@@ -19,5 +19,6 @@ INTEGER_M :: NPROMATR        ! Packet size for transform (in no of fields)
 
 LOGICAL   :: LALLOPERM       ! Allocate some shared data structures permanently
 LOGICAL   :: LIMP            ! true: use immediate message passing 
+LOGICAL   :: LIMP_NOOLAP     ! true: use immediate message passing 
 
 END MODULE TPM_GEN
