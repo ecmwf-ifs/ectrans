@@ -211,7 +211,7 @@ ENDIF
 
 IF(LIMP_NOOLAP)THEN
 ! Copy local contribution
-  CALL GSTATS(1104,0)
+  CALL GSTATS(1704,0)
   IF( IRECVTOT(MYPROC) > 0 )THEN
     IFLDS = 0
     DO JFLD=1,KF_GP
@@ -252,7 +252,7 @@ IF(LIMP_NOOLAP)THEN
 !$OMP END PARALLEL DO
 
   ENDIF
-  CALL GSTATS(1104,1)
+  CALL GSTATS(1704,1)
 
 !
 ! loop over the number of processors we need to communicate with.
@@ -260,7 +260,7 @@ IF(LIMP_NOOLAP)THEN
 !
 !  Pack loop.........................................................
 
-  CALL GSTATS(1105,0)
+  CALL GSTATS(1705,0)
   DO INS=1,INSEND
     ISEND=JSEND(INS)
     ISEND_FLD_START(ISEND)= 1
@@ -270,22 +270,22 @@ IF(LIMP_NOOLAP)THEN
     ZCOMBUFS(-1,INS) = 1
     ZCOMBUFS(0,INS)  = KF_FS
   ENDDO
-  CALL GSTATS(1105,1)
+  CALL GSTATS(1705,1)
 
 !...Send loop.........................................................
 
-  CALL GSTATS(503,0)
+  CALL GSTATS(703,0)
   DO INS=1,INSEND
     ISEND=JSEND(INS)
     CALL MPL_SEND(ZCOMBUFS(-1:ISENDTOT(ISEND),INS),KDEST=NPRCIDS(ISEND),&
          & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(INS), &
          & KTAG=ITAG,CDSTRING='TRLTOG:')
   ENDDO
-  CALL GSTATS(503,1)
+  CALL GSTATS(703,1)
 
 !...Receive loop.........................................................
 
-  CALL GSTATS(504,0)
+  CALL GSTATS(704,0)
   DO INR=1,INRECV
     IRECV=JRECV(INR)
     CALL MPL_RECV(ZCOMBUFR(-1:IRECVTOT(IRECV),INR), &
@@ -298,11 +298,11 @@ IF(LIMP_NOOLAP)THEN
     CALL MPL_WAIT(ZCOMBUFS(-1:ISENDCOUNT,1),KREQUEST=ISENDREQ(1:INSEND), &
     & CDSTRING='TRGTOL: WAIT FOR SENDS')
   ENDIF
-  CALL GSTATS(504,1)
+  CALL GSTATS(704,1)
 
 !  Unpack loop.........................................................
 
-  CALL GSTATS(1106,0)
+  CALL GSTATS(1706,0)
   DO INR=1,INRECV
     IRECV=JRECV(INR)
     CALL PE2SET(IRECV,ISETA,ISETB,ISETW,ISETV)
@@ -319,7 +319,7 @@ IF(LIMP_NOOLAP)THEN
       CALL ABOR1('TRLTOG: RECEIVED MESSAGE OF INCORRECT LENGTH')
     ENDIF
   ENDDO
-  CALL GSTATS(1106,1)
+  CALL GSTATS(1706,1)
 
 ELSE
 
@@ -495,17 +495,17 @@ ELSE
   
   ENDDO
 
+! Perform barrier synchronisation to guarantee all processors have
+! completed communication
+
+  IF( NPROC > 1 .AND. (D%LSPLIT .OR. NPRTRV > 1 .OR. NPRGPEW > 1 ))THEN
+    CALL MPL_BARRIER(CDSTRING='TRLTOG:')
+  ENDIF
 ENDIF
 
 IF (IBUFLENS > 0) DEALLOCATE(ZCOMBUFS)
 IF (IBUFLENR > 0) DEALLOCATE(ZCOMBUFR)
 
-! Perform barrier synchronisation to guarantee all processors have
-! completed communication
-
-IF( NPROC > 1 .AND. (D%LSPLIT .OR. NPRTRV > 1 .OR. NPRGPEW > 1 ))THEN
-  CALL MPL_BARRIER(CDSTRING='TRLTOG:')
-ENDIF
 
 
 RETURN
