@@ -1,0 +1,95 @@
+MODULE PRFI1B_MOD
+CONTAINS
+SUBROUTINE PRFI1B(KM,PIA,PSPEC,KFIELDS)
+
+#include "tsmbkind.h"
+
+USE TPM_DIM
+USE TPM_DISTR
+
+#ifdef DOC
+
+!**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
+
+!     Purpose.
+!     --------
+!        To extract the spectral fields for a specific zonal wavenumber
+!        and put them in an order suitable for the inverse Legendre           .
+!        tranforms.The ordering is from NSMAX to KM for better conditioning.
+!        Elements 1,2 and NLCM(KM)+1 are zeroed in preparation for computing
+!        u,v and derivatives in spectral space.
+
+!**   Interface.
+!     ----------
+!        *CALL* *PRFI1B(...)*
+
+!        Explicit arguments :  KM     - zonal wavenumber
+!        ------------------    PIA    - spectral components for transform
+!                              PSPEC  - spectral array
+!                              KFIELDS  - number of fields
+
+
+!        Implicit arguments :  None.
+!        --------------------
+
+!     Method.
+!     -------
+
+!     Externals.   None.
+!     ----------
+
+!     Reference.
+!     ----------
+!        ECMWF Research Department documentation of the IFS
+
+!     Author.
+!     -------
+!        Mats Hamrud and Philippe Courtier  *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-02-01 From PRFI1B in IFS CY22R1
+
+!     ------------------------------------------------------------------
+#endif
+
+IMPLICIT NONE
+
+INTEGER_M,INTENT(IN)   :: KM,KFIELDS
+REAL_B   ,INTENT(IN)   :: PSPEC(:,:)
+REAL_B   ,INTENT(OUT)  :: PIA(:,:)
+
+!     LOCAL INTEGER SCALARS
+INTEGER_M :: II, INM, IR, J, JFLD, ILCM
+
+
+!     ------------------------------------------------------------------
+
+!*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
+!              --------------------------------------------------
+
+
+ILCM = R%NSMAX+1-KM
+DO J=1,ILCM
+  INM = D%NASM0(KM)+(ILCM-J)*2
+!DIR$ IVDEP
+!OCL NOVREC
+  DO JFLD=1,KFIELDS
+    IR = 2*(JFLD-1)+1
+    II = IR+1
+    PIA(J+2,IR) = PSPEC(JFLD,INM  )
+    PIA(J+2,II) = PSPEC(JFLD,INM+1)
+  ENDDO
+ENDDO
+
+DO J=1,2*KFIELDS
+  PIA(1,J) = _ZERO_
+  PIA(2,J) = _ZERO_
+  PIA(ILCM+3,J) = _ZERO_
+ENDDO
+
+
+!     ------------------------------------------------------------------
+
+END SUBROUTINE PRFI1B
+END MODULE PRFI1B_MOD

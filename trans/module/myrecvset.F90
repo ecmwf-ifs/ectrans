@@ -1,0 +1,76 @@
+FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
+
+#ifdef DOC
+
+!**** *MYRECVSET* RETURNS SET NUMBER TO SEND TO
+
+!     Purpose.
+!     --------
+!       
+
+!**   Interface.
+!     ----------
+!        ISENDSET = MYRECVSET(KSETS,KMYSET,KSET)
+
+!        Explicit arguments :  
+!        --------------------
+!                  input:   KSETS
+!                
+!                
+!                
+!                
+
+!        Implicit arguments :  NONE
+!        --------------------
+!     Method.
+!     -------
+
+!        
+
+!     Externals.
+!     ----------
+!         NONE
+
+!     Reference.
+!     ----------
+!        ECMWF Research Department documentation of the IFS
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-02-03
+
+!     ------------------------------------------------------------------
+#endif
+
+#include "tsmbkind.h"
+
+
+IMPLICIT NONE
+INTEGER_M :: MYRECVSET
+INTEGER_M,INTENT(IN)  :: KSETS,KMYSET,KSET
+
+
+!     ------------------------------------------------------------------
+
+!*       1.    Check input argument for validity 
+!              ---------------------------------
+
+IF(KSETS < 1 .OR. KMYSET > KSETS .OR. KSET > KSETS-1) THEN
+
+  CALL ABOR1(' MYRECVSET: INVALID ARGUMENT ')
+
+ELSE
+
+!*       2.    Compute output parameters
+!              -------------------------
+
+MYRECVSET = MOD(-KSET-1+KMYSET+KSETS,KSETS)+1
+
+ENDIF
+
+RETURN
+END FUNCTION MYRECVSET
