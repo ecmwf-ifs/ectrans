@@ -69,7 +69,9 @@ MTAGDISTGP = 25000
 
 ! Create communicators for MPI groups
 
-CALL MPL_GROUPS_CREATE(NPRTRW, NPRTRV)
+IF (.NOT.LMPOFF) THEN
+  CALL MPL_GROUPS_CREATE(NPRTRW, NPRTRV)
+ENDIF
 
 ! Setup labels for timing package (gstats)
 
