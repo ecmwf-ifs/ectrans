@@ -44,7 +44,7 @@ SUBROUTINE LEINVAD(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_GEOMETRY
@@ -54,13 +54,13 @@ USE TPM_DISTR
 
 IMPLICIT NONE
 
-INTEGER_M, INTENT(IN)    :: KM,KFC,KF_OUT_LT
-REAL_B,    INTENT(OUT)   :: PIA(:,:)
-REAL_B,    INTENT(INOUT) :: PSOA1(:,:)
-REAL_B,    INTENT(INOUT) :: PAOA1(:,:)
+INTEGER(KIND=JPIM), INTENT(IN)    :: KM,KFC,KF_OUT_LT
+REAL(KIND=JPRB),    INTENT(OUT)   :: PIA(:,:)
+REAL(KIND=JPRB),    INTENT(INOUT) :: PSOA1(:,:)
+REAL(KIND=JPRB),    INTENT(INOUT) :: PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1,JN
+INTEGER(KIND=JPIM) :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1,JN
 
 
 !     ------------------------------------------------------------------

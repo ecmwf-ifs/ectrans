@@ -45,7 +45,7 @@ SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC,KFLDPTR)
 !        L. Isaksen : 95-06-06 Reordering of spectral arrays
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_FIELDS
@@ -53,13 +53,13 @@ USE TPM_DISTR
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN)    :: KM,KFIELD
-REAL_B   ,INTENT(OUT)   :: POA(:,:)
-REAL_B   ,INTENT(INOUT) :: PSPEC(:,:)
-INTEGER_M,INTENT(IN),OPTIONAL :: KFLDPTR(:)
+INTEGER(KIND=JPIM),INTENT(IN)    :: KM,KFIELD
+REAL(KIND=JPRB)   ,INTENT(OUT)   :: POA(:,:)
+REAL(KIND=JPRB)   ,INTENT(INOUT) :: PSPEC(:,:)
+INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
+INTEGER(KIND=JPIM) :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
 
 
 !     ------------------------------------------------------------------
@@ -84,7 +84,7 @@ ITMAX = R%NTMAX
 IASM0 = D%NASM0(KM)
 
 
-POA(:,:) = _ZERO_
+POA(:,:) = 0.0_JPRB
 
 !*       1.1   KM=0
 
@@ -98,7 +98,7 @@ IF(KM == 0) THEN
 !DIR$ IVDEP
 !OCL NOVREC
         POA(JN,IR) = PSPEC(IFLD,INM)
-        PSPEC(IFLD,INM) = _ZERO_
+        PSPEC(IFLD,INM) = 0.0_JPRB
       ENDDO
     ENDDO
   ELSE
@@ -109,7 +109,7 @@ IF(KM == 0) THEN
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
         POA(JN,IR) = PSPEC(JFLD,INM)
-        PSPEC(JFLD,INM) = _ZERO_
+        PSPEC(JFLD,INM) = 0.0_JPRB
       ENDDO
     ENDDO
   ENDIF
@@ -127,8 +127,8 @@ ELSE
 !OCL NOVREC
         POA(JN,IR) = PSPEC(IFLD,INM)
         POA(JN,II) = PSPEC(IFLD,INM+1)
-        PSPEC(IFLD,INM)   = _ZERO_
-        PSPEC(IFLD,INM+1) = _ZERO_
+        PSPEC(IFLD,INM)   = 0.0_JPRB
+        PSPEC(IFLD,INM+1) = 0.0_JPRB
       ENDDO
     ENDDO
   ELSE
@@ -141,8 +141,8 @@ ELSE
         II = IR+1
         POA(JN,IR) = PSPEC(JFLD,INM)
         POA(JN,II) = PSPEC(JFLD,INM+1)
-        PSPEC(JFLD,INM)   = _ZERO_
-        PSPEC(JFLD,INM+1) = _ZERO_
+        PSPEC(JFLD,INM)   = 0.0_JPRB
+        PSPEC(JFLD,INM+1) = 0.0_JPRB
       ENDDO
     ENDDO
   ENDIF

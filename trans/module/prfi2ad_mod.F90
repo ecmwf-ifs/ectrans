@@ -55,7 +55,7 @@ SUBROUTINE PRFI2AD(KM,KMLOC,KF_FS,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE PRFI2BAD_MOD
 
@@ -63,15 +63,15 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER_M , INTENT(IN) :: KM
-INTEGER_M , INTENT(IN) :: KMLOC
-INTEGER_M , INTENT(IN) :: KF_FS
+INTEGER(KIND=JPIM) , INTENT(IN) :: KM
+INTEGER(KIND=JPIM) , INTENT(IN) :: KMLOC
+INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS
 
 
-REAL_B , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB) , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: ITBLEN, IVARS
+INTEGER(KIND=JPIM) :: ITBLEN, IVARS
 
 
 !     ------------------------------------------------------------------

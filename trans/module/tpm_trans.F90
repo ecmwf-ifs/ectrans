@@ -2,7 +2,7 @@ MODULE TPM_TRANS
 
 ! Module to contain variables "local" to a specific call to a transform
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
 
@@ -14,9 +14,9 @@ SAVE
                         ! (inverse transform, spectral/fourier space)
 !INTEGER_M :: NF_OUT_LT  ! Number of fields that comes out of Inverse 
                         ! Legendre transform
-INTEGER_M :: NF_SC2
-INTEGER_M :: NF_SC3A
-INTEGER_M :: NF_SC3B
+INTEGER(KIND=JPIM) :: NF_SC2
+INTEGER(KIND=JPIM) :: NF_SC3A
+INTEGER(KIND=JPIM) :: NF_SC3B
 
 !LOGICAL   :: LUV        ! uv fields requested
 !LOGICAL   :: LSCALAR    ! scalar fields requested
@@ -35,10 +35,10 @@ LOGICAL   :: LSCDERS    ! derivatives of scalar variables are req.
 !INTEGER_M :: NF_UV_G      ! Global version of NF_UV (grid-point space)
 !INTEGER_M :: NF_SCALARS_G ! Global version of NF_SCALARS (grid-point space)
 
-REAL_B, ALLOCATABLE :: FOUBUF_IN(:)  ! Fourier buffer 
-REAL_B, ALLOCATABLE :: FOUBUF(:)     ! Fourier buffer
+REAL(KIND=JPRB), ALLOCATABLE :: FOUBUF_IN(:)  ! Fourier buffer 
+REAL(KIND=JPRB), ALLOCATABLE :: FOUBUF(:)     ! Fourier buffer
 
-INTEGER_M :: NPROMA  ! Blocking factor for gridpoint input/output
-INTEGER_M :: NGPBLKS ! Number of NPROMA blocks
+INTEGER(KIND=JPIM) :: NPROMA  ! Blocking factor for gridpoint input/output
+INTEGER(KIND=JPIM) :: NGPBLKS ! Number of NPROMA blocks
 
 END MODULE TPM_TRANS

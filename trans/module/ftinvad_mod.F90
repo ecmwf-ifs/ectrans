@@ -32,7 +32,7 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR
 USE TPM_TRANS
@@ -41,10 +41,10 @@ USE TPM_FFT
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN) :: KFIELDS,KGL
-REAL_B, INTENT(OUT)  :: PREEL(:,:)
+INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
+REAL(KIND=JPRB), INTENT(OUT)  :: PREEL(:,:)
 
-INTEGER_M :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN,IOFF
+INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN,IOFF
 
 !     ------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ CALL FFT992(PREEL(1,IOFF+1),T%TRIGS(1,KGL),&
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+IOFF+JJ-1) = _ZERO_
+    PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRB
   ENDDO
 ENDDO
 

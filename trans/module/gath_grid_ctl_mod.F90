@@ -23,7 +23,7 @@ SUBROUTINE GATH_GRID_CTL(PGPG,KFGATHG,KPROMA,KTO,PGP)
 !     ------------------------------------------------------------------
 
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE MPL_MODULE
 USE YOMGSTATS, ONLY : LSYNCSTATS
 
@@ -38,18 +38,18 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
-INTEGER_M          , INTENT(IN)  :: KFGATHG
-INTEGER_M          , INTENT(IN)  :: KPROMA
-INTEGER_M          , INTENT(IN)  :: KTO(:)
-REAL_B             , INTENT(IN)  :: PGP(:,:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KPROMA
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
+REAL(KIND=JPRB)             , INTENT(IN)  :: PGP(:,:,:)
 
 ! Declaration of local variables
 
-REAL_B    :: ZFLD(D%NGPTOTMX)
-INTEGER_M :: IFLDR,JFLD,ITAG,ILEN,JA,JB,IERR,ISND,JGL,JLON,ILOFF,ILENB
-INTEGER_M :: IRCV,IOFF,ILAST,IGL1,IGL2,IGLOFF
-INTEGER_M :: JKGLO,JROF,IEND,J,IBL
+REAL(KIND=JPRB)    :: ZFLD(D%NGPTOTMX)
+INTEGER(KIND=JPIM) :: IFLDR,JFLD,ITAG,ILEN,JA,JB,IERR,ISND,JGL,JLON,ILOFF,ILENB
+INTEGER(KIND=JPIM) :: IRCV,IOFF,ILAST,IGL1,IGL2,IGLOFF
+INTEGER(KIND=JPIM) :: JKGLO,JROF,IEND,J,IBL
 !     ------------------------------------------------------------------
 
 

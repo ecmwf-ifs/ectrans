@@ -2,13 +2,13 @@ MODULE SETUP_DIMS_MOD
 CONTAINS
 SUBROUTINE SETUP_DIMS
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 
 IMPLICIT NONE
 
-INTEGER_M :: JM,JN,ISPOLEG
+INTEGER(KIND=JPIM) :: JM,JN,ISPOLEG
 
 !     ------------------------------------------------------------------
 

@@ -36,7 +36,7 @@ SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 IMPLICIT NONE
@@ -44,12 +44,12 @@ IMPLICIT NONE
 ! Declaration of arguments
 
 
-REAL_B    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KVSET(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KMASTER
-REAL_B    ,OPTIONAL, INTENT(IN)  :: PMET(:)
-REAL_B    ,OPTIONAL, INTENT(OUT) :: PNORM(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PNORM(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 
 !     ------------------------------------------------------------------
 

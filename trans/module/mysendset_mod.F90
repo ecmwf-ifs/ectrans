@@ -48,12 +48,12 @@ FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
 !     ------------------------------------------------------------------
 #endif
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE ABORT_TRANS_MOD
 
 IMPLICIT NONE
-INTEGER_M :: MYSENDSET
-INTEGER_M,INTENT(IN)  :: KSETS,KMYSET,KSET
+INTEGER(KIND=JPIM) :: MYSENDSET
+INTEGER(KIND=JPIM),INTENT(IN)  :: KSETS,KMYSET,KSET
 
 
 !     ------------------------------------------------------------------

@@ -1,7 +1,7 @@
 MODULE SET_RESOL_MOD
 CONTAINS
 SUBROUTINE SET_RESOL(KRESOL)
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN
 USE TPM_DIM
@@ -16,10 +16,10 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-INTEGER_M ,OPTIONAL, INTENT(IN) :: KRESOL
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL
 
 ! Local varaibles
-INTEGER_M :: IRESOL
+INTEGER(KIND=JPIM) :: IRESOL
 
 !     ------------------------------------------------------------------
 

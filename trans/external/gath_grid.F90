@@ -36,7 +36,7 @@ SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
@@ -54,16 +54,16 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KPROMA
-INTEGER_M          , INTENT(IN)  :: KFGATHG
-INTEGER_M          , INTENT(IN)  :: KTO(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL_B             , INTENT(IN)  :: PGP(:,:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRB)             , INTENT(IN)  :: PGP(:,:,:)
 
 !ifndef INTERFACE
 
-INTEGER_M :: IFRECV,J,IUBOUND(3),IPROMA,IGPBLKS
+INTEGER(KIND=JPIM) :: IFRECV,J,IUBOUND(3),IPROMA,IGPBLKS
 
 !     ------------------------------------------------------------------
 

@@ -28,7 +28,7 @@ SUBROUTINE FOURIER_INAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR
 USE TPM_TRANS
@@ -36,11 +36,11 @@ USE TPM_GEOMETRY
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN) :: KFIELDS,KGL
+INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
 
-REAL_B, INTENT(IN) :: PREEL(:,:)
+REAL(KIND=JPRB), INTENT(IN) :: PREEL(:,:)
 
-INTEGER_M :: JM,JF,IGLG,IPROC,IR,II,ISTA
+INTEGER(KIND=JPIM) :: JM,JF,IGLG,IPROC,IR,II,ISTA
 
 !     ------------------------------------------------------------------
 

@@ -30,7 +30,7 @@ SUBROUTINE TRANS_END
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 END SUBROUTINE TRANS_END

@@ -44,7 +44,7 @@ SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_GEOMETRY
@@ -54,13 +54,13 @@ USE TPM_DISTR
 
 IMPLICIT NONE
 
-INTEGER_M, INTENT(IN)  :: KM,KFC,KF_OUT_LT
-REAL_B,    INTENT(IN)  :: PIA(:,:)
-REAL_B,    INTENT(OUT) :: PSOA1(:,:)
-REAL_B,    INTENT(OUT) :: PAOA1(:,:)
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KFC,KF_OUT_LT
+REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PSOA1(:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1,JN
+INTEGER(KIND=JPIM) :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1,JN
 
 
 !     ------------------------------------------------------------------
@@ -84,8 +84,8 @@ IF(KM == 0)THEN
   IFC = KFC/2
   DO J1=2,KFC,2
     DO JGL=ISL,R%NDGNH
-      PSOA1(J1,JGL) = _ZERO_
-      PAOA1(J1,JGL) = _ZERO_
+      PSOA1(J1,JGL) = 0.0_JPRB
+      PAOA1(J1,JGL) = 0.0_JPRB
     ENDDO
   ENDDO
 ELSE

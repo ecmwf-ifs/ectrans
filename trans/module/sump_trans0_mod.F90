@@ -4,7 +4,7 @@ SUBROUTINE SUMP_TRANS0
 
 ! Set up distributed environment for the transform package (part 0)
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE MPL_MODULE
 
 USE TPM_GEN
@@ -14,7 +14,7 @@ USE PE2SET_MOD
 USE ABORT_TRANS_MOD
 
 LOGICAL :: LLP1,LLP2
-INTEGER_M :: IPROC
+INTEGER(KIND=JPIM) :: IPROC
 
 !     ------------------------------------------------------------------
 

@@ -31,7 +31,7 @@ SUBROUTINE FTINV(PREEL,KFIELDS,KGL)
 !        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR
 USE TPM_TRANS
@@ -40,10 +40,10 @@ USE TPM_FFT
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN) :: KFIELDS,KGL
-REAL_B, INTENT(OUT)  :: PREEL(:,:)
+INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
+REAL(KIND=JPRB), INTENT(OUT)  :: PREEL(:,:)
 
-INTEGER_M :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
+INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 
 !     ------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ IF (G%NLOEN(IGLG)==1) IST1=0
 
 DO JJ=IST1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = _ZERO_
+    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = 0.0_JPRB
   ENDDO
 ENDDO
 

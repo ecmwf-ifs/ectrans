@@ -36,19 +36,19 @@ SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(IN)  :: PGPG(:,:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KPROMA
-INTEGER_M          , INTENT(IN)  :: KFDISTG
-INTEGER_M          , INTENT(IN)  :: KFROM(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL_B             , INTENT(OUT) :: PGP(:,:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PGPG(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
 
 
 !     ------------------------------------------------------------------

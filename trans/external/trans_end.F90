@@ -30,7 +30,7 @@ SUBROUTINE TRANS_END
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
@@ -47,7 +47,7 @@ USE SET_RESOL_MOD
 IMPLICIT NONE
 
 ! Local variables
-INTEGER_M :: JRES
+INTEGER(KIND=JPIM) :: JRES
 !     ------------------------------------------------------------------
 
 DO JRES=1,NDEF_RESOL

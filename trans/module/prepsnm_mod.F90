@@ -42,7 +42,7 @@ SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 !     ------------------------------------------------------------------
 #endif
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_FIELDS
@@ -50,11 +50,11 @@ USE TPM_DISTR
 
 IMPLICIT NONE
 
-INTEGER_M, INTENT(IN)  :: KM,KMLOC
-REAL_B,    INTENT(OUT) :: PEPSNM(0:R%NTMAX+2)
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KMLOC
+REAL(KIND=JPRB),    INTENT(OUT) :: PEPSNM(0:R%NTMAX+2)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: JN
+INTEGER(KIND=JPIM) :: JN
 
 !     ------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ INTEGER_M :: JN
 
 
 IF (KM > 0) THEN
-  PEPSNM(0:KM-1) = _ZERO_
+  PEPSNM(0:KM-1) = 0.0_JPRB
 ENDIF
 
 DO JN=KM,R%NTMAX+2
