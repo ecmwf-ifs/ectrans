@@ -95,6 +95,8 @@ LOGICAL LLP1,LLP2
 !*       1. Initialization.
 !           ---------------
 
+LLP1=.FALSE.
+LLP2=.FALSE.
 ZPI = _TWO_*ASIN(_ONE_)
 INS2 = KN/2+MOD(KN,2)
 

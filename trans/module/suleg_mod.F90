@@ -93,7 +93,7 @@ IMPLICIT NONE
 
 
 !     ------------------------------------------------------------------
-REAL_B :: ZPNMG(D%NLEI3D,R%NSPOLEG)
+REAL_B :: ZPNMG(R%NSPOLEG,D%NLEI3D)
 
 REAL_H :: DLSTRET
 REAL_H :: DLRMU(R%NDGL)
@@ -177,9 +177,9 @@ ENDDO
 !*       3.3   Working arrays
 DO JN=3,R%NTMAX+1
   DO JM=2,JN-1
-    DLC(JN,JM) = DC(JN,JM)
-    DLD(JN,JM) = DD(JN,JM)
-    DLE(JN,JM) = DE(JN,JM)
+    DLC(JM,JN) = DC(JN,JM)
+    DLD(JM,JN) = DD(JN,JM)
+    DLE(JM,JN) = DE(JN,JM)
   ENDDO
 ENDDO
 
@@ -201,7 +201,7 @@ DO JGL=D%NLATLS(MYSETW),D%NLATLE(MYSETW)
   DO JM=0,R%NSMAX
     DO JN=R%NTMAX+1,JM,-1
       INM = INM+1
-      ZPNMG(IGLLOC,INM) = REAL(DLPOL(JM,JN),JPKS)
+      ZPNMG(INM,IGLLOC) = REAL(DLPOL(JM,JN),JPKS)
     ENDDO
   ENDDO
 ENDDO

@@ -72,7 +72,9 @@ REAL_B,    INTENT(INOUT) :: PF(:,:)
 REAL_B,    INTENT(IN)    :: PNSD(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IJ, ISKIP, J, JN,II
+INTEGER_M :: IJ, ISKIP, J, JN,II,JI,ISMAX
+REAL_B :: ZEPSNM(-1:R%NSMAX+4)
+REAL_B :: ZN(-1:R%NTMAX+4)
 
 
 !     ------------------------------------------------------------------
@@ -84,17 +86,24 @@ INTEGER_M :: IJ, ISKIP, J, JN,II
 !*       1.1      COMPUTE
 
 
+ISMAX = R%NSMAX
+DO JN=KM-1,ISMAX+2
+  IJ = ISMAX+3-JN
+  ZN(IJ) = F%RN(JN)
+  ZEPSNM(IJ) = PEPSNM(JN)
+ENDDO
+
+ZN(0) = F%RN(ISMAX+3)
 IF(KM == 0) THEN
   ISKIP = 2
 ELSE
   ISKIP = 1
 ENDIF
 
-DO JN=KM,R%NSMAX+1
-  IJ = R%NSMAX+3-JN
-  DO J=1,2*KF_SCALARS,ISKIP
-    PF(IJ+1,J) = PF(IJ+1,J)-F%RN(JN-1)*PEPSNM(JN  )*PNSD(IJ,J)
-    PF(IJ-1,J) = PF(IJ-1,J)+F%RN(JN+2)*PEPSNM(JN+1)*PNSD(IJ,J)
+DO J=1,2*KF_SCALARS,ISKIP
+  DO JI=2,ISMAX+3-KM
+    PF(JI+1,J) = PF(JI+1,J)-ZN(JI+1)*ZEPSNM(JI)*PNSD(JI,J)
+    PF(JI-1,J) = PF(JI-1,J)+ZN(JI-2)*ZEPSNM(JI-1)*PNSD(JI,J)
   ENDDO
 ENDDO
 

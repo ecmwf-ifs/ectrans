@@ -1,6 +1,6 @@
 MODULE LEINV_MOD
 CONTAINS
-SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1,PLEPO)
+SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 
 !**** *LEINV* - Inverse Legendre transform.
 
@@ -20,8 +20,6 @@ SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1,PLEPO)
 !                              fields for zonal wavenumber KM (output)
 !                              PSOA1 - symmetric part of Fourier
 !                              fields for zonal wavenumber KM (output)
-!                              PLEPO - Legendre polonomials for zonal
-!                              wavenumber KM (input-c)
 
 !        Implicit arguments :  None.
 !        --------------------
@@ -51,17 +49,18 @@ SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1,PLEPO)
 USE TPM_DIM
 USE TPM_GEOMETRY
 USE TPM_TRANS
+USE TPM_FIELDS
+USE TPM_DISTR
 
 IMPLICIT NONE
 
 INTEGER_M, INTENT(IN)  :: KM,KFC,KF_OUT_LT
 REAL_B,    INTENT(IN)  :: PIA(:,:)
-REAL_B,    INTENT(IN)  :: PLEPO(:,:)
 REAL_B,    INTENT(OUT) :: PSOA1(:,:)
 REAL_B,    INTENT(OUT) :: PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1
+INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1,JN
 
 
 !     ------------------------------------------------------------------
@@ -70,6 +69,8 @@ INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1
 !                 --------------------------
 
 !*       1.1      PREPARATIONS.
+
+ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
 
 IA  = 1+MOD(R%NSMAX-KM+2,2)
 IS  = 1+MOD(R%NSMAX-KM+1,2)
@@ -98,13 +99,13 @@ IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 
 IF( IDGLU > 0 ) THEN
 
-  CALL MXMAOP(PLEPO(ISL,IA),1,2*R%NLEI3,PIA(1+IA,1),2,&
+  CALL MXMAOP(F%RPNM(ISL,D%NPMS(KM)+IA),1,2*R%NLEI3,PIA(1+IA,1),2,&
               &R%NLEI1*ISKIP,PAOA1(1,ISL),IOAD1,ISKIP,&
               &IDGLU,ILA,IFC)
 
 !*       1.3      SYMMETRIC PART.
 
-  CALL MXMAOP(PLEPO(ISL,IS),1,2*R%NLEI3,PIA(1+IS,1),2,&
+  CALL MXMAOP(F%RPNM(ISL,D%NPMS(KM)+IS),1,2*R%NLEI3,PIA(1+IS,1),2,&
               &R%NLEI1*ISKIP,PSOA1(1,ISL),IOAD1,ISKIP,&
               &IDGLU,ILS,IFC)
 

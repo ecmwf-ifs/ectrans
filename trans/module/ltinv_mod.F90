@@ -10,11 +10,11 @@ USE TPM_TRANS
 
 USE PRLE1_MOD
 USE PREPSNM_MOD
-USE PRFI1_MOD
+USE PRFI1B_MOD
 USE VDTUV_MOD
 USE SPNSDE_MOD
 USE LEINV_MOD
-USE ASRE1_MOD
+USE ASRE1B_MOD
 USE FSPGL_INT_MOD
 
 #ifdef DOC
@@ -46,9 +46,9 @@ USE FSPGL_INT_MOD
 
 !     Externals.
 !     ----------
-!         PRLE1   - prepares the Legendre polonymials
+
 !         PREPSNM - prepare REPSNM for wavenumber KM
-!         PRFI1   - prepares the spectral fields
+!         PRFI1B  - prepares the spectral fields
 !         VDTUV   - compute u and v from vorticity and divergence
 !         SPNSDE  - compute north-south derivatives
 !         LEINV   - Inverse Legendre transform
@@ -85,7 +85,6 @@ EXTERNAL  FSPGL_PROC
 OPTIONAL  FSPGL_PROC 
 
 REAL_B :: ZIA(R%NLEI1,KLEI2)
-REAL_B :: ZLEPO(R%NLEI3,R%NSMAX+2)
 REAL_B :: ZEPSNM(0:R%NTMAX+2)
 REAL_B :: ZSOA1(KDIM1,R%NLEI3),ZAOA1(KDIM1,R%NLEI3)
 
@@ -93,6 +92,7 @@ REAL_B :: ZSOA1(KDIM1,R%NLEI3),ZAOA1(KDIM1,R%NLEI3)
 !     LOCAL INTEGER SCALARS
 INTEGER_M :: IFC, ISTA
 INTEGER_M :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
+INTEGER_M :: IDIV, IFIRST, ILAST, IVOR
 
 !     LOCAL LOGICAL SCALARS
 
@@ -100,25 +100,19 @@ INTEGER_M :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
 
 !     ------------------------------------------------------------------
 
-!*       1.    PREPARE LEGENDRE POLONOMIALS AND ZEPSNM.
-!              ----------------------------------------
-
-CALL PRLE1(KM,ZLEPO)
+!*       1.    PREPARE ZEPSNM.
+!              ---------------
 
 CALL PREPSNM(KM,KMLOC,ZEPSNM)
 
 !     ------------------------------------------------------------------
 
-!*       2.    PREPARE SPECTRAL FIELDS.
-!              ------------------------
-
-CALL PRFI1(KM,KF_UV,KF_SCALARS,ZIA,PSPVOR,PSPDIV,PSPSCALAR,&
- & KFLDPTRUV,KFLDPTRSC)
-
-!     ------------------------------------------------------------------
 
 !*       3.    SPECTRAL COMPUTATIONS FOR U,V AND DERIVATIVES.
 !              ----------------------------------------------
+
+IFIRST = 1
+ILAST  = 4*KF_UV
 
 IF (KF_UV > 0) THEN
   IVORL = 1
@@ -129,8 +123,18 @@ IF (KF_UV > 0) THEN
   IUU   = 6*KF_UV
   IVL   = 6*KF_UV+1
   IVU   = 8*KF_UV
+  CALL PRFI1B(KM,ZIA(:,IVORL:IVORU),PSPVOR,KF_UV,KFLDPTRUV)
+  CALL PRFI1B(KM,ZIA(:,IDIVL:IDIVU),PSPDIV,KF_UV,KFLDPTRUV)
+  ILAST = ILAST+4*KF_UV
+
   CALL VDTUV(KM,KF_UV,ZEPSNM,ZIA(:,IVORL:IVORU),ZIA(:,IDIVL:IDIVU),&
              ZIA(:,IUL:IUU),ZIA(:,IVL:IVU))
+ENDIF
+
+IF(KF_SCALARS > 0)THEN
+  IFIRST = ILAST+1
+  ILAST  = IFIRST - 1 + 2*KF_SCALARS 
+  CALL PRFI1B(KM,ZIA(:,IFIRST:ILAST),PSPSCALAR(:,:),KF_SCALARS,KFLDPTRSC)
 ENDIF
 
 IF (KF_SCDERS > 0) THEN
@@ -157,14 +161,14 @@ IF(KF_UV > 0 .AND. .NOT. LDIVGP) THEN
   ISTA = ISTA+2*KF_UV
 ENDIF 
 
-CALL LEINV(KM,IFC,KF_OUT_LT,ZIA(:,ISTA:ISTA+IFC-1),ZAOA1,ZSOA1,ZLEPO)
+CALL LEINV(KM,IFC,KF_OUT_LT,ZIA(:,ISTA:ISTA+IFC-1),ZAOA1,ZSOA1)
 
 !     ------------------------------------------------------------------
 
 !*       5.    RECOMBINATION SYMMETRIC/ANTISYMMETRIC PART.
 !              --------------------------------------------
 
-CALL ASRE1(KM,KMLOC,KF_OUT_LT,ZAOA1,ZSOA1)
+CALL ASRE1B(KF_OUT_LT,KM,KMLOC,ZAOA1,ZSOA1)
 
 !     ------------------------------------------------------------------
 
