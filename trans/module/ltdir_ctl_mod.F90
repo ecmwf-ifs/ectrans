@@ -66,6 +66,7 @@ DEALLOCATE(FOUBUF_IN)
 
 ! Direct Legendre transform
 
+IF (.NOT.LSYNCSTATS) CALL GSTATS(103,0)
 ILED2 = 2*KF_FS
 IF (.NOT.LSYNCSTATS) CALL GSTATS(1645,0)
 IF(KF_FS>0) THEN
@@ -82,6 +83,7 @@ ENDIF
 IF (.NOT.LSYNCSTATS) CALL GSTATS(1645,1)
 
 DEALLOCATE(FOUBUF)
+IF (.NOT.LSYNCSTATS) CALL GSTATS(103,1)
 
 !     -----------------------------------------------------------------
 

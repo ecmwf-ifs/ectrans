@@ -6,6 +6,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_DISTR
+USE YOMGSTATS, ONLY : LSYNCSTATS
 
 REAL(KIND=JPRB)    ,INTENT(IN)  :: PSPEC(:,:)
 REAL(KIND=JPRB)    ,INTENT(IN)  :: PMET(0:R%NSMAX)
@@ -17,7 +18,7 @@ INTEGER(KIND=JPIM) :: JM ,JFLD ,JN ,IM ,ISP
 !     ------------------------------------------------------------------
 
 
-
+IF (.NOT.LSYNCSTATS) CALL GSTATS(1651,0)
 !$OMP PARALLEL DO SCHEDULE(STATIC,1)  PRIVATE(JM,IM,JN,ISP,JFLD)
 DO JM=1,D%NUMP
   PSM(:,JM) = 0.0_JPRB
@@ -40,6 +41,7 @@ DO JM=1,D%NUMP
   ENDIF
 ENDDO
 !$OMP END PARALLEL DO
+IF (.NOT.LSYNCSTATS) CALL GSTATS(1651,1)
 
 !     ------------------------------------------------------------------
 
