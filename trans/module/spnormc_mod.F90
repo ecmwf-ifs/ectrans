@@ -5,6 +5,7 @@ SUBROUTINE SPNORMC(PSM,KFLD_G,KVSET,KMASTER,PGM)
 
 #include "tsmbkind.h"
 USE MPL_MODULE
+USE YOMGSTATS, ONLY : LSYNCSTATS
 
 USE TPM_DIM
 USE TPM_DISTR
@@ -72,7 +73,9 @@ ENDIF
 ! completed communication
 
 IF( NPROC > 1 )THEN
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(729,0)
   CALL MPL_BARRIER(CDSTRING='SPNORMC')
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(729,1)
 ENDIF
 !     ------------------------------------------------------------------
 

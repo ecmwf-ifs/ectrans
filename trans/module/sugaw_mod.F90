@@ -109,18 +109,19 @@ DO JGL=1,INS2
   ZREG(JGL) = COS(Z)
   ZLI(JGL) = PL(JGL)
 ENDDO
-
 !     ------------------------------------------------------------------
 
 !*      2. Computes roots and weights.
 !          ---------------------------
 
 ZEPS = EPSILON(Z)
-!$OMP PARALLEL DO PRIVATE(JGL)
+CALL GSTATS(1650,0)
+!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL)
 DO JGL=1,INS2
   CALL GAWL(PL(JGL),DDL(JGL),PW(JGL),ZEPS,KN,ITER(JGL),ZMOD(JGL))
 ENDDO
 !$OMP END PARALLEL DO
+CALL GSTATS(1650,1)
 
 !DIR$ IVDEP
 !OCL NOVREC

@@ -41,6 +41,7 @@ SUBROUTINE SUTRLE(PNM)
 
 #include "tsmbkind.h"
 USE MPL_MODULE
+USE YOMGSTATS, ONLY : LSYNCSTATS
 
 USE TPM_GEN
 USE TPM_DIM
@@ -68,7 +69,6 @@ LOGICAL :: LLADMSG, LLEXACT
 
 !*       0.    Some initializations.
 !              ---------------------
-
 !! Workaround for obscure unwillingness to vectorize on VPP
 ZPNM => F%RPNM
 
@@ -76,7 +76,9 @@ ZPNM => F%RPNM
 ! completed all previous communication
 
 IF( NPROC > 1 )THEN
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,0)
   CALL MPL_BARRIER(CDSTRING='SUTRLE:')
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,1)
 ENDIF
 
 ALLOCATE (ZCOMBUF(NCOMBFLEN))
@@ -89,6 +91,7 @@ DO JROC=1,NPRTRW-1
 !*     Define PE to which data have to be sent and PE from which
 !*     data have to be received
 
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(684,0)
   ISEND = MYSETW-JROC
   IRECV = MYSETW+JROC
   IF (ISEND <= 0)     ISEND = ISEND+NPRTRW
@@ -138,6 +141,7 @@ DO JROC=1,NPRTRW-1
     CALL MPL_SEND(ZCOMBUF(1:IPOS),KDEST=NPRCIDS(ISEND), &
      & KTAG=ITAG,CDSTRING='SUTRLE:')
   ENDIF
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(684,1)
 
   ILREC = 0
   ITAG = MTAGLETR
@@ -145,6 +149,7 @@ DO JROC=1,NPRTRW-1
 
 !*   receive message (if not empty)
 
+    IF (.NOT.LSYNCSTATS) CALL GSTATS(684,0)
     CALL MPL_RECV(ZCOMBUF(1:NCOMBFLEN),KSOURCE=NPRCIDS(IRECV), &
      & KTAG=ITAG,KOUNT=ILREC,CDSTRING='SUTRLE:')
 
@@ -178,6 +183,7 @@ DO JROC=1,NPRTRW-1
         ENDDO
       ENDIF
     ENDDO
+    IF (.NOT.LSYNCSTATS) CALL GSTATS(684,1)
 
 !*    check received message length
 
@@ -190,14 +196,16 @@ DO JROC=1,NPRTRW-1
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication for this jroc loop iteration
 
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,0)
   CALL MPL_BARRIER(CDSTRING='SUTRLE:')
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,1)
 
 ENDDO
 
 !*    copy data from pnm to rpnm
 
-!$OMP PARALLEL PRIVATE(jmloc,im,iofft,ioffg,jgl,iglloc,jn)
-!$OMP DO SCHEDULE(STATIC,1)
+CALL GSTATS(1601,0)
+!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(jmloc,im,iofft,ioffg,jgl,iglloc,jn)
 DO JMLOC=1,D%NUMP
   IM = D%MYMS(JMLOC)
   IOFFT = D%NPMT(IM)
@@ -209,8 +217,8 @@ DO JMLOC=1,D%NUMP
     ENDDO
   ENDDO
 ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
+!$OMP END PARALLEL DO
+CALL GSTATS(1601,1)
 
 DEALLOCATE (ZCOMBUF)
 

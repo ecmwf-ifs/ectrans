@@ -200,6 +200,7 @@ CALL SUMP_TRANS_PRELEG
 ! Compute Legandre polonomial and Gaussian Latitudes and Weights
 CALL SULEG
 
+CALL GSTATS(1953,0)
 ! Compute arrays related to grid-point geometry
 CALL SETUP_GEOM
 
@@ -208,6 +209,7 @@ CALL SUMP_TRANS
 
 ! Initialize Fast Fourier Transform package
 CALL SUFFT
+CALL GSTATS(1953,1)
 
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
