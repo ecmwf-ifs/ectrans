@@ -43,8 +43,10 @@ INTEGER_M :: JGL,JM,JF,IGLG,IPROC,IR,II,ISTA
 
 !     ------------------------------------------------------------------
 
+#ifndef HLOMP
 !$OMP PARALLEL PRIVATE(JGL,IGLG,JM,IPROC,IR,II,ISTA,JF)
 !$OMP DO SCHEDULE(STATIC,1)
+#endif
 DO JGL=1,D%NDGL_FS
   IGLG = D%NPTRLS(MYSETW)+JGL-1
   DO JM=0,G%NMEN(IGLG)
@@ -58,8 +60,10 @@ DO JGL=1,D%NDGL_FS
     ENDDO
   ENDDO
 ENDDO
+#ifndef HLOMP
 !$OMP END DO
 !$OMP END PARALLEL
+#endif
 
 !     ------------------------------------------------------------------
 

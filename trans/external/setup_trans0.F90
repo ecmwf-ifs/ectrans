@@ -1,12 +1,12 @@
-SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
-&                       KPRGPNS,KPRGPEW,KPRTRW,LDALLOPERM)
+SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
+&                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,LDALLOPERM,LDIMP)
 
-!**** *SETUP_TRANS* - General setup routine for transform package
+!**** *SETUP_TRANS0* - General setup routine for transform package
 
 !     Purpose.
 !     --------
 !     Resolution independent part of setup of transform package
-!     Has to called BEFORE SETUP_TRANS
+!     Has to be called BEFORE SETUP_TRANS
 
 !**   Interface.
 !     ----------
@@ -21,7 +21,9 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
 !     KPRGPNS - splitting level in N-S direction in grid-point space [1]
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
+!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ]
 !     LDALLOPERM - allocate some arrays permenately (OpenMP issue) [false]
+!     LDIMP - use immediate message passing [false]
 
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
 
@@ -54,9 +56,10 @@ USE SUMP_TRANS0_MOD
 
 IMPLICIT NONE
 
-INTEGER_M ,OPTIONAL,INTENT(IN) :: KOUT,KERR,KPRINTLEV,KMAX_RESOL
-INTEGER_M ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW
+INTEGER_M ,OPTIONAL,INTENT(IN) :: KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR
+INTEGER_M ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDALLOPERM
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDIMP
 
 !ifndef INTERFACE
 
@@ -77,7 +80,11 @@ NMAX_RESOL = 1
 NPRGPNS = 1
 NPRGPEW = 1
 NPRTRW = 1
+NPROMATR = 0
+NCOMBFLEN = 1800000
 LALLOPERM = .FALSE.
+LIMP = .FALSE.
+
 ! Optional arguments
 
 IF(PRESENT(KOUT)) THEN
@@ -97,6 +104,12 @@ IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SETUP_TRANS0 ==='
 IF(PRESENT(KMAX_RESOL))THEN
   NMAX_RESOL = KMAX_RESOL
 ENDIF
+IF(PRESENT(KPROMATR))THEN
+  IF(MOD(KPROMATR,2) /= 0) THEN
+    CALL ABOR1('SETUP_TRANS0: KPROMATR HAS TO BE MULTIPLE OF 2')
+  ENDIF
+  NPROMATR = KPROMATR
+ENDIF
 IF(PRESENT(KPRGPNS)) THEN
   NPRGPNS = KPRGPNS
 ENDIF
@@ -106,8 +119,14 @@ ENDIF
 IF(PRESENT(KPRTRW)) THEN
   NPRTRW = KPRTRW
 ENDIF
+IF(PRESENT(KCOMBFLEN)) THEN
+  NCOMBFLEN = KCOMBFLEN
+ENDIF
 IF(PRESENT(LDALLOPERM)) THEN
   LALLOPERM = LDALLOPERM
+ENDIF
+IF(PRESENT(LDIMP)) THEN
+  LIMP = LDIMP
 ENDIF
 
 ! Initial setup

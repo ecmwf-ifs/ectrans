@@ -1,6 +1,7 @@
 MODULE FTDIR_CTL_MOD
 CONTAINS
-SUBROUTINE FTDIR_CTL(PGP,KVSETUV,KVSETSC)
+SUBROUTINE FTDIR_CTL(PGP,KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
+ & KVSETUV,KVSETSC,KPTRGP)
 
 
 !**** *FTDIR_CTL - Direct Fourier transform control
@@ -10,13 +11,20 @@ SUBROUTINE FTDIR_CTL(PGP,KVSETUV,KVSETSC)
 
 !**   Interface.
 !     ----------
-!        CALL FTDIR_CTL(..)
+!     CALL FTDIR_CTL(..)
 
-!        Explicit arguments :  PGP     -  gridpoint array
-!        --------------------  KVSETUV - "B" set in spectral/fourier space for
-!                                         u and v variables
-!                              KVSETSC - "B" set in spectral/fourier space for
-!                                         scalar variables
+!     Explicit arguments : 
+!     -------------------- 
+!     KF_UV_G      - global number of spectral u-v fields
+!     KF_SCALARS_G - global number of scalar spectral fields
+!     KF_GP        - total number of output gridpoint fields
+!     KF_FS        - total number of fields in fourier space
+!     PGP     -  gridpoint array
+!     KVSETUV - "B" set in spectral/fourier space for
+!                u and v variables
+!     KVSETSC - "B" set in spectral/fourier space for
+!                scalar variables
+!     KPTRGP  -  pointer array to fields in gridpoint space
 
 !     Method.
 !     -------
@@ -51,16 +59,18 @@ IMPLICIT NONE
 
 ! Dummy arguments
 REAL_B , INTENT(IN) :: PGP(:,:,:)
+INTEGER_M,INTENT(IN) :: KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
 
 ! Local variables
 REAL_B,ALLOCATABLE :: ZGTF(:,:)
 
 INTEGER_M :: IST
-INTEGER_M :: IVSETUV(NF_UV_G)
-INTEGER_M :: IVSETSC(NF_SCALARS_G)
-INTEGER_M :: IVSET(NF_GP)
+INTEGER_M :: IVSETUV(KF_UV_G)
+INTEGER_M :: IVSETSC(KF_SCALARS_G)
+INTEGER_M :: IVSET(KF_GP)
 
 !     ------------------------------------------------------------------
 
@@ -68,13 +78,13 @@ INTEGER_M :: IVSET(NF_GP)
 
 IF(LALLOPERM) THEN
   IF(ALLOCATED(ZGTF)) THEN
-    IF( .NOT. (SIZE(ZGTF,1) == NF_FS .AND. SIZE(ZGTF,2) ==  D%NLENGTF) ) THEN
+    IF( .NOT. (SIZE(ZGTF,1) == KF_FS .AND. SIZE(ZGTF,2) ==  D%NLENGTF) ) THEN
       DEALLOCATE(ZGTF)
     ENDIF
   ENDIF
 ENDIF
 IF(.NOT.ALLOCATED(ZGTF)) THEN
-  ALLOCATE(ZGTF(NF_FS,D%NLENGTF))
+  ALLOCATE(ZGTF(KF_FS,D%NLENGTF))
 ENDIF
 IF(PRESENT(KVSETUV)) THEN
   IVSETUV(:) = KVSETUV(:)
@@ -88,39 +98,41 @@ ELSE
 ENDIF
 
 IST = 1
-IF(NF_UV_G > 0) THEN
-  IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-  IST = IST+NF_UV_G
-  IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-  IST = IST+NF_UV_G
+IF(KF_UV_G > 0) THEN
+  IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+  IST = IST+KF_UV_G
+  IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+  IST = IST+KF_UV_G
 ENDIF
-IF(NF_SCALARS_G > 0) THEN
-  IVSET(IST:IST+NF_SCALARS_G-1) = IVSETSC(:)
-  IST = IST+NF_SCALARS_G
+IF(KF_SCALARS_G > 0) THEN
+  IVSET(IST:IST+KF_SCALARS_G-1) = IVSETSC(:)
+  IST = IST+KF_SCALARS_G
 ENDIF
 
 ! Transposition
 
 CALL GSTATS(158,0)
-CALL TRGTOL(ZGTF,PGP,IVSET)
+CALL TRGTOL(ZGTF,PGP,KF_FS,KF_GP,IVSET,KPTRGP)
 CALL GSTATS(158,1)
 
 ! Fourier transform
 
 CALL GSTATS(106,0)
-CALL FTDIR(ZGTF,NF_FS)
+IF(KF_FS>0) THEN
+  CALL FTDIR(ZGTF,KF_FS)
+ENDIF
 
 ! Save Fourier data in FOUBUF_IN
 
 IF(LALLOPERM) THEN
   IF(ALLOCATED(FOUBUF_IN)) THEN
-    IF(SIZE(FOUBUF_IN) < D%NLENGT0B*2*NF_FS) THEN
+    IF(SIZE(FOUBUF_IN) < D%NLENGT0B*2*KF_FS) THEN
       DEALLOCATE(FOUBUF_IN)
     ENDIF
   ENDIF
 ENDIF
-IF(.NOT.ALLOCATED(FOUBUF_IN)) ALLOCATE(FOUBUF_IN(D%NLENGT0B*2*NF_FS))
-CALL FOURIER_OUT(ZGTF,NF_FS)
+IF(.NOT.ALLOCATED(FOUBUF_IN)) ALLOCATE(FOUBUF_IN(D%NLENGT0B*2*KF_FS))
+CALL FOURIER_OUT(ZGTF,KF_FS)
 CALL GSTATS(106,1)
 IF(.NOT.LALLOPERM) THEN
   DEALLOCATE(ZGTF)

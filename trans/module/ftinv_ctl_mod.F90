@@ -1,6 +1,7 @@
 MODULE FTINV_CTL_MOD
 CONTAINS
-SUBROUTINE FTINV_CTL(PGP,KVSETUV,KVSETSC)
+SUBROUTINE FTINV_CTL(PGP,KF_UV_G,KF_SCALARS_G,&
+ & KF_UV,KF_SCALARS,KF_SCDERS,KF_GP,KF_FS,KF_OUT_LT,KVSETUV,KVSETSC,KPTRGP)
 
 
 !**** *FTINV_CTL - Inverse Fourier transform control
@@ -12,11 +13,22 @@ SUBROUTINE FTINV_CTL(PGP,KVSETUV,KVSETSC)
 !     ----------
 !        CALL FTINV_CTL(..)
 
-!        Explicit arguments :  PGP     -  gridpoint array
-!        --------------------  KVSETUV - "B" set in spectral/fourier space for
-!                                         u and v variables
-!                              KVSETSC - "B" set in spectral/fourier space for
-!                                         scalar variables
+!        Explicit arguments : 
+!        --------------------
+!        PGP     -  gridpoint array 
+!        KF_UV_G      - global number of spectral u-v fields
+!        KF_SCALARS_G - global number of scalar spectral fields 
+!        KF_UV        - local number of spectral u-v fields
+!        KF_SCALARS   - local number of scalar spectral fields
+!        KF_SCDERS    - local number of derivatives of scalar spectral fields
+!        KF_GP        - total number of output gridpoint fields
+!        KF_FS        - total number of fields in fourier space
+!        KF_OUT_LT    - total number of fields coming out from inverse LT
+!        KVSETUV - "B"  set in spectral/fourier space for
+!                   u and v variables
+!        KVSETSC - "B" set in spectral/fourier space for
+!                  scalar variables
+!        KPTRGP - pointer array to fi3elds in gridpoint space
 
 !     Method.
 !     -------
@@ -52,8 +64,11 @@ USE TRLTOG_MOD
 IMPLICIT NONE
 
 REAL_B , INTENT(OUT) :: PGP(:,:,:)
+INTEGER_M ,INTENT(IN) :: KF_UV_G,KF_SCALARS_G
+INTEGER_M ,INTENT(IN) :: KF_UV,KF_SCALARS,KF_SCDERS,KF_GP,KF_FS,KF_OUT_LT
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
 
 REAL_B,ALLOCATABLE,TARGET  :: ZGTF(:,:)
 REAL_B,TARGET  :: ZDUM(1,D%NLENGTF)
@@ -64,9 +79,9 @@ REAL_B,POINTER :: ZEWDERS(:,:)
 REAL_B,POINTER :: ZUVDERS(:,:)
 
 INTEGER_M :: IST
-INTEGER_M :: IVSETUV(NF_UV_G)
-INTEGER_M :: IVSETSC(NF_SCALARS_G)
-INTEGER_M :: IVSET(NF_GP)
+INTEGER_M :: IVSETUV(KF_UV_G)
+INTEGER_M :: IVSETSC(KF_SCALARS_G)
+INTEGER_M :: IVSET(KF_GP)
 INTEGER_M :: J1,J2
 
 !     ------------------------------------------------------------------
@@ -76,52 +91,58 @@ INTEGER_M :: J1,J2
 CALL GSTATS(107,0)
 IF(LALLOPERM) THEN
   IF(ALLOCATED(ZGTF)) THEN
-    IF( .NOT. (SIZE(ZGTF,1) == NF_FS .AND. SIZE(ZGTF,2) ==  D%NLENGTF) ) THEN
+    IF( .NOT. (SIZE(ZGTF,1) == KF_FS .AND. SIZE(ZGTF,2) ==  D%NLENGTF) ) THEN
       DEALLOCATE(ZGTF)
     ENDIF
   ENDIF
 ENDIF
 IF(.NOT.ALLOCATED(ZGTF)) THEN
-  ALLOCATE(ZGTF(NF_FS,D%NLENGTF))
+  ALLOCATE(ZGTF(KF_FS,D%NLENGTF))
 ENDIF
-!$OMP PARALLEL DO PRIVATE(J,I)
+
+#ifndef HLOMP
+!$OMP PARALLEL DO PRIVATE(J1,J2)
+#endif
 DO J1=1,D%NLENGTF
-  DO J2=1,NF_FS
+  DO J2=1,KF_FS
     ZGTF(J2,J1) = _ZERO_
   ENDDO
 ENDDO
+#ifndef HLOMP
 !$OMP END PARALLEL DO
-CALL FOURIER_IN(ZGTF,NF_OUT_LT)
+#endif
+
+CALL FOURIER_IN(ZGTF,KF_OUT_LT)
 
 !    2.  Fourier space computations
 
-IF(NF_UV > 0 .OR. NF_SCDERS > 0) THEN
+IF(KF_UV > 0 .OR. KF_SCDERS > 0) THEN
   IST=1
   IF(LVORGP) THEN
-    IST = IST+NF_UV
+    IST = IST+KF_UV
   ENDIF
   IF(LDIVGP) THEN
-    IST = IST+NF_UV
+    IST = IST+KF_UV
   ENDIF
-  ZUV => ZGTF(IST:IST+2*NF_UV-1,:)
-  IST = IST+2*NF_UV
-  ZSCALAR => ZGTF(IST:IST+NF_SCALARS-1,:)
-  IST = IST+NF_SCALARS
-  ZNSDERS => ZGTF(IST:IST+NF_SCDERS-1,:)
-  IST = IST+NF_SCDERS
+  ZUV => ZGTF(IST:IST+2*KF_UV-1,:)
+  IST = IST+2*KF_UV
+  ZSCALAR => ZGTF(IST:IST+KF_SCALARS-1,:)
+  IST = IST+KF_SCALARS
+  ZNSDERS => ZGTF(IST:IST+KF_SCDERS-1,:)
+  IST = IST+KF_SCDERS
   IF(LUVDER) THEN
-    ZUVDERS => ZGTF(IST:IST+2*NF_UV-1,:)
-    IST = IST+2*NF_UV
+    ZUVDERS => ZGTF(IST:IST+2*KF_UV-1,:)
+    IST = IST+2*KF_UV
   ELSE
     ZUVDERS => ZDUM(1:1,:)  
   ENDIF
-  IF(NF_SCDERS > 0) THEN
-    ZEWDERS => ZGTF(IST:IST+NF_SCDERS-1,:)
+  IF(KF_SCDERS > 0) THEN
+    ZEWDERS => ZGTF(IST:IST+KF_SCDERS-1,:)
   ELSE
     ZEWDERS => ZDUM(1:1,:)
   ENDIF
 
-  CALL FSC(ZUV,ZSCALAR,ZNSDERS,ZEWDERS,ZUVDERS)
+  CALL FSC(KF_UV,KF_SCALARS,KF_SCDERS,ZUV,ZSCALAR,ZNSDERS,ZEWDERS,ZUVDERS)
 
   NULLIFY(ZUV)
   NULLIFY(ZSCALAR)
@@ -131,7 +152,9 @@ IF(NF_UV > 0 .OR. NF_SCDERS > 0) THEN
 ENDIF
 
 !   3.  Fourier transform
-CALL FTINV(ZGTF,NF_FS)
+IF(KF_FS > 0) THEN
+  CALL FTINV(ZGTF,KF_FS)
+ENDIF
 CALL GSTATS(107,1)
 
 !   4.  Transposition
@@ -148,43 +171,43 @@ ELSE
 ENDIF
 
 IST = 1
-IF(NF_UV_G > 0) THEN
+IF(KF_UV_G > 0) THEN
   IF( LVORGP) THEN
-    IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-    IST = IST+NF_UV_G
+    IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+    IST = IST+KF_UV_G
   ENDIF
   IF( LDIVGP) THEN
-    IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-    IST = IST+NF_UV_G
+    IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+    IST = IST+KF_UV_G
   ENDIF
-  IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-  IST = IST+NF_UV_G
-  IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-  IST = IST+NF_UV_G
+  IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+  IST = IST+KF_UV_G
+  IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+  IST = IST+KF_UV_G
 ENDIF
-IF(NF_SCALARS_G > 0) THEN
-  IVSET(IST:IST+NF_SCALARS_G-1) = IVSETSC(:)
-  IST = IST+NF_SCALARS_G
-  IF(NF_SCDERS > 0) THEN
-    IVSET(IST:IST+NF_SCALARS_G-1) = IVSETSC(:)
-    IST = IST+NF_SCALARS_G
+IF(KF_SCALARS_G > 0) THEN
+  IVSET(IST:IST+KF_SCALARS_G-1) = IVSETSC(:)
+  IST = IST+KF_SCALARS_G
+  IF(LSCDERS) THEN
+    IVSET(IST:IST+KF_SCALARS_G-1) = IVSETSC(:)
+    IST = IST+KF_SCALARS_G
   ENDIF
 ENDIF
-IF(NF_UV_G > 0 .AND. LUVDER) THEN
-  IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-  IST = IST+NF_UV_G
-  IVSET(IST:IST+NF_UV_G-1) = IVSETUV(:)
-  IST = IST+NF_UV_G
+IF(KF_UV_G > 0 .AND. LUVDER) THEN
+  IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+  IST = IST+KF_UV_G
+  IVSET(IST:IST+KF_UV_G-1) = IVSETUV(:)
+  IST = IST+KF_UV_G
 ENDIF
-IF(NF_SCALARS_G > 0) THEN
-  IF(NF_SCDERS > 0) THEN
-    IVSET(IST:IST+NF_SCALARS_G-1) = IVSETSC(:)
-    IST = IST+NF_SCALARS_G
+IF(KF_SCALARS_G > 0) THEN
+  IF(LSCDERS) THEN
+    IVSET(IST:IST+KF_SCALARS_G-1) = IVSETSC(:)
+    IST = IST+KF_SCALARS_G
   ENDIF
 ENDIF
 
 CALL GSTATS(157,0)
-CALL TRLTOG(ZGTF,PGP,IVSET)
+CALL TRLTOG(ZGTF,PGP,KF_FS,KF_GP,IVSET,KPTRGP)
 CALL GSTATS(157,1)
 
 IF(.NOT. LALLOPERM) THEN

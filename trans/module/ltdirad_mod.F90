@@ -1,12 +1,12 @@
 MODULE LTDIRAD_MOD
 CONTAINS
-SUBROUTINE LTDIRAD(KM,KMLOC,PSPVOR,PSPDIV,PSPSCALAR)
+SUBROUTINE LTDIRAD(KM,KMLOC,KF_FS,KF_UV,KF_SCALARS,KLED2,&
+ & PSPVOR,PSPDIV,PSPSCALAR,KFLDPTRUV,KFLDPTRSC)
 
 
 #include "tsmbkind.h"
 
 USE TPM_DIM
-USE TPM_TRANS
 
 USE PRLE2AD_MOD
 USE PREPSNM_MOD
@@ -83,20 +83,23 @@ IMPLICIT NONE
 !     DUMMY INTEGER SCALARS
 INTEGER_M, INTENT(IN)  :: KM
 INTEGER_M, INTENT(IN)  :: KMLOC
+INTEGER_M,INTENT(IN)   :: KF_FS,KF_UV,KF_SCALARS,KLED2
 
 REAL_B  ,OPTIONAL, INTENT(INOUT) :: PSPVOR(:,:)
 REAL_B  ,OPTIONAL, INTENT(INOUT) :: PSPDIV(:,:)
 REAL_B  ,OPTIONAL, INTENT(INOUT) :: PSPSCALAR(:,:)
+INTEGER_M,OPTIONAL,INTENT(IN)    :: KFLDPTRUV(:)
+INTEGER_M,OPTIONAL,INTENT(IN)    :: KFLDPTRSC(:)
 
 
 !     LOCAL INTEGER SCALARS
 INTEGER_M :: IFC
 
 !     LOCAL REALS
-REAL_B :: ZSIA(NLED2,R%NDGNH),       ZAIA(NLED2,R%NDGNH)
+REAL_B :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
 REAL_B :: ZLEPO(R%NLED3,R%NDGNH)
 REAL_B :: ZEPSNM(0:R%NTMAX+2)
-REAL_B :: ZOA1(R%NLED4,NLED2),         ZOA2(R%NLED4,MAX(4*NF_UV,1))
+REAL_B :: ZOA1(R%NLED4,KLED2),         ZOA2(R%NLED4,MAX(4*KF_UV,1))
 
 
 !     ------------------------------------------------------------------
@@ -114,37 +117,38 @@ CALL PREPSNM(KM,KMLOC,ZEPSNM)
 !*       6.    UPDATE SPECTRAL ARRAYS.
 !              -----------------------
 
-CALL UPDSPAD(KM,ZOA1,ZOA2,PSPVOR,PSPDIV,PSPSCALAR)
+CALL UPDSPAD(KM,KF_UV,KF_SCALARS,ZOA1,ZOA2, &
+ & PSPVOR,PSPDIV,PSPSCALAR,KFLDPTRUV,KFLDPTRSC)
 
 !     ------------------------------------------------------------------
 
 !*       5.    COMPUTE VORTICITY AND DIVERGENCE.
 !              ---------------------------------
 
-IF( NF_UV > 0 ) THEN
-  CALL LDSPC2AD(KM,ZEPSNM,ZOA1,ZOA2)
+IF( KF_UV > 0 ) THEN
+  CALL LDSPC2AD(KM,KF_UV,ZEPSNM,ZOA1,ZOA2)
 ENDIF
 
 !     ------------------------------------------------------------------
 
 !*       4.    DIRECT LEGENDRE TRANSFORM.
 !              --------------------------
-IFC = 2*NF_FS 
-CALL LEDIRAD(KM,IFC,ZAIA,ZSIA,ZOA1,ZLEPO)
+IFC = 2*KF_FS 
+CALL LEDIRAD(KM,IFC,KLED2,ZAIA,ZSIA,ZOA1,ZLEPO)
 
 !     ------------------------------------------------------------------
 
 !*       3.    FOURIER SPACE COMPUTATIONS.
 !              ---------------------------
 
-CALL LDFOU2AD(KM,ZAIA,ZSIA)
+CALL LDFOU2AD(KM,KF_UV,ZAIA,ZSIA)
 
 !     ------------------------------------------------------------------
 
 !*       2.    PREPARE WORK ARRAYS.
 !              --------------------
 
-CALL PRFI2AD(KM,KMLOC,ZAIA,ZSIA)
+CALL PRFI2AD(KM,KMLOC,KF_FS,ZAIA,ZSIA)
 
 
 !     ------------------------------------------------------------------

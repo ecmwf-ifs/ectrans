@@ -67,10 +67,6 @@ MTAGGL   = 23000
 MTAGLM   = 24000
 MTAGDISTGP = 25000
 
-! Message passing buffer length
-
-NCOMBFLEN = 1800000
-
 ! Setup labels for timing package (gstats)
 
 CALL GSTATS_LABEL(102,'LTINV_CTL    - INVERSE LEGENDRE TRANSFORM')

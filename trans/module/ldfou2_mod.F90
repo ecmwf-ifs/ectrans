@@ -1,6 +1,6 @@
 MODULE LDFOU2_MOD
 CONTAINS
-SUBROUTINE LDFOU2(KM,PAIA,PSIA)
+SUBROUTINE LDFOU2(KM,KF_UV,PAIA,PSIA)
 
 !**** *LDFOU2* - Division by a*cos(theta) of u and v
 
@@ -48,7 +48,6 @@ SUBROUTINE LDFOU2(KM,PAIA,PSIA)
 #include "tsmbkind.h"
 
 USE TPM_DIM
-USE TPM_TRANS
 USE TPM_GEOMETRY
 USE TPM_FIELDS
 
@@ -56,7 +55,7 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER_M, INTENT(IN) :: KM
+INTEGER_M, INTENT(IN) :: KM,KF_UV
 
 REAL_B ,INTENT(INOUT) :: PSIA(:,:),   PAIA(:,:)
 
@@ -70,7 +69,7 @@ INTEGER_M :: J, JGL ,IFLD ,ISL
 !              --------------------------
 
 ISL  = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
-IFLD = 4*NF_UV
+IFLD = 4*KF_UV
 
 !*       1.1      U AND V 
 

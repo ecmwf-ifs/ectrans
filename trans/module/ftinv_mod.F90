@@ -48,7 +48,9 @@ INTEGER_M :: JGL,IGLG,IST,ILEN,IJUMP,JJ,JF
 !     ------------------------------------------------------------------
 
 IJUMP = 1
+#ifndef HLOMP
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JGL,IGLG,IST,ILEN,JJ,JF)
+#endif
 DO JGL=1,D%NDGL_FS
   IGLG  = D%NPTRLS(MYSETW)+JGL-1
   IST   = 2*(G%NMEN(IGLG)+1)+1
@@ -64,7 +66,9 @@ DO JGL=1,D%NDGL_FS
    &T%NFAX(1,JGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,1)
 
 ENDDO
+#ifndef HLOMP
 !$OMP END PARALLEL DO
+#endif
 
 !     ------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 MODULE PRFI2AD_MOD
 CONTAINS
-SUBROUTINE PRFI2AD(KM,KMLOC,PAIA,PSIA)
+SUBROUTINE PRFI2AD(KM,KMLOC,KF_FS,PAIA,PSIA)
 
 !**** *PRFI2AD* - Prepare input work arrays for direct transform
 
@@ -57,8 +57,6 @@ SUBROUTINE PRFI2AD(KM,KMLOC,PAIA,PSIA)
 
 #include "tsmbkind.h"
 
-USE TPM_TRANS
-
 USE PRFI2BAD_MOD
 
 IMPLICIT NONE
@@ -67,12 +65,13 @@ IMPLICIT NONE
 !     DUMMY INTEGER SCALARS
 INTEGER_M , INTENT(IN) :: KM
 INTEGER_M , INTENT(IN) :: KMLOC
+INTEGER_M , INTENT(IN) :: KF_FS
 
 
 REAL_B , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IFLDS, ITBLEN, IVARS
+INTEGER_M :: ITBLEN, IVARS
 
 
 !     ------------------------------------------------------------------
@@ -80,8 +79,7 @@ INTEGER_M :: IFLDS, ITBLEN, IVARS
 !*       2.    EXTRACT SYM./ANTISYM. FIELDS FROM TIME T+1.
 !              -------------------------------------------
 
-IFLDS = NF_FS
-CALL PRFI2BAD(IFLDS,KM,KMLOC,PAIA,PSIA)
+CALL PRFI2BAD(KF_FS,KM,KMLOC,PAIA,PSIA)
 
 !     ------------------------------------------------------------------
 

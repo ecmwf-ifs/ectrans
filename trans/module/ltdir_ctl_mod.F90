@@ -1,6 +1,7 @@
 MODULE LTDIR_CTL_MOD
 CONTAINS
-SUBROUTINE LTDIR_CTL(PSPVOR,PSPDIV,PSPSCALAR)
+SUBROUTINE LTDIR_CTL(KF_FS,KF_UV,KF_SCALARS, &
+ & PSPVOR,PSPDIV,PSPSCALAR,KFLDPTRUV,KFLDPTRSC)
 
 !**** *LTDIR_CTL* - Control routine for direct Legendre transform
 
@@ -14,9 +15,14 @@ SUBROUTINE LTDIR_CTL(PSPVOR,PSPDIV,PSPSCALAR)
 
 !     Explicit arguments : 
 !     -------------------- 
+!     KF_FS      - number of fields in Fourier space
+!     KF_UV      - local number of spectral u-v fields
+!     KF_SCALARS - local number of scalar spectral fields
 !     PSPVOR(:,:) - spectral vorticity (output)
 !     PSPDIV(:,:) - spectral divergence (output)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (output)
+!     KFLDPTRUV(:) - field pointer for vorticity and divergence (input)
+!     KFLDPTRSC(:) - field pointer for scalarvalued fields (input)
 
 !     ------------------------------------------------------------------
 
@@ -32,17 +38,20 @@ USE TRLTOM_MOD
 
 IMPLICIT NONE
 
+INTEGER_M,INTENT(IN) :: KF_FS,KF_UV,KF_SCALARS
 REAL_B ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
 REAL_B ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL_B ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)
+INTEGER_M,OPTIONAL,INTENT(IN) :: KFLDPTRUV(:)
+INTEGER_M,OPTIONAL,INTENT(IN) :: KFLDPTRSC(:)
 
-INTEGER_M :: JM,IM,IBLEN
+INTEGER_M :: JM,IM,IBLEN,ILED2
 
 !     ------------------------------------------------------------------
 
 ! Transposition from Fourier space distribution to spectral space distribution
 
-IBLEN = D%NLENGT0B*2*NF_FS
+IBLEN = D%NLENGT0B*2*KF_FS
 IF(LALLOPERM) THEN
   IF(ALLOCATED(FOUBUF)) THEN
     IF(SIZE(FOUBUF) < IBLEN) THEN
@@ -52,7 +61,7 @@ IF(LALLOPERM) THEN
 ENDIF
 IF(.NOT. ALLOCATED(FOUBUF))  ALLOCATE(FOUBUF(IBLEN))
 CALL GSTATS(153,0)
-CALL TRLTOM(FOUBUF_IN,FOUBUF,2*NF_FS)
+CALL TRLTOM(FOUBUF_IN,FOUBUF,2*KF_FS)
 CALL GSTATS(153,1)
 IF(.NOT. LALLOPERM) THEN
   DEALLOCATE(FOUBUF_IN)
@@ -60,14 +69,21 @@ ENDIF
 
 ! Direct Legendre transform
 
-NLED2 = 2*NF_FS
+ILED2 = 2*KF_FS
 CALL GSTATS(103,0)
+IF(KF_FS>0) THEN
+#ifndef HLOMP
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JM,IM)
-DO JM=1,D%NUMP
-  IM = D%MYMS(JM)
-  CALL LTDIR(IM,JM,PSPVOR,PSPDIV,PSPSCALAR)
-ENDDO
+#endif
+  DO JM=1,D%NUMP
+    IM = D%MYMS(JM)
+    CALL LTDIR(IM,JM,KF_FS,KF_UV,KF_SCALARS,ILED2, &
+     & PSPVOR,PSPDIV,PSPSCALAR,KFLDPTRUV,KFLDPTRSC)
+  ENDDO
+#ifndef HLOMP
 !$OMP END PARALLEL DO
+#endif
+ENDIF
 CALL GSTATS(103,1)
 
 IF(.NOT. LALLOPERM) THEN

@@ -1,6 +1,6 @@
 MODULE UPDSPBAD_MOD
 CONTAINS
-SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC)
+SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC,KFLDPTR)
 
 
 !**** *UPDSPBAD* - Update spectral arrays after direct Legendre transform
@@ -56,9 +56,10 @@ IMPLICIT NONE
 INTEGER_M,INTENT(IN)    :: KM,KFIELD
 REAL_B   ,INTENT(OUT)   :: POA(:,:)
 REAL_B   ,INTENT(INOUT) :: PSPEC(:,:)
+INTEGER_M,INTENT(IN),OPTIONAL :: KFLDPTR(:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0
+INTEGER_M :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
 
 
 !     ------------------------------------------------------------------
@@ -88,33 +89,63 @@ POA(:,:) = _ZERO_
 !*       1.1   KM=0
 
 IF(KM == 0) THEN
-  DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
-    INM = IASM0+(ITMAX+2-JN)*2
-!DIR$ IVDEP
-!OCL NOVREC
+  IF(PRESENT(KFLDPTR)) THEN
     DO JFLD=1,KFIELD
       IR = 2*JFLD-1
-      POA(JN,IR) = PSPEC(JFLD,INM)
-      PSPEC(JFLD,INM) = _ZERO_
+      IFLD = KFLDPTR(JFLD)
+      DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+        INM = IASM0+(ITMAX+2-JN)*2
+!DIR$ IVDEP
+!OCL NOVREC
+        POA(JN,IR) = PSPEC(IFLD,INM)
+        PSPEC(IFLD,INM) = _ZERO_
+      ENDDO
     ENDDO
-  ENDDO
-
+  ELSE
+    DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+      INM = IASM0+(ITMAX+2-JN)*2
+!DIR$ IVDEP
+!OCL NOVREC
+      DO JFLD=1,KFIELD
+        IR = 2*JFLD-1
+        POA(JN,IR) = PSPEC(JFLD,INM)
+        PSPEC(JFLD,INM) = _ZERO_
+      ENDDO
+    ENDDO
+  ENDIF
 !*       1.2   KM!=0
 
 ELSE
-  DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
-    INM = IASM0+((ITMAX+2-JN)-KM)*2
-!DIR$ IVDEP
-!OCL NOVREC
+  IF(PRESENT(KFLDPTR)) THEN
     DO JFLD=1,KFIELD
       IR = 2*JFLD-1
       II = IR+1
-      POA(JN,IR) = PSPEC(JFLD,INM)
-      POA(JN,II) = PSPEC(JFLD,INM+1)
-      PSPEC(JFLD,INM)   = _ZERO_
-      PSPEC(JFLD,INM+1) = _ZERO_
+      IFLD = KFLDPTR(JFLD)
+      DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+        INM = IASM0+((ITMAX+2-JN)-KM)*2
+!DIR$ IVDEP
+!OCL NOVREC
+        POA(JN,IR) = PSPEC(IFLD,INM)
+        POA(JN,II) = PSPEC(IFLD,INM+1)
+        PSPEC(IFLD,INM)   = _ZERO_
+        PSPEC(IFLD,INM+1) = _ZERO_
+      ENDDO
     ENDDO
-  ENDDO
+  ELSE
+    DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+      INM = IASM0+((ITMAX+2-JN)-KM)*2
+!DIR$ IVDEP
+!OCL NOVREC
+      DO JFLD=1,KFIELD
+        IR = 2*JFLD-1
+        II = IR+1
+        POA(JN,IR) = PSPEC(JFLD,INM)
+        POA(JN,II) = PSPEC(JFLD,INM+1)
+        PSPEC(JFLD,INM)   = _ZERO_
+        PSPEC(JFLD,INM+1) = _ZERO_
+      ENDDO
+    ENDDO
+  ENDIF
 ENDIF
 
 !     ------------------------------------------------------------------

@@ -2,7 +2,7 @@ MODULE TRLTOM_MOD
 CONTAINS
 SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 
-!**** *trltom * - transposition in Fourierspace
+!**** *TRLTOM * - transposition in Fourierspace
 
 !     Purpose.
 !     --------
@@ -14,14 +14,11 @@ SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 
 !**   Interface.
 !     ----------
-!        *call* *trltom(...)*
+!        *CALL* *TRLTOM(...)*
 
 !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
 !        --------------------          used for both input and output.
-!                                      KSTA 
-!                             KFBUFL - Dimension of PFBUF
-!                             KSTA   - Start address of data sent to/
-!                                      received from other PE's
+
 !                             KFIELD - Number of fields communicated
 
 !        Implicit arguments :
@@ -55,6 +52,7 @@ SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 USE MPL_MODULE
 
 USE TPM_DISTR
+USE TPM_GEN
 
 USE SET2PE_MOD
 
@@ -67,11 +65,13 @@ REAL_B   ,INTENT(INOUT)  :: PFBUF_IN(:)
 ! === END OF INTERFACE BLOCK ===
 INTEGER_M :: INFS(NPRTRW)
 
-LOGICAL LLWAITRECV(NPRTRW)
 INTEGER_M :: ISENT    (NPRTRW-1)
 INTEGER_M :: IRCVD    (NPRTRW-1)
 INTEGER_M :: ISENDTOT (NPRTRW-1)
 INTEGER_M :: IRECVTOT (NPRTRW-1)
+INTEGER_M :: ISENDREQ (NPRTRW-1)
+INTEGER_M :: IRECVREQ (NPRTRW-1)
+INTEGER_M :: IJPOS(NPROC), IJSTOP(NPROC),  IJSEND(NPROC)
 
 !     LOCAL INTEGER SCALARS
 INTEGER_M :: IBUFLEN, ICOMBFLENP, IERR, IFIRS1, IFIRSK1,&
@@ -79,10 +79,10 @@ INTEGER_M :: IBUFLEN, ICOMBFLENP, IERR, IFIRS1, IFIRSK1,&
              &ILEN, ILENOL, ILREC, IP, IP1, IPOS, IPOSB, &
              &IREC, IRECD, IRECSET, IRECV, IRECVSET, ISEND,ISTP, &
              &ISENDSET, ISTA, ISTAR, ITAG, ITREC, J, J1, &
-             &JHASE, JK, JROCA
+             &JHASE, JK, JROCA,IJR,IJS,INUMSENT
 
 !     LOCAL LOGICAL SCALARS
-LOGICAL :: LLDONE, LLEXIST, LLWAIT, LLRECV
+LOGICAL :: LLDONE, LLEXIST
 !     INTEGER FUNCTIONS
 INTEGER_M :: MYSENDSET,MYRECVSET
 
@@ -90,69 +90,90 @@ INTEGER_M :: MYSENDSET,MYRECVSET
 !     ------------------------------------------------------------------
 
 
-
-!     transposition
+!     TRANSPOSITION
 !     -------------
-
 
 ! Set maximum transfer length
 
 IF( NPRTRW > 1 )THEN
-  ICOMBFLENP=NCOMBFLEN/(3*NPRTRW-4)
+  ICOMBFLENP = NCOMBFLEN/(3*NPRTRW-4)
 ENDIF
 
 ! Mark all processors as having no outstanding receives,
 ! nothing sent or received.
 
-LLWAITRECV(:)=.FALSE.
 DO J=1,NPRTRW-1
-  ISENDSET=MYSENDSET(NPRTRW,MYSETW,J)
-  IRECVSET=MYRECVSET(NPRTRW,MYSETW,J)
-  ISENT(J)=0
-  IRCVD(J)=0
-  ISENDTOT(J)=D%NLTSGTB(ISENDSET)*KFIELD
-  IRECVTOT(J)=D%NLTSFTB(IRECVSET)*KFIELD
+  ISENDSET = MYSENDSET(NPRTRW,MYSETW,J)
+  IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
+  ISENT(J) = 0
+  IRCVD(J) = 0
+  ISENDTOT(J) = D%NLTSGTB(ISENDSET)*KFIELD
+  IRECVTOT(J) = D%NLTSFTB(IRECVSET)*KFIELD
 ENDDO
-LLDONE=.FALSE.
-ITAG=MTAGLM
+LLDONE = .FALSE.
+ITAG = MTAGLM
 
 ! Copy local part of PFBUF_IN to PFBUF
 
-ILEN=D%NLTSGTB(MYSETW)*KFIELD
-ISTA=D%NSTAGT1B(MYSETW)*KFIELD+1
+ILEN = D%NLTSGTB(MYSETW)*KFIELD
+ISTA = D%NSTAGT1B(MYSETW)*KFIELD+1
 !$OMP PARALLEL DO PRIVATE(J)
 DO J=ISTA,ISTA+ILEN-1
-  PFBUF(J)=PFBUF_IN(J)
+  PFBUF(J) = PFBUF_IN(J)
 ENDDO
 !$OMP END PARALLEL DO
 
 ! Loop over the number of processors we need to communicate with
 
-DO WHILE( .NOT.LLDONE )
+DO WHILE( .NOT. LLDONE )
 
-  LLDONE=.TRUE.
+  LLDONE = .TRUE.
 
 
 ! Send loop.............................................................
 
+!  For immediate send/recv, post receives first
 
+  IF(LIMP) THEN
+    DO J=1,NPRTRW-1
+      IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
+        IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
+        CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
+        ISTA = D%NSTAGT1B(IRECVSET)*KFIELD+IRCVD(J)+1
+        ILEN = MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
+        ISTP = ISTA+ILEN-1
+        CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),KTAG=ITAG, &
+        &    KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(J), &
+        &    CDSTRING='TRLTOM:' )
+      ENDIF
+    ENDDO
+  ENDIF
+
+  INUMSENT = 0
   DO J=1,NPRTRW-1
 
 ! Check if there is no outstanding receive, and we have data to send
 
-    ISENDSET=MYSENDSET(NPRTRW,MYSETW,J)
-    IF( .NOT.LLWAITRECV(ISENDSET).AND.ISENDTOT(J)-ISENT(J) > 0 )THEN
+    IF( ISENDTOT(J)-ISENT(J) > 0 )THEN
 
-      LLDONE=.FALSE.
+      LLDONE = .FALSE.
+      ISENDSET = MYSENDSET(NPRTRW,MYSETW,J)
       CALL SET2PE(ISEND,0,0,ISENDSET,MYSETV)
-      ILEN=MIN(ICOMBFLENP,ISENDTOT(J)-ISENT(J))
-      ISTA=D%NSTAGT1B(D%MSTABF(ISENDSET))*KFIELD+ISENT(J)+1
-      ISTP=ISTA+ILEN-1
+      ILEN = MIN(ICOMBFLENP,ISENDTOT(J)-ISENT(J))
+      ISTA = D%NSTAGT1B(D%MSTABF(ISENDSET))*KFIELD+ISENT(J)+1
+      ISTP = ISTA+ILEN-1
 
-      CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
-       &KTAG=ITAG,CDSTRING='TRLTOM:')
+      IF(LIMP) THEN
+        INUMSENT = INUMSENT+1
+        CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
+    &    KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(INUMSENT), &
+         &KTAG=ITAG,CDSTRING='TRLTOM:')
+      ELSE
+        CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
+         &KTAG=ITAG,CDSTRING='TRLTOM:')
+      ENDIF
 
-      ISENT(J)=ISENT(J)+ILEN
+      ISENT(J) = ISENT(J)+ILEN
       
     ENDIF
 
@@ -162,64 +183,47 @@ DO WHILE( .NOT.LLDONE )
 !  Receive loop.........................................................
 
 
-! Check if there is data to receive
-
-  LLRECV=.FALSE.
   DO J=1,NPRTRW-1
     IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
-      LLRECV=.TRUE.
-      LLDONE=.FALSE.
-    ENDIF
-  ENDDO
-
-  IF( LLRECV )THEN
-
-! Probe and wait for a message from anybody
-
-    LLWAIT=.TRUE.
-    CALL MPL_PROBE(KTAG=ITAG,LDWAIT=LLWAIT,LDFLAG=LLEXIST,&
-     & CDSTRING='TRLTOM: PROBEING FOR ANY MESSAGE ')
-
-  ENDIF
-
-! A message should now be ready to be received
-
-  DO J=1,NPRTRW-1
-    IRECVSET=MYRECVSET(NPRTRW,MYSETW,J)
-    IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
-      CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
-      LLWAIT=.FALSE.
-      CALL MPL_PROBE(KSOURCE=NPRCIDS(IRECV),KTAG=ITAG,LDWAIT=LLWAIT,&
-       &LDFLAG=LLEXIST,CDSTRING='TRLTOM: PROBEING FOR MESSAGE ')
-      IF( LLEXIST )THEN
-        ILEN=MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
-        ISTA=D%NSTAGT1B(IRECVSET)*KFIELD+IRCVD(J)+1
-        ISTP=ISTA+ILEN-1
+      LLDONE = .FALSE.
+      ILEN = MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
+      IF( .NOT. LIMP ) THEN
+        IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
+        CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
+        ISTA = D%NSTAGT1B(IRECVSET)*KFIELD+IRCVD(J)+1
+        ISTP = ISTA+ILEN-1
         CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),&
          &KTAG=ITAG,KOUNT=ILREC,CDSTRING='TRLTOM:')
-        IF( ILREC /= ILEN )THEN
-          CALL ABOR1('TRLTOM:RECEIVED MESSAGE LENGTH ERROR')
-        ENDIF
-        IRCVD(J)=IRCVD(J)+ILEN
-        LLWAITRECV(IRECVSET)=.FALSE.
       ELSE
-! Expecting data but none found, set outstanding receive flag
-        LLWAITRECV(IRECVSET)=.TRUE.
+!       For LIMP=true, find message length
+        CALL MPL_WAIT(PFBUF,KREQUEST=IRECVREQ(J), &
+         & KCOUNT=ILREC,CDSTRING='TRLTOM: LIMP WAITS ' )
       ENDIF
-    ELSE
-! No data to receive
-      LLWAITRECV(IRECVSET)=.FALSE.
+      IF( ILREC /= ILEN )THEN
+        CALL ABOR1('TRLTOM:RECEIVED MESSAGE LENGTH ERROR')
+      ENDIF
+      IRCVD(J) = IRCVD(J)+ILEN
     ENDIF
   ENDDO
+
+!       For LIMP=true, wait for sends to complete
+  IF(LIMP) THEN
+    IF( INUMSENT > 0 ) THEN
+      CALL MPL_WAIT(PFBUF,KREQUEST=ISENDREQ(1:INUMSENT), &
+       & CDSTRING='TRLTOM: ERROR IN MPL_WAIT FOR SENDS')
+    ENDIF
+  ENDIF
 
 ENDDO
 
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication
 
-IF( NPROC > 1 )THEN
+IF( NPRTRW > 1 )THEN
   CALL MPL_BARRIER(CDSTRING='TRLTOM:')
 ENDIF
+
+!     ------------------------------------------------------------------
 
 END SUBROUTINE TRLTOM
 END MODULE TRLTOM_MOD

@@ -1,6 +1,6 @@
 MODULE SPNSDE_MOD
 CONTAINS
-SUBROUTINE SPNSDE(KM,PEPSNM,PF,PNSD)
+SUBROUTINE SPNSDE(KM,KF_SCALARS,PEPSNM,PF,PNSD)
 
 #include "tsmbkind.h"
 
@@ -25,8 +25,8 @@ USE TPM_TRANS
 !        -------------------- 
 !        KM -zonal wavenumber (input-c)
 !        PEPSNM - REPSNM for wavenumber KM (input-c)
-!        PF  (NLEI1,2*NF_SCALAR) - input field (input)
-!        PNSD(NLEI1,2*NF_SCALAR) - N-S derivative (output)
+!        PF  (NLEI1,2*KF_SCALARS) - input field (input)
+!        PNSD(NLEI1,2*KF_SCALARS) - N-S derivative (output)
 
 !        Organisation within NLEI1:
 !        NLEI1 = NSMAX+4+mod(NSMAX+4+1,2)
@@ -66,7 +66,7 @@ USE TPM_TRANS
 
 IMPLICIT NONE
 
-INTEGER_M, INTENT(IN)  :: KM
+INTEGER_M, INTENT(IN)  :: KM,KF_SCALARS
 REAL_B,    INTENT(IN)  :: PEPSNM(0:R%NTMAX+2)
 REAL_B,    INTENT(IN)  :: PF(:,:)
 REAL_B,    INTENT(OUT) :: PNSD(:,:)
@@ -92,7 +92,7 @@ ENDIF
 
 DO JN=KM,R%NSMAX+1
   IJ = R%NSMAX+3-JN
-  DO J=1,2*NF_SCALARS,ISKIP
+  DO J=1,2*KF_SCALARS,ISKIP
       PNSD(IJ,J) = -F%RN(JN-1)*PEPSNM(JN  )*PF(IJ+1,J)+&
        &F%RN(JN+2)*PEPSNM(JN+1)*PF(IJ-1,J)
   ENDDO

@@ -1,12 +1,12 @@
-SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
-&                       KPRGPNS,KPRGPEW,KPRTRW,LDALLOPERM)
+SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
+&                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,LDALLOPERM,LDIMP)
 
-!**** *SETUP_TRANS* - General setup routine for transform package
+!**** *SETUP_TRANS0* - General setup routine for transform package
 
 !     Purpose.
 !     --------
 !     Resolution independent part of setup of transform package
-!     Has to called BEFORE SETUP_TRANS
+!     Has to be called BEFORE SETUP_TRANS
 
 !**   Interface.
 !     ----------
@@ -21,7 +21,9 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
 !     KPRGPNS - splitting level in N-S direction in grid-point space [1]
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
+!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ]
 !     LDALLOPERM - allocate some arrays permenately (OpenMP issue) [false]
+!     LDIMP - use immediate message passing [false]
 
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
 
@@ -46,9 +48,10 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
 
 IMPLICIT NONE
 
-INTEGER_M ,OPTIONAL,INTENT(IN) :: KOUT,KERR,KPRINTLEV,KMAX_RESOL
-INTEGER_M ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW
+INTEGER_M ,OPTIONAL,INTENT(IN) :: KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR
+INTEGER_M ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDALLOPERM
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDIMP
 
 
 END SUBROUTINE SETUP_TRANS0

@@ -32,19 +32,19 @@ SUBROUTINE DIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,&
 !     KRESOL   - resolution tag  which is required ,default is the
 !                first defined resulution (input)
 !     PGP(:,:,:) - gridpoint fields (input)
-!                  PGP need to  dimensioned (NPROMA,NF_GP,NGPBLKS) where
-!                  NPROMA is the blocking factor, NF_GP the total number
+!                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
+!                  NPROMA is the blocking factor, IF_GP the total number
 !                  of output fields and NGPBLKS the number of NPROMA blocks.
 !                  The ordering of the output fields is as follows (all 
 !                  parts are optional depending on the input switches):
 !
-!     u             : NF_UV_G fields (if psvor present)
-!     v             : NF_UV_G fields (if psvor present)
-!     scalar fields : NF_SCALARS_G fields (if pspscalar present)
+!     u             : IF_UV_G fields (if psvor present)
+!     v             : IF_UV_G fields (if psvor present)
+!     scalar fields : IF_SCALARS_G fields (if pspscalar present)
 !   
-!     Here NF_UV_G is the GLOBAL number of u/v fields as given by the length
+!     Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
 !     of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!     NF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
+!     IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
 !     length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !     'b-set' split
 ! 
@@ -52,8 +52,8 @@ SUBROUTINE DIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,&
 !     -------
 
 !     Externals.  SET_RESOL   - set resolution
-!     ----------  LTDIR_CTLAD - control of Legendre transform
-!                 FTDIR_CTLAD - control of Fourier transform
+!     ----------  DIR_TRANS_CTLAD - control routine
+!                 
 
 !     Author.
 !     -------

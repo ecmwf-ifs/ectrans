@@ -37,27 +37,27 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !     KRESOL   - resolution tag  which is required ,default is the
 !                first defined resulution (input)
 !     PGP(:,:,:) - gridpoint fields (output)
-!                  PGP need to  dimensioned (NPROMA,NF_GP,NGPBLKS) where
-!                  NPROMA is the blocking factor, NF_GP the total number
+!                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
+!                  NPROMA is the blocking factor, IF_GP the total number
 !                  of output fields and NGPBLKS the number of NPROMA blocks.
 !                  The ordering of the output fields is as follows (all 
 !                  parts are optional depending on the input switches):
 !
-!       vorticity     : NF_UV_G fields (if psvor present and LDVORGP)
-!       divergence    : NF_UV_G fields (if psvor present and LDDIVGP)
-!       u             : NF_UV_G fields (if psvor present)
-!       v             : NF_UV_G fields (if psvor present)
-!       scalar fields : NF_SCALARS_G fields (if pspscalar present)
-!       N-S derivative of scalar fields : NF_SCALARS_G fields (if pspscalar
+!       vorticity     : IF_UV_G fields (if psvor present and LDVORGP)
+!       divergence    : IF_UV_G fields (if psvor present and LDDIVGP)
+!       u             : IF_UV_G fields (if psvor present)
+!       v             : IF_UV_G fields (if psvor present)
+!       scalar fields : IF_SCALARS_G fields (if pspscalar present)
+!       N-S derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
 !                                         present and LDSCDERS)
-!       E-W derivative of u : NF_UV_G fields (if psvor present and and LDUVDER)
-!       E-W derivative of v : NF_UV_G fields (if psvor present and and LDUVDER)
-!       E-W derivative of scalar fields : NF_SCALARS_G fields (if pspscalar
+!       E-W derivative of u : IF_UV_G fields (if psvor present and and LDUVDER)
+!       E-W derivative of v : IF_UV_G fields (if psvor present and and LDUVDER)
+!       E-W derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
 !                                         present and LDSCDERS)
 !   
-!       Here NF_UV_G is the GLOBAL number of u/v fields as given by the length
+!       Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
 !       of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!       NF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
+!       IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
 !       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !       'b-set' split
 ! 
@@ -91,8 +91,7 @@ USE TPM_FIELDS
 USE TPM_FFT
 
 USE SET_RESOL_MOD
-USE LTINV_CTL_MOD
-USE FTINV_CTL_MOD
+USE INV_TRANS_CTL_MOD
 
 !endif INTERFACE
 
@@ -119,7 +118,8 @@ REAL_B    ,INTENT(OUT) :: PGP(:,:,:)
 
 ! Local varaibles
 INTEGER_M :: IUBOUND(3),J
-LOGICAL   :: LLSCDERS
+INTEGER_M :: IF_UV,IF_UV_G,IF_SCALARS,IF_SCALARS_G,IF_FS,IF_GP,IF_OUT_LT
+INTEGER_M :: IF_SCDERS
 !     ------------------------------------------------------------------
 
 ! Set current resolution
@@ -127,61 +127,55 @@ CALL SET_RESOL(KRESOL)
 
 ! Set defaults
 
-LUV = .FALSE.
-LSCALAR = .FALSE.
 LVORGP = .FALSE.
 LDIVGP = .FALSE.
 LUVDER = .FALSE.
-NF_UV = 0
-NF_UV_G = 0
-NF_SCALARS = 0
-NF_SCALARS_G = 0
-NF_SCDERS = 0
+IF_UV = 0
+IF_UV_G = 0
+IF_SCALARS = 0
+IF_SCALARS_G = 0
+IF_SCDERS = 0
 NPROMA = D%NGPTOT
-LLSCDERS = .FALSE.
+LSCDERS = .FALSE.
 
 ! Decide requirements
 
 IF(PRESENT(KVSETUV)) THEN
-  NF_UV_G = UBOUND(KVSETUV,1)
-  LUV = .TRUE.
-  DO J=1,NF_UV_G
+  IF_UV_G = UBOUND(KVSETUV,1)
+  DO J=1,IF_UV_G
     IF(KVSETUV(J) > NPRTRV .OR. KVSETUV(J) < 1) THEN
       WRITE(NERR,*) 'INV_TRANS:KVSETUV(J) > NPRTRV ',J,KVSETUV(J),NPRTRV
       CALL ABOR1('INV_TRANS:KVSETUV TOO LONG OR CONTAINS VALUES OUTSIDE RANGE')
     ENDIF
     IF(KVSETUV(J) == MYSETV) THEN
-      NF_UV = NF_UV+1
+      IF_UV = IF_UV+1
     ENDIF
   ENDDO
 ELSEIF(PRESENT(PSPVOR)) THEN
-  LUV = .TRUE.
-  NF_UV = UBOUND(PSPVOR,1)
-  NF_UV_G = NF_UV
+  IF_UV = UBOUND(PSPVOR,1)
+  IF_UV_G = IF_UV
 ENDIF
 
 IF(PRESENT(KVSETSC)) THEN
-  LSCALAR = .TRUE.
-  NF_SCALARS_G = UBOUND(KVSETSC,1)
-  DO J=1,NF_SCALARS_G
+  IF_SCALARS_G = UBOUND(KVSETSC,1)
+  DO J=1,IF_SCALARS_G
     IF(KVSETSC(J) > NPRTRV .OR. KVSETSC(J) < 1) THEN
       WRITE(NERR,*) 'INV_TRANS:KVSETSC(J) > NPRTRV ',J,KVSETSC(J),NPRTRV
       CALL ABOR1('INV_TRANS:KVSETSC TOO LONG OR CONTAINS VALUES OUTSIDE RANGE')
     ENDIF
     IF(KVSETSC(J) == MYSETV) THEN
-      NF_SCALARS = NF_SCALARS+1
+      IF_SCALARS = IF_SCALARS+1
     ENDIF
   ENDDO
 ELSEIF(PRESENT(PSPSCALAR)) THEN
-  LSCALAR = .TRUE.
-  NF_SCALARS = UBOUND(PSPSCALAR,1)
-  NF_SCALARS_G = NF_SCALARS
+  IF_SCALARS = UBOUND(PSPSCALAR,1)
+  IF_SCALARS_G = IF_SCALARS
 ENDIF
 
-IF (LSCALAR) THEN
+IF (IF_SCALARS > 0 ) THEN
   IF(PRESENT(LDSCDERS)) THEN
-    NF_SCDERS = NF_SCALARS
-    LLSCDERS = .TRUE.
+    IF_SCDERS = IF_SCALARS
+    LSCDERS = .TRUE.
   ENDIF
 ENDIF
 
@@ -210,76 +204,76 @@ IF(LVORGP) LDIVGP = .TRUE.
 
 NGPBLKS = (D%NGPTOT-1)/NPROMA+1
 
-NF_OUT_LT = 2*NF_UV + NF_SCALARS+NF_SCDERS
+IF_OUT_LT = 2*IF_UV + IF_SCALARS+IF_SCDERS
 
-IF(NF_UV > 0 .AND. LVORGP) THEN
-  NF_OUT_LT = NF_OUT_LT+NF_UV
+IF(IF_UV > 0 .AND. LVORGP) THEN
+  IF_OUT_LT = IF_OUT_LT+IF_UV
 ENDIF
-IF(NF_UV > 0 .AND. LDIVGP) THEN
-  NF_OUT_LT = NF_OUT_LT+NF_UV
+IF(IF_UV > 0 .AND. LDIVGP) THEN
+  IF_OUT_LT = IF_OUT_LT+IF_UV
 ENDIF
-NF_FS = NF_OUT_LT+NF_SCDERS
-IF(NF_UV > 0 .AND. LUVDER) THEN
-  NF_FS = NF_FS+2*NF_UV
+IF_FS = IF_OUT_LT+IF_SCDERS
+IF(IF_UV > 0 .AND. LUVDER) THEN
+  IF_FS = IF_FS+2*IF_UV
 ENDIF
 
-NF_GP = 2*NF_UV_G+NF_SCALARS_G
-IF(LLSCDERS) THEN
-  NF_GP  = NF_GP+2*NF_SCALARS_G
+IF_GP = 2*IF_UV_G+IF_SCALARS_G
+IF(LSCDERS) THEN
+  IF_GP  = IF_GP+2*IF_SCALARS_G
 ENDIF
-IF(NF_UV_G > 0 .AND. LVORGP) THEN
-  NF_GP = NF_GP+NF_UV_G
+IF(IF_UV_G > 0 .AND. LVORGP) THEN
+  IF_GP = IF_GP+IF_UV_G
 ENDIF
-IF(NF_UV_G > 0 .AND. LDIVGP) THEN
-  NF_GP = NF_GP+NF_UV_G
+IF(IF_UV_G > 0 .AND. LDIVGP) THEN
+  IF_GP = IF_GP+IF_UV_G
 ENDIF
-IF(NF_UV_G > 0 .AND. LUVDER) THEN
-  NF_GP = NF_GP+2*NF_UV_G
+IF(IF_UV_G > 0 .AND. LUVDER) THEN
+  IF_GP = IF_GP+2*IF_UV_G
 ENDIF
 
 ! Consistency checks
 
-IF (NF_UV > 0) THEN
+IF (IF_UV > 0) THEN
   IF(.NOT. PRESENT(PSPVOR) ) THEN
-    CALL ABOR1('INV_TRANS : NF_UV > 0 BUT PSPVOR MISSING')
+    CALL ABOR1('INV_TRANS : IF_UV > 0 BUT PSPVOR MISSING')
   ENDIF
-  IF(UBOUND(PSPVOR,1) < NF_UV) THEN
-    WRITE(NERR,*)'INV_TRANS : UBOUND(PSPVOR,1) < NF_UV ',UBOUND(PSPVOR,1),NF_UV
+  IF(UBOUND(PSPVOR,1) < IF_UV) THEN
+    WRITE(NERR,*)'INV_TRANS : UBOUND(PSPVOR,1) < IF_UV ',UBOUND(PSPVOR,1),IF_UV
     CALL ABOR1('INV_TRANS : PSPVOR TOO SHORT')
   ENDIF
   IF(.NOT. PRESENT(PSPDIV) ) THEN
-    CALL ABOR1('INV_TRANS : NF_UV > 0 BUT PSPDIV MISSING')
+    CALL ABOR1('INV_TRANS : IF_UV > 0 BUT PSPDIV MISSING')
   ENDIF
-  IF(UBOUND(PSPDIV,1) < NF_UV) THEN
-    WRITE(NERR,*)'INV_TRANS : UBOUND(PSPDIV,1) < NF_UV ',UBOUND(PSPDIV,1),NF_UV
+  IF(UBOUND(PSPDIV,1) < IF_UV) THEN
+    WRITE(NERR,*)'INV_TRANS : UBOUND(PSPDIV,1) < IF_UV ',UBOUND(PSPDIV,1),IF_UV
     CALL ABOR1('INV_TRANS : PSPDIV TOO SHORT')
   ENDIF
 ENDIF
 
-IF (NF_SCALARS > 0) THEN
+IF (IF_SCALARS > 0) THEN
   IF(.NOT. PRESENT(PSPSCALAR) ) THEN
-    CALL ABOR1('INV_TRANS : NF_SCALARS > 0 BUT PSPSCALAR MISSING')
+    CALL ABOR1('INV_TRANS : IF_SCALARS > 0 BUT PSPSCALAR MISSING')
   ENDIF
-  IF(UBOUND(PSPSCALAR,1) < NF_SCALARS) THEN
-    WRITE(NERR,*)'INV_TRANS : UBOUND(PSPSCALAR,1) < NF_SCALARS) ',&
-     & UBOUND(PSPSCALAR,1),NF_SCALARS
+  IF(UBOUND(PSPSCALAR,1) < IF_SCALARS) THEN
+    WRITE(NERR,*)'INV_TRANS : UBOUND(PSPSCALAR,1) < IF_SCALARS) ',&
+     & UBOUND(PSPSCALAR,1),IF_SCALARS
     CALL ABOR1('INV_TRANS : PSPSCALAR TOO SHORT')
   ENDIF
 ENDIF
 
-IF(NF_UV_G == 0) THEN
+IF(IF_UV_G == 0) THEN
   LUVDER = .FALSE.
 ENDIF
 
 IF(NPRTRV >1) THEN
-  IF(NF_UV > 0 .AND. .NOT. PRESENT(KVSETUV)) THEN
-    WRITE(NERR,*)'NPRTRV >1 AND NF_UV > 0 AND NOT PRESENT(KVSETUV)',&
-                 &NPRTRV,NF_UV
+  IF(IF_UV > 0 .AND. .NOT. PRESENT(KVSETUV)) THEN
+    WRITE(NERR,*)'NPRTRV >1 AND IF_UV > 0 AND NOT PRESENT(KVSETUV)',&
+                 &NPRTRV,IF_UV
     CALL ABOR1('INV_TRANS: SPECIFY VERTICAL SPECTRAL DISTRIBUTION!')
   ENDIF
-  IF(NF_SCALARS > 0 .AND. .NOT. PRESENT(KVSETSC)) THEN
-    WRITE(NERR,*)'NPRTRV >1 AND NF_SCALARS > 0 AND NOT PRESENT(KVSETSC)',&
-                 &NPRTRV,NF_SCALARS
+  IF(IF_SCALARS > 0 .AND. .NOT. PRESENT(KVSETSC)) THEN
+    WRITE(NERR,*)'NPRTRV >1 AND IF_SCALARS > 0 AND NOT PRESENT(KVSETSC)',&
+                 &NPRTRV,IF_SCALARS
     CALL ABOR1('INV_TRANS: SPECIFY VERTICAL SPECTRAL DISTRIBUTION!')
   ENDIF
 ENDIF
@@ -288,10 +282,10 @@ IF(IUBOUND(1) < NPROMA) THEN
   WRITE(NOUT,*)'INV_TRANS:FIRST DIM. OF PGP TOO SMALL ',IUBOUND(1),NPROMA
   CALL ABOR1('INV_TRANS:FIRST DIMENSION OF PGP TOO SMALL ')
 ENDIF
-IF(IUBOUND(2) < NF_GP) THEN
-  WRITE(NOUT,*)'INV_TRANS:SEC. DIM. OF PGP TOO SMALL ',IUBOUND(2),NF_GP
-  WRITE(NOUT,*)'NF_UV_G,NF_SCALARS_G,LLSCDERS,LVORGP,LDIVGP,LUVDER ',&
-   &            NF_UV_G,NF_SCALARS_G,LLSCDERS,LVORGP,LDIVGP,LUVDER 
+IF(IUBOUND(2) < IF_GP) THEN
+  WRITE(NOUT,*)'INV_TRANS:SEC. DIM. OF PGP TOO SMALL ',IUBOUND(2),IF_GP
+  WRITE(NOUT,*)'IF_UV_G,IF_SCALARS_G,LSCDERS,LVORGP,LDIVGP,LUVDER ',&
+   &            IF_UV_G,IF_SCALARS_G,LSCDERS,LVORGP,LDIVGP,LUVDER 
   CALL ABOR1('INV_TRANS:SECOND DIMENSION OF PGP TOO SMALL ')
 ENDIF
 IF(IUBOUND(3) < NGPBLKS) THEN
@@ -303,9 +297,9 @@ ENDIF
 
 ! Perform transform
 
-CALL LTINV_CTL(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC)
-
-CALL FTINV_CTL(PGP,KVSETUV,KVSETSC)
+CALL INV_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_OUT_LT,&
+ & IF_UV,IF_SCALARS,IF_SCDERS,&
+ & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,FSPGL_PROC)
 
 !     ------------------------------------------------------------------
 

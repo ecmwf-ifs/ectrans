@@ -37,27 +37,27 @@ SUBROUTINE INV_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !     KRESOL   - resolution tag  which is required ,default is the
 !                first defined resulution (input)
 !     PGP(:,:,:) - gridpoint fields (output)
-!                  PGP need to  dimensioned (NPROMA,NF_GP,NGPBLKS) where
-!                  NPROMA is the blocking factor, NF_GP the total number
+!                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
+!                  NPROMA is the blocking factor, IF_GP the total number
 !                  of output fields and NGPBLKS the number of NPROMA blocks.
 !                  The ordering of the output fields is as follows (all 
 !                  parts are optional depending on the input switches):
 !
-!       vorticity     : NF_UV_G fields (if psvor present and LDVORGP)
-!       divergence    : NF_UV_G fields (if psvor present and LDDIVGP)
-!       u             : NF_UV_G fields (if psvor present)
-!       v             : NF_UV_G fields (if psvor present)
-!       scalar fields : NF_SCALARS_G fields (if pspscalar present)
-!       N-S derivative of scalar fields : NF_SCALARS_G fields (if pspscalar
+!       vorticity     : IF_UV_G fields (if psvor present and LDVORGP)
+!       divergence    : IF_UV_G fields (if psvor present and LDDIVGP)
+!       u             : IF_UV_G fields (if psvor present)
+!       v             : IF_UV_G fields (if psvor present)
+!       scalar fields : IF_SCALARS_G fields (if pspscalar present)
+!       N-S derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
 !                                         present and LDSCDERS)
-!       E-W derivative of u : NF_UV_G fields (if psvor present and and LDUVDER)
-!       E-W derivative of v : NF_UV_G fields (if psvor present and and LDUVDER)
-!       E-W derivative of scalar fields : NF_SCALARS_G fields (if pspscalar
+!       E-W derivative of u : IF_UV_G fields (if psvor present and and LDUVDER)
+!       E-W derivative of v : IF_UV_G fields (if psvor present and and LDUVDER)
+!       E-W derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
 !                                         present and LDSCDERS)
 !   
-!       Here NF_UV_G is the GLOBAL number of u/v fields as given by the length
+!       Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
 !       of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!       NF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
+!       IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
 !       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !       'b-set' split
 ! 
