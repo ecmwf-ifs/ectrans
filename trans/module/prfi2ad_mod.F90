@@ -61,18 +61,11 @@ USE PRFI2BAD_MOD
 
 IMPLICIT NONE
 
-
-!     DUMMY INTEGER SCALARS
 INTEGER(KIND=JPIM) , INTENT(IN) :: KM
 INTEGER(KIND=JPIM) , INTENT(IN) :: KMLOC
 INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS
 
-
 REAL(KIND=JPRB) , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
-
-!     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: ITBLEN, IVARS
-
 
 !     ------------------------------------------------------------------
 

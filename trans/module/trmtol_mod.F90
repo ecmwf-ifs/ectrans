@@ -70,7 +70,6 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN)    :: KFIELD
 REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFBUF(:)
 REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFBUF_IN(:)
-! === END OF INTERFACE BLOCK ===
 
 INTEGER(KIND=JPIM) :: ISENT    (NPRTRW-1)
 INTEGER(KIND=JPIM) :: IRCVD    (NPRTRW-1)
@@ -80,23 +79,13 @@ INTEGER(KIND=JPIM) :: ISENDREQ (NPRTRW-1)
 INTEGER(KIND=JPIM) :: IRECVREQ (NPRTRW-1)
 INTEGER(KIND=JPIM) :: ILENS(NPRTRW),IOFFS(NPRTRW),ILENR(NPRTRW),IOFFR(NPRTRW)
 
-!     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: ICOMBFLENP, IERR,&
-             &ILEN,  ILREC, &
-             &IRECD, IRECV, IRECVSET, ISEND, ISTP,&
-             &ISENDSET, ISTA, ITAG, ITREC, J, INUMSENT
+INTEGER(KIND=JPIM) :: ICOMBFLENP, ILEN,  ILREC, &
+             &IRECV, IRECVSET, ISEND, ISTP,&
+             &ISENDSET, ISTA, ITAG, J, INUMSENT
 
-!     LOCAL LOGICAL SCALARS
 LOGICAL :: LLDONE
-!     INTEGER FUNCTIONS
-
 
 !     ------------------------------------------------------------------
-
-
-!      transposition for nphase  = 1
-!      -----------------------------
-
 
 ! Set maximum transfer length 
 

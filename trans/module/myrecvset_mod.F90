@@ -17,10 +17,6 @@ FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
 !        Explicit arguments :  
 !        --------------------
 !                  input:   KSETS
-!                
-!                
-!                
-!                
 
 !        Implicit arguments :  NONE
 !        --------------------
@@ -70,10 +66,9 @@ ELSE
 !*       2.    Compute output parameters
 !              -------------------------
 
-MYRECVSET = MOD(-KSET-1+KMYSET+KSETS,KSETS)+1
+  MYRECVSET = MOD(-KSET-1+KMYSET+KSETS,KSETS)+1
 
 ENDIF
 
-RETURN
 END FUNCTION MYRECVSET
 END MODULE MYRECVSET_MOD

@@ -19,7 +19,7 @@ SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFDISTG,KTO,KVSET,PSPEC)
 !     KTO(:)    - Processor responsible for distributing each field
 !     KVSET(:)    - "B-Set" for each field
 !     PSPEC(:,:)  - Local spectral array
-!
+
 !     ------------------------------------------------------------------
 
 
@@ -43,8 +43,8 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KVSET(:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) :: PSPEC(:,:)
 
 REAL(KIND=JPRB)    :: ZFLD(R%NSPEC2_G)
-INTEGER(KIND=JPIM) :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,JNM,IBSET,ILEN,JA,IERR,ISND
-INTEGER(KIND=JPIM) :: ISENDER,ITAGR,IRCV,ISP,ILENR,IPROCA,ISTA,ISTP
+INTEGER(KIND=JPIM) :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,IBSET,ILEN,JA,ISND
+INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,IPROCA,ISTA,ISTP
 
 !     ------------------------------------------------------------------
 
@@ -93,7 +93,7 @@ ELSE
           CALL MPL_RECV(ZFLD(ISTA:ISTP),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
            &KOUNT=ILENR,CDSTRING='GATH_SPEC_CONTROL')
           IF( ILENR /= ILEN )THEN
-            CALL ABORT_TRANS(' GATH_SPEC_CONTROL: INVALID RECEIVE MESSAGE LENGTH')
+            CALL ABORT_TRANS('GATH_SPEC_CONTROL:INVALID RECEIVE MESSAGE LENGTH')
           ENDIF
           II = 0
           DO JM=0,R%NSMAX
