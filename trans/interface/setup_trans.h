@@ -1,4 +1,4 @@
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS)
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS,KTMAX)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -20,8 +20,9 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS)
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     KAPSETS - Number of apple sets in the distribution [0]
+!     KTMAX - truncation order for tendencies?
 !
-!     KSMAX,KDGL and KLOEN are GLOBAL variables desribing the resolution
+!     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
 !     LDSPLIT and KAPSETS describe the distribution among processors of
@@ -60,6 +61,7 @@ INTEGER_M ,INTENT(IN) :: KSMAX,KDGL
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KAPSETS
+INTEGER_M ,OPTIONAL,INTENT(IN) :: KTMAX
 
 
 END SUBROUTINE SETUP_TRANS

@@ -1,4 +1,4 @@
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS)
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS,KTMAX)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -20,8 +20,9 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS)
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     KAPSETS - Number of apple sets in the distribution [0]
+!     KTMAX - truncation order for tendencies?
 !
-!     KSMAX,KDGL and KLOEN are GLOBAL variables desribing the resolution
+!     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
 !     LDSPLIT and KAPSETS describe the distribution among processors of
@@ -78,6 +79,7 @@ INTEGER_M ,INTENT(IN) :: KSMAX,KDGL
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KAPSETS
+INTEGER_M ,OPTIONAL,INTENT(IN) :: KTMAX
 
 !ifndef INTERFACE
 
@@ -92,7 +94,6 @@ LOGICAL :: LLP1,LLP2
 IF(MSETUP0 /= 1) THEN
   CALL ABOR1('SETUP_TRANS: SETUP_TRANS0 HAS TO BE CALLED BEFORE SETUP_TRANS')
 ENDIF
-
 LLP1 = NPRINTLEV>0
 LLP2 = NPRINTLEV>1
 IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SETUP_TRANS ==='
@@ -134,7 +135,6 @@ R%NDLON = 2*KDGL
 
 ! Optional arguments
 
-
 ALLOCATE(G%NLOEN(R%NDGL))
 IF(LLP2)WRITE(NOUT,9) 'NLOEN   ',SIZE(G%NLOEN   ),SHAPE(G%NLOEN   )
 IF(PRESENT(KLOEN)) THEN
@@ -145,6 +145,7 @@ IF(PRESENT(KLOEN)) THEN
     ENDIF
   ENDDO
 ENDIF
+
 IF (G%LREDUCED_GRID) THEN
   G%NLOEN(:) = KLOEN(1:R%NDGL)
 ELSE
@@ -158,8 +159,16 @@ IF(PRESENT(KAPSETS)) THEN
   D%NAPSETS = KAPSETS
 ENDIF
 
+IF(PRESENT(KTMAX)) THEN
+  R%NTMAX = KTMAX
+ELSE
+  R%NTMAX = R%NSMAX
+ENDIF
+IF(R%NTMAX /= R%NSMAX) THEN
+  !This SHOULD work but I don't know how to test it /MH
+  CALL ABOR1('SETUP_TRANS:R%NTMAX /= R%NSMAX HAS NOT BEEN VALIDATED')
+ENDIF
 !Temporary?
-R%NTMAX = R%NSMAX
 IF(R%NSMAX > (R%NDLON+3)/3) THEN
   G%LINEAR_GRID = .TRUE.
 ENDIF  

@@ -95,6 +95,7 @@ INTEGER_M :: INUMFLDS
 INTEGER_M :: IPROCS_COMM_MAX
 INTEGER_M :: IGPTRSEND(2,NGPBLKS,NPRTRNS)
 INTEGER_M :: IGPTRRECV(NPRTRNS)
+INTEGER_M :: IGPTROFF(NGPBLKS)
 
 
 !     ------------------------------------------------------------------
@@ -330,22 +331,32 @@ ENDDO
               IFLDOFF(IFLDS) = JFLD
             ENDIF
           ENDDO
+
+          IPOS=0
+          DO JBLK=1,NGPBLKS
+            IGPTROFF(JBLK)=IPOS
+            IFIRST = IGPTRSEND(1,JBLK,ISETW)
+            IF(IFIRST > 0) THEN
+              ILAST = IGPTRSEND(2,JBLK,ISETW)
+              IPOS=IPOS+ILAST-IFIRST+1
+            ENDIF
+          ENDDO
 !$OMP PARALLEL DO PRIVATE(JFLD,JBLK,JK,IFLD,IPOS,IFIRST,ILAST)
-          DO JFLD=1,IFLDS
-            IFLD = IFLDOFF(JFLD)
-            IPOS = INDOFF(MYPROC)
-            DO JBLK=1,NGPBLKS
-              IFIRST = IGPTRSEND(1,JBLK,ISETW)
-              IF(IFIRST > 0) THEN
-                ILAST = IGPTRSEND(2,JBLK,ISETW)
+          DO JBLK=1,NGPBLKS
+            IFIRST = IGPTRSEND(1,JBLK,ISETW)
+            IF(IFIRST > 0) THEN
+              ILAST = IGPTRSEND(2,JBLK,ISETW)
+              DO JFLD=1,IFLDS
+                IFLD = IFLDOFF(JFLD)
                 DO JK=IFIRST,ILAST
-                  IPOS = IPOS+1
+                  IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
                   PGCOL(JK,IFLD,JBLK) = PGLAT(JFLD,INDEX(IPOS))
                 ENDDO
-              ENDIF
-            ENDDO
+              ENDDO
+            ENDIF
           ENDDO
 !$OMP END PARALLEL DO
+
 
           IRCVD(IPROC) = IRECVTOT(IPROC)
 
@@ -368,7 +379,7 @@ IF (IBUFLENR > 0) DEALLOCATE(ZCOMBUFR)
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication
 
-IF( NPROC > 1 .AND. (D%LSPLIT .OR. NPRTRV > 1))THEN
+IF( NPROC > 1 .AND. (D%LSPLIT .OR. NPRTRV > 1 .OR. NPRGPEW > 1 ))THEN
   CALL MPL_BARRIER(CDSTRING='TRLTOG:')
 ENDIF
 

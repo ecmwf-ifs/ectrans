@@ -121,7 +121,9 @@ CALL UPDSPAD(KM,ZOA1,ZOA2,PSPVOR,PSPDIV,PSPSCALAR)
 !*       5.    COMPUTE VORTICITY AND DIVERGENCE.
 !              ---------------------------------
 
-CALL LDSPC2AD(KM,ZEPSNM,ZOA1,ZOA2)
+IF( NF_UV > 0 ) THEN
+  CALL LDSPC2AD(KM,ZEPSNM,ZOA1,ZOA2)
+ENDIF
 
 !     ------------------------------------------------------------------
 

@@ -4,6 +4,7 @@ SUBROUTINE PRFI1(KM,PIA,PSPVOR,PSPDIV,PSPSCALAR)
 
 #include "tsmbkind.h"
 
+USE TPM_DISTR
 USE TPM_TRANS
 
 USE PRFI1B_MOD
@@ -64,7 +65,7 @@ REAL_B ,          INTENT(OUT) :: PIA(:,:)
 
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IDIV, IFIRST, ILAST, IVOR
+INTEGER_M :: IDIV, IFIRST, ILAST, IVOR, JFLD
 
 
 !     ------------------------------------------------------------------

@@ -65,7 +65,7 @@ REAL_B ,          INTENT(IN)     :: PIA(:,:)
 
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IDIV, IFIRST, ILAST, IVOR, JFLD
+INTEGER_M :: IDIV, IFIRST, ILAST, IVOR
 
 
 !     ------------------------------------------------------------------
@@ -81,12 +81,6 @@ ILAST  = 4*NF_UV
 IF(NF_UV > 0)THEN
   IVOR = 1
   IDIV = 2*NF_UV+1
-  IF(KM == 0)THEN
-    DO JFLD=1,NF_UV
-      PSPVOR(JFLD,D%NASM0(0)) = _ZERO_
-      PSPDIV(JFLD,D%NASM0(0)) = _ZERO_
-    ENDDO
-  ENDIF
   CALL PRFI1BAD(KM,PIA(:,IVOR:IDIV-1),PSPVOR,NF_UV)
   CALL PRFI1BAD(KM,PIA(:,IDIV:ILAST) ,PSPDIV,NF_UV)
   ILAST = ILAST+4*NF_UV

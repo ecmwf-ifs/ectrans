@@ -89,8 +89,6 @@ IF (NF_UV > 0) THEN
   IDIVS = 2*NF_UV+1
   IDIVE = 4*NF_UV
   IF (KM == 0) THEN
-    PSPVOR(:,D%NASM0(0)) = _ZERO_
-    PSPDIV(:,D%NASM0(0)) = _ZERO_
     DO JN=0,R%NSMAX
       ISE = 1+JN*2+1
       PSPDIV(:,ISE) = _ZERO_

@@ -1,0 +1,107 @@
+SUBROUTINE TRANS_END
+
+!**** *TRANS_END* - Terminate transform package 
+
+!     Purpose.
+!     --------
+!     Terminate transform package. Release all allocated arrays.
+
+!**   Interface.
+!     ----------
+!     CALL TRANS_END
+
+!     Explicit arguments : None
+!     -------------------- 
+
+!     Method.
+!     -------
+
+!     Externals.  None
+!     ----------  
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
+
+!     ------------------------------------------------------------------
+
+#include "tsmbkind.h"
+
+!ifndef INTERFACE
+
+USE TPM_GEN
+USE TPM_DIM
+USE TPM_DISTR
+USE TPM_GEOMETRY
+USE TPM_FIELDS
+USE TPM_FFT
+USE TPM_TRANS
+
+USE SET_RESOL_MOD
+
+IMPLICIT NONE
+
+! Local variables
+INTEGER_M :: JRES
+!     ------------------------------------------------------------------
+
+DO JRES=1,NDEF_RESOL
+  CALL SET_RESOL(JRES)
+
+  !TPM_DISTR
+  DEALLOCATE(D%MYMS,D%NUMPP,D%NPOSSP,D%NPROCM,D%NDIM0G,D%NASM0,D%NATM0)
+  DEALLOCATE(D%NLATLS,D%NLATLE,D%NPMT,D%NPMS,D%NPMG,D%NULTPP,D%NPROCL)
+  DEALLOCATE(D%NPTRLS,D%NALLMS,D%NPTRMS,D%NSTAGT0B,D%NSTAGT1B,D%NPNTGTB0)
+  DEALLOCATE(D%NPNTGTB1,D%NLTSFTB,D%NLTSGTB,D%MSTABF)
+  DEALLOCATE(D%NFRSTLAT,D%NLSTLAT,D%NPTRLAT,D%NPTRFRSTLAT,D%NPTRLSTLAT)
+  DEALLOCATE(D%LSPLITLAT,D%NSTA,D%NONL,D%NSTAGTF)
+
+  !TPM_FFT
+  DEALLOCATE(T%TRIGS,T%NFAX)
+
+  !TPM_FIELDS
+  DEALLOCATE(F%RPNM,F%RMU,F%RW,F%R1MU2,F%RACTHE)
+  DEALLOCATE(F%REPSNM,F%RN,F%RLAPIN,F%NLTN)
+
+  !TPM_GEOMETRY
+  DEALLOCATE(G%NLOEN,G%NMEN,G%NDGLU)
+ENDDO
+NULLIFY(R)
+DEALLOCATE(DIM_RESOL)
+
+!TPM_DISTR
+DEALLOCATE(NPRCIDS)
+NULLIFY(D)
+DEALLOCATE(DISTR_RESOL)
+
+!TPM_FFT
+NULLIFY(T)
+DEALLOCATE(FFT_RESOL)
+
+!TPM_FIELDS
+NULLIFY(F)
+DEALLOCATE(FIELDS_RESOL)
+
+!TPM_GEOMETRY
+NULLIFY(G)
+DEALLOCATE(GEOM_RESOL)
+
+!TPM_TRANS
+IF(ALLOCATED(FOUBUF_IN)) DEALLOCATE(FOUBUF_IN)
+IF(ALLOCATED(FOUBUF)) DEALLOCATE(FOUBUF)
+
+MSETUP0 = 0
+NMAX_RESOL = 0
+NCUR_RESOL = 0
+NDEF_RESOL = 0
+
+!     ------------------------------------------------------------------
+
+!endif INTERFACE
+
+END SUBROUTINE TRANS_END
