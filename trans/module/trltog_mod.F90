@@ -50,6 +50,8 @@ SUBROUTINE TRLTOG(PGLAT,PGCOL,KF_FS,KF_GP,KVSET,KPTRGP)
 !         01-11-23  Deborah Salmond and John Hague
 !                   LIMP_NOOLAP Option for non-overlapping message passing 
 !                               and buffer packing
+!         01-12-18  Peter Towers
+!                   Improved vector performance of LTOG_PACK,LTOG_UNPACK
 !     ------------------------------------------------------------------
 
 
@@ -520,9 +522,9 @@ SUBROUTINE LTOG_PACK(INS,ISEND,ISEND_FLD_END,ILEN)
 
 INTEGER_M :: INS,ISEND,ISEND_FLD_END,ILEN
 
-DO JL=1,ILEN
-  II = INDEX(INDOFF(ISEND)+JL)
-  DO JFLD=ISEND_FLD_START(ISEND),ISEND_FLD_END
+DO JFLD=ISEND_FLD_START(ISEND),ISEND_FLD_END
+  DO JL=1,ILEN
+    II = INDEX(INDOFF(ISEND)+JL)
     ZCOMBUFS((JFLD-ISEND_FLD_START(ISEND))*ILEN+JL,INS) = PGLAT(JFLD,II)
   ENDDO
 ENDDO
@@ -531,7 +533,7 @@ END SUBROUTINE LTOG_PACK
 SUBROUTINE LTOG_UNPACK(INR,IRECV_FLD_START,IRECV_FLD_END,&
                      &IRECVSET,ISETW,IFLD,IPOS)
 
-INTEGER_M :: INR,IRECV_FLD_START,IRECV_FLD_END,IRECVSET,ISETW,IFLD,IPOS
+INTEGER_M :: INR,IRECV_FLD_START,IRECV_FLD_END,IRECVSET,ISETW,IFLD,IPOS,JPOS
 
 DO JFLD=1,KF_GP
   IF(KVSET(JFLD) == IRECVSET .OR. KVSET(JFLD) == -1 ) THEN
@@ -542,17 +544,19 @@ DO JFLD=1,KF_GP
         IFIRST = IGPTRSEND(1,JBLK,ISETW)
         IF(IFIRST > 0) THEN
           ILAST = IGPTRSEND(2,JBLK,ISETW)
+          JPOS=IPOS
           IF(LLINDER) THEN
             DO JK=IFIRST,ILAST
-              IPOS = IPOS+1
-              PGCOL(JK,KPTRGP(JFLD),JBLK) = ZCOMBUFR(IPOS,INR)
+              JPOS = JPOS+1
+              PGCOL(JK,KPTRGP(JFLD),JBLK) = ZCOMBUFR(JPOS,INR)
             ENDDO
           ELSE
             DO JK=IFIRST,ILAST
-              IPOS = IPOS+1
-              PGCOL(JK,JFLD,JBLK) = ZCOMBUFR(IPOS,INR)
+              JPOS = JPOS+1
+              PGCOL(JK,JFLD,JBLK) = ZCOMBUFR(JPOS,INR)
             ENDDO
           ENDIF
+          IPOS = IPOS + ILAST - IFIRST +1
         ENDIF
       ENDDO
     ENDIF

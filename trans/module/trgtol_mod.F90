@@ -49,6 +49,8 @@ SUBROUTINE TRGTOL(PGLAT,PGCOL,KF_FS,KF_GP,KVSET,KPTRGP)
 !         01-11-23  Deborah Salmond and John Hague
 !                    LIMP_NOOLAP Option for non-overlapping message passing 
 !                    and buffer packing
+!         01-12-18  Peter Towers
+!                   Improved vector performance of GTOL_PACK,GTOL_UNPACK
 !     ------------------------------------------------------------------
 
 
@@ -517,7 +519,7 @@ CONTAINS
 
 SUBROUTINE GTOL_PACK(INS,ISEND,ISEND_FLD_END,ISENDSET,ISETW,IFLD,IPOS)
 
-INTEGER_M :: INS,ISEND,ISEND_FLD_END,ISENDSET,ISETW,IFLD,IPOS
+INTEGER_M :: INS,ISEND,ISEND_FLD_END,ISENDSET,ISETW,IFLD,IPOS,JPOS
 
 DO JFLD=1,KF_GP
   IF(KVSET(JFLD) == ISENDSET .OR. KVSET(JFLD) == -1 ) THEN
@@ -528,17 +530,19 @@ DO JFLD=1,KF_GP
         IFIRST = IGPTRSEND(1,JBLK,ISETW)
         IF(IFIRST > 0) THEN
           ILAST = IGPTRSEND(2,JBLK,ISETW)
+          JPOS = IPOS
           IF(LLINDER) THEN
             DO JK=IFIRST,ILAST
-              IPOS = IPOS+1
-              ZCOMBUFS(IPOS,INS) = PGCOL(JK,KPTRGP(JFLD),JBLK)
+              JPOS = JPOS+1
+              ZCOMBUFS(JPOS,INS) = PGCOL(JK,KPTRGP(JFLD),JBLK)
             ENDDO
           ELSE
             DO JK=IFIRST,ILAST
-              IPOS = IPOS+1
-              ZCOMBUFS(IPOS,INS) = PGCOL(JK,JFLD,JBLK)
+              JPOS = JPOS+1
+              ZCOMBUFS(JPOS,INS) = PGCOL(JK,JFLD,JBLK)
             ENDDO
           ENDIF
+          IPOS = IPOS + ILAST - IFIRST + 1
         ENDIF
       ENDDO
     ENDIF
@@ -550,9 +554,9 @@ SUBROUTINE GTOL_UNPACK(INR,IRECV,IRECV_FLD_START,IRECV_FLD_END,ILEN)
 
 INTEGER_M :: INR,IRECV,IRECV_FLD_START,IRECV_FLD_END,ILEN
 
-DO JL=1,ILEN
-  II = INDEX(INDOFF(IRECV)+JL)
-  DO JFLD=IRECV_FLD_START,IRECV_FLD_END
+DO JFLD=IRECV_FLD_START,IRECV_FLD_END
+  DO JL=1,ILEN
+    II = INDEX(INDOFF(IRECV)+JL)
     PGLAT(JFLD,II) = ZCOMBUFR(JL+(JFLD-IRECV_FLD_START)*ILEN,INR)
   ENDDO
 ENDDO

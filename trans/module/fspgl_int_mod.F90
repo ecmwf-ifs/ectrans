@@ -19,10 +19,17 @@ EXTERNAL  FSPGL_PROC
 INTEGER_M,OPTIONAL,INTENT(IN)  :: KFLDPTRUV(:)
 INTEGER_M,OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
 
-REAL_B :: ZFIELD(2*KF_OUT_LT,R%NDGL)
+!
+! ZFIELD 2nd dimension is extended from 0 to R%NDGL+1, while only 1 to R%NDGL
+! is given from the north/south transforms, and only 1 to R%NDGL rows will be
+! passed to the east/west transforms.
+! the 2 extra rows are used inside the model Fourier space computations
+! (outside the transform package - see FSPGLH in Arpege/IFS).
+!
+REAL_B :: ZFIELD(2*KF_OUT_LT,0:R%NDGL+1)
 
 
-INTEGER_M :: ISL, IGLS, JFLD, JGL ,IPROC, IPROCS
+INTEGER_M :: ISL, IGLS, JFLD, JGL ,IPROC,  IPROCS
 INTEGER_M :: IPTRVOR,IPTRDIV,IPTRU,IPTRV,IPTRSC,IPTRNSD,IST,J
 INTEGER_M :: IDGNH,IDGL
 INTEGER_M :: ISTAN(R%NDGNH),ISTAS(R%NDGNH)
@@ -99,4 +106,3 @@ ENDDO
 
 END SUBROUTINE FSPGL_INT
 END MODULE FSPGL_INT_MOD
-

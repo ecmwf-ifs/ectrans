@@ -6,10 +6,11 @@ implicit none
 character*(*) cl
 integer ierror
 close(nout)
+write(0,'(a)') 'CALLING TRANS LIBRARY ABOR1'
 write(0,'(a)') cl
 if(nproc > 1 ) then
- call mpl_barrier()
- call mpl_end()
+  call mpl_abort(cl)
+else
+  call abort
 endif
-stop
 end

@@ -95,15 +95,20 @@ ENDIF
 !*       1.2      ANTISYMMETRIC PART.
 
 IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
-CALL MXMAOP(PLEPO(ISL,IA),1,2*R%NLEI3,PIA(1+IA,1),2,&
-            &R%NLEI1*ISKIP,PAOA1(1,ISL),IOAD1,ISKIP,&
-            &IDGLU,ILA,IFC)
+
+IF( IDGLU > 0 ) THEN
+
+  CALL MXMAOP(PLEPO(ISL,IA),1,2*R%NLEI3,PIA(1+IA,1),2,&
+              &R%NLEI1*ISKIP,PAOA1(1,ISL),IOAD1,ISKIP,&
+              &IDGLU,ILA,IFC)
 
 !*       1.3      SYMMETRIC PART.
 
-CALL MXMAOP(PLEPO(ISL,IS),1,2*R%NLEI3,PIA(1+IS,1),2,&
-            &R%NLEI1*ISKIP,PSOA1(1,ISL),IOAD1,ISKIP,&
-            &IDGLU,ILS,IFC)
+  CALL MXMAOP(PLEPO(ISL,IS),1,2*R%NLEI3,PIA(1+IS,1),2,&
+              &R%NLEI1*ISKIP,PSOA1(1,ISL),IOAD1,ISKIP,&
+              &IDGLU,ILS,IFC)
+
+ENDIF
 
 !     ------------------------------------------------------------------
 

@@ -28,7 +28,7 @@ SUBROUTINE FTINV(PREEL,KFIELDS,KGL)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-
+!        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
@@ -43,7 +43,7 @@ IMPLICIT NONE
 INTEGER_M,INTENT(IN) :: KFIELDS,KGL
 REAL_B, INTENT(OUT)  :: PREEL(:,:)
 
-INTEGER_M :: IGLG,IST,ILEN,IJUMP,JJ,JF
+INTEGER_M :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 
 !     ------------------------------------------------------------------
 
@@ -51,16 +51,19 @@ IJUMP = 1
 IGLG  = D%NPTRLS(MYSETW)+KGL-1
 IST   = 2*(G%NMEN(IGLG)+1)+1
 ILEN  = G%NLOEN(IGLG)+3-IST
+IST1=1
+IF (G%NLOEN(IGLG)==1) IST1=0
 
-DO JJ=1,ILEN
+DO JJ=IST1,ILEN
   DO JF=1,KFIELDS
     PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = _ZERO_
   ENDDO
 ENDDO
-  
-CALL FFT992(PREEL(1,D%NSTAGTF(KGL)+1),T%TRIGS(1,KGL),&
- &T%NFAX(1,KGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,1)
 
+IF (G%NLOEN(IGLG)>1) THEN
+  CALL FFT992(PREEL(1,D%NSTAGTF(KGL)+1),T%TRIGS(1,KGL),&
+   &T%NFAX(1,KGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,1)
+ENDIF
 
 !     ------------------------------------------------------------------
 
