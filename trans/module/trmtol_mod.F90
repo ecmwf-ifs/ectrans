@@ -53,7 +53,11 @@ SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMGSTATS, ONLY : LBARRIER_STATS
+
 USE MPL_MODULE
+
 
 USE TPM_DISTR
 USE TPM_GEN
@@ -83,8 +87,18 @@ INTEGER(KIND=JPIM) :: ICOMBFLENP, ILEN,  ILREC, &
              &ISENDSET, ISTA, ITAG, J, INUMSENT
 
 LOGICAL :: LLDONE
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
+
 
 !     ------------------------------------------------------------------
+
+IF (LHOOK) CALL DR_HOOK('TRMTOL',0,ZHOOK_HANDLE)
+
+IF(LBARRIER_STATS)THEN
+  CALL GSTATS(764,0)
+  CALL MPL_BARRIER(CDSTRING='TRMTOL:')
+  CALL GSTATS(764,1)
+ENDIF
 
 ! Set maximum transfer length 
 
@@ -239,6 +253,7 @@ ELSE
   ENDIF
 ENDIF
 
+IF (LHOOK) CALL DR_HOOK('TRMTOL',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 

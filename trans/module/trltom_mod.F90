@@ -51,6 +51,9 @@ SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMGSTATS, ONLY : LBARRIER_STATS
+
 USE MPL_MODULE
 
 USE TPM_DISTR
@@ -81,6 +84,7 @@ INTEGER(KIND=JPIM) :: ICOMBFLENP, ILEN, ILREC, &
              &INUMSENT
 
 LOGICAL :: LLDONE
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -89,6 +93,14 @@ LOGICAL :: LLDONE
 !     -------------
 
 ! Set maximum transfer length
+
+IF (LHOOK) CALL DR_HOOK('TRLTOM',0,ZHOOK_HANDLE)
+
+IF(LBARRIER_STATS)THEN
+  CALL GSTATS(763,0)
+  CALL MPL_BARRIER(CDSTRING='TRLTOM:')
+  CALL GSTATS(763,1)
+ENDIF
 
 IF( NPRTRW > 1 )THEN
   ICOMBFLENP = NCOMBFLEN/(3*NPRTRW-4)
@@ -239,6 +251,7 @@ ELSE
   ENDIF
 ENDIF
 
+IF (LHOOK) CALL DR_HOOK('TRLTOM',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
 END SUBROUTINE TRLTOM
