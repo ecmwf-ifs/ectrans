@@ -60,7 +60,7 @@ REAL_B   ,INTENT(IN)   :: PSPEC(:,:)
 REAL_B   ,INTENT(OUT)  :: PIA(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: II, INM, IR, J, JFLD, ILCM
+INTEGER_M :: II, INM, IR, J, JFLD, ILCM, IOFF
 
 
 !     ------------------------------------------------------------------
@@ -70,8 +70,10 @@ INTEGER_M :: II, INM, IR, J, JFLD, ILCM
 
 
 ILCM = R%NSMAX+1-KM
+IOFF = D%NASM0(KM)
+
 DO J=1,ILCM
-  INM = D%NASM0(KM)+(ILCM-J)*2
+  INM = IOFF+(ILCM-J)*2
 !DIR$ IVDEP
 !OCL NOVREC
   DO JFLD=1,KFIELDS

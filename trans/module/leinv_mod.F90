@@ -61,7 +61,7 @@ REAL_B,    INTENT(OUT) :: PSOA1(:,:)
 REAL_B,    INTENT(OUT) :: PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL
+INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1
 
 
 !     ------------------------------------------------------------------
@@ -76,7 +76,7 @@ IS  = 1+MOD(R%NSMAX-KM+1,2)
 ILA = (R%NSMAX-KM+2)/2
 ILS = (R%NSMAX-KM+3)/2
 ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
-
+IOAD1 = 2*NF_OUT_LT
 
 IF(KM == 0)THEN
   ISKIP = 2
@@ -96,13 +96,13 @@ ENDIF
 
 IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 CALL MXMAOP(PLEPO(ISL,IA),1,2*R%NLEI3,PIA(1+IA,1),2,&
-            &R%NLEI1*ISKIP,PAOA1(1,ISL),NLEI2,ISKIP,&
+            &R%NLEI1*ISKIP,PAOA1(1,ISL),IOAD1,ISKIP,&
             &IDGLU,ILA,IFC)
 
 !*       1.3      SYMMETRIC PART.
 
 CALL MXMAOP(PLEPO(ISL,IS),1,2*R%NLEI3,PIA(1+IS,1),2,&
-            &R%NLEI1*ISKIP,PSOA1(1,ISL),NLEI2,ISKIP,&
+            &R%NLEI1*ISKIP,PSOA1(1,ISL),IOAD1,ISKIP,&
             &IDGLU,ILS,IFC)
 
 !     ------------------------------------------------------------------

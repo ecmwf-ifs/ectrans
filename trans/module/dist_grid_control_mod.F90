@@ -1,0 +1,97 @@
+MODULE DIST_GRID_CONTROL_MOD
+CONTAINS
+SUBROUTINE DIST_GRID_CONTROL(PGPG,KFDISTG,KFROM,PGP)
+!     ------------------------------------------------------------------
+
+#include "tsmbkind.h"
+
+USE TPM_DISTR
+USE TPM_GEOMETRY
+
+USE SET2PE_MOD
+
+IMPLICIT NONE
+
+! Declaration of arguments
+
+REAL_B    ,OPTIONAL, INTENT(IN)  :: PGPG(:,:)
+INTEGER_M          , INTENT(IN)  :: KFDISTG
+INTEGER_M          , INTENT(IN)  :: KFROM(:)
+REAL_B             , INTENT(OUT) :: PGP(:,:)
+
+REAL_B :: ZFLD(D%NGPTOTMX)
+INTEGER_M :: JFLD,JB,JA,IGLOFF,IGL1,IGL2,IOFF,ILAST,ILEN,ILOFF
+INTEGER_M :: JGL,JLON,ISND,ITAG,IERR,ISENDER,ITAGR,J,IRCV
+!     ------------------------------------------------------------------
+
+IF(NPROC == 1) THEN
+  PGP(1:D%NGPTOT,1:KFDISTG) = PGPG(1:D%NGPTOT,1:KFDISTG)
+ELSE
+  DO JFLD=1,KFDISTG
+    IF(KFROM(JFLD) == MYPROC) THEN
+      DO JB=1,NPRGPEW
+        DO JA=1,NPRGPNS
+
+          IGLOFF = D%NPTRFRSTLAT(JA)
+          IGL1   = D%NFRSTLAT(JA)
+          IGL2   = D%NLSTLAT(JA)
+          IOFF = 0
+          IF(JA > 1) THEN
+            IF( D%NLSTLAT(JA-1) == D%NFRSTLAT(JA) )THEN
+              ILAST = D%NLSTLAT(JA-1)-1
+            ELSE
+              ILAST = D%NLSTLAT(JA-1)
+            ENDIF
+            DO J=D%NFRSTLAT(1),ILAST
+              IOFF = IOFF+G%NLOEN(J)
+            ENDDO
+          ENDIF
+
+          ILEN = 0
+          ILOFF = 0
+          DO JGL=IGL1,IGL2
+            DO JLON=1,D%NONL(IGLOFF+JGL-IGL1,JB)
+              ZFLD(ILEN+JLON) = &
+               & PGPG(IOFF+ILOFF+D%NSTA(IGLOFF+JGL-IGL1,JB)+JLON-1,JFLD)
+            ENDDO
+            ILEN = ILEN + D%NONL(IGLOFF+JGL-IGL1,JB)
+            ILOFF = ILOFF + G%NLOEN(JGL)
+          ENDDO
+
+          IF( ILEN > 0 )THEN
+            CALL SET2PE(ISND,JA,JB,0,0)
+            ITAG = MTAGDISTGP
+            CALL MPE_SEND(ZFLD,ILEN,MREALT,NPRCIDS(ISND),ITAG,0,0,0,IERR)
+            IF( IERR < 0 )THEN
+              CALL ABOR1(' DIST_GRID_CONTROL:ERROR IN MPE_SEND')
+            ENDIF
+          ENDIF
+        ENDDO
+      ENDDO
+    ENDIF
+
+    IF( D%NGPTOT > 0 )THEN
+      ITAG = MTAGDISTGP
+      IRCV = KFROM(JFLD)
+      CALL MPE_RECV(PGP(1,JFLD),D%NGPTOT,MREALT,NPRCIDS(IRCV),ITAG,&
+       &0,0,0,ILEN,ISENDER,ITAGR,IERR)
+      IF( IERR < 0 ) CALL ABOR1(' DIST_GRID_CONTROL:ERROR IN MPE_RECV')
+    ENDIF
+    IF( ILEN /= D%NGPTOT )THEN
+      CALL ABOR1(' DIST_GRID_CONTROL: INVALID RECEIVE MESSAGE LENGTH')
+    ENDIF
+
+    CALL MPE_BARRIER(IERR)
+    IF( IERR /= 0 )THEN
+      CALL ABOR1(' DIST_GRID_CONTROL: ERROR IN MPE_BARRIER')
+    ENDIF
+
+  ENDDO
+ENDIF
+
+END SUBROUTINE DIST_GRID_CONTROL
+END MODULE DIST_GRID_CONTROL_MOD
+
+
+
+

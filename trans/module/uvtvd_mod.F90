@@ -64,10 +64,11 @@ REAL_B, INTENT(OUT)    :: PVOR(:,:),PDIV(:,:)
 REAL_B, INTENT(INOUT)  :: PU  (:,:),PV  (:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: II, IN, IR, J, JN
+INTEGER_M :: II, IN, IR, J, JN, ITMAX
 
 !     LOCAL REAL SCALARS
 REAL_B :: ZKM
+REAL_B :: ZN(-1:R%NTMAX+3)
 
 
 !     ------------------------------------------------------------------
@@ -77,7 +78,8 @@ REAL_B :: ZKM
 !              ------------------------------------------
 
 ZKM = KM
-
+ITMAX = R%NTMAX
+ZN(KM-1:ITMAX+3) = F%RN(KM-1:ITMAX+3)
 !*       1.1      SET N=KM-1 COMPONENT TO 0 FOR U AND V
 
 IN = F%NLTN(KM-1)
@@ -89,38 +91,38 @@ ENDDO
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
 
 IF(KM /= 0) THEN
-  DO JN=KM,R%NTMAX
-    IN=F%NLTN(JN)
+  DO JN=KM,ITMAX
+    IN = ITMAX+2-JN
 !DIR$ IVDEP
 !OCL NOVREC
     DO J=1,KFIELD
-      IR=2*J-1
-      II=IR+1
-      PVOR(IN,IR)=-ZKM*PV(IN,II)-&
-       &F%RN(JN)*PEPSNM(JN+1)*PU(IN-1,IR)+&
-       &F%RN(JN+1)*PEPSNM(JN)*PU(IN+1,IR)
-      PVOR(IN,II)=+ZKM*PV(IN,IR)-&
-       &F%RN(JN)*PEPSNM(JN+1)*PU(IN-1,II)+&
-       &F%RN(JN+1)*PEPSNM(JN)*PU(IN+1,II)
-      PDIV(IN,IR)=-ZKM*PU(IN,II)+&
-       &F%RN(JN)*PEPSNM(JN+1)*PV(IN-1,IR)-&
-       &F%RN(JN+1)*PEPSNM(JN)*PV(IN+1,IR)
-      PDIV(IN,II)=+ZKM*PU(IN,IR)+&
-       &F%RN(JN)*PEPSNM(JN+1)*PV(IN-1,II)-&
-       &F%RN(JN+1)*PEPSNM(JN)*PV(IN+1,II)
+      IR = 2*J-1
+      II = IR+1
+      PVOR(IN,IR) = -ZKM*PV(IN,II)-&
+       &ZN(JN)*PEPSNM(JN+1)*PU(IN-1,IR)+&
+       &ZN(JN+1)*PEPSNM(JN)*PU(IN+1,IR)
+      PVOR(IN,II) = +ZKM*PV(IN,IR)-&
+       &ZN(JN)*PEPSNM(JN+1)*PU(IN-1,II)+&
+       &ZN(JN+1)*PEPSNM(JN)*PU(IN+1,II)
+      PDIV(IN,IR) = -ZKM*PU(IN,II)+&
+       &ZN(JN)*PEPSNM(JN+1)*PV(IN-1,IR)-&
+       &ZN(JN+1)*PEPSNM(JN)*PV(IN+1,IR)
+      PDIV(IN,II) = +ZKM*PU(IN,IR)+&
+       &ZN(JN)*PEPSNM(JN+1)*PV(IN-1,II)-&
+       &ZN(JN+1)*PEPSNM(JN)*PV(IN+1,II)
     ENDDO
   ENDDO
 ELSE
-  DO JN=KM,R%NTMAX
-    IN=F%NLTN(JN)
+  DO JN=KM,ITMAX
+    IN = ITMAX+2-JN
     DO J=1,KFIELD
-      IR=2*J-1
-      PVOR(IN,IR)=-&
-       &F%RN(JN)*PEPSNM(JN+1)*PU(IN-1,IR)+&
-       &F%RN(JN+1)*PEPSNM(JN)*PU(IN+1,IR)
-      PDIV(IN,IR)=&
-       &F%RN(JN)*PEPSNM(JN+1)*PV(IN-1,IR)-&
-       &F%RN(JN+1)*PEPSNM(JN)*PV(IN+1,IR)
+      IR = 2*J-1
+      PVOR(IN,IR) = -&
+       &ZN(JN)*PEPSNM(JN+1)*PU(IN-1,IR)+&
+       &ZN(JN+1)*PEPSNM(JN)*PU(IN+1,IR)
+      PDIV(IN,IR) = &
+       &ZN(JN)*PEPSNM(JN+1)*PV(IN-1,IR)-&
+       &ZN(JN+1)*PEPSNM(JN)*PV(IN+1,IR)
     ENDDO
   ENDDO
 ENDIF

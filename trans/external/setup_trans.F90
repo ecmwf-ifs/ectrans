@@ -100,6 +100,7 @@ IF(LLP1) WRITE(NOUT,*) '=== DEFINING RESOLUTION ',NCUR_RESOL
 
 
 G%LREDUCED_GRID = .FALSE.
+G%LINEAR_GRID = .FALSE.
 D%LSPLIT = .FALSE.
 D%NAPSETS = 0
 
@@ -136,6 +137,9 @@ ENDIF
 
 !Temporary?
 R%NTMAX = R%NSMAX
+IF(R%NSMAX > (R%NDLON+3)/3) THEN
+  G%LINEAR_GRID = .TRUE.
+ENDIF  
 
 !     Setup resolution dependent structures
 !     -------------------------------------

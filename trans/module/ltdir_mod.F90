@@ -93,7 +93,7 @@ INTEGER_M :: IFC
 REAL_B :: ZSIA(NLED2,R%NDGNH),       ZAIA(NLED2,R%NDGNH)
 REAL_B :: ZLEPO(R%NLED3,R%NDGNH)
 REAL_B :: ZEPSNM(0:R%NTMAX+2)
-REAL_B :: ZOA1(R%NLED4,NLED2),         ZOA2(R%NLED4,NLED2)
+REAL_B :: ZOA1(R%NLED4,NLED2),         ZOA2(R%NLED4,4*NF_UV)
 
 
 !     ------------------------------------------------------------------

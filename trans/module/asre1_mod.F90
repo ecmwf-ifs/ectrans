@@ -68,25 +68,16 @@ INTEGER_M , INTENT(IN) :: KMLOC
 REAL_B , INTENT(IN)  :: PSOA1(:,:),       PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: ISTA, IFLDS
+INTEGER_M :: IFLDS
 
 !     LOCAL LOGICAL SCALARS
 
 
 !     ------------------------------------------------------------------
 
-ISTA  = 1
 IFLDS = NF_OUT_LT
-IF(NF_UV > 0 .AND. .NOT. LVORGP) THEN
-  ISTA  = ISTA+2*NF_UV
-  IFLDS = IFLDS-NF_UV
-ENDIF 
-IF(NF_UV > 0 .AND. .NOT. LDIVGP) THEN
-  ISTA  = ISTA+2*NF_UV
-  IFLDS = IFLDS-NF_UV
-ENDIF 
 
-CALL ASRE1B(IFLDS,KM,KMLOC,PAOA1(ISTA:,:),PSOA1(ISTA:,:))
+CALL ASRE1B(IFLDS,KM,KMLOC,PAOA1,PSOA1)
 
 !     ------------------------------------------------------------------
 

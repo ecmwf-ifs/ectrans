@@ -1,5 +1,5 @@
 SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
-& KPROMA,KVSETUV,KVSETSC,&
+& KPROMA,KVSETUV,KVSETSC,KRESOL,&
 & PGP)
 
 
@@ -29,6 +29,8 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
 !                   if the total number of processors is greater than
 !                   the number of processors used for distribution in
 !                   spectral wave space.  
+!     KRESOL   - resolution tag  which is required ,default is the
+!                first defined resulution (input)
 !     PGP(:,:,:) - gridpoint fields (input)
 !                  PGP need to  dimensioned (NPROMA,NF_GP,NGPBLKS) where
 !                  NPROMA is the blocking factor, NF_GP the total number
@@ -56,6 +58,7 @@ USE TPM_GEN
 USE TPM_TRANS
 USE TPM_DISTR
 
+USE SET_RESOL_MOD
 USE LTDIR_CONTROL_MOD
 USE FTDIR_CONTROL_MOD
 
@@ -71,6 +74,7 @@ REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KPROMA
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KRESOL
 
 REAL_B    ,INTENT(IN) :: PGP(:,:,:)
 
@@ -80,6 +84,9 @@ REAL_B    ,INTENT(IN) :: PGP(:,:,:)
 INTEGER_M :: IUBOUND(3),J
 
 !     ------------------------------------------------------------------
+
+! Set current resolution
+CALL SET_RESOL(KRESOL)
 
 ! Set defaults
 

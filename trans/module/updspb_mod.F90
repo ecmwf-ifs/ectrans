@@ -58,7 +58,7 @@ REAL_B   ,INTENT(IN)  :: POA(:,:)
 REAL_B   ,INTENT(OUT) :: PSPEC(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: II, INM, IR, JFLD, JN
+INTEGER_M :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0
 
 
 !     ------------------------------------------------------------------
@@ -78,13 +78,15 @@ INTEGER_M :: II, INM, IR, JFLD, JN
 
 !*       1.    UPDATE SPECTRAL FIELDS.
 !              -----------------------
-
+ISMAX = R%NSMAX
+ITMAX = R%NTMAX
+IASM0 = D%NASM0(KM)
 
 !*       1.1   KM=0
 
 IF(KM == 0) THEN
-  DO JN=F%NLTN(R%NSMAX),F%NLTN(KM)
-    INM = D%NASM0(KM)+F%NLTN(JN)*2
+  DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+    INM = IASM0+(ITMAX+2-JN)*2
 !DIR$ IVDEP
 !OCL NOVREC
     DO JFLD=1,KFIELD
@@ -97,8 +99,8 @@ IF(KM == 0) THEN
 !*       1.2   KM!=0
 
 ELSE
-  DO JN=F%NLTN(R%NSMAX),F%NLTN(KM)
-    INM = D%NASM0(KM)+(F%NLTN(JN)-KM)*2
+  DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+    INM = IASM0+((ITMAX+2-JN)-KM)*2
 !DIR$ IVDEP
 !OCL NOVREC
     DO JFLD=1,KFIELD

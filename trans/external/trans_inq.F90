@@ -13,14 +13,17 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2MX,KNUMP,&
 !     CALL TRANS_INQ(...)
 !     Explicit arguments : All arguments are optional.
 !     -------------------- 
-!     KRESOL - resolution tag for which info is required (input)
-!     KSPEC  - number of complex spectral coefficients on this PE
-!     KSPEC2 - 2*KSPEC 
+!     KRESOL   - resolution tag for which info is required ,default is the
+!                first defined resulution (input)
+!     KSPEC    - number of complex spectral coefficients on this PE
+!     KSPEC2   - 2*KSPEC 
 !     KSPEC2MX - maximun KSPEC2 among all PEs
-!     KNUMP - Number of spectral waves handled by this PE
-!     KGPTOT - Total number of grid columns on this PE
-!     KGPTOTG - Total number of grid columns on the Globe
+!     KNUMP    - Number of spectral waves handled by this PE
+!     KGPTOT   - Total number of grid columns on this PE
+!     KGPTOTG  - Total number of grid columns on the Globe
 !     KGPTOTMX - Maximum number of grid columns on any of the PEs
+!     PMU      - sin(Gaussian latitudes)
+!     PGW      - Gaussian weights
 
 ! 
 !     ------------------------------------------------------------------

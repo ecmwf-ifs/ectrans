@@ -57,17 +57,21 @@ INTEGER_M, INTENT(IN)  :: KM
 REAL_B,    INTENT(OUT) :: PLEPO(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: ISL, JGL, JN
+INTEGER_M :: ISL, JGL, JN ,ISMAX, IDGNH, IPMT
 
 !     ------------------------------------------------------------------
 
 !*       1.    COPY LEGENDRE POLONOMIALS, MULTIPLY BY GAUSSIAN WEIGHTS.
 !              --------------------------------------------------------
 
-ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
-DO JN=1,R%NSMAX-KM+2
-  DO JGL=ISL,R%NDGNH
-    PLEPO(JN,JGL)= F%RPNM(JGL,D%NPMT(KM)+JN)*F%RW(JGL)
+ISMAX = R%NSMAX
+IDGNH = R%NDGNH
+ISL   = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
+IPMT  = D%NPMT(KM)
+
+DO JN=1,ISMAX-KM+2
+  DO JGL=ISL,IDGNH
+    PLEPO(JN,JGL)= F%RPNM(JGL,IPMT+JN)*F%RW(JGL)
   ENDDO
 ENDDO
 

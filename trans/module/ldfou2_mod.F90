@@ -70,7 +70,7 @@ INTEGER_M :: J, JGL ,IFLD ,ISL
 !              --------------------------
 
 ISL  = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
-IFLD = 2*NF_UV
+IFLD = 4*NF_UV
 
 !*       1.1      U AND V 
 

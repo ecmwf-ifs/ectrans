@@ -48,7 +48,11 @@ IF (G%LREDUCED_GRID) THEN
 ELSE
   G%NMEN(:) = R%NSMAX
 ENDIF
-
+IF(LLP1) THEN
+  WRITE(NOUT,FMT='('' (JGL,G%NLOEN,G%NMEN) '')')
+  WRITE(NOUT,FMT='(8(1X,''('',I4,I4,I4,'')''))')&
+   &(JGL,G%NLOEN(JGL),G%NMEN(JGL),JGL=1,R%NDGL)
+ENDIF
 ALLOCATE(G%NDGLU(0:R%NSMAX))
 IF(LLP2)WRITE(NOUT,9) 'G%NDGLU   ',SIZE(G%NDGLU   ),SHAPE(G%NDGLU   )
 IDGLU(:,:) = 0
@@ -63,7 +67,11 @@ DO JM=0,R%NSMAX
     G%NDGLU(JM) = G%NDGLU(JM)+IDGLU(JM,JGL)
   ENDDO
 ENDDO
-
+IF(LLP1) THEN
+    WRITE(NOUT,FMT='('' (JM,G%NDGLU) '')')
+  WRITE(NOUT,FMT='(10(1X,''('',I4,I4,'')''))')&
+   &(JM,G%NDGLU(JM),JM=0,R%NSMAX)
+ENDIF
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
 

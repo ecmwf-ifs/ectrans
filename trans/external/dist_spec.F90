@@ -1,5 +1,26 @@
-subroutine dist_spec(pspecg,kfdistg,kfrom,kvset,pspec)
+SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC)
 
+!**** *DIST_SPEC* - Distribute global spectral array among processors
+
+!     Purpose.
+!     --------
+!        Interface routine for distributing spectral array
+
+!**   Interface.
+!     ----------
+!     CALL DIST__SPEC(...)
+
+!     Explicit arguments : 
+!     -------------------- 
+!     PSPECG(:,:) - Global spectral array
+!     KFDISTG     - Global number of fields to be distributed
+!     KFROM(:)    - Processor resposible for distributing each field
+!     KVSET(:)    - "B-Set" for each field
+!     KRESOL      - resolution tag  which is required ,default is the
+!                   first defined resulution (input)
+!     PSPEC(:,:)  - Local spectral array
+!
+!     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
 
@@ -9,6 +30,7 @@ USE TPM_GEN
 USE TPM_DIM
 USE TPM_DISTR
 
+USE SET_RESOL_MOD
 USE DIST_SPEC_CONTROL_MOD
 
 !endif INTERFACE
@@ -17,71 +39,84 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(IN) :: pspecg(:,:)
-INTEGER_M          , INTENT(IN) :: kfdistg
-INTEGER_M          , INTENT(IN) :: kfrom(:)
-INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSET(:)
-REAL_B    ,OPTIONAL, INTENT(OUT) :: pspec(:,:)
+REAL_B    ,OPTIONAL, INTENT(IN)  :: PSPECG(:,:)
+INTEGER_M          , INTENT(IN)  :: KFDISTG
+INTEGER_M          , INTENT(IN)  :: KFROM(:)
+INTEGER_M ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 
 !ifndef INTERFACE
 
-INTEGER_M :: IVSET(kfdistg)
+INTEGER_M :: IVSET(KFDISTG)
 INTEGER_M :: IFSEND,IFRECV,J
 
-if(ubound(kfrom,1) < kfdistg) then
- call abor1('dist_spec: kfrom too short!')
-endif
- 
-ifsend = 0
-do j=1,kfdistg
-  if(kfrom(j) == myproc) ifsend = ifsend+1
-enddo
+!     ------------------------------------------------------------------
 
-if(ifsend > 0) then
-  if(.not.present(pspecg)) then
-    call abor1('dist_spec:pspecg missing')
-  endif
-  if(ubound(pspecg,1) < ifsend) then
-    call abor1('dist_spec:first dimension of pspecg too small')
-  endif 
- if(ubound(pspecg,2) < R%nspec2_g) then
-    call abor1('dist_spec:first dimension of pspecg too small')
-  endif
-endif
+! Set current resolution
+CALL SET_RESOL(KRESOL)
+
+IF(UBOUND(KFROM,1) < KFDISTG) THEN
+ CALL ABOR1('DIST_SPEC: KFROM TOO SHORT!')
+ENDIF
+ 
+IFSEND = 0
+DO J=1,KFDISTG
+  IF(KFROM(J) < 1 .OR. KFROM(J) > NPROC) THEN
+    WRITE(NERR,*) 'DIST_SPEC:ILLEGAL KFROM VALUE',KFROM(J),J
+    CALL ABOR1('DIST_SPEC:ILLEGAL KFROM VALUE')
+  ENDIF
+  IF(KFROM(J) == MYPROC) IFSEND = IFSEND+1
+ENDDO
+
+IF(IFSEND > 0) THEN
+  IF(.NOT.PRESENT(PSPECG)) THEN
+    CALL ABOR1('DIST_SPEC:PSPECG MISSING')
+  ENDIF
+  IF(UBOUND(PSPECG,1) < IFSEND) THEN
+    CALL ABOR1('DIST_SPEC:FIRST DIMENSION OF PSPECG TOO SMALL')
+  ENDIF 
+ IF(UBOUND(PSPECG,2) < R%NSPEC2_G) THEN
+    CALL ABOR1('DIST_SPEC:FIRST DIMENSION OF PSPECG TOO SMALL')
+  ENDIF
+ENDIF
 
 IF(PRESENT(KVSET)) THEN
-  if(ubound(kvset,1) < kfdistg) then
-    call abor1('dist_spec: kvset too short!')
-  endif
-  DO J=1,kfdistg
-    IF(KVSET(J) > NPRTRV) THEN
+  IF(UBOUND(KVSET,1) < KFDISTG) THEN
+    CALL ABOR1('DIST_SPEC: KVSET TOO SHORT!')
+  ENDIF
+  DO J=1,KFDISTG
+    IF(KVSET(J) > NPRTRV .OR. KVSET(J) < 1) THEN
       WRITE(NERR,*) 'DIST_SPEC:KVSET(J) > NPRTRV ',J,KVSET(J),NPRTRV
       CALL ABOR1('DIST_SPEC:KVSET CONTAINS VALUES OUTSIDE RANGE')
     ENDIF
-    if(KVSET(J) == mysetv) then
-      ifrecv = ifrecv+1
-    endif
+    IF(KVSET(J) == MYSETV) THEN
+      IFRECV = IFRECV+1
+    ENDIF
   ENDDO
-  ivset(:) = kvset(1:kfdistg)
+  IVSET(:) = KVSET(1:KFDISTG)
 ELSE
-  ifrecv = kfdistg
-  ivset(:) = mysetv
+  IFRECV   = KFDISTG
+  IVSET(:) = MYSETV
 ENDIF
 
-if(ifrecv > 0 ) then
-  if(.not.present(pspec)) then
-    call abor1('DIST_SPEC: fields to recieve and pspec not present')
-  endif
-  if(ubound(pspec,1) < ifrecv) then
-    call abor1('DIST_SPEC: first dimension of pspec too small')
-  endif
-  if(ubound(pspec,2) < d%nspec2 ) then
-    call abor1('DIST_SPEC: second dimension of pspec too small')
-  endif
-endif
+IF(IFRECV > 0 ) THEN
+  IF(.NOT.PRESENT(PSPEC)) THEN
+    CALL ABOR1('DIST_SPEC: FIELDS TO RECEIVE AND PSPEC NOT PRESENT')
+  ENDIF
+  IF(UBOUND(PSPEC,1) < IFRECV) THEN
+    CALL ABOR1('DIST_SPEC: FIRST DIMENSION OF PSPEC TOO SMALL')
+  ENDIF
+  IF(UBOUND(PSPEC,2) < D%NSPEC2 ) THEN
+    CALL ABOR1('DIST_SPEC: SECOND DIMENSION OF PSPEC TOO SMALL')
+  ENDIF
+ENDIF
 
-call dist_spec_control(pspecg,kfdistg,kfrom,ivset,pspec)
+CALL DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,IVSET,PSPEC)
 
 !endif INTERFACE
 
-end subroutine dist_spec
+!     ------------------------------------------------------------------
+
+END SUBROUTINE DIST_SPEC
+
