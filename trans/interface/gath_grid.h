@@ -1,24 +1,24 @@
-SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC)
+SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
-!**** *GATH_SPEC* - Gather global spectral array from processors
+!**** *GATH_GRID* - Gather global gridpoint array from processors
 
 !     Purpose.
 !     --------
-!        Interface routine for gathering spectral array
+!        Interface routine for gathering gripoint array
 
 !**   Interface.
 !     ----------
-!     CALL GATH_SPEC(...)
+!     CALL GATH_GRID(...)
 
 !     Explicit arguments : 
 !     -------------------- 
-!     PSPECG(:,:) - Global spectral array
+!     PGPG(:,:)   - Global gridpoint array
 !     KFGATHG     - Global number of fields to be gathered
+!     KPROMA      - blocking factor for gridpoint input
 !     KTO(:)      - Processor responsible for gathering each field
-!     KVSET(:)    - "B-Set" for each field
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PSPEC(:,:)  - Local spectral array
+!     PGP(:,:,:)  - Local spectral array
 !
 !     ------------------------------------------------------------------
 
@@ -29,15 +29,15 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(OUT)  :: PSPECG(:,:)
+REAL_B    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
+INTEGER_M ,OPTIONAL, INTENT(IN)  :: KPROMA
 INTEGER_M          , INTENT(IN)  :: KFGATHG
 INTEGER_M          , INTENT(IN)  :: KTO(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KVSET(:)
 INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL_B    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+REAL_B             , INTENT(IN)  :: PGP(:,:,:)
 
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE GATH_SPEC
+END SUBROUTINE GATH_GRID
 

@@ -17,6 +17,8 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !     PSPVOR(:,:) - spectral vorticity (input)
 !     PSPDIV(:,:) - spectral divergence (input)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
+!     FSPGL_PROC  - external procedure to be executed in fourier space
+!                   before transposition  
 !     LDSCDERS    - indicating if derivatives of scalar variables are req.
 !     LDVORGP     - indicating if grid-point vorticity is req.
 !     LDDIVGP     - indicating if grid-point divergence is req.

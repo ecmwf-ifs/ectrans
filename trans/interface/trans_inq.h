@@ -1,4 +1,4 @@
-SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2MX,KNUMP,&
+SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
                     &KGPTOT,KGPTOTG,KGPTOTMX,&
                     &PMU,PGW)
 
@@ -17,6 +17,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2MX,KNUMP,&
 !                first defined resulution (input)
 !     KSPEC    - number of complex spectral coefficients on this PE
 !     KSPEC2   - 2*KSPEC 
+!     KSPEC2G  - global KSPEC2
 !     KSPEC2MX - maximun KSPEC2 among all PEs
 !     KNUMP    - Number of spectral waves handled by this PE
 !     KGPTOT   - Total number of grid columns on this PE
@@ -37,6 +38,7 @@ INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
 
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KSPEC
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KSPEC2
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KSPEC2G
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KSPEC2MX
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KNUMP
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KGPTOT

@@ -53,11 +53,11 @@ IMPLICIT NONE
 REAL_B :: pnm(d%nlei3d,r%nspoleg)
 
 REAL_B, allocatable :: zcombuf(:)
-
+REAL_B, pointer     :: zpnm(:,:)
 !     LOCAL INTEGER SCALARS
 INTEGER_M :: ierr, iglloc, ilrec, im, inentr, ipos, irecd,&
              &irecset, irecv, isend, isendset, itag, itagr, &
-             &jgl, jglloc, jm, jmloc, jn, jroc
+             &jgl, jglloc, jm, jmloc, jn, jroc ,iofft, ioffg
 
 !     LOCAL LOGICAL SCALARS
 LOGICAL :: lladmsg, llexact
@@ -67,7 +67,8 @@ LOGICAL :: lladmsg, llexact
 !*       0.    Some initializations.
 !              ---------------------
 
-
+!! Workaround for obscure unwillingness to vectorize on VPP
+zpnm => f%rpnm
 
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed all previous communication
@@ -153,18 +154,19 @@ do jroc=1,nprtrw-1
     do jmloc=1,d%nump
       jm = d%myms(jmloc)
       inentr = (d%nlatle(irecset)-d%nlatls(irecset)+1)*(r%ntmax-jm+2)
+      iofft = d%npmt(jm) 
       if (ipos + inentr < ncombflen) then
         do jgl=d%nlatls(irecset),d%nlatle(irecset)
           do jn=1,r%ntmax-jm+2
             ipos = ipos + 1
-            f%rpnm(jgl,d%npmt(jm)+jn) = zcombuf(ipos)
+            zpnm(jgl,iofft+jn) = zcombuf(ipos)
           enddo
         enddo
       else
         do jgl=d%nlatls(irecset),d%nlatle(irecset)
           do jn=1,r%ntmax-jm+2
             ipos = ipos + 1
-            f%rpnm(jgl,d%npmt(jm)+jn) = zcombuf(ipos)
+            zpnm(jgl,iofft+jn) = zcombuf(ipos)
             if (ipos == ncombflen) then
               itag = itag + 1
               call mpe_recv(zcombuf,ncombflen,mrealt,&
@@ -201,10 +203,12 @@ enddo
 !$OMP DO SCHEDULE(STATIC,1)
 do jmloc=1,d%nump
   im = d%myms(jmloc)
+  iofft = d%npmt(im)
+  ioffg = d%npmg(im)
   do jgl=d%nlatls(mysetw),d%nlatle(mysetw)
     iglloc = jgl-d%nlatls(mysetw)+1
     do jn=1,r%ntmax-im+2
-      f%rpnm(jgl,d%npmt(im)+jn) = pnm(iglloc,d%npmg(im)+jn)
+      zpnm(jgl,iofft+jn) = pnm(iglloc,ioffg+jn)
     enddo
   enddo
 enddo
