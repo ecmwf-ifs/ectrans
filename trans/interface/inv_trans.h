@@ -75,6 +75,8 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        26-02-03 Mats Hamrud & Gabor Radnoti : modified condition for scalar fields
+!                                               and derivatives (IF_SCALARS_G)
 
 !     ------------------------------------------------------------------
 

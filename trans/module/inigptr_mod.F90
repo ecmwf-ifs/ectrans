@@ -9,6 +9,7 @@ SUBROUTINE INIGPTR(KGPTRSEND,KGPTRRECV)
 USE TPM_GEN
 USE TPM_DISTR
 USE TPM_TRANS
+USE ABORT_TRANS_MOD
 
 IMPLICIT NONE
 
@@ -31,7 +32,7 @@ DO JGL=1,D%NDGL_GP
   IF(IPROC > NPRTRNS) THEN
     WRITE(NOUT,'(A,I8)')&
      &' INIGPTR ERROR : exceeding processor limit ',NPRTRNS
-    CALL ABOR1(' INIGPTR ERROR : exceeding processor limit ')
+    CALL ABORT_TRANS(' INIGPTR ERROR : exceeding processor limit ')
   ENDIF
 
   !           for each latitude on this processor, find first and last points
