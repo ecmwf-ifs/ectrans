@@ -5,7 +5,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
                     &KPTRFRSTLAT,KPTRLSTLAT,KPTRFLOFF,KSTA,KONL,&
                     &KULTPP,KPTRLS,&
                     &LDSPLITLAT,&
-                    &PMU,PGW,PRPNM)
+                    &PMU,PGW,PRPNM,KLEI3,KSPOLEGL,KPMS)
 
 !**** *TRANS_INQ* - Extract information from the transform package
 
@@ -74,6 +74,9 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     PMU      - sin(Gaussian latitudes)
 !     PGW      - Gaussian weights
 !     PRPNM    - Legendre polynomials
+!     KLEI3    - First dimension of Legendre polynomials
+!     KSPOLEGL - Second dimension of Legendre polynomials
+!     KPMS     - Adress for legendre polynomial for given M (NSMAX)
 
 !     Method.
 !     -------
@@ -88,6 +91,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        M. Hortal : 2001-03-05 Dimensions of the Legendre polynomials
 
 !     ------------------------------------------------------------------
 
@@ -142,6 +146,9 @@ INTEGER_M ,OPTIONAL, INTENT(OUT) :: KPTRLS(:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PMU(:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PGW(:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PRPNM(:,:)
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KLEI3
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KSPOLEGL
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KPMS(0:)
 
 !ifndef INTERFACE
 
@@ -329,6 +336,19 @@ IF(PRESENT(PRPNM)) THEN
     IU1 = MIN(IU1,R%NLEI3)
     IU2 = MIN(IU2,D%NSPOLEGL)
     PRPNM(1:IU1,1:IU2) = F%RPNM(1:IU1,1:IU2)
+  ENDIF
+ENDIF
+IF(PRESENT(KLEI3)) THEN
+  KLEI3=R%NLEI3
+ENDIF
+IF(PRESENT(KSPOLEGL)) THEN
+  KSPOLEGL=D%NSPOLEGL
+ENDIF
+IF(PRESENT(KPMS)) THEN
+  IF(UBOUND(KPMS,1) < R%NSMAX) THEN
+    CALL ABOR1('TRANS_INQ: KPMS TOO SMALL')
+  ELSE
+    KPMS(0:R%NSMAX) = D%NPMS(0:R%NSMAX)
   ENDIF
 ENDIF
 !     ------------------------------------------------------------------

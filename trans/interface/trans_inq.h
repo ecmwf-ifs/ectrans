@@ -5,7 +5,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
                     &KPTRFRSTLAT,KPTRLSTLAT,KPTRFLOFF,KSTA,KONL,&
                     &KULTPP,KPTRLS,&
                     &LDSPLITLAT,&
-                    &PMU,PGW,PRPNM)
+                    &PMU,PGW,PRPNM,KLEI3,KSPOLEGL,KPMS)
 
 !**** *TRANS_INQ* - Extract information from the transform package
 
@@ -74,6 +74,9 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     PMU      - sin(Gaussian latitudes)
 !     PGW      - Gaussian weights
 !     PRPNM    - Legendre polynomials
+!     KLEI3    - First dimension of Legendre polynomials
+!     KSPOLEGL - Second dimension of Legendre polynomials
+!     KPMS     - Adress for legendre polynomial for given M (NSMAX)
 
 !     Method.
 !     -------
@@ -88,6 +91,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        M. Hortal : 2001-03-05 Dimensions of the Legendre polynomials
 
 !     ------------------------------------------------------------------
 
@@ -131,6 +135,9 @@ INTEGER_M ,OPTIONAL, INTENT(OUT) :: KPTRLS(:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PMU(:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PGW(:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PRPNM(:,:)
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KLEI3
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KSPOLEGL
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KPMS(0:)
 
 
 END SUBROUTINE TRANS_INQ
