@@ -2,6 +2,32 @@ MODULE FOURIER_OUT_MOD
 CONTAINS
 SUBROUTINE FOURIER_OUT(PREEL,KFIELDS)
 
+!**** *FOURIER_OUT* - Copy fourier data from local array to buffer
+
+!     Purpose.
+!     --------
+!        Routine for copying fourier data from local array to buffer
+
+!**   Interface.
+!     ----------
+!     CALL FOURIER_OUT(...)
+
+!     Explicit arguments :  PREEL - local fourier/GP array
+!     --------------------  KFIELDS - number of fields
+!
+!     Externals.  None.
+!     ----------  
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 2000-04-01
+
+!     ------------------------------------------------------------------
+
 #include "tsmbkind.h"
 
 USE TPM_DISTR
@@ -17,7 +43,7 @@ INTEGER_M :: JGL,JM,JF,IGLG,IPROC,IR,II,ISTA
 
 !     ------------------------------------------------------------------
 
-!$OMP PARALLEL PRIVATE(JGL,ISTADR,ISTGB,ILAT)
+!$OMP PARALLEL PRIVATE(JGL,IGLG,JM,IPROC,IR,II,ISTA,JF)
 !$OMP DO SCHEDULE(STATIC,1)
 DO JGL=1,D%NDGL_FS
   IGLG = D%NPTRLS(MYSETW)+JGL-1

@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
-&                       KPRGPNS,KPRGPEW,KPRTRW)
+&                       KPRGPNS,KPRGPEW,KPRTRW,LDALLOPERM)
 
 !**** *SETUP_TRANS* - General setup routine for transform package
 
@@ -12,17 +12,32 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,&
 !     ----------
 !     CALL SETUP_TRANS0(...)
 
-!     Explicit arguments : All arguments are optional
+!     Explicit arguments : All arguments are optional, [..] default value
 !     -------------------
-!     KOUT - Unit number for listing output
-!     KERR - Unit number for error messages
-!     KPRINTLEV - level of output to listing, 0->no output,1->normal,2->debug 
-!     KMAX_RESOL - maximum number of different resolutions for this run
-!     KPRGPNS - splitting level in N-S direction in grid-point space
-!     KPRGPEW - splitting level in E-W direction in grid-point space
-!     KPRTRW  - splitting level in wave direction in spectral space
+!     KOUT - Unit number for listing output [6]
+!     KERR - Unit number for error messages [0]
+!     KPRINTLEV - level of output to KOUT, 0->no output,1->normal,2->debug [0]
+!     KMAX_RESOL - maximum number of different resolutions for this run [1]
+!     KPRGPNS - splitting level in N-S direction in grid-point space [1]
+!     KPRGPEW - splitting level in E-W direction in grid-point space [1]
+!     KPRTRW  - splitting level in wave direction in spectral space [1]
+!     LDALLOPERM - allocate some arrays permenately (OpenMP issue) [false]
 
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
+
+!     Method.
+!     -------
+
+!     Externals.  SUMP_TRANS0 - initial setup routine
+!     ----------  
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
 
 !     ------------------------------------------------------------------
 
@@ -41,6 +56,7 @@ IMPLICIT NONE
 
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KOUT,KERR,KPRINTLEV,KMAX_RESOL
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDALLOPERM
 
 !ifndef INTERFACE
 
@@ -61,7 +77,7 @@ NMAX_RESOL = 1
 NPRGPNS = 1
 NPRGPEW = 1
 NPRTRW = 1
-
+LALLOPERM = .FALSE.
 ! Optional arguments
 
 IF(PRESENT(KOUT)) THEN
@@ -89,6 +105,9 @@ IF(PRESENT(KPRGPEW)) THEN
 ENDIF
 IF(PRESENT(KPRTRW)) THEN
   NPRTRW = KPRTRW
+ENDIF
+IF(PRESENT(LDALLOPERM)) THEN
+  LALLOPERM = LDALLOPERM
 ENDIF
 
 ! Initial setup

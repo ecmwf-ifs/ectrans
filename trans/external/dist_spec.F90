@@ -20,6 +20,20 @@ SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC)
 !                   first defined resulution (input)
 !     PSPEC(:,:)  - Local spectral array
 !
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  DIST_SPEC_CONTROL - control routine
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

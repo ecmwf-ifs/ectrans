@@ -20,10 +20,22 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC)
 !     KVSET(:)    - "B-Set" for each field
 !     PSPEC(:,:)  - Local spectral array
 !
+!     Externals.  SET2PE - compute "A and B" set from PE
+!     ----------  MPL..  - message passing routines
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 2000-04-01
+
 !     ------------------------------------------------------------------
 
 
 #include "tsmbkind.h"
+USE MPL_MODULE
 
 USE TPM_GEN
 USE TPM_DIM
@@ -42,7 +54,7 @@ REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 INTEGER_M :: IDIST(R%NSPEC2_G)
 REAL_B    :: ZFLD(R%NSPEC2_G)
 INTEGER_M :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,JNM,IBSET,ILEN,JA,IERR,ISND
-INTEGER_M :: ISENDER,ITAGR,IRCV
+INTEGER_M :: ISENDER,ITAGR,IRCV,ISTA,ISTP,ILENR
 
 !     ------------------------------------------------------------------
 
@@ -75,13 +87,12 @@ DO JFLD=1,KFDISTG
       ILEN = D%NPOSSP(JA+1)-D%NPOSSP(JA)
       IF( ILEN > 0 )THEN
         CALL SET2PE(ISND,0,0,JA,IBSET)
-        ITAG = MTAGDISTSP+JFLD
         IF( NPROC > 1 )THEN
-          CALL MPE_SEND(ZFLD(D%NPOSSP(JA)),ILEN,MREALT,&
-           &NPRCIDS(ISND),ITAG,0,0,0,IERR)
-          IF( IERR < 0 )THEN
-            CALL ABOR1(' DIST_SPEC_CONTROL : ERROR IN MPE_SEND (ZFLD)')
-          ENDIF
+          ITAG = MTAGDISTSP
+          ISTA = D%NPOSSP(JA)
+          ISTP = ISTA+ILEN-1
+          CALL MPL_SEND(ZFLD(ISTA:ISTP),KDEST=NPRCIDS(ISND),KTAG=ITAG,&
+           &CDSTRING='DIST_SPEC_CONTROL:')
         ENDIF
       ENDIF
     ENDDO
@@ -91,15 +102,12 @@ DO JFLD=1,KFDISTG
   IF( IBSET == MYSETV )THEN
 
     IF( D%NSPEC2 > 0 )THEN
-      IRCV = KFROM(JFLD)
-      ITAG = MTAGDISTSP+JFLD
       IF( NPROC > 1 )THEN
-        CALL MPE_RECV(ZFLD,D%NSPEC2,MREALT,NPRCIDS(IRCV),ITAG,0,&
-         &0,0,ILEN,ISENDER,ITAGR,IERR)
-        IF( IERR < 0 )THEN
-          CALL ABOR1(' DIST_SPEC_CONTROL : ERROR IN MPE_RECV (ZFLD)')
-        ENDIF
-        IF( ILEN /= D%NSPEC2 )THEN
+        IRCV = KFROM(JFLD)
+        ITAG = MTAGDISTSP
+        CALL MPL_RECV(ZFLD(1:D%NSPEC2),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
+         &KOUNT=ILENR,CDSTRING='DIST_SPEC_CONTROL:')
+        IF( ILENR /= D%NSPEC2 )THEN
           CALL ABOR1(' DIST_SPEC_CONTROL: INVALID RECEIVE MESSAGE LENGTH')
         ENDIF
       ENDIF
@@ -110,10 +118,7 @@ DO JFLD=1,KFDISTG
 
   !Synchronize processors
   IF( NPROC > 1 )THEN
-    CALL MPE_BARRIER(IERR)
-    IF( IERR /= 0 )THEN
-      CALL ABOR1(' DIST_SPEC_CONTROL: ERROR IN MPE_BARRIER')
-    ENDIF
+    CALL MPL_BARRIER(CDSTRING='DIST_SPEC_CONTROL:')
   ENDIF
 
 ENDDO

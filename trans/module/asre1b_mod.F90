@@ -9,7 +9,6 @@ USE TPM_TRANS
 USE TPM_GEOMETRY
 USE TPM_DISTR
 
-#ifdef DOC
 
 !**** *ASRE1B* - Recombine antisymmetric and symmetric parts
 
@@ -31,6 +30,7 @@ USE TPM_DISTR
 !                              fields for zonal wavenumber KM (input)
 !                              PSOA - symmetric part of Fourier
 !                              fields for zonal wavenumber KM (input)
+
 !        Implicit arguments :  FOUBUF_IN - output buffer (output)
 !        --------------------
 
@@ -53,18 +53,15 @@ USE TPM_DISTR
 !        Original : 00-02-01 From ASRE1B in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 
 IMPLICIT NONE
-
-
 
 INTEGER_M, INTENT(IN) :: KFIELD,KM,KMLOC
 REAL_B, INTENT(IN)    :: PSOA(:,:)
 REAL_B, INTENT(IN)    :: PAOA(:,:)
 
-!     LOCAL INTEGER SCALARS
+!     LOCAL INTEGERS
 INTEGER_M :: ISL, IGLS, JFLD, JGL ,IPROC, IPROCS, IDGNH
 INTEGER_M :: ISTAN(R%NDGNH),ISTAS(R%NDGNH)
 

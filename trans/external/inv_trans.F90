@@ -61,6 +61,21 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !       'b-set' split
 ! 
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  LTINV_CTL   - control of Legendre transform
+!                 FTINV_CTL   - control of Fourier transform
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
@@ -76,8 +91,8 @@ USE TPM_FIELDS
 USE TPM_FFT
 
 USE SET_RESOL_MOD
-USE LTINV_CONTROL_MOD
-USE FTINV_CONTROL_MOD
+USE LTINV_CTL_MOD
+USE FTINV_CTL_MOD
 
 !endif INTERFACE
 
@@ -202,7 +217,7 @@ IF(NF_UV > 0 .AND. LDIVGP) THEN
 ENDIF
 NF_FS = NF_OUT_LT+NF_SCDERS
 IF(NF_UV > 0 .AND. LUVDER) THEN
-  NF_FS = NF_FS+NF_UV
+  NF_FS = NF_FS+2*NF_UV
 ENDIF
 
 NF_GP = 2*NF_UV_G+NF_SCALARS_G
@@ -216,7 +231,7 @@ IF(NF_UV_G > 0 .AND. LDIVGP) THEN
   NF_GP = NF_GP+NF_UV_G
 ENDIF
 IF(NF_UV_G > 0 .AND. LUVDER) THEN
-  NF_GP = NF_GP+NF_UV_G
+  NF_GP = NF_GP+2*NF_UV_G
 ENDIF
 
 ! Consistency checks
@@ -270,10 +285,10 @@ ENDIF
 ! Perform transform
 
 IF (NF_OUT_LT > 0) THEN
-  CALL LTINV_CONTROL(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC)
+  CALL LTINV_CTL(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC)
 ENDIF
 
-CALL FTINV_CONTROL(PGP,KVSETUV,KVSETSC)
+CALL FTINV_CTL(PGP,KVSETUV,KVSETSC)
 
 !     ------------------------------------------------------------------
 

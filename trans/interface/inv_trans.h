@@ -61,6 +61,21 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !       'b-set' split
 ! 
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  LTINV_CTL   - control of Legendre transform
+!                 FTINV_CTL   - control of Fourier transform
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

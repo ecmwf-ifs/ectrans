@@ -1,8 +1,8 @@
-MODULE LTDIR_CONTROL_MOD
+MODULE LTDIR_CTL_MOD
 CONTAINS
-SUBROUTINE LTDIR_CONTROL(PSPVOR,PSPDIV,PSPSCALAR)
+SUBROUTINE LTDIR_CTL(PSPVOR,PSPDIV,PSPSCALAR)
 
-!**** *LTDIR_CONTROL* - Control routine for direct Legendre transform
+!**** *LTDIR_CTL* - Control routine for direct Legendre transform
 
 !     Purpose.
 !     --------
@@ -10,7 +10,7 @@ SUBROUTINE LTDIR_CONTROL(PSPVOR,PSPDIV,PSPSCALAR)
 
 !**   Interface.
 !     ----------
-!     CALL LTDIR_CONTROL(...)
+!     CALL LTDIR_CTL(...)
 
 !     Explicit arguments : 
 !     -------------------- 
@@ -22,6 +22,7 @@ SUBROUTINE LTDIR_CONTROL(PSPVOR,PSPDIV,PSPSCALAR)
 
 #include "tsmbkind.h"
 
+USE TPM_GEN
 USE TPM_DIM
 USE TPM_TRANS
 USE TPM_DISTR
@@ -35,29 +36,45 @@ REAL_B ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
 REAL_B ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL_B ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)
 
-INTEGER_M :: JM,IM
+INTEGER_M :: JM,IM,IBLEN
 
 !     ------------------------------------------------------------------
 
 ! Transposition from Fourier space distribution to spectral space distribution
 
-ALLOCATE(FOUBUF(D%NLENGT0B*2*NF_FS))
+IBLEN = D%NLENGT0B*2*NF_FS
+IF(LALLOPERM) THEN
+  IF(ALLOCATED(FOUBUF)) THEN
+    IF(SIZE(FOUBUF) < IBLEN) THEN
+      DEALLOCATE(FOUBUF)
+    ENDIF
+  ENDIF
+ENDIF
+IF(.NOT. ALLOCATED(FOUBUF))  ALLOCATE(FOUBUF(IBLEN))
+CALL GSTATS(153,0)
 CALL TRLTOM(FOUBUF_IN,FOUBUF,2*NF_FS)
-DEALLOCATE(FOUBUF_IN)
+CALL GSTATS(153,1)
+IF(.NOT. LALLOPERM) THEN
+  DEALLOCATE(FOUBUF_IN)
+ENDIF
 
 ! Direct Legendre transform
 
 NLED2 = 2*NF_FS
+CALL GSTATS(103,0)
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JM,IM)
 DO JM=1,D%NUMP
   IM = D%MYMS(JM)
   CALL LTDIR(IM,JM,PSPVOR,PSPDIV,PSPSCALAR)
 ENDDO
 !$OMP END PARALLEL DO
+CALL GSTATS(103,1)
 
-DEALLOCATE(FOUBUF)
+IF(.NOT. LALLOPERM) THEN
+  DEALLOCATE(FOUBUF)
+ENDIF
 
-!     ------------------------------------------------------------------
+!     -----------------------------------------------------------------
 
-END SUBROUTINE LTDIR_CONTROL
-END MODULE LTDIR_CONTROL_MOD
+END SUBROUTINE LTDIR_CTL
+END MODULE LTDIR_CTL_MOD

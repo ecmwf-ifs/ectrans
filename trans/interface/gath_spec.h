@@ -20,6 +20,20 @@ SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC)
 !                   first defined resulution (input)
 !     PSPEC(:,:)  - Local spectral array
 !
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  GATH_SPEC_CONTROL - control routine
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

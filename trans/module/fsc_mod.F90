@@ -2,6 +2,39 @@ MODULE FSC_MOD
 CONTAINS
 SUBROUTINE FSC(PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
 
+!**** *FSC - Division by a*cos(theta), east-west derivatives
+
+!     Purpose.
+!     --------
+!        In Fourier space divide u and v and all north-south
+!        derivatives by a*cos(theta). Also compute east-west derivatives
+!        of u,v,thermodynamic, passiv scalar variables and surface
+!        pressure.
+
+!**   Interface.
+!     ----------
+!        CALL FSC(..)
+!        Explicit arguments :  PUV     - u and v
+!        --------------------  PSCALAR - scalar valued varaibles
+!                              PNSDERS - N-S derivative of S.V.V.
+!                              PEWDERS - E-W derivative of S.V.V.
+!                              PUVDERS - E-W derivative of u and v
+!     Method.
+!     -------
+
+!     Externals.   None.
+!     ----------
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03 (From SC2FSC)
+
+!     ------------------------------------------------------------------
+
 #include "tsmbkind.h"
 
 USE TPM_DISTR
@@ -23,6 +56,8 @@ INTEGER_M :: IMEN(D%NDGL_FS),ISTAGTF(D%NDGL_FS)
 
 INTEGER_M :: JGL,JLON,JF,IGLG,II,IR,JM
 
+!     ------------------------------------------------------------------
+
 DO JGL=1,D%NDGL_FS
   IGLG = D%NPTRLS(MYSETW)+JGL-1
   ZACHTE(JGL)  = F%RACTHE(IGLG)
@@ -30,11 +65,14 @@ DO JGL=1,D%NDGL_FS
   ISTAGTF(JGL) = D%NSTAGTF(JGL)
 ENDDO
 
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JGL,JLON,JF,JM,II,IR)
+DO JGL=1,D%NDGL_FS
+
+!     ------------------------------------------------------------------
+
 !*       1.    DIVIDE U V AND N-S DERIVATIVES BY A*COS(THETA)
 !              ----------------------------------------------
 
-!$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JGL,JLON,JF,IGLG,IJ,II,IR,JM)
-DO JGL=1,D%NDGL_FS
   
 !*       1.1      U AND V.
 
@@ -45,6 +83,8 @@ DO JGL=1,D%NDGL_FS
       ENDDO
     ENDDO
   ENDIF
+
+!*      1.2      N-S DERIVATIVES
 
   IF(NF_SCDERS > 0)THEN
     DO JLON=ISTAGTF(JGL)+1,ISTAGTF(JGL)+2*(IMEN(JGL)+1)
@@ -59,6 +99,8 @@ DO JGL=1,D%NDGL_FS
 !*       2.    EAST-WEST DERIVATIVES
 !              ---------------------
 
+!*       2.1      U AND V.
+
   IF(LUVDER)THEN
     DO JM=0,IMEN(JGL)
       IR = ISTAGTF(JGL)+2*JM+1
@@ -69,6 +111,8 @@ DO JGL=1,D%NDGL_FS
       ENDDO
     ENDDO
   ENDIF
+
+!*       2.2     SCALAR VARIABLES
 
   IF(NF_SCDERS > 0)THEN
     DO JM=0,IMEN(JGL)
@@ -83,6 +127,8 @@ DO JGL=1,D%NDGL_FS
 
 ENDDO
 !$OMP END PARALLEL DO
+
+!     ------------------------------------------------------------------
 
 END SUBROUTINE FSC
 END MODULE FSC_MOD

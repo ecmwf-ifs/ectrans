@@ -20,6 +20,20 @@ SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 !                   first defined resulution (input)
 !     PGP(:,:,:)  - Local spectral array
 !
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  GATH_GRID_CTL -  control routine
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

@@ -2,38 +2,39 @@ MODULE DIST_GRID_CTL_MOD
 CONTAINS
 SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 
-!**** *GATH_GRID_CTL* - Gather global gridpoint array from processors
+!**** *DIST_GRID_CTL* - Distributing global gridpoint array to processors
 
 !     Purpose.
 !     --------
-!        Routine for gathering gridpoint array
+!        Routine for distributing gridpoint array
 
 !**   Interface.
 !     ----------
-!     CALL GATH_GRID_CTL(...)
-
-!     Explicit arguments : 
-!**** *GATH_GRID_CTL* - Gather global gridpoint array from processors
-
-!     Purpose.
-!     --------
-!        Routine for gathering gridpoint array
-
-!**   Interface.
-!     ----------
-!     CALL GATH_GRID_CTL(...)
+!     CALL DIST_GRID_CTL(...)
 
 !     Explicit arguments : 
 !     -------------------- 
-!     PGPG(:,:) - Global gridpoint array
-!     KFDISTG     - Global number of fields to be gathered
-!     KTO(:)    - Processor responsible for gathering each field
-!     PGP(:,:)  - Local spectral array
+!     PGPG(:,:)   - Global gridpoint array
+!     KFDISTG     - Global number of fields to be distributed
+!     KPROMA      - required blocking factor for gridpoint output
+!     KFROM(:)    - Processor responsible for distributing each field
+!     PGP(:,:,:)  - Local spectral array
 !
+!     Externals.  SET2PE - compute "A and B" set from PE
+!     ----------  MPL..  - message passing routines
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 2000-04-01
 
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
+USE MPL_MODULE
 
 USE TPM_DISTR
 USE TPM_GEOMETRY
@@ -50,23 +51,32 @@ INTEGER_M          , INTENT(IN)  :: KPROMA
 INTEGER_M          , INTENT(IN)  :: KFROM(:)
 REAL_B             , INTENT(OUT) :: PGP(:,:,:)
 
-REAL_B :: ZFLD(D%NGPTOTMX)
-INTEGER_M :: JFLD,JB,JA,IGLOFF,IGL1,IGL2,IOFF,ILAST,ILEN,ILOFF
+! Declaration of local variables
+
+REAL_B    :: ZFLD(D%NGPTOTMX)
+INTEGER_M :: JFLD,JB,JA,IGLOFF,IGL1,IGL2,IOFF,ILAST,ILEN,ILOFF,ILENR
 INTEGER_M :: JGL,JLON,ISND,ITAG,IERR,ISENDER,ITAGR,J,IRCV
-INTEGER_M :: JKGLO,IEND,JROF
+INTEGER_M :: JKGLO,IEND,JROF,IBL
+
 !     ------------------------------------------------------------------
+
+! Copy for single PE
 
 IF(NPROC == 1) THEN
   DO JFLD=1,KFDISTG
     DO JKGLO=1,D%NGPTOT,KPROMA
       IEND = MIN(KPROMA,D%NGPTOT-JKGLO+1)
       IOFF = JKGLO-1
+      IBL  = (JKGLO-1)/KPROMA+1
       DO JROF=1,IEND
-        PGP(JROF,JFLD,JKGLO) = PGPG(IOFF+JROF,JFLD) 
+        PGP(JROF,JFLD,IBL) = PGPG(IOFF+JROF,JFLD) 
       ENDDO
     ENDDO
   ENDDO
 ELSE
+
+  ! Message passing
+
   DO JFLD=1,KFDISTG
 
     ! Send
@@ -103,10 +113,8 @@ ELSE
 
           CALL SET2PE(ISND,JA,JB,0,0)
           ITAG = MTAGDISTGP
-          CALL MPE_SEND(ZFLD,ILEN,MREALT,NPRCIDS(ISND),ITAG,0,0,0,IERR)
-          IF( IERR < 0 )THEN
-            CALL ABOR1(' DIST_GRID_CTL:ERROR IN MPE_SEND')
-          ENDIF
+          CALL MPL_SEND(ZFLD(1:ILEN),KDEST=NPRCIDS(ISND),KTAG=ITAG,&
+           &CDSTRING='DIST_GRID_CTL')
         ENDDO
       ENDDO
     ENDIF
@@ -115,26 +123,23 @@ ELSE
 
     IRCV = KFROM(JFLD)
     ITAG = MTAGDISTGP
-    CALL MPE_RECV(ZFLD,D%NGPTOT,MREALT,NPRCIDS(IRCV),ITAG,&
-     &0,0,0,ILEN,ISENDER,ITAGR,IERR)
-    IF( IERR < 0 ) CALL ABOR1(' DIST_GRID_CTL:ERROR IN MPE_RECV')
-    IF( ILEN /= D%NGPTOT )THEN
+    CALL MPL_RECV(ZFLD(1:D%NGPTOT),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
+     &KOUNT=ILENR,CDSTRING='DIST_GRID_CTL:')
+    IF( ILENR /= D%NGPTOT )THEN
       CALL ABOR1(' DIST_GRID_CTL: INVALID RECEIVE MESSAGE LENGTH')
     ENDIF
 
     DO JKGLO=1,D%NGPTOT,KPROMA
       IEND = MIN(KPROMA,D%NGPTOT-JKGLO+1)
       IOFF = JKGLO-1
+      IBL  = (JKGLO-1)/KPROMA+1
       DO JROF=1,IEND
-        PGP(JROF,JFLD,JKGLO) = ZFLD(IOFF+JROF) 
+        PGP(JROF,JFLD,IBL) = ZFLD(IOFF+JROF) 
       ENDDO
     ENDDO
 
     !Synchronize processors
-    CALL MPE_BARRIER(IERR)
-    IF( IERR /= 0 )THEN
-      CALL ABOR1(' DIST_GRID_CTL: ERROR IN MPE_BARRIER')
-    ENDIF
+    CALL MPL_BARRIER(CDSTRING='DIST_GRID_CTL:')
 
   ENDDO
 ENDIF

@@ -8,7 +8,6 @@ USE TPM_TRANS
  
 USE ASRE1B_MOD
 
-#ifdef DOC
 
 !**** *ASRE1* - Recombine antisymmetric and symmetric parts
 
@@ -55,7 +54,6 @@ USE ASRE1B_MOD
 !        Original : 00-02-01 From ASRE1 in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 
 IMPLICIT NONE
@@ -65,12 +63,10 @@ IMPLICIT NONE
 INTEGER_M , INTENT(IN) :: KM
 INTEGER_M , INTENT(IN) :: KMLOC
 
-REAL_B , INTENT(IN)  :: PSOA1(:,:),       PAOA1(:,:)
+REAL_B    , INTENT(IN) :: PSOA1(:,:),       PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER_M :: IFLDS
-
-!     LOCAL LOGICAL SCALARS
 
 
 !     ------------------------------------------------------------------

@@ -1,6 +1,6 @@
-module sutrle_mod
-contains
-subroutine sutrle(pnm)
+MODULE SUTRLE_MOD
+CONTAINS
+SUBROUTINE SUTRLE(PNM)
 
 !**** *sutrle * - transposition of Legendre polynomials during set-up
 
@@ -40,27 +40,28 @@ subroutine sutrle(pnm)
 
 
 #include "tsmbkind.h"
+USE MPL_MODULE
 
-use tpm_gen
-use tpm_dim
-use tpm_distr
-use tpm_fields
-use set2pe_mod
+USE TPM_GEN
+USE TPM_DIM
+USE TPM_DISTR
+USE TPM_FIELDS
+USE SET2PE_MOD
 
 
 IMPLICIT NONE
 
-REAL_B :: pnm(d%nlei3d,r%nspoleg)
+REAL_B :: PNM(D%NLEI3D,R%NSPOLEG)
 
-REAL_B, allocatable :: zcombuf(:)
-REAL_B, pointer     :: zpnm(:,:)
+REAL_B, ALLOCATABLE :: ZCOMBUF(:)
+REAL_B, POINTER     :: ZPNM(:,:)
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: ierr, iglloc, ilrec, im, inentr, ipos, irecd,&
-             &irecset, irecv, isend, isendset, itag, itagr, &
-             &jgl, jglloc, jm, jmloc, jn, jroc ,iofft, ioffg
+INTEGER_M :: IERR, IGLLOC, ILREC, IM, INENTR, IPOS, IRECD,&
+             &IRECSET, IRECV, ISEND, ISENDSET, ITAG, ITAGR, &
+             &JGL, JGLLOC, JM, JMLOC, JN, JROC ,IOFFT, IOFFG
 
 !     LOCAL LOGICAL SCALARS
-LOGICAL :: lladmsg, llexact
+LOGICAL :: LLADMSG, LLEXACT
 
 !     ------------------------------------------------------------------
 
@@ -68,154 +69,149 @@ LOGICAL :: lladmsg, llexact
 !              ---------------------
 
 !! Workaround for obscure unwillingness to vectorize on VPP
-zpnm => f%rpnm
+ZPNM => F%RPNM
 
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed all previous communication
 
-if( nproc > 1 )then
-  call mpe_barrier(ierr)
-  if( ierr /= 0 )then
-    call abor1('sutrle: at start, error in mpe_barrier')
-  endif
-endif
+IF( NPROC > 1 )THEN
+  CALL MPL_BARRIER(CDSTRING='SUTRLE:')
+ENDIF
 
-allocate (zcombuf(ncombflen))
+ALLOCATE (ZCOMBUF(NCOMBFLEN))
 
-do jroc=1,nprtrw-1
+DO JROC=1,NPRTRW-1
 
-  lladmsg = .false.
-  itag = mtagletr
+  LLADMSG = .FALSE.
+  ITAG = MTAGLETR
 
 !*     Define PE to which data have to be sent and PE from which
 !*     data have to be received
 
-  isend = mysetw-jroc
-  irecv = mysetw+jroc
-  if (isend <= 0)     isend = isend+nprtrw
-  if (irecv > nprtrw) irecv = irecv-nprtrw
-  irecset = irecv
-  isendset = isend
-  call set2pe(isend,0,0,isend,mysetv)
-  call set2pe(irecv,0,0,irecv,mysetv)
+  ISEND = MYSETW-JROC
+  IRECV = MYSETW+JROC
+  IF (ISEND <= 0)     ISEND = ISEND+NPRTRW
+  IF (IRECV > NPRTRW) IRECV = IRECV-NPRTRW
+  IRECSET = IRECV
+  ISENDSET = ISEND
+  CALL SET2PE(ISEND,0,0,ISEND,MYSETV)
+  CALL SET2PE(IRECV,0,0,IRECV,MYSETV)
 
 !*   copy data to be sent into zcombuf
 
-  ipos=0
-  do jm=0,r%nsmax
-    if (isendset == d%nprocm(jm)) then
-      inentr = (d%nlatle(mysetw)-d%nlatls(mysetw)+1)*(r%ntmax-jm+2)
-      if (ipos + inentr < ncombflen) then
-        do jgl=d%nlatls(mysetw),d%nlatle(mysetw)
-          jglloc = jgl - d%nlatls(mysetw) + 1
-          do jn=1,r%ntmax-jm+2
-            ipos = ipos + 1
-            zcombuf(ipos)=pnm(jglloc,d%npmg(jm)+jn)
-          enddo
-        enddo
-      else
-        do jgl=d%nlatls(mysetw),d%nlatle(mysetw)
-          jglloc = jgl - d%nlatls(mysetw) + 1
-          do jn=1,r%ntmax-jm+2
-            ipos = ipos + 1
-            zcombuf(ipos)=pnm(jglloc,d%npmg(jm)+jn)
-            if (ipos == ncombflen) then
-              call mpe_send(zcombuf,ipos,mrealt,&
-               &nprcids(isend),itag,0,0,0,ierr)
-              ipos = 0
-              itag = itag + 1
-              llexact=jgl == d%nlatle(mysetw).and.jn == r%ntmax-jm+2
-              if (.not.llexact) lladmsg = .true.
-            endif
-          enddo
-        enddo
-      endif
-    endif
-  enddo
+  IPOS = 0
+  DO JM=0,R%NSMAX
+    IF (ISENDSET == D%NPROCM(JM)) THEN
+      INENTR = (D%NLATLE(MYSETW)-D%NLATLS(MYSETW)+1)*(R%NTMAX-JM+2)
+      IF (IPOS + INENTR < NCOMBFLEN) THEN
+        DO JGL=D%NLATLS(MYSETW),D%NLATLE(MYSETW)
+          JGLLOC = JGL - D%NLATLS(MYSETW) + 1
+          DO JN=1,R%NTMAX-JM+2
+            IPOS = IPOS + 1
+            ZCOMBUF(IPOS) = PNM(JGLLOC,D%NPMG(JM)+JN)
+          ENDDO
+        ENDDO
+      ELSE
+        DO JGL=D%NLATLS(MYSETW),D%NLATLE(MYSETW)
+          JGLLOC = JGL - D%NLATLS(MYSETW) + 1
+          DO JN=1,R%NTMAX-JM+2
+            IPOS = IPOS + 1
+            ZCOMBUF(IPOS) = PNM(JGLLOC,D%NPMG(JM)+JN)
+            IF (IPOS == NCOMBFLEN) THEN
+              CALL MPL_SEND(zcombuf(1:ipos),KDEST=NPRCIDS(ISEND), &
+               & KTAG=ITAG,CDSTRING='SUTRLE:')
+              IPOS = 0
+              ITAG = ITAG + 1
+              LLEXACT = (JGL == D%NLATLE(MYSETW) .AND. JN == R%NTMAX-JM+2)
+              IF (.NOT.LLEXACT) LLADMSG = .TRUE.
+            ENDIF
+          ENDDO
+        ENDDO
+      ENDIF
+    ENDIF
+  ENDDO
 
 !*   send message (if not empty or if message has been split)
 
-  if (ipos > 0.or. lladmsg) then
-    call mpe_send(zcombuf,ipos,mrealt,nprcids(isend),itag,0,0,0,ierr)
-  endif
+  IF (IPOS > 0 .OR. LLADMSG) THEN
+    CALL MPL_SEND(ZCOMBUF(1:IPOS),KDEST=NPRCIDS(ISEND), &
+     & KTAG=ITAG,CDSTRING='SUTRLE:')
+  ENDIF
 
-  ilrec = 0
-  itag = mtagletr
-  if (d%nump > 0.and. d%nlatle(irecset) >= d%nlatls(irecset)) then
+  ILREC = 0
+  ITAG = MTAGLETR
+  IF (D%NUMP > 0.AND. D%NLATLE(IRECSET) >= D%NLATLS(IRECSET)) THEN
 
 !*   receive message (if not empty)
 
-    call mpe_recv(zcombuf,ncombflen,mrealt,nprcids(irecv),itag,&
-     &0,0,0,ilrec,irecd,itagr,ierr)
+    CALL MPL_RECV(ZCOMBUF(1:NCOMBFLEN),KSOURCE=NPRCIDS(IRECV), &
+     & KTAG=ITAG,KOUNT=ILREC,CDSTRING='SUTRLE:')
 
 !*   copy data from buffer to f%rpnm
 
-    ipos=0
-    do jmloc=1,d%nump
-      jm = d%myms(jmloc)
-      inentr = (d%nlatle(irecset)-d%nlatls(irecset)+1)*(r%ntmax-jm+2)
-      iofft = d%npmt(jm) 
-      if (ipos + inentr < ncombflen) then
-        do jgl=d%nlatls(irecset),d%nlatle(irecset)
-          do jn=1,r%ntmax-jm+2
-            ipos = ipos + 1
-            zpnm(jgl,iofft+jn) = zcombuf(ipos)
-          enddo
-        enddo
-      else
-        do jgl=d%nlatls(irecset),d%nlatle(irecset)
-          do jn=1,r%ntmax-jm+2
-            ipos = ipos + 1
-            zpnm(jgl,iofft+jn) = zcombuf(ipos)
-            if (ipos == ncombflen) then
-              itag = itag + 1
-              call mpe_recv(zcombuf,ncombflen,mrealt,&
-               &nprcids(irecv),itag,0,0,0,ilrec,irecd,itagr,&
-               &ierr)
-              ipos = 0
-            endif
-          enddo
-        enddo
-      endif
-    enddo
+    IPOS = 0
+    DO JMLOC=1,D%NUMP
+      JM = D%MYMS(JMLOC)
+      INENTR = (D%NLATLE(IRECSET)-D%NLATLS(IRECSET)+1)*(R%NTMAX-JM+2)
+      IOFFT = D%NPMT(JM) 
+      IF (IPOS + INENTR < NCOMBFLEN) THEN
+        DO JGL=D%NLATLS(IRECSET),D%NLATLE(IRECSET)
+          DO JN=1,R%NTMAX-JM+2
+            IPOS = IPOS + 1
+            ZPNM(JGL,IOFFT+JN) = ZCOMBUF(IPOS)
+          ENDDO
+        ENDDO
+      ELSE
+        DO JGL=D%NLATLS(IRECSET),D%NLATLE(IRECSET)
+          DO JN=1,R%NTMAX-JM+2
+            IPOS = IPOS + 1
+            ZPNM(JGL,IOFFT+JN) = ZCOMBUF(IPOS)
+            IF (IPOS == NCOMBFLEN) THEN
+              ITAG = ITAG + 1
+              CALL MPL_RECV(ZCOMBUF(1:NCOMBFLEN), &
+               & KSOURCE=NPRCIDS(IRECV),KTAG=ITAG, &
+               & KOUNT=ILREC,CDSTRING='SUTRLE:')
+              IPOS = 0
+            ENDIF
+          ENDDO
+        ENDDO
+      ENDIF
+    ENDDO
 
 !*    check received message length
 
-    if (ilrec /= ipos) then
-      write(nout,*)' sutrle: ilrec,ipos,ncomblen ',ilrec,ipos,ncombflen
-      call abor1(' sutrle:received message length does not match')
-    endif
-  endif
+    IF (ILREC /= IPOS) THEN
+      WRITE(NOUT,*)' SUTRLE: ILREC,IPOS,NCOMBLEN ',ILREC,IPOS,NCOMBFLEN
+      CALL ABOR1(' SUTRLE:RECEIVED MESSAGE LENGTH DOES NOT MATCH')
+    ENDIF
+  ENDIF
 
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication for this jroc loop iteration
 
-  call mpe_barrier(ierr)
-  if( ierr /= 0 )then
-    call abor1('sutrle: jroc loop, error in mpe_barrier')
-  endif
+  CALL MPL_BARRIER(CDSTRING='SUTRLE:')
 
-enddo
+ENDDO
 
 !*    copy data from pnm to rpnm
 
-!$OMP PARALLEL PRIVATE(jmloc,im,jgl,iglloc,jn)
+!$OMP PARALLEL PRIVATE(jmloc,im,iofft,ioffg,jgl,iglloc,jn)
 !$OMP DO SCHEDULE(STATIC,1)
-do jmloc=1,d%nump
-  im = d%myms(jmloc)
-  iofft = d%npmt(im)
-  ioffg = d%npmg(im)
-  do jgl=d%nlatls(mysetw),d%nlatle(mysetw)
-    iglloc = jgl-d%nlatls(mysetw)+1
-    do jn=1,r%ntmax-im+2
-      zpnm(jgl,iofft+jn) = pnm(iglloc,ioffg+jn)
-    enddo
-  enddo
-enddo
+DO JMLOC=1,D%NUMP
+  IM = D%MYMS(JMLOC)
+  IOFFT = D%NPMT(IM)
+  IOFFG = D%NPMG(IM)
+  DO JGL=D%NLATLS(MYSETW),D%NLATLE(MYSETW)
+    IGLLOC = JGL-D%NLATLS(MYSETW)+1
+    DO JN=1,R%NTMAX-IM+2
+      ZPNM(JGL,IOFFT+JN) = PNM(IGLLOC,IOFFG+JN)
+    ENDDO
+  ENDDO
+ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
 
-deallocate (zcombuf)
+DEALLOCATE (ZCOMBUF)
 
-end subroutine sutrle
-end module sutrle_mod
+END SUBROUTINE SUTRLE
+END MODULE SUTRLE_MOD

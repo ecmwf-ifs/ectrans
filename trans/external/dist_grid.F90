@@ -20,6 +20,20 @@ SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 !                   first defined resulution (input)
 !     PGP(:,:)  - Local spectral array
 !
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL      - set resolution
+!     ----------  DIST_GRID_CTL  - control routine
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

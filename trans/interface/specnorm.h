@@ -20,6 +20,20 @@ SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
 !     PMET(:)     - metric
 !     PNORM(:)    - Norms (output for processor KMASTER)
 !
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL - set resolution
+!     ----------  SPNORM_CTL - control routine
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

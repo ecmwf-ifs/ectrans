@@ -1,6 +1,40 @@
-MODULE FTINV_CONTROL_MOD
+MODULE FTINV_CTL_MOD
 CONTAINS
-SUBROUTINE FTINV_CONTROL(PGP,KVSETUV,KVSETSC)
+SUBROUTINE FTINV_CTL(PGP,KVSETUV,KVSETSC)
+
+
+!**** *FTINV_CTL - Inverse Fourier transform control
+
+!     Purpose. Control routine for Fourier to Gridpoint transform
+!     --------
+
+!**   Interface.
+!     ----------
+!        CALL FTINV_CTL(..)
+
+!        Explicit arguments :  PGP     -  gridpoint array
+!        --------------------  KVSETUV - "B" set in spectral/fourier space for
+!                                         u and v variables
+!                              KVSETSC - "B" set in spectral/fourier space for
+!                                         scalar variables
+
+!     Method.
+!     -------
+
+!     Externals.  TRLTOG      - transposition routine 
+!     ----------  FOURIER_IN  - copy fourier data from Fourier buffer
+!                 FTINV       - fourier transform
+!                 FSC         - Fourier space computations
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
+!     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
 
@@ -21,7 +55,7 @@ REAL_B , INTENT(OUT) :: PGP(:,:,:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
 
-REAL_B,TARGET :: ZGTF(NF_FS,D%NLENGTF)
+REAL_B,TARGET  :: ZGTF(NF_FS,D%NLENGTF)
 REAL_B,POINTER :: ZUV(:,:)
 REAL_B,POINTER :: ZSCALAR(:,:)
 REAL_B,POINTER :: ZNSDERS(:,:)
@@ -33,8 +67,14 @@ INTEGER_M :: IVSETUV(NF_UV_G)
 INTEGER_M :: IVSETSC(NF_SCALARS_G)
 INTEGER_M :: IVSET(NF_GP)
 
+!     ------------------------------------------------------------------
 
+!    1.  Copy Fourier data to local array
+
+CALL GSTATS(107,0)
 CALL FOURIER_IN(ZGTF,NF_OUT_LT)
+
+!    2.  Fourier space computations
 
 IST=1
 IF(LVORGP) THEN
@@ -59,7 +99,11 @@ IF(NF_UV > 0 .OR. NF_SCDERS > 0) THEN
   CALL FSC(ZUV,ZSCALAR,ZNSDERS,ZEWDERS,ZUVDERS)
 ENDIF
 
+!   3.  Fourier transform
 CALL FTINV(ZGTF,NF_FS)
+CALL GSTATS(107,1)
+
+!   4.  Transposition
 
 IF(PRESENT(KVSETUV)) THEN
   IVSETUV(:) = KVSETUV(:)
@@ -108,13 +152,18 @@ IF(NF_SCALARS_G > 0) THEN
   ENDIF
 ENDIF
 
+CALL GSTATS(157,0)
 CALL TRLTOG(ZGTF,PGP,IVSET)
+CALL GSTATS(157,1)
 
-DEALLOCATE(FOUBUF)
+IF(.NOT. LALLOPERM) THEN
+  DEALLOCATE(FOUBUF)
+ENDIF
 
+!     ------------------------------------------------------------------
 
-END SUBROUTINE FTINV_CONTROL
-END MODULE FTINV_CONTROL_MOD
+END SUBROUTINE FTINV_CTL
+END MODULE FTINV_CTL_MOD
 
 
 

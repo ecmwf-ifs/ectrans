@@ -38,16 +38,31 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
 !                  The ordering of the output fields is as follows (all 
 !                  parts are optional depending on the input switches):
 !
-!       u             : NF_UV_G fields (if psvor present)
-!       v             : NF_UV_G fields (if psvor present)
-!       scalar fields : NF_SCALARS_G fields (if pspscalar present)
+!     u             : NF_UV_G fields (if psvor present)
+!     v             : NF_UV_G fields (if psvor present)
+!     scalar fields : NF_SCALARS_G fields (if pspscalar present)
 !   
-!       Here NF_UV_G is the GLOBAL number of u/v fields as given by the length
-!       of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!       NF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
-!       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
-!       'b-set' split
+!     Here NF_UV_G is the GLOBAL number of u/v fields as given by the length
+!     of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
+!     NF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
+!     length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
+!     'b-set' split
 ! 
+!     Method.
+!     -------
+
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  LTDIR_CTL   - control of Legendre transform
+!                 FTDIR_CTL   - control of Fourier transform
+
+!     Author.
+!     -------
+!        Mats Hamrud *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-03-03
+
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"

@@ -16,10 +16,11 @@ INTEGER_M :: JM ,JFLD ,JN ,IM ,ISP
 
 !     ------------------------------------------------------------------
 
-PSM(:,:) = _ZERO_
 
-!$OMP PARALLEL DO SCHEDULE(STATIC,1)  PRIVATE(JN,JFLD)
+
+!$OMP PARALLEL DO SCHEDULE(STATIC,1)  PRIVATE(JM,IM,JN,ISP,JFLD)
 DO JM=1,D%NUMP
+  PSM(:,JM) = _ZERO_
   IM = D%MYMS(JM)
   IF(IM == 0)THEN
     DO JN=0,R%NSMAX
