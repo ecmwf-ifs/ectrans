@@ -46,7 +46,7 @@ C
       REAL A(*),TRIGS(N)
       INTEGER IFAX(10)
 C     Dynamically allocated work array:
-      REAL WORK(N*LOT)
+      REAL WORK(N*LOT+1)
       LOGICAL LIPL
 *
       NFAX=IFAX(1)
