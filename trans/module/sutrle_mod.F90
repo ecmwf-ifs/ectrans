@@ -76,9 +76,7 @@ ZPNM => F%RPNM
 ! completed all previous communication
 
 IF( NPROC > 1 )THEN
-  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,0)
   CALL MPL_BARRIER(CDSTRING='SUTRLE:')
-  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,1)
 ENDIF
 
 ALLOCATE (ZCOMBUF(NCOMBFLEN))
@@ -91,7 +89,7 @@ DO JROC=1,NPRTRW-1
 !*     Define PE to which data have to be sent and PE from which
 !*     data have to be received
 
-  IF (.NOT.LSYNCSTATS) CALL GSTATS(684,0)
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(801,0)
   ISEND = MYSETW-JROC
   IRECV = MYSETW+JROC
   IF (ISEND <= 0)     ISEND = ISEND+NPRTRW
@@ -141,7 +139,7 @@ DO JROC=1,NPRTRW-1
     CALL MPL_SEND(ZCOMBUF(1:IPOS),KDEST=NPRCIDS(ISEND), &
      & KTAG=ITAG,CDSTRING='SUTRLE:')
   ENDIF
-  IF (.NOT.LSYNCSTATS) CALL GSTATS(684,1)
+  IF (.NOT.LSYNCSTATS) CALL GSTATS(801,1)
 
   ILREC = 0
   ITAG = MTAGLETR
@@ -149,7 +147,7 @@ DO JROC=1,NPRTRW-1
 
 !*   receive message (if not empty)
 
-    IF (.NOT.LSYNCSTATS) CALL GSTATS(684,0)
+    IF (.NOT.LSYNCSTATS) CALL GSTATS(801,0)
     CALL MPL_RECV(ZCOMBUF(1:NCOMBFLEN),KSOURCE=NPRCIDS(IRECV), &
      & KTAG=ITAG,KOUNT=ILREC,CDSTRING='SUTRLE:')
 
@@ -183,7 +181,7 @@ DO JROC=1,NPRTRW-1
         ENDDO
       ENDIF
     ENDDO
-    IF (.NOT.LSYNCSTATS) CALL GSTATS(684,1)
+    IF (.NOT.LSYNCSTATS) CALL GSTATS(801,1)
 
 !*    check received message length
 
@@ -196,9 +194,7 @@ DO JROC=1,NPRTRW-1
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication for this jroc loop iteration
 
-  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,0)
   CALL MPL_BARRIER(CDSTRING='SUTRLE:')
-  IF (.NOT.LSYNCSTATS) CALL GSTATS(730,1)
 
 ENDDO
 

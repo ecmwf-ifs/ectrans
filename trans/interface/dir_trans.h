@@ -1,6 +1,6 @@
-SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
-& KPROMA,KVSETUV,KVSETSC,KRESOL,&
-& PGP)
+SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
+& KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
+& PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
 
 !**** *DIR_TRANS* - Direct spectral transform (from grid-point to spectral).
@@ -18,6 +18,9 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
 !     PSPVOR(:,:) - spectral vorticity (output)
 !     PSPDIV(:,:) - spectral divergence (output)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (output)
+!     PSPSC3A(:,:,:) - alternative to use of PSPSCALAR, see PGP3A below (input)
+!     PSPSC3B(:,:,:) - alternative to use of PSPSCALAR, see PGP3B below (input)
+!     PSPSC2(:,:)  - alternative to use of PSPSCALAR, see PGP2 below (input)
 !     KPROMA      - required blocking factor for gridpoint output
 !     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
@@ -29,6 +32,9 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
 !                   if the total number of processors is greater than
 !                   the number of processors used for distribution in
 !                   spectral wave space.  
+!     KVSETSC3A(:) - as KVESETSC for PSPSC3A (distribution on first dimension)
+!     KVSETSC3B(:) - as KVESETSC for PSPSC3B (distribution on first dimension)
+!     KVSETSC2(:) - as KVESETSC for PSPSC2 (distribution on first dimension)
 !     KRESOL   - resolution tag  which is required ,default is the
 !                first defined resulution (input)
 !     PGP(:,:,:) - gridpoint fields (input)
@@ -47,6 +53,31 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,&
 !     IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
 !     length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !     'b-set' split
+
+!     As an alternative to using PGP you can also use a combination of the
+!     following arrays. The reason for introducing these alternative ways
+!     of calling DIR_TRANS is to avoid uneccessary copies where your data
+!     structures don't fit in to the 'PSPVOR,PSPDIV, PSPSCALAR, PGP' layout.
+!     The use of any of these precludes the use of PGP and vice versa.
+
+!     PGPUV(:,:,:,:) - the 'u-v' related grid-point variables in the order
+!                      described for PGP. The second dimension of PGPUV should
+!                      be the same as the "global" first dimension of 
+!                      PSPVOR,PSPDIV (in the IFS this is the number of levels)
+!                      PGPUV need to be dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
+!                      IFLDS is the number of 'variables' (u,v)
+!     PGP3A(:,:,:,:) - grid-point array directly connected with PSPSC3A
+!                      dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
+!                      IFLDS is the number of 'variables' (the same as in
+!                      PSPSC3A )
+!     PGP3B(:,:,:,:) - grid-point array directly connected with PSPSC3B
+!                      dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
+!                      IFLDS is the number of 'variables' (the same as in
+!                      PSPSC3B)
+!     PGP2(:,:,:)    - grid-point array directly connected with PSPSC2
+!                      dimensioned(NPROMA,IFLDS,NGPBLKS)
+!                      IFLDS is the number of 'variables' (the same as in
+!                      PSPSC2 )
 ! 
 !     Method.
 !     -------
@@ -75,12 +106,22 @@ IMPLICIT NONE
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)
+REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPSC3A(:,:,:)
+REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPSC3B(:,:,:)
+REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPSC2(:,:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KPROMA
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC3A(:)
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC3B(:)
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KVSETSC2(:)
 INTEGER_M ,OPTIONAL, INTENT(IN) :: KRESOL
 
-REAL_B    ,INTENT(IN) :: PGP(:,:,:)
+REAL_B,OPTIONAL    ,INTENT(IN) :: PGP(:,:,:)
+REAL_B,OPTIONAL    ,INTENT(IN) :: PGPUV(:,:,:,:)
+REAL_B,OPTIONAL    ,INTENT(IN) :: PGP3A(:,:,:,:)
+REAL_B,OPTIONAL    ,INTENT(IN) :: PGP3B(:,:,:,:)
+REAL_B,OPTIONAL    ,INTENT(IN) :: PGP2(:,:,:)
 
 
 END SUBROUTINE DIR_TRANS

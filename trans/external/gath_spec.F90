@@ -33,7 +33,7 @@ SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-
+!        Modified 03-09-30  Y. Seity, bug correction IFSEND=0       
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
@@ -74,7 +74,8 @@ CALL SET_RESOL(KRESOL)
 IF(UBOUND(KTO,1) < KFGATHG) THEN
  CALL ABORT_TRANS('GATH_SPEC: KTO TOO SHORT!')
 ENDIF
- 
+
+IFSEND = 0 
 IFRECV = 0
 DO J=1,KFGATHG
   IF(KTO(J) < 1 .OR. KTO(J) > NPROC) THEN
