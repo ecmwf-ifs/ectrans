@@ -1,4 +1,4 @@
-SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC)
+SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD)
 
 !**** *GATH_SPEC* - Gather global spectral array from processors
 
@@ -19,6 +19,7 @@ SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC)
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
 !     PSPEC(:,:)  - Local spectral array
+!     LDIM1_IS_FLD - If TRUE first dimension of PSCPEC and PSPECG is the field dimension [.T.]
 !
 !     Method.
 !     -------
@@ -43,12 +44,13 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT)  :: PSPECG(:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPECG(:,:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 
 
 !     ------------------------------------------------------------------

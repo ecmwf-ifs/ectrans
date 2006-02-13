@@ -47,6 +47,7 @@ USE TPM_DISTR
 USE SET_RESOL_MOD
 USE DIST_SPEC_CONTROL_MOD
 USE ABORT_TRANS_MOD
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
 
@@ -65,9 +66,11 @@ REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 
 INTEGER(KIND=JPIM) :: IVSET(KFDISTG)
 INTEGER(KIND=JPIM) :: IFSEND,IFRECV,J
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
+IF (LHOOK) CALL DR_HOOK('DIST_SPEC',0,ZHOOK_HANDLE)
 ! Set current resolution
 CALL SET_RESOL(KRESOL)
 
@@ -131,6 +134,7 @@ ENDIF
 
 CALL DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,IVSET,PSPEC)
 
+IF (LHOOK) CALL DR_HOOK('DIST_SPEC',1,ZHOOK_HANDLE)
 !endif INTERFACE
 
 !     ------------------------------------------------------------------

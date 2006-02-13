@@ -61,6 +61,7 @@ INTEGER(KIND=JPIM) :: IRCV,ISTA,ISTP,ILENR
 
 ! Compute help array for distribution
 II = 0
+CALL GSTATS(1804,0)
 DO JM=0,R%NSMAX
   DO JN=JM,R%NSMAX
     IDIST(II+1) = D%NDIM0G(JM)+(JN-JM)*2
@@ -68,12 +69,14 @@ DO JM=0,R%NSMAX
     II = II+2
   ENDDO
 ENDDO
+CALL GSTATS(1804,1)
 
 !Distribute spectral array
 
 IFLDR = 0
 IFLDS = 0
 
+CALL GSTATS(812,0)
 DO JFLD=1,KFDISTG
 
   IBSET = KVSET(JFLD)
@@ -117,12 +120,16 @@ DO JFLD=1,KFDISTG
     PSPEC(IFLDR,:) = ZFLD(1:D%NSPEC2)
   ENDIF
 
-  !Synchronize processors
-  IF( NPROC > 1 )THEN
-    CALL MPL_BARRIER(CDSTRING='DIST_SPEC_CONTROL:')
-  ENDIF
 
 ENDDO
+CALL GSTATS(812,1)
+
+!Synchronize processors
+CALL GSTATS(787,0)
+IF( NPROC > 1 )THEN
+  CALL MPL_BARRIER(CDSTRING='DIST_SPEC_CONTROL:')
+ENDIF
+CALL GSTATS(787,1)
 
 !     ------------------------------------------------------------------
 
