@@ -51,7 +51,8 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KDIM0G(0:)
 
 REAL(KIND=JPRB)    :: ZFLD(KSPEC2_G),ZRECV(KSPEC2_G)
 INTEGER(KIND=JPIM) :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,IBSET,ILEN,JA,ISND
-INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,ISTA,ISTP,ISENDREQ,IPOS0
+INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,ISTA,ISTP,ISENDREQ,IPOS0,JNM
+INTEGER(KIND=JPIM) :: IDIST(KSPEC2_G)
 
 !     ------------------------------------------------------------------
 
@@ -79,6 +80,16 @@ IF( NPROC == 1 ) THEN
   ENDIF
   CALL GSTATS(1644,1)
 ELSE
+  II = 0
+  CALL GSTATS(1804,0)
+  DO JM=0,KSMAX
+    DO JN=JM,KSMAX
+      IDIST(II+1) = KDIM0G(JM)+(JN-JM)*2
+      IDIST(II+2) = KDIM0G(JM)+(JN-JM)*2+1
+      II = II+2
+    ENDDO
+  ENDDO
+  CALL GSTATS(1804,1)
   IFLDR = 0
   IFLDS = 0
 
@@ -120,41 +131,30 @@ ELSE
           IF( ILENR /= ILEN )THEN
             CALL ABORT_TRANS('GATH_SPEC_CONTROL:INVALID RECEIVE MESSAGE LENGTH')
           ENDIF
-          IF(LDIM1_IS_FLD) THEN
-            II = 0
-            DO JM=0,KSMAX
-              DO JN=JM,KSMAX
-                ISP = KDIM0G(JM)+(JN-JM)*2
-                II = II+1
-                PSPECG(IFLDR,II) = ZRECV(ISP)
-                ISP = ISP+1
-                II = II+1
-                IF(JM /= 0) THEN
-                  PSPECG(IFLDR,II) = ZRECV(ISP)
-                ELSE
-                  PSPECG(IFLDR,II) = 0.0_JPRB
-                ENDIF
-              ENDDO
-            ENDDO
-          ELSE
-            II = 0
-            DO JM=0,KSMAX
-              DO JN=JM,KSMAX
-                ISP = KDIM0G(JM)+(JN-JM)*2
-                II = II+1
-                PSPECG(II,IFLDR) = ZRECV(ISP)
-                ISP = ISP+1
-                II = II+1
-                IF(JM /= 0) THEN
-                  PSPECG(II,IFLDR) = ZRECV(ISP)
-                ELSE
-                  PSPECG(II,IFLDR) = 0.0_JPRB
-                ENDIF
-              ENDDO
-            ENDDO
-          ENDIF
         ENDIF
       ENDDO
+
+      IF(LDIM1_IS_FLD) THEN
+        DO JNM=1,KSPEC2_G
+          PSPECG(IFLDR,JNM) = ZRECV(IDIST(JNM))
+        ENDDO
+        II = 0
+        DO JN=0,KSMAX
+          ISP = KDIM0G(0)+JN*2+1
+          II = II+2
+          PSPECG(IFLDR,II) = 0.0_JPRB
+        ENDDO
+      ELSE
+        DO JNM=1,KSPEC2_G
+          PSPECG(JNM,IFLDR) = ZRECV(IDIST(JNM))
+        ENDDO
+        II = 0
+        DO JN=0,KSMAX
+          ISP = KDIM0G(0)+JN*2+1
+          II = II+2
+          PSPECG(II,IFLDR) = 0.0_JPRB
+        ENDDO
+      ENDIF
     ENDIF
     IF( IBSET == MYSETV )THEN
       CALL MPL_WAIT(ZFLD,KREQUEST=ISENDREQ, &
