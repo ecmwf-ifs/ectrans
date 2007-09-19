@@ -34,6 +34,7 @@ INTEGER(KIND=JPIM) :: MTAGDISTGP ! Tag
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPRCIDS(:) ! Array containing the process ids
 
 TYPE DISTR_TYPE
+LOGICAL   :: LGRIDONLY          ! TRUE - only grid space structures are available
 LOGICAL   :: LSPLIT             ! TRUE - latitudes are shared between a-sets
 INTEGER(KIND=JPIM) :: NAPSETS   ! Number of apple sets at the poles. Default is zero.
 

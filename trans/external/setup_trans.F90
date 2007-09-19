@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
-&KAPSETS,KTMAX,KRESOL)
+&KAPSETS,KTMAX,KRESOL,LDGRIDONLY)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -24,6 +24,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     KAPSETS - Number of apple sets in the distribution [0]
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
+!     LDGRIDONLY - true if only grid space is required
 
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
@@ -87,6 +88,7 @@ LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KAPSETS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 
 !ifndef INTERFACE
 
@@ -138,6 +140,7 @@ IF(LLP1) WRITE(NOUT,*) '=== DEFINING RESOLUTION ',NCUR_RESOL
 
 G%LREDUCED_GRID = .FALSE.
 G%LINEAR_GRID = .FALSE.
+D%LGRIDONLY = .FALSE.
 D%LSPLIT = .FALSE.
 D%NAPSETS = 0
 
@@ -193,6 +196,10 @@ ELSEIF(R%NSMAX > (R%NDLON+3)/3) THEN
   G%LINEAR_GRID = .TRUE.
 ENDIF  
 
+IF(PRESENT(LDGRIDONLY)) THEN
+  D%LGRIDONLY=LDGRIDONLY
+ENDIF
+
 !     Setup resolution dependent structures
 !     -------------------------------------
 
@@ -206,6 +213,7 @@ CALL SUMP_TRANS_PRELEG
 CALL SULEG
 
 CALL GSTATS(1802,0)
+
 ! Compute arrays related to grid-point geometry
 CALL SETUP_GEOM
 
@@ -214,6 +222,7 @@ CALL SUMP_TRANS
 
 ! Initialize Fast Fourier Transform package
 CALL SUFFT
+
 CALL GSTATS(1802,1)
 
 
