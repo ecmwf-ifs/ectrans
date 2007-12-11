@@ -2,7 +2,7 @@ MODULE SULEG_MOD
 CONTAINS
 SUBROUTINE SULEG
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPIB
 USE PARKIND2  ,ONLY : JPRH
 
 USE TPM_GEN
@@ -14,6 +14,10 @@ USE TPM_FIELDS
 USE SUGAW_MOD
 USE SUPOL_MOD
 USE SUTRLE_MOD
+
+#if defined(NECSX) && defined(REALHUGE)
+USE quad_emu
+#endif
 
 #ifdef DOC
 
@@ -84,6 +88,8 @@ USE SUTRLE_MOD
 !        Modified 98-08-10 by K. YESSAD: removal of LRPOLE option.
 !          - removal of LRPOLE in YOMCT0.
 !          - removal of code under LRPOLE.
+!        R. El Khatib 11-Apr-2007 Emulation of vectorized quadruple precision
+!                                 on NEC
 !     ------------------------------------------------------------------
 
 #endif
@@ -118,6 +124,14 @@ INTEGER(KIND=JPIM) :: IGLLOC, INM, IM , ICOUNT,&
 
 LOGICAL :: LLP1,LLP2
 
+#if defined(NECSX) && defined(REALHUGE)
+INTEGER(KIND=JPIB) :: IDCN(0:R%NTMAX+1,0:R%NTMAX+1)
+INTEGER(KIND=JPIB) :: IDCD(0:R%NTMAX+1,0:R%NTMAX+1)
+INTEGER(KIND=JPIB) :: IDDN(0:R%NTMAX+1,0:R%NTMAX+1)
+INTEGER(KIND=JPIB) :: IDDD(0:R%NTMAX+1,0:R%NTMAX+1)
+INTEGER(KIND=JPIB) :: IDEN(0:R%NTMAX+1,0:R%NTMAX+1)
+INTEGER(KIND=JPIB) :: IDED(0:R%NTMAX+1,0:R%NTMAX+1)
+#endif
 
 DC(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPKD)*REAL(KKN+KKM-1,JPKD)&
                    &*REAL(KKN+KKM-3,JPKD))&
@@ -178,6 +192,28 @@ IF(.NOT.D%LGRIDONLY) THEN
   ENDDO
 
 !*       3.3   Working arrays
+
+#if defined(NECSX) && defined(REALHUGE)
+
+  DO JN=3,R%NTMAX+1
+    DO JM=2,JN-1
+      IDCN(JM,JN)=(2*JN+1)*(JN+JM-1)*(JN+JM-3)
+      IDCD(JM,JN)=(2*JN-3)*(JN+JM  )*(JN+JM-2)
+      IDDN(JM,JN)=(2*JN+1)*(JN+JM-1)*(JN-JM+1)
+      IDDD(JM,JN)=(2*JN-1)*(JN+JM  )*(JN+JM-2)
+      IDEN(JM,JN)=(2*JN+1)*(JN-JM)
+      IDED(JM,JN)=(2*JN-1)*(JN+JM)
+    ENDDO
+  ENDDO
+
+  DO JN=3,R%NTMAX+1
+    CALL SQRTIVDV (IDCN(2,JN), IDCD(2,JN), JN-2, DLC(2,JN))
+    CALL SQRTIVDV (IDDN(2,JN), IDDD(2,JN), JN-2, DLD(2,JN))
+    CALL SQRTIVDV (IDEN(2,JN), IDED(2,JN), JN-2, DLE(2,JN))
+  ENDDO
+
+#else
+
   DO JN=3,R%NTMAX+1
     DO JM=2,JN-1
       DLC(JM,JN) = DC(JN,JM)
@@ -185,6 +221,8 @@ IF(.NOT.D%LGRIDONLY) THEN
       DLE(JM,JN) = DE(JN,JM)
     ENDDO
   ENDDO
+
+#endif
 
   DO JN=1,R%NTMAX+1
     DLA(JN) = SQRT(REAL(2*JN+1,JPKD))

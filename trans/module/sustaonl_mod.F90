@@ -43,6 +43,7 @@ SUBROUTINE SUSTAONL(KMEDIAP,KRESTM)
 !          - removal of LRPOLE in YOMCT0.
 !          - removal of code under LRPOLE.
 !        Modified 98-12-04 C. Fischer: merge with SUESTAONL (Aladin)
+!        R. El Khatib 05-Apr-2007 Enable back vectorization on NEC
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -177,7 +178,6 @@ DO JB=1,N_REGIONS(MY_REGION_NS)
     ZLAT  = 1._JPRB
     ZLAT1 = 1._JPRB
     IF (MY_REGION_NS <= D%NAPSETS .AND.(IPART /= 2.OR.LLALLAT)) THEN
-!cdir novector
       DO JGL=1,ILEN
         IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
           ZLAT1  = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
@@ -188,7 +188,6 @@ DO JB=1,N_REGIONS(MY_REGION_NS)
         ENDIF
       ENDDO
     ELSEIF (MY_REGION_NS > N_REGIONS_NS-D%NAPSETS.AND.(IPART /= 1.OR.LLALLAT)) THEN
-!cdir novector
       DO JGL=1,ILEN
         IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
           ZLAT1  = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
@@ -199,7 +198,6 @@ DO JB=1,N_REGIONS(MY_REGION_NS)
         ENDIF
       ENDDO
     ELSE
-!cdir novector
       DO JGL=1,ILEN
         IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
           ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)

@@ -49,6 +49,7 @@ SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
 !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
 !                             passing and buffer packing
+!        Y.Seity   : 07-08-31 add barrien synchronisation under LSYNC_TRANS
 !     ------------------------------------------------------------------
 
 
@@ -132,6 +133,11 @@ IF(LIMP_NOOLAP)THEN
   ENDDO
 
   CALL GSTATS(807,0)
+
+  IF (LSYNC_TRANS) THEN
+    CALL MPL_BARRIER(CDSTRING='TRMTOL')
+  ENDIF
+ 
   CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN,KSENDCOUNTS=ILENS,&
    & PRECVBUF=PFBUF,KRECVCOUNTS=ILENR,KSENDDISPL=IOFFS,KRECVDISPL=IOFFR,&
    & KCOMM=MPL_ALL_MS_COMM,CDSTRING='TRMTOL:')

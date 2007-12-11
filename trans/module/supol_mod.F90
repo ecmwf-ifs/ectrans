@@ -43,10 +43,15 @@ SUBROUTINE SUPOL(KNSMAX,DDMU,DDPOL,DDA,DDB,DDC,DDD,DDE,DDF,DDG,DDH,DDI)
 !     --------------
 !        Original : 87-10-15
 !        K. YESSAD (MAY 1998): modification to avoid underflow.
+!        R. El Khatib 11-Apr-2007 Emulation of vectorized quadruple precision
+!                                 on NEC
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE PARKIND2  ,ONLY : JPRH
+#if defined(NECSX) && defined(REALHUGE)
+USE QUAD_EMU
+#endif
 
 IMPLICIT NONE
 
@@ -63,6 +68,11 @@ REAL(KIND=JPRH) :: DLX,DLSITA,DL1SITA,DLKM2,DLKM1,DLK,DL1,DLS
 
 INTEGER(KIND=JPIM) :: JM, JN
 REAL(KIND=JPRB) :: Z
+
+#if defined(NECSX) && defined(REALHUGE)
+REAL(KIND=JPRH), allocatable, dimension(:) :: ddpol_
+REAL(KIND=JPRH) :: DLXM
+#endif
 
 !     ------------------------------------------------------------------
 
@@ -101,7 +111,9 @@ ENDDO
 
 DLS=DL1SITA*TINY(DLS)
 
+#ifdef VPP
 !OCL SCALAR
+#endif
 DO JN=2,KNSMAX
   DDPOL(JN,JN)=DDPOL(JN-1,JN-1)*DLSITA*DDH(JN)
   IF ( ABS(DDPOL(JN,JN))  <  DLS ) DDPOL(JN,JN)=0.0_JPRB
@@ -111,6 +123,23 @@ ENDDO
 
 !*       3. General recurrence.
 !           -------------------
+
+#if defined(NECSX) && defined(REALHUGE)
+
+allocate (DDPOL_(2:KNSMAX-1),stat=jn)
+
+DLXM = -DLX
+DO JN=3,KNSMAX
+  call QXMY(DDC(2:JN-1,JN),DDPOL(0:JN-3,JN-2),JN-2,DDPOL (2:JN-1,JN))
+  call QXMY(DDD(2:JN-1,JN),DDPOL(0:JN-3,JN-1),JN-2,DDPOL_(2:JN-1))
+  call QAXPY (DLXM,DDPOL_(2),DDPOL(2,JN),JN-2)
+  call QXMY(DDE(2:JN-1,JN),DDPOL(2:JN-1,JN-1),JN-2,DDPOL_(2:JN-1))
+  call QAXPY ( DLX,DDPOL_(2),DDPOL(2,JN),JN-2)
+END DO
+
+  deallocate (DDPOL_)
+
+#else
 
 DO JN=3,KNSMAX
 !DIR$ IVDEP
@@ -122,9 +151,8 @@ DO JN=3,KNSMAX
   ENDDO
 ENDDO
 
+#endif
 !     ------------------------------------------------------------------
 
 END SUBROUTINE SUPOL
 END MODULE SUPOL_MOD
-
-
