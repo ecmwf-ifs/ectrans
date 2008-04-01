@@ -18,8 +18,6 @@ INTEGER(KIND=JPIM) :: NPROMATR        ! Packet size for transform (in no of fiel
                              ! NPROMATR=0 means do all fields together (dflt)
 
 LOGICAL   :: LALLOPERM       ! Allocate some shared data structures permanently
-LOGICAL   :: LIMP            ! true: use immediate message passing 
-LOGICAL   :: LIMP_NOOLAP     ! true: use immediate message passing 
 LOGICAL   :: LMPOFF          ! true: switch off message passing
 LOGICAL   :: LSYNC_TRANS     ! true: activate barriers in trmtol and trltom
 
