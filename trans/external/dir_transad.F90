@@ -146,6 +146,7 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANSAD',0,ZHOOK_HANDLE)
 
+CALL GSTATS(1810,0)
 ! Set current resolution
 
 CALL SET_RESOL(KRESOL)
@@ -476,6 +477,7 @@ IF(IF_SC3B_G > 0) THEN
     CALL ABORT_TRANS('DIR_TRANS:PGP3B MISSING')
   ENDIF
 ENDIF
+CALL GSTATS(1810,1)
 
 ! Perform transform
 
