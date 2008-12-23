@@ -134,7 +134,6 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('TRGOTL',0,ZHOOK_HANDLE)
 
-CALL GSTATS_BARRIER(761)
 
 CALL GSTATS(1805,0)
 
@@ -483,6 +482,8 @@ ENDDO
 
 !....Send loop.........................................................
 
+CALL GSTATS_BARRIER(761)
+
 CALL GSTATS(803,0)
 DO INS=1,INSEND
   ISEND=JSEND(INS)
@@ -506,6 +507,7 @@ IF(INSEND > 0) THEN
     & CDSTRING='TRGTOL: WAIT FOR SENDS')
 ENDIF
 CALL GSTATS(803,1)
+CALL GSTATS_BARRIER2(761)
 
 !  Unpack loop.........................................................
 DO INR=1,INRECV
