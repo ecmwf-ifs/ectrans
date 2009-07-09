@@ -1,22 +1,24 @@
 MODULE CPLEDN_MOD
 CONTAINS
-SUBROUTINE CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)
+SUBROUTINE CPLEDN(KN,KODD,PFN,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)
 
-!**** *CPLEDN* - Routine to compute the Legendre polynomial of degree N
+!**** *CPLEDN* - Routine to perform a single Newton iteration step to find
+!                the zero of the ordinary Legendre polynomial of degree N
 
 !     Purpose.
 !     --------
-!           Computes Legendre polynomial of degree N
+!           
 
 !**   Interface.
 !     ----------
-!        *CALL* *CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)*
+!        *CALL* *CPLEDN(KN,KODD,PFN,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)*
 
 !        Explicit arguments :
 !        --------------------
 !              KN       :  Degree of the Legendre polynomial
-!              KDBLE    :  0, single precision
-!                          1, double precision
+!              KODD     :  odd or even number of latitudes          
+!              PFN      :  Fourier coefficients of series expansion 
+!                          for the ordinary Legendre polynomials
 !              PX       :  abcissa where the computations are performed
 !              DDX      :  id in double precision
 !              KFLAG    :  When KFLAG.EQ.1 computes the weights
@@ -49,113 +51,73 @@ SUBROUTINE CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)
 !     --------------
 !        Original : 87-10-15
 !        Michel Rochas, 90-08-30 (Lobatto+cleaning)
+!        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
 !     ------------------------------------------------------------------
 
 
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE PARKIND2  ,ONLY : JPRH
 
 IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER(KIND=JPIM) :: KDBLE
 INTEGER(KIND=JPIM) :: KFLAG
 INTEGER(KIND=JPIM) :: KN
+INTEGER(KIND=JPIM) :: KODD
 
 !     DUMMY REAL SCALARS
 REAL(KIND=JPRB) :: PW
 REAL(KIND=JPRB) :: PX
 REAL(KIND=JPRB) :: PXMOD
 REAL(KIND=JPRB) :: PXN
+REAL(KIND=JPRB) :: PFN(0:KN/2)
 
-
-REAL(KIND=JPRH) :: DDX,DDXN,DLX,DLK,DLKM1,DLKM2,DLLDN,DLXN,DLMOD
-REAL(KIND=JPRH) :: DLG,DLGDN
+REAL(KIND=JPRB) :: DDX,DDXN,DLX,DLK,DLKM1,DLKM2,DLLDN,DLXN,DLMOD
+REAL(KIND=JPRB) :: DLG,DLGDN
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKS=KIND(PX)
 INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DDX)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IZN, JN
-
-!     LOCAL REAL SCALARS
-REAL(KIND=JPRB) :: ZG, ZGDN, ZK, ZKM1, ZKM2, ZLDN, ZMOD, ZX, ZXN
-
+INTEGER(KIND=JPIM) :: JN, IK
 
 !      -----------------------------------------------------------------
 
-!*       1. Single precision computations.
-!           ------------------------------
-
-IZN = KN
-
-ZK = 0.0_JPRB
+DLX = DDX
 DLK = 0.0_JPRB
+IF( KODD==0 ) DLK=0.5_JPRB*PFN(0)
 DLXN = 0.0_JPRB
-IF(KDBLE == 0)THEN
-
-!*       1.1   NEWTON ITERATION STEP.
-
-  ZKM2 = 1
-  ZKM1 = PX
-  ZX   = PX
-  DO JN=2,IZN
-    ZK = (REAL(2*JN-1,JPRB)*ZX*ZKM1-REAL(JN-1,JPRB)*ZKM2)/REAL(JN,JPRB)
-    ZKM2 = ZKM1
-    ZKM1 = ZK
-  ENDDO
-  ZKM1 = ZKM2
-  ZLDN = (REAL(KN,JPRB)*(ZKM1-ZX*ZK))/(1.0_JPRB-ZX*ZX)
-  ZMOD = -ZK/ZLDN
-  ZXN = ZX+ZMOD
-  PXN = ZXN
-  DDXN = REAL(ZXN,JPKD)
-  PXMOD = ZMOD
-
-!     ------------------------------------------------------------------
-
-!*         2.    Double precision computations.
-!                ------------------------------
-
-ELSE
+DLLDN = 0.0_JPRB
 
 !*       2.1   NEWTON ITERATION STEP.
 
-  DLKM2 = 1.0_JPRB
-  DLKM1 = DDX
-  DLX = DDX
-  DO JN=2,IZN
-    DLK = (REAL(2*JN-1,JPKD)*DLX*DLKM1-REAL(JN-1,JPKD)*DLKM2)/REAL(JN,JPKD)
-    DLKM2 = DLKM1
-    DLKM1 = DLK
+IK=1
+IF(KFLAG == 0)THEN
+  DO JN=2-KODD,KN,2
+! normalised ordinary Legendre polynomial == \overbar{P_n}^0
+    DLK = DLK + PFN(IK)*COS(REAL(JN,JPKD)*DLX)
+! normalised derivative == d/d\theta(\overbar{P_n}^0)
+    DLLDN = DLLDN - PFN(IK)*REAL(JN,JPKD)*SIN(REAL(JN,JPKD)*DLX)
+    IK=IK+1
   ENDDO
-  DLKM1 = DLKM2
-  DLLDN = (REAL(KN,JPKD)*(DLKM1-DLX*DLK))/(1.0_JPRB-DLX*DLX)
+! Newton method
   DLMOD = -DLK/DLLDN
   DLXN = DLX+DLMOD
   PXN = REAL(DLXN,JPKS)
   DDXN = DLXN
   PXMOD = REAL(DLMOD,JPKS)
-ENDIF
+ELSE
 !     ------------------------------------------------------------------
 
 !*         3.    Computes weight.
 !                ----------------
-
-
-IF(KFLAG == 1)THEN
-  DLKM2 = 1.0_JPRB
-  DLKM1 = DLXN
-  DLX = DLXN
-  DO JN=2,IZN
-    DLK = (REAL(2*JN-1,JPKD)*DLX*DLKM1-REAL(JN-1,JPKD)*DLKM2)/REAL(JN,JPKD)
-    DLKM2 = DLKM1
-    DLKM1 = DLK
+  DO JN=2-KODD,KN,2
+! normalised derivative
+    DLLDN = DLLDN - PFN(IK)*REAL(JN,JPKD)*SIN(REAL(JN,JPKD)*DLX)
+    IK=IK+1
   ENDDO
-  DLKM1 = DLKM2
-  PW = REAL((1.0_JPRB-DLX*DLX)/(REAL(KN*KN,JPKD)*DLKM1*DLKM1),JPKS)
+  PW = REAL(2*KN+1,JPKD)/DLLDN**2
 ENDIF
 
 !     ------------------------------------------------------------------

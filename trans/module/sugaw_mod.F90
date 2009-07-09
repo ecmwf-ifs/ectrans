@@ -1,9 +1,8 @@
 MODULE SUGAW_MOD
 CONTAINS
-SUBROUTINE SUGAW(KN,PL,PDL,PW)
+SUBROUTINE SUGAW(KN,PFN,PL,PDL,PW)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE PARKIND2  ,ONLY : JPRH
 
 USE TPM_GEN
 USE GAWL_MOD
@@ -19,12 +18,14 @@ USE ABORT_TRANS_MOD
 !           Initialize arrays PL,PDL and PW (quadrature abscissas and weights)
 !**   Interface.
 !     ----------
-!        *CALL* *SUGAW(KN,PL,PDL,PW) *
+!        *CALL* *SUGAW(KN,PFN,PL,PDL,PW) *
 
 !        Explicit arguments :
 !        --------------------
 !           INPUT:
 !              KN       :  Number of Gauss  abscissas 
+!             PFN       :  Fourier coefficients of series expansion for
+!                          the ordinary Legendre polynomials
 !           OUTPUT:
 !              PL (KN)  :  abscissas of Gauss
 !              PDL(KN)  :  idem in double precision
@@ -50,7 +51,10 @@ USE ABORT_TRANS_MOD
 !     Reference.
 !     ----------
 
-!     ARPEGE Documentation vol.2, ch3.
+!     
+!     S.L. Belousov, Tables of normalized associated Legendre Polynomials, Pergamon Press (1962)
+!     P.N. Swarztrauber, On computing the points and weights for Gauss-Legendre quadrature,
+!     SIAM J. Sci. Comput. Vol. 24 (3) pp. 945-954 (2002)
 
 !     Author.
 !     -------
@@ -63,7 +67,8 @@ USE ABORT_TRANS_MOD
 !        Philippe Courtier : 92-12-19 Multitasking
 !        Ryad El Khatib    : 94-04-20 Remove unused comdecks pardim and yomdim
 !        Mats Hamrud       : 94-08-12 Printing level
-!     ------------------------------------------------------------------
+!        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
+!     ---------------------------------------------------------------------------
 #endif
 
 IMPLICIT NONE
@@ -71,9 +76,11 @@ IMPLICIT NONE
 
 !     DUMMY ARGUMENTS
 INTEGER(KIND=JPIM),INTENT(IN) :: KN
+REAL(KIND=JPRB),INTENT(IN) :: PFN(0:KN/2)
 
 REAL(KIND=JPRB),INTENT(OUT) :: PL(:),PW(:)
-REAL(KIND=JPRH),INTENT(OUT) :: PDL(:)
+REAL(KIND=JPRB),INTENT(OUT) :: PDL(:)
+
 
 ! LOCAL REALS
 
@@ -87,7 +94,7 @@ INTEGER(KIND=JPIM) :: IALLOW, INS2, ISYM, JGL
 !     LOCAL REAL SCALARS
 REAL(KIND=JPRB) :: Z, ZEPS, ZPI
 
-LOGICAL :: LLP1,LLP2
+LOGICAL :: LLP2
 
 
 !     ------------------------------------------------------------------
@@ -95,7 +102,6 @@ LOGICAL :: LLP1,LLP2
 !*       1. Initialization.
 !           ---------------
 
-LLP1 = .FALSE.
 LLP2 = .FALSE.
 ZPI  = 2.0_JPRB*ASIN(1.0_JPRB)
 INS2 = KN/2+MOD(KN,2)
@@ -104,23 +110,31 @@ INS2 = KN/2+MOD(KN,2)
 !           Legendre polynomial of degree KN.
 DO JGL=1,INS2
   Z = REAL(4*JGL-1,JPRB)*ZPI/REAL(4*KN+2,JPRB)
-  PL(JGL) = COS(Z+1.0_JPRB/(TAN(Z)*REAL(8*KN**2,JPRB)))
+  PL(JGL) = Z+1.0_JPRB/(TAN(Z)*REAL(8*KN**2,JPRB))
   ZREG(JGL) = COS(Z)
-  ZLI(JGL) = PL(JGL)
+  ZLI(JGL) = COS(PL(JGL))
 ENDDO
 !     ------------------------------------------------------------------
 
-!*      2. Computes roots and weights.
-!          ---------------------------
+!*      2. Computes roots and weights for transformed theta 
+!          ------------------------------------------------
 
 ZEPS = EPSILON(Z)
 CALL GSTATS(1650,0)
-!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL)
-DO JGL=1,INS2
-  CALL GAWL(PL(JGL),PDL(JGL),PW(JGL),ZEPS,KN,ITER(JGL),ZMOD(JGL))
+!!!!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL)
+DO JGL=INS2,1,-1
+  CALL GAWL(PFN,PL(JGL),PDL(JGL),PW(JGL),ZEPS,KN,ITER(JGL),ZMOD(JGL))
 ENDDO
-!$OMP END PARALLEL DO
+!!!!!$OMP END PARALLEL DO
 CALL GSTATS(1650,1)
+
+! convert to physical latitude space PMU
+!DIR$ IVDEP
+!OCL NOVREC
+DO JGL=1,INS2
+  PL(JGL) = COS(PL(JGL))
+  PDL(JGL) = COS(PDL(JGL))
+ENDDO
 
 !DIR$ IVDEP
 !OCL NOVREC
