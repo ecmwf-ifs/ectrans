@@ -4,13 +4,13 @@ SUBROUTINE SUGAW(KN,PFN,PL,PDL,PW)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
+USE TPM_CONSTANTS ,ONLY : RA
+
 USE TPM_GEN
 USE GAWL_MOD
 USE ABORT_TRANS_MOD
 
-#ifdef DOC
-
-!**** *SUGAW * - Routine to initialize the Gaussian 
+!**** *SUGAW * - Routine to initialize the Gaussian
 !                 abcissa and the associated weights
 
 !     Purpose.
@@ -23,7 +23,7 @@ USE ABORT_TRANS_MOD
 !        Explicit arguments :
 !        --------------------
 !           INPUT:
-!              KN       :  Number of Gauss  abscissas 
+!              KN       :  Number of Gauss  abscissas
 !             PFN       :  Fourier coefficients of series expansion for
 !                          the ordinary Legendre polynomials
 !           OUTPUT:
@@ -33,7 +33,7 @@ USE ABORT_TRANS_MOD
 
 !     PL (i) is the abscissa i starting from the northern pole, it is
 ! the cosine of the colatitude of the corresponding row of the collocation
-! grid. 
+! grid.
 
 !        Implicit arguments :
 !        --------------------
@@ -45,13 +45,10 @@ USE ABORT_TRANS_MOD
 
 !     Externals.
 !     ----------
-!      Calls:
-!      Called by SULEG.
 
 !     Reference.
 !     ----------
 
-!     
 !     S.L. Belousov, Tables of normalized associated Legendre Polynomials, Pergamon Press (1962)
 !     P.N. Swarztrauber, On computing the points and weights for Gauss-Legendre quadrature,
 !     SIAM J. Sci. Comput. Vol. 24 (3) pp. 945-954 (2002)
@@ -67,35 +64,26 @@ USE ABORT_TRANS_MOD
 !        Philippe Courtier : 92-12-19 Multitasking
 !        Ryad El Khatib    : 94-04-20 Remove unused comdecks pardim and yomdim
 !        Mats Hamrud       : 94-08-12 Printing level
+!        K. Yessad (Sep 2008): cleaning, improve comments.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
-!     ---------------------------------------------------------------------------
-#endif
+!     ------------------------------------------------------------------
 
 IMPLICIT NONE
 
-
-!     DUMMY ARGUMENTS
 INTEGER(KIND=JPIM),INTENT(IN) :: KN
 REAL(KIND=JPRB),INTENT(IN) :: PFN(0:KN/2)
-
-REAL(KIND=JPRB),INTENT(OUT) :: PL(:),PW(:)
+REAL(KIND=JPRB),INTENT(OUT) :: PL(:)
 REAL(KIND=JPRB),INTENT(OUT) :: PDL(:)
+REAL(KIND=JPRB),INTENT(OUT) :: PW(:)
 
-
-! LOCAL REALS
+!     ------------------------------------------------------------------
 
 REAL(KIND=JPRB) :: ZLI(KN),ZT(KN)
 REAL(KIND=JPRB) :: ZREG(KN),ZMOD(KN),ZM(KN),ZR(KN)
 INTEGER(KIND=JPIM) :: ITER(KN)
-
-!     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IALLOW, INS2, ISYM, JGL
-
-!     LOCAL REAL SCALARS
 REAL(KIND=JPRB) :: Z, ZEPS, ZPI
-
 LOGICAL :: LLP2
-
 
 !     ------------------------------------------------------------------
 
@@ -114,6 +102,7 @@ DO JGL=1,INS2
   ZREG(JGL) = COS(Z)
   ZLI(JGL) = COS(PL(JGL))
 ENDDO
+
 !     ------------------------------------------------------------------
 
 !*      2. Computes roots and weights for transformed theta 
@@ -152,8 +141,8 @@ ENDDO
 
 IF(LLP2)THEN
   DO JGL=1,INS2
-    ZM(JGL) = (ACOS(PL(JGL))-ACOS(ZLI(JGL)))*6371229._JPRB
-    ZR(JGL) = (ACOS(PL(JGL))-ACOS(ZREG(JGL)))*6371229._JPRB
+    ZM(JGL) = (ACOS(PL(JGL))-ACOS(ZLI(JGL)))*RA
+    ZR(JGL) = (ACOS(PL(JGL))-ACOS(ZREG(JGL)))*RA
     ZT(JGL) = ACOS(PL(JGL))*180._JPRB/ZPI
   ENDDO
 ENDIF
