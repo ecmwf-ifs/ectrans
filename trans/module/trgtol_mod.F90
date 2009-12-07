@@ -553,7 +553,11 @@ CALL GSTATS(1602,1)
 
 CALL GSTATS_BARRIER(761)
 
-CALL GSTATS(803,0)
+IF(.NOT.LGPNORM)THEN
+  CALL GSTATS(803,0)
+ELSE
+  CALL GSTATS(804,0)
+ENDIF
 IR=0
 
 !  Receive loop.........................................................
@@ -580,7 +584,11 @@ IF(IR > 0) THEN
     & CDSTRING='TRGTOL: WAIT FOR SENDS AND RECEIVES')
 ENDIF
 
-CALL GSTATS(803,1)
+IF(.NOT.LGPNORM)THEN
+  CALL GSTATS(803,1)
+ELSE
+  CALL GSTATS(804,1)
+ENDIF
 CALL GSTATS_BARRIER2(761)
 
 !  Unpack loop.........................................................

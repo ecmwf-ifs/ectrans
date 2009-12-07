@@ -41,4 +41,6 @@ REAL(KIND=JPRB), ALLOCATABLE :: FOUBUF(:)     ! Fourier buffer
 INTEGER(KIND=JPIM) :: NPROMA  ! Blocking factor for gridpoint input/output
 INTEGER(KIND=JPIM) :: NGPBLKS ! Number of NPROMA blocks
 
+LOGICAL :: LGPNORM = .FALSE.  ! indicates whether transform is being done for gpnorm
+
 END MODULE TPM_TRANS
