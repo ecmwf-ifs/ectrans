@@ -1,4 +1,4 @@
-SUBROUTINE TRANS_END
+SUBROUTINE TRANS_END(CDMODE)
 
 !**** *TRANS_END* - Terminate transform package 
 
@@ -31,6 +31,8 @@ SUBROUTINE TRANS_END
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+IMPLICIT NONE
+CHARACTER*5, OPTIONAL, INTENT(IN) :: CDMODE
 
 
 END SUBROUTINE TRANS_END

@@ -1,7 +1,8 @@
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,&
 &                       LDMPOFF,LDSYNC_TRANS,&
-&                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS)
+&                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS,&
+&                       PRAD)
 
 !**** *SETUP_TRANS0* - General setup routine for transform package
 
@@ -30,6 +31,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     K_REGIONS    - Number of regions (1D or 2D partitioning)
 !     K_REGIONS_NS - Maximum number of NS partitions
 !     K_REGIONS_EW - Maximum number of EW partitions
+!     PRAD         - Radius of the planet
 
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
 
@@ -48,6 +50,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !        Original : 00-03-03
 !        R. El Khatib 03-01-24 LDMPOFF
 !        G. Mozdzynski 2006-09-13 LDEQ_REGIONS
+!        N. Wedi  2009-11-30 add radius
 
 !     ------------------------------------------------------------------
 
@@ -63,6 +66,7 @@ LOGICAL   ,OPTIONAL,INTENT(IN) :: LDEQ_REGIONS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS(:)
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_NS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_EW
+REAL(KIND=JPRB),OPTIONAL,INTENT(IN) :: PRAD
 
 END SUBROUTINE SETUP_TRANS0
 

@@ -36,6 +36,7 @@ SUBROUTINE SUTRLE(PNM,KGL,KLOOP,KEXPECT)
 !     Modifications.
 !     --------------
 !        Original : 95-10-01
+!        P.Towers : 10-01-12  Corrected over allocation of ZSNDBUF (XT4 fix)
 !     ------------------------------------------------------------------
 
 
@@ -78,7 +79,26 @@ IF( NPROC > 1 .AND. KLOOP ==1)THEN
   CALL GSTATS(783,1)
 ENDIF
 
-ALLOCATE (ZSNDBUF(R%NSPOLEG+1,NPRTRW))
+!*     Calculate send buffer size
+
+ISENDSIZE=0
+DO JROC=1,NPRTRW-1
+
+  ISEND = MYSETW-JROC
+  IF (ISEND <= 0)     ISEND = ISEND+NPRTRW
+  ISENDSET = ISEND
+  CALL SET2PE(ISEND,0,0,ISENDSET,MYSETV)
+
+  IF(KGL > 0) THEN
+    IPOS = 1
+    DO JM=0,R%NSMAX
+      IF (ISENDSET == D%NPROCM(JM) ) IPOS = IPOS + R%NTMAX-JM+2 
+    ENDDO
+    ISENDSIZE = MAX(IPOS,ISENDSIZE)
+  ENDIF
+ENDDO
+
+ALLOCATE (ZSNDBUF(ISENDSIZE,NPRTRW))
 ALLOCATE (ZRCVBUF(R%NSPOLEG+1))
 !*   copy data to be sent into zsndbuf
 

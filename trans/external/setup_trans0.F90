@@ -1,7 +1,8 @@
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,&
 &                       LDMPOFF,LDSYNC_TRANS,&
-&                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS)
+&                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS,&
+&                       PRAD)
 
 !**** *SETUP_TRANS0* - General setup routine for transform package
 
@@ -30,7 +31,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     K_REGIONS    - Number of regions (1D or 2D partitioning)
 !     K_REGIONS_NS - Maximum number of NS partitions
 !     K_REGIONS_EW - Maximum number of EW partitions
-
+!     PRAD         - Radius of the planet
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
 
 !     Method.
@@ -48,6 +49,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !        Original : 00-03-03
 !        R. El Khatib 03-01-24 LDMPOFF
 !        G. Mozdzynski 2006-09-13 LDEQ_REGIONS
+!        N. Wedi  2009-11-30 add radius
 
 !     ------------------------------------------------------------------
 
@@ -57,6 +59,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN
 USE TPM_DISTR
+USE TPM_CONSTANTS
 
 USE SUMP_TRANS0_MOD
 USE ABORT_TRANS_MOD
@@ -71,6 +74,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDMPOFF
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSYNC_TRANS
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDEQ_REGIONS
+REAL(KIND=JPRB),OPTIONAL,INTENT(IN) :: PRAD
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS(:)
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_NS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_EW
@@ -82,7 +86,7 @@ LOGICAL :: LLP1,LLP2
 !     ------------------------------------------------------------------
 
 IF(MSETUP0 /= 0) THEN
-  CALL ABORT_TRANS('SETUP_TRANS0: SETUP_TRANS0 MAY ONLY BE CALLED ONCE')
+!gr  CALL ABORT_TRANS('SETUP_TRANS0: SETUP_TRANS0 MAY ONLY BE CALLED ONCE')
 ENDIF
 
 ! Default values
@@ -101,6 +105,7 @@ NCOMBFLEN = 1800000
 LMPOFF = .FALSE.
 LSYNC_TRANS=.FALSE. 
 LEQ_REGIONS=.FALSE.
+RA=6371229._JPRB
 
 ! Optional arguments
 
@@ -166,6 +171,10 @@ IF(PRESENT(K_REGIONS)) THEN
   ELSE
     K_REGIONS(1:N_REGIONS_NS)=N_REGIONS(1:N_REGIONS_NS)
   ENDIF
+ENDIF
+
+IF(PRESENT(PRAD)) THEN
+  RA=PRAD
 ENDIF
 
 ! Setup level 0 complete
