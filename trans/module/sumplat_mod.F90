@@ -3,6 +3,7 @@ CONTAINS
 SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
                    &KFRSTLAT,KLSTLAT,KFRSTLOFF,KPTRLAT,&
                    &KPTRFRSTLAT,KPTRLSTLAT,KPTRFLOFF,&
+                   &PWEIGHT,LDWEIGHTED_DISTR,PMEDIAP,KPROCAGP,&
                    &KMEDIAP,KRESTM,LDSPLITLAT)
 
 !**** *SUMPLAT * - Initialize gridpoint distrbution in N-S direction
@@ -23,10 +24,14 @@ SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 !                          KMYSETA    -process number in A direction
 !                          LDSPLIT    -true for latitudes shared between sets
 !                          LDEQ_REGIONS -true if eq_regions partitioning
+!                          PWEIGHT    -weight per grid-point if weighted distribution
+!                          LDWEIGHTED_DISTR -true if weighted distribution
 
 !     Explicit arguments - output:
 !     -------------------- 
+!                          PMEDIAP    -mean weight per PE if weighted distribution
 !                          KMEDIAP    -mean number of grid points per PE
+!                          KPROCAGP   -number of grid points per A set
 !                          KRESTM     -number of PEs with one extra point
 !                          KFRSTLAT   -first latitude row on processor
 !                          KLSTLAT    -last  latitude row on processor
@@ -80,17 +85,21 @@ USE TPM_DISTR
 
 USE SUMPLATB_MOD
 USE SUMPLATBEQ_MOD
+USE ABORT_TRANS_MOD
 
 IMPLICIT NONE
 
 
 !     * DUMMY:
+REAL(KIND=JPRB),INTENT(OUT)    :: PMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT) :: KMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT) :: KRESTM
 INTEGER(KIND=JPIM),INTENT(IN)  :: KDGL
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROC
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROCA
 INTEGER(KIND=JPIM),INTENT(IN)  :: KMYSETA
+REAL(KIND=JPRB),INTENT(IN)     :: PWEIGHT(:)
+LOGICAL,INTENT(INOUT)          :: LDWEIGHTED_DISTR
 INTEGER(KIND=JPIM),INTENT(OUT) :: KFRSTLAT(:)
 INTEGER(KIND=JPIM),INTENT(OUT) :: KLSTLAT(:)
 INTEGER(KIND=JPIM),INTENT(OUT) :: KFRSTLOFF
@@ -98,6 +107,7 @@ INTEGER(KIND=JPIM),INTENT(OUT) :: KPTRLAT(:)
 INTEGER(KIND=JPIM),INTENT(OUT) :: KPTRFRSTLAT(:)
 INTEGER(KIND=JPIM),INTENT(OUT) :: KPTRLSTLAT(:)
 INTEGER(KIND=JPIM),INTENT(OUT) :: KPTRFLOFF
+INTEGER(KIND=JPIM),INTENT(OUT) :: KPROCAGP(KPROCA)
 LOGICAL,INTENT(IN)  :: LDSPLIT
 LOGICAL,INTENT(IN)  :: LDEQ_REGIONS
 LOGICAL,INTENT(OUT) :: LDSPLITLAT(:)
@@ -110,16 +120,23 @@ INTEGER(KIND=JPIM) :: INDIC(KPROCA),ILAST(KPROCA)
 INTEGER(KIND=JPIM) :: IPTRLATITUDE,  JA, JGL
 
 LOGICAL :: LLFOURIER
+LOGICAL :: LLDEBUG=.FALSE.
 
 !      -----------------------------------------------------------------
 
 !*       1.    CODE DEPENDING ON 'LELAM': COMPUTATION OF
 !              KMEDIAP, KRESTM, INDIC, ILAST.
 !              -----------------------------------------
+INDIC(:)=0
+ILAST(:)=0
 
+IF(LDWEIGHTED_DISTR.AND..NOT.LDEQ_REGIONS)THEN
+  CALL ABORT_TRANS ('SUMPLAT: LDWEIGHTED_DISTR=T AND  LDEQ_REGIONS=F NOT SUPPORTED')
+ENDIF
 
 IF( LDEQ_REGIONS )THEN
   CALL SUMPLATBEQ(1,KDGL,KPROC,KPROCA,G%NLOEN,LDSPLIT,LDEQ_REGIONS,&
+   &PWEIGHT,LDWEIGHTED_DISTR,PMEDIAP,KPROCAGP,&
    &KMEDIAP,KRESTM,INDIC,ILAST)
 ELSE
   LLFOURIER=.FALSE.
@@ -137,13 +154,27 @@ ENDIF
 !     * Computation of first and last latitude of processor sets
 !       -----------  in grid-point-space -----------------------
 
+IF(MYPROC==1.AND.LLDEBUG)THEN
+  WRITE(0,'("")')
+  WRITE(0,'("SUMPLAT_MOD:LDWEIGHTED_DISTR=",L1)')LDWEIGHTED_DISTR
+  WRITE(0,'("")')
+  DO JA=1,KPROCA
+    WRITE(0,'("SUMPLAT_MOD: JA=",I3," ILAST=",I3," INDIC=",I3)')&
+    &JA,ILAST(JA),INDIC(JA)
+  ENDDO
+  WRITE(0,'("")')
+  IF( LDEQ_REGIONS .AND. LDSPLIT )THEN
+    DO JA=1,KPROCA
+      WRITE(0,'("SUMPLAT_MOD: JA=",I3," KPROCAGP=",I8)')&
+      &JA,KPROCAGP(JA)
+    ENDDO
+    WRITE(0,'("")')
+  ENDIF
+ENDIF
+
 KFRSTLAT(1) = 1
 KLSTLAT(KPROCA) = KDGL
 DO JA=1,KPROCA-1
-!!$  IF(MYPROC==1)THEN
-!!$    WRITE(0,'("SUMPLAT_MOD: JA=",I3," ILAST=",I3," INDIC=",I3)')&
-!!$    &JA,ILAST(JA),INDIC(JA)
-!!$  ENDIF
   IF ((.NOT. LDSPLIT) .OR. INDIC(JA) == 0) THEN
     KFRSTLAT(JA+1) = ILAST(JA) + 1
     KLSTLAT(JA) = ILAST(JA)
@@ -188,17 +219,18 @@ DO JA=1,KPROCA
   ENDIF
 ENDDO
 KPTRFLOFF=KPTRFRSTLAT(KMYSETA)-1
-!!$IF(MYPROC==1)THEN
-!!$  DO JGL=1,KDGL
-!!$    WRITE(0,'("SUMPLAT_MOD: JGL=",I3," KPTRLAT=",I3," LDSPLITLAT=",L4)')&
-!!$    & JGL,KPTRLAT(JGL),LDSPLITLAT(JGL)
-!!$  ENDDO
-!!$  DO JA=1,KPROCA
-!!$    WRITE(0,'("SUMPLAT_MOD: JA=",I3," KFRSTLAT=",I3," KLSTLAT=",I3,&
-!!$    & " KPTRFRSTLAT=",I3," KPTRLSTLAT=",I3)')&
-!!$    & JA,KFRSTLAT(JA),KLSTLAT(JA),KPTRFRSTLAT(JA),KPTRLSTLAT(JA)
-!!$  ENDDO
-!!$ENDIF
+
+IF(MYPROC==1.AND.LLDEBUG)THEN
+  DO JGL=1,KDGL
+    WRITE(0,'("SUMPLAT_MOD: JGL=",I3," KPTRLAT=",I3," LDSPLITLAT=",L4)')&
+    & JGL,KPTRLAT(JGL),LDSPLITLAT(JGL)
+  ENDDO
+  DO JA=1,KPROCA
+    WRITE(0,'("SUMPLAT_MOD: JA=",I3," KFRSTLAT=",I3," KLSTLAT=",I3,&
+    & " KPTRFRSTLAT=",I3," KPTRLSTLAT=",I3)')&
+    & JA,KFRSTLAT(JA),KLSTLAT(JA),KPTRFRSTLAT(JA),KPTRLSTLAT(JA)
+  ENDDO
+ENDIF
 
 !     ------------------------------------------------------------------
 

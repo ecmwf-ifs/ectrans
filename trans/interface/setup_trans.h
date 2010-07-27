@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
-&KAPSETS,KTMAX,KRESOL,LDGRIDONLY)
+&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -14,23 +14,23 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     ----------
 !     CALL SETUP_TRANS(...)
 
-!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT,KAPSETS are optional arguments
+!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT are optional arguments
 !     --------------------
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     LDLINEAR_GRID - true if linear grid
-!     KAPSETS - Number of apple sets in the distribution [0]
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
+!     PWEIGHT - the weight per grid-point (for a weighted distribution)
 !     LDGRIDONLY - true if only grid space is required
 
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
-!     LDSPLIT and KAPSETS describe the distribution among processors of
-!     grid-point data and has no relevance if you are using a single processor
+!     LDSPLIT describe the distribution among processors of grid-point data
+!     and has no relevance if you are using a single processor
 
 !     Method.
 !     -------
@@ -64,9 +64,9 @@ INTEGER(KIND=JPIM) ,INTENT(IN) :: KSMAX,KDGL
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
-INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KAPSETS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
+REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 
 
