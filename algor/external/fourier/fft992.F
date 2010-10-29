@@ -1,3 +1,4 @@
+C
 C     SUBROUTINE 'FFT992' - MULTIPLE FAST REAL PERIODIC TRANSFORM
 C
 C     Author: Clive Temperton, January 1998
@@ -44,6 +45,9 @@ C               B(K)=-(1/N)*SUM(J=0,...,N-1)(X(J)*SIN(2*J*K*PI/N))
 C
 #ifdef MATHKEISAN
       SUBROUTINE FFT992(A,TRIGS_,IFAX_,INC,JUMP,N,LOT,ISIGN)
+!AUTOPROMOTE
+      USE PARKIND1, ONLY : JPRB
+      USE YOMHOOK , ONLY : LHOOK, DR_HOOK
       implicit none
       integer :: n
       REAL A(*),TRIGS_(N)
@@ -61,6 +65,8 @@ C
 !$OMP threadprivate(ifax,n_old,lot_old,trigs,work)
 
 
+      REAL(KIND=JPRB) :: ZHOOK_HANDLE
+      IF (LHOOK) CALL DR_HOOK('FFT992',0,ZHOOK_HANDLE)
       if (n .ne. n_old) then
 
          IF( ALLOCATED( work ) ) DEALLOCATE( work )
@@ -88,17 +94,23 @@ C
 
       call dfftmlt ( a, work, trigs, ifax, inc, jump, n, lot, isign )
 
+      IF (LHOOK) CALL DR_HOOK('FFT992',1,ZHOOK_HANDLE)
       return
 
       END SUBROUTINE FFT992
 #else
       SUBROUTINE FFT992(A,TRIGS,IFAX,INC,JUMP,N,LOT,ISIGN)
+!AUTOPROMOTE
+      USE PARKIND1, ONLY : JPRB
+      USE YOMHOOK , ONLY : LHOOK, DR_HOOK
       REAL A(*),TRIGS(N)
       INTEGER IFAX(10)
 C     Dynamically allocated work array:
       REAL WORK(N*LOT+1)
       LOGICAL LIPL
 *
+      REAL(KIND=JPRB) :: ZHOOK_HANDLE
+      IF (LHOOK) CALL DR_HOOK('FFT992',0,ZHOOK_HANDLE)
       NFAX=IFAX(1)
       IF (ISIGN.EQ.+1) THEN
 C
@@ -150,6 +162,7 @@ C
           IF (IERR.NE.0) THEN
             IF (IERR.EQ.2) WRITE(6,901) IFAC
             IF (IERR.EQ.3) WRITE(6,902) IFAC
+            IF (LHOOK) CALL DR_HOOK('FFT992',1,ZHOOK_HANDLE)
             RETURN
           ENDIF
           LA=IFAC*LA
@@ -220,6 +233,7 @@ C
           IF (IERR.NE.0) THEN
             IF (IERR.EQ.2) WRITE(6,901) IFAC
             IF (IERR.EQ.3) WRITE(6,902) IFAC
+            IF (LHOOK) CALL DR_HOOK('FFT992',1,ZHOOK_HANDLE)
             RETURN
           ENDIF
           IF (LIPL) THEN
@@ -267,11 +281,10 @@ C     ------------------------------------
 C
       ENDIF
 C
-      RETURN
-C
 C     FORMAT STATEMENTS FOR ERROR MESSAGES:
   901 FORMAT(' FACTOR =',I3,' NOT CATERED FOR')
   902 FORMAT(' FACTOR =',I3,' ONLY CATERED FOR IF LA*IFAC=N')
 C
+      IF (LHOOK) CALL DR_HOOK('FFT992',1,ZHOOK_HANDLE)
       END
 #endif

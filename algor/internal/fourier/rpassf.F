@@ -26,12 +26,17 @@ C-----------------------------------------------------------------------
 C                                                                       
       SUBROUTINE RPASSF(A,B,C,D,TRIGS,INC1,INC2,INC3,INC4,LOT,N,IFAC,   
      *    LA,IERR,LIPL)                                                      
+!AUTOPROMOTE
+      USE PARKIND1, ONLY : JPRB
+      USE YOMHOOK , ONLY : LHOOK, DR_HOOK
       DIMENSION A(*),B(*),C(*),D(*),TRIGS(N)                            
       LOGICAL LIPL
 C                                                                       
       DATA SIN36/0.587785252292473/,SIN72/0.951056516295154/,           
      *    QRT5/0.559016994374947/,SIN60/0.866025403784437/              
 C                                                                       
+      REAL(KIND=JPRB) :: ZHOOK_HANDLE
+      IF (LHOOK) CALL DR_HOOK('RPASSF',0,ZHOOK_HANDLE)
       M=N/IFAC                                                          
       IINK=LA*INC1                                                      
       JINK=LA*INC2                                                      
@@ -897,5 +902,5 @@ C     RETURN
 C     ------                                                            
   900 CONTINUE                                                          
       IERR=IBAD                                                         
-      RETURN                                                            
+      IF (LHOOK) CALL DR_HOOK('RPASSF',1,ZHOOK_HANDLE)
       END                                                               
