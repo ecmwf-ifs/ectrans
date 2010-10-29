@@ -14,9 +14,9 @@ SAVE
                         ! (inverse transform, spectral/fourier space)
 !INTEGER_M :: NF_OUT_LT  ! Number of fields that comes out of Inverse 
                         ! Legendre transform
-INTEGER(KIND=JPIM) :: NF_SC2
-INTEGER(KIND=JPIM) :: NF_SC3A
-INTEGER(KIND=JPIM) :: NF_SC3B
+INTEGER(KIND=JPIM) :: NF_SC2  ! Number of fields in "SPSC2" arrays.
+INTEGER(KIND=JPIM) :: NF_SC3A ! Number of fields in "SPSC3A" arrays.
+INTEGER(KIND=JPIM) :: NF_SC3B ! Number of fields in "SPSC3B" arrays.
 
 !LOGICAL   :: LUV        ! uv fields requested
 !LOGICAL   :: LSCALAR    ! scalar fields requested
