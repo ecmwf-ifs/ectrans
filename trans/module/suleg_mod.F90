@@ -14,7 +14,6 @@ USE SUGAW_MOD
 USE SUPOL_MOD
 USE SUTRLE_MOD
 
-#ifdef DOC
 
 !**** *SULEG * - initialize the Legendre polynomials
 
@@ -92,7 +91,6 @@ USE SUTRLE_MOD
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
 !     ------------------------------------------------------------------
 
-#endif
 
 
 IMPLICIT NONE

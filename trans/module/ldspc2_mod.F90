@@ -9,7 +9,6 @@ USE TPM_DIM
 
 USE UVTVD_MOD
 
-#ifdef DOC
 
 !**** *LDSPC2* - Spectral computations in direct Legendre transform
 
@@ -55,7 +54,6 @@ USE UVTVD_MOD
 !                            instead of u,v->vor,div
 !        MPP Group: 95-10-01 Support for Message Passing version
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

@@ -10,7 +10,6 @@ USE TPM_TRANS
 
 USE PRFI1BAD_MOD
 
-#ifdef DOC
 
 !**** *PRFI1AD* - Prepare spectral fields for inverse Legendre transform
 
@@ -54,7 +53,6 @@ USE PRFI1BAD_MOD
 !        Original : 00-02-01 From PRFI1AD in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

@@ -7,7 +7,6 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE TPM_DIM
 USE TPM_DISTR
 
-#ifdef DOC
 
 !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
 
@@ -51,7 +50,6 @@ USE TPM_DISTR
 !        Original : 00-02-01 From PRFI1B in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

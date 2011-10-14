@@ -2,7 +2,6 @@ MODULE SET2PE_MOD
 CONTAINS
 SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 
-#ifdef DOC
 
 !**** *SET2PE* - Convert from set numbers to PE number
 
@@ -56,7 +55,6 @@ SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !     --------------
 !        Original : 98-08-19
 !     ------------------------------------------------------------------
-#endif
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

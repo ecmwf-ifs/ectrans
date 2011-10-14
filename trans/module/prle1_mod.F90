@@ -9,7 +9,6 @@ USE TPM_DISTR
 USE TPM_FIELDS
 USE TPM_GEOMETRY
 
-#ifdef DOC
 
 !**** *PRLE1* - Prepare Legendre polonomials for inverse tranform.
 
@@ -47,7 +46,6 @@ USE TPM_GEOMETRY
 !     --------------
 !        Original : 00-02-01 From PRLE1 in IFS CY22R1
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

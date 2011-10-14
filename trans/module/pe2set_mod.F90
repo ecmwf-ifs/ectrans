@@ -2,7 +2,6 @@ MODULE PE2SET_MOD
 CONTAINS
 SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 
-#ifdef DOC
 
 !**** *PE2SET* - Convert from PE number to set numbers
 
@@ -60,7 +59,6 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !        Original : 98-08-19
 !        Revision : 98-10-13 row ordering
 !     ------------------------------------------------------------------
-#endif
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

@@ -9,7 +9,6 @@ USE TPM_DIM
 USE TPM_FIELDS
 USE TPM_TRANS
 
-#ifdef DOC
 
 !**** *SPNSDE* - Compute North-South derivative in spectral space
 
@@ -62,7 +61,6 @@ USE TPM_TRANS
 !        Original : 00-02-01 From SPNSDE in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

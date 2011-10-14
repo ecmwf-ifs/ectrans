@@ -2,7 +2,6 @@ MODULE MYSENDSET_MOD
 CONTAINS
 FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
 
-#ifdef DOC
 
 !**** *MYSENDSET* RETURNS SET NUMBER TO SEND TO
 
@@ -40,7 +39,6 @@ FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
 !        Original : 00-02-03
 
 !     ------------------------------------------------------------------
-#endif
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE ABORT_TRANS_MOD

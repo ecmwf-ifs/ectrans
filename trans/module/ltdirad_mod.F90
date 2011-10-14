@@ -18,7 +18,6 @@ USE LEDIRAD_MOD
 USE LDSPC2AD_MOD
 USE UPDSPAD_MOD  
  
-#ifdef DOC
 
 !**** *LTDIRAD* - Control of Direct Legendre transform step - adjoint
 
@@ -77,7 +76,6 @@ USE UPDSPAD_MOD
 !               - Legendre transforms for transmission coefficients.
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 
