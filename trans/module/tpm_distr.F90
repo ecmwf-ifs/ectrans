@@ -73,8 +73,8 @@ INTEGER(KIND=JPIM) ,POINTER :: NPTRMS(:) ! Pointer to the first wave number of a
 
 ! Legendre polynomials
 
-INTEGER(KIND=JPIM) ,POINTER :: NLATLS(:) ! First latitude for which each a-set calcul.
-INTEGER(KIND=JPIM) ,POINTER :: NLATLE(:) ! Last latitude for which each a-set calcul.
+INTEGER(KIND=JPIM) ,POINTER :: NLATLS(:,:) ! First latitude for which each a-set,bset calcul.
+INTEGER(KIND=JPIM) ,POINTER :: NLATLE(:,:) ! Last latitude for which each a-set,bset calcul.
 
 INTEGER(KIND=JPIM) ,POINTER :: NPMT(:) ! Adress for legendre polynomial for
                               ! given M (NTMAX)

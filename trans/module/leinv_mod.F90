@@ -1,6 +1,6 @@
 MODULE LEINV_MOD
 CONTAINS
-SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
+SUBROUTINE LEINV(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KDGLU,PIA,PAOA1,PSOA1)
 
 !**** *LEINV* - Inverse Legendre transform.
 
@@ -24,10 +24,10 @@ SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 !        Implicit arguments :  None.
 !        --------------------
 
-!     Method.
+!     Method.    use butterfly or dgemm
 !     -------
 
-!     Externals.   MXMAOP - calls SGEMVX (matrix multiply)
+!     Externals.   
 !     ----------
 
 !     Reference.
@@ -36,11 +36,10 @@ SUBROUTINE LEINV(KM,KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 
 !     Author.
 !     -------
-!        Mats Hamrud and Philippe Courtier  *ECMWF*
-
+!      Nils Wedi + Mats Hamrud + George Modzynski
+!
 !     Modifications.
 !     --------------
-!        Original : 00-02-01 From LEINV in IFS CY22R1
 
 !     ------------------------------------------------------------------
 
@@ -51,19 +50,26 @@ USE TPM_GEOMETRY
 USE TPM_TRANS
 USE TPM_FIELDS
 USE TPM_DISTR
+USE TPM_FLT
+USE TPM_GEN ! Fpr nout
+USE BUTTERFLY_ALG_MOD
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM
+INTEGER(KIND=JPIM), INTENT(IN)  :: KMLOC
 INTEGER(KIND=JPIM), INTENT(IN)  :: KFC
+INTEGER(KIND=JPIM), INTENT(IN)  :: KIFC
+INTEGER(KIND=JPIM), INTENT(IN)  :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_OUT_LT
 REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: PSOA1(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: PAOA1(:,:)
 
-!     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, J1, JGL,IOAD1
-
+!     LOCAL 
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI
+INTEGER(KIND=JPIM) :: ITHRESHOLD
+REAL(KIND=JPRB)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
 
 !     ------------------------------------------------------------------
 
@@ -79,11 +85,9 @@ IS  = 1+MOD(R%NSMAX-KM+1,2)
 ILA = (R%NSMAX-KM+2)/2
 ILS = (R%NSMAX-KM+3)/2
 ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
-IOAD1 = 2*KF_OUT_LT
 
 IF(KM == 0)THEN
   ISKIP = 2
-  IFC = KFC/2
   DO J1=2,KFC,2
     DO JGL=ISL,R%NDGNH
       PSOA1(J1,JGL) = 0.0_JPRB
@@ -92,29 +96,74 @@ IF(KM == 0)THEN
   ENDDO
 ELSE
   ISKIP = 1
-  IFC = KFC
 ENDIF
 
-!*       1.2      ANTISYMMETRIC PART.
+IF( KDGLU > 0 ) THEN
 
-IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
+  ITHRESHOLD=S%ITHRESHOLD
 
-IF( IDGLU > 0 ) THEN
+  ! 1. +++++++++++++ anti-symmetric
 
-  CALL MXMAOP(F%RPNM(ISL,D%NPMS(KM)+IA),1,2*R%NLEI3,PIA(1+IA,1),2,&
-              &R%NLEI1*ISKIP,PAOA1(1,ISL),IOAD1,ISKIP,&
-              &IDGLU,ILA,IFC)
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO J=1,ILA
+      ZBA(J,IF)=PIA(IA+1+(J-1)*2,JK)
+    ENDDO
+  ENDDO
+  
+  IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
-!*       1.3      SYMMETRIC PART.
+    CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
+     &ZBA,ILA,0._JPRB,ZC,KDGLU)
+  
+  ELSE
 
-  CALL MXMAOP(F%RPNM(ISL,D%NPMS(KM)+IS),1,2*R%NLEI3,PIA(1+IS,1),2,&
-              &R%NLEI1*ISKIP,PSOA1(1,ISL),IOAD1,ISKIP,&
-              &IDGLU,ILS,IFC)
+    CALL MULT_BUTM('N',S%FA(KMLOC)%YBUT_STRUCT_A,KIFC,ZBA,ZC)
+    
+  ENDIF
 
+  ! we need the transpose of C
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO JI=1,KDGLU
+      PAOA1(JK,ISL+JI-1) = ZC(JI,IF)
+    ENDDO
+  ENDDO
+
+  ! 2. +++++++++++++ symmetric
+
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO J=1,ILS
+      ZBS(J,IF)=PIA(IS+1+(J-1)*2,JK)
+    ENDDO
+  ENDDO
+  
+  IF(ILS <= ITHRESHOLD .OR. .NOT.S%LUSEFLT ) THEN
+
+    CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
+     &ZBS,ILS,0._JPRB,ZC,KDGLU)
+    
+  ELSE
+
+    CALL MULT_BUTM('N',S%FA(KMLOC)%YBUT_STRUCT_S,KIFC,ZBS,ZC)
+
+  ENDIF
+
+  ! we need the transpose of C 
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO JI=1,KDGLU
+      PSOA1(JK,ISL+JI-1) = ZC(JI,IF)
+    ENDDO
+  ENDDO
+  
 ENDIF
-
 !     ------------------------------------------------------------------
-
 
 END SUBROUTINE LEINV
 END MODULE LEINV_MOD

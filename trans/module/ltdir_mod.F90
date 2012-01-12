@@ -7,8 +7,10 @@ SUBROUTINE LTDIR(KM,KMLOC,KF_FS,KF_UV,KF_SCALARS,KLED2,&
 
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 USE TPM_DIM
+USE TPM_GEOMETRY
 
 USE PRLE2_MOD
 USE PREPSNM_MOD
@@ -93,20 +95,22 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
 
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IFC
+INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
 
 !     LOCAL REALS
 REAL(KIND=JPRB) :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
-REAL(KIND=JPRB) :: ZLEPO(R%NLED3,R%NDGNH)
 REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRB) :: ZOA1(R%NLED4,KLED2),         ZOA2(R%NLED4,MAX(4*KF_UV,1))
-
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
+!CHARACTER(LEN=10) :: CLHOOK
 
 !     ------------------------------------------------------------------
 
 !*       1.    PREPARE LEGENDRE POLONOMIALS AND EPSNM
 !              --------------------------------------
 
+!WRITE(CLHOOK,FMT='(A,I4.4)') 'LTDIR_',KM
+IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',0,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
@@ -126,9 +130,13 @@ CALL LDFOU2(KM,KF_UV,ZAIA,ZSIA)
 
 !*       4.    DIRECT LEGENDRE TRANSFORM.
 !              --------------------------
-CALL PRLE2(KM,ZLEPO)
 IFC = 2*KF_FS 
-CALL LEDIR(KM,IFC,KLED2,ZAIA,ZSIA,ZOA1,ZLEPO)
+IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
+IIFC = IFC
+IF(KM == 0)THEN
+  IIFC = IFC/2
+ENDIF
+CALL LEDIR(KM,KMLOC,IFC,IIFC,IDGLU,KLED2,ZAIA,ZSIA,ZOA1)
 
 !     ------------------------------------------------------------------
 
@@ -150,6 +158,7 @@ CALL UPDSP(KM,KF_UV,KF_SCALARS,ZOA1,ZOA2, &
  & PSPSC3A,PSPSC3B,PSPSC2 , &
  & KFLDPTRUV,KFLDPTRSC)
 
+IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
 END SUBROUTINE LTDIR

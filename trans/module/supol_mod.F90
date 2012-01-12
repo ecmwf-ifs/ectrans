@@ -1,6 +1,6 @@
 MODULE SUPOL_MOD
 CONTAINS
-SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL,PDDA,PDDC,PDDD,PDDE,PDDH,PDDI)
+SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL)
 
 !**** *SUPOL * - Routine to compute the Legendre polynomials
 
@@ -19,7 +19,6 @@ SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL,PDDA,PDDC,PDDD,PDDE,PDDH,PDDI)
 !        PFN       :  Fourier coefficients of series expansion 
 !                     for the ordinary Legendre polynomials               [in]
 !        PDDPOL    :  Polynomials (the first index is m and the second n) [out]
-!        PDDA to PDDI: intermediate precomputed quantities (see caller)   [in]
 
 !        Implicit arguments :   None
 !        --------------------
@@ -52,28 +51,21 @@ SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL,PDDA,PDDC,PDDD,PDDE,PDDH,PDDI)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE TPM_POL
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KNSMAX
 REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDMU
 REAL(KIND=JPRB)   ,INTENT(IN)  :: PFN(0:KNSMAX,0:KNSMAX)
+
 REAL(KIND=JPRB)   ,INTENT(OUT) :: PDDPOL(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDA(0:KNSMAX)
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDC(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDD(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDE(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDH(0:KNSMAX)
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDI(0:KNSMAX)
 
-!     ------------------------------------------------------------------
-
-REAL(KIND=JPRB) :: ZDLX,ZDLX1,ZDLSITA,ZDL1SITA,ZDLK,ZDL1,ZDLS,ZDLLDN
-
-INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(ZDLX)
+REAL(KIND=JPRB) :: ZDLX,ZDLX1,ZDLSITA,ZDL1SITA,ZDLS,ZDLK,ZDLLDN
 
 INTEGER(KIND=JPIM) :: JM, JN, JK
 REAL(KIND=JPRB) :: Z
+REAL(KIND=JPRB) :: DCL, DDL
 
 !     ------------------------------------------------------------------
 
@@ -106,9 +98,9 @@ DO JN=2,KNSMAX,2
   ! represented by only even k
   DO JK=2,JN,2
     ! normalised ordinary Legendre polynomial == \overbar{P_n}^0
-    ZDLK = ZDLK + PFN(JN,JK)*COS(PDDI(JK)*ZDLX1)
+    ZDLK = ZDLK + PFN(JN,JK)*COS(DDI(JK)*ZDLX1)
     ! normalised associated Legendre polynomial == \overbar{P_n}^1
-    ZDLLDN = ZDLLDN + PDDA(JN)*PFN(JN,JK)*PDDI(JK)*SIN(PDDI(JK)*ZDLX1)
+    ZDLLDN = ZDLLDN + DDA(JN)*PFN(JN,JK)*DDI(JK)*SIN(DDI(JK)*ZDLX1)
   ENDDO
   PDDPOL(0,JN) = ZDLK
   PDDPOL(1,JN) = ZDLLDN
@@ -120,9 +112,9 @@ DO JN=1,KNSMAX,2
   ! represented by only odd k
   DO JK=1,JN,2
     ! normalised ordinary Legendre polynomial == \overbar{P_n}^0
-    ZDLK = ZDLK + PFN(JN,JK)*COS(PDDI(JK)*ZDLX1)
+    ZDLK = ZDLK + PFN(JN,JK)*COS(DDI(JK)*ZDLX1)
     ! normalised associated Legendre polynomial == \overbar{P_n}^1
-    ZDLLDN = ZDLLDN + PDDA(JN)*PFN(JN,JK)*PDDI(JK)*SIN(PDDI(JK)*ZDLX1)
+    ZDLLDN = ZDLLDN + DDA(JN)*PFN(JN,JK)*DDI(JK)*SIN(DDI(JK)*ZDLX1)
   ENDDO
   PDDPOL(0,JN) = ZDLK
   PDDPOL(1,JN) = ZDLLDN
@@ -140,8 +132,8 @@ ZDLS=ZDL1SITA*TINY(ZDLS)
 !OCL SCALAR
 #endif
 DO JN=2,KNSMAX
-  PDDPOL(JN,JN)=PDDPOL(JN-1,JN-1)*ZDLSITA*PDDH(JN)
-  IF ( ABS(PDDPOL(JN,JN))  <  ZDLS ) PDDPOL(JN,JN)=0.0_JPRB
+  PDDPOL(JN,JN)=PDDPOL(JN-1,JN-1)*ZDLSITA*DDH(JN)
+  IF ( ABS(PDDPOL(JN,JN)) < ZDLS ) PDDPOL(JN,JN)=0.0_JPRB
 ENDDO
 
 !     ------------------------------------------------------------------
@@ -153,9 +145,9 @@ DO JN=3,KNSMAX
 !DIR$ IVDEP
 !OCL NOVREC
   DO JM=2,JN-1
-    PDDPOL(JM,JN)=PDDC(JM,JN)*PDDPOL(JM-2,JN-2)&
-     &-PDDD(JM,JN)*PDDPOL(JM-2,JN-1)*ZDLX &
-     &+PDDE(JM,JN)*PDDPOL(JM  ,JN-1)*ZDLX
+    PDDPOL(JM,JN)=DDC(JM,JN)*PDDPOL(JM-2,JN-2)&
+     &-DDD(JM,JN)*PDDPOL(JM-2,JN-1)*ZDLX &
+     &+DDE(JM,JN)*PDDPOL(JM  ,JN-1)*ZDLX
   ENDDO
 ENDDO
 

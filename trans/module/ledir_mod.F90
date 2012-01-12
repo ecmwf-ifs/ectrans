@@ -1,6 +1,6 @@
 MODULE LEDIR_MOD
 CONTAINS
-SUBROUTINE LEDIR(KM,KFC,KLED2,PAIA,PSIA,POA1,PLEPO)
+SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
 
 !**** *LEDIR* - Direct Legendre transform.
 
@@ -20,15 +20,14 @@ SUBROUTINE LEDIR(KM,KFC,KLED2,PAIA,PSIA,POA1,PLEPO)
 !                              fields for zonal wavenumber KM
 !                              POA1 -  spectral
 !                              fields for zonal wavenumber KM
-!                              PLEPO - Legendre polonomials
 
 !        Implicit arguments :  None.
 !        --------------------
 
 !     Method.
-!     -------
+!     -------   use butterfly or dgemm
 
-!     Externals.   MXMAOP - matrix multiply
+!     Externals.   
 !     ----------
 
 !     Reference.
@@ -37,15 +36,10 @@ SUBROUTINE LEDIR(KM,KFC,KLED2,PAIA,PSIA,POA1,PLEPO)
 
 !     Author.
 !     -------
-!        Mats Hamrud and Philippe Courtier  *ECMWF*
+!          Nils Wedi + Mats Hamrud + George Modzynski
 
 !     Modifications.
 !     --------------
-!        Original : 88-01-28
-!        Modified : 91-07-01 Philippe Courtier/Mats Hamrud - Rewrite
-!                            for uv formulation
-!        Modified : 93-03-19 D. Giard - NTMAX instead of NSMAX
-!        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -53,22 +47,29 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE TPM_DIM
 USE TPM_GEOMETRY
 USE TPM_TRANS
+USE TPM_FLT
+USE TPM_FIELDS
+USE TPM_DISTR
+USE BUTTERFLY_ALG_MOD
 
 IMPLICIT NONE
 
 
 !     DUMMY ARGUMENTS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM
+INTEGER(KIND=JPIM), INTENT(IN)  :: KMLOC
 INTEGER(KIND=JPIM), INTENT(IN)  :: KFC
+INTEGER(KIND=JPIM), INTENT(IN)  :: KIFC
+INTEGER(KIND=JPIM), INTENT(IN)  :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KLED2
 
 REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
-REAL(KIND=JPRB),    INTENT(IN)  :: PLEPO(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL
-
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK
+INTEGER(KIND=JPIM) :: ITHRESHOLD
+REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 
 !     ------------------------------------------------------------------
 
@@ -85,26 +86,73 @@ ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
 
 IF(KM == 0)THEN
   ISKIP = 2
-  IFC   = KFC/2
 ELSE
   ISKIP = 1
-  IFC   = KFC
 ENDIF
 
-IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
+IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
-IF (IFC > 0 .AND. IDGLU > 0 ) THEN
+  ITHRESHOLD=S%ITHRESHOLD
+ 
+!*       1. ANTISYMMETRIC PART.
 
-!*       1.2      ANTISYMMETRIC PART.
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO J=1,KDGLU
+      ZB(J,IF)=PAIA(JK,ISL+J-1)*F%RW(ISL+J-1)
+    ENDDO
+  ENDDO
+  
+  IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
-  CALL MXMAOP(PLEPO(IA,ISL),2,R%NLED3,PAIA(1,ISL),KLED2,ISKIP, &
-      & POA1(IA,1),2,R%NLED4*ISKIP,ILA,IDGLU,IFC)
+    CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
+     &ZB,KDGLU,0._JPRB,ZCA,ILA)
 
+  ELSE
+
+    CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_A,KIFC,ZB,ZCA)
+
+  ENDIF
+
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO J=1,ILA
+      POA1(IA+(J-1)*2,JK) = ZCA(J,IF)
+    ENDDO
+  ENDDO
+  
 !*       1.3      SYMMETRIC PART.
 
-  CALL MXMAOP(PLEPO(IS,ISL),2,R%NLED3,PSIA(1,ISL),KLED2,ISKIP, &
-      & POA1(IS,1),2,R%NLED4*ISKIP,ILS,IDGLU,IFC)
+  
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO J=1,KDGLU
+      ZB(J,IF)=PSIA(JK,ISL+J-1)*F%RW(ISL+J-1)
+    ENDDO
+  ENDDO
+  
+  IF(ILS <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
+    CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
+     &ZB,KDGLU,0._JPRB,ZCS,ILS)
+    
+  ELSE
+
+    CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_S,KIFC,ZB,ZCS)
+    
+  ENDIF
+
+  IF=0
+  DO JK=1,KFC,ISKIP
+    IF=IF+1
+    DO J=1,ILS
+      POA1(IS+(J-1)*2,JK) = ZCS(J,IF)
+    ENDDO
+  ENDDO
+  
 ENDIF
 
 !     ------------------------------------------------------------------
