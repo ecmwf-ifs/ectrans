@@ -13,9 +13,7 @@ USE ABORT_TRANS_MOD
 USE SUPOLF_MOD
 USE TPM_POL
 
-#ifdef DOC
-
-!**** *SUGAW * - Routine to initialize the Gaussian 
+!**** *SUGAW * - Routine to initialize the Gaussian
 !                 abcissa and the associated weights
 
 !     Purpose.
@@ -39,7 +37,7 @@ USE TPM_POL
 
 !     PL (i) is the abscissa i starting from the northern pole, it is
 ! the cosine of the colatitude of the corresponding row of the collocation
-! grid. 
+! grid.
 
 !        Implicit arguments :
 !        --------------------
@@ -51,13 +49,10 @@ USE TPM_POL
 
 !     Externals.
 !     ----------
-!      Calls:
-!      Called by SULEG.
 
 !     Reference.
 !     ----------
 
-!     
 !     S.L. Belousov, Tables of normalized associated Legendre Polynomials, Pergamon Press (1962)
 !     P.N. Swarztrauber, On computing the points and weights for Gauss-Legendre quadrature,
 !     SIAM J. Sci. Comput. Vol. 24 (3) pp. 945-954 (2002)
@@ -73,13 +68,12 @@ USE TPM_POL
 !        Philippe Courtier : 92-12-19 Multitasking
 !        Ryad El Khatib    : 94-04-20 Remove unused comdecks pardim and yomdim
 !        Mats Hamrud       : 94-08-12 Printing level
+!        K. Yessad (Sep 2008): cleaning, improve comments.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
-!     ---------------------------------------------------------------------------
-#endif
+!     ------------------------------------------------------------------
 
 IMPLICIT NONE
 
-!     DUMMY ARGUMENTS
 INTEGER(KIND=JPIM),INTENT(IN) :: KDGL
 INTEGER(KIND=JPIM),INTENT(IN) :: KM
 INTEGER(KIND=JPIM),INTENT(IN) :: KN
@@ -91,16 +85,14 @@ REAL(KIND=JPRB),INTENT(OUT) :: PL(KDGL)
 
 REAL(KIND=JPRB)   ,OPTIONAL, INTENT(IN)  :: PFN(0:KDGL,0:KDGL)
 
-! LOCAL REALS
+!     ------------------------------------------------------------------
 
 REAL(KIND=JPRB) :: ZLI(KDGL),ZT(KDGL),ZFN(0:KDGL/2),ZL(KDGL)
 REAL(KIND=JPRB) :: ZREG(KDGL),ZMOD(KDGL),ZM(KDGL),ZRR(KDGL)
 INTEGER(KIND=JPIM) :: ITER(KDGL)
 
-!     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IALLOW, INS2, ISYM, JGL, IK, IODD, I, IMAX
 
-!     LOCAL REAL SCALARS
 REAL(KIND=JPRB) :: Z, ZEPS, Z0, ZPI
 
 ! computations in extended precision for alternative root finding
@@ -425,5 +417,4 @@ ENDIF
 !     ------------------------------------------------------------------
 
 END SUBROUTINE SUGAW
-
 END MODULE SUGAW_MOD
