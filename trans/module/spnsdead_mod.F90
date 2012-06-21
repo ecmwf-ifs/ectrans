@@ -94,7 +94,8 @@ ELSE
   ISKIP = 1
 ENDIF
 
-!cdir novector
+!cdir loopchg
+!cdir select(vector)
 DO J=1,2*KF_SCALARS,ISKIP
   DO JI=2,ISMAX+3-KM
     PF(JI+1,J) = PF(JI+1,J)-ZN(JI+1)*ZEPSNM(JI)  *PNSD(JI,J)
