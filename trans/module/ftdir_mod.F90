@@ -29,6 +29,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!         G. Radnoti 01-04-24 2D model (NLOEN=1)
 
 !     ------------------------------------------------------------------
 
@@ -44,7 +45,7 @@ IMPLICIT NONE
 INTEGER_M,INTENT(IN)  :: KFIELDS
 REAL_B, INTENT(INOUT) :: PREEL(:,:)
 
-INTEGER_M :: JGL,IGLG,IST,ILEN,IJUMP,JJ,JF
+INTEGER_M :: JGL,IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 
 !     ------------------------------------------------------------------
 
@@ -57,11 +58,13 @@ DO JGL=1,D%NDGL_FS
   IGLG = D%NPTRLS(MYSETW)+JGL-1
   IST  = 2*(G%NMEN(IGLG)+1)+1
   ILEN = G%NLOEN(IGLG)+3-IST
-  
-  CALL FFT992(PREEL(1,D%NSTAGTF(JGL)+1),T%TRIGS(1,JGL),&
-   &T%NFAX(1,JGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,-1)
-
-  DO JJ=1,ILEN
+  IF (G%NLOEN(IGLG)>1) THEN 
+    CALL FFT992(PREEL(1,D%NSTAGTF(JGL)+1),T%TRIGS(1,JGL),&
+     &T%NFAX(1,JGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,-1)
+  ENDIF
+  IST1=1
+  IF (G%NLOEN(IGLG)==1) IST1=0
+  DO JJ=IST1,ILEN
     DO JF=1,KFIELDS
       PREEL(JF,IST+D%NSTAGTF(JGL)+JJ-1) = _ZERO_
     ENDDO
