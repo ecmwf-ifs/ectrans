@@ -75,7 +75,7 @@ INTEGER_M,OPTIONAL,INTENT(IN)    :: KFLDPTRUV(:)
 INTEGER_M,OPTIONAL,INTENT(IN)    :: KFLDPTRSC(:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IVORS, IVORE, IDIVS, IDIVE, IST ,IEND, JN, ISE
+INTEGER_M :: IVORS, IVORE, IDIVS, IDIVE, IST ,IEND, JN, ISE,IFLD,JFLD
 
 
 !     ------------------------------------------------------------------
@@ -92,11 +92,29 @@ IF (KF_UV > 0) THEN
   IDIVS = 2*KF_UV+1
   IDIVE = 4*KF_UV
   IF (KM == 0) THEN
-    DO JN=0,R%NSMAX
-      ISE = 1+JN*2+1
-      PSPDIV(:,ISE) = _ZERO_
-      PSPVOR(:,ISE) = _ZERO_
-    ENDDO
+    IF(PRESENT(KFLDPTRUV)) THEN
+      DO JFLD=1,KF_UV
+        IFLD = KFLDPTRUV(JFLD)
+        PSPVOR(IFLD,D%NASM0(0)) = _ZERO_
+        PSPDIV(IFLD,D%NASM0(0)) = _ZERO_
+      ENDDO
+      DO JN=0,R%NSMAX
+        ISE = 1+JN*2+1
+        DO JFLD=1,KF_UV
+          IFLD = KFLDPTRUV(JFLD)
+          PSPDIV(IFLD,ISE) = _ZERO_
+          PSPVOR(IFLD,ISE) = _ZERO_
+        ENDDO
+      ENDDO
+    ELSE
+      PSPVOR(:,D%NASM0(0)) = _ZERO_
+      PSPDIV(:,D%NASM0(0)) = _ZERO_
+      DO JN=0,R%NSMAX
+        ISE = 1+JN*2+1
+        PSPDIV(:,ISE) = _ZERO_
+        PSPVOR(:,ISE) = _ZERO_
+      ENDDO
+    ENDIF
   ENDIF
   CALL UPDSPBAD(KM,KF_UV,POA2(:,IVORS:IVORE),PSPVOR,KFLDPTRUV)
   CALL UPDSPBAD(KM,KF_UV,POA2(:,IDIVS:IDIVE),PSPDIV,KFLDPTRUV)

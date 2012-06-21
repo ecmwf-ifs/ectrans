@@ -1,4 +1,4 @@
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS,KTMAX)
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,KAPSETS,KTMAX,KRESOL)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -13,15 +13,17 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS,KTMAX)
 !     ----------
 !     CALL SETUP_TRANS(...)
 
-!     Explicit arguments : KLOEN,LDSPLIT,KAPSETS are optional arguments
+!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT,KAPSETS are optional arguments
 !     -------------------- 
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
+!     LDLINEAR_GRID - true if linear grid
 !     KAPSETS - Number of apple sets in the distribution [0]
 !     KTMAX - truncation order for tendencies?
-!
+!     KRESOL - the resolution identifier
+
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
@@ -59,9 +61,11 @@ IMPLICIT NONE
 
 INTEGER_M ,INTENT(IN) :: KSMAX,KDGL
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KLOEN(:)
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KAPSETS
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KTMAX
+INTEGER_M ,OPTIONAL,INTENT(OUT):: KRESOL
 
 
 END SUBROUTINE SETUP_TRANS

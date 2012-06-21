@@ -90,11 +90,12 @@ ELSE
   IFC   = KFC
 ENDIF
 
+IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 
-IF (IFC > 0) THEN
+IF (IFC > 0 .AND. IDGLU > 0 ) THEN
+
 !*       1.2      ANTISYMMETRIC PART.
 
-  IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
   CALL MXMAOP(PLEPO(IA,ISL),2,R%NLED3,PAIA(1,ISL),KLED2,ISKIP &
       &,POA1(IA,1),2,R%NLED4*ISKIP,ILA,IDGLU,IFC)
 
@@ -102,6 +103,7 @@ IF (IFC > 0) THEN
 
   CALL MXMAOP(PLEPO(IS,ISL),2,R%NLED3,PSIA(1,ISL),KLED2,ISKIP &
       &,POA1(IS,1),2,R%NLED4*ISKIP,ILS,IDGLU,IFC)
+
 ENDIF
 
 !     ------------------------------------------------------------------

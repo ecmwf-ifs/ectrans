@@ -29,7 +29,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-!         G. Radnoti 01-04-24 2D model (NLOEN=1)
+!        G. Radnoti 01-04-24 2D model (NLOEN=1)
 
 !     ------------------------------------------------------------------
 
@@ -52,7 +52,7 @@ INTEGER_M :: JGL,IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 IJUMP = 1
 
 #ifndef HLOMP
-!$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JGL,IGLG,IST,ILEN,JJ,JF)
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JGL,IGLG,IST,ILEN,JJ,JF,IST1)
 #endif
 DO JGL=1,D%NDGL_FS
   IGLG = D%NPTRLS(MYSETW)+JGL-1

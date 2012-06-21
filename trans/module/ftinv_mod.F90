@@ -1,6 +1,6 @@
 MODULE FTINV_MOD
 CONTAINS
-SUBROUTINE FTINV(PREEL,KFIELDS)
+SUBROUTINE FTINV(PREEL,KFIELDS,KGL)
 
 !**** *FTINV - Inverse Fourier transform
 
@@ -28,7 +28,7 @@ SUBROUTINE FTINV(PREEL,KFIELDS)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-!           G. Radnoti 01-04-24 : 2D model (NLOEN=1)
+!        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
 !     ------------------------------------------------------------------
 
 #include "tsmbkind.h"
@@ -40,36 +40,30 @@ USE TPM_FFT
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN) :: KFIELDS
+INTEGER_M,INTENT(IN) :: KFIELDS,KGL
 REAL_B, INTENT(OUT)  :: PREEL(:,:)
 
-INTEGER_M :: JGL,IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
+INTEGER_M :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 
 !     ------------------------------------------------------------------
 
 IJUMP = 1
-#ifndef HLOMP
-!$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JGL,IGLG,IST,ILEN,JJ,JF)
-#endif
-DO JGL=1,D%NDGL_FS
-  IGLG  = D%NPTRLS(MYSETW)+JGL-1
-  IST   = 2*(G%NMEN(IGLG)+1)+1
-  ILEN  = G%NLOEN(IGLG)+3-IST
-  IST1=1
-  IF (G%NLOEN(IGLG)==1) IST1=0
-  DO JJ=IST1,ILEN
-    DO JF=1,KFIELDS
-      PREEL(JF,IST+D%NSTAGTF(JGL)+JJ-1) = _ZERO_
-    ENDDO
+IGLG  = D%NPTRLS(MYSETW)+KGL-1
+IST   = 2*(G%NMEN(IGLG)+1)+1
+ILEN  = G%NLOEN(IGLG)+3-IST
+IST1=1
+IF (G%NLOEN(IGLG)==1) IST1=0
+
+DO JJ=IST1,ILEN
+  DO JF=1,KFIELDS
+    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = _ZERO_
   ENDDO
-  IF (G%NLOEN(IGLG)>1) THEN 
-    CALL FFT992(PREEL(1,D%NSTAGTF(JGL)+1),T%TRIGS(1,JGL),&
-     &T%NFAX(1,JGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,1)
-  ENDIF
 ENDDO
-#ifndef HLOMP
-!$OMP END PARALLEL DO
-#endif
+
+IF (G%NLOEN(IGLG)>1) THEN
+  CALL FFT992(PREEL(1,D%NSTAGTF(KGL)+1),T%TRIGS(1,KGL),&
+   &T%NFAX(1,KGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,1)
+ENDIF
 
 !     ------------------------------------------------------------------
 

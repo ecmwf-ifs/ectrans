@@ -1,4 +1,5 @@
 MODULE TRMTOL_MOD
+
 CONTAINS
 SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 
@@ -46,6 +47,8 @@ SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 !                                            (NCOMBFLEN) for nphase.eq.1
 !        Modified : 99-05-28  D.Salmond - Optimise copies. 
 !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
+!        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
+!                             passing and buffer packing
 !     ------------------------------------------------------------------
 
 
@@ -118,102 +121,148 @@ ITAG = MTAGML
 ILEN = D%NLTSGTB(MYSETW)*KFIELD
 ISTA = D%NSTAGT0B(MYSETW)*KFIELD+1
 
+CALL GSTATS(1108,0)
 !$OMP PARALLEL DO PRIVATE(J)
 DO J=ISTA,ISTA+ILEN-1
   PFBUF(J) = PFBUF_IN(J)
 ENDDO
 !$OMP END PARALLEL DO
+CALL GSTATS(1108,1)
 
 ! Loop over the number of processors we need to communicate with
 
-DO WHILE( .NOT.LLDONE )
-  
-  LLDONE = .TRUE.
-    
+IF(LIMP_NOOLAP)THEN
 
-! Send loop.............................................................
+!  Send/Recv loop.........................................................
 
-!  For immediate send/recv, post receives first
-
-  IF(LIMP) THEN
-    DO J=1,NPRTRW-1
-      IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
-        IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
-        CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
-        ILEN = MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
-        ISTA = D%NSTAGT0B(D%MSTABF(IRECVSET))*KFIELD+IRCVD(J)+1
-        ISTP = ISTA+ILEN-1
-        CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),KTAG=ITAG, &
-         & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(J), &
-         & CDSTRING='TRMTOL:' )
-      ENDIF
-    ENDDO
-  ENDIF
-
-  INUMSENT = 0
-
+  CALL GSTATS(506,0)
   DO J=1,NPRTRW-1
 
 ! Check if there is no outstanding receive, and we have data to send
 
-    IF(ISENDTOT(J)-ISENT(J) > 0 )THEN
-      LLDONE = .FALSE.
+    IF(ISENDTOT(J) > 0 )THEN
       ISENDSET = MYSENDSET(NPRTRW,MYSETW,J)
       CALL SET2PE(ISEND,0,0,ISENDSET,MYSETV)
-      ILEN = MIN(ICOMBFLENP,ISENDTOT(J)-ISENT(J))
-      ISTA = D%NSTAGT0B(ISENDSET)*KFIELD+ISENT(J)+1
+      ILEN = ISENDTOT(J)
+      ISTA = D%NSTAGT0B(ISENDSET)*KFIELD+1
       ISTP = ISTA+ILEN-1
-      IF(LIMP) THEN
-        INUMSENT = INUMSENT+1
         CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
-         & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(INUMSENT), &
+         & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(J), &
          & KTAG=ITAG,CDSTRING='TRMTOL:')
-      ELSE
-        CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
-         &KTAG=ITAG,CDSTRING='TRMTOL:')
-      ENDIF
-      ISENT(J) = ISENT(J)+ILEN
-
     ENDIF
 
-  ENDDO
-
-
-!  Receive loop.........................................................
-
-
-  DO J=1,NPRTRW-1
-    IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
-      LLDONE = .FALSE.
-      ILEN = MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
-      IF( .NOT. LIMP ) THEN
+    IF( IRECVTOT(J) > 0 )THEN
         IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
         CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
-        ISTA = D%NSTAGT0B(D%MSTABF(IRECVSET))*KFIELD+IRCVD(J)+1
+        ILEN = IRECVTOT(J)
+        ISTA = D%NSTAGT0B(D%MSTABF(IRECVSET))*KFIELD+1
         ISTP = ISTA+ILEN-1
-        CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),&
-         &KTAG=ITAG,KOUNT=ILREC,CDSTRING='TRMTOL:')
-      ELSE
-!       For LIMP=true, find message length
-        CALL MPL_WAIT(PFBUF,KREQUEST=IRECVREQ(J), &
-         & KCOUNT=ILREC,CDSTRING='TRMTOL: LIMP WAITS ' )
-      ENDIF
+        CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),KTAG=ITAG, &
+         & KMP_TYPE=JP_BLOCKING_STANDARD,KOUNT=ILREC, &
+         & CDSTRING='TRMTOL:' )
       IF( ILREC /= ILEN )THEN
         CALL ABOR1('TRMTOL:RECEIVED MESSAGE LENGTH ERROR')
       ENDIF
-      IRCVD(J) = IRCVD(J)+ILEN
+    ENDIF
+    IF(ISENDTOT(J) > 0) THEN
+      CALL MPL_WAIT(PFBUF,KREQUEST=ISENDREQ(J), &
+       & CDSTRING='TRLTOM: WAIT FOR SENDS')
     ENDIF
   ENDDO
+  CALL GSTATS(506,1)
 
-!       For LIMP=true, wait for sends to complete
-  IF(LIMP) THEN
-    IF(INUMSENT > 0) THEN
-      CALL MPL_WAIT(PFBUF,KREQUEST=ISENDREQ(1:INUMSENT), &
-       & CDSTRING='TRLTOM: ERROR IN MPL_WAIT FOR SENDS')
+ELSE
+
+  DO WHILE( .NOT.LLDONE )
+    
+    LLDONE = .TRUE.
+      
+  
+! Send loop.............................................................
+  
+!  For immediate send/recv, post receives first
+  
+    IF(LIMP) THEN
+      DO J=1,NPRTRW-1
+        IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
+          IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
+          CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
+          ILEN = MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
+          ISTA = D%NSTAGT0B(D%MSTABF(IRECVSET))*KFIELD+IRCVD(J)+1
+          ISTP = ISTA+ILEN-1
+          CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),KTAG=ITAG, &
+           & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(J), &
+           & CDSTRING='TRMTOL:' )
+        ENDIF
+      ENDDO
     ENDIF
-  ENDIF
+  
+    INUMSENT = 0
+  
+    DO J=1,NPRTRW-1
+  
+! Check if there is no outstanding receive, and we have data to send
+  
+      IF(ISENDTOT(J)-ISENT(J) > 0 )THEN
+        LLDONE = .FALSE.
+        ISENDSET = MYSENDSET(NPRTRW,MYSETW,J)
+        CALL SET2PE(ISEND,0,0,ISENDSET,MYSETV)
+        ILEN = MIN(ICOMBFLENP,ISENDTOT(J)-ISENT(J))
+        ISTA = D%NSTAGT0B(ISENDSET)*KFIELD+ISENT(J)+1
+        ISTP = ISTA+ILEN-1
+        IF(LIMP) THEN
+          INUMSENT = INUMSENT+1
+          CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
+           & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(INUMSENT), &
+           & KTAG=ITAG,CDSTRING='TRMTOL:')
+        ELSE
+          CALL MPL_SEND(PFBUF_IN(ISTA:ISTP),KDEST=NPRCIDS(ISEND),&
+           &KTAG=ITAG,CDSTRING='TRMTOL:')
+        ENDIF
+        ISENT(J) = ISENT(J)+ILEN
+  
+      ENDIF
+  
+    ENDDO
+  
+  
+!  Receive loop.........................................................
+  
+  
+    DO J=1,NPRTRW-1
+      IF( IRECVTOT(J)-IRCVD(J) > 0 )THEN
+        LLDONE = .FALSE.
+        ILEN = MIN(ICOMBFLENP,IRECVTOT(J)-IRCVD(J))
+        IF( .NOT. LIMP ) THEN
+          IRECVSET = MYRECVSET(NPRTRW,MYSETW,J)
+          CALL SET2PE(IRECV,0,0,IRECVSET,MYSETV)
+          ISTA = D%NSTAGT0B(D%MSTABF(IRECVSET))*KFIELD+IRCVD(J)+1
+          ISTP = ISTA+ILEN-1
+          CALL MPL_RECV(PFBUF(ISTA:ISTP),KSOURCE=NPRCIDS(IRECV),&
+           &KTAG=ITAG,KOUNT=ILREC,CDSTRING='TRMTOL:')
+        ELSE
+!       For LIMP=true, find message length
+          CALL MPL_WAIT(PFBUF,KREQUEST=IRECVREQ(J), &
+           & KCOUNT=ILREC,CDSTRING='TRMTOL: LIMP WAITS ' )
+        ENDIF
+        IF( ILREC /= ILEN )THEN
+          CALL ABOR1('TRMTOL:RECEIVED MESSAGE LENGTH ERROR')
+        ENDIF
+        IRCVD(J) = IRCVD(J)+ILEN
+      ENDIF
+    ENDDO
+  
+!       For LIMP=true, wait for sends to complete
+    IF(LIMP) THEN
+      IF(INUMSENT > 0) THEN
+        CALL MPL_WAIT(PFBUF,KREQUEST=ISENDREQ(1:INUMSENT), &
+         & CDSTRING='TRLTOM: ERROR IN MPL_WAIT FOR SENDS')
+      ENDIF
+    ENDIF
+  
+  ENDDO
 
-ENDDO
+ENDIF
 
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication

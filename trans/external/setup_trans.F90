@@ -1,4 +1,4 @@
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS,KTMAX)
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,KAPSETS,KTMAX,KRESOL)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -13,15 +13,17 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDSPLIT,KAPSETS,KTMAX)
 !     ----------
 !     CALL SETUP_TRANS(...)
 
-!     Explicit arguments : KLOEN,LDSPLIT,KAPSETS are optional arguments
+!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT,KAPSETS are optional arguments
 !     -------------------- 
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
+!     LDLINEAR_GRID - true if linear grid
 !     KAPSETS - Number of apple sets in the distribution [0]
 !     KTMAX - truncation order for tendencies?
-!
+!     KRESOL - the resolution identifier
+
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
@@ -77,9 +79,11 @@ IMPLICIT NONE
 
 INTEGER_M ,INTENT(IN) :: KSMAX,KDGL
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KLOEN(:)
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KAPSETS
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KTMAX
+INTEGER_M ,OPTIONAL,INTENT(OUT):: KRESOL
 
 !ifndef INTERFACE
 
@@ -113,6 +117,10 @@ ELSE
   ENDIF
 ENDIF
 
+IF (PRESENT(KRESOL)) THEN
+  KRESOL=NDEF_RESOL
+ENDIF
+
 ! Point at structures due to be initialized
 CALL SET_RESOL(NDEF_RESOL)
 
@@ -132,6 +140,10 @@ D%NAPSETS = 0
 R%NSMAX = KSMAX
 R%NDGL  = KDGL
 R%NDLON = 2*KDGL
+
+IF (KDGL <= 0 .OR. MOD(KDGL,2) /= 0) THEN
+  CALL ABOR1 ('SETUP_TRANS: KDGL IS NOT A POSITIVE, EVEN NUMBER')
+ENDIF
 
 ! Optional arguments
 
@@ -169,7 +181,9 @@ IF(R%NTMAX /= R%NSMAX) THEN
   CALL ABOR1('SETUP_TRANS:R%NTMAX /= R%NSMAX HAS NOT BEEN VALIDATED')
 ENDIF
 !Temporary?
-IF(R%NSMAX > (R%NDLON+3)/3) THEN
+IF(PRESENT(LDLINEAR_GRID)) THEN
+  G%LINEAR_GRID = LDLINEAR_GRID
+ELSEIF(R%NSMAX > (R%NDLON+3)/3) THEN
   G%LINEAR_GRID = .TRUE.
 ENDIF  
 
