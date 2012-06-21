@@ -170,6 +170,7 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !     ------------------------------------------------------------------
 
 IF (LHOOK) CALL DR_HOOK('INV_TRANSAD',0,ZHOOK_HANDLE)
+CALL GSTATS(1809,0)
 ! Set current resolution
 CALL SET_RESOL(KRESOL)
 
@@ -585,6 +586,7 @@ IF(IF_SC3B_G3 > 0) THEN
     CALL ABORT_TRANS('INV_TRANSAD:PGP3B MISSING')
   ENDIF
 ENDIF
+CALL GSTATS(1809,1)
 
 !     ------------------------------------------------------------------
 
