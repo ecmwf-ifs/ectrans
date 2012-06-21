@@ -65,6 +65,7 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR
+USE EQ_REGIONS_MOD
 USE ABORT_TRANS_MOD
 
 
@@ -72,6 +73,7 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPE
 INTEGER(KIND=JPIM),INTENT(OUT) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
 
+INTEGER(KIND=JPIM) :: IPE,JA
 !     ------------------------------------------------------------------
 
 !*       1.    Check input argument for validity 
@@ -86,8 +88,22 @@ ELSE
 !*       2.    Compute output parameters
 !              -------------------------
 
-  KPRGPEW=MOD(KPE-1,NPRGPEW)+1
-  KPRGPNS=(KPE-1)/NPRGPEW+1
+  IF( LEQ_REGIONS )THEN
+    KPRGPNS=1
+    IPE=KPE
+    DO JA=1,N_REGIONS_NS
+      IF( IPE > N_REGIONS(JA) )THEN
+        IPE=IPE-N_REGIONS(JA)
+        KPRGPNS=KPRGPNS+1
+        CYCLE
+      ENDIF
+      KPRGPEW=IPE
+      EXIT
+    ENDDO
+  ELSE
+    KPRGPEW=MOD(KPE-1,NPRGPEW)+1
+    KPRGPNS=(KPE-1)/NPRGPEW+1
+  ENDIF
   KPRTRV =MOD(KPE-1,NPRTRV)+1
   KPRTRW =(KPE-1)/NPRTRV+1
 

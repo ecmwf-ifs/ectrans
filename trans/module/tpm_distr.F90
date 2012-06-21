@@ -14,10 +14,10 @@ INTEGER(KIND=JPIM) :: NPRGPEW   ! No. of sets in E-W direction (grid-point space
 INTEGER(KIND=JPIM) :: NPRTRW    ! No. of sets in wave direction (spectral space)
 INTEGER(KIND=JPIM) :: NPRTRV    ! NPROC/NPRTRW
 INTEGER(KIND=JPIM) :: NPRTRNS   ! No. of sets in N-S direction (Fourier space)
-                       ! (always equal to NPRTRW)
+                                ! (always equal to NPRTRW)
+LOGICAL            :: LEQ_REGIONS ! TRUE - Use new eq_regions partitioning
+                                  ! FALSE- Use old NPRGPNS x NPRGPEW partitioning
 INTEGER(KIND=JPIM) :: MYPROC    ! My processor number
-INTEGER(KIND=JPIM) :: MYSETNS   ! My set number in N-S direction (grid-point space)
-INTEGER(KIND=JPIM) :: MYSETEW   ! My set number in E-W direction (grid-point space)
 INTEGER(KIND=JPIM) :: MYSETW    ! My set number in wave direction (spectral space) 
 INTEGER(KIND=JPIM) :: MYSETV    ! My set number in field direction(S.S and F.S)
 INTEGER(KIND=JPIM) :: NCOMBFLEN ! Size of communication buffer
@@ -34,7 +34,7 @@ INTEGER(KIND=JPIM) :: MTAGDISTGP ! Tag
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPRCIDS(:) ! Array containing the process ids
 
 TYPE DISTR_TYPE
-LOGICAL   :: LSPLIT    ! TRUE - latitudes are shared between a-sets
+LOGICAL   :: LSPLIT             ! TRUE - latitudes are shared between a-sets
 INTEGER(KIND=JPIM) :: NAPSETS   ! Number of apple sets at the poles. Default is zero.
 
 ! SPECTRAL SPACE
@@ -111,7 +111,7 @@ INTEGER(KIND=JPIM) :: NLENGT1B
 
 ! GRIDPOINT SPACE
 
-INTEGER(KIND=JPIM) :: NDGL_GP ! D%NLSTLAT(MYSETNS)-D%NFRSTLOFF
+INTEGER(KIND=JPIM) :: NDGL_GP ! D%NLSTLAT(MY_REGION_NS)-D%NFRSTLOFF
 INTEGER(KIND=JPIM) ,POINTER :: NFRSTLAT(:) ! First lat of each a-set 
 INTEGER(KIND=JPIM) ,POINTER :: NLSTLAT(:)  ! Last lat of each a-set 
 INTEGER(KIND=JPIM) :: NFRSTLOFF ! Offset for first lat of own a-set 

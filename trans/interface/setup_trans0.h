@@ -1,6 +1,7 @@
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,LDIMP,&
-&                       LDIMP_NOOLAP,LDMPOFF)
+&                       LDIMP_NOOLAP,LDMPOFF,&
+&                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS)
 
 !**** *SETUP_TRANS0* - General setup routine for transform package
 
@@ -27,6 +28,10 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     LDIMP_NOOLAP - use immediate message passing with no overlap between
 !                    communications and computations [false]
 !     LDMPOFF - switch off message passing [false]
+!     LDEQ_REGIONS - true if new eq_regions partitioning [false]
+!     K_REGIONS    - Number of regions (1D or 2D partitioning)
+!     K_REGIONS_NS - Maximum number of NS partitions
+!     K_REGIONS_EW - Maximum number of EW partitions
 
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
 
@@ -34,7 +39,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     -------
 
 !     Externals.  SUMP_TRANS0 - initial setup routine
-!     ----------  
+!     ----------
 
 !     Author.
 !     -------
@@ -44,11 +49,11 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     --------------
 !        Original : 00-03-03
 !        R. El Khatib 03-01-24 LDMPOFF
+!        G. Mozdzynski 2006-09-13 LDEQ_REGIONS
 
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-
 
 IMPLICIT NONE
 
@@ -57,7 +62,10 @@ INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDIMP
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDIMP_NOOLAP
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDMPOFF
-
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDEQ_REGIONS
+INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS(:)
+INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_NS
+INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_EW
 
 END SUBROUTINE SETUP_TRANS0
 
