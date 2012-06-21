@@ -1,0 +1,10 @@
+MODULE TPM_CONSTANTS
+#include "tsmbkind.h"
+
+IMPLICIT NONE
+
+SAVE
+
+REAL_B :: RA=6371229._JPRB   ! Radius of Earth
+
+END MODULE TPM_CONSTANTS

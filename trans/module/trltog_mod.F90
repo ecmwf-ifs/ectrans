@@ -1,0 +1,411 @@
+MODULE TRLTOG_MOD
+CONTAINS
+SUBROUTINE TRLTOG(PGLAT,PGCOL,KF_FS,KF_GP,KVSET,KPTRGP)
+
+!**** *trltog * - transposition of grid point data from latitudinal
+!                 to column structure. This takes place between inverse
+!                 FFT and grid point calculations. 
+!                 TRLTOG is the inverse of TRGTOL
+
+!     Purpose.
+!     --------
+
+
+!**   Interface.
+!     ----------
+!        *call* *trltog(...)
+
+!        Explicit arguments :
+!        --------------------
+!           PGLAT    -  Latitudinal data ready for direct FFT (input)
+!           PGCOL    -  Blocked grid point data    (output)
+!           KVSET    - "v-set" for each field      (input)
+
+!        Implicit arguments :
+!        --------------------
+
+!     Method.
+!     -------
+!        See documentation
+
+!     Externals.
+!     ----------
+
+!     Reference.
+!     ----------
+!        ECMWF Research Department documentation of the IFS
+
+!     Author.
+!     -------
+!        MPP Group *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original  : 95-10-01
+!        D.Dent    : 97-08-04 Reorganisation to allow NPRTRV
+!                             to differ from NPRGPEW
+!        =99-03-29= Mats Hamrud and Deborah Salmond
+!                   JUMP in FFT's changed to 1
+!                   INDEX introduced and ZCOMBUF not used for same PE
+!     ------------------------------------------------------------------
+
+
+
+#include "tsmbkind.h"
+USE MPL_MODULE
+
+USE TPM_GEN
+USE TPM_DISTR
+USE TPM_TRANS
+
+USE INIGPTR_MOD
+USE PE2SET_MOD
+
+
+IMPLICIT NONE
+
+
+
+REAL_B,INTENT(IN)     :: PGLAT(:,:)
+REAL_B,INTENT(OUT)    :: PGCOL(:,:,:)
+INTEGER_M,INTENT(IN)  :: KVSET(:)
+INTEGER_M,INTENT(IN)  :: KF_FS,KF_GP
+INTEGER_M ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
+
+REAL_B,ALLOCATABLE :: ZCOMBUFS(:,:),ZCOMBUFR(:,:)
+
+INTEGER_M :: ISENT    (NPROC)
+INTEGER_M :: IRCVD    (NPROC)
+INTEGER_M :: ISENDTOT (NPROC)
+INTEGER_M :: IRECVTOT (NPROC)
+INTEGER_M :: ISENDREQ (NPROC)
+INTEGER_M :: IRECVREQ (NPROC)
+
+!     LOCAL INTEGER SCALARS
+INTEGER_M :: IERR, IFIRST, IFIRSTLAT, IFLD, IGL, IGLL,&
+             &ILAST, ILASTLAT, ILRECV, IPE, IPOS, ISETA, &
+             &ISETB, IRCVTG, IRECV, IRECVD, IRECVSET, &
+             &ISETV, ISEND, ISENDSET, ITAG,  JBLK, JFLD, &
+             &JGL, JK, JL, JLOOP, ISETW, IFLDS, IPROC,JROC, &
+             &INRECV, INSEND,INR,INS
+INTEGER_M :: II,INDOFFX,ILEN,IBUFLENS,IBUFLENR
+
+!     LOCAL LOGICAL SCALARS
+LOGICAL   :: LLDONE, LLEXIST, LLRECV,LLINDER
+INTEGER_M :: INDEX(D%NLENGTF),INDOFF(NPROC),IFLDOFF(KF_FS)
+INTEGER_M :: IRECV_FLD_START,IRECV_FLD_END
+INTEGER_M :: ISEND_FLD_START(NPROC),ISEND_FLD_END
+INTEGER_M :: ICOMBFLEN
+INTEGER_M :: INUMFLDS
+INTEGER_M :: IPROCS_COMM_MAX
+INTEGER_M :: IGPTRSEND(2,NGPBLKS,NPRTRNS)
+INTEGER_M :: IGPTRRECV(NPRTRNS)
+INTEGER_M :: IGPTROFF(NGPBLKS)
+!     INTEGER FUNCTIONS
+INTEGER_M :: MYSENDSET,MYRECVSET
+
+
+!     ------------------------------------------------------------------
+
+!*       0.    Some initializations
+!              --------------------
+
+IF(PRESENT(KPTRGP)) THEN
+  LLINDER = .TRUE.
+ELSE
+  LLINDER = .FALSE.
+ENDIF
+
+CALL INIGPTR(IGPTRSEND,IGPTRRECV)
+LLDONE = .FALSE.
+ITAG   = MTAGLG
+
+INDOFFX  = 0
+IBUFLENS = 0
+IBUFLENR = 0
+INRECV = 0
+INSEND = 0
+
+DO JROC=1,NPROC
+
+  CALL PE2SET(JROC,ISETA,ISETB,ISETW,ISETV)
+  ISEND      = JROC
+  ISENT(JROC) = 0
+  IRCVD(JROC) = 0
+
+!             count up expected number of fields
+  IPOS = 0
+  DO JFLD=1,KF_GP
+    IF(KVSET(JFLD) == ISETV .OR. KVSET(JFLD) == -1) IPOS = IPOS+1
+  ENDDO
+  IRECVTOT(JROC) = IGPTRRECV(ISETW)*IPOS
+  IF(IRECVTOT(JROC) > 0 .AND. MYPROC /= JROC) INRECV = INRECV + 1
+
+
+  IF( JROC /= MYPROC) IBUFLENR = MAX(IBUFLENR,IRECVTOT(JROC))
+
+  IFIRSTLAT = MAX(D%NPTRLS(MYSETW),D%NFRSTLAT(ISETA))
+  ILASTLAT  = MIN(D%NPTRLS(MYSETW)+D%NULTPP(MYSETW)-1,D%NLSTLAT(ISETA))
+
+  IPOS = 0
+  DO JGL=IFIRSTLAT,ILASTLAT
+    IGL  = D%NPTRFRSTLAT(ISETA)+JGL-D%NFRSTLAT(ISETA)
+    IPOS = IPOS+D%NONL(IGL,ISETB)
+  ENDDO
+
+  ISENDTOT(JROC) = IPOS*KF_FS
+  IF( JROC /= MYPROC) THEN
+    IBUFLENS = MAX(IBUFLENS,ISENDTOT(JROC))
+    IF(ISENDTOT(JROC) > 0) INSEND = INSEND+1
+  ENDIF
+
+  IF(IPOS > 0) THEN
+    INDOFF(JROC) = INDOFFX
+    INDOFFX = INDOFFX+IPOS
+    IPOS = 0
+    DO JGL=IFIRSTLAT,ILASTLAT
+      IGL  = D%NPTRFRSTLAT(ISETA)+JGL-D%NFRSTLAT(ISETA)
+      IGLL = JGL-D%NPTRLS(MYSETW)+1
+      DO JL=D%NSTA(IGL,ISETB)+D%NSTAGTF(IGLL),&
+       &D%NSTA(IGL,ISETB)+D%NSTAGTF(IGLL)+D%NONL(IGL,ISETB)-1
+        IPOS = IPOS+1
+        INDEX(IPOS+INDOFF(JROC)) = JL
+      ENDDO
+    ENDDO
+  ENDIF
+ENDDO
+IPROCS_COMM_MAX = (NPRTRNS/NPRGPNS+1)*NPRTRV
+
+ICOMBFLEN = NCOMBFLEN/IPROCS_COMM_MAX
+
+IF( .NOT.LIMP) THEN
+  INSEND = 1
+  INRECV = 1
+  INS = 1
+  INR = 1
+ENDIF
+
+IF (IBUFLENS > 0) ALLOCATE(ZCOMBUFS(-1:ICOMBFLEN,INSEND))
+IF (IBUFLENR > 0) ALLOCATE(ZCOMBUFR(-1:ICOMBFLEN,INRECV))
+
+
+! Send loop.............................................................
+
+ISEND_FLD_START(:) = 1
+
+DO WHILE( .NOT. LLDONE ) 
+  LLDONE = .TRUE.  
+
+!  For immediate send/recv, post receives first
+
+  IF(LIMP) THEN
+    INR = 0
+    DO JLOOP=1,NPROC-1
+      IPROC = MYRECVSET(NPROC,MYPROC,JLOOP)
+
+! Check if there is data to receive
+
+      IF( IRECVTOT(IPROC)-IRCVD(IPROC) > 0 )THEN
+        IRECV = IPROC
+        INR = INR+1
+
+!*   receive message
+
+        CALL MPL_RECV(ZCOMBUFR(-1:ICOMBFLEN,INR),KSOURCE=NPRCIDS(IRECV), &
+         & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(INR), &
+         & KTAG=ITAG,CDSTRING='TRLTOG:' )
+      ENDIF
+    ENDDO
+  ENDIF
+! 
+! loop over the number of processors we need to communicate with. 
+! NOT MYPROC 
+! 
+  IF(LIMP) INS = 0
+  DO JLOOP=1,NPROC-1 
+    IPROC = MYSENDSET(NPROC,MYPROC,JLOOP)
+
+! Check if we have data to send
+
+    IF(ISENDTOT(IPROC)-ISENT(IPROC) > 0 )THEN
+      LLDONE = .FALSE.
+      ISEND = IPROC
+      IF(LIMP) INS = INS+1
+
+      ILEN = ISENDTOT(ISEND)/KF_FS
+      INUMFLDS = ICOMBFLEN/ILEN
+      ISEND_FLD_END = MIN(KF_FS,ISEND_FLD_START(ISEND)+INUMFLDS-1)
+
+      DO JL=1,ILEN
+        II = INDEX(INDOFF(ISEND)+JL)
+        DO JFLD=ISEND_FLD_START(ISEND),ISEND_FLD_END
+          ZCOMBUFS(JL+(JFLD-ISEND_FLD_START(ISEND))*ILEN,INS) = PGLAT(JFLD,II)
+        ENDDO
+      ENDDO
+
+      ZCOMBUFS(-1,INS) = ISEND_FLD_START(ISEND)
+      ZCOMBUFS(0,INS)  = ISEND_FLD_END
+
+      IPOS = ILEN*(ISEND_FLD_END-ISEND_FLD_START(ISEND)+1)
+
+      ISEND_FLD_START(ISEND) = ISEND_FLD_END+1
+
+      IF(LIMP) THEN
+        CALL MPL_SEND(ZCOMBUFS(-1:IPOS,INS),KDEST=NPRCIDS(ISEND),&
+         & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(INS), &
+         & KTAG=ITAG,CDSTRING='TRLTOG:')
+      ELSE
+        CALL MPL_SEND(ZCOMBUFS(-1:IPOS,INS),KDEST=NPRCIDS(ISEND),&
+         & KTAG=ITAG,CDSTRING='TRLTOG:')
+      ENDIF
+
+      ISENT(ISEND) = ISENT(ISEND)+IPOS
+    ENDIF
+  ENDDO
+
+! Copy local contribution
+
+  IF( IRECVTOT(MYPROC)-IRCVD(MYPROC) > 0 )THEN
+    IFLDS = 0
+    DO JFLD=1,KF_GP
+      IF(KVSET(JFLD) == MYSETV .OR. KVSET(JFLD) == -1) THEN
+        IFLDS = IFLDS+1
+        IF(LLINDER) THEN
+          IFLDOFF(IFLDS) = KPTRGP(JFLD)
+        ELSE
+          IFLDOFF(IFLDS) = JFLD
+        ENDIF
+      ENDIF
+    ENDDO
+    
+    IPOS=0
+    DO JBLK=1,NGPBLKS
+      IGPTROFF(JBLK)=IPOS
+      IFIRST = IGPTRSEND(1,JBLK,MYSETW)
+      IF(IFIRST > 0) THEN
+        ILAST = IGPTRSEND(2,JBLK,MYSETW)
+        IPOS=IPOS+ILAST-IFIRST+1
+      ENDIF
+    ENDDO
+!$OMP PARALLEL DO PRIVATE(JFLD,JBLK,JK,IFLD,IPOS,IFIRST,ILAST)
+    DO JBLK=1,NGPBLKS
+      IFIRST = IGPTRSEND(1,JBLK,MYSETW)
+      IF(IFIRST > 0) THEN
+        ILAST = IGPTRSEND(2,JBLK,MYSETW)
+        DO JFLD=1,IFLDS
+          IFLD = IFLDOFF(JFLD)
+          DO JK=IFIRST,ILAST
+            IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
+            PGCOL(JK,IFLD,JBLK) = PGLAT(JFLD,INDEX(IPOS))
+          ENDDO
+        ENDDO
+      ENDIF
+    ENDDO
+!$OMP END PARALLEL DO
+
+    IRCVD(MYPROC) = IRECVTOT(MYPROC)
+
+  ENDIF
+
+!  Receive loop.........................................................
+
+
+!
+! loop over the number of processors we need to communicate with
+!
+  IF (LIMP) INR = 0
+  DO JLOOP=1,NPROC-1
+    IPROC = MYRECVSET(NPROC,MYPROC,JLOOP)
+
+! Check if there is data to receive
+
+    IF( IRECVTOT(IPROC)-IRCVD(IPROC) > 0 )THEN
+      CALL PE2SET(IPROC,ISETA,ISETB,ISETW,ISETV)
+      IRECVSET = ISETV
+      IRECV = IPROC
+
+!*   receive message
+
+      LLDONE = .FALSE.
+
+      IF (LIMP) THEN
+        INR = INR+1
+        CALL MPL_WAIT(ZCOMBUFR(-1:ICOMBFLEN,INR),KREQUEST=IRECVREQ(INR), &
+         & KCOUNT=ILRECV,CDSTRING='TRLTOG: LIMP WAITS ' )
+
+      ELSE
+        CALL MPL_RECV(ZCOMBUFR(-1:ICOMBFLEN,INR),KSOURCE=NPRCIDS(IRECV), &
+         & KTAG=ITAG,KOUNT=ILRECV,CDSTRING='TRLTOG:' )
+      ENDIF
+  
+      IRECV_FLD_START = ZCOMBUFR(-1,INR)
+      IRECV_FLD_END   = ZCOMBUFR(0,INR)
+      IFLD = 0
+      IPOS = 0
+      DO JFLD=1,KF_GP
+        IF(KVSET(JFLD) == IRECVSET .OR. KVSET(JFLD) == -1 ) THEN
+          IF (IFLD == IRECV_FLD_END) EXIT
+          IFLD = IFLD+1
+          IF (IFLD >= IRECV_FLD_START) THEN
+            DO JBLK=1,NGPBLKS
+              IFIRST = IGPTRSEND(1,JBLK,ISETW)
+              IF(IFIRST > 0) THEN
+                ILAST = IGPTRSEND(2,JBLK,ISETW)
+                IF(LLINDER) THEN
+                  DO JK=IFIRST,ILAST
+                    IPOS = IPOS+1
+                    PGCOL(JK,KPTRGP(JFLD),JBLK) = ZCOMBUFR(IPOS,INR)
+                  ENDDO
+                ELSE
+                  DO JK=IFIRST,ILAST
+                    IPOS = IPOS+1
+                    PGCOL(JK,JFLD,JBLK) = ZCOMBUFR(IPOS,INR)
+                  ENDDO
+                ENDIF
+              ENDIF
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDDO
+    
+      IF( ILRECV /= IPOS+2 )THEN
+        WRITE(NOUT,*) MYPROC,' receiving ',ILRECV,'expected ',IPOS
+        WRITE(NOUT,*) 'IRECV=',IRECV,'IRECVSET=',IRECVSET
+        WRITE(NOUT,*) 'KF_GP=',KF_GP,'KVSET=',KVSET(1:KF_GP)
+        CALL ABOR1('TRLTOG: RECEIVED MESSAGE OF INCORRECT LENGTH')
+      ENDIF
+  
+      IRCVD(IPROC) = IRCVD(IPROC)+IPOS
+  
+    ENDIF
+  ENDDO
+
+  IF(LIMP)THEN
+    IF(INS > 0) THEN
+      CALL MPL_WAIT(ZCOMBUFS(-1:ICOMBFLEN,1),KREQUEST=ISENDREQ(1:INS), &
+      & CDSTRING='TRGTOL: ERROR IN MPL_WAIT FOR SENDS')
+    ENDIF
+  ENDIF
+
+ENDDO
+
+IF (IBUFLENS > 0) DEALLOCATE(ZCOMBUFS)
+IF (IBUFLENR > 0) DEALLOCATE(ZCOMBUFR)
+
+! Perform barrier synchronisation to guarantee all processors have
+! completed communication
+
+IF( NPROC > 1 .AND. (D%LSPLIT .OR. NPRTRV > 1 .OR. NPRGPEW > 1 ))THEN
+  CALL MPL_BARRIER(CDSTRING='TRLTOG:')
+ENDIF
+
+
+RETURN
+END SUBROUTINE TRLTOG
+END MODULE TRLTOG_MOD
+
+
+
+
+
+
