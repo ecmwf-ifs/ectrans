@@ -48,7 +48,7 @@ SUBROUTINE LEDIR(KM,KFC,KLED2,PAIA,PSIA,POA1,PLEPO)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_GEOMETRY
@@ -58,15 +58,15 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER_M, INTENT(IN)  :: KM,KFC,KLED2
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KFC,KLED2
 
 
-REAL_B ,   INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
-REAL_B,    INTENT(IN)  :: PLEPO(:,:)
-REAL_B :: POA1(:,:)
+REAL(KIND=JPRB) ,   INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB),    INTENT(IN)  :: PLEPO(:,:)
+REAL(KIND=JPRB) :: POA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL
+INTEGER(KIND=JPIM) :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL
 
 
 !     ------------------------------------------------------------------

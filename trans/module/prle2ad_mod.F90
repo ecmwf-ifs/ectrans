@@ -43,7 +43,7 @@ SUBROUTINE PRLE2AD(KM,PLEPO)
 !        Modified : 93-03-19 D. Giard - NTMAX,NPMT instead of NSMAX,NPM
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_DISTR
@@ -53,11 +53,11 @@ USE TPM_GEOMETRY
 IMPLICIT NONE
 
 !     DUMMY ARGUMENTS
-INTEGER_M, INTENT(IN)  :: KM
-REAL_B,    INTENT(OUT) :: PLEPO(:,:)
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM
+REAL(KIND=JPRB),    INTENT(OUT) :: PLEPO(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: ISL, JGL, JN ,ISMAX, IDGNH, IPMT
+INTEGER(KIND=JPIM) :: ISL, JGL, JN ,ISMAX, IDGNH, IPMT
 
 !     ------------------------------------------------------------------
 

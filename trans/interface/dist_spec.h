@@ -36,19 +36,19 @@ SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(IN)  :: PSPECG(:,:)
-INTEGER_M          , INTENT(IN)  :: KFDISTG
-INTEGER_M          , INTENT(IN)  :: KFROM(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KVSET(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL_B    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPECG(:,:)
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 
 
 !     ------------------------------------------------------------------

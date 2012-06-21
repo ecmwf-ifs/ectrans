@@ -2,7 +2,7 @@ MODULE PRLE1AD_MOD
 CONTAINS
 SUBROUTINE PRLE1AD(KM,PLEPO)
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_DISTR
@@ -52,11 +52,11 @@ USE TPM_GEOMETRY
 IMPLICIT NONE
 
 
-INTEGER_M, INTENT(IN)  :: KM
-REAL_B,    INTENT(OUT) :: PLEPO(:,:)
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM
+REAL(KIND=JPRB),    INTENT(OUT) :: PLEPO(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M ::  ISL, JGL, JN
+INTEGER(KIND=JPIM) ::  ISL, JGL, JN
 
 
 !     ------------------------------------------------------------------

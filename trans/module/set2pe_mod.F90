@@ -58,7 +58,7 @@ SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !     ------------------------------------------------------------------
 #endif
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR
 USE ABORT_TRANS_MOD
@@ -66,8 +66,8 @@ USE ABORT_TRANS_MOD
 
 
 IMPLICIT NONE
-INTEGER_M,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
-INTEGER_M,INTENT(OUT)  :: KPE
+INTEGER(KIND=JPIM),INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
+INTEGER(KIND=JPIM),INTENT(OUT)  :: KPE
 
 !     ------------------------------------------------------------------
 

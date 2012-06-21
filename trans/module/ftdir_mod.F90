@@ -33,7 +33,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR
 USE TPM_TRANS
@@ -42,10 +42,10 @@ USE TPM_FFT
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN)  :: KFIELDS,KGL
-REAL_B, INTENT(INOUT) :: PREEL(:,:)
+INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELDS,KGL
+REAL(KIND=JPRB), INTENT(INOUT) :: PREEL(:,:)
 
-INTEGER_M :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
+INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 
 !     ------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ IST1=1
 IF (G%NLOEN(IGLG)==1) IST1=0
 DO JJ=IST1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = _ZERO_
+    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = 0.0_JPRB
   ENDDO
 ENDDO
 

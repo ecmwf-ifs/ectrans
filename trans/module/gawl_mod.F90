@@ -47,8 +47,8 @@ SUBROUTINE GAWL(PL,DDL,PW,PEPS,KN,KITER,PMOD)
 !        Original : 92-12-18
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
-#include "hugekind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND2  ,ONLY : JPRH
 
 USE CPLEDN_MOD
 
@@ -56,24 +56,24 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER_M :: KITER
-INTEGER_M :: KN
+INTEGER(KIND=JPIM) :: KITER
+INTEGER(KIND=JPIM) :: KN
 
 !     DUMMY REAL SCALARS
-REAL_B :: PEPS
-REAL_B :: PL
-REAL_B :: PMOD
-REAL_B :: PW
+REAL(KIND=JPRB) :: PEPS
+REAL(KIND=JPRB) :: PL
+REAL(KIND=JPRB) :: PMOD
+REAL(KIND=JPRB) :: PW
 
-REAL_H :: DDL,DLX,DLXN
+REAL(KIND=JPRH) :: DDL,DLX,DLXN
 
-INTEGER_M, PARAMETER :: JPKD=KIND(DLX)
+INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DLX)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IDBLE, IFLAG, ITEMAX, JTER
+INTEGER(KIND=JPIM) :: IDBLE, IFLAG, ITEMAX, JTER
 
 !     LOCAL REAL SCALARS
-REAL_B :: ZW, ZX, ZXN
+REAL(KIND=JPRB) :: ZW, ZX, ZXN
 
 !     ------------------------------------------------------------------
 

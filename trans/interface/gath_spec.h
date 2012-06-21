@@ -36,19 +36,19 @@ SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC)
 
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL_B    ,OPTIONAL, INTENT(OUT)  :: PSPECG(:,:)
-INTEGER_M          , INTENT(IN)  :: KFGATHG
-INTEGER_M          , INTENT(IN)  :: KTO(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KVSET(:)
-INTEGER_M ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL_B    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT)  :: PSPECG(:,:)
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
 
 
 !     ------------------------------------------------------------------

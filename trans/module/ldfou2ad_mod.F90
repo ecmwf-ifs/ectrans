@@ -45,7 +45,7 @@ SUBROUTINE LDFOU2AD(KM,KF_UV,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_GEOMETRY
@@ -55,12 +55,12 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER_M, INTENT(IN) :: KM,KF_UV
+INTEGER(KIND=JPIM), INTENT(IN) :: KM,KF_UV
 
-REAL_B ,INTENT(INOUT) :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB) ,INTENT(INOUT) :: PSIA(:,:),   PAIA(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: J, JGL ,IFLD ,ISL
+INTEGER(KIND=JPIM) :: J, JGL ,IFLD ,ISL
 
 
 !     ------------------------------------------------------------------

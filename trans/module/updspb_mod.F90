@@ -45,7 +45,7 @@ SUBROUTINE UPDSPB(KM,KFIELD,POA,PSPEC,KFLDPTR)
 !        L. Isaksen : 95-06-06 Reordering of spectral arrays
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_FIELDS
@@ -53,13 +53,13 @@ USE TPM_DISTR
 
 IMPLICIT NONE
 
-INTEGER_M,INTENT(IN)  :: KM,KFIELD
-REAL_B   ,INTENT(IN)  :: POA(:,:)
-REAL_B   ,INTENT(OUT) :: PSPEC(:,:)
-INTEGER_M,INTENT(IN),OPTIONAL :: KFLDPTR(:)
+INTEGER(KIND=JPIM),INTENT(IN)  :: KM,KFIELD
+REAL(KIND=JPRB)   ,INTENT(IN)  :: POA(:,:)
+REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
+INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
+INTEGER(KIND=JPIM) :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
 
 
 !     ------------------------------------------------------------------
@@ -93,7 +93,7 @@ IF(KM == 0) THEN
       DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
         INM = IASM0+(ITMAX+2-JN)*2
         PSPEC(IFLD,INM)   = POA(JN,IR)
-        PSPEC(IFLD,INM+1) = _ZERO_
+        PSPEC(IFLD,INM+1) = 0.0_JPRB
       ENDDO
     ENDDO
   ELSE
@@ -104,7 +104,7 @@ IF(KM == 0) THEN
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
         PSPEC(JFLD,INM)   = POA(JN,IR)
-        PSPEC(JFLD,INM+1) = _ZERO_
+        PSPEC(JFLD,INM+1) = 0.0_JPRB
       ENDDO
     ENDDO
   ENDIF

@@ -2,7 +2,7 @@ MODULE SUFFT_MOD
 CONTAINS
 SUBROUTINE SUFFT
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_GEN
@@ -12,7 +12,7 @@ USE TPM_FFT
 
 IMPLICIT NONE
 
-INTEGER_M :: JGL,IGLG
+INTEGER(KIND=JPIM) :: JGL,IGLG
 LOGICAL LLP1,LLP2
 
 !     ------------------------------------------------------------------

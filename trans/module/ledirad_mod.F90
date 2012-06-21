@@ -48,7 +48,7 @@ SUBROUTINE LEDIRAD(KM,KFC,KLED2,PAIA,PSIA,POA1,PLEPO)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-#include "tsmbkind.h"
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM
 USE TPM_GEOMETRY
@@ -58,15 +58,15 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER_M, INTENT(IN)  :: KM,KFC,KLED2
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KFC,KLED2
 
 
-REAL_B ,   INTENT(OUT)  :: PSIA(:,:),   PAIA(:,:)
-REAL_B,    INTENT(IN)   :: PLEPO(:,:)
-REAL_B,     INTENT(IN)  :: POA1(:,:)
+REAL(KIND=JPRB) ,   INTENT(OUT)  :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB),    INTENT(IN)   :: PLEPO(:,:)
+REAL(KIND=JPRB),     INTENT(IN)  :: POA1(:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER_M :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, JGL, J1
+INTEGER(KIND=JPIM) :: IA, IDGLU, IFC, ILA, ILS, IS, ISKIP, ISL, JGL, J1
 
 
 !     ------------------------------------------------------------------
@@ -87,8 +87,8 @@ IF(KM == 0)THEN
   IFC   = KFC/2
   DO JGL=ISL,R%NDGNH
     DO J1=2,KFC,2
-      PSIA(J1,JGL)=_ZERO_
-      PAIA(J1,JGL)=_ZERO_
+      PSIA(J1,JGL)=0.0_JPRB
+      PAIA(J1,JGL)=0.0_JPRB
     ENDDO
   ENDDO
 ELSE
