@@ -52,6 +52,7 @@ SUBROUTINE TRLTOG(PGLAT,PGCOL,KF_FS,KF_GP,KVSET,KPTRGP)
 !                               and buffer packing
 !         01-12-18  Peter Towers
 !                   Improved vector performance of LTOG_PACK,LTOG_UNPACK
+!         03-0-02   G. Radnoti: Call barrier always when nproc>1
 !     ------------------------------------------------------------------
 
 
@@ -498,7 +499,7 @@ ELSE
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication
 
-  IF( NPROC > 1 .AND. (D%LSPLIT .OR. NPRTRV > 1 .OR. NPRGPEW > 1 ))THEN
+  IF( NPROC > 1 )THEN
     CALL MPL_BARRIER(CDSTRING='TRLTOG:')
   ENDIF
 ENDIF

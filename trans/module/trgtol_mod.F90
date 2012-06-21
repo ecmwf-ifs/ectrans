@@ -51,6 +51,7 @@ SUBROUTINE TRGTOL(PGLAT,PGCOL,KF_FS,KF_GP,KVSET,KPTRGP)
 !                    and buffer packing
 !         01-12-18  Peter Towers
 !                   Improved vector performance of GTOL_PACK,GTOL_UNPACK
+!         03-04-02  G. Radnoti: call barrier always when nproc>1 
 !     ------------------------------------------------------------------
 
 
@@ -498,7 +499,7 @@ ELSE
 ! Perform barrier synchronisation to guarantee all processors have
 ! completed communication
 
-  IF( NPROC > 1.AND.(D%LSPLIT.OR.NPRTRV > 1))THEN
+  IF( NPROC > 1)THEN
     CALL MPL_BARRIER(CDSTRING='TRGTOL:')
   ENDIF
 ENDIF
