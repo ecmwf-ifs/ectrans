@@ -19,7 +19,7 @@ SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 !     KPROMA      - required blocking factor for gridpoint output
 !     KFROM(:)    - Processor responsible for distributing each field
 !     PGP(:,:,:)  - Local spectral array
-!
+
 !     Externals.  SET2PE - compute "A and B" set from PE
 !     ----------  MPL..  - message passing routines
 
@@ -35,7 +35,6 @@ SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE MPL_MODULE
-USE YOMGSTATS, ONLY : LSYNCSTATS
 
 USE TPM_DISTR
 USE TPM_GEOMETRY
@@ -57,7 +56,7 @@ REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
 
 REAL(KIND=JPRB)    :: ZFLD(D%NGPTOTMX)
 INTEGER(KIND=JPIM) :: JFLD,JB,JA,IGLOFF,IGL1,IGL2,IOFF,ILAST,ILEN,ILOFF,ILENR
-INTEGER(KIND=JPIM) :: JGL,JLON,ISND,ITAG,IERR,ISENDER,ITAGR,J,IRCV
+INTEGER(KIND=JPIM) :: JGL,JLON,ISND,ITAG,J,IRCV
 INTEGER(KIND=JPIM) :: JKGLO,IEND,JROF,IBL
 
 !     ------------------------------------------------------------------

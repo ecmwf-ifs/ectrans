@@ -9,8 +9,6 @@ USE TPM_DIM
 USE TPM_FIELDS
 USE TPM_TRANS
 
-#ifdef DOC
-
 !**** *SPNSDEAD* - Compute North-South derivative in spectral space
 
 !     Purpose.
@@ -62,29 +60,25 @@ USE TPM_TRANS
 !        Original : 00-02-01 From SPNSDEAD in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM), INTENT(IN)    :: KM,KF_SCALARS
+INTEGER(KIND=JPIM), INTENT(IN)    :: KM
+INTEGER(KIND=JPIM), INTENT(IN)    :: KF_SCALARS
 REAL(KIND=JPRB),    INTENT(IN)    :: PEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRB),    INTENT(INOUT) :: PF(:,:)
 REAL(KIND=JPRB),    INTENT(IN)    :: PNSD(:,:)
 
-!     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN,II,JI,ISMAX
+INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN,JI,ISMAX
 REAL(KIND=JPRB) :: ZEPSNM(-1:R%NSMAX+4)
 REAL(KIND=JPRB) :: ZN(-1:R%NTMAX+4)
-
 
 !     ------------------------------------------------------------------
 
 !*       1.    COMPUTE NORTH SOUTH DERIVATIVE.
 !              -------------------------------
 
-
 !*       1.1      COMPUTE
-
 
 ISMAX = R%NSMAX
 DO JN=KM-1,ISMAX+2
@@ -102,7 +96,7 @@ ENDIF
 
 DO J=1,2*KF_SCALARS,ISKIP
   DO JI=2,ISMAX+3-KM
-    PF(JI+1,J) = PF(JI+1,J)-ZN(JI+1)*ZEPSNM(JI)*PNSD(JI,J)
+    PF(JI+1,J) = PF(JI+1,J)-ZN(JI+1)*ZEPSNM(JI)  *PNSD(JI,J)
     PF(JI-1,J) = PF(JI-1,J)+ZN(JI-2)*ZEPSNM(JI-1)*PNSD(JI,J)
   ENDDO
 ENDDO

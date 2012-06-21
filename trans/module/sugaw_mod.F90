@@ -1,6 +1,6 @@
 MODULE SUGAW_MOD
 CONTAINS
-SUBROUTINE SUGAW(KN,PL,DDL,PW)
+SUBROUTINE SUGAW(KN,PL,PDL,PW)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE PARKIND2  ,ONLY : JPRH
@@ -16,10 +16,10 @@ USE ABORT_TRANS_MOD
 
 !     Purpose.
 !     --------
-!           Initialize arrays PL,DDL and PW (quadrature abscissas and weights)
+!           Initialize arrays PL,PDL and PW (quadrature abscissas and weights)
 !**   Interface.
 !     ----------
-!        *CALL* *SUGAW(KN,PL,DDL,PW) *
+!        *CALL* *SUGAW(KN,PL,PDL,PW) *
 
 !        Explicit arguments :
 !        --------------------
@@ -27,7 +27,7 @@ USE ABORT_TRANS_MOD
 !              KN       :  Number of Gauss  abscissas 
 !           OUTPUT:
 !              PL (KN)  :  abscissas of Gauss
-!              DDL(KN)  :  idem in double precision
+!              PDL(KN)  :  idem in double precision
 !              PW (KN)  :  Weights of the Gaussian integration
 
 !     PL (i) is the abscissa i starting from the northern pole, it is
@@ -73,22 +73,21 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN) :: KN
 
 REAL(KIND=JPRB),INTENT(OUT) :: PL(:),PW(:)
-REAL(KIND=JPRH),INTENT(OUT) :: DDL(:)
+REAL(KIND=JPRH),INTENT(OUT) :: PDL(:)
 
 ! LOCAL REALS
 
 REAL(KIND=JPRB) :: ZLI(KN),ZT(KN)
 REAL(KIND=JPRB) :: ZREG(KN),ZMOD(KN),ZM(KN),ZR(KN)
 INTEGER(KIND=JPIM) :: ITER(KN)
-REAL(KIND=JPRB) :: ZD(KN),ZE(KN),ZZ(KN,KN)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IALLOW, INS2, ISYM, JGL, JROC
+INTEGER(KIND=JPIM) :: IALLOW, INS2, ISYM, JGL
 
 !     LOCAL REAL SCALARS
 REAL(KIND=JPRB) :: Z, ZEPS, ZPI
 
-LOGICAL LLP1,LLP2
+LOGICAL :: LLP1,LLP2
 
 
 !     ------------------------------------------------------------------
@@ -96,9 +95,9 @@ LOGICAL LLP1,LLP2
 !*       1. Initialization.
 !           ---------------
 
-LLP1=.FALSE.
-LLP2=.FALSE.
-ZPI = 2.0_JPRB*ASIN(1.0_JPRB)
+LLP1 = .FALSE.
+LLP2 = .FALSE.
+ZPI  = 2.0_JPRB*ASIN(1.0_JPRB)
 INS2 = KN/2+MOD(KN,2)
 
 !*       1.1 Find first approximation of the roots of the
@@ -118,7 +117,7 @@ ZEPS = EPSILON(Z)
 CALL GSTATS(1650,0)
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL)
 DO JGL=1,INS2
-  CALL GAWL(PL(JGL),DDL(JGL),PW(JGL),ZEPS,KN,ITER(JGL),ZMOD(JGL))
+  CALL GAWL(PL(JGL),PDL(JGL),PW(JGL),ZEPS,KN,ITER(JGL),ZMOD(JGL))
 ENDDO
 !$OMP END PARALLEL DO
 CALL GSTATS(1650,1)
@@ -128,7 +127,7 @@ CALL GSTATS(1650,1)
 DO JGL=1,KN/2
   ISYM = KN-JGL+1
   PL(ISYM) = -PL(JGL)
-  DDL(ISYM) = -DDL(JGL)
+  PDL(ISYM) = -PDL(JGL)
   PW(ISYM) = PW(JGL)
 ENDDO
 

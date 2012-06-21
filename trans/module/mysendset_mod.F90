@@ -17,17 +17,11 @@ FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
 !        Explicit arguments :  
 !        --------------------
 !                  input:   KSETS
-!                
-!                
-!                
-!                
 
 !        Implicit arguments :  NONE
 !        --------------------
 !     Method.
 !     -------
-
-!        
 
 !     Externals.
 !     ----------
@@ -70,10 +64,9 @@ ELSE
 !*       2.    Compute output parameters
 !              -------------------------
 
-MYSENDSET = MOD(KMYSET+KSET-1,KSETS)+1
+  MYSENDSET = MOD(KMYSET+KSET-1,KSETS)+1
 
 ENDIF
 
-RETURN
 END FUNCTION MYSENDSET
 END MODULE MYSENDSET_MOD

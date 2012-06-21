@@ -93,9 +93,8 @@ IMPLICIT NONE
 
 
 !     ------------------------------------------------------------------
-REAL(KIND=JPRB) :: ZPNMG(R%NSPOLEG,D%NLEI3D)
+REAL(KIND=JPRB),ALLOCATABLE :: ZPNMG(:,:)
 
-REAL(KIND=JPRH) :: DLSTRET
 REAL(KIND=JPRH) :: DLRMU(R%NDGL)
 REAL(KIND=JPRH) :: DLC(0:R%NTMAX+1,0:R%NTMAX+1)
 REAL(KIND=JPRH) :: DLD(0:R%NTMAX+1,0:R%NTMAX+1)
@@ -112,15 +111,13 @@ INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DLG)
 REAL(KIND=JPRH) :: DA,DC,DD,DE
 INTEGER(KIND=JPIM) :: KKN, KKM
 
-!     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IDT, IGLLOC, ILONG, IMLOC, INBARI, INM, IREP,&
-             &IM , ICOUNT,ISMAX,&
-             &JGL, JGLSUR, JJ, JM, JMLOC, JN, JNM, JROC
+!     LOCAL 
+INTEGER(KIND=JPIM) :: IGLLOC, INM, IM , ICOUNT,&
+             &JGL,  JM, JMLOC, JN, JNM
 
-!     LOCAL REAL SCALARS
-REAL(KIND=JPRB) :: ZINVLAT, ZLAT, ZLATD, ZSC
 
-LOGICAL LLP1,LLP2
+LOGICAL :: LLP1,LLP2
+
 
 DC(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPKD)*REAL(KKN+KKM-1,JPKD)&
                    &*REAL(KKN+KKM-3,JPKD))&
@@ -137,6 +134,7 @@ DA(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPKD)*REAL(KKN-KKM,JPKD)&
                 &/  REAL(2*KKN-1,JPKD) )
 
 !     ------------------------------------------------------------------
+ALLOCATE(ZPNMG(R%NSPOLEG,D%NLEI3D))
 
 !*       0.    Some initializations.
 !              ---------------------
@@ -253,6 +251,7 @@ DO JN=1,R%NSMAX+2
   F%RLAPIN(JN)=REAL(-(REAL(RA,JPKD)*REAL(RA,JPKD))/REAL(JN*(JN+1),JPKD),JPKS)
 ENDDO
 
+DEALLOCATE(ZPNMG)
 
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)

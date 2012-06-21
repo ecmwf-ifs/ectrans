@@ -13,7 +13,7 @@ USE TPM_FFT
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM) :: JGL,IGLG
-LOGICAL LLP1,LLP2
+LOGICAL :: LLP1,LLP2
 
 !     ------------------------------------------------------------------
 
