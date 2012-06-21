@@ -47,6 +47,7 @@ USE TPM_DISTR
 USE SET_RESOL_MOD
 USE DIST_GRID_CTL_MOD
 USE ABORT_TRANS_MOD
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
 
@@ -64,9 +65,11 @@ REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IFSEND,J,IUBOUND(3),IPROMA,IGPBLKS
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
+IF (LHOOK) CALL DR_HOOK('DIST_GRID',0,ZHOOK_HANDLE)
 ! Set current resolution
 CALL SET_RESOL(KRESOL)
 
@@ -118,6 +121,7 @@ ENDIF
 
 CALL DIST_GRID_CTL(PGPG,KFDISTG,IPROMA,KFROM,PGP)
 
+IF (LHOOK) CALL DR_HOOK('DIST_GRID',1,ZHOOK_HANDLE)
 !endif INTERFACE
 
 !     ------------------------------------------------------------------

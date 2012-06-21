@@ -1,6 +1,6 @@
 MODULE GATH_SPEC_CONTROL_MOD
 CONTAINS
-SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFDISTG,KTO,KVSET,PSPEC)
+SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFDISTG,KTO,KVSET,PSPEC,LDIM1_IS_FLD)
 
 !**** *GATH_SPEC_CONTROL* - Gather global spectral array from processors
 
@@ -40,10 +40,11 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KVSET(:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) :: PSPEC(:,:)
+LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 
-REAL(KIND=JPRB)    :: ZFLD(R%NSPEC2_G)
+REAL(KIND=JPRB)    :: ZFLD(R%NSPEC2_G),ZRECV(R%NSPEC2_G)
 INTEGER(KIND=JPIM) :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,IBSET,ILEN,JA,ISND
-INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,IPROCA,ISTA,ISTP
+INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,IPROCA,ISTA,ISTP,ISENDREQ
 
 !     ------------------------------------------------------------------
 
@@ -51,19 +52,30 @@ INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,IPROCA,ISTA,ISTP
 !GATHER SPECTRAL ARRAY
 
 IF( NPROC == 1 ) THEN
-CALL GSTATS(1644,0)
+  CALL GSTATS(1644,0)
+  IF(LDIM1_IS_FLD) THEN
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JM,JFLD)
-  DO JM=1,R%NSPEC2_G
-    DO JFLD=1,KFDISTG
-      PSPECG(JFLD,JM) =PSPEC(JFLD,JM)
+    DO JM=1,R%NSPEC2_G
+      DO JFLD=1,KFDISTG
+        PSPECG(JFLD,JM) =PSPEC(JFLD,JM)
+      ENDDO
     ENDDO
-  ENDDO
 !$OMP END PARALLEL DO
-CALL GSTATS(1644,1)
+  ELSE
+!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JM,JFLD)
+    DO JFLD=1,KFDISTG
+      DO JM=1,R%NSPEC2_G
+        PSPECG(JM,JFLD) =PSPEC(JM,JFLD)
+      ENDDO
+    ENDDO
+!$OMP END PARALLEL DO
+  ENDIF
+  CALL GSTATS(1644,1)
 ELSE
   IFLDR = 0
   IFLDS = 0
 
+  CALL GSTATS(810,0)
   DO JFLD=1,KFDISTG
 
     IBSET = KVSET(JFLD)
@@ -73,9 +85,16 @@ ELSE
       IFLDS = IFLDS+1
       ISND  = KTO(JFLD)
       ITAG  = MTAGDISTSP+JFLD+17
-      ZFLD(1:D%NSPEC2)=PSPEC(IFLDS,1:D%NSPEC2)
-      CALL MPL_SEND(ZFLD(1:D%NSPEC2),KDEST=NPRCIDS(ISND),KTAG=ITAG,&
-       &CDSTRING='GATH_SPEC_CONTROL')
+      IF(LDIM1_IS_FLD) THEN
+        ZFLD(1:D%NSPEC2)=PSPEC(IFLDS,1:D%NSPEC2)
+        CALL MPL_SEND(ZFLD(1:D%NSPEC2),KDEST=NPRCIDS(ISND),KTAG=ITAG,&
+         &KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ,&
+         &CDSTRING='GATH_SPEC_CONTROL')
+      ELSE
+        CALL MPL_SEND(PSPEC(1:D%NSPEC2,IFLDS),KDEST=NPRCIDS(ISND),KTAG=ITAG,&
+         &KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ,&
+         &CDSTRING='GATH_SPEC_CONTROL')
+      ENDIF
     ENDIF
 
 
@@ -89,34 +108,59 @@ ELSE
           ITAG = MTAGDISTSP+JFLD+17
           ISTA = D%NPOSSP(JA)
           ISTP = ISTA+ILEN-1
-          CALL MPL_RECV(ZFLD(ISTA:ISTP),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
+          CALL MPL_RECV(ZRECV(ISTA:ISTP),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
            &KOUNT=ILENR,CDSTRING='GATH_SPEC_CONTROL')
           IF( ILENR /= ILEN )THEN
             CALL ABORT_TRANS('GATH_SPEC_CONTROL:INVALID RECEIVE MESSAGE LENGTH')
           ENDIF
-          II = 0
-          DO JM=0,R%NSMAX
-            IPROCA = D%NPROCM(JM)
-            DO JN=JM,R%NSMAX
-              ISP = D%NDIM0G(JM)+(JN-JM)*2
-              II = II+1
-              PSPECG(IFLDR,II) = ZFLD(ISP)
-              ISP = ISP+1
-              II = II+1
-              IF(JM /= 0) THEN
-                PSPECG(IFLDR,II) = ZFLD(ISP)
-              ELSE
-                PSPECG(IFLDR,II) = 0.0_JPRB
-              ENDIF
+          IF(LDIM1_IS_FLD) THEN
+            II = 0
+            DO JM=0,R%NSMAX
+              IPROCA = D%NPROCM(JM)
+              DO JN=JM,R%NSMAX
+                ISP = D%NDIM0G(JM)+(JN-JM)*2
+                II = II+1
+                PSPECG(IFLDR,II) = ZRECV(ISP)
+                ISP = ISP+1
+                II = II+1
+                IF(JM /= 0) THEN
+                  PSPECG(IFLDR,II) = ZRECV(ISP)
+                ELSE
+                  PSPECG(IFLDR,II) = 0.0_JPRB
+                ENDIF
+              ENDDO
             ENDDO
-          ENDDO
+          ELSE
+            II = 0
+            DO JM=0,R%NSMAX
+              IPROCA = D%NPROCM(JM)
+              DO JN=JM,R%NSMAX
+                ISP = D%NDIM0G(JM)+(JN-JM)*2
+                II = II+1
+                PSPECG(II,IFLDR) = ZRECV(ISP)
+                ISP = ISP+1
+                II = II+1
+                IF(JM /= 0) THEN
+                  PSPECG(II,IFLDR) = ZRECV(ISP)
+                ELSE
+                  PSPECG(II,IFLDR) = 0.0_JPRB
+                ENDIF
+              ENDDO
+            ENDDO
+          ENDIF
         ENDIF
       ENDDO
     ENDIF
-
-  !Synchronize processors
-    CALL MPL_BARRIER(CDSTRING='GATH_SPEC_CONTROL:')
+    IF( IBSET == MYSETV )THEN
+      CALL MPL_WAIT(ZFLD,KREQUEST=ISENDREQ, &
+       & CDSTRING='GATH_GRID_CTL: WAIT')
+    ENDIF  
   ENDDO
+  CALL GSTATS(810,1)
+  !Synchronize processors
+  CALL GSTATS(785,0)
+  CALL MPL_BARRIER(CDSTRING='GATH_SPEC_CONTROL:')
+  CALL GSTATS(785,1)
 ENDIF
 
 !     ------------------------------------------------------------------
