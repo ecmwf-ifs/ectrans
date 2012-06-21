@@ -75,6 +75,8 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,FSPGL_PROC,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        26-02-03 Mats Hamrud & Gabor Radnoti : modified condition for scalar fields
+!                                               and derivatives (IF_SCALARS_G)
 
 !     ------------------------------------------------------------------
 
@@ -172,7 +174,7 @@ ELSEIF(PRESENT(PSPSCALAR)) THEN
   IF_SCALARS_G = IF_SCALARS
 ENDIF
 
-IF (IF_SCALARS > 0 ) THEN
+IF (IF_SCALARS_G > 0 ) THEN
   IF(PRESENT(LDSCDERS)) THEN
     IF_SCDERS = IF_SCALARS
     LSCDERS = .TRUE.

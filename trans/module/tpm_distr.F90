@@ -144,6 +144,7 @@ INTEGER_M ,POINTER :: NONL(:,:)
 INTEGER_M :: NGPTOT   ! Total number of grid columns on this PE
 INTEGER_M :: NGPTOTG  ! Total number of grid columns on the Globe
 INTEGER_M :: NGPTOTMX ! Maximum number of grid columns on any of the PEs
+INTEGER_M ,POINTER :: NGPTOTL(:,:) ! Number of grid columns on each PE.
 
 END TYPE DISTR_TYPE
 

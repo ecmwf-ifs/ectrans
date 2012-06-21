@@ -1,5 +1,5 @@
 SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
-                    &KGPTOT,KGPTOTG,KGPTOTMX,&
+                    &KGPTOT,KGPTOTG,KGPTOTMX,KGPTOTL,&
                     &KMYMS,KASM0,KUMPP,KPOSSP,KPTRMS,KALLMS,KDIM0G,&
                     &KFRSTLAT,KLSTLAT,KFRSTLOFF,KPTRLAT,&
                     &KPTRFRSTLAT,KPTRLSTLAT,KPTRFLOFF,KSTA,KONL,&
@@ -30,6 +30,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     KGPTOT   - Total number of grid columns on this PE
 !     KGPTOTG  - Total number of grid columns on the Globe
 !     KGPTOTMX - Maximum number of grid columns on any of the PEs
+!     KGPTOTL  - Number of grid columns one each PE (dimension NPRGPNS:NPRGPEW)
 !     KMYMS    - This PEs spectral zonal wavenumbers
 !     KASM0    - Address in a spectral array of (m, n=m)
 !     KUMPP    - No. of wave numbers each wave set is responsible for
@@ -110,6 +111,7 @@ INTEGER_M ,OPTIONAL, INTENT(OUT) :: KNUMP
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KGPTOT
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KGPTOTG
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KGPTOTMX
+INTEGER_M ,OPTIONAL, INTENT(OUT) :: KGPTOTL(:,:)
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KFRSTLOFF
 INTEGER_M ,OPTIONAL, INTENT(OUT) :: KPTRFLOFF
 
