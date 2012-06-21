@@ -48,6 +48,7 @@ SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
 !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
 !                             passing and buffer packing
+!        Y.Seity   : 07-08-30 Add barrier synchonisation under LSYNC_TRANS
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -129,6 +130,12 @@ IF(LIMP_NOOLAP)THEN
     IOFFR(J) = D%NSTAGT1B(J)*KFIELD
   ENDDO
   CALL GSTATS(806,0)
+
+!ajout mpl_barrier
+  IF (LSYNC_TRANS) THEN
+    CALL MPL_BARRIER(CDSTRING='TRLTOM:')
+  ENDIF
+
   CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN,KSENDCOUNTS=ILENS,&
    & PRECVBUF=PFBUF,KRECVCOUNTS=ILENR,KSENDDISPL=IOFFS,KRECVDISPL=IOFFR,&
    & KCOMM=MPL_ALL_MS_COMM,CDSTRING='TRLTOM:')

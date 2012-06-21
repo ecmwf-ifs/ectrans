@@ -42,6 +42,56 @@ C
 C     ISIGN=-1: A(K)=(1/N)*SUM(J=0,...,N-1)(X(J)*COS(2*J*K*PI/N))
 C               B(K)=-(1/N)*SUM(J=0,...,N-1)(X(J)*SIN(2*J*K*PI/N))
 C
+#ifdef MATHKEISAN
+      SUBROUTINE FFT992(A,TRIGS_,IFAX_,INC,JUMP,N,LOT,ISIGN)
+      implicit none
+      integer :: n
+      REAL A(*),TRIGS_(N)
+      INTEGER IFAX_(10)
+
+      integer :: inc, jump, lot, isign
+
+      real ,allocatable,dimension(:),save :: work , trigs
+      integer,save :: ifax (32)
+
+
+      integer, save ::  n_old=-1
+      integer, save ::  lot_old=-1
+
+!$OMP threadprivate(ifax,n_old,lot_old,trigs,work)
+
+
+      if (n .ne. n_old) then
+
+         IF( ALLOCATED( work ) ) DEALLOCATE( work )
+         IF( ALLOCATED( trigs ) ) DEALLOCATE( trigs )
+
+         allocate(work(3*n*lot))
+         allocate(trigs(2*n))
+
+         call dftfax ( n, ifax, trigs )
+
+         n_old = n
+         lot_old = lot
+
+      else
+
+       if (lot .gt. lot_old) then
+
+         IF( ALLOCATED( work ) ) DEALLOCATE( work )
+         allocate(work(3*n*lot))
+         lot_old = lot
+
+       endif
+
+      endif
+
+      call dfftmlt ( a, work, trigs, ifax, inc, jump, n, lot, isign )
+
+      return
+
+      END SUBROUTINE FFT992
+#else
       SUBROUTINE FFT992(A,TRIGS,IFAX,INC,JUMP,N,LOT,ISIGN)
       REAL A(*),TRIGS(N)
       INTEGER IFAX(10)
@@ -224,3 +274,4 @@ C     FORMAT STATEMENTS FOR ERROR MESSAGES:
   902 FORMAT(' FACTOR =',I3,' ONLY CATERED FOR IF LA*IFAC=N')
 C
       END
+#endif
