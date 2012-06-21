@@ -14,6 +14,9 @@ SAVE
                         ! (inverse transform, spectral/fourier space)
 !INTEGER_M :: NF_OUT_LT  ! Number of fields that comes out of Inverse 
                         ! Legendre transform
+INTEGER_M :: NF_SC2
+INTEGER_M :: NF_SC3A
+INTEGER_M :: NF_SC3B
 
 !LOGICAL   :: LUV        ! uv fields requested
 !LOGICAL   :: LSCALAR    ! scalar fields requested

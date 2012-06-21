@@ -7,6 +7,7 @@ SUBROUTINE SUGAW(KN,PL,DDL,PW)
 
 USE TPM_GEN
 USE GAWL_MOD
+USE ABORT_TRANS_MOD
 
 #ifdef DOC
 
@@ -108,18 +109,19 @@ DO JGL=1,INS2
   ZREG(JGL) = COS(Z)
   ZLI(JGL) = PL(JGL)
 ENDDO
-
 !     ------------------------------------------------------------------
 
 !*      2. Computes roots and weights.
 !          ---------------------------
 
 ZEPS = EPSILON(Z)
-!$OMP PARALLEL DO PRIVATE(JGL)
+CALL GSTATS(1650,0)
+!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL)
 DO JGL=1,INS2
   CALL GAWL(PL(JGL),DDL(JGL),PW(JGL),ZEPS,KN,ITER(JGL),ZMOD(JGL))
 ENDDO
 !$OMP END PARALLEL DO
+CALL GSTATS(1650,1)
 
 !DIR$ IVDEP
 !OCL NOVREC
@@ -150,7 +152,7 @@ DO JGL=1,INS2
     WRITE(UNIT=NOUT,FMT='('' ALLOWED : '',I4,''&
      &NECESSARY : '',&
      &I4)')IALLOW,ITER(JGL)
-    CALL ABOR1(' FAILURE IN SUGAW ')
+    CALL ABORT_TRANS(' FAILURE IN SUGAW ')
   ENDIF
 
   IF(LLP2)THEN

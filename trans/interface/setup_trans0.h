@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
-&                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,LDALLOPERM,LDIMP,&
+&                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,LDIMP,&
 &                       LDIMP_NOOLAP,LDMPOFF)
 
 !**** *SETUP_TRANS0* - General setup routine for transform package
@@ -23,7 +23,6 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
 !     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ]
-!     LDALLOPERM - allocate some arrays permenately (OpenMP issue) [false]
 !     LDIMP - use immediate message passing [false]
 !     LDIMP_NOOLAP - use immediate message passing with no overlap between
 !                    communications and computations [false]
@@ -55,7 +54,6 @@ IMPLICIT NONE
 
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR
 INTEGER_M ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN
-LOGICAL   ,OPTIONAL,INTENT(IN) :: LDALLOPERM
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDIMP
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDIMP_NOOLAP
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDMPOFF
