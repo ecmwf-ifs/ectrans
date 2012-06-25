@@ -1,6 +1,6 @@
 MODULE SUSTAONL_MOD
 CONTAINS
-SUBROUTINE SUSTAONL(KMEDIAP,KRESTM)
+SUBROUTINE SUSTAONL(KMEDIAP,KRESTM,LDWEIGHTED_DISTR,PWEIGHT,PMEDIAP,KPROCAGP)
 
 !**** *SUSTAONL * - Routine to initialize parallel environment
 
@@ -14,8 +14,14 @@ SUBROUTINE SUSTAONL(KMEDIAP,KRESTM)
 !     ----------
 !        *CALL* *SUSTAONL *
 
-!        Explicit arguments : KMEDIAP - mean number of grid points per PE
-!        -------------------- KRESTM  - number of PEs with one extra point
+!        Explicit arguments : 
+!        --------------------
+!                     KMEDIAP    - mean number of grid points per PE
+!                     KRESTM     - number of PEs with one extra point
+!                     LDWEIGHTED_DISTR -true if weighted distribution
+!                     PWEIGHT    -weight per grid-point if weighted distribution
+!                     PMEDIAP    -mean weight per PE if weighted distribution
+!                     KPROCAGP   -number of grid points per A set
 
 !        Implicit arguments :
 !        --------------------
@@ -64,27 +70,36 @@ IMPLICIT NONE
 !     DUMMY 
 INTEGER(KIND=JPIM),INTENT(IN) :: KMEDIAP
 INTEGER(KIND=JPIM),INTENT(IN) :: KRESTM
+REAL(KIND=JPRB),INTENT(IN)    :: PWEIGHT(:)
+LOGICAL,INTENT(IN)            :: LDWEIGHTED_DISTR
+REAL(KIND=JPRB),INTENT(IN)    :: PMEDIAP
+INTEGER(KIND=JPIM),INTENT(IN) :: KPROCAGP(:)
 
 !     LOCAL
 
 INTEGER(KIND=JPIM) :: IXPTLAT(R%NDGL), ILSTPTLAT(R%NDGL),ISENDREQ(NPROC)
 INTEGER(KIND=JPIM) :: ICHK(R%NDLON,R%NDGL), ICOMBUF(R%NDGL*N_REGIONS_EW*2)
 INTEGER(KIND=JPIM) :: I1, I2, IBUFLEN, IDGLG, IDWIDE,&
-             &IGL, IGL1, IGL2, IGLOFF, IGPTA, IGPTOT, &
+             &IGL, IGL1, IGL2, IGLOFF, IGPTA, &
              &IGPTPRSETS, IGPTS, IGPTSP, ILEN, ILRECV, &
-             &ILSEND, INPLAT, INXLAT, IPART,  IPOS, &
+             &ILSEND, INPLAT, INXLAT, IPOS, &
              &IPROCB, IPTSRE, IRECV, IPE, &
-             &IREST, ISEND, ITAG, JA, JB, JGL, JL, JNPTSRE
+             &IREST, ISEND, ITAG, JA, JB, JGL, JL, JNPTSRE, &
+             &ILAT, ILON, ILOEN
 INTEGER(KIND=JPIM),ALLOCATABLE :: ICOMBUFG(:)
+REAL(KIND=JPRB),ALLOCATABLE :: ZWEIGHT(:,:)
 INTEGER(KIND=JPIM) :: JJ, ILENG(NPROC), IOFF(NPROC)
 
-LOGICAL :: LLABORT, LLALLAT
+LOGICAL :: LLABORT
 LOGICAL :: LLP1,LLP2
 
-REAL(KIND=JPRB) ::  ZLAT, ZLAT1
+REAL(KIND=JPRB) ::  ZLAT, ZLAT1, ZCOMP
 REAL(KIND=JPRB) :: ZDIVID(R%NDGL),ZXPTLAT(R%NDGL)
 
 !      -----------------------------------------------------------------
+
+IXPTLAT  (:)=999999
+ILSTPTLAT(:)=999999
 
 LLP1 = NPRINTLEV>0
 LLP2 = NPRINTLEV>1
@@ -100,31 +115,13 @@ ILEN = D%NLSTLAT(MY_REGION_NS) - D%NFRSTLAT(MY_REGION_NS)+1
 
 IGPTPRSETS = SUM(G%NLOEN(1:D%NFRSTLAT(MY_REGION_NS)-1))
 
-IGPTOT = SUM(G%NLOEN(1:R%NDGL))
-
 IF (D%LSPLIT) THEN
   IF( LEQ_REGIONS )THEN
-    IPE=0
     IGPTA=0
     DO JA=1,MY_REGION_NS-1
-      DO JB=1,N_REGIONS(JA)
-        IPE=IPE+1
-        IF( IPE <= KRESTM .OR. KRESTM  ==  0)THEN
-          IGPTA  = IGPTA + KMEDIAP
-        ELSE
-          IGPTA  = IGPTA + (KMEDIAP-1)
-        ENDIF
-      ENDDO
+      IGPTA = IGPTA + KPROCAGP(JA)
     ENDDO
-    IGPTS=0
-    DO JB=1,N_REGIONS(MY_REGION_NS)
-      IPE=IPE+1
-      IF( IPE <= KRESTM .OR. KRESTM  ==  0 )THEN
-        IGPTS = IGPTS + KMEDIAP
-      ELSE
-        IGPTS = IGPTS + (KMEDIAP-1)
-      ENDIF
-    ENDDO
+    IGPTS = KPROCAGP(MY_REGION_NS)
   ELSE
     IF (MY_REGION_NS <= KRESTM.OR.KRESTM == 0) THEN
       IGPTS = KMEDIAP
@@ -163,43 +160,37 @@ ENDDO
 
 !  grid point decomposition
 !  ---------------------------------------
-LLALLAT = (N_REGIONS_NS == 1)
 DO JGL=1,ILEN
   ZDIVID(JGL)=REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB)
 ENDDO
+IF( LDWEIGHTED_DISTR )THEN
+  ALLOCATE(ZWEIGHT(G%NLOEN(R%NDGL/2),R%NDGL))
+  IGL=0
+  DO JGL=1,R%NDGL
+    DO JL=1,G%NLOEN(JGL)
+      IGL=IGL+1
+      ZWEIGHT(JL,JGL)=PWEIGHT(IGL)
+    ENDDO
+  ENDDO
+  ZCOMP=0
+  IGPTS=0
+ENDIF
+
 DO JB=1,N_REGIONS(MY_REGION_NS)
 
-  IF (JB <= IREST) THEN
-    IPTSRE = IGPTSP+1
-  ELSE
-    IPTSRE = IGPTSP
-  ENDIF
+  IF( .NOT.LDWEIGHTED_DISTR )THEN
 
-  IPART=0
-  DO JNPTSRE=1,IPTSRE
-    ZLAT  = 1._JPRB
-    ZLAT1 = 1._JPRB
-    IF (MY_REGION_NS <= D%NAPSETS .AND.(IPART /= 2.OR.LLALLAT)) THEN
-      DO JGL=1,ILEN
-        IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-          ZLAT1  = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
-          ZLAT   = MIN(ZLAT1,ZLAT)
-          INXLAT = JGL
-          IPART  = 1
-          EXIT
-        ENDIF
-      ENDDO
-    ELSEIF (MY_REGION_NS > N_REGIONS_NS-D%NAPSETS.AND.(IPART /= 1.OR.LLALLAT)) THEN
-      DO JGL=1,ILEN
-        IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-          ZLAT1  = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
-          ZLAT   = MIN(ZLAT1,ZLAT)
-          INXLAT = JGL
-          IPART  = 2
-          EXIT
-        ENDIF
-      ENDDO
+    IF (JB <= IREST) THEN
+      IPTSRE = IGPTSP+1
     ELSE
+      IPTSRE = IGPTSP
+    ENDIF
+
+    DO JNPTSRE=1,IPTSRE
+
+      ZLAT  = 1._JPRB
+      ZLAT1 = 1._JPRB
+
       DO JGL=1,ILEN
         IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
           ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
@@ -209,19 +200,67 @@ DO JB=1,N_REGIONS(MY_REGION_NS)
           ENDIF
         ENDIF
       ENDDO
-    ENDIF
-
-    IF (INXLAT >= I1 .AND. INXLAT <= I2) THEN
-      IF (D%NSTA(D%NPTRFLOFF+INXLAT,JB) == 0) THEN
-        D%NSTA(D%NPTRFLOFF+INXLAT,JB) = IXPTLAT(INXLAT)
+  
+      IF (INXLAT >= I1 .AND. INXLAT <= I2) THEN
+        IGL=D%NPTRFLOFF+INXLAT
+        IF (D%NSTA(IGL,JB) == 0) THEN
+          D%NSTA(IGL,JB) = IXPTLAT(INXLAT)
+        ENDIF
+        D%NONL(IGL,JB) = D%NONL(IGL,JB)+1
       ENDIF
-      D%NONL(D%NPTRFLOFF+INXLAT,JB) = D%NONL(D%NPTRFLOFF+INXLAT,JB)+1
-    ENDIF
-    IXPTLAT(INXLAT) = IXPTLAT(INXLAT)+1
-    ZXPTLAT(INXLAT) = REAL(IXPTLAT(INXLAT),JPRB)
-  ENDDO
+      IXPTLAT(INXLAT) = IXPTLAT(INXLAT)+1
+      ZXPTLAT(INXLAT) = REAL(IXPTLAT(INXLAT),JPRB)
+    ENDDO
+
+  ELSE
+
+    DO WHILE ( (JB <  N_REGIONS(MY_REGION_NS) .AND. ZCOMP < PMEDIAP) &
+        & .OR. (JB == N_REGIONS(MY_REGION_NS) .AND. IGPTS < KPROCAGP(MY_REGION_NS)) )
+
+      IGPTS = IGPTS + 1
+      ZLAT  = 1._JPRB
+      ZLAT1 = 1._JPRB
+
+      DO JGL=1,ILEN
+        IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
+          ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
+          IF (ZLAT1 < ZLAT) THEN
+            ZLAT   = ZLAT1
+            INXLAT = JGL
+          ENDIF
+        ENDIF
+      ENDDO
+  
+      IF (INXLAT >= I1 .AND. INXLAT <= I2) THEN
+        IGL=D%NPTRFLOFF+INXLAT
+        IF (D%NSTA(IGL,JB) == 0) THEN
+          D%NSTA(IGL,JB) = IXPTLAT(INXLAT)
+        ENDIF
+        D%NONL(IGL,JB) = D%NONL(IGL,JB)+1
+        IF(IGL<1.OR.IGL>R%NDGL+N_REGIONS_NS-1)THEN
+          CALL ABORT_TRANS(' SUSTAONL: IGL<1.OR.IGL>R%NDGL+N_REGIONS_NS-1')
+        ENDIF
+        ILON=D%NSTA(IGL,JB)+D%NONL(IGL,JB)-1
+        ILAT=D%NFRSTLAT(MY_REGION_NS)+INXLAT-1
+        ILOEN=G%NLOEN(ILAT)
+        IF(ILON<1.OR.ILON>ILOEN)THEN
+          CALL ABORT_TRANS(' SUSTAONL: ILON<1.OR.ILON>ILOEN')
+        ENDIF
+        ZCOMP = ZCOMP + ZWEIGHT(ILON,ILAT)
+      ENDIF
+      IXPTLAT(INXLAT) = IXPTLAT(INXLAT)+1
+      ZXPTLAT(INXLAT) = REAL(IXPTLAT(INXLAT),JPRB)
+    ENDDO
+
+    ZCOMP = ZCOMP - PMEDIAP
+
+  ENDIF
+
 ENDDO
 
+IF( LDWEIGHTED_DISTR )THEN
+  DEALLOCATE(ZWEIGHT)
+ENDIF
 
 ! Exchange local partitioning info to produce global view
 !

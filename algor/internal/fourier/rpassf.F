@@ -26,6 +26,7 @@ C-----------------------------------------------------------------------
 C                                                                       
       SUBROUTINE RPASSF(A,B,C,D,TRIGS,INC1,INC2,INC3,INC4,LOT,N,IFAC,   
      *    LA,IERR,LIPL)                                                      
+!AUTOPROMOTE
       USE PARKIND1, ONLY : JPRB
       USE YOMHOOK , ONLY : LHOOK, DR_HOOK
       DIMENSION A(*),B(*),C(*),D(*),TRIGS(N)                            

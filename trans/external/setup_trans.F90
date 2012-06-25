@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
-&KAPSETS,KTMAX,KRESOL,LDGRIDONLY)
+&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -14,23 +14,23 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     ----------
 !     CALL SETUP_TRANS(...)
 
-!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT,KAPSETS are optional arguments
+!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT are optional arguments
 !     -------------------- 
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     LDLINEAR_GRID - true if linear grid
-!     KAPSETS - Number of apple sets in the distribution [0]
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
+!     PWEIGHT - the weight per grid-point (for a weighted distribution)
 !     LDGRIDONLY - true if only grid space is required
 
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
-!     LDSPLIT and KAPSETS describe the distribution among processors of
-!     grid-point data and has no relevance if you are using a single processor
+!     LDSPLIT describe the distribution among processors of grid-point data and
+!     has no relevance if you are using a single processor
  
 !     Method.
 !     -------
@@ -85,9 +85,9 @@ INTEGER(KIND=JPIM) ,INTENT(IN) :: KSMAX,KDGL
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
-INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KAPSETS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
+REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 
 !ifndef INTERFACE
@@ -102,7 +102,7 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',0,ZHOOK_HANDLE)
 
-IF(MSETUP0 /= 1) THEN
+IF(MSETUP0 == 0) THEN
   CALL ABORT_TRANS('SETUP_TRANS: SETUP_TRANS0 HAS TO BE CALLED BEFORE SETUP_TRANS')
 ENDIF
 LLP1 = NPRINTLEV>0
@@ -142,7 +142,6 @@ G%LREDUCED_GRID = .FALSE.
 G%LINEAR_GRID = .FALSE.
 D%LGRIDONLY = .FALSE.
 D%LSPLIT = .FALSE.
-D%NAPSETS = 0
 
 ! NON-OPTIONAL ARGUMENTS
 R%NSMAX = KSMAX
@@ -176,10 +175,6 @@ IF(PRESENT(LDSPLIT)) THEN
   D%LSPLIT = LDSPLIT
 ENDIF
 
-IF(PRESENT(KAPSETS)) THEN
-  D%NAPSETS = KAPSETS
-ENDIF
-
 IF(PRESENT(KTMAX)) THEN
   R%NTMAX = KTMAX
 ELSE
@@ -196,6 +191,20 @@ ELSEIF(R%NSMAX > (R%NDLON+3)/3) THEN
   G%LINEAR_GRID = .TRUE.
 ENDIF  
 
+IF(PRESENT(PWEIGHT)) THEN
+  D%LWEIGHTED_DISTR = .TRUE.
+  IF( D%LWEIGHTED_DISTR .AND. .NOT.D%LSPLIT )THEN
+    CALL ABORT_TRANS('SETUP_TRANS: LWEIGHTED_DISTR=T AND LSPLIT=F NOT SUPPORTED')
+  ENDIF
+  IF(SIZE(PWEIGHT) /= SUM(G%NLOEN(:)) )THEN
+    CALL ABORT_TRANS('SETUP_TRANS:SIZE(PWEIGHT) /= SUM(G%NLOEN(:))')
+  ENDIF
+  ALLOCATE(D%RWEIGHT(SIZE(PWEIGHT)))
+  D%RWEIGHT(:)=PWEIGHT(:)
+ELSE
+  D%LWEIGHTED_DISTR = .FALSE.
+ENDIF
+
 IF(PRESENT(LDGRIDONLY)) THEN
   D%LGRIDONLY=LDGRIDONLY
 ENDIF
@@ -209,7 +218,7 @@ CALL SETUP_DIMS
 ! First part of setup of distributed environment
 CALL SUMP_TRANS_PRELEG
 
-! Compute Legandre polonomial and Gaussian Latitudes and Weights
+! Compute Legendre polonomial and Gaussian Latitudes and Weights
 CALL SULEG
 
 CALL GSTATS(1802,0)

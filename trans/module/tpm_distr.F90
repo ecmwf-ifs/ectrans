@@ -37,8 +37,8 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPRCIDS(:) ! Array containing the process ids
 
 TYPE DISTR_TYPE
 LOGICAL   :: LGRIDONLY          ! TRUE - only grid space structures are available
+LOGICAL   :: LWEIGHTED_DISTR    ! TRUE - weighted distribution
 LOGICAL   :: LSPLIT             ! TRUE - latitudes are shared between a-sets
-INTEGER(KIND=JPIM) :: NAPSETS   ! Number of apple sets at the poles. Default is zero.
 
 ! SPECTRAL SPACE
 
@@ -145,6 +145,9 @@ INTEGER(KIND=JPIM) :: NGPTOT   ! Total number of grid columns on this PE
 INTEGER(KIND=JPIM) :: NGPTOTG  ! Total number of grid columns on the Globe
 INTEGER(KIND=JPIM) :: NGPTOTMX ! Maximum number of grid columns on any of the PEs
 INTEGER(KIND=JPIM) ,POINTER :: NGPTOTL(:,:) ! Number of grid columns on each PE.
+
+REAL(KIND=JPRB) ,POINTER :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
+INTEGER(KIND=JPIM) ,POINTER :: NPROCA_GP(:) ! Number of grid-points per a-set
 
 END TYPE DISTR_TYPE
 
