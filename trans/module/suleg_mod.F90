@@ -3,7 +3,6 @@ CONTAINS
 SUBROUTINE SULEG
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPIB
-USE PARKIND2  ,ONLY : JPRH
 
 USE TPM_GEN
 USE TPM_DIM
@@ -14,10 +13,6 @@ USE TPM_FIELDS
 USE SUGAW_MOD
 USE SUPOL_MOD
 USE SUTRLE_MOD
-
-#if defined(NECSX) && defined(REALHUGE)
-USE quad_emu_mod
-#endif
 
 #ifdef DOC
 
@@ -52,6 +47,10 @@ USE quad_emu_mod
 !     Reference.
 !     ----------
 !        ECMWF Research Department documentation of the IFS
+!     
+!     S.L. Belousov, Tables of normalized associated Legendre Polynomials, Pergamon Press (1962)
+!     P.N. Swarztrauber, On computing the points and weights for Gauss-Legendre quadrature,
+!     SIAM J. Sci. Comput. Vol. 24 (3) pp. 945-954 (2002)
 
 !     Author.
 !     -------
@@ -90,6 +89,7 @@ USE quad_emu_mod
 !          - removal of code under LRPOLE.
 !        R. El Khatib 11-Apr-2007 Emulation of vectorized quadruple precision
 !                                 on NEC
+!        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
 !     ------------------------------------------------------------------
 
 #endif
@@ -99,39 +99,36 @@ IMPLICIT NONE
 
 
 !     ------------------------------------------------------------------
-REAL(KIND=JPRB),ALLOCATABLE :: ZPNMG(:,:)
+REAL(KIND=JPRB),ALLOCATABLE :: ZPNMG(:)
+REAL(KIND=JPRB),ALLOCATABLE :: ZFN(:,:)
+REAL(KIND=JPRB),ALLOCATABLE :: ZFNLAT(:)
 
-REAL(KIND=JPRH) :: DLRMU(R%NDGL)
-REAL(KIND=JPRH) :: DLC(0:R%NTMAX+1,0:R%NTMAX+1)
-REAL(KIND=JPRH) :: DLD(0:R%NTMAX+1,0:R%NTMAX+1)
-REAL(KIND=JPRH) :: DLE(0:R%NTMAX+1,0:R%NTMAX+1)
-REAL(KIND=JPRH) :: DLA(0:R%NTMAX+1),DLB(0:R%NTMAX+1),DLF(0:R%NTMAX+1)
-REAL(KIND=JPRH) :: DLG(0:R%NTMAX+1),DLH(0:R%NTMAX+1),DLI(0:R%NTMAX+1)
-REAL(KIND=JPRH) :: DLPOL(0:R%NTMAX+1,0:R%NTMAX+1)
+REAL(KIND=JPRB) :: DLRMU(R%NDGL)
+REAL(KIND=JPRB) :: DLC(0:R%NTMAX+1,0:R%NTMAX+1)
+REAL(KIND=JPRB) :: DLD(0:R%NTMAX+1,0:R%NTMAX+1)
+REAL(KIND=JPRB) :: DLE(0:R%NTMAX+1,0:R%NTMAX+1)
+REAL(KIND=JPRB) :: DLA(0:R%NTMAX+1),DLH(0:R%NTMAX+1),DLI(0:R%NTMAX+1)
+REAL(KIND=JPRB) :: DLPOL(0:R%NTMAX+1,0:R%NTMAX+1)
 !     ------------------------------------------------------------------
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKS=KIND(ZPNMG)
-INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DLG)
+INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DLA)
 
 !     ------------------------------------------------------------------
-REAL(KIND=JPRH) :: DA,DC,DD,DE
+REAL(KIND=JPRB) :: DA,DC,DD,DE
+
+REAL(KIND=JPRB) :: ZFNN
+
 INTEGER(KIND=JPIM) :: KKN, KKM
 
 !     LOCAL 
 INTEGER(KIND=JPIM) :: IGLLOC, INM, IM , ICOUNT,&
-             &JGL,  JM, JMLOC, JN, JNM
+             &JGL,  JM, JMLOC, JN, JNM,&
+             &ISTART, IODD, IK
 
-
+INTEGER(KIND=JPIM) :: ILATPP,IRESTL,ILATS,ILOOP,JSET
+INTEGER(KIND=JPIM) :: IEXPECT(NPRTRW)
 LOGICAL :: LLP1,LLP2
-
-#if defined(NECSX) && defined(REALHUGE)
-INTEGER(KIND=JPIB) :: IDCN(0:R%NTMAX+1,0:R%NTMAX+1)
-INTEGER(KIND=JPIB) :: IDCD(0:R%NTMAX+1,0:R%NTMAX+1)
-INTEGER(KIND=JPIB) :: IDDN(0:R%NTMAX+1,0:R%NTMAX+1)
-INTEGER(KIND=JPIB) :: IDDD(0:R%NTMAX+1,0:R%NTMAX+1)
-INTEGER(KIND=JPIB) :: IDEN(0:R%NTMAX+1,0:R%NTMAX+1)
-INTEGER(KIND=JPIB) :: IDED(0:R%NTMAX+1,0:R%NTMAX+1)
-#endif
 
 DC(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPKD)*REAL(KKN+KKM-1,JPKD)&
                    &*REAL(KKN+KKM-3,JPKD))&
@@ -162,14 +159,50 @@ IF (LLP2) WRITE(NOUT,9) 'F%RMU     ',SIZE(F%RMU ),SHAPE(F%RMU )
 ALLOCATE(F%RW(R%NDGL))
 IF (LLP2) WRITE(NOUT,9) 'F%RW      ',SIZE(F%RW  ),SHAPE(F%RW  ) 
 
-!     ------------------------------------------------------------------
+
+!*       1.0 Initialize Fourier coefficients for ordinary Legendre polynomials
+!     ------------------------------------------------------------------------
+
+IF(.NOT.D%LGRIDONLY) THEN
+  ISTART=1
+ELSE
+  ISTART=R%NDGL
+ENDIF
+ALLOCATE(ZFN(0:R%NDGL,0:R%NDGL))
+IF (LLP2) WRITE(NOUT,9) 'ZFN       ',SIZE(ZFN   ),SHAPE(ZFN   )
+ALLOCATE(ZFNLAT(0:R%NDGL/2))
+IF (LLP2) WRITE(NOUT,9) 'ZFN       ',SIZE(ZFNLAT   ),SHAPE(ZFNLAT   )
+
+! Belousov, Swarztrauber use ZFN(0,0)=SQRT(2._JPRB)
+! IFS normalisation chosen to be 0.5*Integral(Pnm**2) = 1
+ZFN(0,0)=2._JPRB
+DO JN=ISTART,R%NDGL
+  ZFNN=ZFN(0,0)
+  DO JGL=1,JN
+    ZFNN=ZFNN*SQRT(1._JPRB-0.25_JPRB/REAL(JGL**2,JPRB))
+  ENDDO
+
+  IODD=MOD(JN,2)
+  ZFN(JN,JN)=ZFNN
+  DO JGL=2,JN-IODD,2
+    ZFN(JN,JN-JGL)=ZFN(JN,JN-JGL+2)*REAL((JGL-1)*(2*JN-JGL+2),JPRB)/REAL(JGL*(2*JN-JGL+1),JPRB)
+  ENDDO
+ENDDO
 
 !*       3.1   Gaussian latitudes and weights
-CALL SUGAW(R%NDGL,F%RMU,DLRMU,F%RW)
+!     ---------------------------------------
+
+IODD=MOD(R%NDGL,2)
+IK=IODD
+DO JGL=IODD,R%NDGL,2
+  ZFNLAT(IK)=ZFN(R%NDGL,JGL)
+  IK=IK+1
+ENDDO
+CALL SUGAW(R%NDGL,ZFNLAT,F%RMU,DLRMU,F%RW)
 
 IF(.NOT.D%LGRIDONLY) THEN
 
-  ALLOCATE(ZPNMG(R%NSPOLEG,D%NLEI3D))
+  ALLOCATE(ZPNMG(R%NSPOLEG))
 
   ALLOCATE(F%R1MU2(R%NDGL))
   IF (LLP2) WRITE(NOUT,9) 'F%R1MU2   ',SIZE(F%R1MU2),SHAPE(F%R1MU2 ) 
@@ -193,27 +226,6 @@ IF(.NOT.D%LGRIDONLY) THEN
 
 !*       3.3   Working arrays
 
-#if defined(NECSX) && defined(REALHUGE)
-
-  DO JN=3,R%NTMAX+1
-    DO JM=2,JN-1
-      IDCN(JM,JN)=(2*JN+1)*(JN+JM-1)*(JN+JM-3)
-      IDCD(JM,JN)=(2*JN-3)*(JN+JM  )*(JN+JM-2)
-      IDDN(JM,JN)=(2*JN+1)*(JN+JM-1)*(JN-JM+1)
-      IDDD(JM,JN)=(2*JN-1)*(JN+JM  )*(JN+JM-2)
-      IDEN(JM,JN)=(2*JN+1)*(JN-JM)
-      IDED(JM,JN)=(2*JN-1)*(JN+JM)
-    ENDDO
-  ENDDO
-
-  DO JN=3,R%NTMAX+1
-    CALL SQRTIVDV (IDCN(2,JN), IDCD(2,JN), JN-2, DLC(2,JN))
-    CALL SQRTIVDV (IDDN(2,JN), IDDD(2,JN), JN-2, DLD(2,JN))
-    CALL SQRTIVDV (IDEN(2,JN), IDED(2,JN), JN-2, DLE(2,JN))
-  ENDDO
-
-#else
-
   DO JN=3,R%NTMAX+1
     DO JM=2,JN-1
       DLC(JM,JN) = DC(JN,JM)
@@ -222,37 +234,62 @@ IF(.NOT.D%LGRIDONLY) THEN
     ENDDO
   ENDDO
 
-#endif
-
   DO JN=1,R%NTMAX+1
-    DLA(JN) = SQRT(REAL(2*JN+1,JPKD))
-    DLB(JN) = SQRT(REAL(2*JN+1,JPKD)/REAL(JN*(JN+1),JPKD))
-    DLF(JN) = REAL(2*JN-1,JPKD)/REAL(JN,JPKD)
-    DLG(JN) = REAL(JN-1,JPKD)/REAL(JN,JPKD)
+    DLA(JN) = 1._JPRB/SQRT(REAL(JN*(JN+1),JPKD))
     DLH(JN) = SQRT(REAL(2*JN+1,JPKD)/REAL(2*JN,JPKD))
     DLI(JN) = REAL(JN,JPKD)
   ENDDO
+  DO JSET=1,NPRTRW
+    IEXPECT(JSET) = D%NLATLE(JSET)-D%NLATLS(JSET)+1
+  ENDDO
+  IF(R%NTMAX+1 /= R%NDGL) THEN
+    DEALLOCATE(ZFN)
+    ALLOCATE(ZFN(0:R%NTMAX+1,0:R%NTMAX+1))
+  ! Belousov, Swarztrauber use ZFN(0,0)=SQRT(2._JPRB)
+  ! IFS normalisation chosen to be 0.5*Integral(Pnm**2) = 1
+    ZFN(0,0)=2._JPRB
+    DO JN=1,R%NTMAX+1
+      ZFNN=ZFN(0,0)
+      DO JGL=1,JN
+        ZFNN=ZFNN*SQRT(1._JPRB-0.25_JPRB/REAL(JGL**2,JPRB))
+      ENDDO
 
+      IODD=MOD(JN,2)
+      ZFN(JN,JN)=ZFNN
+      DO JGL=2,JN-IODD,2
+        ZFN(JN,JN-JGL)=ZFN(JN,JN-JGL+2)*REAL((JGL-1)*(2*JN-JGL+2),JPRB)/REAL(JGL*(2*JN-JGL+1),JPRB)
+      ENDDO
+    ENDDO
+  ENDIF
   CALL GSTATS(1801,0)
   DO JGL=D%NLATLS(MYSETW),D%NLATLE(MYSETW)
     DLPOL(:,:) = 0.0_JPRB
-    CALL SUPOL(R%NTMAX+1,DLRMU(JGL),DLPOL,DLA,DLB,DLC,DLD,DLE,DLF,DLG,DLH,DLI)
+    CALL SUPOL(R%NTMAX+1,DLRMU(JGL),ZFN,DLPOL,DLA,DLC,DLD,DLE,DLH,DLI)
     INM = 0
     IGLLOC = JGL - D%NLATLS(MYSETW) + 1
     DO JM=0,R%NSMAX
       DO JN=R%NTMAX+1,JM,-1
         INM = INM+1
-        ZPNMG(INM,IGLLOC) = REAL(DLPOL(JM,JN),JPKS)
+        ZPNMG(INM) = REAL(DLPOL(JM,JN),JPKS)
       ENDDO
     ENDDO
+    CALL GSTATS(1801,2)
+!    CALL GSTATS(190,0)
+    ILOOP = JGL-D%NLATLS(MYSETW)+1
+    CALL SUTRLE(ZPNMG,JGL,ILOOP,IEXPECT)
+!###############***##**    CALL GSTATS(190,1)
+    CALL GSTATS(1801,3)
   ENDDO
+  ILATPP = R%NDGNH/NPRTRW
+  IRESTL = R%NDGNH-NPRTRW*ILATPP
+  ILATS = D%NLATLE(MYSETW)-D%NLATLS(MYSETW)+1
+  IF(IRESTL /= 0 .AND. ILATS == ILATPP) THEN
+    ILOOP=ILATS+1
+    CALL SUTRLE(ZPNMG,-1,ILOOP,IEXPECT)
+  ENDIF
   CALL GSTATS(1801,1)
   CALL GSTATS(140,1)
 
-  CALL GSTATS(190,0)
-  CALL SUTRLE(ZPNMG)
-  CALL GSTATS(190,1)
-  
   ICOUNT = 0
   DO JMLOC=1,D%NUMP
     IM = D%MYMS(JMLOC)
@@ -297,6 +334,9 @@ IF(.NOT.D%LGRIDONLY) THEN
 ELSE
   CALL GSTATS(140,1)
 ENDIF
+
+DEALLOCATE(ZFN)
+DEALLOCATE(ZFNLAT)
 
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)

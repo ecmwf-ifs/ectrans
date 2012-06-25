@@ -216,14 +216,16 @@ CALL GSTATS(1802,0)
 
 ! Compute arrays related to grid-point geometry
 CALL SETUP_GEOM
+CALL GSTATS(1802,1)
 
 ! Second part of setup of distributed environment
 CALL SUMP_TRANS
+CALL GSTATS(1802,0)
 
 ! Initialize Fast Fourier Transform package
 CALL SUFFT
-
 CALL GSTATS(1802,1)
+
 
 
 IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',1,ZHOOK_HANDLE)
