@@ -1,6 +1,6 @@
 MODULE GAWL_MOD
 CONTAINS
-SUBROUTINE GAWL(PL,DDL,PW,PEPS,KN,KITER,PMOD)
+SUBROUTINE GAWL(PL,PDL,PW,PEPS,KN,KITER,PMOD)
 
 !**** *GAWL * - Routine to perform the Newton loop
 
@@ -9,17 +9,17 @@ SUBROUTINE GAWL(PL,DDL,PW,PEPS,KN,KITER,PMOD)
 !           Find 0 of Legendre polynomial with Newton loop
 !**   Interface.
 !     ----------
-!        *CALL* *GAWL(PL,DDL,PW,PEPS,KN,KITER,PMOD)
+!        *CALL* *GAWL(PL,PDL,PW,PEPS,KN,KITER,PMOD)
 
 !        Explicit arguments :
 !        --------------------
-! PL     Gaussian latitude
-! DDL    Gaussian latitude in double precision
-! PW     Gaussian weight
-! PEPS   0 of the machine
-! KN     Truncation
-! KITER  Number of iterations
-! PMOD   Last modification
+! PL     Gaussian latitude                         (inout)
+! PDL    Gaussian latitude in double precision     (out)
+! PW     Gaussian weight                           (out)
+! PEPS   0 of the machine                          (in)
+! KN     Truncation                                (in)
+! KITER  Number of iterations                      (out)
+! PMOD   Last modification                         (inout)
 
 !        Implicit arguments :
 !        --------------------
@@ -45,6 +45,7 @@ SUBROUTINE GAWL(PL,DDL,PW,PEPS,KN,KITER,PMOD)
 !     Modifications.
 !     --------------
 !        Original : 92-12-18
+!        K. Yessad (Sep 2008): cleaning, improve comments.
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -52,27 +53,23 @@ USE PARKIND2  ,ONLY : JPRH
 
 USE CPLEDN_MOD
 
+!     ------------------------------------------------------------------
+
 IMPLICIT NONE
 
+REAL(KIND=JPRB),INTENT(INOUT)  :: PL
+REAL(KIND=JPRH),INTENT(OUT)    :: PDL
+REAL(KIND=JPRB),INTENT(OUT)    :: PW
+REAL(KIND=JPRB),INTENT(IN)     :: PEPS
+INTEGER(KIND=JPIM),INTENT(IN)  :: KN
+INTEGER(KIND=JPIM),INTENT(OUT) :: KITER
+REAL(KIND=JPRB),INTENT(INOUT)  :: PMOD
 
-!     DUMMY INTEGER SCALARS
-INTEGER(KIND=JPIM) :: KITER
-INTEGER(KIND=JPIM) :: KN
+!     ------------------------------------------------------------------
 
-!     DUMMY REAL SCALARS
-REAL(KIND=JPRB) :: PEPS
-REAL(KIND=JPRB) :: PL
-REAL(KIND=JPRB) :: PMOD
-REAL(KIND=JPRB) :: PW
-
-REAL(KIND=JPRH) :: DDL,DLX,DLXN
-
-INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DLX)
-
-!     LOCAL INTEGER SCALARS
+REAL(KIND=JPRH) :: ZDLX,ZDLXN
+INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(ZDLX)
 INTEGER(KIND=JPIM) :: IDBLE, IFLAG, ITEMAX, JTER
-
-!     LOCAL REAL SCALARS
 REAL(KIND=JPRB) :: ZW, ZX, ZXN
 
 !     ------------------------------------------------------------------
@@ -82,7 +79,7 @@ REAL(KIND=JPRB) :: ZW, ZX, ZXN
 
 ITEMAX = 20
 ZX = PL
-DLX = REAL(ZX,JPKD)
+ZDLX = REAL(ZX,JPKD)
 IDBLE = 1
 IFLAG = 0
 
@@ -93,9 +90,9 @@ IFLAG = 0
 
 DO JTER=1,ITEMAX+1
   KITER = JTER
-  CALL CPLEDN(KN,IDBLE,ZX,DLX,IFLAG,ZW,ZXN,DLXN,PMOD)
+  CALL CPLEDN(KN,IDBLE,ZX,ZDLX,IFLAG,ZW,ZXN,ZDLXN,PMOD)
   ZX = ZXN
-  DLX = DLXN
+  ZDLX = ZDLXN
 
   IF(IFLAG == 1) EXIT
   IF(IDBLE == 1.AND.ABS(PMOD) <= PEPS*1000._JPRB) IFLAG = 1
@@ -104,7 +101,7 @@ DO JTER=1,ITEMAX+1
 ENDDO
 
 PL = ZXN
-DDL = DLXN
+PDL = ZDLXN
 PW = ZW
 
 !     ------------------------------------------------------------------

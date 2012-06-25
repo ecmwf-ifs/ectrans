@@ -1,6 +1,6 @@
 MODULE CPLEDN_MOD
 CONTAINS
-SUBROUTINE CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)
+SUBROUTINE CPLEDN(KN,KDBLE,PX,PDX,KFLAG,PW,PXN,PDXN,PXMOD)
 
 !**** *CPLEDN* - Routine to compute the Legendre polynomial of degree N
 
@@ -10,20 +10,20 @@ SUBROUTINE CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)
 
 !**   Interface.
 !     ----------
-!        *CALL* *CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)*
+!        *CALL* *CPLEDN(KN,KDBLE,PX,PDX,KFLAG,PW,PXN,PDXN,PXMOD)*
 
 !        Explicit arguments :
 !        --------------------
-!              KN       :  Degree of the Legendre polynomial
-!              KDBLE    :  0, single precision
-!                          1, double precision
-!              PX       :  abcissa where the computations are performed
-!              DDX      :  id in double precision
-!              KFLAG    :  When KFLAG.EQ.1 computes the weights
-!              PW       :  Weight of the quadrature at PXN
-!              PXN      :  new abscissa (Newton iteration)
-!              DDXN     :  id in double precision
-!              PXMOD    :  PXN-PX
+!          KN       :  Degree of the Legendre polynomial              (in)
+!          KDBLE    :  0, single precision                            (in)
+!                      1, double precision
+!          PX       :  abcissa where the computations are performed   (in)
+!          PDX      :  id in double precision                         (in)
+!          KFLAG    :  When KFLAG.EQ.1 computes the weights           (in)
+!          PW       :  Weight of the quadrature at PXN                (out)
+!          PXN      :  new abscissa (Newton iteration)                (out)
+!          PDXN     :  id in double precision                         (out)
+!          PXMOD    :  PXN-PX                                         (out)
 
 !        Implicit arguments :
 !        --------------------
@@ -49,54 +49,50 @@ SUBROUTINE CPLEDN(KN,KDBLE,PX,DDX,KFLAG,PW,PXN,DDXN,PXMOD)
 !     --------------
 !        Original : 87-10-15
 !        Michel Rochas, 90-08-30 (Lobatto+cleaning)
+!        K. Yessad (Sep 2008): cleaning, improve comments.
 !     ------------------------------------------------------------------
-
-
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE PARKIND2  ,ONLY : JPRH
 
+!     ------------------------------------------------------------------
+
 IMPLICIT NONE
 
+INTEGER(KIND=JPIM),INTENT(IN) :: KN
+INTEGER(KIND=JPIM),INTENT(IN) :: KDBLE
+REAL(KIND=JPRB),INTENT(IN)    :: PX
+REAL(KIND=JPRH),INTENT(IN)    :: PDX
+INTEGER(KIND=JPIM),INTENT(IN) :: KFLAG
+REAL(KIND=JPRB),INTENT(OUT)   :: PW
+REAL(KIND=JPRB),INTENT(OUT)   :: PXN
+REAL(KIND=JPRH),INTENT(OUT)   :: PDXN
+REAL(KIND=JPRB),INTENT(OUT)   :: PXMOD
 
-!     DUMMY INTEGER SCALARS
-INTEGER(KIND=JPIM) :: KDBLE
-INTEGER(KIND=JPIM) :: KFLAG
-INTEGER(KIND=JPIM) :: KN
+!     ------------------------------------------------------------------
 
-!     DUMMY REAL SCALARS
-REAL(KIND=JPRB) :: PW
-REAL(KIND=JPRB) :: PX
-REAL(KIND=JPRB) :: PXMOD
-REAL(KIND=JPRB) :: PXN
-
-
-REAL(KIND=JPRH) :: DDX,DDXN,DLX,DLK,DLKM1,DLKM2,DLLDN,DLXN,DLMOD
-REAL(KIND=JPRH) :: DLG,DLGDN
+REAL(KIND=JPRH) :: ZDLX,ZDLK,ZDLKM1,ZDLKM2,ZDLLDN,ZDLXN,ZDLMOD
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKS=KIND(PX)
-INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DDX)
+INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(PDX)
 
-!     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IZN, JN
-
-!     LOCAL REAL SCALARS
-REAL(KIND=JPRB) :: ZG, ZGDN, ZK, ZKM1, ZKM2, ZLDN, ZMOD, ZX, ZXN
-
+REAL(KIND=JPRB) :: ZK, ZKM1, ZKM2, ZLDN, ZMOD, ZX, ZXN
 
 !      -----------------------------------------------------------------
 
-!*       1. Single precision computations.
-!           ------------------------------
+!*       1. NEWTON ITERATION STEP.
+!           ----------------------
 
 IZN = KN
 
 ZK = 0.0_JPRB
-DLK = 0.0_JPRB
-DLXN = 0.0_JPRB
+ZDLK = 0.0_JPRB
+ZDLXN = 0.0_JPRB
+
 IF(KDBLE == 0)THEN
 
-!*       1.1   NEWTON ITERATION STEP.
+  !*       1.1   "JPRB" PRECISION.
 
   ZKM2 = 1
   ZKM1 = PX
@@ -111,51 +107,46 @@ IF(KDBLE == 0)THEN
   ZMOD = -ZK/ZLDN
   ZXN = ZX+ZMOD
   PXN = ZXN
-  DDXN = REAL(ZXN,JPKD)
+  PDXN = REAL(ZXN,JPKD)
   PXMOD = ZMOD
-
-!     ------------------------------------------------------------------
-
-!*         2.    Double precision computations.
-!                ------------------------------
 
 ELSE
 
-!*       2.1   NEWTON ITERATION STEP.
+  !*       1.2   "JPRH" PRECISION.
 
-  DLKM2 = 1.0_JPRB
-  DLKM1 = DDX
-  DLX = DDX
+  ZDLKM2 = 1.0_JPRB
+  ZDLKM1 = PDX
+  ZDLX = PDX
   DO JN=2,IZN
-    DLK = (REAL(2*JN-1,JPKD)*DLX*DLKM1-REAL(JN-1,JPKD)*DLKM2)/REAL(JN,JPKD)
-    DLKM2 = DLKM1
-    DLKM1 = DLK
+    ZDLK = (REAL(2*JN-1,JPKD)*ZDLX*ZDLKM1-REAL(JN-1,JPKD)*ZDLKM2)/REAL(JN,JPKD)
+    ZDLKM2 = ZDLKM1
+    ZDLKM1 = ZDLK
   ENDDO
-  DLKM1 = DLKM2
-  DLLDN = (REAL(KN,JPKD)*(DLKM1-DLX*DLK))/(1.0_JPRB-DLX*DLX)
-  DLMOD = -DLK/DLLDN
-  DLXN = DLX+DLMOD
-  PXN = REAL(DLXN,JPKS)
-  DDXN = DLXN
-  PXMOD = REAL(DLMOD,JPKS)
+  ZDLKM1 = ZDLKM2
+  ZDLLDN = (REAL(KN,JPKD)*(ZDLKM1-ZDLX*ZDLK))/(1.0_JPRB-ZDLX*ZDLX)
+  ZDLMOD = -ZDLK/ZDLLDN
+  ZDLXN = ZDLX+ZDLMOD
+  PXN = REAL(ZDLXN,JPKS)
+  PDXN = ZDLXN
+  PXMOD = REAL(ZDLMOD,JPKS)
 ENDIF
+
 !     ------------------------------------------------------------------
 
-!*         3.    Computes weight.
+!*         2.    Computes weight.
 !                ----------------
 
-
 IF(KFLAG == 1)THEN
-  DLKM2 = 1.0_JPRB
-  DLKM1 = DLXN
-  DLX = DLXN
+  ZDLKM2 = 1.0_JPRB
+  ZDLKM1 = ZDLXN
+  ZDLX = ZDLXN
   DO JN=2,IZN
-    DLK = (REAL(2*JN-1,JPKD)*DLX*DLKM1-REAL(JN-1,JPKD)*DLKM2)/REAL(JN,JPKD)
-    DLKM2 = DLKM1
-    DLKM1 = DLK
+    ZDLK = (REAL(2*JN-1,JPKD)*ZDLX*ZDLKM1-REAL(JN-1,JPKD)*ZDLKM2)/REAL(JN,JPKD)
+    ZDLKM2 = ZDLKM1
+    ZDLKM1 = ZDLK
   ENDDO
-  DLKM1 = DLKM2
-  PW = REAL((1.0_JPRB-DLX*DLX)/(REAL(KN*KN,JPKD)*DLKM1*DLKM1),JPKS)
+  ZDLKM1 = ZDLKM2
+  PW = REAL((1.0_JPRB-ZDLX*ZDLX)/(REAL(KN*KN,JPKD)*ZDLKM1*ZDLKM1),JPKS)
 ENDIF
 
 !     ------------------------------------------------------------------

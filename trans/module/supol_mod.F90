@@ -1,32 +1,32 @@
 MODULE SUPOL_MOD
 CONTAINS
-SUBROUTINE SUPOL(KNSMAX,DDMU,DDPOL,DDA,DDB,DDC,DDD,DDE,DDF,DDG,DDH,DDI)
+SUBROUTINE SUPOL(KNSMAX,PDDMU,PDDPOL, &
+ & PDDA,PDDB,PDDC,PDDD,PDDE,PDDF,PDDG,PDDH,PDDI)
 
 !**** *SUPOL * - Routine to compute the Legendre polynomials
 
 !     Purpose.
 !     --------
-!           For a given value of mu, computes the Legendre
-!           polynomials.
+!           For a given value of mu, computes the Legendre polynomials.
 
 !**   Interface.
 !     ----------
-!        *CALL* *SUPOL(KNSMAX,DDMU,DDPOL,DDA,DDB,DDC,DDD,DDE
-!        ,DDF,DDG,DDH,DDI)
+!        *CALL* *SUPOL(...)
 
 !        Explicit arguments :
 !        --------------------
-!              KNSMAX   :  Truncation  (triangular)
-!              DDMU     :  Abscissa at which the polynomials are computed (mu)
-!              DDPOL    :  Polynomials (the first index is m and the second n)
-
+!        KNSMAX    :  Truncation  (triangular)                            [in]
+!        PDDMU     :  Abscissa at which the polynomials are computed (mu) [in]
+!        PDDPOL    :  Polynomials (the first index is m and the second n) [out]
+!        PDDA to PDDI: intermediate precomputed quantities (see caller)   [in]
 
 !        Implicit arguments :   None
 !        --------------------
 
 !     Method.
 !     -------
-!        See documentation
+!        See documentation about spectral transforms
+!         (doc (IDTS) by K. Yessad, appendix 3, or doc (NTA30) by M. Rochas)
 
 !     Externals.
 !     ----------
@@ -43,8 +43,10 @@ SUBROUTINE SUPOL(KNSMAX,DDMU,DDPOL,DDA,DDB,DDC,DDD,DDE,DDF,DDG,DDH,DDI)
 !     --------------
 !        Original : 87-10-15
 !        K. YESSAD (MAY 1998): modification to avoid underflow.
+!        M.Hamrud      01-Oct-2003 CY28 Cleaning
 !        R. El Khatib 11-Apr-2007 Emulation of vectorized quadruple precision
 !                                 on NEC
+!        K. YESSAD (NOV 2008): make consistent arp/SUPOLA and tfl/SUPOL.
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -53,25 +55,33 @@ USE PARKIND2  ,ONLY : JPRH
 USE QUAD_EMU_MOD
 #endif
 
+!     ------------------------------------------------------------------
+
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KNSMAX
-REAL(KIND=JPRH)   ,INTENT(IN)  :: DDMU
-REAL(KIND=JPRH)   ,INTENT(IN)  :: DDC(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRH)   ,INTENT(IN)  :: DDD(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRH)   ,INTENT(IN)  :: DDE(0:KNSMAX,0:KNSMAX)
-REAL(KIND=JPRH)   ,INTENT(IN)  :: DDA(0:KNSMAX),DDB(0:KNSMAX),DDF(0:KNSMAX)
-REAL(KIND=JPRH)   ,INTENT(IN)  :: DDG(0:KNSMAX),DDH(0:KNSMAX),DDI(0:KNSMAX)
-REAL(KIND=JPRH)   ,INTENT(OUT) :: DDPOL(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDMU
+REAL(KIND=JPRH)   ,INTENT(OUT) :: PDDPOL(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDA(0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDB(0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDC(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDD(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDE(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDF(0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDG(0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDH(0:KNSMAX)
+REAL(KIND=JPRH)   ,INTENT(IN)  :: PDDI(0:KNSMAX)
 
-REAL(KIND=JPRH) :: DLX,DLSITA,DL1SITA,DLKM2,DLKM1,DLK,DL1,DLS
+!     ------------------------------------------------------------------
+
+REAL(KIND=JPRH) :: ZDLX,ZDLSITA,ZDL1SITA,ZDLKM2,ZDLKM1,ZDLK,ZDL1,ZDLS
 
 INTEGER(KIND=JPIM) :: JM, JN
 REAL(KIND=JPRB) :: Z
 
 #if defined(NECSX) && defined(REALHUGE)
-REAL(KIND=JPRH), allocatable, dimension(:) :: ddpol_
-REAL(KIND=JPRH) :: DLXM
+REAL(KIND=JPRH), ALLOCATABLE, DIMENSION(:) :: ZDDPOL_
+REAL(KIND=JPRH) :: ZDLXM
 #endif
 
 !     ------------------------------------------------------------------
@@ -79,29 +89,29 @@ REAL(KIND=JPRH) :: DLXM
 !*       1. First two columns.
 !           ------------------
 
-DLX=DDMU
-DLSITA=SQRT(1.0_JPRB-DLX*DLX)
+ZDLX=PDDMU
+ZDLSITA=SQRT(1.0_JPRB-ZDLX*ZDLX)
 
 ! IF WE ARE LESS THAN 1Meter FROM THE POLE,
-IF(ABS(REAL(DLSITA,KIND(Z))) <= SQRT(EPSILON(Z)))THEN
-  DLX=1._JPRB
-  DLSITA=0._JPRB
-  DL1SITA=0._JPRB
+IF(ABS(REAL(ZDLSITA,KIND(Z))) <= SQRT(EPSILON(Z)))THEN
+  ZDLX=1._JPRB
+  ZDLSITA=0._JPRB
+  ZDL1SITA=0._JPRB
 ELSE
-  DL1SITA=1.0_JPRB/DLSITA
+  ZDL1SITA=1.0_JPRB/ZDLSITA
 ENDIF
-DLKM2=1._JPRB
-DLKM1=DLX
-DDPOL(0,0)=DLKM2
-DDPOL(0,1)=DLKM1*DDA(1)
-DDPOL(1,1)=DLSITA*DDB(1)
+ZDLKM2=1._JPRB
+ZDLKM1=ZDLX
+PDDPOL(0,0)=ZDLKM2
+PDDPOL(0,1)=ZDLKM1*PDDA(1)
+PDDPOL(1,1)=ZDLSITA*PDDB(1)
 DO JN=2,KNSMAX
-  DLK=DDF(JN)*DLX*DLKM1-DDG(JN)*DLKM2
-  DL1=DDI(JN)*(DLKM1-DLX*DLK)*DL1SITA
-  DDPOL(0,JN)=DLK*DDA(JN)
-  DDPOL(1,JN)=DL1*DDB(JN)
-  DLKM2=DLKM1
-  DLKM1=DLK
+  ZDLK=PDDF(JN)*ZDLX*ZDLKM1-PDDG(JN)*ZDLKM2
+  ZDL1=PDDI(JN)*(ZDLKM1-ZDLX*ZDLK)*ZDL1SITA
+  PDDPOL(0,JN)=ZDLK*PDDA(JN)
+  PDDPOL(1,JN)=ZDL1*PDDB(JN)
+  ZDLKM2=ZDLKM1
+  ZDLKM1=ZDLK
 ENDDO
 
 !     ------------------------------------------------------------------
@@ -109,14 +119,14 @@ ENDDO
 !*       2. Diagonal (the terms 0,0 and 1,1 have already been computed)
 !           -----------------------------------------------------------
 
-DLS=DL1SITA*TINY(DLS)
+ZDLS=ZDL1SITA*TINY(ZDLS)
 
 #ifdef VPP
 !OCL SCALAR
 #endif
 DO JN=2,KNSMAX
-  DDPOL(JN,JN)=DDPOL(JN-1,JN-1)*DLSITA*DDH(JN)
-  IF ( ABS(DDPOL(JN,JN))  <  DLS ) DDPOL(JN,JN)=0.0_JPRB
+  PDDPOL(JN,JN)=PDDPOL(JN-1,JN-1)*ZDLSITA*PDDH(JN)
+  IF ( ABS(PDDPOL(JN,JN))  <  ZDLS ) PDDPOL(JN,JN)=0.0_JPRB
 ENDDO
 
 !     ------------------------------------------------------------------
@@ -126,18 +136,18 @@ ENDDO
 
 #if defined(NECSX) && defined(REALHUGE)
 
-allocate (DDPOL_(2:KNSMAX-1),stat=jn)
+ALLOCATE(ZDDPOL_(2:KNSMAX-1),STAT=JN)
 
-DLXM = -DLX
+ZDLXM = -ZDLX
 DO JN=3,KNSMAX
-  call QXMY(DDC(2:JN-1,JN),DDPOL(0:JN-3,JN-2),JN-2,DDPOL (2:JN-1,JN))
-  call QXMY(DDD(2:JN-1,JN),DDPOL(0:JN-3,JN-1),JN-2,DDPOL_(2:JN-1))
-  call QAXPY (DLXM,DDPOL_(2),DDPOL(2,JN),JN-2)
-  call QXMY(DDE(2:JN-1,JN),DDPOL(2:JN-1,JN-1),JN-2,DDPOL_(2:JN-1))
-  call QAXPY ( DLX,DDPOL_(2),DDPOL(2,JN),JN-2)
-END DO
+  CALL QXMY(PDDC(2:JN-1,JN),PDDPOL(0:JN-3,JN-2),JN-2,PDDPOL (2:JN-1,JN))
+  CALL QXMY(PDDD(2:JN-1,JN),PDDPOL(0:JN-3,JN-1),JN-2,ZDDPOL_(2:JN-1))
+  CALL QAXPY(ZDLXM,ZDDPOL_(2),PDDPOL(2,JN),JN-2)
+  CALL QXMY(PDDE(2:JN-1,JN),PDDPOL(2:JN-1,JN-1),JN-2,ZDDPOL_(2:JN-1))
+  CALL QAXPY(ZDLX,ZDDPOL_(2),PDDPOL(2,JN),JN-2)
+ENDDO
 
-  deallocate (DDPOL_)
+DEALLOCATE (ZDDPOL_)
 
 #else
 
@@ -145,13 +155,14 @@ DO JN=3,KNSMAX
 !DIR$ IVDEP
 !OCL NOVREC
   DO JM=2,JN-1
-    DDPOL(JM,JN)=DDC(JM,JN)*DDPOL(JM-2,JN-2)&
-     &-DDD(JM,JN)*DDPOL(JM-2,JN-1)*DLX &
-     &+DDE(JM,JN)*DDPOL(JM  ,JN-1)*DLX
+    PDDPOL(JM,JN)=PDDC(JM,JN)*PDDPOL(JM-2,JN-2)&
+     & -PDDD(JM,JN)*PDDPOL(JM-2,JN-1)*ZDLX &
+     & +PDDE(JM,JN)*PDDPOL(JM  ,JN-1)*ZDLX
   ENDDO
 ENDDO
 
 #endif
+
 !     ------------------------------------------------------------------
 
 END SUBROUTINE SUPOL
