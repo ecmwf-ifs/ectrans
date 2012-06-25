@@ -36,6 +36,7 @@ SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 !     Modifications.
 !     --------------
 !        Original : 19th Sept 2008
+!        R. El Khatib 07-08-2009 Optimisation directive for NEC
 
 !     ------------------------------------------------------------------
 
@@ -176,6 +177,7 @@ CALL GSTATS(1429,0)
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL,IGL,JF,JL)
   DO JGL=IBEG,IEND
     IGL = D%NPTRLS(MYSETW) + JGL - 1
+!CDIR NOLOOPCHG
     DO JF=1,IF_FS
       DO JL=1,G%NLOEN(IGL)
         ZAVE(JF,JGL)=ZAVE(JF,JGL)+ZGTF(JF,D%NSTAGTF(JGL)+JL)

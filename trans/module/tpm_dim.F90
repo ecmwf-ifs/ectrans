@@ -1,5 +1,7 @@
 MODULE TPM_DIM
 
+! Module for dimensions.
+
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
@@ -10,7 +12,7 @@ TYPE DIM_TYPE
 ! SPECTRAL SPACE DIMENSIONS
 
   INTEGER(KIND=JPIM) :: NSMAX      ! Truncation order
-  INTEGER(KIND=JPIM) :: NTMAX
+  INTEGER(KIND=JPIM) :: NTMAX      ! Truncation order for tendencies
   INTEGER(KIND=JPIM) :: NSPOLEG    ! Number of Legandre polynomials
   INTEGER(KIND=JPIM) :: NSPEC_G    ! Number of complex spectral coefficients (global)
   INTEGER(KIND=JPIM) :: NSPEC2_G   ! 2*NSPEC_G

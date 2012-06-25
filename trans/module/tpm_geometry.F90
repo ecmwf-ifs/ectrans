@@ -1,4 +1,7 @@
 MODULE TPM_GEOMETRY
+
+! Module containing data describing Gaussian grid.
+
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
@@ -11,8 +14,9 @@ INTEGER(KIND=JPIM),POINTER :: NMEN(:)  ! ASSOCIATED CUT-OFF WAVE NUMBER
 INTEGER(KIND=JPIM),POINTER :: NDGLU(:) ! NUMBER OF HEMISPERIC LATITUDES
 !                                   FOR A GIVEN WAVE NUMBER M 
 
-LOGICAL :: LREDUCED_GRID
-LOGICAL :: LINEAR_GRID
+LOGICAL :: LREDUCED_GRID ! Reduced Gaussian grid if T
+LOGICAL :: LINEAR_GRID   ! Linear or semi-linear Gaussian grid if T,
+!                          quadratic Gaussian grid otherwise.
 END TYPE GEOM_TYPE
 
 TYPE(GEOM_TYPE),ALLOCATABLE,TARGET :: GEOM_RESOL(:)

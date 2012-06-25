@@ -1,5 +1,7 @@
 MODULE TPM_DISTR
 
+! Module for distributed memory environment.
+
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
@@ -44,10 +46,8 @@ INTEGER(KIND=JPIM) :: NUMP      ! No. of spectral waves handled by this processo
 INTEGER(KIND=JPIM) :: NSPEC     ! No. of complex spectral coefficients (on this PE)
 INTEGER(KIND=JPIM) :: NSPEC2    ! 2*NSPEC
 INTEGER(KIND=JPIM) :: NSPEC2MX  ! maximun NSPEC2 among all PEs
-INTEGER(KIND=JPIM) :: NTPEC2
-INTEGER(KIND=JPIM) :: NUMTP
-
-
+INTEGER(KIND=JPIM) :: NTPEC2    ! cf. NSPEC2 but for truncation NTMAX
+INTEGER(KIND=JPIM) :: NUMTP     ! cf. NUMP but for truncation NTMAX
 
 INTEGER(KIND=JPIM) :: NSPOLEGL  ! No. of legendre polynomials on this PE
 INTEGER(KIND=JPIM) :: NLEI3D    ! (NLEI3-1)/NPRTRW+1
@@ -96,6 +96,7 @@ INTEGER(KIND=JPIM) ,POINTER :: NULTPP(:) ! No of lats. for each wave_set  (F.S)
 INTEGER(KIND=JPIM) ,POINTER :: NPROCL(:) ! Process responsible for each lat. (F.S)
 INTEGER(KIND=JPIM) ,POINTER :: NPTRLS(:) ! Pointer to first lat. (F.S)
 
+! NSTAGT0B to NLENGT1B: help arrays for spectral to fourier space transposition
 INTEGER(KIND=JPIM) ,POINTER :: NSTAGT0B(:) ! Start adresses for segments within buffer
                                   ! (according to processors to whom data 
                                   ! is going to be sent) 
@@ -103,12 +104,10 @@ INTEGER(KIND=JPIM) ,POINTER :: NSTAGT1B(:)
 INTEGER(KIND=JPIM) ,POINTER :: NPNTGTB0(:,:)
 INTEGER(KIND=JPIM) ,POINTER :: NPNTGTB1(:,:)
 INTEGER(KIND=JPIM) ,POINTER :: NLTSFTB(:)  
-
 INTEGER(KIND=JPIM) ,POINTER :: NLTSGTB(:)
 INTEGER(KIND=JPIM) ,POINTER :: MSTABF(:)
-
-INTEGER(KIND=JPIM) :: NLENGT0B
-INTEGER(KIND=JPIM) :: NLENGT1B
+INTEGER(KIND=JPIM) :: NLENGT0B  ! dimension
+INTEGER(KIND=JPIM) :: NLENGT1B  ! dimension
 
 ! GRIDPOINT SPACE
 
@@ -153,10 +152,4 @@ TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
 TYPE(DISTR_TYPE),POINTER     :: D
 
 END MODULE TPM_DISTR
-
-
-
-
-
-
 
