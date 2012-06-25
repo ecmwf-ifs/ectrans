@@ -51,6 +51,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        Daan Degrauwe : Mar 2012 E'-zone dimensions
 
 !     ------------------------------------------------------------------
 
@@ -147,6 +148,9 @@ D%LSPLIT = .FALSE.
 R%NSMAX = KSMAX
 R%NDGL  = KDGL
 R%NDLON = 2*KDGL
+! E'-defaults
+R%NNOEXTZL=0
+R%NNOEXTZG=0
 
 IF (KDGL <= 0 .OR. MOD(KDGL,2) /= 0) THEN
   CALL ABORT_TRANS ('SETUP_TRANS: KDGL IS NOT A POSITIVE, EVEN NUMBER')
