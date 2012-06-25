@@ -16,7 +16,7 @@ USE SUPOL_MOD
 USE SUTRLE_MOD
 
 #if defined(NECSX) && defined(REALHUGE)
-USE quad_emu
+USE quad_emu_mod
 #endif
 
 #ifdef DOC
