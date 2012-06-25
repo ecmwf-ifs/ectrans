@@ -2,7 +2,6 @@ MODULE MYRECVSET_MOD
 CONTAINS
 FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
 
-#ifdef DOC
 
 !**** *MYRECVSET* RETURNS SET NUMBER TO SEND TO
 
@@ -42,7 +41,6 @@ FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
 !        Original : 00-02-03
 
 !     ------------------------------------------------------------------
-#endif
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE ABORT_TRANS_MOD

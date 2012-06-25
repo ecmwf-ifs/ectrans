@@ -7,7 +7,6 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE TPM_DIM
 USE TPM_FIELDS
 
-#ifdef DOC
 
 !**** *VDTUVAD* - Compute U,V in  spectral space
 
@@ -61,7 +60,6 @@ USE TPM_FIELDS
 !        Original : 00-02-01 From VDTUVAD in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

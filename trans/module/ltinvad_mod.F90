@@ -19,7 +19,6 @@ USE LEINVAD_MOD
 USE ASRE1BAD_MOD
 USE FSPGL_INT_MOD
 
-#ifdef DOC
 
 !**** *LTINVAD* - Inverse Legendre transform
 
@@ -69,7 +68,6 @@ USE FSPGL_INT_MOD
 !     --------------
 !        Original : 00-02-01 From LTINVAD in IFS CY22R1
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

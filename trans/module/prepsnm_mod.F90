@@ -2,7 +2,6 @@ MODULE PREPSNM_MOD
 CONTAINS
 SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 
-#ifdef DOC
 
 !**** *PREPSNM* - Prepare REPSNM for wavenumber KM
 
@@ -40,7 +39,6 @@ SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 !        Original : 00-02-01 From LTINV in IFS CY22R1
 
 !     ------------------------------------------------------------------
-#endif
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

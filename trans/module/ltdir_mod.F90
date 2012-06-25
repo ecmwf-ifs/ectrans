@@ -18,7 +18,6 @@ USE LEDIR_MOD
 USE LDSPC2_MOD
 USE UPDSP_MOD  
  
-#ifdef DOC
 
 !**** *LTDIR* - Control of Direct Legendre transform step
 
@@ -74,7 +73,6 @@ USE UPDSP_MOD
 !               - Legendre transforms for transmission coefficients.
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 

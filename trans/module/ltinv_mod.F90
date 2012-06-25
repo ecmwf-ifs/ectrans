@@ -20,7 +20,6 @@ USE ASRE1B_MOD
 USE FSPGL_INT_MOD
 USE ABORT_TRANS_MOD
 
-#ifdef DOC
 
 !**** *LTINV* - Inverse Legendre transform
 
@@ -70,7 +69,6 @@ USE ABORT_TRANS_MOD
 !     --------------
 !        Original : 00-02-01 From LTINV in IFS CY22R1
 !     ------------------------------------------------------------------
-#endif
 
 IMPLICIT NONE
 
