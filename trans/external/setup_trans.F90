@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
-&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT)
+&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,LDSPSETUPONLY)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -31,7 +31,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 
 !     LDSPLIT describe the distribution among processors of grid-point data and
 !     has no relevance if you are using a single processor
-
+ 
 !     LDUSEFLT   - use Fast Legandre Transform (Butterfly algorithm)
 !     LDUSERPNM  - Use Belusov to compute legendre pol. (else new alg.)
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
@@ -98,13 +98,14 @@ LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
 
 !ifndef INTERFACE
 
 ! Local variables
 INTEGER(KIND=JPIM) :: JGL
 
-LOGICAL :: LLP1,LLP2
+LOGICAL :: LLP1,LLP2, LLSPSETUPONLY
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -155,6 +156,7 @@ D%LSPLIT = .FALSE.
 S%LUSERPNM=.TRUE. ! use RPNM array instead of per m
 S%LKEEPRPNM=.TRUE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
+LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 
 
 ! NON-OPTIONAL ARGUMENTS
@@ -216,6 +218,9 @@ IF(PRESENT(PWEIGHT)) THEN
   IF(SIZE(PWEIGHT) /= SUM(G%NLOEN(:)) )THEN
     CALL ABORT_TRANS('SETUP_TRANS:SIZE(PWEIGHT) /= SUM(G%NLOEN(:))')
   ENDIF
+  IF( MINVAL(PWEIGHT(:)) < 0.0_JPRB )THEN
+    CALL ABORT_TRANS('SETUP_TRANS: INVALID WEIGHTS')
+  ENDIF
   ALLOCATE(D%RWEIGHT(SIZE(PWEIGHT)))
   D%RWEIGHT(:)=PWEIGHT(:)
 ELSE
@@ -225,6 +230,11 @@ ENDIF
 IF(PRESENT(LDGRIDONLY)) THEN
   D%LGRIDONLY=LDGRIDONLY
 ENDIF
+
+IF(PRESENT(LDSPSETUPONLY)) THEN
+  LLSPSETUPONLY=LDSPSETUPONLY
+ENDIF
+
 
 IF(PRESENT(LDUSEFLT)) THEN
   S%LUSEFLT=LDUSEFLT
@@ -250,6 +260,8 @@ CALL SETUP_DIMS
 ! First part of setup of distributed environment
 CALL SUMP_TRANS_PRELEG
 
+IF( .NOT.LLSPSETUPONLY ) THEN
+
 ! Compute Legendre polonomial and Gaussian Latitudes and Weights
 CALL SULEG
 
@@ -267,7 +279,7 @@ CALL GSTATS(1802,0)
 CALL SUFFT
 CALL GSTATS(1802,1)
 
-
+ENDIF
 
 IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------

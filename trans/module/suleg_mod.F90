@@ -186,7 +186,7 @@ S%ITHRESHOLD=ITHRESHOLD
 !*       3.1   Gaussian latitudes and weights
 !     ---------------------------------------
 
-CALL INI_POL(R%NTMAX+1)
+CALL INI_POL(R%NTMAX+2)
 
 IF(.NOT.D%LGRIDONLY) THEN
   ISTART=1
@@ -214,7 +214,9 @@ ENDDO
 ! compute latitudes and weights for original Gaussian latitudes
 ZANM=SQRT(REAL(2*INMAX+1,JPRB)*REAL(INMAX**2,JPRB)/REAL(2*INMAX-1,JPRB))
 INN=R%NDGL
+CALL GSTATS(1801,2)
 CALL SUGAW(INN,0,INMAX,ZLRMUZ(1:INN),ZW(1:INN),ZANM,ZFN)
+CALL GSTATS(1801,3)
 
 WRITE(NOUT,*) '=== SULEG: Finished Gaussian latitudes ==='
 
