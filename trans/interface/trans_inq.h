@@ -3,10 +3,10 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
                     &KMYMS,KASM0,KUMPP,KPOSSP,KPTRMS,KALLMS,KDIM0G,&
                     &KFRSTLAT,KLSTLAT,KFRSTLOFF,KPTRLAT,&
                     &KPTRFRSTLAT,KPTRLSTLAT,KPTRFLOFF,KSTA,KONL,&
-                    &KULTPP,KPTRLS,&
+                    &KULTPP,KPTRLS,KNMENG,&
                     &KPRTRW,KMYSETW,KMYSETV,KMY_REGION_NS,KMY_REGION_EW,&
                     &LDSPLITLAT,&
-                    &PMU,PGW,PRPNM,KLEI3,KSPOLEGL,KPMS)
+                    &PMU,PGW,PRPNM,KLEI3,KSPOLEGL,KPMS,KDGLU)
 
 !**** *TRANS_INQ* - Extract information from the transform package
 
@@ -31,7 +31,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     KGPTOT   - Total number of grid columns on this PE
 !     KGPTOTG  - Total number of grid columns on the Globe
 !     KGPTOTMX - Maximum number of grid columns on any of the PEs
-!     KGPTOTL  - Number of grid columns one each PE (dimension NPRGPNS:NPRGPEW)
+!     KGPTOTL  - Number of grid columns one each PE (dimension N_REGIONS_NS:N_REGIONS_EW)
 !     KMYMS    - This PEs spectral zonal wavenumbers
 !     KASM0    - Address in a spectral array of (m, n=m)
 !     KUMPP    - No. of wave numbers each wave set is responsible for
@@ -60,7 +60,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !                   nptrfloff=nptrfrstlat(myseta) on this processors a-set.
 !                   Each split latitude has two entries in nsta(,:) which 
 !                   necessitates the rather complex addressing of nsta(,:)
-!                   and the overdimensioning of nsta by nprgpns.
+!                   and the overdimensioning of nsta by N_REGIONS_NS.
 !     KONL        - Number of grid columns for the latitudes on a processor.
 !                   Similar to nsta() in data structure.
 !     LDSPLITLAT  - TRUE if latitude is split in grid point space over 
@@ -71,6 +71,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !                the FFT's.
 !     KPTRLS   - pointer to first global latitude of each a-set for which
 !                it performs the Fourier calculations
+!     KNMENG   - associated (with NLOENG) cut-off zonal wavenumber
 
 !                 LEGENDRE
 !     PMU      - sin(Gaussian latitudes)
@@ -79,6 +80,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     KLEI3    - First dimension of Legendre polynomials
 !     KSPOLEGL - Second dimension of Legendre polynomials
 !     KPMS     - Adress for legendre polynomial for given M (NSMAX)
+!     KDGLU    - Number of active points in an hemisphere for a given wavenumber "m"
 
 !     Method.
 !     -------
@@ -139,6 +141,7 @@ LOGICAL   ,OPTIONAL, INTENT(OUT) :: LDSPLITLAT(:)
 
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KULTPP(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KPTRLS(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KNMENG(:)
 
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PMU(:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGW(:)
@@ -146,7 +149,7 @@ REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PRPNM(:,:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KLEI3
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KSPOLEGL
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KPMS(0:)
-
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KDGLU(0:)
 
 END SUBROUTINE TRANS_INQ
 

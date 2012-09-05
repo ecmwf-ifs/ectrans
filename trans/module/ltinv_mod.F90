@@ -6,9 +6,12 @@ SUBROUTINE LTINV(KM,KMLOC,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,KLEI2,KDIM1,&
  & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 USE TPM_DIM
 USE TPM_TRANS
+USE TPM_FLT
+USE TPM_GEOMETRY
 
 USE PRLE1_MOD
 USE PREPSNM_MOD
@@ -21,8 +24,9 @@ USE FSPGL_INT_MOD
 USE ABORT_TRANS_MOD
 
 
-!**** *LTINV* - Inverse Legendre transform
 
+!**** *LTINV* - Inverse Legendre transform
+!
 !     Purpose.
 !     --------
 !        Tranform from Laplace space to Fourier space, compute U and V
@@ -98,9 +102,20 @@ REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRB) :: ZSOA1(KDIM1,R%NLEI3),ZAOA1(KDIM1,R%NLEI3)
 
 
-INTEGER(KIND=JPIM) :: IFC, ISTA
+INTEGER(KIND=JPIM) :: IFC, ISTA, IIFC, IDGLU
 INTEGER(KIND=JPIM) :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
 INTEGER(KIND=JPIM) :: IFIRST, ILAST, IDIM1,IDIM3,J3
+
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
+!CHARACTER(LEN=10) :: CLHOOK
+
+!     ------------------------------------------------------------------
+
+!*       1.       PERFORM LEGENDRE TRANFORM.
+!                 --------------------------
+
+!WRITE(CLHOOK,FMT='(A,I4.4)') 'LTINV_',KM
+IF (LHOOK) CALL DR_HOOK('LTINV_MOD',0,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
@@ -195,7 +210,12 @@ IF(KF_UV > 0 .AND. .NOT. LDIVGP) THEN
   ISTA = ISTA+2*KF_UV
 ENDIF 
 
-CALL LEINV(KM,IFC,KF_OUT_LT,ZIA(:,ISTA:ISTA+IFC-1),ZAOA1,ZSOA1)
+IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
+IIFC=IFC
+IF(KM == 0)THEN
+  IIFC=IFC/2
+ENDIF
+CALL LEINV(KM,KMLOC,IFC,IIFC,KF_OUT_LT,IDGLU,ZIA(:,ISTA:ISTA+IFC-1),ZAOA1,ZSOA1)
 
 !     ------------------------------------------------------------------
 
@@ -213,6 +233,7 @@ IF(PRESENT(FSPGL_PROC)) THEN
    & KFLDPTRUV,KFLDPTRSC)
 ENDIF
 
+IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
 END SUBROUTINE LTINV

@@ -1,5 +1,5 @@
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
-&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY)
+&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,LDSPSETUPONLY)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -15,7 +15,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     CALL SETUP_TRANS(...)
 
 !     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT are optional arguments
-!     --------------------
+!     -------------------- 
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
@@ -29,16 +29,21 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
 !     in spectral and grid-point space
 
-!     LDSPLIT describe the distribution among processors of grid-point data
-!     and has no relevance if you are using a single processor
+!     LDSPLIT describe the distribution among processors of grid-point data and
+!     has no relevance if you are using a single processor
 
+!     LDUSEFLT   - use Fast Legandre Transform (Butterfly algorithm)
+!     LDUSERPNM  - Use Belusov to compute legendre pol. (else new alg.)
+!     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
+!                  FLT, otherwise always kept)
+ 
 !     Method.
 !     -------
 
 !     Externals.  SET_RESOL   - set resolution
 !     ----------  SETUP_DIMS  - setup distribution independent dimensions
 !                 SUMP_TRANS_PRELEG - first part of setup of distr. environment
-!                 SULEG - Compute Legandre polonomial and Gaussian
+!                 SULEG - Compute Legandre polonomial and Gaussian 
 !                         Latitudes and Weights
 !                 SETUP_GEOM - Compute arrays related to grid-point geometry
 !                 SUMP_TRANS - Second part of setup of distributed environment
@@ -56,6 +61,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
+
 IMPLICIT NONE
 
 ! Dummy arguments
@@ -68,6 +74,10 @@ INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
 
 
 END SUBROUTINE SETUP_TRANS

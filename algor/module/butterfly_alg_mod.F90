@@ -1,0 +1,782 @@
+MODULE BUTTERFLY_ALG_MOD 
+USE PARKIND1, ONLY : JPIM, JPRB, JPIB
+USE INTERPOL_DECOMP_MOD
+IMPLICIT NONE
+
+PRIVATE
+PUBLIC NODE_TYPE,LEV_STRUCT,BUTTERFLY_STRUCT,CONSTRUCT_BUTTERFLY,MULT_BUTV,MULT_BUTM
+
+! Butterfly package.
+
+! Butterfly algorithm for matrix multiplication
+! Coded from: "An algorithm for the rapid evaluation of special function transform" by
+! Michael O'Neill, Franco Woolfe and Vladimir Rohklin, Appl.Comput.Harmon.Anal. 2009?
+! referred to in the following as ONWR
+
+TYPE NODE_TYPE
+INTEGER(KIND=JPIM) :: ILEV    ! Level of this node
+INTEGER(KIND=JPIM) :: IFCOL   ! First column
+INTEGER(KIND=JPIM) :: ILCOL   ! Last column
+INTEGER(KIND=JPIM) :: IFROW   ! first row
+INTEGER(KIND=JPIM) :: ILROW   ! Last row
+INTEGER(KIND=JPIM) :: ICOLS   ! Number of columns
+INTEGER(KIND=JPIM) :: IROWS   ! Number of rows
+INTEGER(KIND=JPIM) :: IRANK   ! Rank of interpolative decomposition
+INTEGER(KIND=JPIM) :: IOFFBETA  ! Offset in "beta" work space
+INTEGER(KIND=JPIM),POINTER :: ICLIST(:) ! List of columns in B (column skeleton matrix)
+REAL(KIND=JPRB),POINTER :: PNONIM(:)  ! Non-identety part of interpolation matrix
+REAL(KIND=JPRB),POINTER :: B(:,:)   ! Column skeleton matrix
+END TYPE NODE_TYPE
+
+TYPE LEV_STRUCT
+INTEGER(KIND=JPIM) :: IJ  ! Number of row boxes at this level
+INTEGER(KIND=JPIM) :: IK  ! Number of column boxes at this level
+INTEGER(KIND=JPIM) :: IBETALEN ! Workspace needed at this level of interim results "beta"
+TYPE(NODE_TYPE),POINTER :: NODE(:,:) ! Box info
+END TYPE LEV_STRUCT
+
+TYPE BUTTERFLY_STRUCT
+INTEGER(KIND=JPIM)  :: M_ORDER ! M of original matrix
+INTEGER(KIND=JPIM)  :: N_ORDER ! N of original matrix
+INTEGER(KIND=JPIM)  :: N_CMAX  ! Max number of columns in each submatrix at level 0
+INTEGER(KIND=JPIM)  :: N_LEVELS ! Max level in dyadic hierarchy
+INTEGER(KIND=JPIM)  :: IBETALEN_MAX ! Max workspace for one level of interim results "beta"
+TYPE(LEV_STRUCT),POINTER :: SLEV(:) ! Level structure (dimensioned 0:n_levels)
+END TYPE BUTTERFLY_STRUCT
+
+CONTAINS
+!================================================================================
+SUBROUTINE CONSTRUCT_BUTTERFLY(PEPS,KCMAX,KM,KN,PMAT,YD_STRUCT)
+IMPLICIT NONE
+
+! Constuct butterfly
+
+REAL(KIND=JPRB),INTENT(IN)    :: PEPS  ! Precision
+INTEGER(KIND=JPIM),INTENT(IN) :: KCMAX ! Max number of columns in each submatrix at level 0
+INTEGER(KIND=JPIM),INTENT(IN) :: KM    ! Number of rows in matrix pmat
+INTEGER(KIND=JPIM),INTENT(IN) :: KN    ! Number of columns in matrix pmat
+REAL(KIND=JPRB),INTENT(IN)    :: PMAT(:,:)  ! original matrix
+TYPE(BUTTERFLY_STRUCT),INTENT(INOUT) :: YD_STRUCT ! Structure needed to apply butterfly
+
+REAL(KIND=JPRB),ALLOCATABLE :: ZSUB(:,:),ZBCOMB(:,:)
+INTEGER(KIND=JPIM) :: ILEVELS,JL,JJ,JK,IM,II,JR,IJ,IK
+INTEGER(KIND=JPIM) :: IROWS,ICOLS,IRANK,ICLIST(KN)
+INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR,IOFFROW,IBLEV,IBLEVM1
+INTEGER(KIND=JPIM) :: IFR,ILR,IFC,IROFF,IRSTRIDE,IOFFBETA
+REAL(KIND=JPRB)    :: ZNORMS(KN)
+TYPE(NODE_TYPE),POINTER :: YNODEL,YNODER,YNODE 
+TYPE(NODE_TYPE),POINTER :: YBNODEL,YBNODER,YBNODE 
+TYPE(LEV_STRUCT) :: YTEMPB(0:1)
+
+!--------------------------------------------------------------------------------
+
+! ONWR 5.4.1
+YD_STRUCT%M_ORDER = KM
+YD_STRUCT%N_ORDER = KN
+YD_STRUCT%N_CMAX  = KCMAX
+
+!Find number of levels
+ILEVELS = 0
+DO
+  IF(2**ILEVELS >= (YD_STRUCT%N_ORDER+YD_STRUCT%N_CMAX-1) /YD_STRUCT%N_CMAX ) EXIT
+  ILEVELS = ILEVELS+1
+ENDDO
+YD_STRUCT%N_LEVELS = ILEVELS
+ALLOCATE(YD_STRUCT%SLEV(0:YD_STRUCT%N_LEVELS))
+
+! Number of boxes at each level
+IJ = 1
+IK = (KN-1)/KCMAX+1
+DO JL=0,YD_STRUCT%N_LEVELS
+  YD_STRUCT%SLEV(JL)%IJ = IJ
+  YD_STRUCT%SLEV(JL)%IK = IK
+  IJ = IJ*2
+  IK = MAX((IK+1)/2,1)
+ENDDO
+
+DO JL=0,YD_STRUCT%N_LEVELS
+  ALLOCATE(YD_STRUCT%SLEV(JL)%NODE(YD_STRUCT%SLEV(JL)%IJ,YD_STRUCT%SLEV(JL)%IK))
+  DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+    DO JK=1,YD_STRUCT%SLEV(JL)%IK
+      YNODE => YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+      YNODE%ILEV = JL
+      IF(JL == 0) THEN
+        YNODE%IFCOL = 1+(JK-1)*KCMAX
+        YNODE%ILCOL = MIN(JK*KCMAX,KN)
+        YNODE%ICOLS = YNODE%ILCOL - YNODE%IFCOL+1
+        YNODE%IFROW = 1
+        YNODE%ILROW = KM
+      ELSE
+        YNODE%IFCOL = -99
+        YNODE%ILCOL = -99
+        YNODE%ICOLS = -99
+        ILM1 = JL-1
+        IJL  = (JJ+1)/2
+        IKL  = 2*JK-1
+        IJR  = (JJ+1)/2
+        IKR  = 2*JK
+        IRSTRIDE = (YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IROWS+1)/2
+        IF(MOD(JJ,2) == 1) THEN
+          YNODE%IFROW = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IFROW
+          YNODE%ILROW = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IFROW+IRSTRIDE -1
+        ELSE
+          YNODE%IFROW = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IFROW+IRSTRIDE
+          YNODE%ILROW = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%ILROW
+        ENDIF
+      ENDIF
+      YNODE%IROWS = YNODE%ILROW - YNODE%IFROW+1
+      YNODE%IROWS = MAX(YNODE%IROWS,0)
+    ENDDO
+  ENDDO
+ENDDO
+
+
+! ONWR 5.4.2
+
+DO JL=0,YD_STRUCT%N_LEVELS
+  IBLEV = MOD(JL,2)
+  IF(JL > 0) THEN
+    IBLEVM1 = MOD(JL-1,2)
+  ELSE
+    IBLEVM1 = -1
+  ENDIF
+  ALLOCATE(YTEMPB(IBLEV)%NODE(YD_STRUCT%SLEV(JL)%IJ,YD_STRUCT%SLEV(JL)%IK))
+  DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+    DO JK=1,YD_STRUCT%SLEV(JL)%IK
+      YNODE => YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+      YBNODE => YTEMPB(IBLEV)%NODE(JJ,JK)
+      IF(JL == 0) THEN
+        IROWS=YNODE%IROWS
+        ICOLS=YNODE%ICOLS
+        ALLOCATE(ZSUB(IROWS,ICOLS))
+        CALL EXTRACT_SUB(YNODE,PMAT,ZSUB)
+        CALL COMPRESS_MAT(YNODE,YBNODE,PEPS,IROWS,ICOLS,ZSUB)
+        DEALLOCATE(ZSUB)
+      ELSE
+        ILM1 = JL-1
+        IJL  = (JJ+1)/2
+        IKL  = 2*JK-1
+        IJR  = (JJ+1)/2
+        IKR  = 2*JK
+        YNODEL => YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)
+        YBNODEL =>  YTEMPB(IBLEVM1)%NODE(IJL,IKL)
+        IRANKL = YNODEL%IRANK
+        IF(IKR <= YD_STRUCT%SLEV(ILM1)%IK) THEN
+          YNODER => YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)
+          YBNODER =>  YTEMPB(IBLEVM1)%NODE(IJR,IKR)
+          IRANKR = YNODER%IRANK
+        ELSE
+          YNODER => YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)
+          IRANKR = 0
+        ENDIF
+        IROWS  = YNODE%IROWS
+        ICOLS  = IRANKL+IRANKR
+        YNODE%ICOLS=ICOLS
+        IOFFROW = YNODE%IFROW-&
+         & YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IFROW
+        ALLOCATE(ZBCOMB(IROWS,ICOLS))
+        CALL COMBINE_B(YBNODEL%B,IRANKL,&
+         &             YBNODER%B,IRANKR,&
+         &             IROWS,IOFFROW,ZBCOMB)
+        CALL COMPRESS_MAT(YNODE,YBNODE,PEPS,IROWS,ICOLS,ZBCOMB)
+        DEALLOCATE(ZBCOMB)
+      ENDIF
+    ENDDO
+  ENDDO
+  IF(IBLEVM1 >= 0) THEN
+!Deallocate Bs on longer needed
+    DO JJ=1,YD_STRUCT%SLEV(JL-1)%IJ
+      DO JK=1,YD_STRUCT%SLEV(JL-1)%IK
+        DEALLOCATE(YTEMPB(IBLEVM1)%NODE(JJ,JK)%B)
+      ENDDO
+    ENDDO
+    DEALLOCATE(YTEMPB(IBLEVM1)%NODE)
+  ENDIF
+! Permanently store B for last level
+  IF(JL == YD_STRUCT%N_LEVELS) THEN
+    DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+      DO JK=1,YD_STRUCT%SLEV(JL)%IK
+        YNODE => YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+        ALLOCATE(YNODE%B(YNODE%IROWS,YNODE%IRANK))
+        YNODE%B(:,:) = YTEMPB(IBLEV)%NODE(JJ,JK)%B(:,:)
+        DEALLOCATE(YTEMPB(IBLEV)%NODE(JJ,JK)%B)
+      ENDDO
+    ENDDO
+    DEALLOCATE(YTEMPB(IBLEV)%NODE)
+  ENDIF
+ENDDO
+
+! Compute work space 
+YD_STRUCT%IBETALEN_MAX = 0
+DO JL=0,YD_STRUCT%N_LEVELS
+  IOFFBETA = 0
+  DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+    DO JK=1,YD_STRUCT%SLEV(JL)%IK
+      YNODE => YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+      YNODE%IOFFBETA = IOFFBETA
+      IOFFBETA = IOFFBETA+YNODE%IRANK
+    ENDDO
+  ENDDO
+  YD_STRUCT%SLEV(JL)%IBETALEN = IOFFBETA
+  YD_STRUCT%IBETALEN_MAX = MAX(YD_STRUCT%IBETALEN_MAX,YD_STRUCT%SLEV(JL)%IBETALEN)
+!  print *,'IBETALEN ',jl,yd_struct%slev(jl)%ibetalen,yd_struct%ibetalen_max
+ENDDO
+
+END SUBROUTINE CONSTRUCT_BUTTERFLY
+!=============================================================================
+SUBROUTINE EXTRACT_SUB(YDNODE,PMAT,PSUB)
+IMPLICIT NONE
+TYPE(NODE_TYPE),INTENT(IN) :: YDNODE
+REAL(KIND=JPRB),INTENT(IN) :: PMAT(:,:)
+REAL(KIND=JPRB),INTENT(OUT) :: PSUB(:,:)
+
+INTEGER(KIND=JPIM) :: ICOL,IROW,JCOL,JROW
+!--------------------------------------------------------------------
+
+ICOL = 0
+DO JCOL=YDNODE%IFCOL,YDNODE%ILCOL
+  ICOL = ICOL+1
+  IROW = 0
+  DO JROW=YDNODE%IFROW,YDNODE%ILROW
+    IROW = IROW+1
+    PSUB(IROW,ICOL) = PMAT(JROW,JCOL)
+  ENDDO
+ENDDO
+
+END SUBROUTINE EXTRACT_SUB
+!===================================================================
+SUBROUTINE COMBINE_B(PBL,KRANKL,PBR,KRANKR,KROWS,KOFFROW,PBCOMB)
+IMPLICIT NONE
+REAL(KIND=JPRB),INTENT(IN) :: PBL(:,:)
+INTEGER(KIND=JPIM),INTENT(IN) :: KRANKL
+REAL(KIND=JPRB),INTENT(IN) :: PBR(:,:)
+INTEGER(KIND=JPIM),INTENT(IN) :: KRANKR
+INTEGER(KIND=JPIM),INTENT(IN) :: KROWS
+INTEGER(KIND=JPIM),INTENT(IN) :: KOFFROW
+REAL(KIND=JPRB),INTENT(OUT) :: PBCOMB(:,:)
+
+INTEGER(KIND=JPIM) :: JCOL,JM
+!--------------------------------------------------------------------
+DO JCOL=1,KRANKL
+  DO JM=1,KROWS
+   PBCOMB(JM,JCOL) = PBL(KOFFROW+JM,JCOL)
+ ENDDO
+ENDDO
+DO JCOL=1,KRANKR
+  DO JM=1,KROWS
+    PBCOMB(JM,KRANKL+JCOL) = PBR(KOFFROW+JM,JCOL) 
+  ENDDO
+ENDDO
+
+END SUBROUTINE COMBINE_B
+!===================================================================
+SUBROUTINE COMPRESS_MAT(YDNODE,YDBNODE,PEPS,KROWS,KCOLS,PSUB)
+IMPLICIT NONE
+TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
+TYPE(NODE_TYPE),INTENT(INOUT) :: YDBNODE
+REAL(KIND=JPRB),INTENT(IN)    :: PEPS
+INTEGER(KIND=JPIM),INTENT(IN) :: KROWS,KCOLS
+REAL(KIND=JPRB),INTENT(IN)    :: PSUB(:,:)
+
+INTEGER(KIND=JPIM) :: JR,IRANK,ICLIST(KCOLS),JN,JM,II
+REAL(KIND=JPRB)    :: ZNORMS(KCOLS)
+REAL(KIND=JPRB) :: ZSUB(KROWS,KCOLS),ZPNONIM(KROWS,KCOLS)
+REAL(KIND=JPRB),ALLOCATABLE :: ZP(:,:)
+REAL(KIND=JPRB),ALLOCATABLE :: ZB(:,:)
+!--------------------------------------------------------------------
+
+II = 0
+DO JN=1,KCOLS
+  DO JM=1,KROWS
+    II = II+1
+    ZSUB(JM,JN) = PSUB(JM,JN)
+  ENDDO
+ENDDO
+
+CALL COMPUTE_ID(PEPS,KROWS,KCOLS,ZSUB,IRANK,ICLIST,ZPNONIM)
+YDNODE%IRANK = IRANK
+ALLOCATE(YDNODE%PNONIM(IRANK*(KCOLS-IRANK)))
+ALLOCATE(YDNODE%ICLIST(KCOLS))
+ALLOCATE(YDBNODE%B(KROWS,IRANK))
+YDNODE%ICLIST(:) = ICLIST(1:KCOLS)
+II = 0
+DO JN=1,KCOLS-IRANK
+  DO JM=1,IRANK
+    II = II+1
+    YDNODE%PNONIM(II) = ZPNONIM(JM,JN)
+  ENDDO
+ENDDO
+DO JR=1,IRANK
+  YDBNODE%B(:,JR) = PSUB(:,ICLIST(JR))
+ENDDO
+!!$if(kcols>irank) then
+!!$  print *,'maxval pnonim ',maxval(ydnode%pnonim(1:irank*(kcols-irank)))
+!!$endif
+
+END SUBROUTINE COMPRESS_MAT
+!====================================================================
+SUBROUTINE MULT_BUTV(CDTRANS,YD_STRUCT,PVECIN,PVECOUT)
+IMPLICIT NONE
+! Multiply vector by matrix represented by buttervfly
+
+TYPE(BUTTERFLY_STRUCT),INTENT(IN) :: YD_STRUCT ! Structure from constucT-butterfly
+CHARACTER(LEN=1),INTENT(IN)   :: CDTRANS       ! 'N' normal matmul, 'T' with transpose of matrix
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)     ! Input vector
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)    ! Output vector
+
+REAL(KIND=JPRB),ALLOCATABLE   :: ZBETA(:,:)
+INTEGER(KIND=JPIM) :: JL,JJ,JK,ILEVS,IFR,ILR,IROWS
+INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR
+INTEGER(KIND=JPIM) :: IBETALV,IBTST,IBTEN,IBETALVM1,IBTSTL,IBTENL,IBTSTR,IBTENR
+REAL(KIND=JPRB) :: ZVECIN(SIZE(PVECIN))
+LOGICAL :: LLTRANSPOSE
+TYPE(NODE_TYPE),POINTER :: YNODEL,YNODER,YNODE 
+!----------------------------------------------------------------------------------
+LLTRANSPOSE = (CDTRANS == 'T' .OR. CDTRANS == 't') 
+
+ILEVS = YD_STRUCT%N_LEVELS
+ALLOCATE(ZBETA(YD_STRUCT%IBETALEN_MAX,0:1)) ! Work space for "beta"
+
+! ONWR 5.4.3
+IF(LLTRANSPOSE) THEN
+  DO JL=ILEVS,0,-1
+    IBETALV = MOD(JL,2)
+    DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+      DO JK=1,YD_STRUCT%SLEV(JL)%IK
+        YNODE =>  YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+        IBTST = YNODE%IOFFBETA+1
+        IBTEN = YNODE%IOFFBETA+YNODE%IRANK
+        IF(JL == 0) THEN
+          IFR = YNODE%IFCOL
+          ILR = YNODE%ILCOL
+          CALL MULT_P_TR(YNODE,ZBETA(IBTST:IBTEN,IBETALV),PVECOUT(IFR:ILR))
+        ELSE
+          IF(JL == ILEVS) THEN
+            IFR = YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IFROW
+            ILR = YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%ILROW
+            IROWS=YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IROWS
+            CALL DGEMV('T',IROWS,YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IRANK,&
+             & 1.0_JPRB,YNODE%B,IROWS,PVECIN(IFR:ILR),1,&
+             & 0.0_JPRB,ZBETA(IBTST:IBTEN,IBETALV),1)
+          ENDIF
+          ILM1 = JL-1
+          IBETALVM1=MOD(ILM1,2)
+          IJL  = (JJ+1)/2
+          IKL  = 2*JK-1
+          IJR  = (JJ+1)/2
+          IKR  = 2*JK
+          IRANKL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IRANK
+          IF(IKR <= YD_STRUCT%SLEV(ILM1)%IK) THEN
+            IRANKR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IRANK
+          ELSE
+            IRANKR = 0
+          endif
+          IBTSTL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+1
+          IBTENL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+IRANKL
+          IBTSTR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+1
+          IBTENR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+IRANKR
+          CALL MULT_P_TR(YNODE,ZBETA(IBTST:IBTEN,IBETALV),ZVECIN(1:IRANKL+IRANKR))  
+          IF(MOD(JJ,2) == 1) THEN
+            ZBETA(IBTSTL:IBTENL,IBETALVM1)= ZVECIN(1:IRANKL)
+            IF(IRANKR > 0) THEN
+              ZBETA(IBTSTR:IBTENR,IBETALVM1)=ZVECIN(IRANKL+1:IRANKL+IRANKR)
+            ENDIF
+          ELSE
+            ZBETA(IBTSTL:IBTENL,IBETALVM1)=ZBETA(IBTSTL:IBTENL,IBETALVM1)+ &
+             & ZVECIN(1:IRANKL)
+            IF(IRANKR > 0) THEN
+              ZBETA(IBTSTR:IBTENR,IBETALVM1)=ZBETA(IBTSTR:IBTENR,IBETALVM1) + &
+               &  ZVECIN(IRANKL+1:IRANKL+IRANKR)
+            ENDIF
+          ENDIF
+        ENDIF
+      ENDDO
+    ENDDO
+  ENDDO
+ELSE
+  DO JL=0,ILEVS
+    IBETALV = MOD(JL,2)
+    DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+      DO JK=1,YD_STRUCT%SLEV(JL)%IK
+        YNODE =>  YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+        IBTST = YNODE%IOFFBETA+1
+        IBTEN = YNODE%IOFFBETA+YNODE%IRANK
+        IF(JL == 0) THEN    ! ONWR (115)
+          IFR = YNODE%IFCOL
+          ILR = YNODE%ILCOL
+          CALL MULT_P(YNODE,PVECIN(IFR:ILR),ZBETA(IBTST:IBTEN,IBETALV) )     
+        ELSE                ! ONWR (116)
+          ILM1 = JL-1
+          IBETALVM1=MOD(ILM1,2)
+          IJL  = (JJ+1)/2
+          IKL  = 2*JK-1
+          IJR  = (JJ+1)/2
+          IKR  = 2*JK
+          IRANKL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IRANK
+          IF(IKR <= YD_STRUCT%SLEV(ILM1)%IK) THEN
+            IRANKR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IRANK
+          ELSE
+            IRANKR = 0
+          ENDIF
+          IBTSTL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+1
+          IBTENL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+IRANKL
+          IBTSTR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+1
+          IBTENR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+IRANKR
+          CALL MULT_P(YNODE,ZBETA(IBTSTL:IBTENR,IBETALVM1),ZBETA(IBTST:IBTEN,IBETALV))     
+        ENDIF
+        IF(JL == ILEVS) THEN ! ONWR (117)
+          IFR = YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IFROW
+          ILR = YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%ILROW
+          IROWS = YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IROWS
+          CALL DGEMV('N',IROWS,YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IRANK,&
+           & 1.0_JPRB,YNODE%B,IROWS,ZBETA(IBTST:IBTEN,IBETALV),1,&
+           & 0.0_JPRB,PVECOUT(IFR:ILR),1)
+        ENDIF
+      ENDDO
+    ENDDO
+  ENDDO
+ENDIF
+END SUBROUTINE MULT_BUTV
+!====================================================================
+subroutine mult_butm(cdtrans,yd_struct,kf,pvecin,pvecout)
+IMPLICIT NONE
+
+! Multiply matrix by matrix represented by butterfly
+
+CHARACTER(LEN=1),INTENT(IN)   :: CDTRANS       ! 'N' normal matmul, 'T' with transpose of matrix
+TYPE(BUTTERFLY_STRUCT),INTENT(IN) :: YD_STRUCT ! Structure from constucT-butterfly
+INTEGER(KIND=JPIM),INTENT(IN) :: KF            ! Number of fields
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)     ! Input vector
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)    ! Output vector
+
+REAL(KIND=JPRB),ALLOCATABLE   :: ZBETA(:,:,:)
+INTEGER(KIND=JPIM) :: JL,JJ,JK,ILEVS,IFR,ILR,IROWS,JF
+INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR,IROUT,IRIN
+INTEGER(KIND=JPIM) :: IRANK,IM,IN,JN,IDX
+INTEGER(KIND=JPIM) :: IBETALV,IBTST,IBTEN,IBETALVM1,IBTSTL,IBTENL,IBTSTR,IBTENR,ILBETA
+REAL(KIND=JPRB) :: ZVECIN(YD_STRUCT%N_ORDER,KF),ZVECOUT(YD_STRUCT%N_ORDER,KF)
+LOGICAL :: LLTRANSPOSE
+TYPE(NODE_TYPE),POINTER :: YNODEL,YNODER,YNODE 
+!----------------------------------------------------------------------------------
+LLTRANSPOSE = (CDTRANS == 'T' .OR. CDTRANS == 't') 
+IROUT=SIZE(PVECOUT(:,1))
+IRIN=SIZE(PVECIN(:,1))
+
+ILEVS = YD_STRUCT%N_LEVELS
+ILBETA = YD_STRUCT%IBETALEN_MAX
+ALLOCATE(ZBETA(ILBETA,KF,0:1)) ! Work space for "beta"
+
+! ONWR 5.4.3
+IF(LLTRANSPOSE) THEN
+  DO JL=ILEVS,0,-1
+    IBETALV = MOD(JL,2)
+    DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+      DO JK=1,YD_STRUCT%SLEV(JL)%IK
+        YNODE =>  YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+        IBTST = YNODE%IOFFBETA+1
+        IBTEN = YNODE%IOFFBETA+YNODE%IRANK
+        IF(JL == 0) THEN
+          IFR = YNODE%IFCOL
+          ILR = YNODE%ILCOL
+!!$          do jf=1,kf
+!!$            call mult_p_tr(ynode,zbeta(ibtst:ibten,jf,ibetalv),pvecout(ifr:ilr,jf))
+!!$          enddo
+          IN = YNODE%ICOLS-YNODE%IRANK
+          IM = YNODE%IRANK
+          IF(IN>0) THEN
+            CALL DGEMM('T','N',IN,KF,IM,1.0_JPRB,&
+             & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRB,&
+             & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+
+          ENDIF
+          DO JF=1,KF
+            DO JN=1,YNODE%IRANK
+              IDX = YNODE%ICLIST(JN)
+              PVECOUT(IFR+IDX-1,JF) = ZBETA(IBTST+JN-1,JF,IBETALV)
+            ENDDO
+            DO JN=YNODE%IRANK+1,YNODE%ICOLS
+              IDX = YNODE%ICLIST(JN)
+              PVECOUT(IFR+IDX-1,JF) = ZVECOUT(JN,JF)
+            ENDDO
+          ENDDO
+!          call mult_p_trm(ynode,kf,zbeta(ibtst:ibten,:,ibetalv),pvecout(ifr:ilr,:))
+        ELSE
+          IF(JL == ILEVS) THEN
+            IFR = YNODE%IFROW
+            ILR = YNODE%ILROW
+            IROWS =YNODE%IROWS
+            IRANK = YNODE%IRANK
+            CALL DGEMM('T','N',IRANK,KF,IROWS,1.0_JPRB,&
+             & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRB,&
+             & ZBETA(IBTST,1,IBETALV),ILBETA)
+          ENDIF
+          ILM1 = JL-1
+          IBETALVM1=MOD(ILM1,2)
+          IJL  = (JJ+1)/2
+          IKL  = 2*JK-1
+          IJR  = (JJ+1)/2
+          IKR  = 2*JK
+          IRANKL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IRANK
+          IBTSTL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+1
+          IBTENL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+IRANKL
+          IF(IKR <= YD_STRUCT%SLEV(ILM1)%IK) THEN
+            IRANKR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IRANK
+            IBTSTR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+1
+            IBTENR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+IRANKR
+          ELSE
+            IRANKR = 0
+          ENDIF
+!          call mult_p_trm(ynode,kf,zbeta(ibtst:ibten,:,ibetalv),zvecin(1:irankl+irankr,:)) 
+          IN = YNODE%ICOLS-YNODE%IRANK
+          IM = YNODE%IRANK
+          IF(IN>0) THEN
+            CALL DGEMM('T','N',IN,KF,IM,1.0_JPRB,&
+             & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRB,&
+             & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+          ENDIF
+          DO JF=1,KF
+            DO JN=1,YNODE%IRANK
+              IDX = YNODE%ICLIST(JN)
+              ZVECIN(IDX,JF) = ZBETA(IBTST+JN-1,JF,IBETALV)
+            ENDDO
+            DO JN=YNODE%IRANK+1,YNODE%ICOLS
+              IDX = YNODE%ICLIST(JN)
+              ZVECIN(IDX,JF) = ZVECOUT(JN,JF)
+            ENDDO
+          ENDDO
+          
+          DO JF=1,KF
+!            call mult_p_tr(ynode,zbeta(ibtst:ibten,jf,ibetalv),zvecin(1:irankl+irankr,jf)) 
+            IF(MOD(JJ,2) == 1) THEN
+              ZBETA(IBTSTL:IBTENL,JF,IBETALVM1)= ZVECIN(1:IRANKL,JF)
+              IF(IRANKR > 0) THEN
+                ZBETA(IBTSTR:IBTENR,JF,IBETALVM1)=ZVECIN(IRANKL+1:IRANKL+IRANKR,JF)
+              ENDIF
+            ELSE
+              ZBETA(IBTSTL:IBTENL,JF,IBETALVM1)=ZBETA(IBTSTL:IBTENL,JF,IBETALVM1)+ &
+               & ZVECIN(1:IRANKL,JF)
+              IF(IRANKR > 0) THEN
+                ZBETA(IBTSTR:IBTENR,JF,IBETALVM1)=ZBETA(IBTSTR:IBTENR,JF,IBETALVM1) + &
+                 &  ZVECIN(IRANKL+1:IRANKL+IRANKR,JF)
+              ENDIF
+            ENDIF
+          ENDDO
+        ENDIF
+      ENDDO
+    ENDDO
+  ENDDO
+ELSE
+  DO JL=0,ILEVS
+    IBETALV = MOD(JL,2)
+    DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
+      DO JK=1,YD_STRUCT%SLEV(JL)%IK
+        YNODE =>  YD_STRUCT%SLEV(JL)%NODE(JJ,JK)
+        IBTST = YNODE%IOFFBETA+1
+        IBTEN = YNODE%IOFFBETA+YNODE%IRANK
+        IF(JL == 0) THEN
+          IFR = YNODE%IFCOL
+          ILR = YNODE%ILCOL
+!!$          do jf=1,kf
+!!$            call mult_p(ynode,pvecin(ifr:ilr,jf),zbeta(ibtst:ibten,jf,ibetalv) )   
+!!$          enddo
+          IRANK = YNODE%IRANK
+          IM = IRANK
+          IN = YNODE%ICOLS-IRANK
+          DO JF=1,KF
+            DO JN=1,YNODE%ICOLS
+              IDX = YNODE%ICLIST(JN)
+              IF(JN <= IRANK) THEN
+                ZBETA(IBTST+JN-1,JF,IBETALV) = PVECIN(IFR+IDX-1,JF)
+              ELSE
+                ZVECIN(JN,JF) = PVECIN(IFR+IDX-1,JF)
+              ENDIF
+            ENDDO
+          ENDDO
+          IF(YNODE%ICOLS > IRANK) THEN
+            CALL DGEMM('N','N',IRANK,KF,IN,1.0_JPRB,&
+             & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRB,&
+             & ZBETA(IBTST,1,IBETALV),ILBETA)
+          ENDIF
+        ELSE
+          ILM1 = JL-1
+          IBETALVM1=MOD(ILM1,2)
+          IJL  = (JJ+1)/2
+          IKL  = 2*JK-1
+          IJR  = (JJ+1)/2
+          IKR  = 2*JK
+          IRANKL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IRANK
+          IBTSTL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+1
+          IBTENL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+IRANKL
+          IF(IKR <= YD_STRUCT%SLEV(ILM1)%IK) THEN
+            IRANKR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IRANK
+            IBTSTR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+1
+            IBTENR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+IRANKR
+          ELSE
+            IRANKR = 0
+            IBTENR = IBTENL 
+          ENDIF
+!!$          zvecin(1:irankl) =  zbeta(ibtstl:ibtenl,ibetalvm1)
+!!$          if(irankr > 0) then
+!!$            zvecin(irankl+1:irankl+irankr) = zbeta(ibtstr:ibtenr,ibetalvm1)
+!!$          endif
+!!$          do jf=1,kf
+!!$            call mult_p(ynode,zbeta(ibtstl:ibtenr,jf,ibetalvm1),zbeta(ibtst:ibten,jf,ibetalv))
+!!$          enddo
+          IRANK = YNODE%IRANK
+          IM = IRANK
+          IN = YNODE%ICOLS-IRANK
+          DO JF=1,KF
+            DO JN=1,YNODE%ICOLS
+              IDX = YNODE%ICLIST(JN)
+              IF(JN <= IRANK) THEN
+                ZBETA(IBTST+JN-1,JF,IBETALV) = ZBETA(IBTSTL+IDX-1,JF,IBETALVM1)
+              ELSE
+                ZVECIN(JN,JF) = ZBETA(IBTSTL+IDX-1,JF,IBETALVM1)
+              ENDIF
+            ENDDO
+          ENDDO
+          IF(YNODE%ICOLS > IRANK) THEN
+            CALL DGEMM('N','N',IRANK,KF,IN,1.0_JPRB,&
+             & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRB,&
+             & ZBETA(IBTST,1,IBETALV),ILBETA)
+          ENDIF
+!          call mult_pm(ynode,kf,ilbeta,zbeta(ibtstl:ibtenr,:,ibetalvm1),zbeta(ibtst:ibten,:,ibetalv))     
+        ENDIF
+        IF(JL == ILEVS) THEN
+          IFR = YNODE%IFROW
+          ILR = YNODE%ILROW
+          IROWS = YNODE%IROWS
+          CALL DGEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRB,&
+           & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRB,&
+           & PVECOUT(IFR,1),IROUT)
+        ENDIF
+      ENDDO
+    ENDDO
+  ENDDO
+ENDIF
+DEALLOCATE(ZBETA)
+END SUBROUTINE MULT_BUTM
+!=====================================================================
+SUBROUTINE MULT_P(YDNODE,PVECIN,PVECOUT)
+! Multiply vector by projection matrix
+IMPLICIT NONE
+TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)
+
+REAL(KIND=JPRB) :: ZVECIN(YDNODE%ICOLS)
+INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN
+!---------------------------------------------------------
+
+IRANK = YDNODE%IRANK
+DO JN=1,YDNODE%ICOLS
+  IDX = YDNODE%ICLIST(JN)
+  IF(JN <= IRANK) THEN
+    PVECOUT(JN) = PVECIN(IDX)
+  ELSE
+    ZVECIN(JN) = PVECIN(IDX)
+  ENDIF
+ENDDO
+
+IF(YDNODE%ICOLS > IRANK) THEN
+  IM = IRANK
+  IN = YDNODE%ICOLS-IRANK
+  CALL DGEMV('N',IM,IN,1.0_JPRB,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRB,PVECOUT,1)
+ENDIF
+
+END SUBROUTINE MULT_P
+!=====================================================================
+SUBROUTINE MULT_PM(YDNODE,KF,KLBETA,PVECIN,PVECOUT)
+IMPLICIT NONE
+! Multiply matrix by projection matrix
+TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
+INTEGER(KIND=JPIM),INTENT(IN) :: KF 
+INTEGER(KIND=JPIM),INTENT(IN) :: KLBETA
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)
+
+REAL(KIND=JPRB) :: ZVECIN(YDNODE%ICOLS,KF)
+INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN,JF
+!---------------------------------------------------------
+
+IRANK = YDNODE%IRANK
+IM = IRANK
+IN = YDNODE%ICOLS-IRANK
+DO JF=1,KF
+  DO JN=1,YDNODE%ICOLS
+    IDX = YDNODE%ICLIST(JN)
+    IF(JN <= IRANK) THEN
+      PVECOUT(JN,JF) = PVECIN(IDX,JF)
+    ELSE
+      ZVECIN(JN,JF) = PVECIN(IDX,JF)
+    ENDIF
+  ENDDO
+ENDDO
+IF(YDNODE%ICOLS > IRANK) THEN
+  CALL DGEMM('N','N',IRANK,KF,IN,1.0_JPRB,&
+   & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRB,&
+   & PVECOUT,IRANK)
+ENDIF
+END SUBROUTINE MULT_PM
+!==================================================================
+SUBROUTINE MULT_P_TR(YDNODE,PVECIN,PVECOUT)
+! Multiply vector by transposed procetion matrix
+IMPLICIT NONE
+TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)
+
+REAL(KIND=JPRB) :: ZVECOUT(YDNODE%ICOLS)
+INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN
+!---------------------------------------------------------
+
+IRANK = YDNODE%IRANK
+IN = YDNODE%ICOLS-IRANK
+IF(IN>0) THEN
+  IM = IRANK
+  CALL DGEMV('T',IM,IN,1.0_JPRB,YDNODE%PNONIM,IRANK,PVECIN,1,0.0_JPRB,ZVECOUT(IRANK+1),1)
+ENDIF
+DO JK=1,IRANK
+  IDX = YDNODE%ICLIST(JK)
+  PVECOUT(IDX) = PVECIN(JK)
+ENDDO
+DO JN=IRANK+1,YDNODE%ICOLS
+  IDX = YDNODE%ICLIST(JN)
+  PVECOUT(IDX) = ZVECOUT(JN)
+ENDDO
+
+END SUBROUTINE MULT_P_TR
+!==================================================================
+SUBROUTINE MULT_P_TRM(YDNODE,KF,PVECIN,PVECOUT)
+! Multiply matrix by transposed procetion matrix
+IMPLICIT NONE
+TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
+INTEGER(KIND=JPIM),INTENT(IN) :: KF 
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)
+
+REAL(KIND=JPRB) :: ZVECOUT(YDNODE%ICOLS,KF)
+INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN,JF
+!------------------------------------------------------------------
+
+IN = YDNODE%ICOLS-YDNODE%IRANK
+IM = YDNODE%IRANK
+IF(IN>0) THEN
+  CALL DGEMM('T','N',IN,KF,IM,1.0_JPRB,&
+   & YDNODE%PNONIM(1),IM,PVECIN,IM,0.0_JPRB,&
+   & ZVECOUT(YDNODE%IRANK+1,1),YDNODE%ICOLS)
+ENDIF
+DO JF=1,KF
+  DO JK=1,YDNODE%IRANK
+    IDX = YDNODE%ICLIST(JK)
+    PVECOUT(IDX,JF) = PVECIN(JK,JF)
+  ENDDO
+  DO JN=YDNODE%IRANK+1,YDNODE%ICOLS
+    IDX = YDNODE%ICLIST(JN)
+    PVECOUT(IDX,JF) = ZVECOUT(JN,JF)
+  ENDDO
+ENDDO
+END SUBROUTINE MULT_P_TRM
+!====================================================================
+END MODULE BUTTERFLY_ALG_MOD
+
