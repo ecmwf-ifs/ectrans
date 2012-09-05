@@ -12,7 +12,6 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE TPM_DIM
 USE TPM_GEOMETRY
 
-USE PRLE2_MOD
 USE PREPSNM_MOD
 USE PRFI2_MOD
 USE LDFOU2_MOD
@@ -44,7 +43,6 @@ USE UPDSP_MOD
 
 !     Externals.
 !     ----------
-!         PRLE2   - prepares the Legendre polonymials for truncation NTMAX.
 !         PREPSNM - prepare REPSNM for wavenumber KM
 !         PRFI2   - prepares the Fourier work arrays for model variables.
 !         LDFOU2  - computations in Fourier space

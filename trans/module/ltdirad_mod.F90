@@ -11,7 +11,6 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE TPM_DIM
 USE TPM_GEOMETRY
 
-USE PRLE2AD_MOD
 USE PREPSNM_MOD
 USE PRFI2AD_MOD
 USE LDFOU2AD_MOD
@@ -46,7 +45,6 @@ USE UPDSPAD_MOD
 
 !     Externals.
 !     ----------
-!         PRLE2AD  - prepares the Legendre polonymials for truncation NTMAX.
 !         PREPSNM  - prepare REPSNM for wavenumber KM
 !         PRFI2AD  - prepares the Fourier work arrays for model variables.
 !         LDFOU2AD - computations in Fourier space
