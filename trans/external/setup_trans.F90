@@ -56,6 +56,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        Daan Degrauwe : Mar 2012 E'-zone dimensions
+!        R. El Khatib 09-Aug-2012 %LAM in GEOM_TYPE
 
 !     ------------------------------------------------------------------
 
@@ -128,6 +130,7 @@ IF(.NOT. ALLOCATED(DIM_RESOL)) THEN
   ALLOCATE(DISTR_RESOL(NMAX_RESOL))
   ALLOCATE(FFT_RESOL(NMAX_RESOL))
   ALLOCATE(FLT_RESOL(NMAX_RESOL))
+  GEOM_RESOL(:)%LAM=.FALSE.
 ELSE
   NDEF_RESOL = NDEF_RESOL+1
   IF(NDEF_RESOL > NMAX_RESOL) THEN
@@ -163,6 +166,12 @@ LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 R%NSMAX = KSMAX
 R%NDGL  = KDGL
 R%NDLON = 2*KDGL
+! E'-defaults
+R%NNOEXTZL=0
+R%NNOEXTZG=0
+
+! IMPLICIT argument :
+G%LAM = .FALSE.
 
 IF (KDGL <= 0 .OR. MOD(KDGL,2) /= 0) THEN
   CALL ABORT_TRANS ('SETUP_TRANS: KDGL IS NOT A POSITIVE, EVEN NUMBER')

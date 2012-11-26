@@ -29,6 +29,7 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 
 !     ------------------------------------------------------------------
 
@@ -38,6 +39,7 @@ USE TPM_DISTR
 USE TPM_TRANS
 USE TPM_GEOMETRY
 USE TPM_FFT
+USE TPM_DIM
 
 IMPLICIT NONE
 
@@ -51,7 +53,7 @@ REAL(KIND=JPRB) :: ZMUL
 IJUMP = 1
 
 IGLG = D%NPTRLS(MYSETW)+KGL-1
-ILOEN = G%NLOEN(IGLG)
+ILOEN = G%NLOEN(IGLG)+R%NNOEXTZL
 IST  = 2*(G%NMEN(IGLG)+1)+1
 ILEN = ILOEN+3-IST
 IOFF  = D%NSTAGTF(KGL)

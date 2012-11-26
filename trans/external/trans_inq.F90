@@ -6,6 +6,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
                     &KULTPP,KPTRLS,KNMENG,&
                     &KPRTRW,KMYSETW,KMYSETV,KMY_REGION_NS,KMY_REGION_EW,&
                     &LDSPLITLAT,&
+                    &KSMAX,PLAPIN,KNVALUE,KDEF_RESOL,LDLAM,&
                     &PMU,PGW,PRPNM,KLEI3,KSPOLEGL,KPMS,KDGLU)
 
 !**** *TRANS_INQ* - Extract information from the transform package
@@ -21,6 +22,10 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     -------------------- 
 !     KRESOL   - resolution tag for which info is required ,default is the
 !                first defined resulution (input)
+
+!                   MULTI-TRANSFORMS MANAGEMENT
+!     KDEF_RESOL - number or resolutions defined
+!     LDLAM      - .T. if the corresponding resolution is LAM, .F. if it is global
 
 !                   SPECTRAL SPACE
 !     KSPEC    - number of complex spectral coefficients on this PE
@@ -40,6 +45,8 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     KALLMS   - Wave numbers for all wave-set concatenated together 
 !                to give all wave numbers in wave-set order
 !     KDIM0G   - Defines partitioning of global spectral fields among PEs
+!     KSMAX    - spectral truncation
+!     KNVALUE  - n value for each KSPEC2 spectral coeffient
 
 !                 GRIDPOINT SPACE                  
 !     KFRSTLAT    - First latitude of each a-set in grid-point space
@@ -80,6 +87,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     KLEI3    - First dimension of Legendre polynomials
 !     KSPOLEGL - Second dimension of Legendre polynomials
 !     KPMS     - Adress for legendre polynomial for given M (NSMAX)
+!     PLAPIN   - Eigen-values of the inverse Laplace operator
 !     KDGLU    - Number of active points in an hemisphere for a given wavenumber "m"
 
 !     Method.
@@ -96,6 +104,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     --------------
 !        Original : 00-03-03
 !        M. Hortal : 2001-03-05 Dimensions of the Legendre polynomials
+!        R. El Khatib 08-Aug-2012 KSMAX,PLAPIN,KNVALUE,LDLAM,KDEF_RESOL
 
 !     ------------------------------------------------------------------
 
@@ -165,9 +174,17 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KSPOLEGL
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KPMS(0:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KDGLU(0:)
 
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PLAPIN(-1:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KSMAX
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KNVALUE(:)
+
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(OUT) :: KDEF_RESOL
+LOGICAL           ,OPTIONAL,INTENT(OUT)   :: LDLAM
+
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IU1,IU2
+INTEGER(KIND=JPIM) :: IC, JN, JMLOC
 !     ------------------------------------------------------------------
 
 
@@ -190,6 +207,8 @@ IF(PRESENT(KMYSETW))   KMYSETW   = MYSETW
 IF(PRESENT(KMYSETV))   KMYSETV   = MYSETV
 IF(PRESENT(KMY_REGION_NS))   KMY_REGION_NS = MY_REGION_NS
 IF(PRESENT(KMY_REGION_EW))   KMY_REGION_EW = MY_REGION_EW
+IF(PRESENT(LDLAM))       LDLAM      = G%LAM
+IF(PRESENT(KDEF_RESOL))  KDEF_RESOL = NDEF_RESOL 
 
 IF(PRESENT(KGPTOTL)) THEN
   IF(UBOUND(KGPTOTL,1) < N_REGIONS_NS) THEN
@@ -427,6 +446,38 @@ IF(PRESENT(KPMS)) THEN
     KPMS(0:R%NSMAX) = D%NPMS(0:R%NSMAX)
   ENDIF
 ENDIF
+
+IF(PRESENT(KSMAX)) KSMAX = R%NSMAX
+IF(PRESENT(PLAPIN)) THEN
+  IF(D%LGRIDONLY) THEN
+    CALL ABORT_TRANS('TRANS_INQ: PLAPIN REQUIRED BUT LGRIDONLY=T')
+  ENDIF
+  IF(UBOUND(PLAPIN,1) < R%NSMAX+2) THEN
+    CALL ABORT_TRANS('TRANS_INQ: PLAPIN TOO SMALL')
+  ELSEIF (LBOUND(PLAPIN,1) /= -1) THEN
+    CALL ABORT_TRANS('TRANS_INQ: LOWER BOUND OF PLAPIN SHOULD BE -1')
+  ELSE
+    PLAPIN(-1:R%NSMAX+2) = F%RLAPIN(:)
+  ENDIF
+ENDIF
+IF(PRESENT(KNVALUE)) THEN
+  IF(D%LGRIDONLY) THEN
+    CALL ABORT_TRANS('TRANS_INQ: KNVALUE REQUIRED BUT LGRIDONLY=T')
+  ENDIF
+  IF(SIZE(KNVALUE) < D%NSPEC2) THEN
+    CALL ABORT_TRANS('TRANS_INQ: KNVALUE TOO SMALL')
+  ELSE
+    IC=1
+    DO JMLOC=1,D%NUMP
+      DO JN=D%MYMS(JMLOC),R%NSMAX
+        KNVALUE(IC  )=JN
+        KNVALUE(IC+1)=JN
+        IC=IC+2
+      ENDDO
+    ENDDO
+  ENDIF
+ENDIF
+
 
 IF(PRESENT(KDGLU)) THEN
   IF(UBOUND(KDGLU,1) < R%NSMAX) THEN

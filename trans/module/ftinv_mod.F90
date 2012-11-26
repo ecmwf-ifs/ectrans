@@ -29,6 +29,7 @@ SUBROUTINE FTINV(PREEL,KFIELDS,KGL)
 !     --------------
 !        Original : 00-03-03
 !        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
+!        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -37,6 +38,7 @@ USE TPM_DISTR
 USE TPM_TRANS
 USE TPM_GEOMETRY
 USE TPM_FFT
+USE TPM_DIM
 
 IMPLICIT NONE
 
@@ -50,7 +52,7 @@ INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 IJUMP = 1
 IGLG  = D%NPTRLS(MYSETW)+KGL-1
 IST   = 2*(G%NMEN(IGLG)+1)+1
-ILEN  = G%NLOEN(IGLG)+3-IST
+ILEN  = G%NLOEN(IGLG)+R%NNOEXTZL+3-IST
 IST1=1
 IF (G%NLOEN(IGLG)==1) IST1=0
 
@@ -62,7 +64,7 @@ ENDDO
 
 IF (G%NLOEN(IGLG)>1) THEN
   CALL FFT992(PREEL(1,D%NSTAGTF(KGL)+1),T%TRIGS(1,KGL),&
-   &T%NFAX(1,KGL),KFIELDS,IJUMP,G%NLOEN(IGLG),KFIELDS,1)
+   &T%NFAX(1,KGL),KFIELDS,IJUMP,G%NLOEN(IGLG)+R%NNOEXTZL,KFIELDS,1)
 ENDIF
 
 !     ------------------------------------------------------------------

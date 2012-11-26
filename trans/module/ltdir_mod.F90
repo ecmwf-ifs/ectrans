@@ -12,12 +12,11 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 USE TPM_DIM
 USE TPM_GEOMETRY
 
-USE PRLE2_MOD
 USE PREPSNM_MOD
 USE PRFI2_MOD
 USE LDFOU2_MOD
 USE LEDIR_MOD
-USE LDSPC2_MOD
+USE UVTVD_MOD
 USE UPDSP_MOD  
  
 
@@ -44,12 +43,11 @@ USE UPDSP_MOD
 
 !     Externals.
 !     ----------
-!         PRLE2   - prepares the Legendre polonymials for truncation NTMAX.
 !         PREPSNM - prepare REPSNM for wavenumber KM
 !         PRFI2   - prepares the Fourier work arrays for model variables.
 !         LDFOU2  - computations in Fourier space
 !         LEDIR   - direct Legendre transform
-!         LDSPC2  - computations in spectral space
+!         UVTVD   -
 !         UPDSP   - updating of spectral arrays (fields)
 
 !     Reference.
@@ -74,6 +72,7 @@ USE UPDSP_MOD
 !        K. YESSAD (AUGUST 1996): 
 !               - Legendre transforms for transmission coefficients.
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
+!        R. El Khatib 12-Jul-2012 LDSPC2 replaced by UVTVD
 !     ------------------------------------------------------------------
 
 IMPLICIT NONE
@@ -96,21 +95,21 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
+INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
 
 !     LOCAL REALS
 REAL(KIND=JPRB) :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
 REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRB) :: ZOA1(R%NLED4,KLED2),         ZOA2(R%NLED4,MAX(4*KF_UV,1))
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
-!CHARACTER(LEN=10) :: CLHOOK
 
+!     ------------------------------------------------------------------
+IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',0,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
 !*       1.    PREPARE LEGENDRE POLONOMIALS AND EPSNM
 !              --------------------------------------
 
-!WRITE(CLHOOK,FMT='(A,I4.4)') 'LTDIR_',KM
-IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',0,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
@@ -145,7 +144,16 @@ CALL LEDIR(KM,KMLOC,IFC,IIFC,IDGLU,KLED2,ZAIA,ZSIA,ZOA1)
 
 IF( KF_UV > 0 ) THEN
   CALL PREPSNM(KM,KMLOC,ZEPSNM)
-  CALL LDSPC2(KM,KF_UV,ZEPSNM,ZOA1,ZOA2)
+  IUS = 1
+  IUE = 2*KF_UV
+  IVS = 2*KF_UV+1
+  IVE = 4*KF_UV
+  IVORS = 1
+  IVORE = 2*KF_UV
+  IDIVS = 2*KF_UV+1
+  IDIVE = 4*KF_UV
+  CALL UVTVD(KM,KF_UV,ZEPSNM,ZOA1(:,IUS:IUE),ZOA1(:,IVS:IVE),&
+   & ZOA2(:,IVORS:IVORE),ZOA2(:,IDIVS:IDIVE))
 ENDIF
 
 !     ------------------------------------------------------------------
@@ -158,9 +166,8 @@ CALL UPDSP(KM,KF_UV,KF_SCALARS,ZOA1,ZOA2, &
  & PSPSC3A,PSPSC3B,PSPSC2 , &
  & KFLDPTRUV,KFLDPTRSC)
 
-IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
+IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',1,ZHOOK_HANDLE)
 
 END SUBROUTINE LTDIR
 END MODULE LTDIR_MOD
-

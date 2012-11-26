@@ -14,6 +14,7 @@ INTEGER(KIND=JPIM),POINTER :: NMEN(:)  ! ASSOCIATED CUT-OFF WAVE NUMBER
 INTEGER(KIND=JPIM),POINTER :: NDGLU(:) ! NUMBER OF HEMISPERIC LATITUDES
 !                                   FOR A GIVEN WAVE NUMBER M 
 
+LOGICAL :: LAM           ! LAM geometry if T, Global geometry if F
 LOGICAL :: LREDUCED_GRID ! Reduced Gaussian grid if T
 LOGICAL :: LINEAR_GRID   ! Linear or semi-linear Gaussian grid if T,
 !                          quadratic Gaussian grid otherwise.
