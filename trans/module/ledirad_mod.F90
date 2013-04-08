@@ -46,9 +46,11 @@ SUBROUTINE LEDIRAD(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
 !                            for uv formulation
 !        Modified : 93-03-19 D. Giard - NTMAX instead of NSMAX
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
+!        Modified ! 16/10/12 J.Hague : DR_HOOK round calls to DGEMM:
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY    ,ONLY : G
@@ -77,7 +79,7 @@ INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J, JK,JGL,J1
 INTEGER(KIND=JPIM) :: IF,ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 
-
+REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -121,8 +123,10 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   
   IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
     CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
      &ZCA,ILA,0._JPRB,ZB,KDGLU)
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
 
   ELSE
 
@@ -152,8 +156,10 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   
   IF(ILS <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
     CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
      &ZCS,ILS,0._JPRB,ZB,KDGLU)
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     
   ELSE
 
