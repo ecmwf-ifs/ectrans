@@ -14,13 +14,13 @@ SUBROUTINE SUMPLATF(KDGL,KPROCA,KMYSETA,&
 !        *CALL* *SUMPLATF *
 
 !     Explicit arguments - input :
-!     -------------------- 
+!     --------------------
 !                          KDGL       -last  latitude
 !                          KPROCA     -number of processors in A direction
 !                          KMYSETA    -process number in A direction
 
 !     Explicit arguments - output:
-!     -------------------- 
+!     --------------------
 
 !                          KULTPP     -number of latitudes in process
 !                                      (in Fourier space)
@@ -67,13 +67,12 @@ SUBROUTINE SUMPLATF(KDGL,KPROCA,KMYSETA,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-use tpm_geometry
+USE TPM_GEOMETRY    ,ONLY : G
 
-use sumplatb_mod
-
+USE SUMPLATB_MOD    ,ONLY : SUMPLATB
+!
 
 IMPLICIT NONE
-
 
 !     * DUMMY:
 INTEGER(KIND=JPIM),INTENT(IN)  :: KDGL
@@ -105,7 +104,7 @@ CALL SUMPLATB(1,KDGL,KPROCA,G%NLOEN,LLSPLIT,LLFOURIER,&
 
 !      -----------------------------------------------------------------
 
-!*       2.    CODE NOT DEPENDING ON 'LELAM': 
+!*       2.    CODE NOT DEPENDING ON 'LELAM':
 !              ------------------------------
 
 

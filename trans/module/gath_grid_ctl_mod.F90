@@ -12,8 +12,8 @@ SUBROUTINE GATH_GRID_CTL(PGPG,KFGATHG,KPROMA,KTO,PGP)
 !     ----------
 !     CALL GATH_GRID_CTL(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PGPG(:,:)   - Global gridpoint array
 !     KFGATHG     - Global number of fields to be gathered
 !     KPROMA      - blocking factor for gridpoint input
@@ -24,15 +24,16 @@ SUBROUTINE GATH_GRID_CTL(PGPG,KFGATHG,KPROMA,KTO,PGP)
 
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_RECV, MPL_SEND, MPL_WAIT,   &
+     &                  JP_BLOCKING_STANDARD, JP_NON_BLOCKING_STANDARD
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_GEOMETRY
-USE TPM_DISTR
+!USE TPM_GEN
+!USE TPM_DIM
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_DISTR       ,ONLY : D, MTAGDISTSP, NPRCIDS, MYPROC, NPROC
 
-USE SET2PE_MOD
-USE EQ_REGIONS_MOD
+USE SET2PE_MOD      ,ONLY : SET2PE
+USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS
 
 IMPLICIT NONE
 
@@ -104,7 +105,7 @@ ELSE
         IOFF = JKGLO-1
         IBL  = (JKGLO-1)/KPROMA+1
         DO JROF=1,IEND
-          ZFLD(IOFF+JROF+(JFLD-1)*IFLDL) = PGP(JROF,JFLD,IBL) 
+          ZFLD(IOFF+JROF+(JFLD-1)*IFLDL) = PGP(JROF,JFLD,IBL)
         ENDDO
       ENDDO
     ENDDO
@@ -135,7 +136,7 @@ ELSE
               IOFF = JKGLO-1
               IBL  = (JKGLO-1)/KPROMA+1
               DO JROF=1,IEND
-                ZFLD(IOFF+JROF+IFLDS*IFLDL) = PGP(JROF,JFLD,IBL) 
+                ZFLD(IOFF+JROF+IFLDS*IFLDL) = PGP(JROF,JFLD,IBL)
               ENDDO
             ENDDO
             IFLDS=IFLDS+1
@@ -267,7 +268,7 @@ ELSE
 !$OMP END PARALLEL DO
 
   CALL GSTATS(1643,1)
-! Synhronize processors 
+! Synhronize processors
 ! Should not be necessary
 !!$  CALL GSTATS(784,0)
 !!$  CALL MPL_BARRIER(CDSTRING='GATH_GRID_CTL:')

@@ -52,7 +52,7 @@ SUBROUTINE GAWL(PFN,PL,PW,PEPS,KN,KITER,PMOD)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE CPLEDN_MOD
+USE CPLEDN_MOD      ,ONLY : CPLEDN
 
 !     ------------------------------------------------------------------
 

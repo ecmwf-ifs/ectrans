@@ -14,7 +14,7 @@ SUBROUTINE PRFI2(KM,KMLOC,KF_FS,PAIA,PSIA)
 !     ----------
 !        *CALL* *PRFI2(..)
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        --------------------  KM - zonal wavenumber
 !                              KMLOC - local zonal wavenumber
 !                              PAIA - antisymmetric part of Fourier
@@ -29,7 +29,7 @@ SUBROUTINE PRFI2(KM,KMLOC,KF_FS,PAIA,PSIA)
 !     -------
 
 !     Externals.   PRFI2B   - basic copying routine
-!     ----------  
+!     ----------
 
 !     Reference.
 !     ----------
@@ -57,9 +57,10 @@ SUBROUTINE PRFI2(KM,KMLOC,KF_FS,PAIA,PSIA)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_TRANS
+!USE TPM_TRANS
 
-USE PRFI2B_MOD
+USE PRFI2B_MOD      ,ONLY : PRFI2B
+!
 
 IMPLICIT NONE
 

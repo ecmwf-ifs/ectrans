@@ -49,7 +49,7 @@ SUBROUTINE TRLTOG(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
 !                   JUMP in FFT's changed to 1
 !                   INDEX introduced and ZCOMBUF not used for same PE
 !         01-11-23  Deborah Salmond and John Hague
-!                   LIMP_NOOLAP Option for non-overlapping message passing 
+!                   LIMP_NOOLAP Option for non-overlapping message passing
 !                               and buffer packing
 !         01-12-18  Peter Towers
 !                   Improved vector performance of LTOG_PACK,LTOG_UNPACK
@@ -63,17 +63,19 @@ SUBROUTINE TRLTOG(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD
 
-USE TPM_GEN
-USE TPM_DISTR
-USE TPM_TRANS
+USE TPM_GEN         ,ONLY : NOUT
+USE TPM_DISTR       ,ONLY : D, MYSETV, MYSETW, MTAGLG,      &
+     &                      NPRCIDS, NPRTRNS, MYPROC, NPROC
+USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, NGPBLKS
 
-USE INIGPTR_MOD
-USE PE2SET_MOD
-USE MYSENDSET_MOD
-USE MYRECVSET_MOD
-USE ABORT_TRANS_MOD
+USE INIGPTR_MOD     ,ONLY : INIGPTR
+USE PE2SET_MOD      ,ONLY : PE2SET
+!USE MYSENDSET_MOD
+!USE MYRECVSET_MOD
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 

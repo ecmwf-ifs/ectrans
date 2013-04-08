@@ -4,9 +4,9 @@ SUBROUTINE ASRE1AD(KM,KMLOC,KF_OUT_LT,PAOA1,PSOA1)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_TRANS
- 
-USE ASRE1BAD_MOD
+!USE TPM_TRANS
+
+USE ASRE1BAD_MOD    ,ONLY : ASRE1BAD
 
 
 !**** *ASRE1AD* - Recombine antisymmetric and symmetric parts - adjoint
@@ -21,8 +21,8 @@ USE ASRE1BAD_MOD
 !     ----------
 !       *CALL* *ASRE1AD(...)
 
-!        Explicit arguments : 
-!        --------------------  
+!        Explicit arguments :
+!        --------------------
 !                              KM - zonal wavenumber
 !                              KMLOC - local zonal wavenumber
 !                              PAOA1 - antisymmetric part of Fourier

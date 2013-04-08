@@ -16,8 +16,8 @@ SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 !     ----------
 !        CALL UPDSPAD(...)
 
-!        Explicit arguments : 
-!        -------------------- 
+!        Explicit arguments :
+!        --------------------
 !        KM - zonal wave-number
 !        POA1 - spectral fields for zonal wavenumber KM (basic var.)
 !        POA2 - spectral fields for zonal wavenumber KM (vor. div.)
@@ -25,7 +25,7 @@ SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 !        PSPDIV - spectral divergence
 !        PSPSCALAR - spectral scalar variables
 
-!        Implicit arguments :  
+!        Implicit arguments :
 !        --------------------
 
 !     Method.
@@ -55,11 +55,12 @@ SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_DISTR
+USE TPM_DIM         ,ONLY : R
+USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
+USE TPM_DISTR       ,ONLY : D
 
-USE UPDSPBAD_MOD
+USE UPDSPBAD_MOD    ,ONLY : UPDSPBAD
+!
 
 IMPLICIT NONE
 

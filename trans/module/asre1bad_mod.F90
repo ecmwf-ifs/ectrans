@@ -4,10 +4,10 @@ SUBROUTINE ASRE1BAD(KFIELD,KM,KMLOC,PAOA,PSOA)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_GEOMETRY
-USE TPM_DISTR
+USE TPM_DIM         ,ONLY : R
+USE TPM_TRANS       ,ONLY : FOUBUF_IN
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_DISTR       ,ONLY : D
 
 
 !**** *ASRE1BAD* - Recombine antisymmetric and symmetric parts - adjoint
@@ -22,9 +22,9 @@ USE TPM_DISTR
 !     ----------
 !        *CALL* *ASRE1BAD(..)
 
-!        Explicit arguments :  
+!        Explicit arguments :
 !        -------------------   KFIELD - number of fields (input-c)
-!                              KM - zonal wavenumber(input-c) 
+!                              KM - zonal wavenumber(input-c)
 !                              KMLOC - local version of KM (input-c)
 !                              PAOA - antisymmetric part of Fourier
 !                              fields for zonal wavenumber KM (input)

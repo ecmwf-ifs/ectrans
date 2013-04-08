@@ -12,7 +12,7 @@ SUBROUTINE LDFOU2AD(KM,KF_UV,PAIA,PSIA)
 !     ----------
 !        CALL LDFOU2AD(KM,PAIA,PSIA)
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        --------------------  KM - zonal wavenumber
 !                              PAIA - antisymmetric fourier fields
 !                              PSIA - symmetric fourierfields
@@ -47,9 +47,10 @@ SUBROUTINE LDFOU2AD(KM,KF_UV,PAIA,PSIA)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
-USE TPM_GEOMETRY
-USE TPM_FIELDS
+USE TPM_DIM         ,ONLY : R
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_FIELDS      ,ONLY : F
+!
 
 IMPLICIT NONE
 
@@ -71,7 +72,7 @@ INTEGER(KIND=JPIM) :: J, JGL ,IFLD ,ISL
 ISL  = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
 IFLD = 4*KF_UV
 
-!*       1.1      U AND V 
+!*       1.1      U AND V
 
 DO JGL=ISL,R%NDGNH
   DO J=1,IFLD

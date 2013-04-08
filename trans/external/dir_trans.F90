@@ -14,7 +14,7 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     CALL DIR_TRANS(...)
 
 !     Explicit arguments : All arguments except from PGP are optional.
-!     -------------------- 
+!     --------------------
 !     PSPVOR(:,:) - spectral vorticity (output)
 !     PSPDIV(:,:) - spectral divergence (output)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (output)
@@ -22,16 +22,16 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     PSPSC3B(:,:,:) - alternative to use of PSPSCALAR, see PGP3B below (input)
 !     PSPSC2(:,:)  - alternative to use of PSPSCALAR, see PGP2 below (input)
 !     KPROMA      - required blocking factor for gridpoint output
-!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
+!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
 !                   The length of KVSETUV should be the GLOBAL number
 !                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space. 
+!                   fields in grid-point space.
 !     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
 !                   scalar field. As for KVSETUV this argument is required
 !                   if the total number of processors is greater than
 !                   the number of processors used for distribution in
-!                   spectral wave space.  
+!                   spectral wave space.
 !     KVSETSC3A(:) - as KVESETSC for PSPSC3A (distribution on first dimension)
 !     KVSETSC3B(:) - as KVESETSC for PSPSC3B (distribution on first dimension)
 !     KVSETSC2(:) - as KVESETSC for PSPSC2 (distribution on first dimension)
@@ -41,16 +41,16 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
 !                  NPROMA is the blocking factor, IF_GP the total number
 !                  of output fields and NGPBLKS the number of NPROMA blocks.
-!                  The ordering of the output fields is as follows (all 
+!                  The ordering of the output fields is as follows (all
 !                  parts are optional depending on the input switches):
 !
 !     u             : IF_UV_G fields (if psvor present)
 !     v             : IF_UV_G fields (if psvor present)
 !     scalar fields : IF_SCALARS_G fields (if pspscalar present)
-!   
+!
 !     Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
 !     of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!     IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
+!     IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the
 !     length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !     'b-set' split
 
@@ -62,7 +62,7 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 
 !     PGPUV(:,:,:,:) - the 'u-v' related grid-point variables in the order
 !                      described for PGP. The second dimension of PGPUV should
-!                      be the same as the "global" first dimension of 
+!                      be the same as the "global" first dimension of
 !                      PSPVOR,PSPDIV (in the IFS this is the number of levels)
 !                      PGPUV need to be dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (u,v)
@@ -78,7 +78,7 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 )
-! 
+!
 !     Method.
 !     -------
 
@@ -100,13 +100,14 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_TRANS
-USE TPM_DISTR
-
-USE SET_RESOL_MOD
-USE DIR_TRANS_CTL_MOD
-USE ABORT_TRANS_MOD
+USE TPM_GEN         ,ONLY : NERR, NOUT
+USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, &
+     &                      NF_SC2, NF_SC3A, NF_SC3B,        &
+     &                      NGPBLKS, NPROMA
+USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE DIR_TRANS_CTL_MOD ,ONLY : DIR_TRANS_CTL
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
@@ -243,7 +244,7 @@ IF(PRESENT(KVSETSC3A)) THEN
   ENDDO
 ELSEIF(PRESENT(PSPSC3A)) THEN
   IF_SCALARS = IF_SCALARS+UBOUND(PSPSC3A,1)*UBOUND(PSPSC3A,3)
-  IF_SC3A_G = UBOUND(PSPSC3A,1)  
+  IF_SC3A_G = UBOUND(PSPSC3A,1)
   IF_SCALARS_G = IF_SCALARS_G +IF_SC3A_G*UBOUND(PSPSC3A,3)
   NF_SC3A = UBOUND(PSPSC3A,1)
 ENDIF
@@ -266,7 +267,7 @@ IF(PRESENT(KVSETSC3B)) THEN
   ENDDO
 ELSEIF(PRESENT(PSPSC3B)) THEN
   IF_SCALARS = IF_SCALARS+UBOUND(PSPSC3B,1)*UBOUND(PSPSC3B,3)
-  IF_SC3B_G = UBOUND(PSPSC3B,1)  
+  IF_SC3B_G = UBOUND(PSPSC3B,1)
   IF_SCALARS_G = IF_SCALARS_G +IF_SC3B_G*UBOUND(PSPSC3B,3)
   NF_SC3B = UBOUND(PSPSC3B,1)
 ENDIF

@@ -15,7 +15,7 @@ SUBROUTINE INV_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     CALL INV_TRANSAD(...)
 
 !     Explicit arguments : All arguments except from PGP are optional.
-!     -------------------- 
+!     --------------------
 !     PSPVOR(:,:) - spectral vorticity (input)
 !     PSPDIV(:,:) - spectral divergence (input)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
@@ -23,22 +23,22 @@ SUBROUTINE INV_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     PSPSC3B(:,:,:) - alternative to use of PSPSCALAR, see PGP3B below (input)
 !     PSPSC2(:,:)  - alternative to use of PSPSCALAR, see PGP2 below (input)
 !     FSPGL_PROC  - external procedure to be executed in fourier space
-!                   before transposition  
+!                   before transposition
 !     LDSCDERS    - indicating if derivatives of scalar variables are req.
 !     LDVORGP     - indicating if grid-point vorticity is req.
 !     LDDIVGP     - indicating if grid-point divergence is req.
 !     LDUVDER     - indicating if E-W derivatives of u and v are req.
 !     KPROMA      - required blocking factor for gridpoint output
-!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
+!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
 !                   The length of KVSETUV should be the GLOBAL number
 !                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space. 
+!                   fields in grid-point space.
 !     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
 !                   scalar field. As for KVSETUV this argument is required
 !                   if the total number of processors is greater than
 !                   the number of processors used for distribution in
-!                   spectral wave space.  
+!                   spectral wave space.
 !     KVSETSC3A(:) - as KVESETSC for PSPSC3A (distribution on first dimension)
 !     KVSETSC3B(:) - as KVESETSC for PSPSC3B (distribution on first dimension)
 !     KVSETSC2(:) - as KVESETSC for PSPSC2 (distribution on first dimension)
@@ -48,7 +48,7 @@ SUBROUTINE INV_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
 !                  NPROMA is the blocking factor, IF_GP the total number
 !                  of output fields and NGPBLKS the number of NPROMA blocks.
-!                  The ordering of the output fields is as follows (all 
+!                  The ordering of the output fields is as follows (all
 !                  parts are optional depending on the input switches):
 !
 !       vorticity     : IF_UV_G fields (if psvor present and LDVORGP)
@@ -62,10 +62,10 @@ SUBROUTINE INV_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !       E-W derivative of v : IF_UV_G fields (if psvor present and and LDUVDER)
 !       E-W derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
 !                                         present and LDSCDERS)
-!   
+!
 !       Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
 !       of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!       IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
+!       IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the
 !       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
 !       'b-set' split
 
@@ -74,10 +74,10 @@ SUBROUTINE INV_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     of calling INV_TRANS is to avoid uneccessary copies where your data
 !     structures don't fit in to the 'PSPVOR,PSPDIV, PSPSCALAR, PGP' layout.
 !     The use of any of these precludes the use of PGP and vice versa.
-! 
+!
 !     PGPUV(:,:,:,:) - the 'u-v' related grid-point variables in the order
 !                      described for PGP. The second dimension of PGPUV should
-!                      be the same as the "global" first dimension of 
+!                      be the same as the "global" first dimension of
 !                      PSPVOR,PSPDIV (in the IFS this is the number of levels)
 !                      PGPUV need to be dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (u,v,vor,div ...)
@@ -115,17 +115,19 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_DISTR
-USE TPM_GEOMETRY
-USE TPM_FIELDS
-USE TPM_FFT
+USE TPM_GEN         ,ONLY : NERR, NOUT, NPROMATR
+!USE TPM_DIM
+USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, &
+     &                      NF_SC2, NF_SC3A, NF_SC3B,        &
+     &                      NGPBLKS, NPROMA
+USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
+!USE TPM_GEOMETRY
+!USE TPM_FIELDS
+!USE TPM_FFT
 
-USE SET_RESOL_MOD
-USE INV_TRANS_CTLAD_MOD
-USE ABORT_TRANS_MOD
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE INV_TRANS_CTLAD_MOD ,ONLY : INV_TRANS_CTLAD
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
@@ -466,7 +468,7 @@ IF(PRESENT(PGP)) THEN
   IF(IUBOUND(2) < IF_GP) THEN
     WRITE(NOUT,*)'INV_TRANSAD:SEC. DIM. OF PGP TOO SMALL ',IUBOUND(2),IF_GP
     WRITE(NOUT,*)'IF_UV_G,IF_SCALARS_G,LSCDERS,LVORGP,LDIVGP,LUVDER ',&
-     &            IF_UV_G,IF_SCALARS_G,LSCDERS,LVORGP,LDIVGP,LUVDER 
+     &            IF_UV_G,IF_SCALARS_G,LSCDERS,LVORGP,LDIVGP,LUVDER
     CALL ABORT_TRANS('INV_TRANSAD:SECOND DIMENSION OF PGP TOO SMALL ')
   ENDIF
   IF(IUBOUND(3) < NGPBLKS) THEN

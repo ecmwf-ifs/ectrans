@@ -4,10 +4,10 @@ SUBROUTINE PRLE1(KM,PLEPO)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
-USE TPM_DISTR
-USE TPM_FIELDS
-USE TPM_GEOMETRY
+USE TPM_DIM         ,ONLY : R
+USE TPM_DISTR       ,ONLY : D
+USE TPM_FIELDS      ,ONLY : F
+USE TPM_GEOMETRY    ,ONLY : G
 
 
 !**** *PRLE1* - Prepare Legendre polonomials for inverse tranform.
@@ -25,14 +25,14 @@ USE TPM_GEOMETRY
 !        -------------------   PLEPO - Legendre polonomial for zonal
 !                                      wavenumber KM
 
-!        Implicit arguments : 
+!        Implicit arguments :
 !        --------------------
 
 !     Method.
 !     -------
 
 !     Externals.   None
-!     ----------   
+!     ----------
 
 !     Reference.
 !     ----------

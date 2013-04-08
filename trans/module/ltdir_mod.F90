@@ -9,15 +9,15 @@ SUBROUTINE LTDIR(KM,KMLOC,KF_FS,KF_UV,KF_SCALARS,KLED2,&
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
-USE TPM_DIM
+USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY
 
-USE PREPSNM_MOD
-USE PRFI2_MOD
-USE LDFOU2_MOD
-USE LEDIR_MOD
+USE PREPSNM_MOD     ,ONLY : PREPSNM
+USE PRFI2_MOD       ,ONLY : PRFI2
+USE LDFOU2_MOD      ,ONLY : LDFOU2
+USE LEDIR_MOD       ,ONLY : LEDIR
 USE UVTVD_MOD
-USE UPDSP_MOD  
+USE UPDSP_MOD       ,ONLY : UPDSP
  
 
 !**** *LTDIR* - Control of Direct Legendre transform step
@@ -31,7 +31,7 @@ USE UPDSP_MOD
 !     ----------
 !        *CALL* *LTDIR(...)*
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        --------------------  KM     - zonal wavenumber
 !                              KMLOC  - local zonal wavenumber
 
@@ -69,7 +69,7 @@ USE UPDSP_MOD
 !        M.Hamrud  : 94-11-01 New conf 'G' - vor,div->vor,div
 !                             instead of u,v->vor,div
 !        MPP Group : 95-10-01 Support for Distributed Memory version
-!        K. YESSAD (AUGUST 1996): 
+!        K. YESSAD (AUGUST 1996):
 !               - Legendre transforms for transmission coefficients.
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !        R. El Khatib 12-Jul-2012 LDSPC2 replaced by UVTVD
@@ -129,7 +129,7 @@ CALL LDFOU2(KM,KF_UV,ZAIA,ZSIA)
 
 !*       4.    DIRECT LEGENDRE TRANSFORM.
 !              --------------------------
-IFC = 2*KF_FS 
+IFC = 2*KF_FS
 IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 IIFC = IFC
 IF(KM == 0)THEN

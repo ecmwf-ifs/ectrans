@@ -15,8 +15,8 @@ SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 !     ----------
 !     CALL FTDIR_CTL(..)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     KF_UV_G      - global number of spectral u-v fields
 !     KF_SCALARS_G - global number of scalar spectral fields
 !     KF_GP        - total number of output gridpoint fields
@@ -31,7 +31,7 @@ SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 !     Method.
 !     -------
 
-!     Externals.  TRGTOL      - transposition routine 
+!     Externals.  TRGTOL      - transposition routine
 !     ----------  FOURIER_OUT - copy fourier data to Fourier buffer
 !                 FTDIR       - fourier transform
 
@@ -47,15 +47,16 @@ SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_GEOMETRY
-USE TPM_TRANS
-USE TPM_DISTR
+!USE TPM_GEN
+!USE TPM_DIM
+!USE TPM_GEOMETRY
+USE TPM_TRANS       ,ONLY : FOUBUF_IN
+USE TPM_DISTR       ,ONLY : D, MYPROC, NPROC
 
-USE TRGTOL_MOD
-USE FOURIER_OUT_MOD
-USE FTDIR_MOD
+USE TRGTOL_MOD      ,ONLY : TRGTOL
+USE FOURIER_OUT_MOD ,ONLY : FOURIER_OUT
+USE FTDIR_MOD       ,ONLY : FTDIR
+!
 
 IMPLICIT NONE
 

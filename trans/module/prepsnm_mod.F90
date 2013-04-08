@@ -19,7 +19,7 @@ SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 !                              PEPSNM - REPSNM for zonal
 !                                      wavenumber KM
 
-!        Implicit arguments :  
+!        Implicit arguments :
 !        --------------------
 
 !     Method.
@@ -42,9 +42,10 @@ SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
-USE TPM_FIELDS
-USE TPM_DISTR
+USE TPM_DIM         ,ONLY : R
+USE TPM_FIELDS      ,ONLY : F
+USE TPM_DISTR       ,ONLY : D
+!
 
 IMPLICIT NONE
 

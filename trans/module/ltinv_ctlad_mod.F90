@@ -24,14 +24,14 @@ SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
 !     KFLDPTRUV(:) - field pointer array for vor./div.
 !     KFLDPTRSC(:) - field pointer array for PSPSCALAR
 !     FSPGL_PROC  - external procedure to be executed in fourier space
-!                   before transposition  
+!                   before transposition
 
 !     Method.
 !     -------
 
-!     Externals.  
-!     ----------  
-!                 
+!     Externals.
+!     ----------
+!
 
 !     Author.
 !     -------
@@ -44,12 +44,12 @@ SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
 !     ------------------------------------------------------------------
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_DISTR
-USE LTINVAD_MOD
-USE TRLTOM_MOD
+!USE TPM_GEN
+!USE TPM_DIM
+USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
+USE TPM_DISTR       ,ONLY : D
+USE LTINVAD_MOD     ,ONLY : LTINVAD
+USE TRLTOM_MOD      ,ONLY : TRLTOM
 
 IMPLICIT NONE
 

@@ -10,8 +10,8 @@ SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 !     ----------
 !     CALL GATH_GRID(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PGPG(:,:)   - Global gridpoint array
 !     KFGATHG     - Global number of fields to be gathered
 !     KPROMA      - blocking factor for gridpoint input
@@ -40,13 +40,13 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_DISTR
+USE TPM_GEN         ,ONLY : NERR, NOUT
+!USE TPM_DIM
+USE TPM_DISTR       ,ONLY : D, MYPROC, NPROC
 
-USE SET_RESOL_MOD
-USE GATH_GRID_CTL_MOD
-USE ABORT_TRANS_MOD
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE GATH_GRID_CTL_MOD ,ONLY : GATH_GRID_CTL
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
@@ -113,7 +113,7 @@ IF(IFRECV > 0) THEN
   ENDIF
   IF(UBOUND(PGPG,1) < D%NGPTOTG) THEN
     CALL ABORT_TRANS('GATH_GRID:FIRST DIMENSION OF PGPG TOO SMALL')
-  ENDIF 
+  ENDIF
  IF(UBOUND(PGPG,2) < IFRECV) THEN
     CALL ABORT_TRANS('GATH_GRID:SECOND DIMENSION OF PGPG TOO SMALL')
   ENDIF

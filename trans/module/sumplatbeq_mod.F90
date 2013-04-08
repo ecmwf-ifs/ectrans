@@ -16,7 +16,7 @@ SUBROUTINE SUMPLATBEQ(KDGSA,KDGL,KPROC,KPROCA,KLOENG,LDSPLIT,LDEQ_REGIONS,&
 !        *CALL* *SUMPLATBEQ *
 
 !     Explicit arguments - input :
-!     -------------------- 
+!     --------------------
 !                          KDGSA      -first latitude (grid-space)
 !                                      (may be different from NDGSAG)
 !                          KDGL       -last  latitude
@@ -29,7 +29,7 @@ SUBROUTINE SUMPLATBEQ(KDGSA,KDGL,KPROC,KPROCA,KLOENG,LDSPLIT,LDEQ_REGIONS,&
 !                          LDWEIGHTED_DISTR -true if weighted distribution
 
 !     Explicit arguments - output:
-!     -------------------- 
+!     --------------------
 !                          PMEDIAP    -mean weight per PE if weighted distribution
 !                          KMEDIAP    -mean number of grid points per PE
 !                          KPROCAGP   -number of grid points per A set
@@ -64,9 +64,10 @@ SUBROUTINE SUMPLATBEQ(KDGSA,KDGL,KPROC,KPROCA,KLOENG,LDSPLIT,LDEQ_REGIONS,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DISTR
-USE EQ_REGIONS_MOD
-USE ABORT_TRANS_MOD
+USE TPM_DISTR       ,ONLY : MYPROC
+USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 
@@ -109,7 +110,7 @@ IF (.NOT.LDWEIGHTED_DISTR) THEN
   KMEDIAP = IMEDIA / KPROC
 
   IF( KPROC > 1 )THEN
-! test if KMEDIAP is too small and no more than 2 asets would be required 
+! test if KMEDIAP is too small and no more than 2 asets would be required
 ! for the first latitude
     IF( LDSPLIT )THEN
       I2REGIONS=N_REGIONS(1)+N_REGIONS(2)
@@ -176,12 +177,12 @@ IF (LDSPLIT) THEN
         ITOT = ITOT+KLOENG(JGL)
       ELSEIF(ITOT+KLOENG(JGL) == ICOMP) THEN
         IREST = 0
-        KLAST(JA) = JGL 
+        KLAST(JA) = JGL
         KINDIC(JA) = 0
         EXIT
       ELSE
         IREST =  KLOENG(JGL) -(ICOMP-ITOT)
-        KLAST(JA) = JGL 
+        KLAST(JA) = JGL
         KINDIC(JA) = JGL
         EXIT
       ENDIF
@@ -272,7 +273,6 @@ ELSE
       LLDONE=.TRUE.
     ENDIF
   ENDDO
-    
 ENDIF
 
 END SUBROUTINE SUMPLATBEQ

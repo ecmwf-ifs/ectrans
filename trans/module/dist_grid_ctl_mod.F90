@@ -12,8 +12,8 @@ SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 !     ----------
 !     CALL DIST_GRID_CTL(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PGPG(:,:)   - Global gridpoint array
 !     KFDISTG     - Global number of fields to be distributed
 !     KPROMA      - required blocking factor for gridpoint output
@@ -34,14 +34,16 @@ SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT,     &
+     &                  JP_BLOCKING_STANDARD, JP_NON_BLOCKING_STANDARD
 
-USE TPM_DISTR
-USE TPM_GEOMETRY
+USE TPM_DISTR       ,ONLY : D, MTAGDISTGP, NPRCIDS, MYPROC, NPROC
+USE TPM_GEOMETRY    ,ONLY : G
 
-USE SET2PE_MOD
-USE ABORT_TRANS_MOD
-USE EQ_REGIONS_MOD
+USE SET2PE_MOD      ,ONLY : SET2PE
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS
+!
 
 IMPLICIT NONE
 
@@ -77,7 +79,7 @@ IF(NPROC == 1) THEN
     IBL  = (JKGLO-1)/KPROMA+1
     DO JFLD=1,KFDISTG
       DO JROF=1,IEND
-        PGP(JROF,JFLD,IBL) = PGPG(IOFF+JROF,JFLD) 
+        PGP(JROF,JFLD,IBL) = PGPG(IOFF+JROF,JFLD)
       ENDDO
     ENDDO
   ENDDO
@@ -222,7 +224,7 @@ ELSEIF(KFDISTG>0) THEN
     IBL  = (JKGLO-1)/KPROMA+1
     DO JFLD=1,KFDISTG
       DO JROF=1,IEND
-        PGP(JROF,JFLD,IBL) = ZRCV(IOFF+JROF,JFLD) 
+        PGP(JROF,JFLD,IBL) = ZRCV(IOFF+JROF,JFLD)
       ENDDO
     ENDDO
   ENDDO

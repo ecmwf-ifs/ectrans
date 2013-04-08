@@ -12,7 +12,7 @@ SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
 !     ----------
 !     CALL INI_SPEC_DIST(...)
 
-!     Explicit arguments : 
+!     Explicit arguments :
 !     --------------------
 !           KSMAX    - spectral truncation required
 !           KTMAX    - Overtruncation for KSMAX (input)
@@ -35,14 +35,14 @@ SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
 !        See documentation
 
 !     Externals.  SUWAVEDI
-!     ----------  
+!     ----------
 !        Original : 00-03-03
 
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 !ifndef INTERFACE
-USE SUWAVEDI_MOD
+USE SUWAVEDI_MOD    ,ONLY : SUWAVEDI
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 !endif INTERFACE
 

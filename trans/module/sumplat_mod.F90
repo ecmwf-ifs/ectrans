@@ -17,7 +17,7 @@ SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 !        *CALL* *SUMPLAT *
 
 !     Explicit arguments - input :
-!     -------------------- 
+!     --------------------
 !                          KDGL       -last  latitude
 !                          KPROC      -total number of processors
 !                          KPROCA     -number of processors in A direction
@@ -28,7 +28,7 @@ SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 !                          LDWEIGHTED_DISTR -true if weighted distribution
 
 !     Explicit arguments - output:
-!     -------------------- 
+!     --------------------
 !                          PMEDIAP    -mean weight per PE if weighted distribution
 !                          KMEDIAP    -mean number of grid points per PE
 !                          KPROCAGP   -number of grid points per A set
@@ -36,7 +36,7 @@ SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 !                          KFRSTLAT   -first latitude row on processor
 !                          KLSTLAT    -last  latitude row on processor
 !                          KFRSTLOFF  -offset for first latitude in set
-!                          KPTRLAT    -pointer to start of latitude    
+!                          KPTRLAT    -pointer to start of latitude
 !                          KPTRFRSTLAT-pointer to first latitude
 !                          KPTRLSTLAT -pointer to last  latitude
 !                          KPTRFLOFF  -offset for pointer to first latitude
@@ -80,12 +80,13 @@ SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEOMETRY
-USE TPM_DISTR
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_DISTR       ,ONLY : MYPROC
 
-USE SUMPLATB_MOD
-USE SUMPLATBEQ_MOD
-USE ABORT_TRANS_MOD
+USE SUMPLATB_MOD    ,ONLY : SUMPLATB
+USE SUMPLATBEQ_MOD  ,ONLY : SUMPLATBEQ
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 

@@ -16,7 +16,7 @@ SUBROUTINE FOURIER_OUT(PREEL,KFIELDS,KGL)
 !     --------------------  KFIELDS - number of fields
 !
 !     Externals.  None.
-!     ----------  
+!     ----------
 
 !     Author.
 !     -------
@@ -30,9 +30,10 @@ SUBROUTINE FOURIER_OUT(PREEL,KFIELDS,KGL)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DISTR
-USE TPM_TRANS
-USE TPM_GEOMETRY
+USE TPM_DISTR       ,ONLY : D, MYSETW
+USE TPM_TRANS       ,ONLY : FOUBUF_IN
+USE TPM_GEOMETRY    ,ONLY : G
+!
 
 IMPLICIT NONE
 

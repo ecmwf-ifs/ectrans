@@ -19,8 +19,8 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 !     -------
 
 !     Externals.  FFT992 - FFT routine
-!     ----------  
-!                 
+!     ----------
+!
 
 !     Author.
 !     -------
@@ -35,11 +35,15 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DISTR
-USE TPM_TRANS
-USE TPM_GEOMETRY
-USE TPM_FFT
-USE TPM_DIM
+USE TPM_DISTR       ,ONLY : D, MYSETW
+USE TPM_DIM         ,ONLY : R
+!USE TPMALD_DIM      ,ONLY : RALD
+!USE TPM_TRANS
+USE TPM_GEOMETRY    ,ONLY : G
+USE EXTPER_MOD      ,ONLY : EXTPER
+USE TPM_FFT         ,ONLY : T
+USE TPM_DIM         ,ONLY : R
+!
 
 IMPLICIT NONE
 

@@ -15,8 +15,8 @@ SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
 !     ----------
 !     CALL LTDIR_CTLAD(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PSPVOR(:,:) - spectral vorticity (output)
 !     PSPDIV(:,:) - spectral divergence (output)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (output)
@@ -25,13 +25,14 @@ SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_DISTR
+!USE TPM_GEN
+!USE TPM_DIM
+USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
+USE TPM_DISTR       ,ONLY : D
 
-USE LTDIRAD_MOD
-USE TRMTOL_MOD
+USE LTDIRAD_MOD     ,ONLY : LTDIRAD
+USE TRMTOL_MOD      ,ONLY : TRMTOL
+!
 
 IMPLICIT NONE
 
