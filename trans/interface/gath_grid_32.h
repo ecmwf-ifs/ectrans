@@ -1,3 +1,4 @@
+INTERFACE
 SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
 !**** *GATH_GRID_32* - Gather global gridpoint array from processors
@@ -55,3 +56,4 @@ REAL(KIND=JPRM)             , INTENT(IN)  :: PGP(:,:,:)
 
 END SUBROUTINE GATH_GRID_32
 
+END INTERFACE
