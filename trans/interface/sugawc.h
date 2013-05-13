@@ -1,3 +1,4 @@
+INTERFACE
 SUBROUTINE SUGAWC(KDGLG,PMU,PW)
 
 !**** *SUGAWC* - Compute Gaussian latitudes and weights 
@@ -46,3 +47,4 @@ REAL(KIND=JPRB)    ,INTENT(OUT) :: PW(:)
 
 END SUBROUTINE SUGAWC
 
+END INTERFACE

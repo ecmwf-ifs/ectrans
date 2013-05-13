@@ -1,3 +1,4 @@
+INTERFACE
 SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 
 !**** *DIST_GRID* - Distribute global gridpoint array among processors
@@ -55,3 +56,4 @@ REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
 
 END SUBROUTINE DIST_GRID
 
+END INTERFACE
