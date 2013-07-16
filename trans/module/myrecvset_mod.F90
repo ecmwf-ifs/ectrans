@@ -7,13 +7,13 @@ FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
 
 !     Purpose.
 !     --------
-!       
+!
 
 !**   Interface.
 !     ----------
 !        ISENDSET = MYRECVSET(KSETS,KMYSET,KSET)
 
-!        Explicit arguments :  
+!        Explicit arguments :
 !        --------------------
 !                  input:   KSETS
 
@@ -22,7 +22,7 @@ FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
 !     Method.
 !     -------
 
-!        
+!
 
 !     Externals.
 !     ----------
@@ -43,7 +43,8 @@ FUNCTION MYRECVSET(KSETS,KMYSET,KSET)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE ABORT_TRANS_MOD
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 INTEGER(KIND=JPIM) :: MYRECVSET
@@ -52,7 +53,7 @@ INTEGER(KIND=JPIM),INTENT(IN)  :: KSETS,KMYSET,KSET
 
 !     ------------------------------------------------------------------
 
-!*       1.    Check input argument for validity 
+!*       1.    Check input argument for validity
 !              ---------------------------------
 
 IF(KSETS < 1 .OR. KMYSET > KSETS .OR. KSET > KSETS-1) THEN

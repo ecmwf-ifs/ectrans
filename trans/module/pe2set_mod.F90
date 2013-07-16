@@ -14,18 +14,18 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !     ----------
 !        *CALL* *PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 
-!        Explicit arguments :  
+!        Explicit arguments :
 !        --------------------
-!                  input:   KPE     - integer processor number 
+!                  input:   KPE     - integer processor number
 !                                     in the range 1 .. NPROC
 !                  output:  KPRGPNS - integer A set number in grid space
 !                                     in the range 1 .. NPRGPNS
 !                           KPRGPEW - integer B set number in grid space
 !                                     in the range 1 .. NPRGPEW
 !                           KPRTRW  - integer A set number in spectral space
-!                                     in the range 1 .. NPRTRW 
+!                                     in the range 1 .. NPRTRW
 !                           KPRTRV  - integer B set number in spectral space
-!                                     in the range 1 .. NPRTRV 
+!                                     in the range 1 .. NPRTRV
 
 !        Implicit arguments :  YOMMP parameters
 !                              NPRGPNS,NPRGPEW,NPRTRW,NPRTRV,NPROC
@@ -36,10 +36,10 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 
 !        PE allocation order is row oriented (e.g. NPRGPNS or NPRTRW = 4):
 
-!                1  2  3  4 
-!                5  6  7  8 
-!                9 10 11 12 
-!               13 14 15 16 
+!                1  2  3  4
+!                5  6  7  8
+!                9 10 11 12
+!               13 14 15 16
 !                .  .  .  .
 
 !     Externals.
@@ -62,10 +62,10 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DISTR
-USE EQ_REGIONS_MOD
-USE ABORT_TRANS_MOD
-
+USE TPM_DISTR       ,ONLY : LEQ_REGIONS, NPRGPEW, NPROC, NPRTRV
+USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPE
@@ -74,7 +74,7 @@ INTEGER(KIND=JPIM),INTENT(OUT) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
 INTEGER(KIND=JPIM) :: IPE,JA
 !     ------------------------------------------------------------------
 
-!*       1.    Check input argument for validity 
+!*       1.    Check input argument for validity
 !              ---------------------------------
 
 IF(KPE <= 0.OR.KPE > NPROC) THEN

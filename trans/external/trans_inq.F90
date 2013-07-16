@@ -19,7 +19,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     ----------
 !     CALL TRANS_INQ(...)
 !     Explicit arguments : All arguments are optional.
-!     -------------------- 
+!     --------------------
 !     KRESOL   - resolution tag for which info is required ,default is the
 !                first defined resulution (input)
 
@@ -29,7 +29,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 
 !                   SPECTRAL SPACE
 !     KSPEC    - number of complex spectral coefficients on this PE
-!     KSPEC2   - 2*KSPEC 
+!     KSPEC2   - 2*KSPEC
 !     KSPEC2G  - global KSPEC2
 !     KSPEC2MX - maximun KSPEC2 among all PEs
 !     KNUMP    - Number of spectral waves handled by this PE
@@ -42,39 +42,39 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     KUMPP    - No. of wave numbers each wave set is responsible for
 !     KPOSSP   - Defines partitioning of global spectral fields among PEs
 !     KPTRMS   - Pointer to the first wave number of a given a-set
-!     KALLMS   - Wave numbers for all wave-set concatenated together 
+!     KALLMS   - Wave numbers for all wave-set concatenated together
 !                to give all wave numbers in wave-set order
 !     KDIM0G   - Defines partitioning of global spectral fields among PEs
 !     KSMAX    - spectral truncation
 !     KNVALUE  - n value for each KSPEC2 spectral coeffient
 
-!                 GRIDPOINT SPACE                  
+!                 GRIDPOINT SPACE
 !     KFRSTLAT    - First latitude of each a-set in grid-point space
 !     KLSTTLAT    - Last latitude of each a-set in grid-point space
 !     KFRSTLOFF   - Offset for first lat of own a-set in grid-point space
 !     KPTRLAT     - Pointer to the start of each latitude
-!     KPTRFRSTLAT - Pointer to the first latitude of each a-set in 
+!     KPTRFRSTLAT - Pointer to the first latitude of each a-set in
 !                   NSTA and NONL arrays
 !     KPTRLSTLAT  - Pointer to the last latitude of each a-set in
 !                   NSTA and NONL arrays
 !     KPTRFLOFF   - Offset for pointer to the first latitude of own a-set
 !                   NSTA and NONL arrays, i.e. nptrfrstlat(myseta)-1
-!     KSTA        - Position of first grid column for the latitudes on a 
+!     KSTA        - Position of first grid column for the latitudes on a
 !                   processor. The information is available for all processors.
-!                   The b-sets are distinguished by the last dimension of 
-!                   nsta().The latitude band for each a-set is addressed by 
-!                   nptrfrstlat(jaset),nptrlstlat(jaset), and 
+!                   The b-sets are distinguished by the last dimension of
+!                   nsta().The latitude band for each a-set is addressed by
+!                   nptrfrstlat(jaset),nptrlstlat(jaset), and
 !                   nptrfloff=nptrfrstlat(myseta) on this processors a-set.
-!                   Each split latitude has two entries in nsta(,:) which 
+!                   Each split latitude has two entries in nsta(,:) which
 !                   necessitates the rather complex addressing of nsta(,:)
 !                   and the overdimensioning of nsta by N_REGIONS_NS.
 !     KONL        - Number of grid columns for the latitudes on a processor.
 !                   Similar to nsta() in data structure.
-!     LDSPLITLAT  - TRUE if latitude is split in grid point space over 
+!     LDSPLITLAT  - TRUE if latitude is split in grid point space over
 !                   two a-sets
 
 !                FOURIER SPACE
-!     KULTPP   - number of latitudes for which each a-set is calculating 
+!     KULTPP   - number of latitudes for which each a-set is calculating
 !                the FFT's.
 !     KPTRLS   - pointer to first global latitude of each a-set for which
 !                it performs the Fourier calculations
@@ -94,7 +94,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     -------
 
 !     Externals.  SET_RESOL - set resolution
-!     ----------  
+!     ----------
 
 !     Author.
 !     -------
@@ -112,16 +112,17 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_DISTR
-USE TPM_GEOMETRY
-USE TPM_FIELDS
+USE TPM_GEN         ,ONLY : NDEF_RESOL
+USE TPM_DIM         ,ONLY : R
+USE TPM_DISTR       ,ONLY : D, NPRTRNS, NPRTRW, MYSETV, MYSETW
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_FIELDS      ,ONLY : F
 USE TPM_FLT
 
-USE SET_RESOL_MOD
-USE ABORT_TRANS_MOD
-USE EQ_REGIONS_MOD
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+USE EQ_REGIONS_MOD  ,ONLY : MY_REGION_EW, MY_REGION_NS, &
+     &                      N_REGIONS_EW, N_REGIONS_NS
 
 !endif INTERFACE
 

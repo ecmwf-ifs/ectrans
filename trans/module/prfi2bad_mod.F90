@@ -14,7 +14,7 @@ SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
 !     ----------
 !     *CALL* *PRFI2BAD(..)
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        -------------------   KFIELD - number of fields
 !                              KM - zonal wavenumber
 !                              KMLOC - local zonal wavenumber
@@ -49,10 +49,11 @@ SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_GEOMETRY
-USE TPM_DISTR
+USE TPM_DIM         ,ONLY : R
+USE TPM_TRANS       ,ONLY : FOUBUF
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_DISTR       ,ONLY : D
+!
 
 IMPLICIT NONE
 

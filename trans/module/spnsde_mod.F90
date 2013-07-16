@@ -4,10 +4,10 @@ SUBROUTINE SPNSDE(KM,KF_SCALARS,PEPSNM,PF,PNSD)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_FIELDS
-USE TPM_TRANS
+!USE TPM_GEN
+USE TPM_DIM         ,ONLY : R
+USE TPM_FIELDS      ,ONLY : F
+!USE TPM_TRANS
 
 
 !**** *SPNSDE* - Compute North-South derivative in spectral space
@@ -21,7 +21,7 @@ USE TPM_TRANS
 !        CALL SPNSDE(...)
 
 !        Explicit arguments :
-!        -------------------- 
+!        --------------------
 !        KM -zonal wavenumber (input-c)
 !        PEPSNM - REPSNM for wavenumber KM (input-c)
 !        PF  (NLEI1,2*KF_SCALARS) - input field (input)

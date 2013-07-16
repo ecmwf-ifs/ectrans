@@ -48,6 +48,7 @@ SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL)
 !                                 on NEC
 !        K. YESSAD (NOV 2008): make consistent arp/SUPOLA and tfl/SUPOL.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
+!        R. El Khatib 30-Apr-2013 Open-MP parallelization
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -92,6 +93,7 @@ ENDIF
 !           ---------------------------------------------------
 
 ! even N
+!$OMP PARALLEL DO PRIVATE(JN,ZDLK,ZDLLDN,JK)
 DO JN=2,KNSMAX,2
   ZDLK = 0.5_JPRB*PFN(JN,0)
   ZDLLDN = 0.0_JPRB
@@ -105,7 +107,9 @@ DO JN=2,KNSMAX,2
   PDDPOL(0,JN) = ZDLK
   PDDPOL(1,JN) = ZDLLDN
 ENDDO
+!$OMP END PARALLEL DO
 ! odd N
+!$OMP PARALLEL DO PRIVATE(JN,ZDLK,ZDLLDN,JK)
 DO JN=1,KNSMAX,2
   ZDLK = 0.0_JPRB
   ZDLLDN = 0.0_JPRB
@@ -119,6 +123,7 @@ DO JN=1,KNSMAX,2
   PDDPOL(0,JN) = ZDLK
   PDDPOL(1,JN) = ZDLLDN
 ENDDO
+!$OMP END PARALLEL DO
 
 !     ------------------------------------------------------------------
 

@@ -14,7 +14,7 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 !        *CALL* *SUMPLATB *
 
 !     Explicit arguments - input :
-!     -------------------- 
+!     --------------------
 !                          KDGSA      -first latitude (grid-space)
 !                                      (may be different from NDGSAG)
 !                          KDGL       -last  latitude
@@ -24,7 +24,7 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 !                          LDFOURIER  -true for fourier space partitioning
 
 !     Explicit arguments - output:
-!     -------------------- 
+!     --------------------
 !                          KMEDIAP    -mean number of grid points per PE
 !                          KRESTM     -number of PEs with one extra point
 !                          KINDIC     -intermediate quantity for 'sumplat'
@@ -57,7 +57,7 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
-USE ABORT_TRANS_MOD
+!USE ABORT_TRANS_MOD
 
 IMPLICIT NONE
 
@@ -134,12 +134,12 @@ IF (LDSPLIT) THEN
         ITOT = ITOT+ICOST(JGL)
       ELSEIF(ITOT+ICOST(JGL) == ICOMP) THEN
         IREST = 0
-        KLAST(JA) = JGL 
+        KLAST(JA) = JGL
         KINDIC(JA) = 0
         EXIT
       ELSE
         IREST =  ICOST(JGL) -(ICOMP-ITOT)
-        KLAST(JA) = JGL 
+        KLAST(JA) = JGL
         KINDIC(JA) = JGL
         EXIT
       ENDIF

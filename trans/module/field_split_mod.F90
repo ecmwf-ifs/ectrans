@@ -14,8 +14,8 @@ SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&
 !     ----------
 !     CALL FIELD_SPLIT(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     KBLK          - block number
 !     KF_GP         - total number of output gridpoint fields
 !     KKF_UV_G      - global number of spectral u-v fields
@@ -37,7 +37,7 @@ SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&
 !     KF_SCALARS    -
 
 !     Externals.  NONE
-!     ----------  
+!     ----------
 
 !     Author.
 !     -------
@@ -50,9 +50,10 @@ SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&
 !     ------------------------------------------------------------------
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_TRANS
-USE TPM_DISTR
+USE TPM_GEN         ,ONLY : NPROMATR
+!USE TPM_TRANS
+USE TPM_DISTR       ,ONLY : MYSETV, NPRTRV
+!
 
 IMPLICIT NONE
 

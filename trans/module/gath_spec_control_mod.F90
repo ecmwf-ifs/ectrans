@@ -13,8 +13,8 @@ SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     ----------
 !     CALL GATH_SPEC_CONTROL(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PSPECG(:,:) - Global spectral array
 !     KFGATHG     - Global number of fields to be distributed
 !     KTO(:)    - Processor responsible for distributing each field
@@ -25,15 +25,18 @@ SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
 
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT,     &
+     &                  JP_BLOCKING_STANDARD, JP_NON_BLOCKING_STANDARD
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_DISTR
-USE ABORT_TRANS_MOD
+!USE TPM_GEN
+!USE TPM_DIM
+USE TPM_DISTR       ,ONLY : MTAGDISTSP, NPRCIDS, NPRTRW,  &
+     &                      MYSETV, MYSETW, MYPROC, NPROC
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
-USE SET2PE_MOD
-USE SUWAVEDI_MOD
+USE SET2PE_MOD      ,ONLY : SET2PE
+!USE SUWAVEDI_MOD
+!
 
 IMPLICIT NONE
 

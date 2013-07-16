@@ -44,7 +44,7 @@ SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 !        Original : 95-10-01
 !        Modified : 97-06-18 G. Mozdzynski - control MPI mailbox use
 !                                            (NCOMBFLEN) for nphase.eq.1
-!        Modified : 99-05-28  D.Salmond - Optimise copies. 
+!        Modified : 99-05-28  D.Salmond - Optimise copies.
 !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
 !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
 !                             passing and buffer packing
@@ -55,15 +55,16 @@ SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM
 
-USE TPM_DISTR
-USE TPM_GEN
+USE TPM_DISTR       ,ONLY : D, MTAGLM, MYSETW, NPRTRW, NPROC
+USE TPM_GEN         ,ONLY : LSYNC_TRANS
 
-USE SET2PE_MOD
-USE MYSENDSET_MOD
-USE MYRECVSET_MOD
-USE ABORT_TRANS_MOD
+!USE SET2PE_MOD
+!USE MYSENDSET_MOD
+!USE MYRECVSET_MOD
+!USE ABORT_TRANS_MOD
+!
 
 IMPLICIT NONE
 

@@ -8,15 +8,15 @@ SUBROUTINE LTDIRAD(KM,KMLOC,KF_FS,KF_UV,KF_SCALARS,KLED2,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM
+USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY
 
-USE PREPSNM_MOD
-USE PRFI2AD_MOD
-USE LDFOU2AD_MOD
-USE LEDIRAD_MOD
+USE PREPSNM_MOD     ,ONLY : PREPSNM
+USE PRFI2AD_MOD     ,ONLY : PRFI2AD
+USE LDFOU2AD_MOD    ,ONLY : LDFOU2AD
+USE LEDIRAD_MOD     ,ONLY : LEDIRAD
 USE UVTVDAD_MOD
-USE UPDSPAD_MOD  
+USE UPDSPAD_MOD     ,ONLY : UPDSPAD
  
 
 !**** *LTDIRAD* - Control of Direct Legendre transform step - adjoint
@@ -30,12 +30,12 @@ USE UPDSPAD_MOD
 !     ----------
 !        *CALL* *LTDIRAD(...)*
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        --------------------  KM     - zonal wavenumber
 !                              KMLOC  - local zonal wavenumber
 !                              PSPVOR - spectral vorticity
 !                              PSPDIV - spectral divergence
-!                              PSPSCALAR - spectral scalar variables       
+!                              PSPSCALAR - spectral scalar variables
 
 !        Implicit arguments :  None
 !        --------------------
@@ -71,7 +71,7 @@ USE UPDSPAD_MOD
 !        M.Hamrud  : 94-11-01 New conf 'G' - vor,div->vor,div
 !                             instead of u,v->vor,div
 !        MPP Group : 95-10-01 Support for Distributed Memory version
-!        K. YESSAD (AUGUST 1996): 
+!        K. YESSAD (AUGUST 1996):
 !               - Legendre transforms for transmission coefficients.
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !        R. El Khatib 12-Jul-2012 LDSPC2AD replaced by UVTVDAD
@@ -148,7 +148,7 @@ ENDIF
 
 !*       4.    DIRECT LEGENDRE TRANSFORM.
 !              --------------------------
-IFC = 2*KF_FS 
+IFC = 2*KF_FS
 IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 IIFC = IFC
 IF(KM == 0)THEN

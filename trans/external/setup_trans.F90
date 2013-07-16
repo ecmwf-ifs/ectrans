@@ -15,7 +15,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     CALL SETUP_TRANS(...)
 
 !     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT are optional arguments
-!     -------------------- 
+!     --------------------
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
@@ -43,7 +43,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     Externals.  SET_RESOL   - set resolution
 !     ----------  SETUP_DIMS  - setup distribution independent dimensions
 !                 SUMP_TRANS_PRELEG - first part of setup of distr. environment
-!                 SULEG - Compute Legandre polonomial and Gaussian 
+!                 SULEG - Compute Legandre polonomial and Gaussian
 !                         Latitudes and Weights
 !                 SETUP_GEOM - Compute arrays related to grid-point geometry
 !                 SUMP_TRANS - Second part of setup of distributed environment
@@ -65,22 +65,23 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_DISTR
-USE TPM_GEOMETRY
-USE TPM_FIELDS
-USE TPM_FFT
+USE TPM_GEN         ,ONLY : NOUT, MSETUP0, NCUR_RESOL, NDEF_RESOL, &
+     &                      NMAX_RESOL, NPRINTLEV
+USE TPM_DIM         ,ONLY : R, DIM_RESOL
+USE TPM_DISTR       ,ONLY : D, DISTR_RESOL
+USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL
+USE TPM_FIELDS      ,ONLY : FIELDS_RESOL
+USE TPM_FFT         ,ONLY : FFT_RESOL
 USE TPM_FLT
 
-USE SET_RESOL_MOD
-USE SETUP_DIMS_MOD
-USE SUMP_TRANS_MOD
-USE SUMP_TRANS_PRELEG_MOD
-USE SULEG_MOD
-USE SETUP_GEOM_MOD
-USE SUFFT_MOD
-USE ABORT_TRANS_MOD
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE SETUP_DIMS_MOD  ,ONLY : SETUP_DIMS
+USE SUMP_TRANS_MOD  ,ONLY : SUMP_TRANS
+USE SUMP_TRANS_PRELEG_MOD ,ONLY : SUMP_TRANS_PRELEG
+USE SULEG_MOD       ,ONLY : SULEG
+USE SETUP_GEOM_MOD  ,ONLY : SETUP_GEOM
+USE SUFFT_MOD       ,ONLY : SUFFT
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
@@ -217,7 +218,7 @@ IF(PRESENT(LDLINEAR_GRID)) THEN
   G%LINEAR_GRID = LDLINEAR_GRID
 ELSEIF(R%NSMAX > (R%NDLON+3)/3) THEN
   G%LINEAR_GRID = .TRUE.
-ENDIF  
+ENDIF
 
 IF(PRESENT(PWEIGHT)) THEN
   D%LWEIGHTED_DISTR = .TRUE.

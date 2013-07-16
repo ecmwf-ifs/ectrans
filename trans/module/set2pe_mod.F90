@@ -14,7 +14,7 @@ SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !     ----------
 !        *CALL* *SET2PE(KPRGPNS,KPRGPEW,KPRTRW,KPRTRV,KPE)
 
-!        Explicit arguments :  
+!        Explicit arguments :
 !        --------------------
 
 !                  input :  KPRGPNS - integer A set number in grid space
@@ -22,10 +22,10 @@ SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !                           KPRGPEW - integer B set number in grid space
 !                                     in the range 1 .. NPRGPEW
 !                           KPRTRW  - integer A set number in spectral space
-!                                     in the range 1 .. NPRTRW 
+!                                     in the range 1 .. NPRTRW
 !                           KPRTRV  - integer B set number in spectral space
-!                                     in the range 1 .. NPRTRV 
-!                  output:  KPE     - integer processor number 
+!                                     in the range 1 .. NPRTRV
+!                  output:  KPE     - integer processor number
 !                                     in the range 1 .. NPROC
 
 !                  Normally, one pair of input set numbers will be set to zero
@@ -56,11 +56,13 @@ SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !        Original : 98-08-19
 !     ------------------------------------------------------------------
 
+
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DISTR
-USE EQ_REGIONS_MOD
-USE ABORT_TRANS_MOD
+USE TPM_DISTR       ,ONLY : LEQ_REGIONS, NPRGPEW, NPRGPNS, NPRTRV, NPRTRW
+USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
@@ -87,7 +89,7 @@ IF(KPRGPNS > 0.AND.KPRGPEW > 0) THEN
     DO JA=1,KPRGPNS-1
       KPE=KPE+N_REGIONS(JA)
     ENDDO
-    KPE=KPE+KPRGPEW    
+    KPE=KPE+KPRGPEW
   ELSE
     IF(KPRGPNS <= NPRGPNS.AND.KPRGPEW <= NPRGPEW) THEN
 

@@ -9,7 +9,7 @@ SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 !     --------
 !              Transpose Fourier buffer data from partitioning
 !              over wave numbers to partitioning over latitudes.
-!              It is called between direct FFT and direct Legendre 
+!              It is called between direct FFT and direct Legendre
 !              transform.
 !              This routine is the inverse of TRLTOM.
 
@@ -42,10 +42,10 @@ SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 
 !     Modifications.
 !     --------------
-!        Original : 95-10-01 
+!        Original : 95-10-01
 !        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
 !                                            (NCOMBFLEN) for nphase.eq.1
-!        Modified : 99-05-28  D.Salmond - Optimise copies. 
+!        Modified : 99-05-28  D.Salmond - Optimise copies.
 !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
 !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
 !                             passing and buffer packing
@@ -57,16 +57,16 @@ SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM
 
+USE TPM_DISTR       ,ONLY : D, MTAGML, MYSETW, NPRTRW, NPROC
+USE TPM_GEN         ,ONLY : LSYNC_TRANS
 
-USE TPM_DISTR
-USE TPM_GEN
-
-USE SET2PE_MOD
-USE MYSENDSET_MOD
-USE MYRECVSET_MOD
-USE ABORT_TRANS_MOD
+!USE SET2PE_MOD
+!USE MYSENDSET_MOD
+!USE MYRECVSET_MOD
+!USE ABORT_TRANS_MOD
+!
 
 IMPLICIT NONE
 
@@ -114,7 +114,7 @@ IF(NPROC > 1) THEN
   IF (LHOOK) CALL DR_HOOK('TRMTOL_BAR2',0,ZHOOK_HANDLE_BAR2)
   CALL GSTATS_BARRIER2(764)
   IF (LHOOK) CALL DR_HOOK('TRMTOL_BAR2',1,ZHOOK_HANDLE_BAR2)
-ELSE  
+ELSE
   ILEN = D%NLTSGTB(MYSETW)*KFIELD
   ISTA = D%NSTAGT0B(MYSETW)*KFIELD+1
   CALL GSTATS(1608,0)

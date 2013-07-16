@@ -15,8 +15,8 @@ SUBROUTINE LTDIR_CTL(KF_FS,KF_UV,KF_SCALARS, &
 !     ----------
 !     CALL LTDIR_CTL(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     KF_FS      - number of fields in Fourier space
 !     KF_UV      - local number of spectral u-v fields
 !     KF_SCALARS - local number of scalar spectral fields
@@ -30,13 +30,14 @@ SUBROUTINE LTDIR_CTL(KF_FS,KF_UV,KF_SCALARS, &
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_DISTR
+!USE TPM_GEN
+!USE TPM_DIM
+USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
+USE TPM_DISTR       ,ONLY : D
 
-USE LTDIR_MOD
-USE TRLTOM_MOD
+USE LTDIR_MOD       ,ONLY : LTDIR
+USE TRLTOM_MOD      ,ONLY : TRLTOM
+!
 
 IMPLICIT NONE
 

@@ -15,8 +15,8 @@ SUBROUTINE INV_TRANS_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_OUT_LT,&
 !     ----------
 !     CALL INV_TRANS_CTLAD(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     KF_UV_G      - global number of spectral u-v fields
 !     KF_SCALARS_G - global number of scalar spectral fields
 !     KF_GP        - total number of output gridpoint fields
@@ -28,31 +28,31 @@ SUBROUTINE INV_TRANS_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_OUT_LT,&
 !     PSPVOR(:,:)  - spectral vorticity (input)
 !     PSPDIV(:,:)  - spectral divergence (input)
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
-!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
+!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
 !                   The length of KVSETUV should be the GLOBAL number
 !                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space. 
+!                   fields in grid-point space.
 !     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
 !                   scalar field. As for KVSETUV this argument is required
 !                   if the total number of processors is greater than
 !                   the number of processors used for distribution in
-!                   spectral wave space.  
+!                   spectral wave space.
 !     PGP(:,:,:)  - gridpoint fields (output)
 
-!                  The ordering of the output fields is as follows (all 
+!                  The ordering of the output fields is as follows (all
 !                  parts are optional depending on the input switches):
 !
 !       vorticity     : KF_UV_G fields
 !       divergence    : KF_UV_G fields
 !       u             : KF_UV_G fields
 !       v             : KF_UV_G fields
-!       scalar fields : KF_SCALARS_G fields 
-!       N-S derivative of scalar fields : KF_SCALARS_G fields 
-!       E-W derivative of u : KF_UV_G fields 
-!       E-W derivative of v : KF_UV_G fields 
-!       E-W derivative of scalar fields : KF_SCALARS_G fields 
-!   
+!       scalar fields : KF_SCALARS_G fields
+!       N-S derivative of scalar fields : KF_SCALARS_G fields
+!       E-W derivative of u : KF_UV_G fields
+!       E-W derivative of v : KF_UV_G fields
+!       E-W derivative of scalar fields : KF_SCALARS_G fields
+!
 !     Method.
 !     -------
 
@@ -74,14 +74,15 @@ SUBROUTINE INV_TRANS_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_OUT_LT,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_TRANS
-USE TPM_DISTR
+USE TPM_GEN         ,ONLY : NPROMATR
+USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP
+!USE TPM_DISTR
 
-USE SHUFFLE_MOD
-USE FIELD_SPLIT_MOD
-USE LTINV_CTLAD_MOD
-USE FTINV_CTLAD_MOD
+USE SHUFFLE_MOD     ,ONLY : SHUFFLE
+USE FIELD_SPLIT_MOD ,ONLY : FIELD_SPLIT
+USE LTINV_CTLAD_MOD ,ONLY : LTINV_CTLAD
+USE FTINV_CTLAD_MOD ,ONLY : FTINV_CTLAD
+!
 
 IMPLICIT NONE
 
@@ -132,7 +133,7 @@ IF(NPROMATR > 0 .AND. IF_GPB > NPROMATR) THEN
 
   ! Fields to be split into packets
 
-  CALL SHUFFLE(KF_UV_G,KF_SCALARS_G,ISHFUV_G,IVSETUV,ISHFSC_G,IVSETSC,& 
+  CALL SHUFFLE(KF_UV_G,KF_SCALARS_G,ISHFUV_G,IVSETUV,ISHFSC_G,IVSETSC,&
  & KVSETUV,KVSETSC)
 
   IBLKS=(IF_GPB-1)/NPROMATR+1

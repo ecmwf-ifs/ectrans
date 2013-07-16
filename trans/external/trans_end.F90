@@ -1,6 +1,6 @@
 SUBROUTINE TRANS_END(CDMODE)
 
-!**** *TRANS_END* - Terminate transform package 
+!**** *TRANS_END* - Terminate transform package
 
 !     Purpose.
 !     --------
@@ -11,13 +11,13 @@ SUBROUTINE TRANS_END(CDMODE)
 !     CALL TRANS_END
 
 !     Explicit arguments : None
-!     -------------------- 
+!     --------------------
 
 !     Method.
 !     -------
 
 !     Externals.  None
-!     ----------  
+!     ----------
 
 !     Author.
 !     -------
@@ -34,17 +34,18 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_DISTR
-USE TPM_GEOMETRY
-USE TPM_FIELDS
-USE TPM_FFT
+USE TPM_GEN         ,ONLY : MSETUP0, NCUR_RESOL, NDEF_RESOL, NMAX_RESOL
+USE TPM_DIM         ,ONLY : R, DIM_RESOL
+USE TPM_DISTR       ,ONLY : D, DISTR_RESOL, NPRCIDS
+USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL
+USE TPM_FIELDS      ,ONLY : F, FIELDS_RESOL
+USE TPM_FFT         ,ONLY : T, FFT_RESOL
 USE TPM_FLT
-USE TPM_TRANS
+USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
 
-USE EQ_REGIONS_MOD
-USE SET_RESOL_MOD
+USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+!
 
 IMPLICIT NONE
 CHARACTER*5, OPTIONAL,  INTENT(IN) :: CDMODE
@@ -53,7 +54,7 @@ INTEGER(KIND=JPIM) :: JRES
 CHARACTER*5 :: CLMODE
 !     ------------------------------------------------------------------
 CLMODE='FINAL'
-IF (PRESENT(CDMODE)) CLMODE=CDMODE 
+IF (PRESENT(CDMODE)) CLMODE=CDMODE
 IF (CLMODE == 'FINAL') THEN
   DO JRES=1,NDEF_RESOL
     CALL SET_RESOL(JRES)

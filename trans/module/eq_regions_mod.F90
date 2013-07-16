@@ -1,27 +1,27 @@
-module eq_regions_mod
+MODULE eq_regions_mod
 !
 !     Purpose.
 !     --------
-!           eq_regions_mod provides the code to perform a high level 
+!           eq_regions_mod provides the code to perform a high level
 !           partitioning of the surface of a sphere into regions of
 !           equal area and small diameter.
 !           the type.
 !
 !     Background.
 !     -----------
-!     This Fortran version of eq_regions is a much cut down version of the 
+!     This Fortran version of eq_regions is a much cut down version of the
 !     "Recursive Zonal Equal Area (EQ) Sphere Partitioning Toolbox" of the
-!     same name developed by Paul Leopardi at the University of New South Wales. 
-!     This version has been coded specifically for the case of partitioning the 
+!     same name developed by Paul Leopardi at the University of New South Wales.
+!     This version has been coded specifically for the case of partitioning the
 !     surface of a sphere or S^dim (where dim=2) as denoted in the original code.
-!     Only a subset of the original eq_regions package has been coded to determine 
-!     the high level distribution of regions on a sphere, as the detailed 
+!     Only a subset of the original eq_regions package has been coded to determine
+!     the high level distribution of regions on a sphere, as the detailed
 !     distribution of grid points to each region is left to IFS software.
-!     This is required to take into account the spatial distribution of grid 
-!     points in an IFS gaussian grid and provide an optimal (i.e. exact) 
+!     This is required to take into account the spatial distribution of grid
+!     points in an IFS gaussian grid and provide an optimal (i.e. exact)
 !     distribution of grid points over regions.
 !
-!     The following copyright notice for the eq_regions package is included from 
+!     The following copyright notice for the eq_regions package is included from
 !     the original MatLab release.
 !
 !     +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -59,8 +59,8 @@ module eq_regions_mod
 !        Original : 2006-04-15
 !
 !--------------------------------------------------------------------------------
-
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+!
+USE PARKIND1  ,ONLY : JPIM,   JPRB
 
 IMPLICIT NONE
 
@@ -85,6 +85,8 @@ subroutine eq_regions(N)
 ! eq_regions uses the zonal equal area sphere partitioning algorithm to partition
 ! the surface of a sphere into N regions of equal area and small diameter.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 integer(kind=jpim) :: n_collars,j
 real(kind=jprb),allocatable :: r_regions(:)
@@ -127,7 +129,7 @@ else
   allocate(r_regions(n_collars+2))
   call ideal_region_list(N,c_polar,n_collars,r_regions)
   !
-  ! Given N and r_regions, determine n_regions, a list of the natural number 
+  ! Given N and r_regions, determine n_regions, a list of the natural number
   ! of regions in each collar and the polar caps.
   ! This list is as close as possible to r_regions.
   ! The number of elements is n_collars+2.
@@ -162,6 +164,8 @@ function num_collars(N,c_polar,a_ideal) result(num_c)
 ! Given N, an ideal angle, and c_polar,
 ! determine n_collars, the number of collars between the polar caps.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprb),intent(in) :: a_ideal,c_polar
 integer(kind=jpim) :: num_c
@@ -181,13 +185,15 @@ subroutine ideal_region_list(N,c_polar,n_collars,r_regions)
 !
 ! List the ideal real number of regions in each collar, plus the polar caps.
 !
-! Given N, c_polar and n_collars, determine r_regions, a list of the ideal real 
+! Given N, c_polar and n_collars, determine r_regions, a list of the ideal real
 ! number of regions in each collar, plus the polar caps.
 ! The number of elements is n_collars+2.
 ! r_regions[1] is 1.
 ! r_regions[n_collars+2] is 1.
 ! The sum of r_regions is N.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N,n_collars
 real(kind=jprb),intent(in) :: c_polar
 real(kind=jprb),intent(out) :: r_regions(n_collars+2)
@@ -220,6 +226,8 @@ function ideal_collar_angle(N) result(ideal)
 ! IDEAL_COLLAR_ANGLE(N) sets ANGLE to the ideal angle for the
 ! spherical collars of an EQ partition of the unit sphere S^2 into N regions.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprb) :: ideal
 ideal = area_of_ideal_region(N)**(0.5_jprb)
@@ -230,7 +238,7 @@ subroutine round_to_naturals(N,n_collars,r_regions)
 !
 ! ROUND_TO_NATURALS Round off a given list of numbers of regions
 !
-! Given N and r_regions, determine n_regions, a list of the natural number 
+! Given N and r_regions, determine n_regions, a list of the natural number
 ! of regions in each collar and the polar caps.
 ! This list is as close as possible to r_regions, using rounding.
 ! The number of elements is n_collars+2.
@@ -238,6 +246,8 @@ subroutine round_to_naturals(N,n_collars,r_regions)
 ! n_regions[n_collars+2] is 1.
 ! The sum of n_regions is N.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N,n_collars
 real(kind=jprb),intent(in) :: r_regions(n_collars+2)
 integer(kind=jpim) :: zone_n
@@ -255,6 +265,8 @@ function polar_colat(N) result(polar_c)
 !
 ! Given N, determine the colatitude of the North polar spherical cap.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprb) :: area
 real(kind=jprb) :: polar_c
@@ -272,6 +284,8 @@ function area_of_ideal_region(N) result(area)
 ! AREA_OF_IDEAL_REGION(N) sets AREA to be the area of one of N equal
 ! area regions on S^2, that is 1/N times AREA_OF_SPHERE.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprb) :: area_of_sphere
 real(kind=jprb) :: area
@@ -285,6 +299,8 @@ function sradius_of_cap(area) result(sradius)
 ! SRADIUS_OF_CAP(AREA) returns the spherical radius of
 ! an S^2 spherical cap of area AREA.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 real(kind=jprb),intent(in) :: area
 real(kind=jprb) :: sradius
 sradius = 2.0_jprb*asin(sqrt(area/pi)/2.0_jprb)
@@ -295,10 +311,12 @@ function area_of_collar(a_top, a_bot) result(area)
 !
 ! AREA_OF_COLLAR Area of spherical collar
 !
-! AREA_OF_COLLAR(A_TOP, A_BOT) sets AREA to be the area of an S^2 spherical 
+! AREA_OF_COLLAR(A_TOP, A_BOT) sets AREA to be the area of an S^2 spherical
 ! collar specified by A_TOP, A_BOT, where A_TOP is top (smaller) spherical radius,
 ! A_BOT is bottom (larger) spherical radius.
 !
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 real(kind=jprb),intent(in) :: a_top,a_bot
 real(kind=jprb) area
 area = area_of_cap(a_bot) - area_of_cap(a_top)
@@ -319,6 +337,9 @@ return
 end function area_of_cap
 
 function gamma(x) result(gamma_res)
+!
+USE PARKIND1  ,ONLY : JPIM,   JPRB
+IMPLICIT NONE
 real(kind=jprb),intent(in) :: x
 real(kind=jprb) :: gamma_res
 real(kind=jprb) :: p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13
@@ -360,4 +381,4 @@ gamma_res = w / y
 return
 end function gamma
 
-end module eq_regions_mod
+END MODULE eq_regions_mod

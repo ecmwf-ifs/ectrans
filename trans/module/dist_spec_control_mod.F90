@@ -13,8 +13,8 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     ----------
 !     CALL DIST_SPEC_CONTROL(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PSPECG(:,:) - Global spectral array
 !     KFDISTG     - Global number of fields to be distributed
 !     KFROM(:)    - Processor resposible for distributing each field
@@ -36,14 +36,16 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
+     &                  JP_NON_BLOCKING_STANDARD
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_DISTR
+!USE TPM_GEN
+!USE TPM_DIM
+USE TPM_DISTR       ,ONLY : MTAGDISTSP, MYSETV, NPRCIDS, NPRTRW, MYPROC, NPROC
 
-USE SET2PE_MOD
-USE ABORT_TRANS_MOD
+USE SET2PE_MOD      ,ONLY : SET2PE
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 
@@ -119,11 +121,11 @@ ELSE
   DO JFLD=1,IFLDS
     IF(LDIM1_IS_FLD) THEN
       DO JNM=1,KSPEC2_G
-        ZBUF(IDIST(JNM),JFLD) = PSPECG(JFLD,JNM) 
+        ZBUF(IDIST(JNM),JFLD) = PSPECG(JFLD,JNM)
       ENDDO
     ELSE
       DO JNM=1,KSPEC2_G
-        ZBUF(IDIST(JNM),JFLD) = PSPECG(JNM,JFLD) 
+        ZBUF(IDIST(JNM),JFLD) = PSPECG(JNM,JFLD)
       ENDDO
     ENDIF
   ENDDO

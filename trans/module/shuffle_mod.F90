@@ -14,27 +14,27 @@ SUBROUTINE SHUFFLE(KF_UV_G,KF_SCALARS_G,KSHFUV_G,KIVSETUV,KSHFSC_G,KIVSETSC,&
 !     ----------
 !     CALL SHUFFLE(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     KF_UV_G      - global number of spectral u-v fields
 !     KF_SCALARS_G - global number of scalar spectral fields
 !     KSHFUV_G     - reshuffling index for uv fields
 !     KIVSETUV     - reshuffled KVSETUV
 !     KSHFSC_G     - reshuffling index for scalar fields
 !     KIVSETSC     - reshuffled KVSETSC
-!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
+!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
 !                   The length of KVSETUV should be the GLOBAL number
 !                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space. 
+!                   fields in grid-point space.
 !     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
 !                   scalar field. As for KVSETUV this argument is required
 !                   if the total number of processors is greater than
 !                   the number of processors used for distribution in
-!                   spectral wave space.  
+!                   spectral wave space.
 
 !     Externals.  NONE
-!     ----------  
+!     ----------
 
 !     Author.
 !     -------
@@ -47,9 +47,11 @@ SUBROUTINE SHUFFLE(KF_UV_G,KF_SCALARS_G,KSHFUV_G,KIVSETUV,KSHFSC_G,KIVSETSC,&
 !     ------------------------------------------------------------------
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_TRANS
-USE TPM_DISTR
+!USE TPM_GEN
+!USE TPM_TRANS
+USE TPM_DISTR       ,ONLY : NPRTRV
+!
+
 IMPLICIT NONE
 
 ! Declaration of arguments

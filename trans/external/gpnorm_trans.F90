@@ -12,8 +12,8 @@ SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 !     ----------
 !     CALL GPNORM_TRANS(...)
 
-!     Explicit arguments : 
-!     -------------------- 
+!     Explicit arguments :
+!     --------------------
 !     PGP(:,:,:) - gridpoint fields (input)
 !                  PGP is  dimensioned (NPROMA,KFIELDS,NGPBLKS) where
 !                  NPROMA is the blocking factor, KFIELDS the total number
@@ -27,7 +27,7 @@ SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 !     LDAVE_ONLY  - T : PMIN and PMAX already contain local MIN and MAX
 !     KRESOL      -  resolution tag (optional)
 !                    default assumes first defined resolution
-!     
+!
 
 !     Author.
 !     -------
@@ -44,17 +44,17 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_TRANS
-USE TPM_DISTR
-USE TPM_GEOMETRY
-USE TPM_FIELDS
-USE SET_RESOL_MOD
-USE TRGTOL_MOD
-USE SET2PE_MOD
-USE MPL_MODULE
-USE ABORT_TRANS_MOD
+USE TPM_GEN         ,ONLY : NOUT
+USE TPM_DIM         ,ONLY : R
+USE TPM_TRANS       ,ONLY : LGPNORM, NGPBLKS, NPROMA
+USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRV, NPRTRW, MYSETV, MYSETW
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_FIELDS      ,ONLY : F
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE TRGTOL_MOD      ,ONLY : TRGTOL
+USE SET2PE_MOD      ,ONLY : SET2PE
+USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, JP_BLOCKING_STANDARD
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 !endif INTERFACE
@@ -371,7 +371,7 @@ IF( MYSETV == 1 )THEN
         DEALLOCATE(ZRCV)
       ENDIF
     ENDDO
-    
+
   ELSE
 
     IF(LDAVE_ONLY)THEN

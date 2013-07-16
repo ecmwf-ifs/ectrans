@@ -14,7 +14,7 @@ SUBROUTINE SUSTAONL(KMEDIAP,KRESTM,LDWEIGHTED_DISTR,PWEIGHT,PMEDIAP,KPROCAGP)
 !     ----------
 !        *CALL* *SUSTAONL *
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        --------------------
 !                     KMEDIAP    - mean number of grid points per PE
 !                     KRESTM     - number of PEs with one extra point
@@ -50,24 +50,26 @@ SUBROUTINE SUSTAONL(KMEDIAP,KRESTM,LDWEIGHTED_DISTR,PWEIGHT,PMEDIAP,KPROCAGP)
 !          - removal of code under LRPOLE.
 !        Modified 98-12-04 C. Fischer: merge with SUESTAONL (Aladin)
 !        R. El Khatib 05-Apr-2007 Enable back vectorization on NEC
+!        R. El Khatib 30-Apr-2013 Optimization
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_ALLGATHERV, MPL_RECV, MPL_SEND
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_GEOMETRY
-USE TPM_DISTR
+USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
+USE TPM_DIM         ,ONLY : R
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_DISTR       ,ONLY : D, LEQ_REGIONS, MTAGPART, NPRCIDS, MYPROC, NPROC
 
-USE SET2PE_MOD
-USE ABORT_TRANS_MOD
-USE EQ_REGIONS_MOD
+USE SET2PE_MOD      ,ONLY : SET2PE
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+USE EQ_REGIONS_MOD  ,ONLY : MY_REGION_NS, MY_REGION_EW,           &
+     &                      N_REGIONS, N_REGIONS_EW, N_REGIONS_NS
+!
 
 IMPLICIT NONE
 
-
-!     DUMMY 
+!     DUMMY
 INTEGER(KIND=JPIM),INTENT(IN) :: KMEDIAP
 INTEGER(KIND=JPIM),INTENT(IN) :: KRESTM
 REAL(KIND=JPRB),INTENT(IN)    :: PWEIGHT(:)
@@ -161,7 +163,7 @@ ENDDO
 !  grid point decomposition
 !  ---------------------------------------
 DO JGL=1,ILEN
-  ZDIVID(JGL)=REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB)
+  ZDIVID(JGL)=1._JPRB/REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB)
 ENDDO
 IF( LDWEIGHTED_DISTR )THEN
   ALLOCATE(ZWEIGHT(G%NLOEN(R%NDGL/2),R%NDGL))
@@ -193,7 +195,7 @@ DO JB=1,N_REGIONS(MY_REGION_NS)
 
       DO JGL=1,ILEN
         IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-          ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
+          ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)*ZDIVID(JGL)
           IF (ZLAT1 < ZLAT) THEN
             ZLAT   = ZLAT1
             INXLAT = JGL
@@ -223,7 +225,7 @@ DO JB=1,N_REGIONS(MY_REGION_NS)
 
       DO JGL=1,ILEN
         IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-          ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)/ZDIVID(JGL)
+          ZLAT1 = (ZXPTLAT(JGL)-1.0_JPRB)*ZDIVID(JGL)
           IF (ZLAT1 < ZLAT) THEN
             ZLAT   = ZLAT1
             INXLAT = JGL

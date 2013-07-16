@@ -48,11 +48,11 @@ SUBROUTINE TRGTOL(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
 !                   JUMP in FFT's changed to 1
 !                   INDEX introduced and ZCOMBUF not used for same PE
 !         01-11-23  Deborah Salmond and John Hague
-!                    LIMP_NOOLAP Option for non-overlapping message passing 
+!                    LIMP_NOOLAP Option for non-overlapping message passing
 !                    and buffer packing
 !         01-12-18  Peter Towers
 !                   Improved vector performance of GTOL_PACK,GTOL_UNPACK
-!         03-04-02  G. Radnoti: call barrier always when nproc>1 
+!         03-04-02  G. Radnoti: call barrier always when nproc>1
 !         08-01-01  G.Mozdzynski: cleanup
 !         09-01-02  G.Mozdzynski: use non-blocking recv and send
 !     ------------------------------------------------------------------
@@ -62,17 +62,19 @@ SUBROUTINE TRGTOL(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
-USE MPL_MODULE
+USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD
 
-USE TPM_GEN
-USE TPM_DISTR
-USE TPM_TRANS
+USE TPM_GEN         ,ONLY : NOUT
+USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRNS, MTAGGL,  &
+     &                      MYSETV, MYSETW, MYPROC, NPROC
+USE TPM_TRANS       ,ONLY : LDIVGP, LGPNORM, LSCDERS, LUVDER, LVORGP, NGPBLKS
 
-USE INIGPTR_MOD
-USE PE2SET_MOD
-USE MYSENDSET_MOD
-USE MYRECVSET_MOD
-USE ABORT_TRANS_MOD
+USE INIGPTR_MOD     ,ONLY : INIGPTR
+USE PE2SET_MOD      ,ONLY : PE2SET
+!USE MYSENDSET_MOD
+!USE MYRECVSET_MOD
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 
@@ -426,7 +428,6 @@ IF(ISENDTOT(MYPROC) > 0 )THEN
     IFIRST = IGPTRSEND(1,JBLK,MYSETW)
     IF(IFIRST > 0) THEN
       ILAST = IGPTRSEND(2,JBLK,MYSETW)
-      
       IF(LLPGPONLY) THEN
         DO JFLD=1,IFLDS
           IFLD = IFLDOFF(JFLD)
@@ -441,7 +442,7 @@ IF(ISENDTOT(MYPROC) > 0 )THEN
           IF(LLUV(IFLD)) THEN
             DO JK=IFIRST,ILAST
               IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
-              PGLAT(JFLD,INDEX(IPOS)) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK) 
+              PGLAT(JFLD,INDEX(IPOS)) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK)
             ENDDO
           ELSEIF(LLGP2(IFLD)) THEN
             DO JK=IFIRST,ILAST
@@ -501,7 +502,7 @@ CALL GSTATS(1602,0)
       ENDIF
     ENDDO
 
-    
+
     DO JJ=ISEND_FLD_START(ISEND),ISEND_FLD_END
       IFLDT=IFLDA(JJ)
       DO JBLK=1,NGPBLKS
@@ -544,7 +545,7 @@ CALL GSTATS(1602,0)
         ENDIF
       ENDDO
     ENDDO
-    
+
     IPOS=(ISEND_FLD_END-ISEND_FLD_START(ISEND)+1)*IPOS
     ZCOMBUFS(-1,INS) = 1
     ZCOMBUFS(0,INS) = IFLD

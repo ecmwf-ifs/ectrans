@@ -15,11 +15,11 @@ SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
 !     ----------
 !        CALL FTINV_CTL(..)
 
-!        Explicit arguments : 
+!        Explicit arguments :
 !        --------------------
-!        PGP     -  gridpoint array 
+!        PGP     -  gridpoint array
 !        KF_UV_G      - global number of spectral u-v fields
-!        KF_SCALARS_G - global number of scalar spectral fields 
+!        KF_SCALARS_G - global number of scalar spectral fields
 !        KF_UV        - local number of spectral u-v fields
 !        KF_SCALARS   - local number of scalar spectral fields
 !        KF_SCDERS    - local number of derivatives of scalar spectral fields
@@ -35,7 +35,7 @@ SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
 !     Method.
 !     -------
 
-!     Externals.  TRLTOG      - transposition routine 
+!     Externals.  TRLTOG      - transposition routine
 !     ----------  FOURIER_IN  - copy fourier data from Fourier buffer
 !                 FTINV       - fourier transform
 !                 FSC         - Fourier space computations
@@ -52,17 +52,18 @@ SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_GEN
-USE TPM_DIM
-USE TPM_GEOMETRY
-USE TPM_TRANS
-USE TPM_DISTR
+USE TPM_GEN         ,ONLY : NERR
+!USE TPM_DIM
+!USE TPM_GEOMETRY
+USE TPM_TRANS       ,ONLY : FOUBUF, LDIVGP, LSCDERS, LUVDER, LVORGP
+USE TPM_DISTR       ,ONLY : D, MYPROC, NPROC
 
-USE FOURIER_IN_MOD
-USE FSC_MOD
-USE FTINV_MOD
-USE TRLTOG_MOD
-USE ABORT_TRANS_MOD
+USE FOURIER_IN_MOD  ,ONLY : FOURIER_IN
+USE FSC_MOD         ,ONLY : FSC
+USE FTINV_MOD       ,ONLY : FTINV
+USE TRLTOG_MOD      ,ONLY : TRLTOG
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+!
 
 IMPLICIT NONE
 
@@ -126,7 +127,7 @@ IF(KF_UV > 0 .OR. KF_SCDERS > 0) THEN
     ZUVDERS => ZGTF(IST:IST+2*KF_UV-1,:)
     IST = IST+2*KF_UV
   ELSE
-    ZUVDERS => ZDUM(1:1,:)  
+    ZUVDERS => ZDUM(1:1,:)
   ENDIF
   IF(KF_SCDERS > 0) THEN
     ZEWDERS => ZGTF(IST:IST+KF_SCDERS-1,:)
