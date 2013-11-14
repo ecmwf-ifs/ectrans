@@ -27,26 +27,43 @@
       SUBROUTINE QPASSF(A,B,C,D,TRIGS,INC1,INC2,INC3,INC4,LOT,N,IFAC,   &
      &    LA,IERR,LIPL)
 !AUTOPROMOTE
-      USE PARKIND1, ONLY : JPRB
+      USE PARKIND1, ONLY : JPIM, JPRB
       USE YOMHOOK , ONLY : LHOOK, DR_HOOK
 !
       IMPLICIT NONE
 !
-      REAL(KIND=8) :: A,A0,A1,A2,A3,A4,A5,A6,A10,A11,A20,A21
-      REAL(KIND=8) :: B,B0,B1,B2,B3,B4,B5,B6,B10,B11,B20,B21
-      REAL(KIND=8) :: C,C1,C2,C3,C4,C5,D,TRIGS
-      REAL(KIND=8) :: S1,S2,S3,S4,S5,T1,T2,T3,T4,T5,T6,T7,Z
-      REAL(KIND=8) :: QRT5,SIN36,SIN45,SIN60,SIN72
-      REAL(KIND=8) :: ZQRT5,ZSIN36,ZSIN45,ZSIN60,ZSIN72
-      INTEGER :: IERR,IFAC,INC1,INC2,INC3,INC4,IINK,IJK,ILOT
-      INTEGER :: I,IA,IB,IBAD,IBASE,IC,ID,IE,IF,IG,IH,IJUMP,ILA,INC11
-      INTEGER :: J,JA,JB,JC,JD,JE,JBASE,JF,JINK,K,KB,KC,KD,KE,KF,KSTOP
-      INTEGER :: L,LA,LOT,M,N
-      DIMENSION A(*),B(*),C(*),D(*),TRIGS(N)
-      LOGICAL LIPL
+      REAL(KIND=JPRB) :: A(*)
+      REAL(KIND=JPRB) :: B(*)
+      REAL(KIND=JPRB) :: C(*)
+      REAL(KIND=JPRB) :: D(*)
+      REAL(KIND=JPRB) :: TRIGS(N)
+      REAL(KIND=JPRB) :: A0,A1,A2,A3,A4,A5,A6,A10,A11,A20,A21
+      REAL(KIND=JPRB) :: B0,B1,B2,B3,B4,B5,B6,B10,B11,B20,B21
+      REAL(KIND=JPRB) :: C1,C2,C3,C4,C5
+      REAL(KIND=JPRB) :: S1,S2,S3,S4,S5
+      REAL(KIND=JPRB) :: T1,T2,T3,T4,T5,T6,T7
+      REAL(KIND=JPRB) :: Z
+      REAL(KIND=JPRB) :: QRT5,SIN36,SIN45,SIN60,SIN72
+      REAL(KIND=JPRB) :: ZQRT5,ZSIN36,ZSIN45,ZSIN60,ZSIN72
+      INTEGER(KIND=JPIM) :: IERR
+      INTEGER(KIND=JPIM) :: INC1
+      INTEGER(KIND=JPIM) :: INC2
+      INTEGER(KIND=JPIM) :: INC3
+      INTEGER(KIND=JPIM) :: INC4
+      INTEGER(KIND=JPIM) :: LOT
+      INTEGER(KIND=JPIM) :: N
+      INTEGER(KIND=JPIM) :: IFAC
+      INTEGER(KIND=JPIM) :: LA
+      INTEGER(KIND=JPIM) :: IINK,IJK,ILOT
+      INTEGER(KIND=JPIM) :: I,IA,IB,IBAD,IBASE,IC,ID,IE,IF,IG,IH
+      INTEGER(KIND=JPIM) :: IJUMP,ILA,INC11
+      INTEGER(KIND=JPIM) :: J,JA,JB,JC,JD,JE,JBASE,JF,JINK
+      INTEGER(KIND=JPIM) :: K,KB,KC,KD,KE,KF,KSTOP
+      INTEGER(KIND=JPIM) :: L,M
+      LOGICAL :: LIPL
 !
-      DATA SIN36/0.587785252292473_8/,SIN72/0.951056516295154_8/,       &
-     &    QRT5/0.559016994374947_8/,SIN60/0.866025403784437_8/
+      DATA SIN36/0.587785252292473_JPRB/,SIN72/0.951056516295154_JPRB/, &
+     &    QRT5/0.559016994374947_JPRB/,SIN60/0.866025403784437_JPRB/
 !
       REAL(KIND=JPRB) :: ZHOOK_HANDLE
       IF (LHOOK) CALL DR_HOOK('QPASSF',0,ZHOOK_HANDLE)
@@ -149,7 +166,7 @@
       ENDIF
 !
       ELSE                !!! Case LA=M
-      Z=1.0_8/REAL(N,KIND=8)
+      Z=1.0_JPRB/REAL(N,KIND=JPRB)
       IF (LIPL) THEN
         DO 294 L=1,ILA
         I=IBASE
@@ -199,7 +216,7 @@
 !OCL NOVREC
       DO 310 IJK=1,ILOT
       C(JA+J)=A(IA+I)+(A(IB+I)+A(IC+I))
-      C(JB+J)=A(IA+I)-0.5_8*(A(IB+I)+A(IC+I))
+      C(JB+J)=A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I))
       D(JB+J)=SIN60*(A(IC+I)-A(IB+I))
       I=I+INC3
       J=J+INC4
@@ -230,8 +247,8 @@
       DO 330 IJK=1,ILOT
       A1=(C1*A(IB+I)+S1*B(IB+I))+(C2*A(IC+I)+S2*B(IC+I))
       B1=(C1*B(IB+I)-S1*A(IB+I))+(C2*B(IC+I)-S2*A(IC+I))
-      A2=A(IA+I)-0.5_8*A1
-      B2=B(IA+I)-0.5_8*B1
+      A2=A(IA+I)-0.5_JPRB*A1
+      B2=B(IA+I)-0.5_JPRB*B1
       A3=SIN60*((C1*A(IB+I)+S1*B(IB+I))-(C2*A(IC+I)+S2*B(IC+I)))
       B3=SIN60*((C1*B(IB+I)-S1*A(IB+I))-(C2*B(IC+I)-S2*A(IC+I)))
       C(JA+J)=A(IA+I)+A1
@@ -260,7 +277,7 @@
       J=JBASE
 !OCL NOVREC
       DO 370 IJK=1,ILOT
-      C(JA+J)=A(IA+I)+0.5_8*(A(IB+I)-A(IC+I))
+      C(JA+J)=A(IA+I)+0.5_JPRB*(A(IB+I)-A(IC+I))
       D(JA+J)=-SIN60*(A(IB+I)+A(IC+I))
       C(JB+J)=A(IA+I)-(A(IB+I)-A(IC+I))
       I=I+INC3
@@ -272,14 +289,14 @@
       ENDIF
 !
       ELSE                 !!! Case LA=M
-      Z=1.0_8/REAL(N,KIND=8)
+      Z=1.0_JPRB/REAL(N,KIND=JPRB)
       ZSIN60=Z*SIN60
       IF (LIPL) THEN
         DO 394 L=1,ILA
         I=IBASE
 !OCL NOVREC
         DO 392 IJK=1,ILOT
-        T1=Z*(A(IA+I)-0.5_8*(A(IB+I)+A(IC+I)))
+        T1=Z*(A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I)))
         T2=ZSIN60*(A(IC+I)-A(IB+I))
         A(IA+I)=Z*(A(IA+I)+(A(IB+I)+A(IC+I)))
         A(IB+I)=T1
@@ -295,7 +312,7 @@
 !OCL NOVREC
         DO 396 IJK=1,ILOT
         C(JA+J)=Z*(A(IA+I)+(A(IB+I)+A(IC+I)))
-        C(JB+J)=Z*(A(IA+I)-0.5_8*(A(IB+I)+A(IC+I)))
+        C(JB+J)=Z*(A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I)))
         D(JB+J)=ZSIN60*(A(IC+I)-A(IB+I))
         I=I+INC3
         J=J+INC4
@@ -393,7 +410,7 @@
       ENDIF
 !
       IF (JB.EQ.JC) THEN
-      SIN45=SQRT(0.5_8)
+      SIN45=SQRT(0.5_JPRB)
       JBASE=0
       DO 480 L=1,ILA
       I=IBASE
@@ -413,7 +430,7 @@
       ENDIF
 !
       ELSE              !!! Case LA=M
-      Z=1.0_8/REAL(N,KIND=8)
+      Z=1.0_JPRB/REAL(N,KIND=JPRB)
       IF (LIPL) THEN
         DO 494 L=1,ILA
         I=IBASE
@@ -476,7 +493,7 @@
       A3=A(IB+I)-A(IE+I)
       A2=A(IC+I)+A(ID+I)
       A4=A(IC+I)-A(ID+I)
-      A5=A(IA+I)-0.25_8*(A1+A2)
+      A5=A(IA+I)-0.25_JPRB*(A1+A2)
       A6=QRT5*(A1-A2)
       C(JA+J)=A(IA+I)+(A1+A2)
       C(JB+J)=A5+A6
@@ -526,9 +543,9 @@
       B3=(C1*B(IB+I)-S1*A(IB+I))-(C4*B(IE+I)-S4*A(IE+I))
       B2=(C2*B(IC+I)-S2*A(IC+I))+(C3*B(ID+I)-S3*A(ID+I))
       B4=(C2*B(IC+I)-S2*A(IC+I))-(C3*B(ID+I)-S3*A(ID+I))
-      A5=A(IA+I)-0.25_8*(A1+A2)
+      A5=A(IA+I)-0.25_JPRB*(A1+A2)
       A6=QRT5*(A1-A2)
-      B5=B(IA+I)-0.25_8*(B1+B2)
+      B5=B(IA+I)-0.25_JPRB*(B1+B2)
       B6=QRT5*(B1-B2)
       A10=A5+A6
       A20=A5-A6
@@ -574,7 +591,7 @@
       A3=A(IB+I)-A(IE+I)
       A2=A(IC+I)+A(ID+I)
       A4=A(IC+I)-A(ID+I)
-      A5=A(IA+I)+0.25_8*(A3-A4)
+      A5=A(IA+I)+0.25_JPRB*(A3-A4)
       A6=QRT5*(A3+A4)
       C(JA+J)=A5+A6
       C(JB+J)=A5-A6
@@ -590,7 +607,7 @@
       ENDIF
 !
       ELSE                !!! Case LA=M
-      Z=1.0_8/REAL(N,KIND=8)
+      Z=1.0_JPRB/REAL(N,KIND=JPRB)
       ZQRT5=Z*QRT5
       ZSIN36=Z*SIN36
       ZSIN72=Z*SIN72
@@ -603,7 +620,7 @@
         A3=A(IB+I)-A(IE+I)
         A2=A(IC+I)+A(ID+I)
         A4=A(IC+I)-A(ID+I)
-        A5=Z*(A(IA+I)-0.25_8*(A1+A2))
+        A5=Z*(A(IA+I)-0.25_JPRB*(A1+A2))
         A6=ZQRT5*(A1-A2)
         A(IA+I)=Z*(A(IA+I)+(A1+A2))
         A(IB+I)=A5+A6
@@ -624,7 +641,7 @@
         A3=A(IB+I)-A(IE+I)
         A2=A(IC+I)+A(ID+I)
         A4=A(IC+I)-A(ID+I)
-        A5=Z*(A(IA+I)-0.25_8*(A1+A2))
+        A5=Z*(A(IA+I)-0.25_JPRB*(A1+A2))
         A6=ZQRT5*(A1-A2)
         C(JA+J)=Z*(A(IA+I)+(A1+A2))
         C(JB+J)=A5+A6
@@ -667,10 +684,10 @@
       DO 610 IJK=1,ILOT
       A11=(A(IC+I)+A(IF+I))+(A(IB+I)+A(IE+I))
       C(JA+J)=(A(IA+I)+A(ID+I))+A11
-      C(JC+J)=(A(IA+I)+A(ID+I)-0.5_8*A11)
+      C(JC+J)=(A(IA+I)+A(ID+I)-0.5_JPRB*A11)
       D(JC+J)=SIN60*((A(IC+I)+A(IF+I))-(A(IB+I)+A(IE+I)))
       A11=(A(IC+I)-A(IF+I))+(A(IE+I)-A(IB+I))
-      C(JB+J)=(A(IA+I)-A(ID+I))-0.5_8*A11
+      C(JB+J)=(A(IA+I)-A(ID+I))-0.5_JPRB*A11
       D(JB+J)=SIN60*((A(IE+I)-A(IB+I))-(A(IC+I)-A(IF+I)))
       C(JD+J)=(A(IA+I)-A(ID+I))+A11
       I=I+INC3
@@ -723,10 +740,10 @@
       A5=C5*A(IF+I)+S5*B(IF+I)
       B5=C5*B(IF+I)-S5*A(IF+I)
       A11=(A2+A5)+(A1+A4)
-      A20=(A(IA+I)+A3)-0.5_8*A11
+      A20=(A(IA+I)+A3)-0.5_JPRB*A11
       A21=SIN60*((A2+A5)-(A1+A4))
       B11=(B2+B5)+(B1+B4)
-      B20=(B(IA+I)+B3)-0.5_8*B11
+      B20=(B(IA+I)+B3)-0.5_JPRB*B11
       B21=SIN60*((B2+B5)-(B1+B4))
       C(JA+J)=(A(IA+I)+A3)+A11
       D(JA+J)=(B(IA+I)+B3)+B11
@@ -735,10 +752,10 @@
       C(JE+J)=A20+B21
       D(JE+J)=A21-B20
       A11=(A2-A5)+(A4-A1)
-      A20=(A(IA+I)-A3)-0.5_8*A11
+      A20=(A(IA+I)-A3)-0.5_JPRB*A11
       A21=SIN60*((A4-A1)-(A2-A5))
       B11=(B5-B2)-(B4-B1)
-      B20=(B3-B(IA+I))-0.5_8*B11
+      B20=(B3-B(IA+I))-0.5_JPRB*B11
       B21=SIN60*((B5-B2)+(B4-B1))
       C(JB+J)=A20-B21
       D(JB+J)=A21-B20
@@ -769,15 +786,15 @@
       J=JBASE
 !OCL NOVREC
       DO 670 IJK=1,ILOT
-      C(JA+J)=(A(IA+I)+0.5_8*(A(IC+I)-A(IE+I)))+                        &
+      C(JA+J)=(A(IA+I)+0.5_JPRB*(A(IC+I)-A(IE+I)))+                     &
      &         SIN60*(A(IB+I)-A(IF+I))
-      D(JA+J)=-(A(ID+I)+0.5_8*(A(IB+I)+A(IF+I)))-                       &
+      D(JA+J)=-(A(ID+I)+0.5_JPRB*(A(IB+I)+A(IF+I)))-                    &
      &         SIN60*(A(IC+I)+A(IE+I))
       C(JB+J)=A(IA+I)-(A(IC+I)-A(IE+I))
       D(JB+J)=A(ID+I)-(A(IB+I)+A(IF+I))
-      C(JC+J)=(A(IA+I)+0.5_8*(A(IC+I)-A(IE+I)))-                        &
+      C(JC+J)=(A(IA+I)+0.5_JPRB*(A(IC+I)-A(IE+I)))-                     &
      &         SIN60*(A(IB+I)-A(IF+I))
-      D(JC+J)=-(A(ID+I)+0.5_8*(A(IB+I)+                                 &
+      D(JC+J)=-(A(ID+I)+0.5_JPRB*(A(IB+I)+                              &
      &         A(IF+I)))+SIN60*(A(IC+I)+A(IE+I))
       I=I+INC3
       J=J+INC4
@@ -788,7 +805,7 @@
       ENDIF
 !
       ELSE                !!! Case LA=M
-      Z=1.0_8/REAL(N,KIND=8)
+      Z=1.0_JPRB/REAL(N,KIND=JPRB)
       ZSIN60=Z*SIN60
       IF (LIPL) THEN
         DO 694 L=1,ILA
@@ -796,12 +813,12 @@
 !OCL NOVREC
         DO 692 IJK=1,ILOT
         A11=(A(IC+I)-A(IF+I))+(A(IE+I)-A(IB+I))
-        T1=Z*((A(IA+I)-A(ID+I))-0.5_8*A11)
+        T1=Z*((A(IA+I)-A(ID+I))-0.5_JPRB*A11)
         T5=Z*((A(IA+I)-A(ID+I))+A11)
         T2=ZSIN60*((A(IE+I)-A(IB+I))-(A(IC+I)-A(IF+I)))
         T4=ZSIN60*((A(IC+I)+A(IF+I))-(A(IB+I)+A(IE+I)))
         A11=(A(IC+I)+A(IF+I))+(A(IB+I)+A(IE+I))
-        T3=Z*((A(IA+I)+A(ID+I))-0.5_8*A11)
+        T3=Z*((A(IA+I)+A(ID+I))-0.5_JPRB*A11)
         A(IA+I)=Z*((A(IA+I)+A(ID+I))+A11)
         A(IB+I)=T1
         A(IC+I)=T2
@@ -820,10 +837,10 @@
         DO 696 IJK=1,ILOT
         A11=(A(IC+I)+A(IF+I))+(A(IB+I)+A(IE+I))
         C(JA+J)=Z*((A(IA+I)+A(ID+I))+A11)
-        C(JC+J)=Z*((A(IA+I)+A(ID+I))-0.5_8*A11)
+        C(JC+J)=Z*((A(IA+I)+A(ID+I))-0.5_JPRB*A11)
         D(JC+J)=ZSIN60*((A(IC+I)+A(IF+I))-(A(IB+I)+A(IE+I)))
         A11=(A(IC+I)-A(IF+I))+(A(IE+I)-A(IB+I))
-        C(JB+J)=Z*((A(IA+I)-A(ID+I))-0.5_8*A11)
+        C(JB+J)=Z*((A(IA+I)-A(ID+I))-0.5_JPRB*A11)
         D(JB+J)=ZSIN60*((A(IE+I)-A(IB+I))-(A(IC+I)-A(IF+I)))
         C(JD+J)=Z*((A(IA+I)-A(ID+I))+A11)
         I=I+INC3
@@ -856,8 +873,8 @@
       JC=JB+2*M*INC2
       JD=JC+2*M*INC2
       JE=JD+2*M*INC2
-      Z=1.0_8/REAL(N,KIND=8)
-      ZSIN45=Z*SQRT(0.5_8)
+      Z=1.0_JPRB/REAL(N,KIND=JPRB)
+      ZSIN45=Z*SQRT(0.5_JPRB)
 !
       IF (LIPL) THEN
         DO 820 L=1,ILA

@@ -46,21 +46,25 @@
 #ifdef MATHKEISAN
       SUBROUTINE FFT992(A,TRIGS_,IFAX_,INC,JUMP,N,LOT,ISIGN)
 !AUTOPROMOTE
-      USE PARKIND1, ONLY : JPRB
+      USE PARKIND1, ONLY : JPIM, JPRB
       USE YOMHOOK , ONLY : LHOOK, DR_HOOK
       implicit none
-      integer :: n
-      REAL A(*),TRIGS_(N)
-      INTEGER IFAX_(10)
+      INTEGER(KIND=JPIM) :: n
+      REAL(KIND=JPRB) :: A(*)
+      REAL(KIND=JPRB) :: TRIGS_(N)
+      INTEGER(KIND=JPIM) :: IFAX_(10)
 
-      integer :: inc, jump, lot, isign
+      INTEGER(KIND=JPIM) :: inc
+      INTEGER(KIND=JPIM) :: jump
+      INTEGER(KIND=JPIM) :: lot
+      INTEGER(KIND=JPIM) :: isign
 
-      real ,allocatable,dimension(:),save :: work , trigs
-      integer,save :: ifax (32)
+      REAL(KIND=JPRB),allocatable,dimension(:),save :: work , trigs
+      INTEGER(KIND=JPIM),save :: ifax (32)
 
 
-      integer, save ::  n_old=-1
-      integer, save ::  lot_old=-1
+      INTEGER(KIND=JPIM), save ::  n_old=-1
+      INTEGER(KIND=JPIM), save ::  lot_old=-1
 
 !$OMP threadprivate(ifax,n_old,lot_old,trigs,work)
 
@@ -101,18 +105,27 @@
 #else
       SUBROUTINE FFT992(A,TRIGS,IFAX,INC,JUMP,N,LOT,ISIGN)
 !AUTOPROMOTE
-      USE PARKIND1, ONLY : JPRB
+      USE PARKIND1, ONLY : JPIM, JPRB
       USE YOMHOOK , ONLY : LHOOK, DR_HOOK
       IMPLICIT NONE
 !      
-      INTEGER :: NU,N,INC,JBASE,JUMP,J,JJ,JUMPA,LOT,K,LA,NFAX
-      INTEGER :: ISIGN,I,IA,IBASE,IERR,IFAC,IGO,II,INCA,IX
+      INTEGER(KIND=JPIM) :: NU
+      INTEGER(KIND=JPIM) :: N
+      INTEGER(KIND=JPIM) :: INC
+      INTEGER(KIND=JPIM) :: JBASE
+      INTEGER(KIND=JPIM) :: JUMP
+      INTEGER(KIND=JPIM) :: J,JJ,JUMPA
+      INTEGER(KIND=JPIM) :: LOT
+      INTEGER(KIND=JPIM) :: K,LA,NFAX
+      INTEGER(KIND=JPIM) :: ISIGN
+      INTEGER(KIND=JPIM) :: I,IA,IBASE,IERR,IFAC,IGO,II,INCA,IX
 
-      REAL(KIND=8) :: A(*),TRIGS(N)
-      INTEGER IFAX(10)
+      REAL(KIND=JPRB) :: A(*)
+      REAL(KIND=JPRB) :: TRIGS(N)
+      INTEGER(KIND=JPIM) :: IFAX(10)
 !     Dynamically allocated work array:
-      REAL(KIND=8) :: WORK(N*LOT+1)
-      LOGICAL LIPL
+      REAL(KIND=JPRB) :: WORK(N*LOT+1)
+      LOGICAL :: LIPL
 !
       REAL(KIND=JPRB) :: ZHOOK_HANDLE
       IF (LHOOK) CALL DR_HOOK('FFT992',0,ZHOOK_HANDLE)
@@ -125,14 +138,14 @@
         I=1
 !OCL NOVREC
         DO J=1,LOT
-          A(I+INC)=0.5_8*A(I)
+          A(I+INC)=0.5_JPRB*A(I)
           I=I+JUMP
         ENDDO
         IF (MOD(N,2).EQ.0) THEN
           I=N*INC+1
 !OCL NOVREC
           DO J=1,LOT
-            A(I)=0.5_8*A(I)
+            A(I)=0.5_JPRB*A(I)
             I=I+JUMP
           ENDDO
         ENDIF
@@ -198,8 +211,8 @@
         IX=N*INC+1
 !OCL NOVREC
         DO J=1,LOT
-          A(IX)=0.0_8
-          A(IX+INC)=0.0_8
+          A(IX)=0.0_JPRB
+          A(IX+INC)=0.0_JPRB
           IX=IX+JUMP
         ENDDO
 !
@@ -273,13 +286,13 @@
 !OCL NOVREC
         DO J=1,LOT
           A(IX)=A(IX+INC)
-          A(IX+INC)=0.0_8
+          A(IX+INC)=0.0_JPRB
           IX=IX+JUMP
         ENDDO
         IF (MOD(N,2).EQ.0) THEN
           IX=(N+1)*INC+1
           DO J=1,LOT
-            A(IX)=0.0_8
+            A(IX)=0.0_JPRB
             IX=IX+JUMP
           ENDDO
         ENDIF

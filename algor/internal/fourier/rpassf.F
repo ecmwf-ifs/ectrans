@@ -28,29 +28,42 @@
      &    LA,IERR,LIPL)
 !AUTOPROMOTE
 !
-      USE PARKIND1, ONLY : JPRB
+      USE PARKIND1, ONLY : JPIM, JPRB
       USE YOMHOOK , ONLY : LHOOK, DR_HOOK
 !
       IMPLICIT NONE
 !
-      REAL(KIND=8) :: A,A10,A11,A20,A21
-      REAL(KIND=8) :: B,B10,B11,B20,B21
-      REAL(KIND=8) :: C,C1,C2,C3,C4,C5
-      REAL(KIND=8) :: S1,S2,S3,S4,S5
-      REAL(KIND=8) :: SIN36,SIN45,SIN60,SIN72
-      REAL(KIND=8) :: SSIN36,SSIN45,SSIN60,SSIN72
-      REAL(KIND=8) :: D,TRIGS,QRT5,QQRT5
-      REAL(KIND=8) :: T1,T2,T3,T4,T5,T6,T7
-      INTEGER :: IERR,INC1,INC2,INC3,INC4,INC21,IFAC,IINK,IJK,ILOT,ILA
-      INTEGER :: I,IA,IB,IBAD,IBASE,IC,ID,IE,IF
-      INTEGER :: J,JA,JB,JBASE,JC,JD,JE,JF,JG,JH,JINK,JUMP
-      INTEGER :: K,KB,KC,KD,KE,KF,KSTOP
-      INTEGER :: L,LA,LOT,M,N
-      DIMENSION A(*),B(*),C(*),D(*),TRIGS(N)
-      LOGICAL LIPL
+      REAL(KIND=JPRB) :: A(*)
+      REAL(KIND=JPRB) :: B(*)
+      REAL(KIND=JPRB) :: C(*)
+      REAL(KIND=JPRB) :: D(*)
+      REAL(KIND=JPRB) :: TRIGS(N)
+      REAL(KIND=JPRB) :: A10,A11,A20,A21
+      REAL(KIND=JPRB) :: B10,B11,B20,B21
+      REAL(KIND=JPRB) :: C1,C2,C3,C4,C5
+      REAL(KIND=JPRB) :: S1,S2,S3,S4,S5
+      REAL(KIND=JPRB) :: SIN36,SIN45,SIN60,SIN72
+      REAL(KIND=JPRB) :: SSIN36,SSIN45,SSIN60,SSIN72
+      REAL(KIND=JPRB) :: QRT5,QQRT5
+      REAL(KIND=JPRB) :: T1,T2,T3,T4,T5,T6,T7
+      INTEGER(KIND=JPIM) :: IERR
+      INTEGER(KIND=JPIM) :: INC1
+      INTEGER(KIND=JPIM) :: INC2
+      INTEGER(KIND=JPIM) :: INC3
+      INTEGER(KIND=JPIM) :: INC4
+      INTEGER(KIND=JPIM) :: LOT
+      INTEGER(KIND=JPIM) :: N
+      INTEGER(KIND=JPIM) :: IFAC
+      INTEGER(KIND=JPIM) :: LA
+      INTEGER(KIND=JPIM) :: INC21,IINK,IJK,ILOT,ILA
+      INTEGER(KIND=JPIM) :: I,IA,IB,IBAD,IBASE,IC,ID,IE,IF
+      INTEGER(KIND=JPIM) :: J,JA,JB,JBASE,JC,JD,JE,JF,JG,JH,JINK,JUMP
+      INTEGER(KIND=JPIM) :: K,KB,KC,KD,KE,KF,KSTOP
+      INTEGER(KIND=JPIM) :: L,M
+      LOGICAL :: LIPL
 !
-      DATA SIN36/0.587785252292473_8/,SIN72/0.951056516295154_8/,       &
-     &    QRT5/0.559016994374947_8/,SIN60/0.866025403784437_8/
+      DATA SIN36/0.587785252292473_JPRB/,SIN72/0.951056516295154_JPRB/, &
+     &    QRT5/0.559016994374947_JPRB/,SIN60/0.866025403784437_JPRB/
 !
       REAL(KIND=JPRB) :: ZHOOK_HANDLE
       IF (LHOOK) CALL DR_HOOK('RPASSF',0,ZHOOK_HANDLE)
@@ -159,7 +172,7 @@
 !OCL NOVREC
         DO 292 IJK=1,ILOT
         T1=2.0*(A(IA+I)-A(IB+I))
-        A(IA+I)=2.0_8*(A(IA+I)+A(IB+I))
+        A(IA+I)=2.0_JPRB*(A(IA+I)+A(IB+I))
         A(IB+I)=T1
         I=I+INC3
   292   CONTINUE
@@ -171,8 +184,8 @@
         J=JBASE
 !OCL NOVREC
         DO 296 IJK=1,ILOT
-        C(JA+J)=2.0_8*(A(IA+I)+A(IB+I))
-        C(JB+J)=2.0_8*(A(IA+I)-A(IB+I))
+        C(JA+J)=2.0_JPRB*(A(IA+I)+A(IB+I))
+        C(JB+J)=2.0_JPRB*(A(IA+I)-A(IB+I))
         I=I+INC3
         J=J+INC4
   296   CONTINUE
@@ -202,8 +215,8 @@
 !OCL NOVREC
       DO 310 IJK=1,ILOT
       C(JA+J)=A(IA+I)+A(IB+I)
-      C(JB+J)=(A(IA+I)-0.5_8*A(IB+I))-(SIN60*(B(IB+I)))
-      C(JC+J)=(A(IA+I)-0.5_8*A(IB+I))+(SIN60*(B(IB+I)))
+      C(JB+J)=(A(IA+I)-0.5_JPRB*A(IB+I))-(SIN60*(B(IB+I)))
+      C(JC+J)=(A(IA+I)-0.5_JPRB*A(IB+I))+(SIN60*(B(IB+I)))
       I=I+INC3
       J=J+INC4
   310 CONTINUE
@@ -234,24 +247,24 @@
       C(JA+J)=A(IA+I)+(A(IB+I)+A(IC+I))
       D(JA+J)=B(IA+I)+(B(IB+I)-B(IC+I))
       C(JB+J)=                                                          &
-     &    C1*((A(IA+I)-0.5_8*(A(IB+I)+A(IC+I)))-                        &
+     &    C1*((A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I)))-                     &
      &   (SIN60*(B(IB+I)+B(IC+I))))                                     &
-     &   -S1*((B(IA+I)-0.5_8*(B(IB+I)-B(IC+I)))+                        &
+     &   -S1*((B(IA+I)-0.5_JPRB*(B(IB+I)-B(IC+I)))+                     &
      &   (SIN60*(A(IB+I)-A(IC+I))))
       D(JB+J)=                                                          &
-     &    S1*((A(IA+I)-0.5_8*(A(IB+I)+A(IC+I)))-                        &
+     &    S1*((A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I)))-                     &
      &   (SIN60*(B(IB+I)+B(IC+I))))                                     &
-     &   +C1*((B(IA+I)-0.5_8*(B(IB+I)-B(IC+I)))+                        &
+     &   +C1*((B(IA+I)-0.5_JPRB*(B(IB+I)-B(IC+I)))+                     &
      &   (SIN60*(A(IB+I)-A(IC+I))))
       C(JC+J)=                                                          &
-     &    C2*((A(IA+I)-0.5_8*(A(IB+I)+A(IC+I)))+                        &
+     &    C2*((A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I)))+                     &
      &   (SIN60*(B(IB+I)+B(IC+I))))                                     &
-     &   -S2*((B(IA+I)-0.5_8*(B(IB+I)-B(IC+I)))-                        &
+     &   -S2*((B(IA+I)-0.5_JPRB*(B(IB+I)-B(IC+I)))-                     &
      &   (SIN60*(A(IB+I)-A(IC+I))))
       D(JC+J)=                                                          &
-     &    S2*((A(IA+I)-0.5_8*(A(IB+I)+A(IC+I)))+                        &
+     &    S2*((A(IA+I)-0.5_JPRB*(A(IB+I)+A(IC+I)))+                     &
      &   (SIN60*(B(IB+I)+B(IC+I))))                                     &
-     &   +C2*((B(IA+I)-0.5_8*(B(IB+I)-B(IC+I)))-                        &
+     &   +C2*((B(IA+I)-0.5_JPRB*(B(IB+I)-B(IC+I)))-                     &
      &   (SIN60*(A(IB+I)-A(IC+I))))
       I=I+INC3
       J=J+INC4
@@ -274,8 +287,8 @@
 !OCL NOVREC
       DO 370 IJK=1,ILOT
       C(JA+J)=A(IA+I)+A(IB+I)
-      C(JB+J)=(0.5_8*A(IA+I)-A(IB+I))-(SIN60*B(IA+I))
-      C(JC+J)=-(0.5_8*A(IA+I)-A(IB+I))-(SIN60*B(IA+I))
+      C(JB+J)=(0.5_JPRB*A(IA+I)-A(IB+I))-(SIN60*B(IA+I))
+      C(JC+J)=-(0.5_JPRB*A(IA+I)-A(IB+I))-(SIN60*B(IA+I))
       I=I+INC3
       J=J+INC4
   370 CONTINUE
@@ -291,9 +304,9 @@
         I=IBASE
 !OCL NOVREC
         DO 392 IJK=1,ILOT
-        T1=(2.0_8*A(IA+I)-A(IB+I))-(SSIN60*B(IB+I))
-        T2=(2.0_8*A(IA+I)-A(IB+I))+(SSIN60*B(IB+I))
-        A(IA+I)=2.0_8*(A(IA+I)+A(IB+I))
+        T1=(2.0_JPRB*A(IA+I)-A(IB+I))-(SSIN60*B(IB+I))
+        T2=(2.0_JPRB*A(IA+I)-A(IB+I))+(SSIN60*B(IB+I))
+        A(IA+I)=2.0_JPRB*(A(IA+I)+A(IB+I))
         A(IB+I)=T1
         B(IB+I)=T2
         I=I+INC3
@@ -306,9 +319,9 @@
         J=JBASE
 !OCL NOVREC
         DO 396 IJK=1,ILOT
-        C(JA+J)=2.0_8*(A(IA+I)+A(IB+I))
-        C(JB+J)=(2.0_8*A(IA+I)-A(IB+I))-(SSIN60*B(IB+I))
-        C(JC+J)=(2.0_8*A(IA+I)-A(IB+I))+(SSIN60*B(IB+I))
+        C(JA+J)=2.0_JPRB*(A(IA+I)+A(IB+I))
+        C(JB+J)=(2.0_JPRB*A(IA+I)-A(IB+I))-(SSIN60*B(IB+I))
+        C(JC+J)=(2.0_JPRB*A(IA+I)-A(IB+I))+(SSIN60*B(IB+I))
         I=I+INC3
         J=J+INC4
   396   CONTINUE
@@ -410,7 +423,7 @@
 !
       IF (IB.EQ.IC) THEN
       IBASE=0
-      SIN45=SQRT(0.5_8)
+      SIN45=SQRT(0.5_JPRB)
       DO 480 L=1,ILA
       I=IBASE
       J=JBASE
@@ -434,10 +447,10 @@
         I=IBASE
 !OCL NOVREC
         DO 492 IJK=1,ILOT
-        T1=2.0_8*((A(IA+I)-A(IC+I))-B(IB+I))
-        T2=2.0_8*((A(IA+I)+A(IC+I))-A(IB+I))
-        T3=2.0_8*((A(IA+I)-A(IC+I))+B(IB+I))
-        A(IA+I)=2.0_8*((A(IA+I)+A(IC+I))+A(IB+I))
+        T1=2.0_JPRB*((A(IA+I)-A(IC+I))-B(IB+I))
+        T2=2.0_JPRB*((A(IA+I)+A(IC+I))-A(IB+I))
+        T3=2.0_JPRB*((A(IA+I)-A(IC+I))+B(IB+I))
+        A(IA+I)=2.0_JPRB*((A(IA+I)+A(IC+I))+A(IB+I))
         A(IB+I)=T1
         B(IB+I)=T2
         A(IC+I)=T3
@@ -451,10 +464,10 @@
         J=JBASE
 !OCL NOVREC
         DO 496 IJK=1,ILOT
-        C(JA+J)=2.0_8*((A(IA+I)+A(IC+I))+A(IB+I))
-        C(JB+J)=2.0_8*((A(IA+I)-A(IC+I))-B(IB+I))
-        C(JC+J)=2.0_8*((A(IA+I)+A(IC+I))-A(IB+I))
-        C(JD+J)=2.0_8*((A(IA+I)-A(IC+I))+B(IB+I))
+        C(JA+J)=2.0_JPRB*((A(IA+I)+A(IC+I))+A(IB+I))
+        C(JB+J)=2.0_JPRB*((A(IA+I)-A(IC+I))-B(IB+I))
+        C(JC+J)=2.0_JPRB*((A(IA+I)+A(IC+I))-A(IB+I))
+        C(JD+J)=2.0_JPRB*((A(IA+I)-A(IC+I))+B(IB+I))
         I=I+INC3
         J=J+INC4
   496   CONTINUE
@@ -488,13 +501,13 @@
 !OCL NOVREC
       DO 510 IJK=1,ILOT
       C(JA+J)=A(IA+I)+(A(IB+I)+A(IC+I))
-      C(JB+J)=((A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))+                      &
+      C(JB+J)=((A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))+                   &
      &      QRT5*(A(IB+I)-A(IC+I)))-(SIN72*B(IB+I)+SIN36*B(IC+I))
-      C(JC+J)=((A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))-                      &
+      C(JC+J)=((A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))-                   &
      &      QRT5*(A(IB+I)-A(IC+I)))-(SIN36*B(IB+I)-SIN72*B(IC+I))
-      C(JD+J)=((A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))-                      &
+      C(JD+J)=((A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))-                   &
      &      QRT5*(A(IB+I)-A(IC+I)))+(SIN36*B(IB+I)-SIN72*B(IC+I))
-      C(JE+J)=((A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))+                      &
+      C(JE+J)=((A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))+                   &
      &      QRT5*(A(IB+I)-A(IC+I)))+(SIN72*B(IB+I)+SIN36*B(IC+I))
       I=I+INC3
       J=J+INC4
@@ -532,13 +545,13 @@
 !OCL NOVREC
       DO 530 IJK=1,ILOT
 !
-      A10=(A(IA+I)-0.25_8*((A(IB+I)+A(IE+I))+(A(IC+I)+A(ID+I))))        &
+      A10=(A(IA+I)-0.25_JPRB*((A(IB+I)+A(IE+I))+(A(IC+I)+A(ID+I))))     &
      &    +QRT5*((A(IB+I)+A(IE+I))-(A(IC+I)+A(ID+I)))
-      A20=(A(IA+I)-0.25_8*((A(IB+I)+A(IE+I))+(A(IC+I)+A(ID+I))))        &
+      A20=(A(IA+I)-0.25_JPRB*((A(IB+I)+A(IE+I))+(A(IC+I)+A(ID+I))))     &
      &    -QRT5*((A(IB+I)+A(IE+I))-(A(IC+I)+A(ID+I)))
-      B10=(B(IA+I)-0.25_8*((B(IB+I)-B(IE+I))+(B(IC+I)-B(ID+I))))        &
+      B10=(B(IA+I)-0.25_JPRB*((B(IB+I)-B(IE+I))+(B(IC+I)-B(ID+I))))     &
      &    +QRT5*((B(IB+I)-B(IE+I))-(B(IC+I)-B(ID+I)))
-      B20=(B(IA+I)-0.25_8*((B(IB+I)-B(IE+I))+(B(IC+I)-B(ID+I))))        &
+      B20=(B(IA+I)-0.25_JPRB*((B(IB+I)-B(IE+I))+(B(IC+I)-B(ID+I))))     &
      &    -QRT5*((B(IB+I)-B(IE+I))-(B(IC+I)-B(ID+I)))
       A11=SIN72*(B(IB+I)+B(IE+I))+SIN36*(B(IC+I)+B(ID+I))
       A21=SIN36*(B(IB+I)+B(IE+I))-SIN72*(B(IC+I)+B(ID+I))
@@ -580,16 +593,16 @@
       DO 570 IJK=1,ILOT
       C(JA+J)=(A(IA+I)+A(IB+I))+A(IC+I)
       C(JB+J)=(QRT5*(A(IA+I)-A(IB+I))+                                  &
-     &     (0.25_8*(A(IA+I)+A(IB+I))-A(IC+I)))                          &
+     &     (0.25_JPRB*(A(IA+I)+A(IB+I))-A(IC+I)))                       &
      &    -(SIN36*B(IA+I)+SIN72*B(IB+I))
       C(JE+J)=-(QRT5*(A(IA+I)-A(IB+I))+                                 &
-     &     (0.25_8*(A(IA+I)+A(IB+I))-A(IC+I)))                          &
+     &     (0.25_JPRB*(A(IA+I)+A(IB+I))-A(IC+I)))                       &
      &    -(SIN36*B(IA+I)+SIN72*B(IB+I))
       C(JC+J)=(QRT5*(A(IA+I)-A(IB+I))-                                  &
-     &     (0.25_8*(A(IA+I)+A(IB+I))-A(IC+I)))                          &
+     &     (0.25_JPRB*(A(IA+I)+A(IB+I))-A(IC+I)))                       &
      &    -(SIN72*B(IA+I)-SIN36*B(IB+I))
       C(JD+J)=-(QRT5*(A(IA+I)-A(IB+I))-                                 &
-     &     (0.25_8*(A(IA+I)+A(IB+I))-A(IC+I)))                          &
+     &     (0.25_JPRB*(A(IA+I)+A(IB+I))-A(IC+I)))                       &
      &    -(SIN72*B(IA+I)-SIN36*B(IB+I))
       I=I+INC3
       J=J+INC4
@@ -608,15 +621,15 @@
         I=IBASE
 !OCL NOVREC
         DO 592 IJK=1,ILOT
-        T1=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))                    &
+        T1=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))              &
      &    +QQRT5*(A(IB+I)-A(IC+I)))-(SSIN72*B(IB+I)+SSIN36*B(IC+I))
-        T2=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))                    &
+        T2=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))              &
      &    -QQRT5*(A(IB+I)-A(IC+I)))-(SSIN36*B(IB+I)-SSIN72*B(IC+I))
-        T3=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))                    &
+        T3=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))              &
      &    -QQRT5*(A(IB+I)-A(IC+I)))+(SSIN36*B(IB+I)-SSIN72*B(IC+I))
-        T4=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))                    &
+        T4=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))              &
      &    +QQRT5*(A(IB+I)-A(IC+I)))+(SSIN72*B(IB+I)+SSIN36*B(IC+I))
-        A(IA+I)=2.0_8*(A(IA+I)+(A(IB+I)+A(IC+I)))
+        A(IA+I)=2.0_JPRB*(A(IA+I)+(A(IB+I)+A(IC+I)))
         A(IB+I)=T1
         B(IB+I)=T2
         A(IC+I)=T3
@@ -631,14 +644,14 @@
         J=JBASE
 !OCL NOVREC
         DO 596 IJK=1,ILOT
-        C(JA+J)=2.0_8*(A(IA+I)+(A(IB+I)+A(IC+I)))
-        C(JB+J)=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))               &
+        C(JA+J)=2.0_JPRB*(A(IA+I)+(A(IB+I)+A(IC+I)))
+        C(JB+J)=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))         &
      &    +QQRT5*(A(IB+I)-A(IC+I)))-(SSIN72*B(IB+I)+SSIN36*B(IC+I))
-        C(JC+J)=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))               &
+        C(JC+J)=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))         &
      &    -QQRT5*(A(IB+I)-A(IC+I)))-(SSIN36*B(IB+I)-SSIN72*B(IC+I))
-        C(JD+J)=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))               &
+        C(JD+J)=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))         &
      &    -QQRT5*(A(IB+I)-A(IC+I)))+(SSIN36*B(IB+I)-SSIN72*B(IC+I))
-        C(JE+J)=(2.0_8*(A(IA+I)-0.25_8*(A(IB+I)+A(IC+I)))               &
+        C(JE+J)=(2.0_JPRB*(A(IA+I)-0.25_JPRB*(A(IB+I)+A(IC+I)))         &
      &    +QQRT5*(A(IB+I)-A(IC+I)))+(SSIN72*B(IB+I)+SSIN36*B(IC+I))
         I=I+INC3
         J=J+INC4
@@ -676,13 +689,13 @@
       DO 610 IJK=1,ILOT
       C(JA+J)=(A(IA+I)+A(ID+I))+(A(IB+I)+A(IC+I))
       C(JD+J)=(A(IA+I)-A(ID+I))-(A(IB+I)-A(IC+I))
-      C(JB+J)=((A(IA+I)-A(ID+I))+0.5_8*(A(IB+I)-A(IC+I)))               &
+      C(JB+J)=((A(IA+I)-A(ID+I))+0.5_JPRB*(A(IB+I)-A(IC+I)))            &
      &    -(SIN60*(B(IB+I)+B(IC+I)))
-      C(JF+J)=((A(IA+I)-A(ID+I))+0.5_8*(A(IB+I)-A(IC+I)))               &
+      C(JF+J)=((A(IA+I)-A(ID+I))+0.5_JPRB*(A(IB+I)-A(IC+I)))            &
      &    +(SIN60*(B(IB+I)+B(IC+I)))
-      C(JC+J)=((A(IA+I)+A(ID+I))-0.5_8*(A(IB+I)+A(IC+I)))               &
+      C(JC+J)=((A(IA+I)+A(ID+I))-0.5_JPRB*(A(IB+I)+A(IC+I)))            &
      &    -(SIN60*(B(IB+I)-B(IC+I)))
-      C(JE+J)=((A(IA+I)+A(ID+I))-0.5_8*(A(IB+I)+A(IC+I)))               &
+      C(JE+J)=((A(IA+I)+A(ID+I))-0.5_JPRB*(A(IB+I)+A(IC+I)))            &
      &    +(SIN60*(B(IB+I)-B(IC+I)))
       I=I+INC3
       J=J+INC4
@@ -725,10 +738,10 @@
       DO 630 IJK=1,ILOT
 !
       A11= (A(IE+I)+A(IB+I))+(A(IC+I)+A(IF+I))
-      A20=(A(IA+I)+A(ID+I))-0.5_8*A11
+      A20=(A(IA+I)+A(ID+I))-0.5_JPRB*A11
       A21=SIN60*((A(IE+I)+A(IB+I))-(A(IC+I)+A(IF+I)))
       B11= (B(IB+I)-B(IE+I))+(B(IC+I)-B(IF+I))
-      B20=(B(IA+I)-B(ID+I))-0.5_8*B11
+      B20=(B(IA+I)-B(ID+I))-0.5_JPRB*B11
       B21=SIN60*((B(IB+I)-B(IE+I))-(B(IC+I)-B(IF+I)))
 !
       C(JA+J)=(A(IA+I)+A(ID+I))+A11
@@ -740,9 +753,9 @@
 !
       A11=(A(IE+I)-A(IB+I))+(A(IC+I)-A(IF+I))
       B11=(B(IE+I)+B(IB+I))-(B(IC+I)+B(IF+I))
-      A20=(A(IA+I)-A(ID+I))-0.5_8*A11
+      A20=(A(IA+I)-A(ID+I))-0.5_JPRB*A11
       A21=SIN60*((A(IE+I)-A(IB+I))-(A(IC+I)-A(IF+I)))
-      B20=(B(IA+I)+B(ID+I))+0.5_8*B11
+      B20=(B(IA+I)+B(ID+I))+0.5_JPRB*B11
       B21=SIN60*((B(IE+I)+B(IB+I))+(B(IC+I)+B(IF+I)))
 !
       C(JD+J)=                                                          &
@@ -780,13 +793,13 @@
       C(JA+J)=A(IB+I)+(A(IA+I)+A(IC+I))
       C(JD+J)=B(IB+I)-(B(IA+I)+B(IC+I))
       C(JB+J)=(SIN60*(A(IA+I)-A(IC+I)))-                                &
-     &        (0.5_8*(B(IA+I)+B(IC+I))+B(IB+I))
+     &        (0.5_JPRB*(B(IA+I)+B(IC+I))+B(IB+I))
       C(JF+J)=-(SIN60*(A(IA+I)-A(IC+I)))-                               &
-     &        (0.5_8*(B(IA+I)+B(IC+I))+B(IB+I))
+     &        (0.5_JPRB*(B(IA+I)+B(IC+I))+B(IB+I))
       C(JC+J)=SIN60*(B(IC+I)-B(IA+I))+                                  &
-     &        (0.5_8*(A(IA+I)+A(IC+I))-A(IB+I))
+     &        (0.5_JPRB*(A(IA+I)+A(IC+I))-A(IB+I))
       C(JE+J)=SIN60*(B(IC+I)-B(IA+I))-                                  &
-     &        (0.5_8*(A(IA+I)+A(IC+I))-A(IB+I))
+     &        (0.5_JPRB*(A(IA+I)+A(IC+I))-A(IB+I))
       I=I+INC3
       J=J+INC4
   670 CONTINUE
@@ -796,22 +809,23 @@
       ENDIF
 !
       ELSE                 !!! Case LA=M
-      SSIN60=2.0_8*SIN60
+      SSIN60=2.0_JPRB*SIN60
       IF (LIPL) THEN
         DO 694 L=1,ILA
         I=IBASE
 !OCL NOVREC
         DO 692 IJK=1,ILOT
-        T1=(2.0_8*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))                  &
+        T1=(2.0_JPRB*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))               &
      &    -(SSIN60*(B(IB+I)+B(IC+I)))
-        T5=(2.0_8*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))                  &
+        T5=(2.0_JPRB*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))               &
      &    +(SSIN60*(B(IB+I)+B(IC+I)))
-        T2=(2.0_8*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))                  &
+        T2=(2.0_JPRB*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))               &
      &    -(SSIN60*(B(IB+I)-B(IC+I)))
-        T4=(2.0_8*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))                  &
+        T4=(2.0_JPRB*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))               &
      &    +(SSIN60*(B(IB+I)-B(IC+I)))
-        T3=(2.0_8*(A(IA+I)-A(ID+I)))-(2.0_8*(A(IB+I)-A(IC+I)))
-        A(IA+I)=(2.0_8*(A(IA+I)+A(ID+I)))+(2.0_8*(A(IB+I)+A(IC+I)))
+        T3=(2.0_JPRB*(A(IA+I)-A(ID+I)))-(2.0_JPRB*(A(IB+I)-A(IC+I)))
+        A(IA+I)=(2.0_JPRB*(A(IA+I)+A(ID+I)))+                           &
+     &          (2.0_JPRB*(A(IB+I)+A(IC+I)))
         A(IB+I)=T1
         B(IB+I)=T2
         A(IC+I)=T3
@@ -827,15 +841,17 @@
         J=JBASE
 !OCL NOVREC
         DO 696 IJK=1,ILOT
-        C(JA+J)=(2.0_8*(A(IA+I)+A(ID+I)))+(2.0_8*(A(IB+I)+A(IC+I)))
-        C(JD+J)=(2.0_8*(A(IA+I)-A(ID+I)))-(2.0_8*(A(IB+I)-A(IC+I)))
-        C(JB+J)=(2.0_8*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))             &
+        C(JA+J)=(2.0_JPRB*(A(IA+I)+A(ID+I)))+                           &
+     &          (2.0_JPRB*(A(IB+I)+A(IC+I)))
+        C(JD+J)=(2.0_JPRB*(A(IA+I)-A(ID+I)))-                           &
+     &          (2.0_JPRB*(A(IB+I)-A(IC+I)))
+        C(JB+J)=(2.0_JPRB*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))          &
      &    -(SSIN60*(B(IB+I)+B(IC+I)))
-        C(JF+J)=(2.0_8*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))             &
+        C(JF+J)=(2.0_JPRB*(A(IA+I)-A(ID+I))+(A(IB+I)-A(IC+I)))          &
      &    +(SSIN60*(B(IB+I)+B(IC+I)))
-        C(JC+J)=(2.0_8*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))             &
+        C(JC+J)=(2.0_JPRB*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))          &
      &    -(SSIN60*(B(IB+I)-B(IC+I)))
-        C(JE+J)=(2.0_8*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))             &
+        C(JE+J)=(2.0_JPRB*(A(IA+I)+A(ID+I))-(A(IB+I)+A(IC+I)))          &
      &    +(SSIN60*(B(IB+I)-B(IC+I)))
         I=I+INC3
         J=J+INC4
@@ -867,25 +883,25 @@
       JF=JE+JINK
       JG=JF+JINK
       JH=JG+JINK
-      SSIN45=SQRT(2.0_8)
+      SSIN45=SQRT(2.0_JPRB)
 !
       IF (LIPL) THEN
         DO 820 L=1,ILA
         I=IBASE
 !OCL NOVREC
         DO 810 IJK=1,ILOT
-        T2=2.0_8*(((A(IA+I)+A(IE+I))-A(IC+I))-(B(IB+I)-B(ID+I)))
-        T6=2.0_8*(((A(IA+I)+A(IE+I))-A(IC+I))+(B(IB+I)-B(ID+I)))
-        T1=2.0_8*((A(IA+I)-A(IE+I))-B(IC+I))                            &
+        T2=2.0_JPRB*(((A(IA+I)+A(IE+I))-A(IC+I))-(B(IB+I)-B(ID+I)))
+        T6=2.0_JPRB*(((A(IA+I)+A(IE+I))-A(IC+I))+(B(IB+I)-B(ID+I)))
+        T1=2.0_JPRB*((A(IA+I)-A(IE+I))-B(IC+I))                         &
      &    +SSIN45*((A(IB+I)-A(ID+I))-(B(IB+I)+B(ID+I)))
-        T5=2.0_8*((A(IA+I)-A(IE+I))-B(IC+I))                            &
+        T5=2.0_JPRB*((A(IA+I)-A(IE+I))-B(IC+I))                         &
      &    -SSIN45*((A(IB+I)-A(ID+I))-(B(IB+I)+B(ID+I)))
-        T3=2.0_8*((A(IA+I)-A(IE+I))+B(IC+I))                            &
+        T3=2.0_JPRB*((A(IA+I)-A(IE+I))+B(IC+I))                         &
      &    -SSIN45*((A(IB+I)-A(ID+I))+(B(IB+I)+B(ID+I)))
-        T7=2.0_8*((A(IA+I)-A(IE+I))+B(IC+I))                            &
+        T7=2.0_JPRB*((A(IA+I)-A(IE+I))+B(IC+I))                         &
      &    +SSIN45*((A(IB+I)-A(ID+I))+(B(IB+I)+B(ID+I)))
-        T4=2.0_8*(((A(IA+I)+A(IE+I))+A(IC+I))-(A(IB+I)+A(ID+I)))
-        A(IA+I)=2.0_8*(((A(IA+I)+A(IE+I))+A(IC+I))+(A(IB+I)+A(ID+I)))
+        T4=2.0_JPRB*(((A(IA+I)+A(IE+I))+A(IC+I))-(A(IB+I)+A(ID+I)))
+        A(IA+I)=2.0_JPRB*(((A(IA+I)+A(IE+I))+A(IC+I))+(A(IB+I)+A(ID+I)))
         A(IB+I)=T1
         B(IB+I)=T2
         A(IC+I)=T3
@@ -903,17 +919,17 @@
         J=JBASE
 !OCL NOVREC
         DO 830 IJK=1,ILOT
-        C(JA+J)=2.0_8*(((A(IA+I)+A(IE+I))+A(IC+I))+(A(IB+I)+A(ID+I)))
-        C(JE+J)=2.0_8*(((A(IA+I)+A(IE+I))+A(IC+I))-(A(IB+I)+A(ID+I)))
-        C(JC+J)=2.0_8*(((A(IA+I)+A(IE+I))-A(IC+I))-(B(IB+I)-B(ID+I)))
-        C(JG+J)=2.0_8*(((A(IA+I)+A(IE+I))-A(IC+I))+(B(IB+I)-B(ID+I)))
-        C(JB+J)=2.0_8*((A(IA+I)-A(IE+I))-B(IC+I))                       &
+        C(JA+J)=2.0_JPRB*(((A(IA+I)+A(IE+I))+A(IC+I))+(A(IB+I)+A(ID+I)))
+        C(JE+J)=2.0_JPRB*(((A(IA+I)+A(IE+I))+A(IC+I))-(A(IB+I)+A(ID+I)))
+        C(JC+J)=2.0_JPRB*(((A(IA+I)+A(IE+I))-A(IC+I))-(B(IB+I)-B(ID+I)))
+        C(JG+J)=2.0_JPRB*(((A(IA+I)+A(IE+I))-A(IC+I))+(B(IB+I)-B(ID+I)))
+        C(JB+J)=2.0_JPRB*((A(IA+I)-A(IE+I))-B(IC+I))                    &
      &    +SSIN45*((A(IB+I)-A(ID+I))-(B(IB+I)+B(ID+I)))
-        C(JF+J)=2.0_8*((A(IA+I)-A(IE+I))-B(IC+I))                       &
+        C(JF+J)=2.0_JPRB*((A(IA+I)-A(IE+I))-B(IC+I))                    &
      &    -SSIN45*((A(IB+I)-A(ID+I))-(B(IB+I)+B(ID+I)))
-        C(JD+J)=2.0_8*((A(IA+I)-A(IE+I))+B(IC+I))                       &
+        C(JD+J)=2.0_JPRB*((A(IA+I)-A(IE+I))+B(IC+I))                    &
      &    -SSIN45*((A(IB+I)-A(ID+I))+(B(IB+I)+B(ID+I)))
-        C(JH+J)=2.0_8*((A(IA+I)-A(IE+I))+B(IC+I))                       &
+        C(JH+J)=2.0_JPRB*((A(IA+I)-A(IE+I))+B(IC+I))                    &
      &    +SSIN45*((A(IB+I)-A(ID+I))+(B(IB+I)+B(ID+I)))
         I=I+INC3
         J=J+INC4
