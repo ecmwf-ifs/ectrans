@@ -1,7 +1,7 @@
 MODULE GATH_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
- & KSMAX,KSPEC2,KSPEC2_G,KPOSSP,KDIM0G)
+ & KSMAX,KSPEC2,KSPEC2_G,KPOSSP,KDIM0G,LDZA0IP)
 
 !**** *GATH_SPEC_CONTROL* - Gather global spectral array from processors
 
@@ -20,6 +20,7 @@ SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     KTO(:)    - Processor responsible for distributing each field
 !     KVSET(:)    - "B-Set" for each field
 !     PSPEC(:,:)  - Local spectral array
+!     LDZA0IP     - Set first coefficients (imaginary part) to zero
 
 !     ------------------------------------------------------------------
 
@@ -51,15 +52,19 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2_G
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KPOSSP(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KDIM0G(0:)
+LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDZA0IP
 
 REAL(KIND=JPRB)    :: ZFLD(KSPEC2,KFGATHG),ZDUM(KSPEC2)
 REAL(KIND=JPRB),ALLOCATABLE :: ZRECV(:,:)
 INTEGER(KIND=JPIM) :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,IBSET,ILEN,JA,ISND
 INTEGER(KIND=JPIM) :: IRCV,ISP,ILENR,ISTA,ISTP,ISENDREQ(KFGATHG),IPOS0,JNM
 INTEGER(KIND=JPIM) :: IDIST(KSPEC2_G),IMYFIELDS
+LOGICAL            :: LLZA0IP
 
 !     ------------------------------------------------------------------
 
+LLZA0IP=.TRUE.
+IF (PRESENT (LDZA0IP)) LLZA0IP=LDZA0IP
 
 !GATHER SPECTRAL ARRAY
 
@@ -178,22 +183,26 @@ ELSE
       DO JNM=1,KSPEC2_G
         PSPECG(JFLD,JNM) = ZRECV(IDIST(JNM),JFLD)
       ENDDO
-      II = 0
-      DO JN=0,KSMAX
-        ISP = KDIM0G(0)+JN*2+1
-        II = II+2
-        PSPECG(JFLD,II) = 0.0_JPRB
-      ENDDO
+      IF (LLZA0IP) THEN
+        II = 0
+        DO JN=0,KSMAX
+          ISP = KDIM0G(0)+JN*2+1
+          II = II+2
+          PSPECG(JFLD,II) = 0.0_JPRB
+        ENDDO
+      ENDIF
     ELSE
       DO JNM=1,KSPEC2_G
         PSPECG(JNM,JFLD) = ZRECV(IDIST(JNM),JFLD)
       ENDDO
-      II = 0
-      DO JN=0,KSMAX
-        ISP = KDIM0G(0)+JN*2+1
-        II = II+2
-        PSPECG(II,JFLD) = 0.0_JPRB
-      ENDDO
+      IF (LLZA0IP) THEN
+        II = 0
+        DO JN=0,KSMAX
+          ISP = KDIM0G(0)+JN*2+1
+          II = II+2
+          PSPECG(II,JFLD) = 0.0_JPRB
+        ENDDO
+      ENDIF
     ENDIF
   ENDDO
 !$OMP END PARALLEL DO

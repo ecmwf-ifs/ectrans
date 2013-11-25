@@ -1,4 +1,4 @@
-SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX)
+SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
 
 !**** *GATH_SPEC* - Gather global spectral array from processors
 
@@ -19,6 +19,7 @@ SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX)
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
 !     PSPEC(:,:)  - Local spectral array
+!     LDZA0IP     - Set to zero imaginary part of first coefficients
 !
 !     Method.
 !     -------
@@ -34,6 +35,7 @@ SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX)
 !     --------------
 !        Original : 00-03-03
 !        Modified 03-09-30  Y. Seity, bug correction IFSEND=0
+!        Modified 13-10-10  P. Marguinaud add LDZA0IP option
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -64,6 +66,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
+LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDZA0IP
 
 !ifndef INTERFACE
 
@@ -169,7 +172,7 @@ IF(IFSEND > 0 ) THEN
 ENDIF
 
 CALL GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,IVSET,PSPEC,LLDIM1_IS_FLD,&
- & ISMAX,ISPEC2,ISPEC2_G,IPOSSP,IDIM0G)
+ & ISMAX,ISPEC2,ISPEC2_G,IPOSSP,IDIM0G,LDZA0IP)
 DEALLOCATE(IDIM0G)
 
 IF (LHOOK) CALL DR_HOOK('GATH_SPEC',1,ZHOOK_HANDLE)
