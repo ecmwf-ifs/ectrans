@@ -218,7 +218,7 @@ CALL GSTATS(1801,2)
 CALL SUGAW(INN,0,INMAX,ZLRMUZ(1:INN),ZW(1:INN),ZANM,ZFN)
 CALL GSTATS(1801,3)
 
-WRITE(NOUT,*) '=== SULEG: Finished Gaussian latitudes ==='
+IF (LLP1) WRITE(NOUT,*) '=== SULEG: Finished Gaussian latitudes ==='
 
 !*       3.2   Computes related arrays
 
@@ -322,7 +322,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
     DEALLOCATE(ZPNMG)
 
-    WRITE(NOUT,*) '=== SULEG: Finished RPNM ==='
+    IF(LLP1) WRITE(NOUT,*) '=== SULEG: Finished RPNM ==='
 
   ENDIF
 
@@ -439,7 +439,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
   ENDDO ! JMLOC
     
-  IF( S%LUSEFLT ) THEN    
+  IF( LLP1 .AND. S%LUSEFLT ) THEN    
     WRITE(NOUT,*) '=== SULEG: Finished SETUP_BUTTERFLY ==='
   ENDIF
 
