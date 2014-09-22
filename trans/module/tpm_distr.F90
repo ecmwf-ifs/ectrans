@@ -39,6 +39,7 @@ TYPE DISTR_TYPE
 LOGICAL   :: LGRIDONLY          ! TRUE - only grid space structures are available
 LOGICAL   :: LWEIGHTED_DISTR    ! TRUE - weighted distribution
 LOGICAL   :: LSPLIT             ! TRUE - latitudes are shared between a-sets
+LOGICAL   :: LCPNMONLY          ! TRUE - Compute Legendre polynomials only, not FFTs
 
 ! SPECTRAL SPACE
 

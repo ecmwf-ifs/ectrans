@@ -1,5 +1,5 @@
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
-&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,LDSPSETUPONLY)
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
+&KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,LDSPSETUPONLY,LDPNMONLY)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -32,10 +32,13 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !     LDSPLIT describe the distribution among processors of grid-point data and
 !     has no relevance if you are using a single processor
  
+!     PSTRET     - stretching factor - for the case the Legendre polynomials are
+!                  computed on the stretched sphere - works with LSOUTHPNM
 !     LDUSEFLT   - use Fast Legandre Transform (Butterfly algorithm)
 !     LDUSERPNM  - Use Belusov to compute legendre pol. (else new alg.)
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
 !                  FLT, otherwise always kept)
+!     LDPNMONLY  - Compute the Legendre polynomialsonly, not the FFTs.
  
 !     Method.
 !     -------
@@ -58,7 +61,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,&
 !        Original : 00-03-03
 !        Daan Degrauwe : Mar 2012 E'-zone dimensions
 !        R. El Khatib 09-Aug-2012 %LAM in GEOM_TYPE
-
+!        R. El Khatib 14-Jun-2013 PSTRET, LDPNMONLY, LENABLED
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -66,7 +69,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 !ifndef INTERFACE
 
 USE TPM_GEN         ,ONLY : NOUT, MSETUP0, NCUR_RESOL, NDEF_RESOL, &
-     &                      NMAX_RESOL, NPRINTLEV
+     &                      NMAX_RESOL, NPRINTLEV, LENABLED
 USE TPM_DIM         ,ONLY : R, DIM_RESOL
 USE TPM_DISTR       ,ONLY : D, DISTR_RESOL
 USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL
@@ -97,11 +100,13 @@ LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
+REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDPNMONLY
 
 !ifndef INTERFACE
 
@@ -132,6 +137,8 @@ IF(.NOT. ALLOCATED(DIM_RESOL)) THEN
   ALLOCATE(FFT_RESOL(NMAX_RESOL))
   ALLOCATE(FLT_RESOL(NMAX_RESOL))
   GEOM_RESOL(:)%LAM=.FALSE.
+  ALLOCATE(LENABLED(NMAX_RESOL))
+  LENABLED(:)=.FALSE.
 ELSE
   NDEF_RESOL = NDEF_RESOL+1
   IF(NDEF_RESOL > NMAX_RESOL) THEN
@@ -155,8 +162,10 @@ IF(LLP1) WRITE(NOUT,*) '=== DEFINING RESOLUTION ',NCUR_RESOL
 
 G%LREDUCED_GRID = .FALSE.
 G%LINEAR_GRID = .FALSE.
+G%RSTRET=1.0_JPRB
 D%LGRIDONLY = .FALSE.
 D%LSPLIT = .FALSE.
+D%LCPNMONLY=.FALSE.
 S%LUSERPNM=.TRUE. ! use RPNM array instead of per m
 S%LKEEPRPNM=.TRUE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
@@ -209,10 +218,6 @@ IF(PRESENT(KTMAX)) THEN
 ELSE
   R%NTMAX = R%NSMAX
 ENDIF
-IF(R%NTMAX /= R%NSMAX) THEN
-  !This SHOULD work but I don't know how to test it /MH
-  CALL ABORT_TRANS('SETUP_TRANS:R%NTMAX /= R%NSMAX HAS NOT BEEN VALIDATED')
-ENDIF
 !Temporary?
 IF(PRESENT(LDLINEAR_GRID)) THEN
   G%LINEAR_GRID = LDLINEAR_GRID
@@ -245,6 +250,9 @@ IF(PRESENT(LDSPSETUPONLY)) THEN
   LLSPSETUPONLY=LDSPSETUPONLY
 ENDIF
 
+IF(PRESENT(LDPNMONLY)) THEN
+  D%LCPNMONLY=LDPNMONLY
+ENDIF
 
 IF(PRESENT(LDUSEFLT)) THEN
   S%LUSEFLT=LDUSEFLT
@@ -259,6 +267,18 @@ IF(PRESENT(LDKEEPRPNM)) THEN
     ENDIF
   ENDIF
   S%LKEEPRPNM=LDKEEPRPNM
+ENDIF
+
+S%LSOUTHPNM=.FALSE.
+IF(PRESENT(PSTRET)) THEN
+  IF (ABS(PSTRET-1.0_JPRB)>100._JPRB*EPSILON(1._JPRB)) THEN
+    IF(.NOT.S%LKEEPRPNM .OR. .NOT. S%LUSERPNM) THEN
+      CALL ABORT_TRANS('SETUP_TRANS: PSTRET implemented only with &
+        &  S%LKEEPRPNM=T and S%LUSERPNM=T')
+    ENDIF
+    G%RSTRET=PSTRET
+    S%LSOUTHPNM=.TRUE.
+  ENDIF
 ENDIF
 
 !     Setup resolution dependent structures
@@ -286,10 +306,13 @@ CALL SUMP_TRANS
 CALL GSTATS(1802,0)
 
 ! Initialize Fast Fourier Transform package
-CALL SUFFT
+IF (.NOT.D%LCPNMONLY) CALL SUFFT
 CALL GSTATS(1802,1)
 
 ENDIF
+
+! Signal the current resolution is active
+LENABLED(NDEF_RESOL)=.TRUE.
 
 IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------

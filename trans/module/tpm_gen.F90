@@ -22,5 +22,7 @@ INTEGER(KIND=JPIM) :: NPROMATR        ! Packet size for transform (in no of fiel
 LOGICAL   :: LALLOPERM       ! Allocate some shared data structures permanently
 LOGICAL   :: LMPOFF          ! true: switch off message passing
 LOGICAL   :: LSYNC_TRANS     ! true: activate barriers in trmtol and trltom
+LOGICAL, ALLOCATABLE :: LENABLED(:)   ! true: the resolution is enabled (it has been
+                                      ! initialised and has not been released afterward) 
 
 END MODULE TPM_GEN
