@@ -1,6 +1,6 @@
 INTERFACE
 SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
- & LDIM1_IS_FLD,KSMAX)
+ & LDIM1_IS_FLD,KSMAX,KSORT)
 
 !**** *DIST_SPEC* - Distribute global spectral array among processors
 
@@ -53,6 +53,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
 
 
 !     ------------------------------------------------------------------

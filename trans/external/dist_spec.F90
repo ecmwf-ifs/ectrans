@@ -1,5 +1,5 @@
 SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
- & LDIM1_IS_FLD,KSMAX)
+ & LDIM1_IS_FLD,KSMAX,KSORT)
 
 !**** *DIST_SPEC* - Distribute global spectral array among processors
 
@@ -20,6 +20,7 @@ SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
 !     PSPEC(:,:)  - Local spectral array
+!     KSORT (:)   - Re-order fields on output
 !
 !     Method.
 !     -------
@@ -34,6 +35,7 @@ SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!    P.Marguinaud : 10-10-14 Add KSORT
 
 !     ------------------------------------------------------------------
 
@@ -65,6 +67,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
 
 !ifndef INTERFACE
 
@@ -165,8 +168,17 @@ IF(IFRECV > 0 ) THEN
   ENDIF
 ENDIF
 
+IF (PRESENT (KSORT)) THEN
+  IF (.NOT. PRESENT (PSPEC)) THEN
+    CALL ABORT_TRANS('DIST_SPEC: KSORT REQUIRES PSPEC')
+  ENDIF
+  IF (UBOUND (KSORT, 1) /= UBOUND (PSPEC, IFLD)) THEN
+    CALL ABORT_TRANS('DIST_SPEC: DIMENSION MISMATCH KSORT, PSPEC')
+  ENDIF
+ENDIF
+
 CALL DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,IVSET,PSPEC,LLDIM1_IS_FLD,&
- & ISMAX,ISPEC2,ISPEC2_G,IPOSSP,IDIM0G)
+ & ISMAX,ISPEC2,ISPEC2_G,IPOSSP,IDIM0G,KSORT)
 
 DEALLOCATE(IDIM0G)
 

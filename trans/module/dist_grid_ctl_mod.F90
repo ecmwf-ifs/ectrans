@@ -1,6 +1,6 @@
 MODULE DIST_GRID_CTL_MOD
 CONTAINS
-SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
+SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP,KSORT)
 
 !**** *DIST_GRID_CTL* - Distributing global gridpoint array to processors
 
@@ -19,6 +19,7 @@ SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 !     KPROMA      - required blocking factor for gridpoint output
 !     KFROM(:)    - Processor responsible for distributing each field
 !     PGP(:,:,:)  - Local spectral array
+!     KSORT(:)    - Add KSORT
 
 !     Externals.  SET2PE - compute "A and B" set from PE
 !     ----------  MPL..  - message passing routines
@@ -30,6 +31,7 @@ SUBROUTINE DIST_GRID_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 !     Modifications.
 !     --------------
 !        Original : 2000-04-01
+!    P.Marguinaud : 2014-10-10
 
 !     ------------------------------------------------------------------
 
@@ -54,6 +56,7 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KPROMA
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
 REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN), TARGET :: KSORT (:)
 
 ! Declaration of local variables
 
@@ -65,9 +68,19 @@ INTEGER(KIND=JPIM) :: JGL,JLON,ISND,ITAG,J,IRCV
 INTEGER(KIND=JPIM) :: JKGLO,IEND,JROF,IBL,JROC
 INTEGER(KIND=JPIM) :: ISENDREQ(NPROC,KFDISTG),ILEN(NPROC,KFDISTG)
 INTEGER(KIND=JPIM) :: IFROM,IMYFIELDS,IFLD
+INTEGER(KIND=JPIM), POINTER :: ISORT (:)
 LOGICAL :: LLSAME
 
 !     ------------------------------------------------------------------
+
+IF (PRESENT (KSORT)) THEN
+  ISORT => KSORT
+ELSE
+  ALLOCATE (ISORT (KFDISTG))
+  DO JFLD = 1, KFDISTG
+    ISORT (JFLD) = JFLD
+  ENDDO
+ENDIF
 
 ! Copy for single PE
 
@@ -79,7 +92,7 @@ IF(NPROC == 1) THEN
     IBL  = (JKGLO-1)/KPROMA+1
     DO JFLD=1,KFDISTG
       DO JROF=1,IEND
-        PGP(JROF,JFLD,IBL) = PGPG(IOFF+JROF,JFLD)
+        PGP(JROF,ISORT(JFLD),IBL) = PGPG(IOFF+JROF,JFLD)
       ENDDO
     ENDDO
   ENDDO
@@ -224,7 +237,7 @@ ELSEIF(KFDISTG>0) THEN
     IBL  = (JKGLO-1)/KPROMA+1
     DO JFLD=1,KFDISTG
       DO JROF=1,IEND
-        PGP(JROF,JFLD,IBL) = ZRCV(IOFF+JROF,JFLD)
+        PGP(JROF,ISORT(JFLD),IBL) = ZRCV(IOFF+JROF,JFLD)
       ENDDO
     ENDDO
   ENDDO
@@ -235,6 +248,10 @@ ELSEIF(KFDISTG>0) THEN
   CALL MPL_BARRIER(CDSTRING='DIST_GRID_CTL:')
   CALL GSTATS(786,1)
   IF(ALLOCATED(ZBUF)) DEALLOCATE(ZBUF)
+ENDIF
+
+IF (.NOT. PRESENT (KSORT)) THEN
+  DEALLOCATE (ISORT)
 ENDIF
 
 !     ------------------------------------------------------------------

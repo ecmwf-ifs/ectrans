@@ -1,5 +1,5 @@
 INTERFACE
-SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
+SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP,KSORT)
 
 !**** *DIST_GRID* - Distribute global gridpoint array among processors
 
@@ -50,6 +50,7 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
 
 
 !     ------------------------------------------------------------------
