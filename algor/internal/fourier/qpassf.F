@@ -32,6 +32,7 @@
 !
       IMPLICIT NONE
 !
+      INTEGER(KIND=JPIM) :: N
       REAL(KIND=JPRB) :: A(*)
       REAL(KIND=JPRB) :: B(*)
       REAL(KIND=JPRB) :: C(*)
@@ -51,7 +52,6 @@
       INTEGER(KIND=JPIM) :: INC3
       INTEGER(KIND=JPIM) :: INC4
       INTEGER(KIND=JPIM) :: LOT
-      INTEGER(KIND=JPIM) :: N
       INTEGER(KIND=JPIM) :: IFAC
       INTEGER(KIND=JPIM) :: LA
       INTEGER(KIND=JPIM) :: IINK,IJK,ILOT
