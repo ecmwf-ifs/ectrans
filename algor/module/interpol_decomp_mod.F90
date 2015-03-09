@@ -153,7 +153,9 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
       ENDIF
     ENDDO
 ! Re-compute column norms when ztau < zeps*ztau_rec
-    IF(ZTAU < ZEPS*ZTAU_REC) THEN
+!   We have disabled this test so as to recompute column nodes unconditionally.
+!   This was done to resolve a SIG FPE in dtrsm @ T3999 on the XC-30.
+!   IF(ZTAU < ZEPS*ZTAU_REC) THEN
       DO JN=KRANK+1,KN
         ZC(JN) = DOT_PRODUCT(PA(KRANK+1:,JN),PA(KRANK+1:,JN))
         IF(ZC(JN) > ZTAU) THEN
@@ -163,7 +165,7 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
       ENDDO
 !!$      PRINT *,'RECOMPUTE TAU ',KRANK,ZTAU_REC,ZTAU
       ZTAU_REC = ZTAU
-    ENDIF
+!   ENDIF
   ENDIF
 ENDDO
 ! Make sure klist is filled also beyond krank
