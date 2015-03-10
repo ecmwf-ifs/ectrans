@@ -187,8 +187,10 @@ ELSE
     IFLDR=IMYFIELDS
 
 !   ALLTOALLV performance is really slow when number of fields (KFGATHG) is << NPROC
+!   This was for IBM - and RECV/SEND alternative causes problems for large number of MPI tasks.
 
-    IF( KFGATHG >= NPROC/8 )THEN
+!   IF( KFGATHG >= NPROC/8 )THEN
+    IF( .TRUE. )THEN
       CALL MPL_ALLTOALLV(PSENDBUF=ZFLD,KSENDCOUNTS=ILENS,&
        & PRECVBUF=ZBUF,KRECVCOUNTS=ILENR,KSENDDISPL=IOFFS,KRECVDISPL=IOFFR,&
        & CDSTRING='GATH_GRID_CTL:')
