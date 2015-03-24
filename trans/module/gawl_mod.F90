@@ -48,9 +48,10 @@ SUBROUTINE GAWL(PFN,PL,PW,PEPS,KN,KITER,PMOD)
 !        Original : 92-12-18
 !        K. Yessad (Sep 2008): cleaning, improve comments.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
+!      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRD, JPIM
 
 USE CPLEDN_MOD      ,ONLY : CPLEDN
 
@@ -59,18 +60,18 @@ USE CPLEDN_MOD      ,ONLY : CPLEDN
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KN
-REAL(KIND=JPRB),INTENT(IN)     :: PFN(0:KN/2)
-REAL(KIND=JPRB),INTENT(INOUT)  :: PL
-REAL(KIND=JPRB),INTENT(OUT)    :: PW
-REAL(KIND=JPRB),INTENT(IN)     :: PEPS
+REAL(KIND=JPRD),INTENT(IN)     :: PFN(0:KN/2)
+REAL(KIND=JPRD),INTENT(INOUT)  :: PL
+REAL(KIND=JPRD),INTENT(OUT)    :: PW
+REAL(KIND=JPRD),INTENT(IN)     :: PEPS
 INTEGER(KIND=JPIM),INTENT(OUT) :: KITER
-REAL(KIND=JPRB),INTENT(INOUT)  :: PMOD
+REAL(KIND=JPRD),INTENT(INOUT)  :: PMOD
 
 !     ------------------------------------------------------------------
 
 
 INTEGER(KIND=JPIM) :: IFLAG, ITEMAX, JTER, IODD
-REAL(KIND=JPRB) :: ZW, ZX, ZXN
+REAL(KIND=JPRD) :: ZW, ZX, ZXN
 
 !     ------------------------------------------------------------------
 
@@ -93,7 +94,7 @@ DO JTER=1,ITEMAX+1
   ZX = ZXN
 
   IF(IFLAG == 1) EXIT
-  IF(ABS(PMOD) <= PEPS*1000._JPRB) IFLAG = 1
+  IF(ABS(PMOD) <= PEPS*1000._JPRD) IFLAG = 1
 ENDDO
 
 PL = ZXN

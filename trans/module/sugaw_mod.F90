@@ -2,7 +2,7 @@ MODULE SUGAW_MOD
 CONTAINS
 SUBROUTINE SUGAW(KDGL,KM,KN,PL,PW,PANM,PFN)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRD, JPIM
 USE PARKIND2  ,ONLY : JPRH
 
 USE TPM_CONSTANTS   ,ONLY : RA
@@ -70,6 +70,7 @@ USE TPM_POL
 !        Mats Hamrud       : 94-08-12 Printing level
 !        K. Yessad (Sep 2008): cleaning, improve comments.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
+!      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
 IMPLICIT NONE
@@ -78,22 +79,22 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KDGL
 INTEGER(KIND=JPIM),INTENT(IN) :: KM
 INTEGER(KIND=JPIM),INTENT(IN) :: KN
 
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PANM
+REAL(KIND=JPRD)   ,INTENT(IN)  :: PANM
 
-REAL(KIND=JPRB),INTENT(OUT) :: PW(KDGL)
-REAL(KIND=JPRB),INTENT(OUT) :: PL(KDGL)
+REAL(KIND=JPRD),INTENT(OUT) :: PW(KDGL)
+REAL(KIND=JPRD),INTENT(OUT) :: PL(KDGL)
 
-REAL(KIND=JPRB)   ,OPTIONAL, INTENT(IN)  :: PFN(0:KDGL,0:KDGL)
+REAL(KIND=JPRD)   ,OPTIONAL, INTENT(IN)  :: PFN(0:KDGL,0:KDGL)
 
 !     ------------------------------------------------------------------
 
-REAL(KIND=JPRB) :: ZLI(KDGL),ZT(KDGL),ZFN(0:KDGL/2),ZL(KDGL)
-REAL(KIND=JPRB) :: ZREG(KDGL),ZMOD(KDGL),ZM(KDGL),ZRR(KDGL)
+REAL(KIND=JPRD) :: ZLI(KDGL),ZT(KDGL),ZFN(0:KDGL/2),ZL(KDGL)
+REAL(KIND=JPRD) :: ZREG(KDGL),ZMOD(KDGL),ZM(KDGL),ZRR(KDGL)
 INTEGER(KIND=JPIM) :: ITER(KDGL)
 
 INTEGER(KIND=JPIM) :: IALLOW, INS2, ISYM, JGL, IK, IODD, I, IMAX
 
-REAL(KIND=JPRB) :: Z, ZEPS, Z0, ZPI
+REAL(KIND=JPRD) :: Z, ZEPS, Z0, ZPI
 
 ! computations in extended precision for alternative root finding
 ! which also works for associated polynomials (m>0)
@@ -108,7 +109,7 @@ INTEGER(KIND=JPIM) :: ISTEPMAX
 
 LOGICAL :: LLP2, LLREF, LLOLD
 
-REAL(KIND=JPRB) :: ZDDPOL(0:KN)
+REAL(KIND=JPRD) :: ZDDPOL(0:KN)
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(ZLK)
 
@@ -145,7 +146,7 @@ ZBIG  = SQRT(HUGE(X))
 
 IF( LLOLD ) THEN
 
-  ZPI  = 2.0_JPRB*ASIN(1.0_JPRB)
+  ZPI  = 2.0_JPRD*ASIN(1.0_JPRD)
   IODD=MOD(KDGL,2)
   IK=IODD
   DO JGL=IODD,KDGL,2
@@ -154,11 +155,11 @@ IF( LLOLD ) THEN
   ENDDO
 
   DO JGL=1,INS2
-    Z = REAL(4*JGL-1,JPRB)*ZPI/REAL(4*KN+2,JPRB)
+    Z = REAL(4*JGL-1,JPRD)*ZPI/REAL(4*KN+2,JPRD)
     ! analytic initial guess for cos(theta) (same quality as RK below)
-    ! ZX = 1._JPRB-REAL(KN-1,JPRB)/REAL(8*KN*KN*KN,JPRB)-(1._JPRB/REAL(384*KN*KN*KN*KN))*(39._JPRB-28._JPRB/SIN(Z)**2)
+    ! ZX = 1._JPRD-REAL(KN-1,JPRD)/REAL(8*KN*KN*KN,JPRD)-(1._JPRD/REAL(384*KN*KN*KN*KN))*(39._JPRD-28._JPRD/SIN(Z)**2)
     ! PL(JGL) = ACOS(ZX*COS(Z))
-    ZL(JGL) = Z+1.0_JPRB/(TAN(Z)*REAL(8*KN**2,JPRB))
+    ZL(JGL) = Z+1.0_JPRD/(TAN(Z)*REAL(8*KN**2,JPRD))
     ZREG(JGL) = COS(Z)
     ZLI(JGL) = COS(ZL(JGL))
   ENDDO
@@ -192,7 +193,7 @@ ELSE
   ZPIH = 2.0_JPRH*ASIN(1.0_JPRH)
 
   ZX0 = 0._JPRH
-  Z0  = 0._JPRB
+  Z0  = 0._JPRD
 
   ! first guess starting point
   IF( MOD(KN-KM,2) == 0 ) THEN
@@ -283,7 +284,7 @@ ELSE
       LOOP: DO I=1,IMAX
         ! supol fast
         ZS0 = ACOS(ZX0)
-        CALL SUPOLF(KM,KN,REAL(ZX0,JPRB),ZDDPOL)
+        CALL SUPOLF(KM,KN,REAL(ZX0,JPRD),ZDDPOL)
         ZLK=REAL(ZDDPOL(KN),JPKD)
         ZLK1= REAL(ZDDPOL(KN-1),JPKD)
         ZLLDN= -(ZANM*ZLK1-DDI(KN)*COS(ZS0)*ZLK)/SIN(ZS0)
@@ -297,7 +298,7 @@ ELSE
           ZX = ZX0
         ENDIF
         
-        IF( ABS(ZX-ZX0) > 1000._JPRB*ZEPS ) THEN
+        IF( ABS(ZX-ZX0) > 1000._JPRD*ZEPS ) THEN
           ZX0 = ZX
         ELSE
           EXIT LOOP
@@ -305,34 +306,34 @@ ELSE
       ENDDO LOOP
       
       ! recompute for accuracy weights
-      CALL SUPOLF(KM,KN,REAL(ZX,JPRB),ZDDPOL)
+      CALL SUPOLF(KM,KN,REAL(ZX,JPRD),ZDDPOL)
       ! option f in Schwarztrauber to compute the weights
       ZS0 = ACOS(ZX)
       ZLK=REAL(ZDDPOL(KN),JPKD)
       ZLK1= REAL(ZDDPOL(KN-1),JPKD)
       ZLLDN= -(ZANM*ZLK1-DDI(KN)*COS(ZS0)*ZLK)/SIN(ZS0)
       
-      PW(JGL) = REAL(REAL(2*KN+1,JPRH)/ZLLDN**2,JPRB)
+      PW(JGL) = REAL(REAL(2*KN+1,JPRH)/ZLLDN**2,JPRD)
       
       ! catch overflow, should never happen
       IF( .NOT.(PW(JGL)==PW(JGL)) ) THEN
         WRITE(NOUT,*) 'invoke overflow ...PW ',KM, KN, JGL
-        PW(JGL) = 0.0_JPRB
+        PW(JGL) = 0.0_JPRD
       ENDIF
       
     ELSE
       ! should never happen ...
       WRITE(NOUT,*) 'Refinement not possible ... PW set to 0',KM, KN, JGL
-      PW(JGL) = 0.0_JPRB
+      PW(JGL) = 0.0_JPRD
     ENDIF
     
     ZX0 = ZX
-    PL(JGL) = REAL(ZX0,JPRB)
+    PL(JGL) = REAL(ZX0,JPRD)
     
     ! catch overflow, should never happen
     IF( .NOT.(PW(JGL)==PW(JGL)) ) THEN
       WRITE(NOUT,*) 'invoke overflow ...PW ',KM, KN, JGL
-      PW(JGL) = 0.0_JPRB
+      PW(JGL) = 0.0_JPRD
     ENDIF
     
 ! ++++++++++++++++++++++++++++++++++++++++++++++++
@@ -373,7 +374,7 @@ IF( LLOLD ) THEN
     DO JGL=1,INS2
       ZM(JGL) = (ACOS(PL(JGL))-ACOS(ZLI(JGL)))*RA
       ZRR(JGL) = (ACOS(PL(JGL))-ACOS(ZREG(JGL)))*RA
-      ZT(JGL) = ACOS(PL(JGL))*180._JPRB/ZPI
+      ZT(JGL) = ACOS(PL(JGL))*180._JPRD/ZPI
     ENDDO
   ENDIF
   
@@ -408,7 +409,7 @@ ELSE
       WRITE(UNIT=NOUT,FMT=&
        &'('' M ='',I4,'' ROW ='',I4,'' ITERATIONS='',I4,'' ROOT='',F30.20,&
        &'' WEIGHT='',F30.20,'' COLAT '',F10.3)')KM,JGL,0,PL(JGL),PW(JGL),&
-       & ACOS(PL(JGL))*180._JPRB/ZPIH
+       & ACOS(PL(JGL))*180._JPRD/ZPIH
     ENDDO
   ENDIF
 

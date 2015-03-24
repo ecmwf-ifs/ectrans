@@ -13,7 +13,7 @@ MODULE INTERPOL_DECOMP_MOD
 ! Author: Mats Hamrud
 
 
-USE PARKIND1, ONLY : JPIM, JPRB, JPIB
+USE PARKIND1, ONLY : JPRD, JPIM, JPRB, JPIB
 IMPLICIT NONE
 CONTAINS
 !===========================================================================
@@ -69,8 +69,13 @@ DO JN=1,KN-KRANK
   ENDDO
 ENDDO
 !Solve linear equation (BLAS level 3 routine)
-CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+IF (JPRB == JPRD) THEN
+  CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
  & ZS,KRANK,ZT,KRANK)
+ELSE
+  CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+ & ZS,KRANK,ZT,KRANK)
+ENDIF
 
 DO JM=1,KRANK
   DO JN=1,KN-KRANK
@@ -153,7 +158,9 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
       ENDIF
     ENDDO
 ! Re-compute column norms when ztau < zeps*ztau_rec
-    IF(ZTAU < ZEPS*ZTAU_REC) THEN
+!   We have disabled this test so as to recompute column nodes unconditionally.
+!   This was done to resolve a SIG FPE in dtrsm @ T3999 on the XC-30.
+!   IF(ZTAU < ZEPS*ZTAU_REC) THEN
       DO JN=KRANK+1,KN
         ZC(JN) = DOT_PRODUCT(PA(KRANK+1:,JN),PA(KRANK+1:,JN))
         IF(ZC(JN) > ZTAU) THEN
@@ -163,7 +170,7 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
       ENDDO
 !!$      PRINT *,'RECOMPUTE TAU ',KRANK,ZTAU_REC,ZTAU
       ZTAU_REC = ZTAU
-    ENDIF
+!   ENDIF
   ENDIF
 ENDDO
 ! Make sure klist is filled also beyond krank
