@@ -49,24 +49,25 @@ SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL)
 !        K. YESSAD (NOV 2008): make consistent arp/SUPOLA and tfl/SUPOL.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
 !        R. El Khatib 30-Apr-2013 Open-MP parallelization
+!      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRD, JPIM
 USE TPM_POL
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KNSMAX
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PDDMU
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PFN(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRD)   ,INTENT(IN)  :: PDDMU
+REAL(KIND=JPRD)   ,INTENT(IN)  :: PFN(0:KNSMAX,0:KNSMAX)
 
-REAL(KIND=JPRB)   ,INTENT(OUT) :: PDDPOL(0:KNSMAX,0:KNSMAX)
+REAL(KIND=JPRD)   ,INTENT(OUT) :: PDDPOL(0:KNSMAX,0:KNSMAX)
 
-REAL(KIND=JPRB) :: ZDLX,ZDLX1,ZDLSITA,ZDL1SITA,ZDLS,ZDLK,ZDLLDN
+REAL(KIND=JPRD) :: ZDLX,ZDLX1,ZDLSITA,ZDL1SITA,ZDLS,ZDLK,ZDLLDN
 
 INTEGER(KIND=JPIM) :: JM, JN, JK
-REAL(KIND=JPRB) :: Z
-REAL(KIND=JPRB) :: DCL, DDL
+REAL(KIND=JPRD) :: Z
+REAL(KIND=JPRD) :: DCL, DDL
 
 !     ------------------------------------------------------------------
 
@@ -75,18 +76,18 @@ REAL(KIND=JPRB) :: DCL, DDL
 
 ZDLX=PDDMU
 ZDLX1=ACOS(ZDLX)
-ZDLSITA=SQRT(1.0_JPRB-ZDLX*ZDLX)
+ZDLSITA=SQRT(1.0_JPRD-ZDLX*ZDLX)
 
-PDDPOL(0,0)=1._JPRB
-ZDLLDN = 0.0_JPRB
+PDDPOL(0,0)=1._JPRD
+ZDLLDN = 0.0_JPRD
 
 ! IF WE ARE LESS THAN 1Meter FROM THE POLE,
 IF(ABS(REAL(ZDLSITA,KIND(Z))) <= SQRT(EPSILON(Z)))THEN
-  ZDLX=1._JPRB
-  ZDLSITA=0._JPRB
-  ZDL1SITA=0._JPRB
+  ZDLX=1._JPRD
+  ZDLSITA=0._JPRD
+  ZDL1SITA=0._JPRD
 ELSE
-  ZDL1SITA=1.0_JPRB/ZDLSITA
+  ZDL1SITA=1.0_JPRD/ZDLSITA
 ENDIF
 
 !*          ordinary Legendre polynomials from series expansion
@@ -95,8 +96,8 @@ ENDIF
 ! even N
 !$OMP PARALLEL DO PRIVATE(JN,ZDLK,ZDLLDN,JK)
 DO JN=2,KNSMAX,2
-  ZDLK = 0.5_JPRB*PFN(JN,0)
-  ZDLLDN = 0.0_JPRB
+  ZDLK = 0.5_JPRD*PFN(JN,0)
+  ZDLLDN = 0.0_JPRD
   ! represented by only even k
   DO JK=2,JN,2
     ! normalised ordinary Legendre polynomial == \overbar{P_n}^0
@@ -111,8 +112,8 @@ ENDDO
 ! odd N
 !$OMP PARALLEL DO PRIVATE(JN,ZDLK,ZDLLDN,JK)
 DO JN=1,KNSMAX,2
-  ZDLK = 0.0_JPRB
-  ZDLLDN = 0.0_JPRB
+  ZDLK = 0.0_JPRD
+  ZDLLDN = 0.0_JPRD
   ! represented by only odd k
   DO JK=1,JN,2
     ! normalised ordinary Legendre polynomial == \overbar{P_n}^0
@@ -138,7 +139,7 @@ ZDLS=ZDL1SITA*TINY(ZDLS)
 #endif
 DO JN=2,KNSMAX
   PDDPOL(JN,JN)=PDDPOL(JN-1,JN-1)*ZDLSITA*DDH(JN)
-  IF ( ABS(PDDPOL(JN,JN)) < ZDLS ) PDDPOL(JN,JN)=0.0_JPRB
+  IF ( ABS(PDDPOL(JN,JN)) < ZDLS ) PDDPOL(JN,JN)=0.0_JPRD
 ENDDO
 
 !     ------------------------------------------------------------------

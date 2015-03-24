@@ -13,7 +13,7 @@ MODULE INTERPOL_DECOMP_MOD
 ! Author: Mats Hamrud
 
 
-USE PARKIND1, ONLY : JPIM, JPRB, JPIB
+USE PARKIND1, ONLY : JPRD, JPIM, JPRB, JPIB
 IMPLICIT NONE
 CONTAINS
 !===========================================================================
@@ -69,8 +69,13 @@ DO JN=1,KN-KRANK
   ENDDO
 ENDDO
 !Solve linear equation (BLAS level 3 routine)
-CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+IF (JPRB == JPRD) THEN
+  CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
  & ZS,KRANK,ZT,KRANK)
+ELSE
+  CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+ & ZS,KRANK,ZT,KRANK)
+ENDIF
 
 DO JM=1,KRANK
   DO JN=1,KN-KRANK
