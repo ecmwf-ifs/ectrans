@@ -53,78 +53,78 @@ INTEGER(KIND=JPIM) :: NUMTP     ! cf. NUMP but for truncation NTMAX
 INTEGER(KIND=JPIM) :: NSPOLEGL  ! No. of legendre polynomials on this PE
 INTEGER(KIND=JPIM) :: NLEI3D    ! (NLEI3-1)/NPRTRW+1
 
-INTEGER(KIND=JPIM) ,POINTER :: MYMS(:)    ! Wave numbers handled by this PE
-INTEGER(KIND=JPIM) ,POINTER :: NUMPP(:)   ! No. of wave numbers each wave set is
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: MYMS(:)    ! Wave numbers handled by this PE
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NUMPP(:)   ! No. of wave numbers each wave set is
                                  ! responsible for
-INTEGER(KIND=JPIM) ,POINTER :: NPOSSP(:)  ! Not needed in transform?
-INTEGER(KIND=JPIM) ,POINTER :: NPROCM(:)  ! Process that does the calc. for certain 
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPOSSP(:)  ! Not needed in transform?
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCM(:)  ! Process that does the calc. for certain 
                                  ! wavenumber M
-INTEGER(KIND=JPIM) ,POINTER :: NDIM0G(:)  ! Defines partitioning of global spectral
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NDIM0G(:)  ! Defines partitioning of global spectral
                                  ! fields among PEs
 
-INTEGER(KIND=JPIM) ,POINTER :: NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,POINTER :: NATM0(:)  ! Same as NASM0 but for NTMAX
-INTEGER(KIND=JPIM) ,POINTER :: NALLMS(:) ! Wave numbers for all a-set concatenated
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NASM0(:)  ! Address in a spectral array of (m, n=m)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NATM0(:)  ! Same as NASM0 but for NTMAX
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NALLMS(:) ! Wave numbers for all a-set concatenated
                                 ! together to give all wave numbers in a-set
                                 ! order. Used when global spectral norms 
                                 ! have to be gathered.
-INTEGER(KIND=JPIM) ,POINTER :: NPTRMS(:) ! Pointer to the first wave number of a given
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRMS(:) ! Pointer to the first wave number of a given
                                 ! a-set in nallms array.
 
 
 ! Legendre polynomials
 
-INTEGER(KIND=JPIM) ,POINTER :: NLATLS(:,:) ! First latitude for which each a-set,bset calcul.
-INTEGER(KIND=JPIM) ,POINTER :: NLATLE(:,:) ! Last latitude for which each a-set,bset calcul.
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLATLS(:,:) ! First latitude for which each a-set,bset calcul.
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLATLE(:,:) ! Last latitude for which each a-set,bset calcul.
 
-INTEGER(KIND=JPIM) ,POINTER :: NPMT(:) ! Adress for legendre polynomial for
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPMT(:) ! Adress for legendre polynomial for
                               ! given M (NTMAX)
-INTEGER(KIND=JPIM) ,POINTER :: NPMS(:) ! Adress for legendre polynomial for
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPMS(:) ! Adress for legendre polynomial for
                               ! given M (NSMAX)
-INTEGER(KIND=JPIM) ,POINTER :: NPMG(:) ! Global version of NPMS
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPMG(:) ! Global version of NPMS
 
 ! FOURIER SPACE
 
 INTEGER(KIND=JPIM) :: NDGL_FS ! Number of rows of latitudes for which this process is
                      ! performing Fourier Space calculations
 
-INTEGER(KIND=JPIM) ,POINTER  :: NSTAGTF(:) ! Offset for specific latitude in 
+INTEGER(KIND=JPIM) ,ALLOCATABLE  :: NSTAGTF(:) ! Offset for specific latitude in 
                                   ! Fourier/gridpoint buffer
 INTEGER(KIND=JPIM) :: NLENGTF ! Second dimension of Fourier/gridpoint buffer 
                      ! (sum of (NLOEN+3) over local latitudes)
 
-INTEGER(KIND=JPIM) ,POINTER :: NULTPP(:) ! No of lats. for each wave_set  (F.S)
-INTEGER(KIND=JPIM) ,POINTER :: NPROCL(:) ! Process responsible for each lat. (F.S)
-INTEGER(KIND=JPIM) ,POINTER :: NPTRLS(:) ! Pointer to first lat. (F.S)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NULTPP(:) ! No of lats. for each wave_set  (F.S)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCL(:) ! Process responsible for each lat. (F.S)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRLS(:) ! Pointer to first lat. (F.S)
 
 ! NSTAGT0B to NLENGT1B: help arrays for spectral to fourier space transposition
-INTEGER(KIND=JPIM) ,POINTER :: NSTAGT0B(:) ! Start adresses for segments within buffer
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT0B(:) ! Start adresses for segments within buffer
                                   ! (according to processors to whom data 
                                   ! is going to be sent) 
-INTEGER(KIND=JPIM) ,POINTER :: NSTAGT1B(:) 
-INTEGER(KIND=JPIM) ,POINTER :: NPNTGTB0(:,:)
-INTEGER(KIND=JPIM) ,POINTER :: NPNTGTB1(:,:)
-INTEGER(KIND=JPIM) ,POINTER :: NLTSFTB(:)  
-INTEGER(KIND=JPIM) ,POINTER :: NLTSGTB(:)
-INTEGER(KIND=JPIM) ,POINTER :: MSTABF(:)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT1B(:) 
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB0(:,:)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB1(:,:)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSFTB(:)  
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSGTB(:)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: MSTABF(:)
 INTEGER(KIND=JPIM) :: NLENGT0B  ! dimension
 INTEGER(KIND=JPIM) :: NLENGT1B  ! dimension
 
 ! GRIDPOINT SPACE
 
 INTEGER(KIND=JPIM) :: NDGL_GP ! D%NLSTLAT(MY_REGION_NS)-D%NFRSTLOFF
-INTEGER(KIND=JPIM) ,POINTER :: NFRSTLAT(:) ! First lat of each a-set 
-INTEGER(KIND=JPIM) ,POINTER :: NLSTLAT(:)  ! Last lat of each a-set 
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NFRSTLAT(:) ! First lat of each a-set 
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLSTLAT(:)  ! Last lat of each a-set 
 INTEGER(KIND=JPIM) :: NFRSTLOFF ! Offset for first lat of own a-set 
                        ! i.e. NFRSTLOFF=NFRSTLAT(MYSETA)-1
-INTEGER(KIND=JPIM) ,POINTER :: NPTRLAT(:) ! Pointer to start of latitude 
-INTEGER(KIND=JPIM) ,POINTER :: NPTRFRSTLAT(:) ! Pointer to the first latitude of each 
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRLAT(:) ! Pointer to start of latitude 
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRFRSTLAT(:) ! Pointer to the first latitude of each 
                                      ! a-set in NSTA and NONL arrays
-INTEGER(KIND=JPIM) ,POINTER :: NPTRLSTLAT(:) ! Pointer to the last latitude of each
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRLSTLAT(:) ! Pointer to the last latitude of each
                                     ! a-set in NSTA and NONL arrays
 INTEGER(KIND=JPIM) :: NPTRFLOFF ! Offset for pointer to the first latitude of own a-set
                        ! NSTA and NONL arrays, i.e. NPTRFRSTLAT(MYSETA)-1
-LOGICAL   ,POINTER :: LSPLITLAT(:) ! True if latitude is split over 2 a-sets
+LOGICAL   ,ALLOCATABLE :: LSPLITLAT(:) ! True if latitude is split over 2 a-sets
 
 !  NSTA(R%NDGL+NPRGPNS-1,NPRGPEW) :  Position of first grid column
 !             for the latitudes on a processor. The information is
@@ -139,16 +139,16 @@ LOGICAL   ,POINTER :: LSPLITLAT(:) ! True if latitude is split over 2 a-sets
 !  NONL(R%NDGL+NPRGPNS-1,NPRGPEW)  :  Number of grid columns for
 !             the latitudes on a processor. Similar to NSTA() in data
 !             structure.
-INTEGER(KIND=JPIM) ,POINTER :: NSTA(:,:)
-INTEGER(KIND=JPIM) ,POINTER :: NONL(:,:)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTA(:,:)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NONL(:,:)
 
 INTEGER(KIND=JPIM) :: NGPTOT   ! Total number of grid columns on this PE
 INTEGER(KIND=JPIM) :: NGPTOTG  ! Total number of grid columns on the Globe
 INTEGER(KIND=JPIM) :: NGPTOTMX ! Maximum number of grid columns on any of the PEs
-INTEGER(KIND=JPIM) ,POINTER :: NGPTOTL(:,:) ! Number of grid columns on each PE.
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each PE.
 
-REAL(KIND=JPRB) ,POINTER :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
-INTEGER(KIND=JPIM) ,POINTER :: NPROCA_GP(:) ! Number of grid-points per a-set
+REAL(KIND=JPRB) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
 END TYPE DISTR_TYPE
 

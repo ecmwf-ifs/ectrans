@@ -38,10 +38,11 @@ SUBROUTINE SUTRLE(PNM,KGL,KLOOP)
 !        Original : 95-10-01
 !        P.Towers : 10-01-12  Corrected over allocation of ZSNDBUF (XT4 fix)
 !        G.Mozdzynski: March 2011 Support 2D (RW,RV) initialisation of legendre coeffs
+!      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRD, JPIM
 USE MPL_MODULE  ,ONLY : MPL_ALLREDUCE, MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
      &                  JP_NON_BLOCKING_STANDARD
 
@@ -56,14 +57,14 @@ USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
-REAL(KIND=JPRB),INTENT(IN) :: PNM(:)
+REAL(KIND=JPRD),INTENT(IN) :: PNM(:)
 INTEGER(KIND=JPIM),INTENT(IN) :: KGL
 INTEGER(KIND=JPIM),INTENT(IN) :: KLOOP
 
 !     LOCAL
 
-REAL(KIND=JPRB), ALLOCATABLE :: ZSNDBUFV(:),ZRCVBUFV(:,:)
-REAL(KIND=JPRB), ALLOCATABLE :: ZSNDBUFW(:,:),ZRCVBUFW(:,:)
+REAL(KIND=JPRD), ALLOCATABLE :: ZSNDBUFV(:),ZRCVBUFV(:,:)
+REAL(KIND=JPRD), ALLOCATABLE :: ZSNDBUFW(:,:),ZRCVBUFW(:,:)
 INTEGER(KIND=JPIM) :: ILREC, IM, IPOS, &
              & IRECVSET, IRECV, ISEND, ISENDSET, ITAG,ISENDSIZE, IRECVSIZE, &
              & J, JM, JMLOC, JN, JV, JROC ,IOFFT, IOFFG, IGL, ISREQ, IRREQ

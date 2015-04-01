@@ -52,12 +52,14 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 !     Modifications.
 !     --------------
 !        Original : 98-12-07
+!        G. Mozdzynski (August 2012): rewrite of fourier latitude distribution
 !     ------------------------------------------------------------------
 
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
-!USE ABORT_TRANS_MOD
+USE TPM_DISTR
+USE ABORT_TRANS_MOD
 
 IMPLICIT NONE
 
@@ -75,17 +77,15 @@ INTEGER(KIND=JPIM),INTENT(OUT)  :: KINDIC(KPROCA)
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KLAST(KPROCA)
 
 !     * LOCAL:
-INTEGER(KIND=JPIM) :: IPP1(KPROCA),ILAST1(KPROCA)
-INTEGER(KIND=JPIM) :: IPP(KPROCA)
-INTEGER(KIND=JPIM) :: IFIRST(KPROCA)
 INTEGER(KIND=JPIB) :: ICOST(KDGSA:KDGL)
+INTEGER(KIND=JPIM) :: ILATS(KPROCA)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: ICOMP, IGL, IMAXI, IMAXIOL, JA, JGL,&
-            &ILAST,IREST,ILIMIT,IFRST
+INTEGER(KIND=JPIM) :: ICOMP, IGL, JA, JGL, ILAST, IREST, IA
+INTEGER(KIND=JPIM) :: ITOT_TOP, ITOT_BOT, IGL_TOP, IGL_BOT
 INTEGER(KIND=JPIB) :: IMEDIA,ITOT
 REAL(KIND=JPRB) :: ZLG
-LOGICAL   :: LLDONE
+LOGICAL   :: LLDONE,LLSIMPLE
 
 !      -----------------------------------------------------------------
 
@@ -96,9 +96,13 @@ LOGICAL   :: LLDONE
 
 IF( LDFOURIER )THEN
 
+! DO JGL=1,KDGL
+!   ZLG=LOG(FLOAT(KLOENG(JGL)))
+!   ICOST(JGL)=KLOENG(JGL)*ZLG*SQRT(ZLG)
+! ENDDO
+
   DO JGL=1,KDGL
-    ZLG=LOG(FLOAT(KLOENG(JGL)))
-    ICOST(JGL)=KLOENG(JGL)*ZLG*SQRT(ZLG)
+    ICOST(JGL)=KLOENG(JGL)
   ENDDO
 
 ELSE
@@ -115,6 +119,9 @@ KRESTM = IMEDIA - KMEDIAP * KPROCA
 IF (KRESTM  >  0) KMEDIAP = KMEDIAP + 1
 
 !     * Computation of intermediate quantities KINDIC and KLAST
+
+KINDIC(:)=0
+KLAST(:)=0
 
 IF (LDSPLIT) THEN
 
@@ -148,85 +155,61 @@ IF (LDSPLIT) THEN
   
 ELSE
 
-  KINDIC(:) = 0
-
-  IMAXI = KMEDIAP-1
-  IMAXIOL = HUGE(IMAXIOL)
-  DO
-    ILIMIT = IMAXI
-    IMAXI = 0
-    IFRST = KDGL
-    ILAST1(:) = 0
-    IPP1(:) = 0
-    DO JA=KPROCA,1,-1
-      IGL = IFRST
-      LATS:DO JGL=IGL,1,-1
-        IF (IPP1(JA) < ILIMIT .OR. JA == 1) THEN
-          IFRST = JGL-1
-          IPP1(JA) = IPP1(JA) + ICOST(JGL)
-          IF(ILAST1(JA)  ==  0) ILAST1(JA) = JGL
+  ITOT_TOP=0
+  ITOT_BOT=0
+  IGL_TOP=1
+  IGL_BOT=KDGL
+  DO JA=1,(KPROCA-1)/2+1
+    IF( JA /= KPROCA/2+1 )THEN
+      LLDONE=.TRUE.
+      DO WHILE ( LLDONE )
+        IF( ITOT_TOP+ICOST(IGL_TOP) < KMEDIAP )THEN
+          KLAST(JA)=IGL_TOP
+          ITOT_TOP=ITOT_TOP+ICOST(IGL_TOP)
+          IGL_TOP=IGL_TOP+1
         ELSE
-          EXIT LATS
+          ITOT_TOP=ITOT_TOP-KMEDIAP
+          LLDONE=.FALSE.
         ENDIF
-      ENDDO LATS
-      IMAXI = MAX (IMAXI,IPP1(JA))
-    ENDDO
-    IF(IMAXI >= IMAXIOL) EXIT
-    KLAST(:) = ILAST1(:)
-    IPP(:) = IPP1(:)
-    IMAXIOL = IMAXI
-  ENDDO
-  
-!       make the distribution more uniform
-!       ----------------------------------
-  
-  IFIRST(1) = 0
-  IF (KLAST(1) > 0) IFIRST(1) = 1
-  DO JA=2,KPROCA
-    IF (IPP(JA) > 0) THEN
-      IFIRST(JA) = KLAST(JA-1)+1
+      ENDDO
+      KLAST(KPROCA-JA+1)=IGL_BOT
+      LLDONE=.TRUE.
+      DO WHILE ( LLDONE )
+        IF( ITOT_BOT+ICOST(IGL_BOT) < KMEDIAP )THEN
+          ITOT_BOT=ITOT_BOT+ICOST(IGL_BOT)
+          IGL_BOT=IGL_BOT-1
+        ELSE
+          ITOT_BOT=ITOT_BOT-KMEDIAP
+          LLDONE=.FALSE.
+        ENDIF
+      ENDDO
     ELSE
-      IFIRST(JA) = 0
+      KLAST(JA)=IGL_BOT
     ENDIF
   ENDDO
-  
-  LLDONE = .FALSE.
-  DO WHILE( .NOT.LLDONE )
-    LLDONE = .TRUE.
-  
-    DO JA=1,KPROCA-1
-      IF (IPP(JA) > IPP(JA+1)) THEN
-        IF (IPP(JA)-IPP(JA+1)  >  IPP(JA+1) + 2 *&
-         &ICOST(KLAST(JA)) -IPP(JA) ) THEN
-          IPP(JA) = IPP(JA) - ICOST(KLAST(JA))
-          IPP(JA+1) = IPP(JA+1) + ICOST(KLAST(JA))
-          IF (KLAST(JA+1)  ==  0) KLAST(JA+1) = KLAST(JA)
-          IFIRST(JA+1) = KLAST(JA)
-          KLAST(JA) = KLAST(JA) - 1
-          IF (KLAST(JA) == 0) IFIRST(JA) = 0
-          LLDONE = .FALSE.
-        ENDIF
-      ELSE
-        IF( IFIRST(JA+1) > 0 )THEN
-          IF (IPP(JA+1)-IPP(JA)  >=  IPP(JA) + 2 *&
-           &ICOST(IFIRST(JA+1)) -IPP(JA+1) ) THEN
-            IPP(JA) = IPP(JA) + ICOST(IFIRST(JA+1))
-            IPP(JA+1) = IPP(JA+1) - ICOST(IFIRST(JA+1))
-            KLAST(JA) = IFIRST(JA+1)
-            IF (IFIRST(JA) == 0) IFIRST(JA) = KLAST(JA)
-            IF (KLAST(JA+1)  ==  KLAST(JA)) THEN
-              KLAST(JA+1) = 0
-              IFIRST(JA+1) = 0
-            ELSE
-              IFIRST(JA+1) = IFIRST(JA+1) + 1
-            ENDIF
-           LLDONE = .FALSE.
-          ENDIF
-        ENDIF
-      ENDIF
-    ENDDO
+
+  LLSIMPLE=.FALSE.
+  DO JA=1,KPROCA
+    IF( KLAST(JA)==0 )THEN
+      LLSIMPLE=.TRUE.
+      EXIT
+    ENDIF
   ENDDO
-  
+  IF( LLSIMPLE )THEN
+    WRITE(0,'("SUMPLATB_MOD: REVERTING TO SIMPLE LATITUDE DISTRIBUTION")')
+    ILATS(:)=0
+    IA=0
+    DO JGL=1,KDGL
+     IA=IA+1
+     ILATS(IA)=ILATS(IA)+1
+     IF( IA==KPROCA ) IA=0
+    ENDDO
+    KLAST(1)=ILATS(1)
+    DO JA=2,KPROCA
+      KLAST(JA)=KLAST(JA-1)+ILATS(JA)
+    ENDDO
+  ENDIF
+
 ENDIF
   
 END SUBROUTINE SUMPLATB

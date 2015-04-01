@@ -50,9 +50,10 @@ SUBROUTINE CPLEDN(KN,KODD,PFN,PX,KFLAG,PW,PXN,PXMOD)
 !        Michel Rochas, 90-08-30 (Lobatto+cleaning)
 !        K. Yessad (Sep 2008): cleaning, improve comments.
 !        Nils Wedi + Mats Hamrud, 2009-02-05 revised following Swarztrauber, 2002
+!      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRD, JPIM
 
 !     ------------------------------------------------------------------
 
@@ -60,16 +61,16 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KN
 INTEGER(KIND=JPIM),INTENT(IN) :: KODD
-REAL(KIND=JPRB),INTENT(IN)    :: PFN(0:KN/2)
-REAL(KIND=JPRB),INTENT(IN)    :: PX
+REAL(KIND=JPRD),INTENT(IN)    :: PFN(0:KN/2)
+REAL(KIND=JPRD),INTENT(IN)    :: PX
 INTEGER(KIND=JPIM),INTENT(IN) :: KFLAG
-REAL(KIND=JPRB),INTENT(OUT)   :: PW
-REAL(KIND=JPRB),INTENT(INOUT) :: PXN
-REAL(KIND=JPRB),INTENT(OUT)   :: PXMOD
+REAL(KIND=JPRD),INTENT(OUT)   :: PW
+REAL(KIND=JPRD),INTENT(INOUT) :: PXN
+REAL(KIND=JPRD),INTENT(OUT)   :: PXMOD
 
 !     ------------------------------------------------------------------
 
-REAL(KIND=JPRB) :: ZDLX,ZDLK,ZDLLDN,ZDLXN,ZDLMOD
+REAL(KIND=JPRD) :: ZDLX,ZDLK,ZDLLDN,ZDLXN,ZDLMOD
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(PX)
 
@@ -82,10 +83,10 @@ INTEGER(KIND=JPIM) :: JN, IK
 
 ZDLX = PX
 
-ZDLK = 0.0_JPRB
-IF( KODD==0 ) ZDLK=0.5_JPRB*PFN(0)
-ZDLXN = 0.0_JPRB
-ZDLLDN = 0.0_JPRB
+ZDLK = 0.0_JPRD
+IF( KODD==0 ) ZDLK=0.5_JPRD*PFN(0)
+ZDLXN = 0.0_JPRD
+ZDLLDN = 0.0_JPRD
 IK=1
 
 IF(KFLAG == 0)THEN
