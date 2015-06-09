@@ -1,7 +1,7 @@
 MODULE DIST_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
- & KSMAX,KSPEC2,KSPEC2_G,KPOSSP,KDIM0G)
+ & KSMAX,KSPEC2,KSPEC2_G,KPOSSP,KDIM0G,KSORT)
 
 !**** *DIST_SPEC_CONTROL* - Distribute global spectral array among processors
 
@@ -20,6 +20,7 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     KFROM(:)    - Processor resposible for distributing each field
 !     KVSET(:)    - "B-Set" for each field
 !     PSPEC(:,:)  - Local spectral array
+!     KSORT(:)   - Re-order fields on output
 
 !     Externals.  SET2PE - compute "A and B" set from PE
 !     ----------  MPL..  - message passing routines
@@ -31,6 +32,7 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     Modifications.
 !     --------------
 !        Original : 2000-04-01
+!    P.Marguinaud : 2014-10-10
 
 !     ------------------------------------------------------------------
 
@@ -60,6 +62,7 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2_G
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KPOSSP(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KDIM0G(0:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN), TARGET :: KSORT (:)
     
 INTEGER(KIND=JPIM) :: IDIST(KSPEC2_G)
 REAL(KIND=JPRB)    :: ZFLD(KSPEC2)
@@ -67,12 +70,21 @@ REAL(KIND=JPRB),ALLOCATABLE  :: ZBUF(:,:)
 INTEGER(KIND=JPIM) :: JM,JN,II,IFLDR,IFLDS,JFLD,ITAG,JNM,IBSET,ILEN,JA,ISND
 INTEGER(KIND=JPIM) :: IRCV,ISTA,ISTP,ILENR,ISENDREQ(NPRTRW*KFDISTG)
 INTEGER(KIND=JPIM) :: ISMAX, ISPEC2, IPOS0,ISENT
+INTEGER(KIND=JPIM), POINTER :: ISORT (:)
 
 !     ------------------------------------------------------------------
 
 
 ! Compute help array for distribution
 
+IF (PRESENT (KSORT)) THEN
+  ISORT => KSORT
+ELSE
+  ALLOCATE (ISORT (KFDISTG))
+  DO JFLD = 1, KFDISTG
+    ISORT (JFLD) = JFLD
+  ENDDO
+ENDIF
 
 IF( NPROC == 1 ) THEN
   CALL GSTATS(1644,0)
@@ -80,7 +92,7 @@ IF( NPROC == 1 ) THEN
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JNM,JFLD)
     DO JNM=1,KSPEC2_G
       DO JFLD=1,KFDISTG
-        PSPEC(JFLD,JNM) = PSPECG(JFLD,JNM)
+        PSPEC(ISORT (JFLD),JNM) = PSPECG(JFLD,JNM)
       ENDDO
     ENDDO
 !$OMP END PARALLEL DO
@@ -88,7 +100,7 @@ IF( NPROC == 1 ) THEN
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JNM,JFLD)
     DO JFLD=1,KFDISTG
       DO JNM=1,KSPEC2_G
-        PSPEC(JNM,JFLD) = PSPECG(JNM,JFLD)
+        PSPEC(JNM,ISORT (JFLD)) = PSPECG(JNM,JFLD)
       ENDDO
     ENDDO
 !$OMP END PARALLEL DO
@@ -172,9 +184,9 @@ ELSE
         IF(LDIM1_IS_FLD) THEN
           CALL MPL_RECV(ZFLD,KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
            &KOUNT=ILENR,CDSTRING='DIST_SPEC_CONTROL:')
-          PSPEC(IFLDR,1:KSPEC2) = ZFLD(:)
+          PSPEC(ISORT (IFLDR),1:KSPEC2) = ZFLD(:)
         ELSE
-          CALL MPL_RECV(PSPEC(:,IFLDR),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
+          CALL MPL_RECV(PSPEC(:,ISORT (IFLDR)),KSOURCE=NPRCIDS(IRCV),KTAG=ITAG,&
            &KOUNT=ILENR,CDSTRING='DIST_SPEC_CONTROL:')
         ENDIF
         IF( ILENR /= KSPEC2 )THEN
@@ -200,6 +212,11 @@ ELSE
   CALL GSTATS(787,1)
   IF(ALLOCATED(ZBUF)) DEALLOCATE(ZBUF)
 ENDIF
+
+IF (.NOT. PRESENT (KSORT)) THEN
+  DEALLOCATE (ISORT)
+ENDIF
+
 !     ------------------------------------------------------------------
 
 END SUBROUTINE DIST_SPEC_CONTROL

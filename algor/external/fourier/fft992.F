@@ -48,58 +48,58 @@
 !AUTOPROMOTE
       USE PARKIND1, ONLY : JPIM, JPRB
       USE YOMHOOK , ONLY : LHOOK, DR_HOOK
-      implicit none
-      INTEGER(KIND=JPIM) :: n
+      IMPLICIT NONE
+      INTEGER(KIND=JPIM) :: N
       REAL(KIND=JPRB) :: A(*)
       REAL(KIND=JPRB) :: TRIGS_(N)
       INTEGER(KIND=JPIM) :: IFAX_(10)
 
-      INTEGER(KIND=JPIM) :: inc
-      INTEGER(KIND=JPIM) :: jump
-      INTEGER(KIND=JPIM) :: lot
-      INTEGER(KIND=JPIM) :: isign
+      INTEGER(KIND=JPIM) :: INC
+      INTEGER(KIND=JPIM) :: JUMP
+      INTEGER(KIND=JPIM) :: LOT
+      INTEGER(KIND=JPIM) :: ISIGN
 
-      REAL(KIND=JPRB),allocatable,dimension(:),save :: work , trigs
-      INTEGER(KIND=JPIM),save :: ifax (32)
+      REAL(KIND=JPRB),ALLOCATABLE,DIMENSION(:),SAVE :: WORK , TRIGS
+      INTEGER(KIND=JPIM),SAVE :: IFAX (32)
 
 
-      INTEGER(KIND=JPIM), save ::  n_old=-1
-      INTEGER(KIND=JPIM), save ::  lot_old=-1
+      INTEGER(KIND=JPIM), SAVE ::  N_OLD=-1
+      INTEGER(KIND=JPIM), SAVE ::  LOT_OLD=-1
 
 !$OMP threadprivate(ifax,n_old,lot_old,trigs,work)
 
 
       REAL(KIND=JPRB) :: ZHOOK_HANDLE
       IF (LHOOK) CALL DR_HOOK('FFT992',0,ZHOOK_HANDLE)
-      if (n .ne. n_old) then
+      IF (N .NE. N_OLD) THEN
 
-         IF( ALLOCATED( work ) ) DEALLOCATE( work )
-         IF( ALLOCATED( trigs ) ) DEALLOCATE( trigs )
+         IF( ALLOCATED( WORK ) ) DEALLOCATE( WORK )
+         IF( ALLOCATED( TRIGS ) ) DEALLOCATE( TRIGS )
 
-         allocate(work(3*n*lot))
-         allocate(trigs(2*n))
+         ALLOCATE(WORK(3*N*LOT))
+         ALLOCATE(TRIGS(2*N))
 
-         call dftfax ( n, ifax, trigs )
+         CALL DFTFAX ( N, IFAX, TRIGS )
 
-         n_old = n
-         lot_old = lot
+         N_OLD = N
+         LOT_OLD = LOT
 
-      else
+      ELSE
 
-       if (lot .gt. lot_old) then
+       IF (LOT .GT. LOT_OLD) THEN
 
-         IF( ALLOCATED( work ) ) DEALLOCATE( work )
-         allocate(work(3*n*lot))
-         lot_old = lot
+         IF( ALLOCATED( WORK ) ) DEALLOCATE( WORK )
+         ALLOCATE(WORK(3*N*LOT))
+         LOT_OLD = LOT
 
-       endif
+       ENDIF
 
-      endif
+      ENDIF
 
-      call dfftmlt ( a, work, trigs, ifax, inc, jump, n, lot, isign )
+      CALL DFFTMLT ( A, WORK, TRIGS, IFAX, INC, JUMP, N, LOT, ISIGN )
 
       IF (LHOOK) CALL DR_HOOK('FFT992',1,ZHOOK_HANDLE)
-      return
+      RETURN
 
       END SUBROUTINE FFT992
 #else

@@ -1,4 +1,4 @@
-SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
+SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP,KSORT)
 
 !**** *DIST_GRID* - Distribute global gridpoint array among processors
 
@@ -19,6 +19,7 @@ SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
 !     PGP(:,:)  - Local spectral array
+!     KSORT (:) - Re-order fields on output
 !
 !     Method.
 !     -------
@@ -33,6 +34,7 @@ SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
+!    P.Marguinaud : 10-10-14 Add KSORT
 
 !     ------------------------------------------------------------------
 
@@ -61,6 +63,7 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
 
 !ifndef INTERFACE
 
@@ -117,8 +120,13 @@ IF(IFSEND > 0) THEN
   ENDIF
 ENDIF
 
+IF (PRESENT (KSORT)) THEN
+  IF (UBOUND (KSORT, 1) /= UBOUND (PGP, 2)) THEN
+    CALL ABORT_TRANS('DIST_GRID: DIMENSION MISMATCH KSORT, PGP')
+  ENDIF
+ENDIF
 
-CALL DIST_GRID_CTL(PGPG,KFDISTG,IPROMA,KFROM,PGP)
+CALL DIST_GRID_CTL(PGPG,KFDISTG,IPROMA,KFROM,PGP,KSORT)
 
 IF (LHOOK) CALL DR_HOOK('DIST_GRID',1,ZHOOK_HANDLE)
 !endif INTERFACE
