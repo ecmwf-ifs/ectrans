@@ -588,7 +588,7 @@ IF(.NOT.D%LGRIDONLY) THEN
             CALL CONSTRUCT_BUTTERFLY(ZEPS_INT_DEC,IMAXCOLS,INX,ILA,S%FA(IMLOC)%RPNMA,&
              & S%FA(IMLOC)%YBUT_STRUCT_A,ZCLONEA(IMLOC))
           ELSE
-            call abor1('Butterfly not available in single precision yet.')
+            CALL ABOR1('Butterfly not available in single precision yet.')
           ENDIF 
           IRECVLENMAX=SIZE(ZCLONEA(IMLOC)%COMMSBUF)
           CALL GSTATS(852,0)
@@ -844,7 +844,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           CALL CONSTRUCT_BUTTERFLY(ZEPS_INT_DEC,IMAXCOLS,INX,ILS,S%FA(IMLOC)%RPNMS,&
            & S%FA(IMLOC)%YBUT_STRUCT_S,ZCLONES(IMLOC))
           ELSE
-            call abor1('Butterfly not available in single precision yet.')
+            CALL ABOR1('Butterfly not available in single precision yet.')
           ENDIF
           IRECVLENMAX=SIZE(ZCLONES(IMLOC)%COMMSBUF)
           CALL GSTATS(852,0)

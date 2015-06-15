@@ -551,7 +551,7 @@ IF(LLTRANSPOSE) THEN
             IRANKR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IRANK
           ELSE
             IRANKR = 0
-          endif
+          ENDIF
           IBTSTL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+1
           IBTENL = YD_STRUCT%SLEV(ILM1)%NODE(IJL,IKL)%IOFFBETA+IRANKL
           IBTSTR = YD_STRUCT%SLEV(ILM1)%NODE(IJR,IKR)%IOFFBETA+1
@@ -625,7 +625,7 @@ ELSE
 ENDIF
 END SUBROUTINE MULT_BUTV
 !====================================================================
-subroutine mult_butm(cdtrans,yd_struct,kf,pvecin,pvecout)
+SUBROUTINE MULT_BUTM(CDTRANS,YD_STRUCT,KF,PVECIN,PVECOUT)
 IMPLICIT NONE
 
 ! Multiply matrix by matrix represented by butterfly
