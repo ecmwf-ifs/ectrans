@@ -32,10 +32,10 @@ SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
 !        G. Radnoti 01-04-24 2D model (NLOEN=1)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
-!        R. El Khatib 01-Sep-2015 Better modularity for FFTW
+
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRB
+USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 !USE TPM_TRANS
@@ -55,6 +55,7 @@ REAL(KIND=JPRB), INTENT(INOUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
+LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 !     ------------------------------------------------------------------
 

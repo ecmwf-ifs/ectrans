@@ -31,7 +31,7 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 !        Original : 00-03-03
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
-!        R. El Khatib 01-Sep-2015 Better modularity for FFTW
+
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPRB
@@ -52,7 +52,7 @@ INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELDS,KGL
 REAL(KIND=JPRB), INTENT(INOUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN
-INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
+INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN,ITYPE
 REAL(KIND=JPRB) :: ZMUL
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 !     ------------------------------------------------------------------
@@ -67,7 +67,7 @@ IOFF  = D%NSTAGTF(KGL)+1
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST-1+IOFF+JJ-1) = 0.0_JPRB
+    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRB
   ENDDO
 ENDDO
 
@@ -89,7 +89,7 @@ ENDIF
 ZMUL = 1.0_JPRB/ILOEN
 DO JJ=1,ILOEN
   DO JF=1,KFIELDS
-    PREEL(JF,IOFF+JJ-1) = PREEL(JF,IOFF+JJ-1)*ZMUL
+    PREEL(JF,IOFF-1+JJ) = PREEL(JF,IOFF-1+JJ)*ZMUL
   ENDDO
 ENDDO
 

@@ -31,10 +31,8 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 !        Original : 00-03-03
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
-!        R. El Khatib 01-Sep-2015 Better modularity for FFTW
-!     ------------------------------------------------------------------
 
-USE, INTRINSIC :: ISO_C_BINDING
+!     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
@@ -58,12 +56,12 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
 REAL(KIND=JPRB), INTENT(OUT)  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN
-INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
-INTEGER(KIND=JPIB) :: IPLAN_R2C
+INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN,ITYPE
+LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 !     ------------------------------------------------------------------
 
-ITYPE=-1
+ITYPE =-1
 IJUMP = 1
 IGLG  = D%NPTRLS(MYSETW)+KGL-1
 ILOEN = G%NLOEN(IGLG)+R%NNOEXTZL
@@ -74,7 +72,7 @@ IOFF  = D%NSTAGTF(KGL)+1
   ! Change of metric (not in forward routine)
 DO JJ=1,ILOEN
   DO JF=1,KFIELDS
-    PREEL(JF,IOFF+JJ-1) = PREEL(JF,IOFF+JJ-1)*ILOEN
+    PREEL(JF,IOFF-1+JJ) = PREEL(JF,IOFF-1+JJ)*ILOEN
   ENDDO
 ENDDO
   
@@ -83,9 +81,9 @@ IF( T%LFFT992 )THEN
    &T%NFAX(1,KGL),KFIELDS,IJUMP,ILOEN,KFIELDS,ITYPE)
 #ifdef WITH_FFTW
 ELSEIF( TW%LFFTW )THEN
-    IRLEN=G%NLOEN(IGLG)+R%NNOEXTZL
-    ICLEN=(IRLEN/2+1)*2
-    CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+  IRLEN=G%NLOEN(IGLG)+R%NNOEXTZL
+  ICLEN=(IRLEN/2+1)*2
+  CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
 #endif
 ELSE
   CALL ABORT_TRANS('FTINVAD: NO FFT PACKAGE SELECTED')
@@ -93,7 +91,7 @@ ENDIF
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST-1+IOFF+JJ-1) = 0.0_JPRB
+    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRB
   ENDDO
 ENDDO
 

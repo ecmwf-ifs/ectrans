@@ -31,7 +31,6 @@ SUBROUTINE FTINV(PREEL,KFIELDS,KGL)
 !        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
-!        R. El Khatib 01-Sep-2015 Better modularity for FFTW
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPRB
@@ -53,9 +52,11 @@ REAL(KIND=JPRB), INTENT(OUT)  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
+LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 !     ------------------------------------------------------------------
 
+ITYPE = 1
 IJUMP = 1
 IGLG  = D%NPTRLS(MYSETW)+KGL-1
 IST   = 2*(G%NMEN(IGLG)+1)+1
@@ -74,11 +75,10 @@ IF (G%NLOEN(IGLG)>1) THEN
   IRLEN=G%NLOEN(IGLG)+R%NNOEXTZL
   IF( T%LFFT992 )THEN
     CALL FFT992(PREEL(1,IOFF),T%TRIGS(1,KGL),&
-     &T%NFAX(1,KGL),KFIELDS,IJUMP,IRLEN,KFIELDS,1)
+     &T%NFAX(1,KGL),KFIELDS,IJUMP,IRLEN,KFIELDS,ITYPE)
 #ifdef WITH_FFTW
   ELSEIF( TW%LFFTW )THEN
     ICLEN=(IRLEN/2+1)*2
-    ITYPE=1
     CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
 #endif
   ELSE
