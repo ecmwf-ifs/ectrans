@@ -3,7 +3,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,&
 &                       LDMPOFF,LDSYNC_TRANS,&
 &                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS,&
-&                       PRAD)
+&                       PRAD,LDALLOPERM)
 
 !**** *SETUP_TRANS0* - General setup routine for transform package
 
@@ -33,6 +33,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     K_REGIONS_NS - Maximum number of NS partitions
 !     K_REGIONS_EW - Maximum number of EW partitions
 !     PRAD         - Radius of the planet
+!     LDALLOPERM  - Allocate certain arrays permanently
 
 !     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
 
@@ -64,6 +65,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDMPOFF
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSYNC_TRANS
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDEQ_REGIONS
+LOGICAL   ,OPTIONAL,INTENT(IN) :: LDALLOPERM
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS(:)
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_NS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_EW
