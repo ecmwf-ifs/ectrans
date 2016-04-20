@@ -31,19 +31,19 @@ SUBROUTINE FTINV(PREEL,KFIELDS,KGL)
 !        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
+!        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
-!USE TPM_TRANS
 USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_FFT         ,ONLY : T
+USE TPM_FFT         ,ONLY : T, TB
+USE BLUESTEIN_MOD   ,ONLY : BLUESTEIN_FFT
 #ifdef WITH_FFTW
 USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
 #endif
 USE TPM_DIM         ,ONLY : R
-USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
@@ -73,17 +73,31 @@ ENDDO
 IF (G%NLOEN(IGLG)>1) THEN
   IOFF=D%NSTAGTF(KGL)+1
   IRLEN=G%NLOEN(IGLG)+R%NNOEXTZL
-  IF( T%LFFT992 )THEN
-    CALL FFT992(PREEL(1,IOFF),T%TRIGS(1,KGL),&
-     &T%NFAX(1,KGL),KFIELDS,IJUMP,IRLEN,KFIELDS,ITYPE)
+  ICLEN=(IRLEN/2+1)*2
+
 #ifdef WITH_FFTW
-  ELSEIF( TW%LFFTW )THEN
-    ICLEN=(IRLEN/2+1)*2
-    CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+  IF( .NOT. TW%LFFTW )THEN
 #endif
+
+    IF( T%LUSEFFT992(KGL) )THEN
+
+      CALL FFT992(PREEL(1,IOFF),T%TRIGS(1,KGL),&
+       &T%NFAX(1,KGL),KFIELDS,IJUMP,IRLEN,KFIELDS,ITYPE)
+
+    ELSE
+
+       CALL BLUESTEIN_FFT(TB,IRLEN,ITYPE,KFIELDS,PREEL(1:KFIELDS,IOFF:IOFF+ICLEN-1))
+
+    ENDIF
+
+#ifdef WITH_FFTW
   ELSE
-    CALL ABORT_TRANS('FTINV: NO FFT PACKAGE SELECTED')
+
+    CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+
   ENDIF
+#endif
+
 ENDIF
 
 !     ------------------------------------------------------------------

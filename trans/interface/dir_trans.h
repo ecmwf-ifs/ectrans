@@ -1,6 +1,6 @@
 INTERFACE
 SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
-& KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
+& LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
 & PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
 
@@ -22,6 +22,7 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     PSPSC3A(:,:,:) - alternative to use of PSPSCALAR, see PGP3A below (input)
 !     PSPSC3B(:,:,:) - alternative to use of PSPSCALAR, see PGP3B below (input)
 !     PSPSC2(:,:)  - alternative to use of PSPSCALAR, see PGP2 below (input)
+!     LDLATLON   - indicating if regular lat-lon is the input data
 !     KPROMA      - required blocking factor for gridpoint output
 !     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
@@ -117,6 +118,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3A(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3B(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC2(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL
+LOGICAL   ,OPTIONAL, INTENT(IN) :: LDLATLON
 
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP(:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGPUV(:,:,:,:)
