@@ -1,4 +1,4 @@
-MODULE EQ_REGIONS_MOD
+MODULE eq_regions_mod
 !
 !     Purpose.
 !     --------
@@ -68,56 +68,105 @@ SAVE
 
 PRIVATE
 
-PUBLIC EQ_REGIONS,L_REGIONS_DEBUG,N_REGIONS_NS,N_REGIONS_EW,N_REGIONS,MY_REGION_NS,MY_REGION_EW
+PUBLIC eq_regions,l_regions_debug,n_regions_ns,n_regions_ew,n_regions,my_region_ns,my_region_ew
+PUBLIC eq_regions_t, eq_regions_save, eq_regions_load, eq_regions_free
 
-REAL(KIND=JPRB) PI
-LOGICAL :: L_REGIONS_DEBUG=.FALSE.
-INTEGER(KIND=JPIM) :: N_REGIONS_NS
-INTEGER(KIND=JPIM) :: N_REGIONS_EW
-INTEGER(KIND=JPIM) :: MY_REGION_NS
-INTEGER(KIND=JPIM) :: MY_REGION_EW
-INTEGER(KIND=JPIM),ALLOCATABLE :: N_REGIONS(:)
+real(kind=jprb) pi
+
+type eq_regions_t
+logical :: l_regions_debug=.false.
+integer(kind=jpim) :: n_regions_ns
+integer(kind=jpim) :: n_regions_ew
+integer(kind=jpim) :: my_region_ns
+integer(kind=jpim) :: my_region_ew
+integer(kind=jpim),pointer :: n_regions(:) => null ()
+end type eq_regions_t
+
+logical :: l_regions_debug=.false.
+integer(kind=jpim) :: n_regions_ns
+integer(kind=jpim) :: n_regions_ew
+integer(kind=jpim) :: my_region_ns
+integer(kind=jpim) :: my_region_ew
+integer(kind=jpim),pointer :: n_regions(:) => null ()
 
 CONTAINS
 
-SUBROUTINE EQ_REGIONS(N)
+subroutine eq_regions_save (yder)
+type (eq_regions_t), intent (inout) :: yder
+
+yder%l_regions_debug =  l_regions_debug 
+yder%n_regions_ns    =  n_regions_ns    
+yder%n_regions_ew    =  n_regions_ew    
+yder%my_region_ns    =  my_region_ns    
+yder%my_region_ew    =  my_region_ew    
+yder%n_regions       => n_regions
+
+nullify (n_regions)
+
+end subroutine
+
+subroutine eq_regions_load (yder)
+type (eq_regions_t), intent (inout) :: yder
+
+l_regions_debug =  yder%l_regions_debug 
+n_regions_ns    =  yder%n_regions_ns    
+n_regions_ew    =  yder%n_regions_ew    
+my_region_ns    =  yder%my_region_ns    
+my_region_ew    =  yder%my_region_ew    
+n_regions       => yder%n_regions
+
+nullify (yder%n_regions)
+
+end subroutine
+
+subroutine eq_regions_free (yder)
+type (eq_regions_t), intent (inout) :: yder
+
+if (associated (yder%n_regions)) then
+  deallocate (yder%n_regions)
+  nullify (yder%n_regions)
+endif
+
+end subroutine
+
+subroutine eq_regions(N)
 !
 ! eq_regions uses the zonal equal area sphere partitioning algorithm to partition
 ! the surface of a sphere into N regions of equal area and small diameter.
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N
-INTEGER(KIND=JPIM) :: N_COLLARS,J
-REAL(KIND=JPRB),ALLOCATABLE :: R_REGIONS(:)
-REAL(KIND=JPRB) :: C_POLAR
+integer(kind=jpim),intent(in) :: N
+integer(kind=jpim) :: n_collars,j
+real(kind=jprb),allocatable :: r_regions(:)
+real(kind=jprb) :: c_polar
 
-PI=2.0_JPRB*ASIN(1.0_JPRB)
+pi=2.0_jprb*asin(1.0_jprb)
 
-N_REGIONS(:)=0
+n_regions(:)=0
 
-IF( N == 1 )THEN
+if( N == 1 )then
 
   !
   ! We have only one region, which must be the whole sphere.
   !
-  N_REGIONS(1)=1
-  N_REGIONS_NS=1
+  n_regions(1)=1
+  n_regions_ns=1
 
-ELSE
+else
 
   !
   ! Given N, determine c_polar
   ! the colatitude of the North polar spherical cap.
   !
-  C_POLAR = POLAR_COLAT(N)
+  c_polar = polar_colat(N)
   !
   ! Given N, determine the ideal angle for spherical collars.
   ! Based on N, this ideal angle, and c_polar,
   ! determine n_collars, the number of collars between the polar caps.
   !
-  N_COLLARS = NUM_COLLARS(N,C_POLAR,IDEAL_COLLAR_ANGLE(N))
-  N_REGIONS_NS=N_COLLARS+2
+  n_collars = num_collars(N,c_polar,ideal_collar_angle(N))
+  n_regions_ns=n_collars+2
   !
   ! Given N, c_polar and n_collars, determine r_regions,
   ! a list of the ideal real number of regions in each collar,
@@ -126,8 +175,8 @@ ELSE
   ! r_regions[1] is 1.
   ! r_regions[n_collars+2] is 1.
   ! The sum of r_regions is N.
-  ALLOCATE(R_REGIONS(N_COLLARS+2))
-  CALL IDEAL_REGION_LIST(N,C_POLAR,N_COLLARS,R_REGIONS)
+  allocate(r_regions(n_collars+2))
+  call ideal_region_list(N,c_polar,n_collars,r_regions)
   !
   ! Given N and r_regions, determine n_regions, a list of the natural number
   ! of regions in each collar and the polar caps.
@@ -137,27 +186,27 @@ ELSE
   ! n_regions[n_collars+2] is 1.
   ! The sum of n_regions is N.
   !
-  CALL ROUND_TO_NATURALS(N,N_COLLARS,R_REGIONS)
-  DEALLOCATE(R_REGIONS)
-  IF( N /= SUM(N_REGIONS(:)) )THEN
-    WRITE(*,'("eq_regions: N=",I10," sum(n_regions(:))=",I10)')N,SUM(N_REGIONS(:))
-    CALL ABOR1('eq_regions: N /= sum(n_regions)')
-  ENDIF
+  call round_to_naturals(N,n_collars,r_regions)
+  deallocate(r_regions)
+  if( N /= sum(n_regions(:)) )then
+    write(*,'("eq_regions: N=",I10," sum(n_regions(:))=",I10)')N,sum(n_regions(:))
+    call abor1('eq_regions: N /= sum(n_regions)')
+  endif
 
-ENDIF
+endif
 
-IF( L_REGIONS_DEBUG )THEN
-  WRITE(*,'("eq_regions: N=",I6," n_regions_ns=",I4)') N,N_REGIONS_NS
-  DO J=1,N_REGIONS_NS
-    WRITE(*,'("eq_regions: n_regions(",I4,")=",I4)') J,N_REGIONS(J)
-  ENDDO
-ENDIF
-N_REGIONS_EW=MAXVAL(N_REGIONS(:))
+if( l_regions_debug )then
+  write(*,'("eq_regions: N=",I6," n_regions_ns=",I4)') N,n_regions_ns
+  do j=1,n_regions_ns
+    write(*,'("eq_regions: n_regions(",I4,")=",I4)') j,n_regions(j)
+  enddo
+endif
+n_regions_ew=maxval(n_regions(:))
 
-RETURN
-END SUBROUTINE EQ_REGIONS
+return
+end subroutine eq_regions
 
-FUNCTION NUM_COLLARS(N,C_POLAR,A_IDEAL) RESULT(NUM_C)
+function num_collars(N,c_polar,a_ideal) result(num_c)
 !
 !NUM_COLLARS The number of collars between the polar caps
 !
@@ -166,20 +215,20 @@ FUNCTION NUM_COLLARS(N,C_POLAR,A_IDEAL) RESULT(NUM_C)
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N
-REAL(KIND=JPRB),INTENT(IN) :: A_IDEAL,C_POLAR
-INTEGER(KIND=JPIM) :: NUM_C
-LOGICAL ENOUGH
-ENOUGH = (N > 2) .AND. (A_IDEAL > 0)
-IF( ENOUGH )THEN
-  NUM_C = MAX(1,NINT((PI-2.*C_POLAR)/A_IDEAL))
-ELSE
-  NUM_C = 0
-ENDIF
-RETURN
-END FUNCTION NUM_COLLARS
+integer(kind=jpim),intent(in) :: N
+real(kind=jprb),intent(in) :: a_ideal,c_polar
+integer(kind=jpim) :: num_c
+logical enough
+enough = (N > 2) .and. (a_ideal > 0)
+if( enough )then
+  num_c = max(1,nint((pi-2.*c_polar)/a_ideal))
+else
+  num_c = 0
+endif
+return
+end function num_collars
 
-SUBROUTINE IDEAL_REGION_LIST(N,C_POLAR,N_COLLARS,R_REGIONS)
+subroutine ideal_region_list(N,c_polar,n_collars,r_regions)
 !
 !IDEAL_REGION_LIST The ideal real number of regions in each zone
 !
@@ -194,32 +243,32 @@ SUBROUTINE IDEAL_REGION_LIST(N,C_POLAR,N_COLLARS,R_REGIONS)
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N,N_COLLARS
-REAL(KIND=JPRB),INTENT(IN) :: C_POLAR
-REAL(KIND=JPRB),INTENT(OUT) :: R_REGIONS(N_COLLARS+2)
-INTEGER(KIND=JPIM) :: COLLAR_N
-REAL(KIND=JPRB) :: IDEAL_REGION_AREA,IDEAL_COLLAR_AREA
-REAL(KIND=JPRB) :: A_FITTING
-R_REGIONS(:)=0.0_JPRB
-R_REGIONS(1) = 1.0_JPRB
-IF( N_COLLARS > 0 )THEN
+integer(kind=jpim),intent(in) :: N,n_collars
+real(kind=jprb),intent(in) :: c_polar
+real(kind=jprb),intent(out) :: r_regions(n_collars+2)
+integer(kind=jpim) :: collar_n
+real(kind=jprb) :: ideal_region_area,ideal_collar_area
+real(kind=jprb) :: a_fitting
+r_regions(:)=0.0_jprb
+r_regions(1) = 1.0_jprb
+if( n_collars > 0 )then
   !
   ! Based on n_collars and c_polar, determine a_fitting,
   ! the collar angle such that n_collars collars fit between the polar caps.
   !
-  A_FITTING = (PI-2.0_JPRB*C_POLAR)/FLOAT(N_COLLARS)
-  IDEAL_REGION_AREA = AREA_OF_IDEAL_REGION(N)
-  DO COLLAR_N=1,N_COLLARS
-    IDEAL_COLLAR_AREA = AREA_OF_COLLAR(C_POLAR+(COLLAR_N-1)*A_FITTING, &
-     & C_POLAR+COLLAR_N*A_FITTING)
-    R_REGIONS(1+COLLAR_N) = IDEAL_COLLAR_AREA / IDEAL_REGION_AREA
-  ENDDO
-ENDIF
-R_REGIONS(2+N_COLLARS) = 1.
-RETURN
-END SUBROUTINE IDEAL_REGION_LIST
+  a_fitting = (pi-2.0_jprb*c_polar)/float(n_collars)
+  ideal_region_area = area_of_ideal_region(N)
+  do collar_n=1,n_collars
+    ideal_collar_area = area_of_collar(c_polar+(collar_n-1)*a_fitting, &
+     & c_polar+collar_n*a_fitting)
+    r_regions(1+collar_n) = ideal_collar_area / ideal_region_area
+  enddo
+endif
+r_regions(2+n_collars) = 1.
+return
+end subroutine ideal_region_list
 
-FUNCTION IDEAL_COLLAR_ANGLE(N) RESULT(IDEAL)
+function ideal_collar_angle(N) result(ideal)
 !
 ! IDEAL_COLLAR_ANGLE The ideal angle for spherical collars of an EQ partition
 !
@@ -228,13 +277,13 @@ FUNCTION IDEAL_COLLAR_ANGLE(N) RESULT(IDEAL)
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N
-REAL(KIND=JPRB) :: IDEAL
-IDEAL = AREA_OF_IDEAL_REGION(N)**(0.5_JPRB)
-RETURN
-END FUNCTION IDEAL_COLLAR_ANGLE
+integer(kind=jpim),intent(in) :: N
+real(kind=jprb) :: ideal
+ideal = area_of_ideal_region(N)**(0.5_jprb)
+return
+end function ideal_collar_angle
 
-SUBROUTINE ROUND_TO_NATURALS(N,N_COLLARS,R_REGIONS)
+subroutine round_to_naturals(N,n_collars,r_regions)
 !
 ! ROUND_TO_NATURALS Round off a given list of numbers of regions
 !
@@ -248,66 +297,66 @@ SUBROUTINE ROUND_TO_NATURALS(N,N_COLLARS,R_REGIONS)
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N,N_COLLARS
-REAL(KIND=JPRB),INTENT(IN) :: R_REGIONS(N_COLLARS+2)
-INTEGER(KIND=JPIM) :: ZONE_N
-REAL(KIND=JPRB) :: DISCREPANCY
-N_REGIONS(1:N_COLLARS+2) = R_REGIONS(:)
-DISCREPANCY = 0.0_JPRB
-DO ZONE_N = 1,N_COLLARS+2
-    N_REGIONS(ZONE_N) = NINT(R_REGIONS(ZONE_N)+DISCREPANCY);
-    DISCREPANCY = DISCREPANCY+R_REGIONS(ZONE_N)-FLOAT(N_REGIONS(ZONE_N));
-ENDDO
-RETURN
-END SUBROUTINE ROUND_TO_NATURALS
+integer(kind=jpim),intent(in) :: N,n_collars
+real(kind=jprb),intent(in) :: r_regions(n_collars+2)
+integer(kind=jpim) :: zone_n
+real(kind=jprb) :: discrepancy
+n_regions(1:n_collars+2) = r_regions(:)
+discrepancy = 0.0_jprb
+do zone_n = 1,n_collars+2
+    n_regions(zone_n) = nint(r_regions(zone_n)+discrepancy);
+    discrepancy = discrepancy+r_regions(zone_n)-float(n_regions(zone_n));
+enddo
+return
+end subroutine round_to_naturals
 
-FUNCTION POLAR_COLAT(N) RESULT(POLAR_C)
+function polar_colat(N) result(polar_c)
 !
 ! Given N, determine the colatitude of the North polar spherical cap.
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N
-REAL(KIND=JPRB) :: AREA
-REAL(KIND=JPRB) :: POLAR_C
-IF( N == 1 ) POLAR_C=PI
-IF( N == 2 ) POLAR_C=PI/2.0_JPRB
-IF( N > 2 )THEN
-  AREA=AREA_OF_IDEAL_REGION(N)
-  POLAR_C=SRADIUS_OF_CAP(AREA)
-ENDIF
-RETURN
-END FUNCTION POLAR_COLAT
+integer(kind=jpim),intent(in) :: N
+real(kind=jprb) :: area
+real(kind=jprb) :: polar_c
+if( N == 1 ) polar_c=pi
+if( N == 2 ) polar_c=pi/2.0_jprb
+if( N > 2 )then
+  area=area_of_ideal_region(N)
+  polar_c=sradius_of_cap(area)
+endif
+return
+end function polar_colat
 
-FUNCTION AREA_OF_IDEAL_REGION(N) RESULT(AREA)
+function area_of_ideal_region(N) result(area)
 !
 ! AREA_OF_IDEAL_REGION(N) sets AREA to be the area of one of N equal
 ! area regions on S^2, that is 1/N times AREA_OF_SPHERE.
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-INTEGER(KIND=JPIM),INTENT(IN) :: N
-REAL(KIND=JPRB) :: AREA_OF_SPHERE
-REAL(KIND=JPRB) :: AREA
-AREA_OF_SPHERE = (2.0_JPRB*PI**1.5_JPRB/GAMMA(1.5_JPRB))
-AREA = AREA_OF_SPHERE/FLOAT(N)
-RETURN
-END FUNCTION AREA_OF_IDEAL_REGION
+integer(kind=jpim),intent(in) :: N
+real(kind=jprb) :: area_of_sphere
+real(kind=jprb) :: area
+area_of_sphere = (2.0_jprb*pi**1.5_jprb/gamma(1.5_jprb))
+area = area_of_sphere/float(N)
+return
+end function area_of_ideal_region
 
-FUNCTION SRADIUS_OF_CAP(AREA) RESULT(SRADIUS)
+function sradius_of_cap(area) result(sradius)
 !
 ! SRADIUS_OF_CAP(AREA) returns the spherical radius of
 ! an S^2 spherical cap of area AREA.
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-REAL(KIND=JPRB),INTENT(IN) :: AREA
-REAL(KIND=JPRB) :: SRADIUS
-SRADIUS = 2.0_JPRB*ASIN(SQRT(AREA/PI)/2.0_JPRB)
-RETURN
-END FUNCTION SRADIUS_OF_CAP
+real(kind=jprb),intent(in) :: area
+real(kind=jprb) :: sradius
+sradius = 2.0_jprb*asin(sqrt(area/pi)/2.0_jprb)
+return
+end function sradius_of_cap
 
-FUNCTION AREA_OF_COLLAR(A_TOP, A_BOT) RESULT(AREA)
+function area_of_collar(a_top, a_bot) result(area)
 !
 ! AREA_OF_COLLAR Area of spherical collar
 !
@@ -317,68 +366,68 @@ FUNCTION AREA_OF_COLLAR(A_TOP, A_BOT) RESULT(AREA)
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-REAL(KIND=JPRB),INTENT(IN) :: A_TOP,A_BOT
-REAL(KIND=JPRB) AREA
-AREA = AREA_OF_CAP(A_BOT) - AREA_OF_CAP(A_TOP)
-RETURN
-END FUNCTION AREA_OF_COLLAR
+real(kind=jprb),intent(in) :: a_top,a_bot
+real(kind=jprb) area
+area = area_of_cap(a_bot) - area_of_cap(a_top)
+return
+end function area_of_collar
 
-FUNCTION AREA_OF_CAP(S_CAP) RESULT(AREA)
+function area_of_cap(s_cap) result(area)
 !
 ! AREA_OF_CAP Area of spherical cap
 !
 ! AREA_OF_CAP(S_CAP) sets AREA to be the area of an S^2 spherical
 ! cap of spherical radius S_CAP.
 !
-REAL(KIND=JPRB),INTENT(IN) :: S_CAP
-REAL(KIND=JPRB) AREA
-AREA = 4.0_JPRB*PI * SIN(S_CAP/2.0_JPRB)**2
-RETURN
-END FUNCTION AREA_OF_CAP
+real(kind=jprb),intent(in) :: s_cap
+real(kind=jprb) area
+area = 4.0_jprb*pi * sin(s_cap/2.0_jprb)**2
+return
+end function area_of_cap
 
-FUNCTION GAMMA(X) RESULT(GAMMA_RES)
+function gamma(x) result(gamma_res)
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
-REAL(KIND=JPRB),INTENT(IN) :: X
-REAL(KIND=JPRB) :: GAMMA_RES
-REAL(KIND=JPRB) :: P0,P1,P2,P3,P4,P5,P6,P7,P8,P9,P10,P11,P12,P13
-REAL(KIND=JPRB) :: W,Y
-INTEGER(KIND=JPIM) :: K,N
-PARAMETER (&
-& P0 =   0.999999999999999990E+00_JPRB,&
-& P1 =  -0.422784335098466784E+00_JPRB,&
-& P2 =  -0.233093736421782878E+00_JPRB,&
-& P3 =   0.191091101387638410E+00_JPRB,&
-& P4 =  -0.024552490005641278E+00_JPRB,&
-& P5 =  -0.017645244547851414E+00_JPRB,&
-& P6 =   0.008023273027855346E+00_JPRB)
-PARAMETER (&
-& P7 =  -0.000804329819255744E+00_JPRB,&
-& P8 =  -0.000360837876648255E+00_JPRB,&
-& P9 =   0.000145596568617526E+00_JPRB,&
-& P10 = -0.000017545539395205E+00_JPRB,&
-& P11 = -0.000002591225267689E+00_JPRB,&
-& P12 =  0.000001337767384067E+00_JPRB,&
-& P13 = -0.000000199542863674E+00_JPRB)
-N = NINT(X - 2)
-W = X - (N + 2)
-Y = ((((((((((((P13 * W + P12) * W + P11) * W + P10) *&
-&    W + P9) * W + P8) * W + P7) * W + P6) * W + P5) *&
-&    W + P4) * W + P3) * W + P2) * W + P1) * W + P0
-IF (N .GT. 0) THEN
-  W = X - 1
-  DO K = 2, N
-    W = W * (X - K)
-  END DO
-ELSE
-  W = 1
-  DO K = 0, -N - 1
-    Y = Y * (X + K)
-  END DO
-END IF
-GAMMA_RES = W / Y
-RETURN
-END FUNCTION GAMMA
+real(kind=jprb),intent(in) :: x
+real(kind=jprb) :: gamma_res
+real(kind=jprb) :: p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13
+real(kind=jprb) :: w,y
+integer(kind=jpim) :: k,n
+parameter (&
+& p0 =   0.999999999999999990e+00_jprb,&
+& p1 =  -0.422784335098466784e+00_jprb,&
+& p2 =  -0.233093736421782878e+00_jprb,&
+& p3 =   0.191091101387638410e+00_jprb,&
+& p4 =  -0.024552490005641278e+00_jprb,&
+& p5 =  -0.017645244547851414e+00_jprb,&
+& p6 =   0.008023273027855346e+00_jprb)
+parameter (&
+& p7 =  -0.000804329819255744e+00_jprb,&
+& p8 =  -0.000360837876648255e+00_jprb,&
+& p9 =   0.000145596568617526e+00_jprb,&
+& p10 = -0.000017545539395205e+00_jprb,&
+& p11 = -0.000002591225267689e+00_jprb,&
+& p12 =  0.000001337767384067e+00_jprb,&
+& p13 = -0.000000199542863674e+00_jprb)
+n = nint(x - 2)
+w = x - (n + 2)
+y = ((((((((((((p13 * w + p12) * w + p11) * w + p10) *&
+&    w + p9) * w + p8) * w + p7) * w + p6) * w + p5) *&
+&    w + p4) * w + p3) * w + p2) * w + p1) * w + p0
+if (n .gt. 0) then
+  w = x - 1
+  do k = 2, n
+    w = w * (x - k)
+  end do
+else
+  w = 1
+  do k = 0, -n - 1
+    y = y * (x + k)
+  end do
+end if
+gamma_res = w / y
+return
+end function gamma
 
-END MODULE EQ_REGIONS_MOD
+END MODULE eq_regions_mod

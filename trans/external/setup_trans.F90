@@ -66,6 +66,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !        R. El Khatib 09-Aug-2012 %LAM in GEOM_TYPE
 !        R. El Khatib 14-Jun-2013 PSTRET, LDPNMONLY, LENABLED
 !        G. Mozdzynski : Oct 2014 Support for FFTW
+!        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -300,10 +301,6 @@ ENDIF
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
   IF (ABS(PSTRET-1.0_JPRB)>100._JPRB*EPSILON(1._JPRB)) THEN
-    IF(.NOT.S%LKEEPRPNM .OR. .NOT. S%LUSERPNM) THEN
-      CALL ABORT_TRANS('SETUP_TRANS: PSTRET implemented only with &
-        &  S%LKEEPRPNM=T and S%LUSERPNM=T')
-    ENDIF
     G%RSTRET=PSTRET
     S%LSOUTHPNM=.TRUE.
   ENDIF
@@ -349,5 +346,3 @@ IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',1,ZHOOK_HANDLE)
 !endif INTERFACE
 
 END SUBROUTINE SETUP_TRANS
-
-

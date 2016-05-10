@@ -105,6 +105,7 @@ USE ABORT_TRANS_MOD
 !        G.Mozdzynski: July 2012  distribute FLT initialisation over NPRTRV
 !        R. El Khatib 14-Jun-2013 optional computation on the stretched latitudes
 !      F. Vana  05-Mar-2015  Support for single precision
+!        R. El Khatib : 07-Mar-2016 Support for computation of Legendre polynomials per wave
 !     ------------------------------------------------------------------
 
 
@@ -204,7 +205,7 @@ S%ITHRESHOLD=ITHRESHOLD
 !*       3.1   Gaussian latitudes and weights
 !     ---------------------------------------
 
-CALL INI_POL(R%NTMAX+2)
+IF (S%LUSERPNM.OR.S%LUSEFLT) CALL INI_POL(R%NTMAX+2)
 
 IF(.NOT.D%LGRIDONLY) THEN
   ISTART=1
@@ -411,6 +412,8 @@ IF(.NOT.D%LGRIDONLY) THEN
     CALL ABORT_TRANS('SULEG: LUSEFLT=T and LMPOFF=T not supported')
   ENDIF
   CALL GSTATS(1801,2)
+
+  IF (S%LUSERPNM.OR.S%LUSEFLT) THEN
 
   DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
     
@@ -930,6 +933,8 @@ IF(.NOT.D%LGRIDONLY) THEN
     ENDIF
 
   ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
+
+  ENDIF ! (S%LUSERPNM.OR.S%LUSEFLT)
     
   IF( S%LUSEFLT )THEN
     DEALLOCATE(ZCLONEA)
@@ -992,7 +997,7 @@ CALL GSTATS(140,1)
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
 
-CALL END_POL
+IF (S%LUSERPNM.OR.S%LUSEFLT) CALL END_POL
 
 END SUBROUTINE SULEG
 END MODULE SULEG_MOD
