@@ -31,20 +31,20 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 !        Original : 00-03-03
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
+!        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW 
 
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
-!USE TPM_TRANS
 USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_FFT         ,ONLY : T
+USE TPM_FFT         ,ONLY : T, TB
+USE BLUESTEIN_MOD   ,ONLY : BLUESTEIN_FFT
 #ifdef WITH_FFTW
 USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
 #endif
 USE TPM_DIM         ,ONLY : R
-USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
@@ -57,13 +57,15 @@ REAL(KIND=JPRB) :: ZMUL
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 !     ------------------------------------------------------------------
 
-ITYPE=1
+ITYPE = 1
 IJUMP = 1
-IGLG = D%NPTRLS(MYSETW)+KGL-1
+IGLG  = D%NPTRLS(MYSETW)+KGL-1
+IST   = 2*(G%NMEN(IGLG)+1)+1
 ILOEN = G%NLOEN(IGLG)+R%NNOEXTZL
-IST  = 2*(G%NMEN(IGLG)+1)+1
-ILEN = ILOEN+3-IST
+ILEN  = ILOEN+3-IST
 IOFF  = D%NSTAGTF(KGL)+1
+IRLEN = ILOEN
+ICLEN = (IRLEN/2+1)*2
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
@@ -71,18 +73,28 @@ DO JJ=1,ILEN
   ENDDO
 ENDDO
 
-IF( T%LFFT992 )THEN
-  CALL FFT992(PREEL(1,IOFF),T%TRIGS(1,KGL),&
-   &T%NFAX(1,KGL),KFIELDS,IJUMP,ILOEN,KFIELDS,ITYPE)
 #ifdef WITH_FFTW
-ELSEIF( TW%LFFTW )THEN
-  IRLEN=G%NLOEN(IGLG)+R%NNOEXTZL
-  ICLEN=(IRLEN/2+1)*2
-  CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+IF( .NOT. TW%LFFTW )THEN
 #endif
+
+  IF( T%LUSEFFT992(KGL) )THEN
+
+    CALL FFT992(PREEL(1,IOFF),T%TRIGS(1,KGL),&
+     &T%NFAX(1,KGL),KFIELDS,IJUMP,ILOEN,KFIELDS,ITYPE)
+
+  ELSE
+  
+    CALL BLUESTEIN_FFT(TB,ILOEN,ITYPE,KFIELDS,PREEL(1:KFIELDS,IOFF:IOFF+ICLEN-1))
+
+  ENDIF
+
+#ifdef WITH_FFTW
 ELSE
-  CALL ABORT_TRANS('FTDIRAD: NO FFT PACKAGE SELECTED')
+
+  CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+
 ENDIF
+#endif
 
   ! Change of metric (not in forward routine)
 

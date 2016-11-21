@@ -38,21 +38,23 @@ SUBROUTINE FSC(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_TRANS       ,ONLY : LUVDER
+USE TPM_TRANS       ,ONLY : LUVDER, LATLON
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_FIELDS      ,ONLY : F
 USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_FLT                ,ONLY: S
 !
 
 IMPLICIT NONE
 INTEGER(KIND=JPIM) , INTENT(IN) :: KGL,KF_UV,KF_SCALARS,KF_SCDERS
 REAL(KIND=JPRB) , INTENT(INOUT) :: PUV(:,:)
-REAL(KIND=JPRB) , INTENT(IN   ) :: PSCALAR(:,:)
+REAL(KIND=JPRB) , INTENT(INOUT) :: PSCALAR(:,:)
 REAL(KIND=JPRB) , INTENT(INOUT) :: PNSDERS(:,:)
 REAL(KIND=JPRB) , INTENT(  OUT) :: PEWDERS(:,:)
 REAL(KIND=JPRB) , INTENT(  OUT) :: PUVDERS(:,:)
 
-REAL(KIND=JPRB) :: ZACHTE,ZMUL
+REAL(KIND=JPRB) :: ZACHTE,ZMUL, ZACHTE2, ZSHIFT, ZPI
+REAL(KIND=JPRB) :: ZAMP, ZPHASE
 INTEGER(KIND=JPIM) :: IMEN,ISTAGTF
 
 
@@ -64,10 +66,59 @@ IGLG    = D%NPTRLS(MYSETW)+KGL-1
 ZACHTE  = F%RACTHE(IGLG)
 IMEN    = G%NMEN(IGLG)
 ISTAGTF = D%NSTAGTF(KGL)
+ZACHTE2  = F%RACTHE(IGLG)
 
+IF( LATLON.AND.S%LDLL ) THEN
+  ZPI = 2.0_JPRB*ASIN(1.0_JPRB)
+  ZACHTE2 = 1._JPRB
+  ZACHTE  = F%RACTHE2(IGLG)
+  
+  ! apply shift for (even) lat-lon output grid
+  IF( S%LSHIFTLL ) THEN
+    ZSHIFT = ZPI/REAL(G%NLOEN(IGLG),JPRB)
 
-!     ------------------------------------------------------------------
-
+    DO JF=1,KF_SCALARS
+      DO JM=0,IMEN
+        IR = ISTAGTF+2*JM+1
+        II = IR+1
+        
+        ! calculate amplitude and add phase shift then reconstruct A,B
+        ZAMP = SQRT(PSCALAR(JF,IR)**2 + PSCALAR(JF,II)**2)
+        ZPHASE = ATAN2(PSCALAR(JF,II),PSCALAR(JF,IR)) + REAL(JM,JPRB)*ZSHIFT
+        
+        PSCALAR(JF,IR) =  ZAMP*COS(ZPHASE)
+        PSCALAR(JF,II) = ZAMP*SIN(ZPHASE)
+      ENDDO
+    ENDDO
+    IF(KF_SCDERS > 0)THEN
+      DO JF=1,KF_SCALARS
+        DO JM=0,IMEN
+          IR = ISTAGTF+2*JM+1
+          II = IR+1          
+          ! calculate amplitude and phase shift and reconstruct A,B
+          ZAMP = SQRT(PNSDERS(JF,IR)**2 + PNSDERS(JF,II)**2)
+          ZPHASE = ATAN2(PNSDERS(JF,II),PNSDERS(JF,IR)) + REAL(JM,JPRB)*ZSHIFT
+          PNSDERS(JF,IR) =  ZAMP*COS(ZPHASE)
+          PNSDERS(JF,II) = ZAMP*SIN(ZPHASE)
+        ENDDO
+      ENDDO
+    ENDIF
+    DO JF=1,2*KF_UV
+      DO JM=0,IMEN
+        IR = ISTAGTF+2*JM+1
+        II = IR+1
+        ! calculate amplitude and phase shift and reconstruct A,B
+        ZAMP = SQRT(PUV(JF,IR)**2 + PUV(JF,II)**2)
+        ZPHASE = ATAN2(PUV(JF,II),PUV(JF,IR)) + REAL(JM,JPRB)*ZSHIFT
+        PUV(JF,IR) =  ZAMP*COS(ZPHASE)
+        PUV(JF,II) =  ZAMP*SIN(ZPHASE)
+      ENDDO
+    ENDDO
+  ENDIF
+ENDIF
+  
+  !     ------------------------------------------------------------------
+  
 !*       1.    DIVIDE U V AND N-S DERIVATIVES BY A*COS(THETA)
 !              ----------------------------------------------
 
@@ -77,7 +128,7 @@ ISTAGTF = D%NSTAGTF(KGL)
 IF(KF_UV > 0) THEN
   DO JLON=ISTAGTF+1,ISTAGTF+2*(IMEN+1)
     DO JF=1,2*KF_UV
-      PUV(JF,JLON) = PUV(JF,JLON)*ZACHTE
+      PUV(JF,JLON) = PUV(JF,JLON)*ZACHTE2
     ENDDO
   ENDDO
 ENDIF
@@ -87,7 +138,7 @@ ENDIF
 IF(KF_SCDERS > 0)THEN
   DO JLON=ISTAGTF+1,ISTAGTF+2*(IMEN+1)
     DO JF=1,KF_SCALARS
-      PNSDERS(JF,JLON) = PNSDERS(JF,JLON)*ZACHTE
+      PNSDERS(JF,JLON) = PNSDERS(JF,JLON)*ZACHTE2
     ENDDO
   ENDDO
 ENDIF

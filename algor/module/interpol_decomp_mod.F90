@@ -69,12 +69,14 @@ DO JN=1,KN-KRANK
   ENDDO
 ENDDO
 !Solve linear equation (BLAS level 3 routine)
-IF (JPRB == JPRD) THEN
-  CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
- & ZS,KRANK,ZT,KRANK)
-ELSE
-  CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
- & ZS,KRANK,ZT,KRANK)
+IF( KN-KRANK > 0 .AND. KRANK > 0 ) THEN
+  IF (JPRB == JPRD) THEN
+    CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+     & ZS,KRANK,ZT,KRANK)
+  ELSE
+    CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+     & ZS,KRANK,ZT,KRANK)
+  ENDIF
 ENDIF
 
 DO JM=1,KRANK

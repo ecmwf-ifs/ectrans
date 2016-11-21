@@ -1,6 +1,6 @@
 MODULE TPM_FIELDS
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM, JPRB
 
 IMPLICIT NONE
 
@@ -17,6 +17,9 @@ REAL(KIND=JPRB) ,ALLOCATABLE :: REPSNM(:) ! eps(n,m) used in the Legendre transf
 REAL(KIND=JPRB) ,ALLOCATABLE :: RN(:)     ! n (to avoid integer to real conversion)
 REAL(KIND=JPRB) ,ALLOCATABLE :: RLAPIN(:) ! eigen-values of the inverse Laplace operator
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTN(:) ! R%NTMAX+2-JN
+
+REAL(KIND=JPRB) ,ALLOCATABLE :: RMU2(:)    ! sin(theta) for dual input/output latitudes
+REAL(KIND=JPRB) ,ALLOCATABLE :: RACTHE2(:) ! 1./SQRT(R1MU2), 1/(cos(theta)) dual input/output latitudes
 END TYPE FIELDS_TYPE
 
 TYPE(FIELDS_TYPE),ALLOCATABLE,TARGET :: FIELDS_RESOL(:)

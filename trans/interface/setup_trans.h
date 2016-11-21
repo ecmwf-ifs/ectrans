@@ -1,7 +1,8 @@
 INTERFACE
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 &KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
-&LDSPSETUPONLY,LDPNMONLY,LDUSEFFT992,LDUSEFFTW)
+&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
+&LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
 
@@ -20,6 +21,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     -------------------- 
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
+!     KDLON - number of points on each latitude [2*KDGL]
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     LDLINEAR_GRID - true if linear grid
@@ -39,8 +41,12 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomialsonly, not the FFTs.
-!     LDUSEFFT992 - Use FF992 for FFTs (default)
 !     LDUSEFFTW   - Use FFTW for FFTs
+!     LDLL                 - Setup second set of input/output latitudes
+!                                 the number of input/output latitudes to transform is equal KDGL 
+!                                 or KDGL+2 in the case that includes poles + equator
+!                                 the number of input/output longitudes to transform is 2*KDGL
+!     LDSHIFTLL       - Shift output lon/lat data by 0.5*dx and 0.5*dy
  
 !     Method.
 !     -------
@@ -50,7 +56,6 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !                 SUMP_TRANS_PRELEG - first part of setup of distr. environment
 !                 SULEG - Compute Legandre polonomial and Gaussian 
 !                         Latitudes and Weights
-!                 SETUP_GEOM - Compute arrays related to grid-point geometry
 !                 SUMP_TRANS - Second part of setup of distributed environment
 !                 SUFFT - setup for FFT
 
@@ -65,6 +70,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+    USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
 
 
 IMPLICIT NONE
@@ -72,6 +78,7 @@ IMPLICIT NONE
 ! Dummy arguments
 
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KSMAX,KDGL
+INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KDLON
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
@@ -85,8 +92,13 @@ LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDPNMONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
-LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFFT992
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFFTW
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDLL
+LOGICAL   ,OPTIONAL,INTENT(IN):: LDSHIFTLL
+CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: CDIO_LEGPOL
+CHARACTER(LEN=*),OPTIONAL,INTENT(IN):: CDLEGPOLFNAME
+TYPE(C_PTR) ,OPTIONAL,INTENT(IN) :: KLEGPOLPTR
+INTEGER(C_SIZE_T) ,OPTIONAL,INTENT(IN) :: KLEGPOLPTR_LEN
 
 
 END SUBROUTINE SETUP_TRANS
