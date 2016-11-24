@@ -1,7 +1,7 @@
 INTERFACE
 SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & FSPGL_PROC,&
- & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,KPROMA,KVSETUV,KVSETSC,KRESOL,&
+ & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
  & PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
@@ -29,6 +29,7 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     LDVORGP     - indicating if grid-point vorticity is req.
 !     LDDIVGP     - indicating if grid-point divergence is req.
 !     LDUVDER     - indicating if E-W derivatives of u and v are req.
+!     LDLATLON   - indicating if regular lat-lon output requested
 !     KPROMA      - required blocking factor for gridpoint output
 !     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
 !                   vor/div field. Equivalant to NBSETLEV in the IFS.
@@ -130,6 +131,7 @@ LOGICAL   ,OPTIONAL, INTENT(IN) :: LDSCDERS
 LOGICAL   ,OPTIONAL, INTENT(IN) :: LDVORGP
 LOGICAL   ,OPTIONAL, INTENT(IN) :: LDDIVGP
 LOGICAL   ,OPTIONAL, INTENT(IN) :: LDUVDER
+LOGICAL   ,OPTIONAL, INTENT(IN) :: LDLATLON
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPROMA
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC(:)

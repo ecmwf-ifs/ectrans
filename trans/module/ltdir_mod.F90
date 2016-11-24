@@ -10,6 +10,9 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
 
 USE TPM_DIM         ,ONLY : R
+USE TPM_FIELDS      ,ONLY : F
+USE TPM_TRANS, ONLY : LATLON
+USE TPM_FLT
 USE TPM_GEOMETRY
 
 USE PREPSNM_MOD     ,ONLY : PREPSNM
@@ -18,7 +21,7 @@ USE LDFOU2_MOD      ,ONLY : LDFOU2
 USE LEDIR_MOD       ,ONLY : LEDIR
 USE UVTVD_MOD
 USE UPDSP_MOD       ,ONLY : UPDSP
- 
+USE CDMAP_MOD , ONLY : CDMAP
 
 !**** *LTDIR* - Control of Direct Legendre transform step
 
@@ -96,46 +99,59 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
 INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
+INTEGER(KIND=JPIM) :: ISL, ISLO
 
 !     LOCAL REALS
-REAL(KIND=JPRB) :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
+!REAL(KIND=JPRB) :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
 REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRB) :: ZOA1(R%NLED4,KLED2),         ZOA2(R%NLED4,MAX(4*KF_UV,1))
+REAL(KIND=JPRB), ALLOCATABLE :: ZAIA(:,:), ZSIA(:,:)
+
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',0,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
-!*       1.    PREPARE LEGENDRE POLONOMIALS AND EPSNM
-!              --------------------------------------
-
-
-!     ------------------------------------------------------------------
-
-!*       2.    PREPARE WORK ARRAYS.
-!              --------------------
-
-CALL PRFI2(KM,KMLOC,KF_FS,ZAIA,ZSIA)
-
-!     ------------------------------------------------------------------
-
-!*       3.    FOURIER SPACE COMPUTATIONS.
-!              ---------------------------
-
-CALL LDFOU2(KM,KF_UV,ZAIA,ZSIA)
-
-!     ------------------------------------------------------------------
-
 !*       4.    DIRECT LEGENDRE TRANSFORM.
 !              --------------------------
 IFC = 2*KF_FS
-IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 IIFC = IFC
 IF(KM == 0)THEN
   IIFC = IFC/2
 ENDIF
-CALL LEDIR(KM,KMLOC,IFC,IIFC,IDGLU,KLED2,ZAIA,ZSIA,ZOA1)
+
+IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
+ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
+
+ALLOCATE(ZSIA(KLED2,R%NDGNH))
+ALLOCATE(ZAIA(KLED2,R%NDGNH))
+
+IF( LATLON.AND.S%LDLL ) THEN
+
+  IF( (S%LSHIFTLL .AND. KM < 2*IDGLU) .OR.&
+   & (.NOT.S%LSHIFTLL .AND. KM < 2*(IDGLU-1)) ) THEN
+
+    CALL PREPSNM(KM,KMLOC,ZEPSNM)
+    ISLO = S%FA(KMLOC)%ISLD
+    ! map from external to internal (gg) roots and split into anti-symmetric / symmetric
+    CALL CDMAP(KM,KMLOC,ISL,ISLO,ZEPSNM(R%NTMAX+1),1_JPIM,&
+     & R%NDGNH,S%NDGNHD,IFC,ZAIA,ZSIA)
+
+  ENDIF
+
+ELSE
+
+  CALL PRFI2(KM,KMLOC,KF_FS,ZAIA,ZSIA)
+
+ENDIF
+
+CALL LDFOU2(KM,KF_UV,ZAIA,ZSIA)
+
+CALL LEDIR(KM,KMLOC,IFC,IIFC,ISL,IDGLU,KLED2,ZAIA,ZSIA,ZOA1,F%RW(1:R%NDGNH))
+
+DEALLOCATE(ZAIA)
+DEALLOCATE(ZSIA)
 
 !     ------------------------------------------------------------------
 

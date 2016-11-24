@@ -25,6 +25,7 @@ LOGICAL   :: LVORGP     ! vorticity requested
 LOGICAL   :: LDIVGP     ! divergence requested
 LOGICAL   :: LUVDER     ! E-W derivatives of U and V requested
 LOGICAL   :: LSCDERS    ! derivatives of scalar variables are req.
+LOGICAL   :: LATLON     ! lat-lon output requested
 
 !INTEGER_M :: NLEI2 ! 8*NF_UV + 2*NF_SCALARS + 2*NF_SCDERS (dimension in
                    ! inverse  Legendre transform)
