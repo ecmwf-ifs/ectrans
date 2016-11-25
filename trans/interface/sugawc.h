@@ -35,15 +35,15 @@ SUBROUTINE SUGAWC(KDGLG,PMU,PW)
 !     --------------
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRD
 
 !     ------------------------------------------------------------------
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM) ,INTENT(IN)  :: KDGLG
-REAL(KIND=JPRB)    ,INTENT(OUT) :: PMU(:)
-REAL(KIND=JPRB)    ,INTENT(OUT) :: PW(:)
+REAL(KIND=JPRD)    ,INTENT(OUT) :: PMU(:)
+REAL(KIND=JPRD)    ,INTENT(OUT) :: PW(:)
 
 END SUBROUTINE SUGAWC
 
