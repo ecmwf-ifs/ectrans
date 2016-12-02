@@ -111,8 +111,8 @@ USE READ_LEGPOL_MOD
 !        R. El Khatib 14-Jun-2013 optional computation on the stretched latitudes
 !        F. Vana  05-Mar-2015  Support for single precision
 !        Nils Wedi, 20-Apr-2015 Support dual latitude/longitude set
-!        R. El Khatib : 07-Mar-2016 Support for computation of Legendre polynomials per wave
 !        T. Wilhelmsson, 22-Sep-2016 Support single precision for dual too
+!        R. El Khatib : 07-Mar-2016 Support for computation of Legendre polynomials per wave
 !     ------------------------------------------------------------------
 
 IMPLICIT NONE
@@ -221,7 +221,7 @@ S%ITHRESHOLD = ITHRESHOLD
 !*       3.1   Gaussian latitudes and weights
 !     ---------------------------------------
 
-IF (S%LUSEFLT) CALL INI_POL(R%NTMAX+3)
+IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) CALL INI_POL(R%NTMAX+3)
 
 IF(.NOT.D%LGRIDONLY) THEN
   ISTART=1
@@ -568,6 +568,8 @@ IF(.NOT.D%LGRIDONLY) THEN
     ALLOCATE(ZCLONEA(D%NUMP))
     ALLOCATE(ZCLONES(D%NUMP))
   ENDIF
+
+  IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) THEN
 
   DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
     IF( S%LUSEFLT )THEN
@@ -1104,7 +1106,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
   ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
 
-  ENDIF ! (S%LUSEFLT)
+  ENDIF ! (S%LUSE_BELUSOV.OR.S%LUSEFLT)
     
   IF( S%LUSEFLT )THEN
     DEALLOCATE(ZCLONEA)
@@ -1114,24 +1116,25 @@ IF(.NOT.D%LGRIDONLY) THEN
   IF( LLP1 .AND. S%LUSEFLT ) THEN    
     WRITE(NOUT,*) '=== SULEG: Finished SETUP_BUTTERFLY ==='
   ENDIF
+  ENDIF
+
+  CALL GSTATS(1801,3)
+  IF( .NOT. S%LKEEPRPNM ) THEN
+    IF(S%LUSE_BELUSOV) DEALLOCATE(F%RPNM)
+  ENDIF
+
+  IF(C%LWRITE_LEGPOL) CALL WRITE_LEGPOL
+  IF(C%LREAD_LEGPOL)  CALL READ_LEGPOL
+
 
 ENDIF
-
-CALL GSTATS(1801,3)
-IF( .NOT. S%LKEEPRPNM ) THEN
-  IF(S%LUSE_BELUSOV) DEALLOCATE(F%RPNM)
-ENDIF
-
-IF(C%LWRITE_LEGPOL) CALL WRITE_LEGPOL
-IF(C%LREAD_LEGPOL)  CALL READ_LEGPOL
-
 CALL GSTATS(1801,1)
 CALL GSTATS(140,1)
 
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
 
-IF (S%LUSEFLT) CALL END_POL
+IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) CALL END_POL
 
 END SUBROUTINE SULEG
 END MODULE SULEG_MOD
