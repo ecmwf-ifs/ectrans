@@ -112,6 +112,7 @@ USE READ_LEGPOL_MOD
 !        F. Vana  05-Mar-2015  Support for single precision
 !        Nils Wedi, 20-Apr-2015 Support dual latitude/longitude set
 !        T. Wilhelmsson, 22-Sep-2016 Support single precision for dual too
+!        R. El Khatib : 07-Mar-2016 Support for computation of Legendre polynomials per wave
 !     ------------------------------------------------------------------
 
 IMPLICIT NONE
@@ -220,7 +221,7 @@ S%ITHRESHOLD = ITHRESHOLD
 !*       3.1   Gaussian latitudes and weights
 !     ---------------------------------------
 
-CALL INI_POL(R%NTMAX+3)
+IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) CALL INI_POL(R%NTMAX+3)
 
 IF(.NOT.D%LGRIDONLY) THEN
   ISTART=1
@@ -567,6 +568,8 @@ IF(.NOT.D%LGRIDONLY) THEN
     ALLOCATE(ZCLONEA(D%NUMP))
     ALLOCATE(ZCLONES(D%NUMP))
   ENDIF
+
+  IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) THEN
 
   DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
     IF( S%LUSEFLT )THEN
@@ -1102,6 +1105,8 @@ IF(.NOT.D%LGRIDONLY) THEN
     ENDIF
 
   ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
+
+  ENDIF ! (S%LUSE_BELUSOV.OR.S%LUSEFLT)
     
   IF( S%LUSEFLT )THEN
     DEALLOCATE(ZCLONEA)
@@ -1129,7 +1134,7 @@ CALL GSTATS(140,1)
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
 
-CALL END_POL
+IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) CALL END_POL
 
 END SUBROUTINE SULEG
 END MODULE SULEG_MOD

@@ -53,7 +53,7 @@ USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),  INTENT(IN) :: KRESOL
-INTEGER(KIND=JPIM) :: JMLOC,IPRTRV,JSETV,IMLOC,IM,ILA,ILS
+INTEGER(KIND=JPIM) :: JMLOC,IPRTRV,JSETV,IMLOC,IM,ILA,ILS, JRESOL
 
 !     ------------------------------------------------------------------
 
@@ -66,7 +66,7 @@ ELSE
   CALL SET_RESOL(KRESOL)
 
   !TPM_FLT
-  IF( ALLOCATED(S%FA) ) THEN
+  IF( ALLOCATED(S%FA).AND.(S%LUSE_BELUSOV.OR.S%LUSEFLT)) THEN
     DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
       IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
       DO JSETV=1,IPRTRV
@@ -191,7 +191,13 @@ ELSE
 
   LENABLED(KRESOL)=.FALSE.
   NDEF_RESOL = COUNT(LENABLED)
-
+  ! Do not stay on a disabled resolution
+  DO JRESOL=1,SIZE(LENABLED)
+    IF (LENABLED(JRESOL)) THEN
+      CALL SET_RESOL(JRESOL)
+      EXIT
+    ENDIF
+  ENDDO
 
 ENDIF
 !     ------------------------------------------------------------------
