@@ -13,7 +13,7 @@ MODULE INTERPOL_DECOMP_MOD
 ! Author: Mats Hamrud
 
 
-USE PARKIND1, ONLY : JPRD, JPIM, JPRB, JPIB
+USE PARKIND1, ONLY : JPRB, JPIM, JPRD, JPIB
 IMPLICIT NONE
 CONTAINS
 !===========================================================================
@@ -22,19 +22,19 @@ IMPLICIT NONE
 
 ! Compute ID
 
-REAL(KIND=JPRB),INTENT(IN)     :: PEPS  ! Precision for computation
+REAL(KIND=JPRD),INTENT(IN)     :: PEPS  ! Precision for computation
                                         ! of numerical rank
 INTEGER(KIND=JPIM),INTENT(IN)  :: KM    ! Number of rows in matrix pmat
 INTEGER(KIND=JPIM),INTENT(IN)  :: KN    ! Number of columns in matrix pmat
-REAL(KIND=JPRB)   ,INTENT(IN)  :: PMAT(:,:)  ! Original matrix
+REAL(KIND=JPRD)   ,INTENT(IN)  :: PMAT(:,:)  ! Original matrix
 INTEGER(KIND=JPIM),INTENT(OUT) :: KRANK      ! Numerical rank
 INTEGER(KIND=JPIM),INTENT(OUT) :: KBCLIST(:) ! List of  columns
-REAL(KIND=JPRB)   ,INTENT(OUT) :: PNONIM(:,:)  ! Non-identity part of projection
+REAL(KIND=JPRD)   ,INTENT(OUT) :: PNONIM(:,:)  ! Non-identity part of projection
                                                ! matrix
 
 INTEGER(KIND=JPIM) :: JM,JN
-REAL(KIND=JPRB) :: ZR(KM,KN)
-REAL(KIND=JPRB),ALLOCATABLE :: ZS(:,:),ZT(:,:)
+REAL(KIND=JPRD) :: ZR(KM,KN)
+REAL(KIND=JPRD),ALLOCATABLE :: ZS(:,:),ZT(:,:)
 !----------------------------------------------------------------------------
 !Avoid destroying input matrix
 ZR(:,:) = PMAT(1:KM,1:KN)
@@ -43,7 +43,7 @@ CALL ALG541(PEPS,KM,KN,ZR,KRANK,KBCLIST)
 
 DO JN=1,KN
   DO JM=JN+1,KM
-    ZR(JM,JN) = 0.0_JPRB
+    ZR(JM,JN) = 0.0_JPRD
   ENDDO
 ENDDO
 ! S leftmost kxk block of R
@@ -53,7 +53,7 @@ DO JN=1,KRANK
     IF(JM <= KM ) THEN
       ZS(JM,JN) = ZR(JM,JN) 
     ELSE
-      ZS(JM,JN) = 0.0_JPRB
+      ZS(JM,JN) = 0.0_JPRD
     ENDIF
   ENDDO
 ENDDO
@@ -64,19 +64,19 @@ DO JN=1,KN-KRANK
     IF(JM <= KM ) THEN
       ZT(JM,JN) = ZR(JM,JN+KRANK) 
     ELSE
-      ZT(JM,JN) = 0.0_JPRB
+      ZT(JM,JN) = 0.0_JPRD
     ENDIF
   ENDDO
 ENDDO
 !Solve linear equation (BLAS level 3 routine)
 IF( KN-KRANK > 0 .AND. KRANK > 0 ) THEN
-  IF (JPRB == JPRD) THEN
-    CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
+!  IF (JPRB == JPRD) THEN
+    CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRD, &
      & ZS,KRANK,ZT,KRANK)
-  ELSE
-    CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRB, &
-     & ZS,KRANK,ZT,KRANK)
-  ENDIF
+!  ELSE
+!    CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRD, &
+!     & ZS,KRANK,ZT,KRANK)
+!  ENDIF
 ENDIF
 
 DO JM=1,KRANK
@@ -99,25 +99,25 @@ IMPLICIT NONE
 
 ! Algorithm modified to terminate at numerical precision "peps"
 
-REAL(KIND=JPRB),INTENT(IN)     :: PEPS     ! Precision
+REAL(KIND=JPRD),INTENT(IN)     :: PEPS     ! Precision
 INTEGER(KIND=JPIM),INTENT(IN)  :: KM       ! Number of rows in matrix pa
 INTEGER(KIND=JPIM),INTENT(IN)  :: KN       ! Number of columns in matrix pa
-REAL(KIND=JPRB),INTENT(INOUT)  :: PA(:,:)  ! On input : original matrix
+REAL(KIND=JPRD),INTENT(INOUT)  :: PA(:,:)  ! On input : original matrix
                                            ! on output : R in upper triangle etc
                                            ! see Golub&Van Loen
 INTEGER(KIND=JPIM),INTENT(OUT) :: KRANK    ! Numerical rank of matrix
 INTEGER(KIND=JPIM),INTENT(OUT) :: KLIST(:) ! List of columns (pivots)
 
 INTEGER(KIND=JPIM)           :: JM,JN,ISWAP,JK,IK,IIK,IM,IN,ILIST(KN)
-REAL(KIND=JPRB) :: ZC(KN),ZTAU,ZSWAPA(KM),ZSWAP,ZV(KM),ZBETA,ZWORK(KN),ZTAU_IN
-REAL(KIND=JPRB) :: ZTAU_REC,ZEPS
+REAL(KIND=JPRD) :: ZC(KN),ZTAU,ZSWAPA(KM),ZSWAP,ZV(KM),ZBETA,ZWORK(KN),ZTAU_IN
+REAL(KIND=JPRD) :: ZTAU_REC,ZEPS
 !-------------------------------------------------------------------------------
-ZEPS = 10000.0_JPRB*EPSILON(ZEPS)
+ZEPS = 10000.0_JPRD*EPSILON(ZEPS)
 ! Compute initial column norms,its max and the first column where c=tau
-ZTAU = 0.0_JPRB
+ZTAU = 0.0_JPRD
 IK = 0
 DO JN=1,KN
-  ZC(JN) = 0.0_JPRB
+  ZC(JN) = 0.0_JPRD
   DO JM=1,KM
     ZC(JN)=ZC(JN)+PA(JM,JN)**2
   ENDDO
@@ -150,7 +150,7 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
   PA(KRANK+1:KM,KRANK) = ZV(2:KM-KRANK+1)
 
 ! Update column norms
-  ZTAU = 0.0_JPRB
+  ZTAU = 0.0_JPRD
   IF(KRANK < MIN(KM,KN)) THEN
     DO JN=KRANK+1,KN
       ZC(JN) = ZC(JN)-PA(KRANK,JN)**2
@@ -191,27 +191,27 @@ SUBROUTINE ALG511(PX,PV,PBETA)
 IMPLICIT NONE
 ! Compute Householder vector
 ! Algorithm 5.1.1 from Matrix Computations, G.H.Golub & C.F van Loen, third ed.
-REAL(KIND=JPRB),INTENT(IN)     :: PX(:)
-REAL(KIND=JPRB),INTENT(OUT)    :: PV(:)
-REAL(KIND=JPRB),INTENT(OUT)    :: PBETA
+REAL(KIND=JPRD),INTENT(IN)     :: PX(:)
+REAL(KIND=JPRD),INTENT(OUT)    :: PV(:)
+REAL(KIND=JPRD),INTENT(OUT)    :: PBETA
 
 INTEGER(KIND=JPIM) :: IN
-REAL(KIND=JPRB) :: ZSIGMA,ZMU
+REAL(KIND=JPRD) :: ZSIGMA,ZMU
 !-------------------------------------------------------------------------------
 IN = SIZE(PX)
 ZSIGMA = DOT_PRODUCT(PX(2:IN),PX(2:IN))
-PV(1) = 1.0_JPRB
+PV(1) = 1.0_JPRD
 PV(2:IN) = PX(2:IN)
-IF(ZSIGMA == 0.0_JPRB) THEN
-  PBETA = 0.0_JPRB
+IF(ZSIGMA == 0.0_JPRD) THEN
+  PBETA = 0.0_JPRD
 ELSE
   ZMU = SQRT(PX(1)**2+ZSIGMA)
-  IF(PX(1) <= 0.0_JPRB) THEN
+  IF(PX(1) <= 0.0_JPRD) THEN
     PV(1) = PX(1)-ZMU
   ELSE
     PV(1) = -ZSIGMA/(PX(1)+ZMU)
   ENDIF
-  PBETA = 2.0_JPRB*PV(1)**2/(ZSIGMA+PV(1)**2)
+  PBETA = 2.0_JPRD*PV(1)**2/(ZSIGMA+PV(1)**2)
   PV(:) = PV(:)/PV(1)
 ENDIF
 END SUBROUTINE ALG511
