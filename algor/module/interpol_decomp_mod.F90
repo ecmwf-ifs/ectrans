@@ -69,15 +69,18 @@ DO JN=1,KN-KRANK
   ENDDO
 ENDDO
 !Solve linear equation (BLAS level 3 routine)
-IF( KN-KRANK > 0 .AND. KRANK > 0 ) THEN
+IF( KRANK <= 0 ) THEN
+  write(0,*) 'warning: KRANK DTRSM ', KRANK, KM, KN
+  CALL ABOR1('DTRSM : KRANK <=0 not allowed')
+ENDIF
+
 !  IF (JPRB == JPRD) THEN
-    CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRD, &
-     & ZS,KRANK,ZT,KRANK)
+CALL DTRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRD, &
+ & ZS,KRANK,ZT,KRANK)
 !  ELSE
 !    CALL STRSM('Left','Upper','No transpose','Non-unit',KRANK,KN-KRANK,1.0_JPRD, &
 !     & ZS,KRANK,ZT,KRANK)
 !  ENDIF
-ENDIF
 
 DO JM=1,KRANK
   DO JN=1,KN-KRANK
@@ -108,19 +111,17 @@ REAL(KIND=JPRD),INTENT(INOUT)  :: PA(:,:)  ! On input : original matrix
 INTEGER(KIND=JPIM),INTENT(OUT) :: KRANK    ! Numerical rank of matrix
 INTEGER(KIND=JPIM),INTENT(OUT) :: KLIST(:) ! List of columns (pivots)
 
-INTEGER(KIND=JPIM)           :: JM,JN,ISWAP,JK,IK,IIK,IM,IN,ILIST(KN)
+INTEGER(KIND=JPIM)           :: JM,JN,ISWAP,JK,IK,IIK,IM,IN,IMIN,ILIST(KN)
 REAL(KIND=JPRD) :: ZC(KN),ZTAU,ZSWAPA(KM),ZSWAP,ZV(KM),ZBETA,ZWORK(KN),ZTAU_IN
 REAL(KIND=JPRD) :: ZTAU_REC,ZEPS
 !-------------------------------------------------------------------------------
 ZEPS = 10000.0_JPRD*EPSILON(ZEPS)
+IMIN=MIN(KM,KN)
 ! Compute initial column norms,its max and the first column where c=tau
-ZTAU = 0.0_JPRD
 IK = 0
+ZTAU = 0._JPRD
 DO JN=1,KN
-  ZC(JN) = 0.0_JPRD
-  DO JM=1,KM
-    ZC(JN)=ZC(JN)+PA(JM,JN)**2
-  ENDDO
+  ZC(JN) = DOT_PRODUCT(PA(1:KM,JN),PA(1:KM,JN))
   IF(ZC(JN) > ZTAU) THEN
     IK = JN
     ZTAU = ZC(JN)
@@ -131,27 +132,29 @@ ZTAU_REC= ZTAU
 KRANK = 0
 DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
   KRANK = KRANK+1
-  ILIST(KRANK) = IK
-! Column swap
-  ZSWAPA(:) = PA(:,KRANK)
-  PA(:,KRANK) = PA(:,IK)
-  PA(:,IK) = ZSWAPA(:)
-  ZSWAP = ZC(KRANK)
-  ZC(KRANK) = ZC(IK)
-  ZC(IK) = ZSWAP
-! Compute Householder vector
-  CALL ALG511(PA(KRANK:KM,KRANK),ZV,ZBETA)
+  IF( KRANK <= IMIN ) THEN
+    ILIST(KRANK) = IK
+    ! Column swap KRANK with IK 
+    ZSWAPA(:) = PA(:,KRANK)
+    PA(:,KRANK) = PA(:,IK)
+    PA(:,IK) = ZSWAPA(:)
+    ZSWAP = ZC(KRANK)
+    ZC(KRANK) = ZC(IK)
+    ZC(IK) = ZSWAP
+    ! Compute Householder vector
+    CALL ALG511(ZEPS,PA(KRANK:KM,KRANK),ZV,ZBETA)
 
-! Apply Householder matrix
-  IM = KM-KRANK+1
-  IN = KN-KRANK+1
-! LAPACK
-  CALL DLARF('Left',IM,IN,ZV,1,ZBETA,PA(KRANK,KRANK),KM,ZWORK)
-  PA(KRANK+1:KM,KRANK) = ZV(2:KM-KRANK+1)
+    ! Apply Householder matrix
+    IM = KM-KRANK+1
+    IN = KN-KRANK+1
+    ! LAPACK
+    CALL DLARF('Left',IM,IN,ZV,1,ZBETA,PA(KRANK,KRANK),KM,ZWORK)
+  ENDIF
 
 ! Update column norms
   ZTAU = 0.0_JPRD
-  IF(KRANK < MIN(KM,KN)) THEN
+  IF(KRANK < IMIN) THEN
+    PA(KRANK+1:KM,KRANK) = ZV(2:IM)
     DO JN=KRANK+1,KN
       ZC(JN) = ZC(JN)-PA(KRANK,JN)**2
       IF(ZC(JN) > ZTAU) THEN
@@ -159,10 +162,8 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
         ZTAU = ZC(JN)
       ENDIF
     ENDDO
-! Re-compute column norms when ztau < zeps*ztau_rec
-!   We have disabled this test so as to recompute column nodes unconditionally.
-!   This was done to resolve a SIG FPE in dtrsm @ T3999 on the XC-30.
-!   IF(ZTAU < ZEPS*ZTAU_REC) THEN
+! Re-compute column norms due to round-off error
+    IF(ZTAU < ZEPS*ZTAU_REC .OR. ZTAU < 0._JPRD .or. (KN-KRANK) > 100 ) THEN
       DO JN=KRANK+1,KN
         ZC(JN) = DOT_PRODUCT(PA(KRANK+1:,JN),PA(KRANK+1:,JN))
         IF(ZC(JN) > ZTAU) THEN
@@ -170,9 +171,9 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
           ZTAU = ZC(JN)
         ENDIF
       ENDDO
-!!$      PRINT *,'RECOMPUTE TAU ',KRANK,ZTAU_REC,ZTAU
+      !write(0,*) 'RECOMPUTE TAU ',KRANK,ZTAU_REC,ZTAU
       ZTAU_REC = ZTAU
-!   ENDIF
+    ENDIF
   ENDIF
 ENDDO
 ! Make sure klist is filled also beyond krank
@@ -186,35 +187,53 @@ DO JN=1,KRANK
 ENDDO
   
 END SUBROUTINE ALG541
+
 !==============================================================================
-SUBROUTINE ALG511(PX,PV,PBETA)
+SUBROUTINE ALG511(PEPS,PX,PV,PBETA)
 IMPLICIT NONE
 ! Compute Householder vector
 ! Algorithm 5.1.1 from Matrix Computations, G.H.Golub & C.F van Loen, third ed.
+REAL(KIND=JPRD),INTENT(IN)     :: PEPS     ! Precision
 REAL(KIND=JPRD),INTENT(IN)     :: PX(:)
 REAL(KIND=JPRD),INTENT(OUT)    :: PV(:)
 REAL(KIND=JPRD),INTENT(OUT)    :: PBETA
 
+INTEGER(KIND=JPIM) :: IL
 INTEGER(KIND=JPIM) :: IN
-REAL(KIND=JPRD) :: ZSIGMA,ZMU
+REAL(KIND=JPRD) :: ZSIGMA,ZMU, ZNORM
+REAL(KIND=JPRD), ALLOCATABLE :: ZX(:)
 !-------------------------------------------------------------------------------
 IN = SIZE(PX)
-ZSIGMA = DOT_PRODUCT(PX(2:IN),PX(2:IN))
+ALLOCATE(ZX(IN))
+
+! normalize
+ZNORM=0._JPRD
+DO IL=1,IN
+  ZNORM = ZNORM + PX(IL)*PX(IL)
+ENDDO
+ZNORM=SQRT(ZNORM)
+IF( ZNORM > PEPS ) ZX(:)=PX(:)/ZNORM
+ZX(:)=PX(:)
+
+ZSIGMA = DOT_PRODUCT(ZX(2:IN),ZX(2:IN))
 PV(1) = 1.0_JPRD
-PV(2:IN) = PX(2:IN)
-IF(ZSIGMA == 0.0_JPRD) THEN
+PV(2:IN) = ZX(2:IN)
+!IF(ZSIGMA == 0.0_JPRD) THEN
+IF(ABS(ZSIGMA) <  PEPS**2) THEN
   PBETA = 0.0_JPRD
 ELSE
-  ZMU = SQRT(PX(1)**2+ZSIGMA)
-  IF(PX(1) <= 0.0_JPRD) THEN
-    PV(1) = PX(1)-ZMU
+  ZMU = SQRT(ZX(1)**2+ZSIGMA)
+  IF(ZX(1) <= 0.0_JPRD) THEN
+    PV(1) = ZX(1)-ZMU
   ELSE
-    PV(1) = -ZSIGMA/(PX(1)+ZMU)
+    PV(1) = -ZSIGMA/(ZX(1)+ZMU)
   ENDIF
   PBETA = 2.0_JPRD*PV(1)**2/(ZSIGMA+PV(1)**2)
-  PV(:) = PV(:)/PV(1)
+  PV(:) = PV(:)/(PV(1))
 ENDIF
+
+DEALLOCATE(ZX)
 END SUBROUTINE ALG511
 !================================================================================
-      
+
 END MODULE INTERPOL_DECOMP_MOD
