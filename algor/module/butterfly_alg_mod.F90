@@ -711,6 +711,7 @@ REAL(KIND=JPRB),ALLOCATABLE   :: ZBETA(:,:,:)
 LOGICAL :: LLTRANSPOSE, LLDOUBLE
 
 TYPE(NODE_TYPE),POINTER :: YNODEL,YNODER,YNODE 
+REAL(KIND=JPRB) :: ZDUMMY
 
 !----------------------------------------------------------------------------------
 LLTRANSPOSE = (CDTRANS == 'T' .OR. CDTRANS == 't') 
@@ -745,7 +746,7 @@ IF(LLTRANSPOSE) THEN
             ELSE             
               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRB,&
                & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRB,&
-               & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+               & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER,ZDUMMY)
             ENDIF
           ENDIF
           DO JF=1,KF
@@ -771,7 +772,7 @@ IF(LLTRANSPOSE) THEN
             ELSE
               CALL SGEMM('T','N',IRANK,KF,IROWS,1.0_JPRB,&
                & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRB,&
-               & ZBETA(IBTST,1,IBETALV),ILBETA)
+               & ZBETA(IBTST,1,IBETALV),ILBETA,ZDUMMY)
             ENDIF
           ENDIF
           ILM1 = JL-1
@@ -801,7 +802,7 @@ IF(LLTRANSPOSE) THEN
             ELSE
               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRB,&
                & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRB,&
-               & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+               & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER,ZDUMMY)
             ENDIF
           ENDIF
           DO JF=1,KF
@@ -867,7 +868,7 @@ ELSE
             ELSE
               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRB,&
                & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRB,&
-               & ZBETA(IBTST,1,IBETALV),ILBETA)
+               & ZBETA(IBTST,1,IBETALV),ILBETA,ZDUMMY)
             ENDIF
           ENDIF
         ELSE
@@ -910,7 +911,7 @@ ELSE
             ELSE
               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRB,&
                & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRB,&
-               & ZBETA(IBTST,1,IBETALV),ILBETA)
+               & ZBETA(IBTST,1,IBETALV),ILBETA,ZDUMMY)
             ENDIF
           ENDIF
         ENDIF
@@ -926,7 +927,7 @@ ELSE
           ELSE
             CALL SGEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRB,&
              & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRB,&
-             & PVECOUT(IFR,1),IROUT)
+             & PVECOUT(IFR,1),IROUT,ZDUMMY)
           ENDIF
         ENDIF
       ENDDO
@@ -981,6 +982,7 @@ REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)
 
 REAL(KIND=JPRB) :: ZVECIN(YDNODE%ICOLS,KF), ZVECOUT(SIZE(PVECOUT(:,1)),KF)
 INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN,JF
+REAL(KIND=JPRB) :: ZDUMMY
 !---------------------------------------------------------
 
 IRANK = YDNODE%IRANK
@@ -1004,7 +1006,7 @@ IF(YDNODE%ICOLS > IRANK) THEN
   ELSE
     CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRB,&
      & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRB,&
-     & PVECOUT,IRANK)
+     & PVECOUT,IRANK,ZDUMMY)
   ENDIF
 ENDIF
 END SUBROUTINE MULT_PM
@@ -1052,6 +1054,7 @@ REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)
 
 REAL(KIND=JPRB) :: ZVECOUT(YDNODE%ICOLS,KF), ZVECIN(SIZE(PVECIN(:,1)),KF)
 INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN,JF
+REAL(KIND=JPRB) :: ZDUMMY
 !------------------------------------------------------------------
 
 IN = YDNODE%ICOLS-YDNODE%IRANK
@@ -1065,7 +1068,7 @@ IF(IN>0) THEN
    ELSE
       CALL SGEMM('T','N',IN,KF,IM,1.0_JPRB,&
            & YDNODE%PNONIM(1),IM,PVECIN,IM,0.0_JPRB,&
-           & ZVECOUT(YDNODE%IRANK+1,1),YDNODE%ICOLS)
+           & ZVECOUT(YDNODE%IRANK+1,1),YDNODE%ICOLS,ZDUMMY)
    ENDIF
 ENDIF
 DO JF=1,KF
