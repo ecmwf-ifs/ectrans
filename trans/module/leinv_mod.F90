@@ -52,6 +52,8 @@ USE TPM_FLT
 USE TPM_GEN ! Fpr nout
 USE BUTTERFLY_ALG_MOD
 
+use, intrinsic :: ieee_exceptions
+
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM
@@ -69,6 +71,7 @@ REAL(KIND=JPRB),    INTENT(OUT) :: PAOA1(:,:)
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI, IEND
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
+LOGICAL :: HALT_INVALID
 
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
@@ -121,8 +124,11 @@ IF( KDGLU > 0 ) THEN
       CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
        &ZBA,ILA,0._JPRB,ZC,KDGLU)
     ELSE
-      CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
-       &ZBA,ILA,0._JPRB,ZC,KDGLU)
+       call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
+       if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
+       CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
+            &ZBA,ILA,0._JPRB,ZC,KDGLU)
+       if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
   
@@ -158,8 +164,11 @@ IF( KDGLU > 0 ) THEN
       CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
        &ZBS,ILS,0._JPRB,ZC,KDGLU)
     ELSE
-      CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
-       &ZBS,ILS,0._JPRB,ZC,KDGLU)
+       call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
+       if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
+       CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZBS,ILS,0._JPRB,ZC,KDGLU)
+       if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     
