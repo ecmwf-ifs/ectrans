@@ -73,11 +73,9 @@ ENDDO
 IST = 1
 IF(LVORGP) THEN
   IST = IST+2*KF_UV
-  CALL ABOR1("LVORGP : can this actually be cleaned up?")
 ENDIF
 IF(LDIVGP) THEN
   IST = IST+2*KF_UV
-  CALL ABOR1("LDIVGP : can this actually be cleaned up?")
 ENDIF
 IPTRU = IST
 
@@ -86,7 +84,7 @@ IPTRU = IST
 
 CALL FSPGL_PROC(KM,ISL,IDGL,KF_OUT_LT,F%R1MU2,ZFIELD,&
  &   IPTRU,KF_UV,KF_SCALARS,&
- &   IFLDPTRUV) !! NMYLEVS, RKRF, TSTEP - optional arguments not called here
+ &   IFLDPTRUV)
 
 DO JGL=ISL,IDGNH
   IGLS = IDGL+1-JGL
