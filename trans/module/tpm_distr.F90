@@ -150,8 +150,6 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each
 REAL(KIND=JPRB) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
-INTEGER(KIND=JPIM), ALLOCATABLE :: NMYLEVS(:) ! number of levels on this processor/PE, required *ONLY* for call to FSPGLH ...
-
 END TYPE DISTR_TYPE
 
 TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
