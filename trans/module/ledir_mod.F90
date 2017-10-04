@@ -77,7 +77,8 @@ INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 LOGICAL :: HALT_INVALID
-
+LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
+CHARACTER(LEN=1) :: CLX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -86,6 +87,9 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 !                 --------------------------
 
 !*       1.1      PREPARATIONS.
+
+CLX = 'S'
+IF (LLDOUBLE) CLX = 'D'
 
 IA  = 1+MOD(R%NTMAX-KM+2,2)
 IS  = 1+MOD(R%NTMAX-KM+1,2)
@@ -115,10 +119,10 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   
   IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
-    IF (JPRB == JPRD) THEN
-      CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
-       &ZB,KDGLU,0._JPRB,ZCA,ILA)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
+    IF (LLDOUBLE) THEN
+       CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
+            &ZB,KDGLU,0._JPRB,ZCA,ILA)
     ELSE
        call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
        if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -126,11 +130,13 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
             &ZB,KDGLU,0._JPRB,ZCA,ILA)
        if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
 
   ELSE
 
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',0,ZHOOK_HANDLE)
     CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_A,KIFC,ZB,ZCA)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',1,ZHOOK_HANDLE)
 
   ENDIF
 
@@ -155,10 +161,10 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   
   IF(ILS <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
-    IF (JPRB == JPRD) THEN
-      CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
-       &ZB,KDGLU,0._JPRB,ZCS,ILS)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
+    IF (LLDOUBLE) THEN
+       CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZB,KDGLU,0._JPRB,ZCS,ILS)
     ELSE
        call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
        if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -166,11 +172,13 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
             &ZB,KDGLU,0._JPRB,ZCS,ILS)
        if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
     
   ELSE
 
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',0,ZHOOK_HANDLE)
     CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_S,KIFC,ZB,ZCS)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',1,ZHOOK_HANDLE)
     
   ENDIF
 
