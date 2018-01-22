@@ -22,6 +22,13 @@ INTEGER(KIND=JPIM) :: NPROMATR        ! Packet size for transform (in no of fiel
 LOGICAL   :: LALLOPERM       ! Allocate some shared data structures permanently
 LOGICAL   :: LMPOFF          ! true: switch off message passing
 LOGICAL   :: LSYNC_TRANS     ! true: activate barriers in trmtol and trltom
+
+! Use of synchronization/blocking in Transpose (some networks do get flooded)
+! 0 = Post IRECVs up-front, use ISENDs, use WAITANY to recv data (default)
+! 1 = Use ISENDs, use blocking RECVs, add barrier at the end of each cycle
+! 2 = Use buffered SENDs, use blocking RECVs, add barrier at the end of each cycle
+INTEGER(KIND=JPIM) :: NTRANS_SYNC_LEVEL = 0
+
 LOGICAL, ALLOCATABLE :: LENABLED(:)   ! true: the resolution is enabled (it has been
                                       ! initialised and has not been released afterward) 
 
