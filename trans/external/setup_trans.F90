@@ -34,7 +34,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 
 !     LDSPLIT describe the distribution among processors of grid-point data and
 !     has no relevance if you are using a single processor
- 
+
 !     PSTRET     - stretching factor - for the case the Legendre polynomials are
 !                  computed on the stretched sphere - works with LSOUTHPNM
 !     LDUSEFLT   - use Fast Legandre Transform (Butterfly algorithm)
@@ -44,7 +44,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     LDPNMONLY  - Compute the Legendre polynomials only, not the FFTs.
 !     LDUSEFFTW    - Use FFTW for FFTs
 !     LDLL                 - Setup second set of input/output latitudes
-!                                 the number of input/output latitudes to transform is equal KDGL 
+!                                 the number of input/output latitudes to transform is equal KDGL
 !                                 or KDGL+2 in the case that includes poles + equator
 !                                 the number of input/output longitudes to transform is 2*KDGL
 !     LDSHIFTLL       - Shift output lon/lat data by 0.5*dx and 0.5*dy
@@ -82,7 +82,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !        R. El Khatib 14-Jun-2013 PSTRET, LDPNMONLY, LENABLED
 !        G. Mozdzynski : Oct 2014 Support f
 !        N. Wedi       : Apr 2015 Support dual set of lat/lon
-!        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW 
+!        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW
 !        M.Hamrud/W.Deconinck : July 2015 IO options for Legenndre polynomials
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
@@ -337,6 +337,9 @@ ENDIF
 IF(PRESENT(LDUSEFFTW)) THEN
   TW%LFFTW=LDUSEFFTW
 ENDIF
+IF( LLSPSETUPONLY .OR. D%LGRIDONLY ) THEN
+  TW%LFFTW = .FALSE.
+ENDIF
 #endif
 
 S%LSOUTHPNM=.FALSE.
@@ -355,12 +358,12 @@ IF(PRESENT(CDIO_LEGPOL)) THEN
     C%LREAD_LEGPOL = .TRUE.
     C%CLEGPOLFNAME = TRIM(CDLEGPOLFNAME)
     C%CIO_TYPE='file'
-  ELSEIF(TRIM(CDIO_LEGPOL) == 'writef' .OR. TRIM(CDIO_LEGPOL) == 'WRITEF') THEN 
+  ELSEIF(TRIM(CDIO_LEGPOL) == 'writef' .OR. TRIM(CDIO_LEGPOL) == 'WRITEF') THEN
     IF(.NOT.PRESENT(CDLEGPOLFNAME)) CALL  ABORT_TRANS('SETUP_TRANS: CDLEGPOLFNAME ARGUMENT MISSING')
     C%LWRITE_LEGPOL = .TRUE.
     C%CLEGPOLFNAME = TRIM(CDLEGPOLFNAME)
     C%CIO_TYPE='file'
-  ELSEIF(TRIM(CDIO_LEGPOL) == 'membuf' .OR. TRIM(CDIO_LEGPOL) == 'MEMBUF') THEN 
+  ELSEIF(TRIM(CDIO_LEGPOL) == 'membuf' .OR. TRIM(CDIO_LEGPOL) == 'MEMBUF') THEN
     IF(.NOT.PRESENT(KLEGPOLPTR)) CALL  ABORT_TRANS('SETUP_TRANS: KLEGPOLPTR  ARGUMENT MISSING')
     IF(.NOT.C_ASSOCIATED(KLEGPOLPTR))  CALL  ABORT_TRANS('SETUP_TRANS: KLEGPOLPTR NULL POINTER')
     IF(.NOT.PRESENT(KLEGPOLPTR_LEN)) CALL  ABORT_TRANS('SETUP_TRANS: KLEGPOLPTR_LEN ARGUMENT MISSING')
