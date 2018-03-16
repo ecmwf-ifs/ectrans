@@ -1,5 +1,5 @@
 INTERFACE
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
 &LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
 &LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
@@ -17,14 +17,13 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     ----------
 !     CALL SETUP_TRANS(...)
 
-!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT are optional arguments
+!     Explicit arguments : KLOEN,LDSPLIT are optional arguments
 !     -------------------- 
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KDLON - number of points on each latitude [2*KDGL]
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
-!     LDLINEAR_GRID - true if linear grid
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
 !     PWEIGHT - the weight per grid-point (for a weighted distribution)
@@ -80,7 +79,6 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KSMAX,KDGL
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KDLON
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
-LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
