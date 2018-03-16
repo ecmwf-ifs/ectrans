@@ -142,8 +142,10 @@ DO WHILE (ZTAU > PEPS**2*ZTAU_IN)
     ZC(KRANK) = ZC(IK)
     ZC(IK) = ZSWAP
     ! Compute Householder vector
-    CALL ALG511(ZEPS,PA(KRANK:KM,KRANK),ZV,ZBETA)
-
+    ZBETA=0.0_JPRD
+    IF( KM-KRANK >= 0 ) THEN
+      CALL ALG511(ZEPS,KM-KRANK+1,PA(KRANK:KM,KRANK),ZV,ZBETA)
+    ENDIF
     ! Apply Householder matrix
     IM = KM-KRANK+1
     IN = KN-KRANK+1
@@ -189,36 +191,32 @@ ENDDO
 END SUBROUTINE ALG541
 
 !==============================================================================
-SUBROUTINE ALG511(PEPS,PX,PV,PBETA)
+SUBROUTINE ALG511(PEPS,KSIZE,PX,PV,PBETA)
 IMPLICIT NONE
 ! Compute Householder vector
 ! Algorithm 5.1.1 from Matrix Computations, G.H.Golub & C.F van Loen, third ed.
 REAL(KIND=JPRD),INTENT(IN)     :: PEPS     ! Precision
 REAL(KIND=JPRD),INTENT(IN)     :: PX(:)
+INTEGER(KIND=JPIM), INTENT(IN)     :: KSIZE
 REAL(KIND=JPRD),INTENT(OUT)    :: PV(:)
 REAL(KIND=JPRD),INTENT(OUT)    :: PBETA
-
 INTEGER(KIND=JPIM) :: IL
-INTEGER(KIND=JPIM) :: IN
 REAL(KIND=JPRD) :: ZSIGMA,ZMU, ZNORM
-REAL(KIND=JPRD), ALLOCATABLE :: ZX(:)
+REAL(KIND=JPRD) :: ZX(KSIZE)
 !-------------------------------------------------------------------------------
-IN = SIZE(PX)
-ALLOCATE(ZX(IN))
-
 ! normalize
 ZNORM=0._JPRD
-DO IL=1,IN
+DO IL=1,KSIZE
   ZNORM = ZNORM + PX(IL)*PX(IL)
 ENDDO
 ZNORM=SQRT(ZNORM)
-IF( ZNORM > PEPS ) ZX(:)=PX(:)/ZNORM
-ZX(:)=PX(:)
+ZX(:)=PX(1:KSIZE)
+IF( ZNORM > PEPS ) ZX(:)=PX(1:KSIZE)/ZNORM
 
-ZSIGMA = DOT_PRODUCT(ZX(2:IN),ZX(2:IN))
+ZSIGMA=0._JPRD
+IF( KSIZE > 1 ) ZSIGMA = DOT_PRODUCT(ZX(2:KSIZE),ZX(2:KSIZE))
 PV(1) = 1.0_JPRD
-PV(2:IN) = ZX(2:IN)
-!IF(ZSIGMA == 0.0_JPRD) THEN
+IF( KSIZE > 1 ) PV(2:KSIZE) = ZX(2:KSIZE)
 IF(ABS(ZSIGMA) <  PEPS**2) THEN
   PBETA = 0.0_JPRD
 ELSE
@@ -232,7 +230,6 @@ ELSE
   PV(:) = PV(:)/(PV(1))
 ENDIF
 
-DEALLOCATE(ZX)
 END SUBROUTINE ALG511
 !================================================================================
 
