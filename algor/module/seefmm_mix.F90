@@ -32,7 +32,7 @@ module seefmm_mix
 !     ------------------------------------------------------------------
 
 
-use parkind1,only : jpim     ,jprb
+use parkind1,only : jpim     ,jprb, jprd
 use ecsort_mix
 use wts500_mod
 
@@ -73,7 +73,7 @@ implicit none
 ! pdiff - difference matrix (optional)
 
 integer(kind=jpim),intent(in)  :: kx    
-real(kind=jprb)   ,intent(in)  :: px(:)
+real(kind=jprd)   ,intent(in)  :: px(:)
 integer(kind=jpim),intent(in)  :: ky
 real(kind=jprb)   ,intent(in)  :: py(:)
 type(fmm_type)    ,intent(out) :: ydfmm
@@ -449,7 +449,7 @@ recursive subroutine comb_xy(kx,px,ky,py,kxy,pxy,kindex)
 implicit none
 
 integer(kind=jpim), intent(in)  :: kx,ky
-real(kind=jprb),    intent(in)  :: px(:)
+real(kind=jprd),    intent(in)  :: px(:)
 real(kind=jprb),    intent(in)  :: py(:)
 integer(kind=jpim), intent(in)  :: kxy
 real(kind=jprb),    intent(out) :: pxy(:)
