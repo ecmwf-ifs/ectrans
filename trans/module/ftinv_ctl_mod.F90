@@ -99,7 +99,7 @@ REAL(KIND=JPRB),POINTER :: ZSCALAR(:,:)
 REAL(KIND=JPRB),POINTER :: ZNSDERS(:,:)
 REAL(KIND=JPRB),POINTER :: ZEWDERS(:,:)
 REAL(KIND=JPRB),POINTER :: ZUVDERS(:,:)
-#if 1
+#if 0
 REAL(KIND=JPRB),TARGET  :: ZDUM(1,D%NLENGTF) ! Reducing stack usage here, too
 #else
 REAL(KIND=JPRB),TARGET,ALLOCATABLE  :: ZDUM(:,:) ! When using this (HEAP) alloc Cray CCE 8.6.2 fails in OMP 1639 
@@ -107,7 +107,9 @@ REAL(KIND=JPRB),TARGET,ALLOCATABLE  :: ZDUM(:,:) ! When using this (HEAP) alloc 
 !REAL(KIND=JPRB),TARGET  :: ZGTF(KF_FS,D%NLENGTF) ! A stack hog ?
 REAL(KIND=JPRB),TARGET,ALLOCATABLE  :: ZGTF(:,:) ! (KF_FS,D%NLENGTF)
 
-#if 0
+ALLOCATE(ZGTF(KF_FS,D%NLENGTF))
+
+#if 1
 ALLOCATE(ZDUM(1,D%NLENGTF))
 #endif
 
@@ -116,8 +118,6 @@ ZSCALAR => ZDUM
 ZNSDERS => ZDUM
 ZEWDERS => ZDUM
 ZUVDERS => ZDUM
-
-ALLOCATE(ZGTF(KF_FS,D%NLENGTF))
 
 !     ------------------------------------------------------------------
 
@@ -174,7 +174,7 @@ DO JGL=IBEG,IEND,IINC
 !    3.  Fourier transform
 
   IF (KF_FS > 0) THEN
-    CALL FTINV(ZGTF,KF_FS,IGL)
+    CALL FTINV(ZGTF,KF_FS,IGL) ! Watch out failures here (Cray CCE 8.6.2 ? Intel 18.0.1 ?)
   ENDIF
 ENDDO
 !$OMP END PARALLEL DO
@@ -185,7 +185,7 @@ NULLIFY(ZSCALAR)
 NULLIFY(ZNSDERS)
 NULLIFY(ZUVDERS)
 NULLIFY(ZEWDERS)
-#if 0
+#if 1
 DEALLOCATE(ZDUM)
 #endif
 
