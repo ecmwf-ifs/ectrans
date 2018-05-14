@@ -76,7 +76,7 @@ REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:)
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
-LOGICAL :: HALT_INVALID
+LOGICAL :: LL_HALT_INVALID
 #ifdef WITH_IEEE_HALT
 LOGICAL, PARAMETER :: LL_IEEE_HALT = .TRUE.
 #else
@@ -129,14 +129,14 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
        CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZB,KDGLU,0._JPRB,ZCA,ILA)
     ELSE
-       HALT_INVALID = .false.
+       LL_HALT_INVALID = .false.
        IF (LL_IEEE_HALT) THEN
-          call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
-          if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
+          call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
+          if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
        CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZB,KDGLU,0._JPRB,ZCA,ILA)
-       if (LL_IEEE_HALT .and. HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
+       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
 
@@ -174,14 +174,14 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
        CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZB,KDGLU,0._JPRB,ZCS,ILS)
     ELSE
-       HALT_INVALID = .false.
+       LL_HALT_INVALID = .false.
        IF (LL_IEEE_HALT) THEN
-          call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
-          if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
+          call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
+          if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
        CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZB,KDGLU,0._JPRB,ZCS,ILS)
-       if (LL_IEEE_HALT .and. HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
+       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
     
