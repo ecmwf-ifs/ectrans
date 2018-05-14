@@ -133,6 +133,7 @@ IF( KDGLU > 0 ) THEN
       CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
        &ZBA,ILA,0._JPRB,ZC,KDGLU)
     ELSE
+       HALT_INVALID = .false.
        IF (LL_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
           if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -177,6 +178,7 @@ IF( KDGLU > 0 ) THEN
        CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZBS,ILS,0._JPRB,ZC,KDGLU)
     ELSE
+       HALT_INVALID = .false.
        IF (LL_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
           if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)

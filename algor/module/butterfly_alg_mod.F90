@@ -752,7 +752,8 @@ IF(LLTRANSPOSE) THEN
               CALL DGEMM('T','N',IN,KF,IM,1.0_JPRD,&
                & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRD,&
                & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
-            ELSE
+           ELSE
+               HALT_INVALID = .false.
                IF (LL_IEEE_HALT) THEN
                   call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
                   if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -784,6 +785,7 @@ IF(LLTRANSPOSE) THEN
                & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRD,&
                & ZBETA(IBTST,1,IBETALV),ILBETA)
             ELSE
+               HALT_INVALID = .false.
                IF (LL_IEEE_HALT) THEN
                   call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
                   if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -819,6 +821,7 @@ IF(LLTRANSPOSE) THEN
                & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRD,&
                & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
             ELSE
+               HALT_INVALID = .false.
                IF (LL_IEEE_HALT) THEN
                   call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
                   if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -890,6 +893,7 @@ ELSE
                & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRD,&
                & ZBETA(IBTST,1,IBETALV),ILBETA)
             ELSE
+               HALT_INVALID = .false.
                IF (LL_IEEE_HALT) THEN
                   call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
                   if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -938,6 +942,7 @@ ELSE
                & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRD,&
                & ZBETA(IBTST,1,IBETALV),ILBETA)
             ELSE
+               HALT_INVALID = .false.
                IF (LL_IEEE_HALT) THEN
                   call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
                   if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -959,6 +964,7 @@ ELSE
              & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRD,&
              & PVECOUT(IFR,1),IROUT)
           ELSE
+             HALT_INVALID = .false.
              IF (LL_IEEE_HALT) THEN
                 call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
                 if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -1044,6 +1050,7 @@ IF(YDNODE%ICOLS > IRANK) THEN
      & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRD,&
      & PVECOUT,IRANK)
   ELSE
+     HALT_INVALID = .false.
      IF (LL_IEEE_HALT) THEN
         call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
         if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
@@ -1113,6 +1120,7 @@ IF(IN>0) THEN
            & YDNODE%PNONIM(1),IM,ZVECIN,IM,0.0_JPRD,&
            & ZVECOUT(YDNODE%IRANK+1,1),YDNODE%ICOLS)
    ELSE
+      HALT_INVALID = .false.
       IF (LL_IEEE_HALT) THEN
          call ieee_get_halting_mode(ieee_invalid,HALT_INVALID)
          if (HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
