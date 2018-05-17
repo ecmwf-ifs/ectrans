@@ -53,6 +53,8 @@ USE TPM_FIELDS
 USE TPM_DISTR
 USE BUTTERFLY_ALG_MOD
 
+USE YOMMP0, ONLY : L_IEEE_HALT
+
 use, intrinsic :: ieee_exceptions
 
 
@@ -77,11 +79,6 @@ INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 LOGICAL :: LL_HALT_INVALID
-#ifdef WITH_IEEE_HALT
-LOGICAL, PARAMETER :: LL_IEEE_HALT = .TRUE.
-#else
-LOGICAL, PARAMETER :: LL_IEEE_HALT = .FALSE.
-#endif
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 CHARACTER(LEN=1) :: CLX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -130,13 +127,13 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
             &ZB,KDGLU,0._JPRB,ZCA,ILA)
     ELSE
        LL_HALT_INVALID = .false.
-       IF (LL_IEEE_HALT) THEN
+       IF (L_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
        CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZB,KDGLU,0._JPRB,ZCA,ILA)
-       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
+       if (L_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
 
@@ -175,13 +172,13 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
             &ZB,KDGLU,0._JPRB,ZCS,ILS)
     ELSE
        LL_HALT_INVALID = .false.
-       IF (LL_IEEE_HALT) THEN
+       IF (L_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
        CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZB,KDGLU,0._JPRB,ZCS,ILS)
-       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
+       if (L_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
     

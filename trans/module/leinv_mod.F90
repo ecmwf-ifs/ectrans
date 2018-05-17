@@ -52,6 +52,8 @@ USE TPM_FLT
 USE TPM_GEN ! Fpr nout
 USE BUTTERFLY_ALG_MOD
 
+USE YOMMP0, ONLY : L_IEEE_HALT
+
 use, intrinsic :: ieee_exceptions
 
 IMPLICIT NONE
@@ -72,11 +74,6 @@ INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI, IEND
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
 LOGICAL :: LL_HALT_INVALID
-#ifdef WITH_IEEE_HALT
-LOGICAL, PARAMETER :: LL_IEEE_HALT = .TRUE.
-#else
-LOGICAL, PARAMETER :: LL_IEEE_HALT = .FALSE.
-#endif
 LOGICAL :: LLDOUBLE = (JPRB == JPRD)
 CHARACTER(LEN=1) :: CLX
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
@@ -134,13 +131,13 @@ IF( KDGLU > 0 ) THEN
        &ZBA,ILA,0._JPRB,ZC,KDGLU)
     ELSE
        LL_HALT_INVALID = .false.
-       IF (LL_IEEE_HALT) THEN
+       IF (L_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
        CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZBA,ILA,0._JPRB,ZC,KDGLU)
-       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
+       if (L_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
   
@@ -179,13 +176,13 @@ IF( KDGLU > 0 ) THEN
             &ZBS,ILS,0._JPRB,ZC,KDGLU)
     ELSE
        LL_HALT_INVALID = .false.
-       IF (LL_IEEE_HALT) THEN
+       IF (L_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
        CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZBS,ILS,0._JPRB,ZC,KDGLU)
-       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
+       if (L_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
     
