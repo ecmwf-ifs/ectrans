@@ -24,6 +24,7 @@ SAVE
 #ifdef __NEC__
 ! From NLC (NEC Numeric Library Collection)
 #include "aslfftw3.f03"
+#define FFTW_NO_SIMD 0
 #else
 #include "fftw3.f03"
 #endif
