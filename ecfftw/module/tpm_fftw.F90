@@ -20,7 +20,15 @@ SAVE
 
 #ifdef ECMWF
 !-- We should pull the include file from the FFTW3 installation rather than use our fixed include
+
+#ifdef __NEC__
+! From NLC (NEC Numeric Library Collection)
+#include "aslfftw3.f03"
+#define FFTW_NO_SIMD 0
+#else
 #include "fftw3.f03"
+#endif
+
 #else
 #include "fftw3.f03.h"
 #endif
