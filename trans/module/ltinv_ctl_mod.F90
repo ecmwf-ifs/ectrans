@@ -49,6 +49,7 @@ USE TPM_GEN    ,ONLY : LALLOPERM
 !USE TPM_DIM
 USE TPM_TRANS  ,ONLY : FOUBUF, FOUBUF_IN
 USE TPM_DISTR  ,ONLY : D
+USE TPM_FLT    ,ONLY : S
 
 USE LTINV_MOD  ,ONLY : LTINV
 USE TRMTOL_MOD ,ONLY : TRMTOL
@@ -90,6 +91,13 @@ IF (ALLOCATED(FOUBUF_IN)) THEN
   ENDIF
 ELSE
   ALLOCATE(FOUBUF_IN(MAX(1,IBLEN)))
+  FOUBUF_IN(:) = 0
+ENDIF
+
+! Following switch necessary when latlon grids are used with different increments in NS and EW direction.
+! Otherwise unassigned values will appear in output. This is very likely a bug (ATLAS-149)
+IF (S%LDLL) THEN
+  FOUBUF_IN(:) = 0
 ENDIF
 
 IF(KF_OUT_LT > 0) THEN

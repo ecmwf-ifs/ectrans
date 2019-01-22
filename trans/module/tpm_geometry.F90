@@ -16,7 +16,6 @@ INTEGER(KIND=JPIM),ALLOCATABLE :: NDGLU(:) ! NUMBER OF HEMISPERIC LATITUDES
 
 LOGICAL :: LAM           ! LAM geometry if T, Global geometry if F
 LOGICAL :: LREDUCED_GRID ! Reduced Gaussian grid if T
-LOGICAL :: LINEAR_GRID   ! Linear or semi-linear Gaussian grid if T,
 !                          quadratic Gaussian grid otherwise.
 REAL(KIND=JPRB) :: RSTRET ! Stretching factor (for Legendre polynomials
 !                           computed on stretched latitudes only)
