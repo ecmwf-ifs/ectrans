@@ -1,4 +1,4 @@
-SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
+SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
 &LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
 &LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
@@ -16,14 +16,13 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     ----------
 !     CALL SETUP_TRANS(...)
 
-!     Explicit arguments : KLOEN,LDLINEAR_GRID,LDSPLIT are optional arguments
+!     Explicit arguments : KLOEN,LDSPLIT are optional arguments
 !     --------------------
 !     KSMAX - spectral truncation required
 !     KDGL  - number of Gaussian latitudes
 !     KDLON - number of points on each Gaussian latitude [2*KDGL]
 !     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
 !     LDSPLIT - true if split latitudes in grid-point space [false]
-!     LDLINEAR_GRID - true if linear grid
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
 !     PWEIGHT - the weight per grid-point (for a weighted distribution)
@@ -34,7 +33,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 
 !     LDSPLIT describe the distribution among processors of grid-point data and
 !     has no relevance if you are using a single processor
- 
+
 !     PSTRET     - stretching factor - for the case the Legendre polynomials are
 !                  computed on the stretched sphere - works with LSOUTHPNM
 !     LDUSEFLT   - use Fast Legandre Transform (Butterfly algorithm)
@@ -44,7 +43,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !     LDPNMONLY  - Compute the Legendre polynomials only, not the FFTs.
 !     LDUSEFFTW    - Use FFTW for FFTs
 !     LDLL                 - Setup second set of input/output latitudes
-!                                 the number of input/output latitudes to transform is equal KDGL 
+!                                 the number of input/output latitudes to transform is equal KDGL
 !                                 or KDGL+2 in the case that includes poles + equator
 !                                 the number of input/output longitudes to transform is 2*KDGL
 !     LDSHIFTLL       - Shift output lon/lat data by 0.5*dx and 0.5*dy
@@ -82,7 +81,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDLINEAR_GRID,LDSPLIT,PSTRET,&
 !        R. El Khatib 14-Jun-2013 PSTRET, LDPNMONLY, LENABLED
 !        G. Mozdzynski : Oct 2014 Support f
 !        N. Wedi       : Apr 2015 Support dual set of lat/lon
-!        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW 
+!        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW
 !        M.Hamrud/W.Deconinck : July 2015 IO options for Legenndre polynomials
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
@@ -125,7 +124,6 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KSMAX,KDGL
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KDLON
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
-LOGICAL   ,OPTIONAL,INTENT(IN) :: LDLINEAR_GRID
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
@@ -211,7 +209,6 @@ IF(LLP1) WRITE(NOUT,*) '=== DEFINING RESOLUTION ',NCUR_RESOL
 
 
 G%LREDUCED_GRID = .FALSE.
-G%LINEAR_GRID = .FALSE.
 G%RSTRET=1.0_JPRB
 D%LGRIDONLY = .FALSE.
 D%LSPLIT = .FALSE.
@@ -296,12 +293,6 @@ IF(PRESENT(KTMAX)) THEN
 ELSE
   R%NTMAX = R%NSMAX
 ENDIF
-!Temporary?
-IF(PRESENT(LDLINEAR_GRID)) THEN
-  G%LINEAR_GRID = LDLINEAR_GRID
-ELSEIF(R%NSMAX > (R%NDLON+3)/3) THEN
-  G%LINEAR_GRID = .TRUE.
-ENDIF
 
 IF(PRESENT(PWEIGHT)) THEN
   D%LWEIGHTED_DISTR = .TRUE.
@@ -337,6 +328,9 @@ ENDIF
 IF(PRESENT(LDUSEFFTW)) THEN
   TW%LFFTW=LDUSEFFTW
 ENDIF
+IF( LLSPSETUPONLY .OR. D%LGRIDONLY ) THEN
+  TW%LFFTW = .FALSE.
+ENDIF
 #endif
 
 S%LSOUTHPNM=.FALSE.
@@ -355,12 +349,12 @@ IF(PRESENT(CDIO_LEGPOL)) THEN
     C%LREAD_LEGPOL = .TRUE.
     C%CLEGPOLFNAME = TRIM(CDLEGPOLFNAME)
     C%CIO_TYPE='file'
-  ELSEIF(TRIM(CDIO_LEGPOL) == 'writef' .OR. TRIM(CDIO_LEGPOL) == 'WRITEF') THEN 
+  ELSEIF(TRIM(CDIO_LEGPOL) == 'writef' .OR. TRIM(CDIO_LEGPOL) == 'WRITEF') THEN
     IF(.NOT.PRESENT(CDLEGPOLFNAME)) CALL  ABORT_TRANS('SETUP_TRANS: CDLEGPOLFNAME ARGUMENT MISSING')
     C%LWRITE_LEGPOL = .TRUE.
     C%CLEGPOLFNAME = TRIM(CDLEGPOLFNAME)
     C%CIO_TYPE='file'
-  ELSEIF(TRIM(CDIO_LEGPOL) == 'membuf' .OR. TRIM(CDIO_LEGPOL) == 'MEMBUF') THEN 
+  ELSEIF(TRIM(CDIO_LEGPOL) == 'membuf' .OR. TRIM(CDIO_LEGPOL) == 'MEMBUF') THEN
     IF(.NOT.PRESENT(KLEGPOLPTR)) CALL  ABORT_TRANS('SETUP_TRANS: KLEGPOLPTR  ARGUMENT MISSING')
     IF(.NOT.C_ASSOCIATED(KLEGPOLPTR))  CALL  ABORT_TRANS('SETUP_TRANS: KLEGPOLPTR NULL POINTER')
     IF(.NOT.PRESENT(KLEGPOLPTR_LEN)) CALL  ABORT_TRANS('SETUP_TRANS: KLEGPOLPTR_LEN ARGUMENT MISSING')
