@@ -51,6 +51,7 @@ SUBROUTINE SUSTAONL(KMEDIAP,KRESTM,LDWEIGHTED_DISTR,PWEIGHT,PMEDIAP,KPROCAGP)
 !        Modified 98-12-04 C. Fischer: merge with SUESTAONL (Aladin)
 !        R. El Khatib 05-Apr-2007 Enable back vectorization on NEC
 !        R. El Khatib 30-Apr-2013 Optimization
+!        R. El Khatib 26-Apr-2018 vectorization
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
@@ -96,8 +97,9 @@ REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
 LOGICAL :: LLABORT
 LOGICAL :: LLP1,LLP2
 
+REAL(KIND=JPRB) ::  ZDIVID(R%NDGL)
 REAL(KIND=JPRB) ::  ZCOMP,ZPI,ZLON
-INTEGER(KIND=JPIM) :: IDIVID(R%NDGL),ILATMD,ILATMD1
+INTEGER(KIND=JPIM) :: ILATMD,ILATMD1
 
 !      -----------------------------------------------------------------
 
@@ -165,7 +167,7 @@ ENDDO
 !  ---------------------------------------
 IF( NPROC > 1 )THEN
   DO JGL=1,ILEN
-    IDIVID(JGL) = NINT(360000.0_JPRB/REAL( G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB))
+    ZDIVID(JGL) = 360000.0_JPRB/REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB)
   ENDDO
   IF( LDWEIGHTED_DISTR )THEN
     ALLOCATE(ZWEIGHT(G%NLOEN(R%NDGL/2),R%NDGL))
@@ -180,7 +182,6 @@ IF( NPROC > 1 )THEN
     IGPTS=0
   ENDIF
 
-
   DO JB=1,N_REGIONS(MY_REGION_NS)
     
     IF( .NOT.LDWEIGHTED_DISTR )THEN
@@ -192,12 +193,10 @@ IF( NPROC > 1 )THEN
       ENDIF
       DO JNPTSRE=1,IPTSRE
 
-        ILATMD = 360*1000
-        
+        ILATMD = 360000
         DO JGL=1,ILEN
           IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-            ZLON = REAL(IXPTLAT(JGL)-1,JPRB)*2.0*ZPI/REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB)
-            ILATMD1 = NINT(ZLON*180000.0_JPRB/ZPI)
+            ILATMD1 = NINT(REAL(IXPTLAT(JGL)-1,JPRB)*ZDIVID(JGL))
             IF(ILATMD1 < ILATMD) THEN
               ILATMD = ILATMD1
               INXLAT = JGL
@@ -221,12 +220,10 @@ IF( NPROC > 1 )THEN
        & .OR. (JB == N_REGIONS(MY_REGION_NS) .AND. IGPTS < KPROCAGP(MY_REGION_NS)) )
         
         IGPTS = IGPTS + 1
-        ILATMD = 360*1000
-        
+        ILATMD = 360000
         DO JGL=1,ILEN
           IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-            ZLON = REAL(IXPTLAT(JGL)-1,JPRB)*2.0*ZPI/REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRB)
-            ILATMD1 = NINT(ZLON*180000.0_JPRB/ZPI)
+            ILATMD1 = NINT(REAL(IXPTLAT(JGL)-1,JPRB)*ZDIVID(JGL))
             IF(ILATMD1 < ILATMD) THEN
               ILATMD = ILATMD1
               INXLAT = JGL
@@ -448,4 +445,3 @@ ENDIF
 
 END SUBROUTINE SUSTAONL
 END MODULE SUSTAONL_MOD
-
