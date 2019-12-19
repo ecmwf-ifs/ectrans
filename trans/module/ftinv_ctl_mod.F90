@@ -108,6 +108,12 @@ REAL(KIND=JPRB),TARGET,ALLOCATABLE  :: ZDUM(:,:) ! When using this (HEAP) alloc 
 REAL(KIND=JPRB),TARGET,ALLOCATABLE  :: ZGTF(:,:) ! (KF_FS,D%NLENGTF)
 
 ALLOCATE(ZGTF(KF_FS,D%NLENGTF))
+! Certain compilers allocate arrays at the moment they start to be used, not at the moment the user
+! allocates them. This is a problem if that moment is an open-mp loop because it would trigger
+! an omp barrier to let the array be allocated by the master thread if the array is shared (which
+! is the case here for zgtf).
+! Therefore the next line ensures zgtf is really allocated here, not inside the omp loop. REK
+IF (KF_FS > 0 .AND. D%NLENGTF > 0) ZGTF(1,1)=0._JPRB
 
 #if 1
 ALLOCATE(ZDUM(1,D%NLENGTF))
