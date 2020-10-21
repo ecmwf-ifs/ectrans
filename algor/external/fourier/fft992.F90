@@ -1,3 +1,12 @@
+! (C) Copyright 1998- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 !
 !     SUBROUTINE 'FFT992' - MULTIPLE FAST REAL PERIODIC TRANSFORM
 !
@@ -44,6 +53,8 @@
 !               B(K)=-(1/N)*SUM(J=0,...,N-1)(X(J)*SIN(2*J*K*PI/N))
 !
 #ifdef MATHKEISAN
+! MathKeisan is a scientific library optimized for NEC (www.mathkeisan.com)
+
       SUBROUTINE FFT992(A,TRIGS_,IFAX_,INC,JUMP,N,LOT,ISIGN)
 !AUTOPROMOTE
       USE PARKIND1, ONLY : JPIM, JPRB
