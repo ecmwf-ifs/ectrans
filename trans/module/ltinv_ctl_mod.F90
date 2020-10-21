@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTINV_CTL_MOD
 CONTAINS
 SUBROUTINE LTINV_CTL(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
@@ -101,18 +110,35 @@ IF (S%LDLL) THEN
 ENDIF
 
 IF(KF_OUT_LT > 0) THEN
-CALL GSTATS(1647,0)
-!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JM,IM)
-  DO JM=1,D%NUMP
-    IM = D%MYMS(JM)
-    CALL LTINV(IM,JM,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,&
-     & PSPVOR,PSPDIV,PSPSCALAR ,&
-     & PSPSC3A,PSPSC3B,PSPSC2 , &
-     & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
-  ENDDO
-!$OMP END PARALLEL DO
-CALL GSTATS(1647,1)
+  CALL GSTATS(1647,0)
+
+  !!!WARNING!!! Duplication of code besides the FSPGL_PROC argument.
+              ! It seems that gfortran 10 does not retain the value
+              ! of FSPGL_PROC within the OMP region.
+  IF( PRESENT(FSPGL_PROC) ) THEN
+    !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JM,IM)
+    DO JM=1,D%NUMP
+      IM = D%MYMS(JM)
+      CALL LTINV(IM,JM,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,&
+       & PSPVOR,PSPDIV,PSPSCALAR ,&
+       & PSPSC3A,PSPSC3B,PSPSC2 , &
+       & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
+    ENDDO
+    !$OMP END PARALLEL DO
+  ELSE
+    !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JM,IM)
+    DO JM=1,D%NUMP
+      IM = D%MYMS(JM)
+      CALL LTINV(IM,JM,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,&
+       & PSPVOR,PSPDIV,PSPSCALAR ,&
+       & PSPSC3A,PSPSC3B,PSPSC2 , &
+       & KFLDPTRUV,KFLDPTRSC)
+    ENDDO
+    !$OMP END PARALLEL DO
+  ENDIF
+  CALL GSTATS(1647,1)
 ENDIF
+
 CALL GSTATS(102,1)
 
 CALL GSTATS(152,0)
