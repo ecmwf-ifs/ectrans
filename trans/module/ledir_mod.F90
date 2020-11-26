@@ -55,7 +55,7 @@ SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KSL,KDGLU,KLED2,PAIA,PSIA,POA1,PW)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPRD, JPIM, JPRB
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FLT
@@ -95,7 +95,7 @@ LOGICAL, PARAMETER :: LL_IEEE_HALT = .FALSE.
 #endif
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 CHARACTER(LEN=1) :: CLX
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

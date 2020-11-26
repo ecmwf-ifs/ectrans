@@ -59,7 +59,7 @@ SUBROUTINE LEDIRAD(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY    ,ONLY : G
@@ -89,7 +89,7 @@ INTEGER(KIND=JPIM) :: IF,ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRD == JPRB)
 CHARACTER(LEN=1) :: CLX
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

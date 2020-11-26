@@ -54,7 +54,7 @@ SUBROUTINE LEINVAD(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KDGLU,PIA,PAOA1,PSOA1)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY    ,ONLY : G
@@ -83,7 +83,7 @@ INTEGER(KIND=JPIM) :: IF,ITHRESHOLD
 REAL(KIND=JPRB)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRD == JPRB)
 CHARACTER(LEN=1) :: CLX
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
