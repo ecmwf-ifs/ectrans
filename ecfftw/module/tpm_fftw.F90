@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE TPM_FFTW
 !   Author.
 !   -------
@@ -18,19 +27,12 @@ IMPLICIT NONE
 
 SAVE
 
-#ifdef ECMWF
-!-- We should pull the include file from the FFTW3 installation rather than use our fixed include
-
 #ifdef __NEC__
 ! From NLC (NEC Numeric Library Collection)
 #include "aslfftw3.f03"
 #define FFTW_NO_SIMD 0
 #else
 #include "fftw3.f03"
-#endif
-
-#else
-#include "fftw3.f03.h"
 #endif
 
 PRIVATE
@@ -224,12 +226,16 @@ END SUBROUTINE DESTROY_PLAN_FFTW
 
 SUBROUTINE DESTROY_PLANS_FFTW
 INTEGER(KIND=JPIM) :: JL, JN
-TYPE(FFTW_PLAN),POINTER :: CURR_FFTW_PLAN
+TYPE(FFTW_PLAN),POINTER :: CURR_FFTW_PLAN, NEXT_FFTW_PLAN
 DO JN=1,TW%N_MAX
   CURR_FFTW_PLAN=>TW%FFTW_PLANS(JN)
   DO JL=1,TW%N_PLANS(JN)
     CALL DESTROY_PLAN_FFTW(CURR_FFTW_PLAN%NPLAN)
-    CURR_FFTW_PLAN=>CURR_FFTW_PLAN%NEXT_PLAN 
+    NEXT_FFTW_PLAN=>CURR_FFTW_PLAN%NEXT_PLAN
+    IF( JL /= 1 ) THEN
+      DEALLOCATE( CURR_FFTW_PLAN )
+    ENDIF
+    CURR_FFTW_PLAN => NEXT_FFTW_PLAN
   ENDDO
 ENDDO
 IF( ASSOCIATED(TW) ) THEN
