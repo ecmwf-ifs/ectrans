@@ -70,7 +70,6 @@ REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
 TYPE(CLONE) :: YLCLONE
 CHARACTER(LEN=8) :: CLABEL
 CHARACTER(LEN=16) :: CLABEL_16
-#include "user_clock.h"
 
 !     ------------------------------------------------------------------
 

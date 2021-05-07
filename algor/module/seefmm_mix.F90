@@ -42,8 +42,10 @@ module seefmm_mix
 
 
 use parkind1,only : jpim     ,jprb, jprd
-use ecsort_mix
-use wts500_mod
+use ecsort_mix, only : keysort
+use wts500_mod, only: wts500
+
+private
 
 integer(kind=jpim) :: nfmm_lim=200 ! Appr. break-even limit for FMM
 integer(kind=jpim),parameter :: nquadEm14=28 ! Quadrature size for eps~=1.e-14
@@ -62,6 +64,8 @@ integer(kind=jpim), pointer :: nclose(:)   ! No of "close" points
 real(kind=jprb)   , pointer :: cik(:)      ! Correction term (142 in [1])
 
 end type fmm_type
+
+public :: fmm_type, setup_seefmm, free_seefmm, seefmm_mulm
 
 contains
 recursive subroutine setup_seefmm(kx,px,ky,py,ydfmm,pdiff)
