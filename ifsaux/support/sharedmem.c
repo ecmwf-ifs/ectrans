@@ -23,5 +23,6 @@ void sharedmem_free(void** ptr)
 
 void sharedmem_advance_bytes  (void** ptr, size_t bytes)
 { 
-  *ptr += bytes; 
+  char** char_ptr = (char**)ptr;
+  *char_ptr += bytes;
 }

@@ -7,9 +7,6 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#ifdef RS6K
-@PROCESS HOT
-#endif
 module seefmm_mix
 !**** *SEEFMM_MIX*  - Implementation of Simple Exponential Expansion FMM
 
