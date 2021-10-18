@@ -161,7 +161,7 @@ LOGICAL :: LLP1,LLP2, LLSPSETUPONLY
 REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
-#include "user_clock.h"
+#include "user_clock.intfb.h"
 !     ------------------------------------------------------------------
 
 IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',0,ZHOOK_HANDLE)
