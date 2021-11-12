@@ -15,8 +15,8 @@ License
 Trans is distributed under the Apache License Version 2.0.
 See `LICENSE` file for details.
 
-Installing Trans 
-===============
+Installing ecTrans
+==================
 
 Supported Platforms
 -------------------
@@ -38,8 +38,8 @@ Requirements
 Further optional recommended dependencies:
 - FFTW (http://www.fftw.org)
 
-Building Trans
---------------
+Building ecTrans
+----------------
 
 Building and installing Trans happens via CMake, which provides automatic detection for
 third-party libraries in standard locations and helps cross-plaform portability.
