@@ -1,0 +1,3 @@
+      SUBROUTINE QPASSF
+C     inlined in fft992
+      ENDSUBROUTINE QPASSF

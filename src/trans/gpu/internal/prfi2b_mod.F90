@@ -1,0 +1,118 @@
+MODULE PRFI2B_MOD
+  CONTAINS
+  SUBROUTINE PRFI2B(KFIELD,PAIA,PSIA)
+  
+  !**** *PRFI2B* - Prepare input work arrays for direct transform
+  
+  !     Purpose.
+  !     --------
+  !        To extract the Fourier fields for a specific zonal wavenumber
+  !        and put them in an order suitable for the direct Legendre
+  !        tranforms, i.e. split into symmetric and anti-symmetric part.
+  
+  !**   Interface.
+  !     ----------
+  !     *CALL* *PRFI2B(..)
+  
+  !        Explicit arguments :
+  !        -------------------   KFIELD - number of fields
+  !                              KM - zonal wavenumber
+  !                              KMLOC - local zonal wavenumber
+  !                              PAOA - antisymmetric part of Fourier
+  !                              fields for zonal wavenumber KM
+  !                              PSOA - symmetric part of Fourier
+  !                              fields for zonal wavenumber KM
+  
+  !        Implicit arguments :  FOUBUF in TPM_TRANS
+  !        --------------------
+  
+  !     Method.
+  !     -------
+  
+  !     Externals.   None.
+  !     ----------
+  
+  !     Reference.
+  !     ----------
+  !        ECMWF Research Department documentation of the IFS
+  
+  !     Author.
+  !     -------
+  !        Mats Hamrud and Philippe Courtier  *ECMWF*
+  
+  !     Modifications.
+  !     --------------
+  !        Original : 90-07-01
+  !        MPP Group: 95-10-01 Support for Distributed Memory version
+  !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
+  !     ------------------------------------------------------------------
+  
+  USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+  
+  USE TPM_DIM         ,ONLY : R, R_NDGNH, R_NDGL
+  USE TPM_TRANS       ,ONLY : FOUBUF
+  USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
+  USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,D_NSTAGT1B,D_NPROCL,D_NPNTGTB1,MYPROC
+  !
+  
+  IMPLICIT NONE
+  
+  INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+  INTEGER(KIND=JPIM)  :: KM,KMLOC
+  REAL(KIND=JPRBT)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
+  
+  
+  !     LOCAL INTEGER SCALARS
+  INTEGER(KIND=JPIM) :: IGLS,  ISL, JF, JGL, iunit
+  
+  INTEGER(KIND=JPIM) :: OFFSET1, OFFSET2
+  
+  
+  !     ------------------------------------------------------------------
+  
+  !*       1.    EXTRACT SYM./ANTISYM. FIELDS FROM FOURIER ARRAY.
+  !              ------------------------------------------------
+ 
+! debugging
+!iunit=300+myproc
+!DO KMLOC=1,D_NUMP
+!  DO JGL=1,R_NDGNH
+!     DO JF=1,KFIELD*2
+!           
+!           KM = D_MYMS(KMLOC)
+!           ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+         
+!            if (JGL .ge. ISL) then
+!               IGLS = R_NDGL+1-JGL
+!             
+!            OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL))+D_NPNTGTB1(KMLOC,JGL ))*2*KFIELD
+!            OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KFIELD
+!            !if( jf.eq.1 .and. km.eq.0 ) write(iunit,*) 'fft ',D_NPROCL(JGL),D_NSTAGT1B(D_NPROCL(JGL)),D_NPNTGTB1(KMLOC,JGL ),OFFSET1,JGL,KMLOC,FOUBUF(OFFSET1+JF)
+!         endif
+!      ENDDO
+!    ENDDO
+!  ENDDO
+
+!$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(KMLOC,JGL,JF,KM,ISL,IGLS,OFFSET1,OFFSET2) 
+DO KMLOC=1,D_NUMP
+     DO JGL=1,R_NDGNH
+        DO JF=1,KFIELD*2
+           KM = D_MYMS(KMLOC)
+           ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+           if (JGL .ge. ISL) then
+              IGLS = R_NDGL+1-JGL
+              OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL) )+D_NPNTGTB1(KMLOC,JGL ))*2*KFIELD
+              OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KFIELD
+
+              PSIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
+              PAIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
+           end if
+        ENDDO
+     ENDDO
+END DO
+!$OMP END PARALLEL DO
+  
+  !     ------------------------------------------------------------------
+  
+  END SUBROUTINE PRFI2B
+  END MODULE PRFI2B_MOD  
