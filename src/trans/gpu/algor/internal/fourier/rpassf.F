@@ -1,0 +1,3 @@
+      SUBROUTINE RPASSF
+C     inlined in fft992
+      ENDSUBROUTINE RPASSF
