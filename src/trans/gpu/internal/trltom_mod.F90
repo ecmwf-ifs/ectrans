@@ -1,3 +1,12 @@
+! (C) Copyright 1995- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE TRLTOM_MOD
   CONTAINS
   SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
@@ -52,8 +61,8 @@ MODULE TRLTOM_MOD
   !        Y.Seity   : 07-08-30 Add barrier synchonisation under LSYNC_TRANS
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRB
-  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
   USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK, MPL_WAIT, JP_NON_BLOCKING_STANDARD
   
@@ -86,23 +95,23 @@ MODULE TRLTOM_MOD
   
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
-  REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF(:)
-  REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF_IN(:)
+  REAL(KIND=JPRB)   ,INTENT(INOUT)  :: PFBUF(:)
+  REAL(KIND=JPRB)   ,INTENT(INOUT)  :: PFBUF_IN(:)
   
   INTEGER(KIND=JPIM) :: ILENS(NPRTRW),IOFFS(NPRTRW),ILENR(NPRTRW),IOFFR(NPRTRW)
   
   INTEGER(KIND=JPIM) :: ITAG, J, ILEN, ISTA
   
-  REAL(KIND=JPRB) :: ZHOOK_HANDLE
-  REAL(KIND=JPRB) :: ZHOOK_HANDLE_BAR
-  REAL(KIND=JPRB) :: ZHOOK_HANDLE_BAR2
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR2
   
-  REAL(KIND=JPRBT)    :: ZDUM(1)
+  REAL(KIND=JPRB)    :: ZDUM(1)
   INTEGER(KIND=JPIM) :: IREQ
   INTEGER(KIND=JPIM) :: IERROR
   !     ------------------------------------------------------------------
   
-  REAL(KIND=JPRBT) :: T1, T2, TIMEF, tc
+  REAL(KIND=JPRB) :: T1, T2, TIMEF, tc
   INTEGER(KIND=JPIM) :: MTOL_OR_LTOM, NOFULLPEERACCESS
   INTEGER(KIND=JPIM) :: IRANK,iunit
 

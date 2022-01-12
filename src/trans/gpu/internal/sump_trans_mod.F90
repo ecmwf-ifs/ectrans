@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SUMP_TRANS_MOD
 CONTAINS
 SUBROUTINE SUMP_TRANS
@@ -7,7 +16,7 @@ SUBROUTINE SUMP_TRANS
 ! Modifications :
 ! P.Marguinaud : 11-Sep-2012 : Fix twice allocated pointer
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT,  JPRD
+USE PARKIND1  ,ONLY : JPIM     ,JPRB,  JPRD
 
 USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
 USE TPM_DIM         ,ONLY : R
@@ -33,8 +42,8 @@ INTEGER(KIND=JPIM) :: I1,I2,I3,IAUX0,IAUX1,JA1
 INTEGER(KIND=JPIM) :: IGPTOT,IMEDIAP,IRESTM,JA,JB,IOFF
 INTEGER(KIND=JPIM),ALLOCATABLE :: IGPTOTL(:,:)
 
-REAL(KIND=JPRBT),ALLOCATABLE :: ZDUM(:)
-REAL(KIND=JPRBT) :: ZMEDIAP
+REAL(KIND=JPRB),ALLOCATABLE :: ZDUM(:)
+REAL(KIND=JPRB) :: ZMEDIAP
 REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
 
 LOGICAL    :: LLP1,LLP2

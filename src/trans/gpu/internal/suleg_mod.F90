@@ -1,3 +1,12 @@
+! (C) Copyright 1987- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SULEG_MOD
 #ifdef __NEC__
 #define SIZEOF(x) STORAGE_SIZE(x)/KIND(x)
@@ -6,7 +15,7 @@ CONTAINS
 SUBROUTINE SULEG
 !DEC$ OPTIMIZE:1
 
-USE PARKIND1  ,ONLY : JPRD, JPIM, JPRBT
+USE PARKIND1  ,ONLY : JPRD, JPIM, JPRB
 USE PARKIND2  ,ONLY : JPRH
 USE MPL_MODULE
 
@@ -124,7 +133,7 @@ IMPLICIT NONE
 REAL(KIND=JPRD),ALLOCATABLE :: ZPNMG(:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZFN(:,:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZLRMUZ2(:)
-REAL(KIND=JPRBT) :: ZEPSNM(0:R%NTMAX+2)
+REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRD) :: ZLRMUZ(R%NDGL)
 REAL(KIND=JPRD) :: ZW(R%NDGL)
 
@@ -134,8 +143,8 @@ REAL(KIND=JPRD) :: ZPI, ZINC, ZOFF, ZTEMP, ZORIG, ZTHETA, ZCOS
 
 REAL(KIND=JPRD), ALLOCATABLE :: ZSNDBUFV(:),ZRCVBUFV(:,:)
 REAL(KIND=JPRD), ALLOCATABLE :: ZPNMCDO(:,:),ZPNMCDD(:,:)
-REAL(KIND=JPRBT), ALLOCATABLE :: ZRCVBUTFV(:,:)
-REAL(KIND=JPRBT) :: ZDUM(2)
+REAL(KIND=JPRB), ALLOCATABLE :: ZRCVBUTFV(:,:)
+REAL(KIND=JPRB) :: ZDUM(2)
 REAL(KIND=KIND(ZRCVBUTFV)) :: ZBYTES
 INTEGER(KIND=JPIM) :: IBYTES
 INTEGER(KIND=JPIM) :: ISENDREQ(NPRTRV)
@@ -795,7 +804,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           CALL GSTATS(852,1)
         ELSE
           IRECVLENMAX=2
-          ZDUM(:)=0.0_JPRBT
+          ZDUM(:)=0.0_JPRB
           CALL GSTATS(852,0)
           DO JSETV=1,NPRTRV
             CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
@@ -1076,7 +1085,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           CALL GSTATS(852,1)
         ELSE
           IRECVLENMAX=2
-          ZDUM(:)=0.0_JPRBT
+          ZDUM(:)=0.0_JPRB
           CALL GSTATS(852,0)
           DO JSETV=1,NPRTRV
             CALL SET2PE(ISEND,0,0,MYSETW,JSETV)

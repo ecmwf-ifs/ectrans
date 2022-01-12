@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FTINV_CTLAD_MOD
 CONTAINS
 SUBROUTINE FTINV_CTLAD(KF_UV_G,KF_SCALARS_G,&
@@ -51,7 +60,7 @@ SUBROUTINE FTINV_CTLAD(KF_UV_G,KF_SCALARS_G,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : NERR
 !USE TPM_DIM
@@ -90,13 +99,13 @@ REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP2(:,:,:)
 
 !     ------------------------------------------------------------------
 
-REAL(KIND=JPRBT),TARGET  :: ZGTF(KF_FS,D%NLENGTF)
-REAL(KIND=JPRBT),TARGET  :: ZDUM(1,D%NLENGTF)
-REAL(KIND=JPRBT),POINTER :: ZUV(:,:)
-REAL(KIND=JPRBT),POINTER :: ZSCALAR(:,:)
-REAL(KIND=JPRBT),POINTER :: ZNSDERS(:,:)
-REAL(KIND=JPRBT),POINTER :: ZEWDERS(:,:)
-REAL(KIND=JPRBT),POINTER :: ZUVDERS(:,:)
+REAL(KIND=JPRB),TARGET  :: ZGTF(KF_FS,D%NLENGTF)
+REAL(KIND=JPRB),TARGET  :: ZDUM(1,D%NLENGTF)
+REAL(KIND=JPRB),POINTER :: ZUV(:,:)
+REAL(KIND=JPRB),POINTER :: ZSCALAR(:,:)
+REAL(KIND=JPRB),POINTER :: ZNSDERS(:,:)
+REAL(KIND=JPRB),POINTER :: ZEWDERS(:,:)
+REAL(KIND=JPRB),POINTER :: ZUVDERS(:,:)
 
 INTEGER(KIND=JPIM) :: IST,IBLEN
 INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)

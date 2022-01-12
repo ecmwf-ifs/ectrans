@@ -1,3 +1,12 @@
+! (C) Copyright 1988- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE UPDSPB_MOD
   CONTAINS
   SUBROUTINE UPDSPB(KFIELD,POA,PSPEC,KFLDPTR)
@@ -45,9 +54,7 @@ MODULE UPDSPB_MOD
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
-  
-  
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   USE TPM_DIM         ,ONLY : R,R_NSMAX,R_NTMAX
   !USE TPM_FIELDS
@@ -58,7 +65,7 @@ MODULE UPDSPB_MOD
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT)   ,INTENT(IN)  :: POA(:,:,:)
+  REAL(KIND=JPRB)   ,INTENT(IN)  :: POA(:,:,:)
   REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
@@ -102,7 +109,7 @@ MODULE UPDSPB_MOD
                    INM = IASM0+(R%NTMAX+2-JN)*2
                    IR = 2*JFLD-1
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
-                   PSPEC(JFLD,INM+1) = 0.0_JPRBT
+                   PSPEC(JFLD,INM+1) = 0.0_JPRB
                    
                 end if
              ELSE

@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
 
 !**** *GATH_SPEC* - Gather global spectral array from processors
@@ -50,7 +59,7 @@ USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 USE GATH_SPEC_CONTROL_MOD ,ONLY : GATH_SPEC_CONTROL
 USE SUWAVEDI_MOD    ,ONLY : SUWAVEDI
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 !endif INTERFACE
 
@@ -77,7 +86,7 @@ INTEGER(KIND=JPIM) :: ISMAX, ISPEC2, ISPEC2_G
 INTEGER(KIND=JPIM) :: IPOSSP(NPRTRW+1)
 INTEGER(KIND=JPIM),ALLOCATABLE :: IDIM0G(:)
 LOGICAL :: LLDIM1_IS_FLD
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

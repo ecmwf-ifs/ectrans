@@ -1,3 +1,12 @@
+! (C) Copyright 1991- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE UVTVD_MOD
 CONTAINS
 SUBROUTINE UVTVD(KFIELD)
@@ -48,7 +57,7 @@ SUBROUTINE UVTVD(KFIELD)
 !        D. Giard : NTMAX instead of NSMAX
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R, R_NTMAX
 USE TPM_FIELDS      ,ONLY : F
@@ -62,18 +71,18 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM), INTENT(IN)  :: KFIELD
 INTEGER(KIND=JPIM)  :: KM, KMLOC
 
-!REAL(KIND=JPRBT), INTENT(IN)     :: PEPSNM(1:d%nump,0:R%NTMAX+2)
-!REAL(KIND=JPRBT), INTENT(OUT)    :: PVOR(:,:,:),PDIV(:,:,:)
-!REAL(KIND=JPRBT), INTENT(INOUT)  :: PU  (:,:,:),PV  (:,:,:)
+!REAL(KIND=JPRB), INTENT(IN)     :: PEPSNM(1:d%nump,0:R%NTMAX+2)
+!REAL(KIND=JPRB), INTENT(OUT)    :: PVOR(:,:,:),PDIV(:,:,:)
+!REAL(KIND=JPRB), INTENT(INOUT)  :: PU  (:,:,:),PV  (:,:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: II, IN, IR, J, JN, ITMAX
 INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
 
 !     LOCAL REAL SCALARS
-REAL(KIND=JPRBT) :: ZKM
-REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+3)
-REAL(KIND=JPRBT), POINTER :: PU(:,:,:),PV(:,:,:),PVOR(:,:,:),PDIV(:,:,:)
+REAL(KIND=JPRB) :: ZKM
+REAL(KIND=JPRB) :: ZN(-1:R%NTMAX+3)
+REAL(KIND=JPRB), POINTER :: PU(:,:,:),PV(:,:,:),PVOR(:,:,:),PDIV(:,:,:)
 
 IUS = 1
 IUE = 2*KFIELD
@@ -112,8 +121,8 @@ DO KMLOC=1,D_NUMP
     KM = D_MYMS(KMLOC)
     IN = F%NLTN(KM-1)
 !    IN=R_NTMAX+3-KM
-    PU(J,IN,KMLOC) = 0.0_JPRBT
-    PV(J,IN,KMLOC) = 0.0_JPRBT
+    PU(J,IN,KMLOC) = 0.0_JPRB
+    PV(J,IN,KMLOC) = 0.0_JPRB
   ENDDO
 ENDDO
 
@@ -126,7 +135,7 @@ DO KMLOC=1,D_NUMP
       IR = 2*J-1
       II = IR+1
       KM = D_MYMS(KMLOC)
-      ZKM = REAL(KM,JPRBT)
+      ZKM = REAL(KM,JPRB)
       IN = R_NTMAX+2-JN
 
       IF(KM /= 0 .and. JN.GE.KM) THEN

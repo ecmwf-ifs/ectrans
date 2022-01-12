@@ -1,8 +1,17 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE PRFI1B_MOD
   CONTAINS
   SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KFLDPTR)
   
-   USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   use tpm_gen, only: nout
   USE TPM_DIM         ,ONLY : R,R_NSMAX
@@ -105,9 +114,9 @@ MODULE PRFI1B_MOD
       DO JFLD=1,2*KFIELDS
          KM = D_MYMS(KMLOC) 
          ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRBT
-         PIA(JFLD,2,KMLOC) = 0.0_JPRBT
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRBT
+         PIA(JFLD,1,KMLOC) = 0.0_JPRB
+         PIA(JFLD,2,KMLOC) = 0.0_JPRB
+         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
       ENDDO 
       ! end loop over wavenumber
    END DO
@@ -148,9 +157,9 @@ MODULE PRFI1B_MOD
       DO JFLD=1,2*KFIELDS
          KM = D_MYMS(KMLOC) 
          ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRBT
-         PIA(JFLD,2,KMLOC) = 0.0_JPRBT
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRBT
+         PIA(JFLD,1,KMLOC) = 0.0_JPRB
+         PIA(JFLD,2,KMLOC) = 0.0_JPRB
+         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
       ENDDO 
       ! end loop over wavenumber
    END DO

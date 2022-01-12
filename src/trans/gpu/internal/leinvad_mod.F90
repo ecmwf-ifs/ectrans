@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LEINVAD_MOD
 CONTAINS
 SUBROUTINE LEINVAD(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KDGLU,PIA,PAOA1,PSOA1)
@@ -44,8 +53,8 @@ SUBROUTINE LEINVAD(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KDGLU,PIA,PAOA1,PSOA1)
 !        Modified ! 16/10/12 J.Hague : DR_HOOK round calls to DGEMM:
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRB     ,JPRD
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY    ,ONLY : G
@@ -65,16 +74,16 @@ INTEGER(KIND=JPIM), INTENT(IN)    :: KIFC
 INTEGER(KIND=JPIM), INTENT(IN)    :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)    :: KF_OUT_LT
 REAL(KIND=JPRB),    INTENT(OUT)   :: PIA(:,:)
-REAL(KIND=JPRBT),    INTENT(INOUT) :: PSOA1(:,:)
-REAL(KIND=JPRBT),    INTENT(INOUT) :: PAOA1(:,:)
+REAL(KIND=JPRB),    INTENT(INOUT) :: PSOA1(:,:)
+REAL(KIND=JPRB),    INTENT(INOUT) :: PAOA1(:,:)
 
 !     LOCAL VARIABLES
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IOAD1, JK,JI
 INTEGER(KIND=JPIM) :: IF,ITHRESHOLD
-REAL(KIND=JPRBT)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
-LOGICAL, PARAMETER :: LLDOUBLE = (JPRD == JPRBT)
+REAL(KIND=JPRB)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
+LOGICAL, PARAMETER :: LLDOUBLE = (JPRD == JPRB)
 CHARACTER(LEN=1) :: CLX
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -118,11 +127,11 @@ IF( KDGLU > 0 ) THEN
   IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
      IF (LHOOK) CALL DR_HOOK('LE_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
      IF(LLDOUBLE)THEN
-        CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRBT,S%FA(KMLOC)%RPNMA,KDGLU,&
-             &ZC,KDGLU,0._JPRBT,ZBA,ILA)
+        CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
+             &ZC,KDGLU,0._JPRB,ZBA,ILA)
      ELSE
-        CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRBT,S%FA(KMLOC)%RPNMA,KDGLU,&
-             &ZC,KDGLU,0._JPRBT,ZBA,ILA)
+        CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
+             &ZC,KDGLU,0._JPRB,ZBA,ILA)
      END IF
      IF (LHOOK) CALL DR_HOOK('LE_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
 
@@ -155,11 +164,11 @@ IF( KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LE_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
     IF(LLDOUBLE)THEN
-       CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRBT,S%FA(KMLOC)%RPNMS,KDGLU,&
-            &ZC,KDGLU,0._JPRBT,ZBS,ILS)
+       CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZC,KDGLU,0._JPRB,ZBS,ILS)
     ELSE
-       CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRBT,S%FA(KMLOC)%RPNMS,KDGLU,&
-            &ZC,KDGLU,0._JPRBT,ZBS,ILS)
+       CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZC,KDGLU,0._JPRB,ZBS,ILS)
     END IF
     IF (LHOOK) CALL DR_HOOK('LE_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
 

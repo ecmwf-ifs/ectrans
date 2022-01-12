@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE PREPSNM_MOD
   CONTAINS
   SUBROUTINE PREPSNM(PEPSNM)
@@ -40,7 +49,7 @@ MODULE PREPSNM_MOD
   
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   USE TPM_DIM         ,ONLY : R
   USE TPM_FIELDS      ,ONLY : F
@@ -51,8 +60,8 @@ MODULE PREPSNM_MOD
   IMPLICIT NONE
   
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT),    INTENT(OUT) :: PEPSNM(1:d%nump,0:R%NTMAX+2)
-  !REAL(KIND=JPRBT),    INTENT(OUT) :: PEPSNM(:,:)
+  REAL(KIND=JPRB),    INTENT(OUT) :: PEPSNM(1:d%nump,0:R%NTMAX+2)
+  !REAL(KIND=JPRB),    INTENT(OUT) :: PEPSNM(:,:)
   
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: JN
@@ -78,10 +87,10 @@ MODULE PREPSNM_MOD
      
      
      IF (KM > 0) THEN
-        !PEPSNM(0:KM-1) = 0.0_JPRBT
+        !PEPSNM(0:KM-1) = 0.0_JPRB
         !$ACC loop
         DO JN=0,KM-1
-           PEPSNM(KMLOC,JN) = 0.0_JPRBT
+           PEPSNM(KMLOC,JN) = 0.0_JPRB
         ENDDO
      ENDIF
   

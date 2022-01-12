@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FSCAD_MOD
 CONTAINS
 SUBROUTINE FSCAD(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
@@ -36,7 +45,7 @@ SUBROUTINE FSCAD(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_TRANS       ,ONLY : LUVDER
 USE TPM_DISTR       ,ONLY : D, MYSETW
@@ -47,13 +56,13 @@ USE TPM_GEOMETRY    ,ONLY : G
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM) , INTENT(IN) :: KGL,KF_UV,KF_SCALARS,KF_SCDERS
-REAL(KIND=JPRBT) , INTENT(INOUT) :: PUV(:,:)
-REAL(KIND=JPRBT) , INTENT(INOUT) :: PSCALAR(:,:)
-REAL(KIND=JPRBT) , INTENT(INOUT) :: PNSDERS(:,:)
-REAL(KIND=JPRBT) , INTENT(INOUT) :: PEWDERS(:,:)
-REAL(KIND=JPRBT) , INTENT(INOUT) :: PUVDERS(:,:)
+REAL(KIND=JPRB) , INTENT(INOUT) :: PUV(:,:)
+REAL(KIND=JPRB) , INTENT(INOUT) :: PSCALAR(:,:)
+REAL(KIND=JPRB) , INTENT(INOUT) :: PNSDERS(:,:)
+REAL(KIND=JPRB) , INTENT(INOUT) :: PEWDERS(:,:)
+REAL(KIND=JPRB) , INTENT(INOUT) :: PUVDERS(:,:)
 
-REAL(KIND=JPRBT) :: ZACHTE,ZMUL
+REAL(KIND=JPRB) :: ZACHTE,ZMUL
 INTEGER(KIND=JPIM) :: IMEN,ISTAGTF
 
 

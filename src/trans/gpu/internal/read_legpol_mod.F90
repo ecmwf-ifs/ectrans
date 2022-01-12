@@ -1,7 +1,16 @@
+! (C) Copyright 2015- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE READ_LEGPOL_MOD
 CONTAINS
 SUBROUTINE READ_LEGPOL
-USE PARKIND1  ,ONLY : JPIM, JPRBT ,JPRD
+USE PARKIND1  ,ONLY : JPIM, JPRB ,JPRD
 USE TPM_GEN
 USE TPM_DISTR
 USE TPM_DIM
@@ -55,13 +64,12 @@ INTEGER(KIND=JPIM),PARAMETER :: JPIBUFL=4
 INTEGER(KIND=JPIM) :: IRBYTES,IIBYTES,JMLOC,IPRTRV,IMLOC,IM,ILA,ILS
 INTEGER(KIND=JPIM) :: IDGLU,ISIZE,IBYTES,IRET,IFILE,JSETV,IDUM,JGL,II,IDGLU2
 INTEGER(KIND=JPIM),POINTER :: IBUF(:)
-REAL(KIND=JPRBT) ,ALLOCATABLE :: ZBUF(:)
+REAL(KIND=JPRB) ,ALLOCATABLE :: ZBUF(:)
 INTEGER(KIND=JPIM) ,POINTER :: IBUFA(:)
 REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
 TYPE(CLONE) :: YLCLONE
 CHARACTER(LEN=8) :: CLABEL
 CHARACTER(LEN=16) :: CLABEL_16
-#include "user_clock.h"
 
 !     ------------------------------------------------------------------
 

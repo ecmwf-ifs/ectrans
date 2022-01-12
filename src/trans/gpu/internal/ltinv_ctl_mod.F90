@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTINV_CTL_MOD
   CONTAINS
   SUBROUTINE LTINV_CTL(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
@@ -43,7 +52,7 @@ MODULE LTINV_CTL_MOD
   
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   USE TPM_GEN, only: nout
   USE TPM_DIM         ,ONLY : R

@@ -1,3 +1,12 @@
+! (C) Copyright 2013- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE DEALLOC_RESOL_MOD
 CONTAINS
 SUBROUTINE DEALLOC_RESOL(KRESOL)
@@ -31,7 +40,7 @@ SUBROUTINE DEALLOC_RESOL(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEN         ,ONLY : LENABLED, NOUT,NDEF_RESOL

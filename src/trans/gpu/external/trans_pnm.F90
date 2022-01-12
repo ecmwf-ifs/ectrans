@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE TRANS_PNM(KRESOL,KM,PRPNM,LDTRANSPOSE,LDCHEAP)
 
 !**** *TRANS_PNM* - Compute Legendre polynomials for a given wavenember
@@ -56,7 +65,7 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 INTEGER(KIND=JPIM) ,INTENT(IN)  :: KM
-REAL(KIND=JPRBT)    ,OPTIONAL, INTENT(OUT) :: PRPNM(:,:)
+REAL(KIND=JPRBT)   ,OPTIONAL, INTENT(OUT) :: PRPNM(:,:)
 LOGICAL, OPTIONAL, INTENT(IN) :: LDTRANSPOSE
 LOGICAL, OPTIONAL, INTENT(IN) :: LDCHEAP
 
@@ -125,7 +134,7 @@ ELSE
   ENDIF
 
   IF (IU1 >= R%NLEI3) THEN
-    PRPNM(R%NLEI3,:) = 0.0_JPRBT
+    PRPNM(R%NLEI3,:) = 0.0_JPRB
   ENDIF
 
 ENDIF

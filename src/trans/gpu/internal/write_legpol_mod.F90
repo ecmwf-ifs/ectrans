@@ -1,7 +1,16 @@
+! (C) Copyright 2015- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE WRITE_LEGPOL_MOD
 CONTAINS
 SUBROUTINE WRITE_LEGPOL
-USE PARKIND1  ,ONLY : JPIM, JPRBT
+USE PARKIND1  ,ONLY : JPIM, JPRB
 USE TPM_GEN
 USE TPM_DISTR
 USE TPM_DIM
@@ -55,7 +64,7 @@ INTEGER(KIND=JPIM) :: IRBYTES,IIBYTES,JMLOC,IPRTRV,IMLOC,IM,ILA,ILS,IFILE,JSETV
 INTEGER(KIND=JPIM) :: IDGLU,ISIZE,IBYTES,IRET,IBUF(JPIBUFL),IDUM,JGL,II
 INTEGER(KIND=JPIM) :: IDGLU2
 TYPE(CLONE) :: YLCLONE
-REAL(KIND=JPRBT) ,ALLOCATABLE :: ZBUF(:)
+REAL(KIND=JPRB) ,ALLOCATABLE :: ZBUF(:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: IBUFA(:)
 !     ------------------------------------------------------------------
 

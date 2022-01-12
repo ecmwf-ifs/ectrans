@@ -1,9 +1,18 @@
+! (C) Copyright 2015- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE VD2UV_MOD
 CONTAINS
 SUBROUTINE VD2UV(KM,KMLOC,KF_UV,KLEI2,PSPVOR,PSPDIV,PU,PV)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_CONSTANTS
 USE TPM_DIM         ,ONLY : R
@@ -73,13 +82,13 @@ REAL(KIND=JPRB)   , INTENT(OUT) :: PU(:,:)
 REAL(KIND=JPRB)   , INTENT(OUT) :: PV(:,:)
 
 REAL(KIND=JPRB) :: ZIA(R%NLEI1,KLEI2)
-REAL(KIND=JPRBT) :: ZEPSNM(0:R%NTMAX+2),ZA_R
+REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2),ZA_R
 
 INTEGER(KIND=JPIM) :: IFC, ISTA, IIFC, IDGLU, JGL, JFLD,ILCM
 INTEGER(KIND=JPIM) :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,II,IR,INM,J
 INTEGER(KIND=JPIM) :: IFIRST, ILAST, IOFF
 
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -122,7 +131,7 @@ IF (KF_UV > 0) THEN
   !         & ZIA(:,IUL:IUU),ZIA(:,IVL:IVU))
   ILCM = R%NSMAX+1-KM
   IOFF = D%NASM0(KM)
-  ZA_R = 1.0_JPRBT/RA
+  ZA_R = 1.0_JPRB/RA
   DO J=1,ILCM
     INM = IOFF+(ILCM-J)*2
     DO JFLD=1,KF_UV

@@ -1,8 +1,17 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SPNSDEAD_MOD
 CONTAINS
 SUBROUTINE SPNSDEAD(KM,KF_SCALARS,PEPSNM,PF,PNSD)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !USE TPM_GEN
 USE TPM_DIM         ,ONLY : R
@@ -65,13 +74,13 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)    :: KM
 INTEGER(KIND=JPIM), INTENT(IN)    :: KF_SCALARS
-REAL(KIND=JPRBT),    INTENT(IN)    :: PEPSNM(0:R%NTMAX+2)
+REAL(KIND=JPRB),    INTENT(IN)    :: PEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRB),    INTENT(INOUT) :: PF(:,:)
 REAL(KIND=JPRB),    INTENT(IN)    :: PNSD(:,:)
 
 INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN,JI,ISMAX
-REAL(KIND=JPRBT) :: ZEPSNM(-1:R%NSMAX+4)
-REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
+REAL(KIND=JPRB) :: ZEPSNM(-1:R%NSMAX+4)
+REAL(KIND=JPRB) :: ZN(-1:R%NTMAX+4)
 
 !     ------------------------------------------------------------------
 

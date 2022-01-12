@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FTDIR_MOD
 CONTAINS
 SUBROUTINE FTDIR(KFIELDS)
@@ -36,7 +45,7 @@ SUBROUTINE FTDIR(KFIELDS)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPIB, JPRBT
+USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC,D_NSTAGTF,D_NPTRLS
 USE TPM_TRANS       ,ONLY : ZGTF
@@ -60,7 +69,7 @@ INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
 INTEGER(KIND=JPIM) :: IPLAN_R2C
 INTEGER(KIND=JPIM) :: JMAX
-REAL(KIND=JPRBT)    :: SCAL
+REAL(KIND=JPRB)    :: SCAL
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISCAL
@@ -113,14 +122,14 @@ DO IGLG=IBEG+OFFSET_VAR-1,IEND+OFFSET_VAR-1,IINC
          if (JJ .le. JMAX) then
            KGL=IGLG-OFFSET_VAR+1
            IOFF=D_NSTAGTF(KGL)+1
-           SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
+           SCAL = 1._JPRB/REAL(G_NLOEN(IGLG),JPRB)
            ZGTF(JF,IOFF+JJ-1)= SCAL * ZGTF(JF, IOFF+JJ-1)
          end if
 
          ! case JJ>0
-         IF( JJ .le. (JMAX+R_NNOEXTZL+2-IST)) ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
+         IF( JJ .le. (JMAX+R_NNOEXTZL+2-IST)) ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRB
          ! case JJ=0
-         IF (G_NLOEN(IGLG)==1) ZGTF(JF,IST+IOFF-1) = 0.0_JPRBT
+         IF (G_NLOEN(IGLG)==1) ZGTF(JF,IST+IOFF-1) = 0.0_JPRB
       ENDDO
    ENDDO
 ENDDO

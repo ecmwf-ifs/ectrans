@@ -7,3 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 add_subdirectory( cpu )
+if( HAVE_GPU )
+  add_subdirectory( gpu )
+endif()
+

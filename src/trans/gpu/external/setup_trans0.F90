@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,&
 &                       LDMPOFF,LDSYNC_TRANS,KTRANS_SYNC_LEVEL,&
@@ -55,7 +64,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
@@ -71,6 +80,7 @@ USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_EW, N_REGIONS_NS
 #ifdef _OPENACC
 use openacc
 #endif
+use ec_env_mod, only : ec_getenv
 
 !endif INTERFACE
 
@@ -102,7 +112,7 @@ LOGICAL :: LLP1,LLP2
 MYPROC = MPL_MYRANK()
 
 #ifdef _OPENACC
-idevtype=acc_device_nvidia
+idevtype=acc_get_device_type()
 numdevs = acc_get_num_devices(idevtype)
 mygpu = mod(MYPROC-1,numdevs)
 CALL acc_set_device_num(mygpu, idevtype)
@@ -118,11 +128,15 @@ IF( CL_NPROC_PERNODE /= ' ')THEN
   WRITE(0,'("TRANSFORM TEST: MYPROC=",I8," CL_NPROC_PERNODE=",A," IPROC_PERNODE=",I2,&
    & " IDEVICE_NUM=",I2)') MYPROC,CL_NPROC_PERNODE,IPROC_PERNODE,IDEVICE_NUM
   IDEVICE_TYPE=0
-  CALL ACC_SET_DEVICE_NUM(IDEVICE_NUM,ACC_DEVICE_NVIDIA)
-  CALL ACC_INIT(ACC_DEVICE_NVIDIA)
+  !!CALL ACC_SET_DEVICE_NUM(IDEVICE_NUM,ACC_DEVICE_NVIDIA)
+  CALL ACC_SET_DEVICE_NUM(IDEVICE_NUM,idevtype)
+  !!CALL ACC_INIT(ACC_DEVICE_NVIDIA)
+  CALL ACC_INIT(idevtype)
   !$OMP PARALLEL
-  CALL ACC_SET_DEVICE_NUM(IDEVICE_NUM,ACC_DEVICE_NVIDIA)
-  CALL ACC_INIT(ACC_DEVICE_NVIDIA)
+  !!CALL ACC_SET_DEVICE_NUM(IDEVICE_NUM,ACC_DEVICE_NVIDIA)
+  CALL ACC_SET_DEVICE_NUM(IDEVICE_NUM,idevtype)
+  !!CALL ACC_INIT(ACC_DEVICE_NVIDIA)
+  CALL ACC_INIT(idevtype)
 !$OMP END PARALLEL
 ENDIF
 
@@ -147,7 +161,7 @@ LMPOFF = .FALSE.
 LSYNC_TRANS=.FALSE.
 NTRANS_SYNC_LEVEL=0
 LEQ_REGIONS=.FALSE.
-RA=6371229._JPRBT
+RA=6371229._JPRB
 LALLOPERM=.FALSE.
 
 ! Optional arguments

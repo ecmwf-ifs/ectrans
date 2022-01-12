@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FOURIER_OUT_MOD
 CONTAINS
 SUBROUTINE FOURIER_OUT(KFIELDS)
@@ -28,7 +37,7 @@ SUBROUTINE FOURIER_OUT(KFIELDS)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC, D_NPTRLS,D_NSTAGTF,D_MSTABF,D_NSTAGT1B,D_NPNTGTB0,D_NPROCM, D_NPROCL
 USE TPM_TRANS       ,ONLY : FOUBUF_IN, ZGTF
@@ -37,7 +46,7 @@ USE TPM_GEOMETRY    ,ONLY : G, G_NMEN,G_NMEN_MAX
 
 IMPLICIT NONE
 
-!REAL(KIND=JPRBT),   INTENT(IN) :: PREEL(:,:)
+!REAL(KIND=JPRB),  INTENT(IN) :: PREEL(:,:)
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
 INTEGER(KIND=JPIM) :: KGL
 

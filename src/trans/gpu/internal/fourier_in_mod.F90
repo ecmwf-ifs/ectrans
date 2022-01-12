@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FOURIER_IN_MOD
 CONTAINS
 SUBROUTINE FOURIER_IN(PREEL,KFIELDS)
@@ -28,7 +37,7 @@ SUBROUTINE FOURIER_IN(PREEL,KFIELDS)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC, D_NSTAGTF,D_MSTABF,D_NSTAGT0B,D_NPNTGTB0,D_NPROCM,D_NPTRLS
 USE TPM_TRANS       ,ONLY : FOUBUF
@@ -42,7 +51,7 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
 
 INTEGER(KIND=JPIM) :: KGL
 
-REAL(KIND=JPRBT), INTENT(OUT) :: PREEL(:,:)
+REAL(KIND=JPRB), INTENT(OUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: JM,JF,IGLG,IPROC,IR,II,ISTA
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,iimax1,iimax2,iimax3,iunit

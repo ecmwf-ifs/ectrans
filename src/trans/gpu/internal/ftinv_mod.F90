@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FTINV_MOD
 CONTAINS
 SUBROUTINE FTINV(PREEL,KFIELDS)
@@ -34,7 +43,7 @@ SUBROUTINE FTINV(PREEL,KFIELDS)
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRBT
+USE PARKIND1  ,ONLY : JPIM, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G
@@ -52,7 +61,7 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
 INTEGER(KIND=JPIM) :: KGL
-REAL(KIND=JPRBT), INTENT(INOUT)  :: PREEL(:,:)
+REAL(KIND=JPRB), INTENT(INOUT)  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
@@ -95,7 +104,7 @@ DO KGL=IBEG,IEND,IINC
   !$ACC loop collapse(2)
   DO JJ=IST1,ILEN
      DO JF=1,KFIELDS
-        PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
+        PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRB
      ENDDO
   ENDDO
 

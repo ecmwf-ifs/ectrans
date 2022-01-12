@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE VORDIV_TO_UV(PSPVOR,PSPDIV,PSPU,PSPV,KSMAX,KVSETUV)
 
 !**** *VORDIV_TO_UV* - Convert spectral vorticity and divergence to spectral U (u*cos(theta)) and V (v*cos(theta).
@@ -50,7 +59,7 @@ USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 USE VD2UV_CTL_MOD ,ONLY   : VD2UV_CTL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 
 !endif INTERFACE
 
@@ -71,7 +80,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER(KIND=JPIM) :: IUBOUND(4),J
 INTEGER(KIND=JPIM) :: IF_UV,IF_UV_G,IRESOL,IDGL
 LOGICAL :: LTMP_SETUP0
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 #include "setup_trans0.h"
 #include "setup_trans.h"

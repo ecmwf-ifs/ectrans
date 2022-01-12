@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FTINV_CTL_MOD
 CONTAINS
 SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
@@ -46,11 +55,11 @@ SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
 
 !     Modifications.
 !     --------------
-!301,*) 'size: ', myproc, size(zgtf,1), KF_FS        Original : 00-03-03
+!        Original : 00-03-03
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : NERR, nout
 !USE TPM_DIM
@@ -95,15 +104,15 @@ INTEGER(KIND=JPIM) :: IVSET(KF_GP)
 INTEGER(KIND=JPIM) :: J3,JGL,IGL,IOFF,IFGP2,IFGP3A,IFGP3B,IGP3APAR,IGP3BPAR
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC
 
-REAL(KIND=JPRBT),POINTER :: ZUV(:,:)
-REAL(KIND=JPRBT),POINTER :: ZSCALAR(:,:)
-REAL(KIND=JPRBT),POINTER :: ZNSDERS(:,:)
-REAL(KIND=JPRBT),POINTER :: ZEWDERS(:,:)
-REAL(KIND=JPRBT),POINTER :: ZUVDERS(:,:)
+REAL(KIND=JPRB),POINTER :: ZUV(:,:)
+REAL(KIND=JPRB),POINTER :: ZSCALAR(:,:)
+REAL(KIND=JPRB),POINTER :: ZNSDERS(:,:)
+REAL(KIND=JPRB),POINTER :: ZEWDERS(:,:)
+REAL(KIND=JPRB),POINTER :: ZUVDERS(:,:)
 #if 0
-REAL(KIND=JPRBT),TARGET  :: ZDUM(1,D%NLENGTF) ! Reducing stack usage here, too
+REAL(KIND=JPRB),TARGET  :: ZDUM(1,D%NLENGTF) ! Reducing stack usage here, too
 #else
-REAL(KIND=JPRBT),TARGET,ALLOCATABLE  :: ZDUM(:,:) ! When using this (HEAP) alloc Cray CCE 8.6.2 fails in OMP 1639 
+REAL(KIND=JPRB),TARGET,ALLOCATABLE  :: ZDUM(:,:) ! When using this (HEAP) alloc Cray CCE 8.6.2 fails in OMP 1639 
 #endif
 INTEGER(KIND=JPIM) :: ist_uv, ist_sc, ist_nsders, ist_uvders, ist_ewders, JF_FS
 

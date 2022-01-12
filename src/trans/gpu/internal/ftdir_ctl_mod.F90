@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FTDIR_CTL_MOD
 CONTAINS
 SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
@@ -45,7 +54,7 @@ SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN, only: nout
 !USE TPM_DIM
@@ -92,7 +101,7 @@ REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP2(:,:,:)
 
 ! Local variables
-!REAL(KIND=JPRBT),ALLOCATABLE :: ZGTF(:,:)
+!REAL(KIND=JPRB),ALLOCATABLE :: ZGTF(:,:)
 
 INTEGER(KIND=JPIM) :: IST,JGL,IGL,JF_FS
 INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)

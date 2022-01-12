@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &KFLEV,KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
 &LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
@@ -86,7 +95,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB ,  JPRD
+USE PARKIND1  ,ONLY : JPIM     ,JPRB ,  JPRD
 USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
 
 !ifndef INTERFACE
@@ -122,7 +131,7 @@ USE PRE_SULEG_MOD   ,ONLY : PRE_SULEG
 USE SUFFT_MOD       ,ONLY : SUFFT
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE SHAREDMEM_MOD    ,ONLY : SHAREDMEM_CREATE
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 USE CUDA_DEVICE_MOD
 #ifdef _OPENACC
 use openacc
@@ -167,11 +176,11 @@ INTEGER(KIND=JPIM) :: IF_FS_INV, IF_FS_DIR, ippnum, IF_PP, IF_FOUBUF
 
 LOGICAL :: LLP1,LLP2, LLSPSETUPONLY
 REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 integer :: idevtype, inumdevs, mygpu, iunit, istat, idev
 
-#include "user_clock.h"
+#include "user_clock.intfb.h"
 !     ------------------------------------------------------------------
 
 IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',0,ZHOOK_HANDLE)
@@ -229,7 +238,7 @@ IF(LLP1) WRITE(NOUT,*) '=== DEFINING RESOLUTION ',NCUR_RESOL
 
 
 G%LREDUCED_GRID = .FALSE.
-G%RSTRET=1.0_JPRBT
+G%RSTRET=1.0_JPRB
 D%LGRIDONLY = .FALSE.
 D%LSPLIT = .FALSE.
 D%LCPNMONLY=.FALSE.
@@ -322,7 +331,7 @@ IF(PRESENT(PWEIGHT)) THEN
   IF(SIZE(PWEIGHT) /= SUM(G%NLOEN(:)) )THEN
     CALL ABORT_TRANS('SETUP_TRANS:SIZE(PWEIGHT) /= SUM(G%NLOEN(:))')
   ENDIF
-  IF( MINVAL(PWEIGHT(:)) < 0.0_JPRBT )THEN
+  IF( MINVAL(PWEIGHT(:)) < 0.0_JPRB )THEN
     CALL ABORT_TRANS('SETUP_TRANS: INVALID WEIGHTS')
   ENDIF
   ALLOCATE(D%RWEIGHT(SIZE(PWEIGHT)))
@@ -355,7 +364,7 @@ ENDIF
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
-  IF (ABS(PSTRET-1.0_JPRBT)>100._JPRBT*EPSILON(1._JPRBT)) THEN
+  IF (ABS(PSTRET-1.0_JPRB)>100._JPRB*EPSILON(1._JPRB)) THEN
     G%RSTRET=PSTRET
     S%LSOUTHPNM=.TRUE.
   ENDIF
@@ -565,9 +574,9 @@ ALLOCATE(DZCST(IF_FS_DIR,TDZAS,D%NUMP))
 
 ! Initialize A arrays
 
-izbs = 0._JPRBT
+izbs = 0._JPRB
 !$acc update device(izbs)
-dzbst = 0._JPRBT
+dzbst = 0._JPRB
 !$acc update device(dzbst)
 
 ! zero arrays
@@ -577,7 +586,7 @@ DO JMLOC=1,D%NUMP
   DO JK=1,TDZAA
     !$ACC loop
     DO J=1,LDZAA
-      ZAA(J,JK,JMLOC)=0._JPRBT
+      ZAA(J,JK,JMLOC)=0._JPRB
     ENDDO
   ENDDO
 ENDDO
@@ -588,7 +597,7 @@ DO JMLOC=1,D%NUMP
   DO JK=1,TDZAS
     !$ACC LOOP
     DO J=1,LDZAS
-      ZAS(J,JK,JMLOC)=0._JPRBT
+      ZAS(J,JK,JMLOC)=0._JPRB
     ENDDO
   ENDDO
 ENDDO
@@ -644,21 +653,21 @@ ALLOCATE(ZOA1(4*IF_FS_DIR,R%NLED4,D%NUMP))
 ALLOCATE(ZOA2(MAX(4*IF_UV,1),R%NLED4,D%NUMP))
 !$ACC enter data create(ZIA,ZEPSNM,ZSOA1,ZAOA1,ISTAN,ISTAS,ZSIA,ZAIA,ZOA1,ZOA2)
 
-zgtf = 0._JPRBT
+zgtf = 0._JPRB
 !$acc update device(zgtf)
-zia = 0._JPRBT
+zia = 0._JPRB
 !$acc update device(zia)
-zsia = 0._JPRBT
+zsia = 0._JPRB
 !$acc update device(zsia)
-zaia = 0._JPRBT
+zaia = 0._JPRB
 !$acc update device(zaia)
-zoa1 = 0._JPRBT
+zoa1 = 0._JPRB
 !$acc update device(zoa1)
-zoa2 = 0._JPRBT
+zoa2 = 0._JPRB
 !$acc update device(zoa2)
-zaoa1 = 0._JPRBT
+zaoa1 = 0._JPRB
 !$acc update device(zaoa1)
-zsoa1 = 0._JPRBT
+zsoa1 = 0._JPRB
 !$acc update device(zsoa1)
 
 ! add arrays for GPNORM1
@@ -669,15 +678,15 @@ ALLOCATE(ZMINGPN(IF_FS))
 ALLOCATE(ZMAXGPN(IF_FS))
 !$ACC enter data create(ZAVE,ZMINGL,ZMAXGL,ZMINGPN,ZMAXGPN)
 
-zave = 0._JPRBT
+zave = 0._JPRB
 !$acc update device(zave)
-zmingl = 0._JPRBT
+zmingl = 0._JPRB
 !$acc update device(zmingl)
-zmaxgl = 0._JPRBT
+zmaxgl = 0._JPRB
 !$acc update device(zmaxgl)
-zmingpn = 0._JPRBT
+zmingpn = 0._JPRB
 !$acc update device(zmingpn)
-zmaxgpn = 0._JPRBT
+zmaxgpn = 0._JPRB
 !$acc update device(zmaxgpn)
 
 !set up flat copies of constant data

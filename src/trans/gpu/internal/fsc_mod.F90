@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FSC_MOD
 CONTAINS
 SUBROUTINE FSC(KF_UV,KF_SCALARS,KF_SCDERS,&
@@ -36,7 +45,7 @@ SUBROUTINE FSC(KF_UV,KF_SCALARS,KF_SCDERS,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_TRANS       ,ONLY : LUVDER, LATLON, ZGTF
 USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
@@ -51,14 +60,14 @@ INTEGER(KIND=JPIM) :: KGL
 INTEGER(KIND=JPIM) , INTENT(IN) :: KF_UV,KF_SCALARS,KF_SCDERS
 INTEGER(KIND=JPIM) , INTENT(IN) :: KST_UV, KST_SC, KST_NSDERS, KST_EWDERS, KST_UVDERS
 
-REAL(KIND=JPRBT) , POINTER :: PUV(:,:)
-REAL(KIND=JPRBT) , POINTER :: PSCALAR(:,:)
-REAL(KIND=JPRBT) , POINTER :: PNSDERS(:,:)
-REAL(KIND=JPRBT) , POINTER :: PEWDERS(:,:)
-REAL(KIND=JPRBT) , POINTER :: PUVDERS(:,:)
+REAL(KIND=JPRB) , POINTER :: PUV(:,:)
+REAL(KIND=JPRB) , POINTER :: PSCALAR(:,:)
+REAL(KIND=JPRB) , POINTER :: PNSDERS(:,:)
+REAL(KIND=JPRB) , POINTER :: PEWDERS(:,:)
+REAL(KIND=JPRB) , POINTER :: PUVDERS(:,:)
 
-REAL(KIND=JPRBT) :: ZACHTE,ZMUL, ZACHTE2, ZSHIFT, ZPI
-REAL(KIND=JPRBT) :: ZAMP, ZPHASE
+REAL(KIND=JPRB) :: ZACHTE,ZMUL, ZACHTE2, ZSHIFT, ZPI
+REAL(KIND=JPRB) :: ZAMP, ZPHASE
 INTEGER(KIND=JPIM) :: IMEN,ISTAGTF
 
 
@@ -108,13 +117,13 @@ ISTAGTF = D%NSTAGTF(KGL)
 ZACHTE2  = F%RACTHE(IGLG)
 
 IF( LATLON.AND.S%LDLL ) THEN
-  ZPI = 2.0_JPRBT*ASIN(1.0_JPRBT)
-  ZACHTE2 = 1._JPRBT
+  ZPI = 2.0_JPRB*ASIN(1.0_JPRB)
+  ZACHTE2 = 1._JPRB
   ZACHTE  = F%RACTHE2(IGLG)
   
   ! apply shift for (even) lat-lon output grid
   IF( S%LSHIFTLL ) THEN
-    ZSHIFT = ZPI/REAL(G%NLOEN(IGLG),JPRBT)
+    ZSHIFT = ZPI/REAL(G%NLOEN(IGLG),JPRB)
 
     !$acc parallel loop
     DO JF=1,KF_SCALARS
@@ -124,7 +133,7 @@ IF( LATLON.AND.S%LDLL ) THEN
         
         ! calculate amplitude and add phase shift then reconstruct A,B
         ZAMP = SQRT(PSCALAR(JF,IR)**2 + PSCALAR(JF,II)**2)
-        ZPHASE = ATAN2(PSCALAR(JF,II),PSCALAR(JF,IR)) + REAL(JM,JPRBT)*ZSHIFT
+        ZPHASE = ATAN2(PSCALAR(JF,II),PSCALAR(JF,IR)) + REAL(JM,JPRB)*ZSHIFT
         
         PSCALAR(2*JF-1,IR) =  ZAMP*COS(ZPHASE)
         PSCALAR(2*JF,  Ir) = ZAMP*SIN(ZPHASE)
@@ -138,7 +147,7 @@ IF( LATLON.AND.S%LDLL ) THEN
           II = IR+1          
           ! calculate amplitude and phase shift and reconstruct A,B
           ZAMP = SQRT(PNSDERS(JF,IR)**2 + PNSDERS(JF,II)**2)
-          ZPHASE = ATAN2(PNSDERS(JF,II),PNSDERS(JF,IR)) + REAL(JM,JPRBT)*ZSHIFT
+          ZPHASE = ATAN2(PNSDERS(JF,II),PNSDERS(JF,IR)) + REAL(JM,JPRB)*ZSHIFT
           PNSDERS(2*JF-1,IR) =  ZAMP*COS(ZPHASE)
           PNSDERS(2*JF,  Ir) = ZAMP*SIN(ZPHASE)
         ENDDO
@@ -151,7 +160,7 @@ IF( LATLON.AND.S%LDLL ) THEN
         II = IR+1
         ! calculate amplitude and phase shift and reconstruct A,B
         ZAMP = SQRT(PUV(JF,IR)**2 + PUV(JF,II)**2)
-        ZPHASE = ATAN2(PUV(JF,II),PUV(JF,IR)) + REAL(JM,JPRBT)*ZSHIFT
+        ZPHASE = ATAN2(PUV(JF,II),PUV(JF,IR)) + REAL(JM,JPRB)*ZSHIFT
         PUV(2*JF-1,IR) =  ZAMP*COS(ZPHASE)
         PUV(2*JF,  Ir) =  ZAMP*SIN(ZPHASE)
       ENDDO
@@ -203,8 +212,8 @@ IF(LUVDER)THEN
   DO JM=0,IMEN
     IR = ISTAGTF+2*JM+1
     DO JF=1,2*KF_UV
-      PUVDERS(2*JF-1,IR) = -PUV(2*JF,IR)*ZACHTE2*REAL(JM,JPRBT)
-      PUVDERS(2*JF,  IR) =  PUV(2*JF-1,IR)*ZACHTE2*REAL(JM,JPRBT)
+      PUVDERS(2*JF-1,IR) = -PUV(2*JF,IR)*ZACHTE2*REAL(JM,JPRB)
+      PUVDERS(2*JF,  IR) =  PUV(2*JF-1,IR)*ZACHTE2*REAL(JM,JPRB)
     ENDDO
   ENDDO
 ENDIF
@@ -216,8 +225,8 @@ IF(KF_SCDERS > 0)THEN
   DO JM=0,IMEN
     IR = ISTAGTF+2*JM+1
     DO JF=1,KF_SCALARS
-      PEWDERS(2*JF-1,IR) = -PSCALAR(2*JF,IR)*ZACHTE2*REAL(JM,JPRBT)
-      PEWDERS(2*JF,  IR) =  PSCALAR(2*JF-1,IR)*ZACHTE2*REAL(JM,JPRBT)
+      PEWDERS(2*JF-1,IR) = -PSCALAR(2*JF,IR)*ZACHTE2*REAL(JM,JPRB)
+      PEWDERS(2*JF,  IR) =  PSCALAR(2*JF-1,IR)*ZACHTE2*REAL(JM,JPRB)
     ENDDO
   ENDDO
 ENDIF

@@ -1,3 +1,12 @@
+! (C) Copyright 1998- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE PE2SET_MOD
 CONTAINS
 SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
@@ -60,7 +69,7 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !        Revision : 98-10-13 row ordering
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR       ,ONLY : LEQ_REGIONS, NPRGPEW, NPROC, NPRTRV
 USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS

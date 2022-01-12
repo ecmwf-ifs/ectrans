@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTINV_MOD
   CONTAINS
   SUBROUTINE LTINV(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,KLEI2,KDIM1,&
@@ -5,8 +14,8 @@ MODULE LTINV_MOD
    & PSPSC3A,PSPSC3B,PSPSC2 , &
    & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
-  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
   USE TPM_DIM         ,ONLY : R
   USE TPM_TRANS       ,ONLY : LDIVGP, LVORGP, NF_SC2, NF_SC3A, NF_SC3B, foubuf_in
@@ -114,13 +123,13 @@ MODULE LTINV_MOD
   EXTERNAL  FSPGL_PROC
   OPTIONAL  FSPGL_PROC
   
-  !REAL(KIND=JPRBT) :: ZEPSNM(d%nump,0:R%NTMAX+2)
+  !REAL(KIND=JPRB) :: ZEPSNM(d%nump,0:R%NTMAX+2)
 
   INTEGER(KIND=JPIM) :: IFC, ISTA, IIFC, IDGLU
   INTEGER(KIND=JPIM) :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
   INTEGER(KIND=JPIM) :: IFIRST, ILAST, IDIM1,IDIM3,J3
   
-  REAL(KIND=JPRB) :: ZHOOK_HANDLE
+  REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   !CHARACTER(LEN=10) :: CLHOOK
   
   

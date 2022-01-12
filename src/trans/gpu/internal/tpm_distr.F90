@@ -1,8 +1,17 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE TPM_DISTR
 
 ! Module for distributed memory environment.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
 
@@ -147,7 +156,7 @@ INTEGER(KIND=JPIM) :: NGPTOTG  ! Total number of grid columns on the Globe
 INTEGER(KIND=JPIM) :: NGPTOTMX ! Maximum number of grid columns on any of the PEs
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each PE.
 
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
+REAL(KIND=JPRB) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
 INTEGER(KIND=JPIM) :: IADJUST_D

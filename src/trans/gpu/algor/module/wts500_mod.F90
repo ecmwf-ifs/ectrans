@@ -2,11 +2,11 @@ MODULE WTS500_MOD
 CONTAINS
 SUBROUTINE WTS500(PX,PW,KN)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KN
-REAL(KIND=JPRBT),    INTENT(OUT) :: PX(:),PW(:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PX(:),PW(:)
 
 ! This routine returns a set of Gaussian nodes and weights for
 ! integrating the functions exp(lambda*x)dx over the range x=0 to x=infinity.

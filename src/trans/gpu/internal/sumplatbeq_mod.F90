@@ -1,3 +1,12 @@
+! (C) Copyright 2006- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SUMPLATBEQ_MOD
 CONTAINS
 SUBROUTINE SUMPLATBEQ(KDGSA,KDGL,KPROC,KPROCA,KLOENG,LDSPLIT,LDEQ_REGIONS,&
@@ -62,7 +71,7 @@ SUBROUTINE SUMPLATBEQ(KDGSA,KDGL,KPROC,KPROCA,KLOENG,LDSPLIT,LDEQ_REGIONS,&
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR       ,ONLY : MYPROC
 USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS
@@ -78,11 +87,11 @@ INTEGER(KIND=JPIM),INTENT(IN)  :: KDGL
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROC
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROCA
 INTEGER(KIND=JPIM),INTENT(IN)  :: KLOENG(KDGSA:KDGL)
-REAL(KIND=JPRBT),INTENT(IN)     :: PWEIGHT(:)
+REAL(KIND=JPRB),INTENT(IN)     :: PWEIGHT(:)
 LOGICAL,INTENT(IN)  :: LDSPLIT
 LOGICAL,INTENT(IN)  :: LDEQ_REGIONS
 LOGICAL,INTENT(INOUT)  :: LDWEIGHTED_DISTR
-REAL(KIND=JPRBT),INTENT(OUT)     :: PMEDIAP
+REAL(KIND=JPRB),INTENT(OUT)     :: PMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KRESTM
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KINDIC(KPROCA)
@@ -94,7 +103,7 @@ INTEGER(KIND=JPIM),INTENT(OUT)  :: KPROCAGP(KPROCA)
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: ICOMP, IGL, IMAXI, IMEDIA, IMEDIAP, ITOT, JA, JB, IA, JGL,&
             &ILAST,IREST,IPE,I2REGIONS,IGP
-REAL(KIND=JPRBT) :: ZMEDIA, ZCOMP
+REAL(KIND=JPRB) :: ZMEDIA, ZCOMP
 LOGICAL   :: LLDONE
 
 !      -----------------------------------------------------------------

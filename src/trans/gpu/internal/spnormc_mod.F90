@@ -1,9 +1,18 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SPNORMC_MOD
 CONTAINS
 SUBROUTINE SPNORMC(PSM,KFLD_G,KVSET,KMASTER,PGM)
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER
 
 USE TPM_DIM         ,ONLY : R
@@ -14,13 +23,13 @@ USE PE2SET_MOD      ,ONLY : PE2SET
 
 IMPLICIT NONE
 
-REAL(KIND=JPRBT)    ,INTENT(IN)  :: PSM(:,:)
+REAL(KIND=JPRB)    ,INTENT(IN)  :: PSM(:,:)
 INTEGER(KIND=JPIM) ,INTENT(IN)  :: KFLD_G
 INTEGER(KIND=JPIM) ,INTENT(IN)  :: KVSET(:)
 INTEGER(KIND=JPIM) ,INTENT(IN)  :: KMASTER
-REAL(KIND=JPRBT)    ,INTENT(OUT) :: PGM(:,0:)
+REAL(KIND=JPRB)    ,INTENT(OUT) :: PGM(:,0:)
 
-REAL(KIND=JPRBT) :: ZRECVBUF(KFLD_G*(R%NSMAX+1))
+REAL(KIND=JPRB) :: ZRECVBUF(KFLD_G*(R%NSMAX+1))
 INTEGER(KIND=JPIM) :: IFLDR(NPRTRV)
 
 INTEGER(KIND=JPIM) :: ISTOTAL,JFLD,ITAG,JROC,IMSGLEN,IRECVID

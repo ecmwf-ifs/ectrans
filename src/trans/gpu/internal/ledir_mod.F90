@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LEDIR_MOD
 CONTAINS
 SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,PSIA,POA1)
@@ -44,8 +53,8 @@ SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,PSIA,POA1)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRB
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX,R_NTMAX
 USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
 USE TPM_FIELDS      ,ONLY : F, &
@@ -73,14 +82,14 @@ INTEGER(KIND=JPIM) :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_FS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KLED2
 
-REAL(KIND=JPRBT),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: POA1(:,:,:)
+REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:,:)
 
 !     LOCAL VARIABLES
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK, IRET
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB) :: RRPELTMDIR = 100.0_JPRB
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 INTEGER :: ISTAT
 
@@ -101,8 +110,8 @@ KIFC = KFC
 !$ACC PARALLEL LOOP COLLAPSE(2)
 DO KMLOC=1,SIZE(ZAMAX,2)
   DO JK=1,SIZE(ZAMAX,1)
-    ZAMAX(JK,KMLOC) = 0.0_JPRBT
-    ZSMAX(JK,KMLOC) = 0.0_JPRBT
+    ZAMAX(JK,KMLOC) = 0.0_JPRB
+    ZSMAX(JK,KMLOC) = 0.0_JPRB
   ENDDO
 ENDDO
 
@@ -176,10 +185,10 @@ END DO
 CALL CUDA_TCGEMM_BATCHED( &
   & 'N', 'N', &
   & DTDZBA, TDZAA, DLDZBA, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & DZBST, DTDZBA, DLDZBA, &
   & ZAA, LDZAA, TDZAA, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & DZCAT, DTDZCA, DLDZCA, &
   & D_NUMP)
 !$ACC END HOST_DATA
@@ -274,10 +283,10 @@ END DO
 CALL CUDA_TCGEMM_BATCHED( &
   & 'N', 'N', &
   & DTDZBS, TDZAS, DLDZBS, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & DZBST, DTDZBS, DLDZBS, &
   & ZAS, LDZAS, TDZAS, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & DZCST, DTDZCS, DLDZCS, &
   & D_NUMP)
 !$ACC END HOST_DATA

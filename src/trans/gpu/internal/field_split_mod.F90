@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FIELD_SPLIT_MOD
 CONTAINS
 SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&
@@ -48,7 +57,7 @@ SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&
 !        Original : 01-01-03
 
 !     ------------------------------------------------------------------
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : NPROMATR
 !USE TPM_TRANS
@@ -59,7 +68,7 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: KBLK,KF_GP,KKF_UV_G
+INTEGER(KIND=JPIM), INTENT(IN)  :: KBLK,KF_GP,KKF_UV_G
 INTEGER(KIND=JPIM), INTENT(IN)  :: KVSETUV(:),KVSETSC(:)
 INTEGER(KIND=JPIM), INTENT(OUT) :: KSTUV_G,KENUV_G,KF_UV_G,KSTSC_G,KENSC_G,KF_SCALARS_G
 INTEGER(KIND=JPIM), INTENT(OUT) :: KSTUV,KENUV,KF_UV,KSTSC,KENSC,KF_SCALARS

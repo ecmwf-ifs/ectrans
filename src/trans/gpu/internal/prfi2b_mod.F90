@@ -1,3 +1,12 @@
+! (C) Copyright 1990- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE PRFI2B_MOD
   CONTAINS
   SUBROUTINE PRFI2B(KFIELD,PAIA,PSIA)
@@ -47,7 +56,7 @@ MODULE PRFI2B_MOD
   !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   USE TPM_DIM         ,ONLY : R, R_NDGNH, R_NDGL
   USE TPM_TRANS       ,ONLY : FOUBUF
@@ -59,7 +68,7 @@ MODULE PRFI2B_MOD
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
+  REAL(KIND=JPRB)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
   
   
   !     LOCAL INTEGER SCALARS
