@@ -18,9 +18,11 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
+ecbuild_find_package( NAME MPI QUIET )
 ecbuild_add_option( FEATURE MPI 
                     DESCRIPTION "Support for MPI distributed memory parallelism"
-                    CONDITION fiat_HAVE_MPI )
+                    CONDITION MPI_Fortran_FOUND )
+##                    CONDITION fiat_HAVE_MPI AND MPI_Fortran_FOUND )
 
 ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
@@ -57,6 +59,24 @@ ecbuild_add_option( FEATURE TRANSI
                     DEFAULT ON
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
+
+## olivier
+find_package(OpenACC REQUIRED)
+ecbuild_add_option( FEATURE ACC  
+                    REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" 
+                    DEFAULT OFF )
+enable_language( CUDA )
+find_package(CUDAToolkit REQUIRED)
+ecbuild_add_option( FEATURE GPU
+                    DEFAULT ON
+                    DESCRIPTION "Compile GPU version of ectrans"
+                    CONDITION HAVE_DOUBLE_PRECISION )
+set( OpenACC_Fortran_FLAGS "-acc" )
+set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -ta=tesla:lineinfo,deepcopy,fastmath" )
+set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -Mcuda" )
+# For debugging accelerator compilation
+# set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -Minfo=accel" )
+
 
 ectrans_find_lapack()
 

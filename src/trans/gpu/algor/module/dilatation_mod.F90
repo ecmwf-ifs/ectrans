@@ -3,7 +3,7 @@ MODULE DILATATION_MOD
 USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
 USE PARKIND2  ,ONLY : JPRH
 USE MPL_MODULE, ONLY : MPL_SEND, MPL_RECV
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 
 IMPLICIT NONE
 
@@ -69,7 +69,7 @@ INTEGER(KIND=JPIM) :: IGLS, IDGNH, JGL
 
 REAL(KIND=JPRH) :: Z_DLSINE,Z_DLTAN
 
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -185,7 +185,7 @@ REAL(KIND=JPRB) :: ZRPNM(2*((KNSMAX-KM+1)/2)+1,KDGNH+1)
 INTEGER(KIND=JPIM) :: IGLS, IR, IR2, JGL, JN, JS, JI, II, IOFF
 INTEGER(KIND=JPIM) :: ISMAXSUR
 
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -343,7 +343,7 @@ INTEGER(KIND=JPIM) :: ID1, ID2, JN1, JN2
 
 REAL(KIND=JPRB), ALLOCATABLE :: ZRESUL(:,:)
 
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
@@ -437,7 +437,7 @@ REAL(KIND=JPRB),   INTENT(IN) :: PMAXALL(0:)
 INTEGER(KIND=JPIM) :: JM
 REAL(KIND=JPRB) :: ZMAXRECV
 
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

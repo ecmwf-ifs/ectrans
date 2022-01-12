@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & FSPGL_PROC,&
  & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,&
@@ -131,7 +140,7 @@ USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV, MYPROC
 USE SET_RESOL_MOD     ,ONLY : SET_RESOL
 USE INV_TRANS_CTL_MOD ,ONLY : INV_TRANS_CTL
 USE ABORT_TRANS_MOD   ,ONLY : ABORT_TRANS
-USE YOMHOOK           ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK           ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 
 #ifdef _OPENACC
 use openacc
@@ -177,7 +186,7 @@ INTEGER(KIND=JPIM) :: IUBOUND(4),J
 INTEGER(KIND=JPIM) :: IF_UV,IF_UV_G,IF_SCALARS,IF_SCALARS_G,IF_FS,IF_GP,IF_OUT_LT
 INTEGER(KIND=JPIM) :: IF_SCDERS,IF_UV_PAR
 INTEGER(KIND=JPIM) :: IF_SC2_G,IF_SC3A_G2,IF_SC3A_G3,IF_SC3B_G2,IF_SC3B_G3
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 INTEGER(KIND=JPIM) :: JMLOC
 INTEGER(KIND=JPIM) :: unit_no,idevtype,numdevs,mygpu,mynum
 !     ------------------------------------------------------------------

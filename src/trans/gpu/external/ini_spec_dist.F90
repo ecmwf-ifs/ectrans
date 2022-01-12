@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
                     &KUMPP,KSPEC,KSPEC2,KSPEC2MX,KPOSSP,KMYMS)
 
@@ -43,7 +52,7 @@ SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 !ifndef INTERFACE
 USE SUWAVEDI_MOD    ,ONLY : SUWAVEDI
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 !endif INTERFACE
 
 IMPLICIT NONE
@@ -64,7 +73,7 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KMYMS(KSMAX+1)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KPOSSP(KPRTRW+1)
 
 !ifndef INTERFACE
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

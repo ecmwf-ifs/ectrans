@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTDIR_CTLAD_MOD
 CONTAINS
 SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
@@ -23,7 +32,7 @@ SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : LALLOPERM
 !USE TPM_DIM

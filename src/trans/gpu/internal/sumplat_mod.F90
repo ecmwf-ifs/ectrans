@@ -1,3 +1,12 @@
+! (C) Copyright 1995- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SUMPLAT_MOD
 CONTAINS
 SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
@@ -78,7 +87,7 @@ SUBROUTINE SUMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 !              not lelam features in new routine sumplatb.F
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEOMETRY    ,ONLY : G
 USE TPM_DISTR       ,ONLY : MYPROC
@@ -92,14 +101,14 @@ IMPLICIT NONE
 
 
 !     * DUMMY:
-REAL(KIND=JPRBT),INTENT(OUT)    :: PMEDIAP
+REAL(KIND=JPRB),INTENT(OUT)    :: PMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT) :: KMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT) :: KRESTM
 INTEGER(KIND=JPIM),INTENT(IN)  :: KDGL
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROC
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROCA
 INTEGER(KIND=JPIM),INTENT(IN)  :: KMYSETA
-REAL(KIND=JPRBT),INTENT(IN)     :: PWEIGHT(:)
+REAL(KIND=JPRB),INTENT(IN)     :: PWEIGHT(:)
 LOGICAL,INTENT(INOUT)          :: LDWEIGHTED_DISTR
 INTEGER(KIND=JPIM),INTENT(OUT) :: KFRSTLAT(:)
 INTEGER(KIND=JPIM),INTENT(OUT) :: KLSTLAT(:)

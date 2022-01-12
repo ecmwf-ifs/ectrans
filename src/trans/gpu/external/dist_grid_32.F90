@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 
 !**** *DIST_GRID_32* - Distribute global gridpoint array among processors
@@ -47,7 +56,7 @@ USE TPM_DISTR
 USE SET_RESOL_MOD
 USE DIST_GRID_32_CTL_MOD
 USE ABORT_TRANS_MOD
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 
 !endif INTERFACE
 
@@ -65,7 +74,7 @@ REAL(KIND=JPRM)             , INTENT(OUT) :: PGP(:,:,:)
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IFSEND,J,IUBOUND(3),IPROMA,IGPBLKS
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

@@ -1,3 +1,12 @@
+! (C) Copyright 1987- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE PRFI2AD_MOD
 CONTAINS
 SUBROUTINE PRFI2AD(KM,KMLOC,KF_FS,PAIA,PSIA)
@@ -55,7 +64,7 @@ SUBROUTINE PRFI2AD(KM,KMLOC,KF_FS,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE PRFI2BAD_MOD    ,ONLY : PRFI2BAD
 !
@@ -66,7 +75,7 @@ INTEGER(KIND=JPIM) , INTENT(IN) :: KM
 INTEGER(KIND=JPIM) , INTENT(IN) :: KMLOC
 INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS
 
-REAL(KIND=JPRBT) , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB) , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
 
 !     ------------------------------------------------------------------
 

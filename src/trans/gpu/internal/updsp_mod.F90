@@ -1,3 +1,12 @@
+! (C) Copyright 1988- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE UPDSP_MOD
 CONTAINS
 SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1,POA2, &
@@ -53,7 +62,7 @@ SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1,POA2, &
 !        MPP Group: 95-10-01 Support for Distributed Memory version
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
 USE TPM_DISTR       ,ONLY : D
@@ -67,8 +76,8 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_UV,KF_SCALARS
 
-REAL(KIND=JPRBT) , INTENT(IN)  :: POA1(:,:,:)
-REAL(KIND=JPRBT) , INTENT(IN)  :: POA2(:,:,:)
+REAL(KIND=JPRB) , INTENT(IN)  :: POA1(:,:,:)
+REAL(KIND=JPRB) , INTENT(IN)  :: POA2(:,:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)

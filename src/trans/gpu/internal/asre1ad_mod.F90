@@ -1,8 +1,17 @@
+! (C) Copyright 2001- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE ASRE1AD_MOD
 CONTAINS
 SUBROUTINE ASRE1AD(KM,KMLOC,KF_OUT_LT,PAOA1,PSOA1)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !USE TPM_TRANS
 
@@ -64,7 +73,7 @@ INTEGER(KIND=JPIM) , INTENT(IN)  :: KM
 INTEGER(KIND=JPIM) , INTENT(IN)  :: KMLOC
 INTEGER(KIND=JPIM) , INTENT(IN)  :: KF_OUT_LT
 
-REAL(KIND=JPRBT)    , INTENT(OUT) :: PSOA1(:,:),       PAOA1(:,:)
+REAL(KIND=JPRB)    , INTENT(OUT) :: PSOA1(:,:),       PAOA1(:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IFLDS

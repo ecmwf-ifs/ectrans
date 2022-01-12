@@ -1,3 +1,12 @@
+! (C) Copyright 1987- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTDIR_MOD
   CONTAINS
   SUBROUTINE LTDIR(KF_FS,KF_UV,KF_SCALARS,KLED2,&
@@ -6,8 +15,8 @@ MODULE LTDIR_MOD
    & KFLDPTRUV,KFLDPTRSC)
   
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
-  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
   USE TPM_DIM         ,ONLY : R
   USE TPM_DISTR       ,ONLY : D
@@ -113,7 +122,7 @@ MODULE LTDIR_MOD
   INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
   INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
   
-  REAL(KIND=JPRB) :: ZHOOK_HANDLE
+  REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   
   
   !call cudaProfilerStart

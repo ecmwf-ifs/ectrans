@@ -1,3 +1,12 @@
+! (C) Copyright 1990- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE PRFI2BAD_MOD
 CONTAINS
 SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
@@ -47,7 +56,7 @@ SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : FOUBUF
@@ -58,7 +67,7 @@ USE TPM_DISTR       ,ONLY : D
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD,KM,KMLOC
-REAL(KIND=JPRBT)  , INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB)  , INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IGLS,  ISL, ISTAN, ISTAS, JF, JGL

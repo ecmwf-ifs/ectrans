@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE UPDSPB_VD_MOD
 CONTAINS
 SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
@@ -44,7 +53,7 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   
   
@@ -104,16 +113,16 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
                    IR = 2*JFLD-1
                    PSPVOR(JFLD,INM)   = ZOA2(IVORS+IR-1,JN,KMLOC)
                    PSPDIV(JFLD,INM)   = ZOA2(IDIVS+IR-1,JN,KMLOC)
-                   PSPVOR(JFLD,INM+1) = 0.0_JPRBT
-                   PSPDIV(JFLD,INM+1) = 0.0_JPRBT
+                   PSPVOR(JFLD,INM+1) = 0.0_JPRB
+                   PSPDIV(JFLD,INM+1) = 0.0_JPRB
                 end if
                 IF(PRESENT(KFLDPTR)) THEN
                   IFLD = KFLDPTR(JFLD)
-                  PSPVOR(IFLD,IASM0) = 0.0_JPRBT
-                  PSPDIV(IFLD,IASM0) = 0.0_JPRBT
+                  PSPVOR(IFLD,IASM0) = 0.0_JPRB
+                  PSPDIV(IFLD,IASM0) = 0.0_JPRB
                 ELSE
-                  PSPVOR(JFLD,IASM0) = 0.0_JPRBT
-                  PSPDIV(JFLD,IASM0) = 0.0_JPRBT
+                  PSPVOR(JFLD,IASM0) = 0.0_JPRB
+                  PSPDIV(JFLD,IASM0) = 0.0_JPRB
                 ENDIF
 
              ELSE

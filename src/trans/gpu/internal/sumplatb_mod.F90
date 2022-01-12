@@ -1,3 +1,12 @@
+! (C) Copyright 1998- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SUMPLATB_MOD
 CONTAINS
 SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
@@ -56,7 +65,7 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPIM, JPIB, JPRBT
+USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
 USE TPM_DISTR
 USE ABORT_TRANS_MOD
@@ -84,7 +93,7 @@ INTEGER(KIND=JPIM) :: ILATS(KPROCA)
 INTEGER(KIND=JPIM) :: ICOMP, IGL, JA, JGL, ILAST, IREST, IA
 INTEGER(KIND=JPIM) :: ITOT_TOP, ITOT_BOT, IGL_TOP, IGL_BOT
 INTEGER(KIND=JPIB) :: IMEDIA,ITOT
-REAL(KIND=JPRBT) :: ZLG
+REAL(KIND=JPRB) :: ZLG
 LOGICAL   :: LLDONE,LLSIMPLE
 
 !      -----------------------------------------------------------------

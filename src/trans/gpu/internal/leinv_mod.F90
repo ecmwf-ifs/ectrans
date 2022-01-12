@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LEINV_MOD
 CONTAINS
 SUBROUTINE LEINV(KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
@@ -44,8 +53,8 @@ SUBROUTINE LEINV(KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
   
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRB
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX
 USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
 USE TPM_FIELDS      ,ONLY : F, &
@@ -72,8 +81,8 @@ INTEGER(KIND=JPIM)  :: KIFC
 INTEGER(KIND=JPIM)  :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_OUT_LT
 REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: PSOA1(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: PAOA1(:,:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PSOA1(:,:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PAOA1(:,:,:)
 
 !     LOCAL
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI, IRET
@@ -82,7 +91,7 @@ REAL(KIND=JPRB) :: RRPELTMINV = 100.0_JPRB
 
 INTEGER :: ISTAT
 
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
   
   
@@ -112,8 +121,8 @@ DO KMLOC=1,D_NUMP
          
          KM = D_MYMS(KMLOC)
          IF(KM == 0)THEN
-            PSOA1(J1,JGL,KMLOC) = 0.0_JPRBT
-            PAOA1(J1,JGL,KMLOC) = 0.0_JPRBT
+            PSOA1(J1,JGL,KMLOC) = 0.0_JPRB
+            PAOA1(J1,JGL,KMLOC) = 0.0_JPRB
          END IF
       ENDDO
    ENDDO
@@ -124,8 +133,8 @@ END DO
 !$ACC PARALLEL LOOP COLLAPSE(2)
 DO KMLOC=1,SIZE(ZAMAX,2)
   DO JK=1,SIZE(ZAMAX,1)
-    ZAMAX(JK,KMLOC) = 0.0_JPRBT
-    ZSMAX(JK,KMLOC) = 0.0_JPRBT
+    ZAMAX(JK,KMLOC) = 0.0_JPRB
+    ZSMAX(JK,KMLOC) = 0.0_JPRB
   ENDDO
 ENDDO
 
@@ -194,17 +203,6 @@ DO KMLOC=1,D_NUMP
     ENDDO
   ENDDO
 ENDDO
-<<<<<<< HEAD
-!$ACC UPDATE SELF(IZBA)
-!$ACC UPDATE SELF(ZAMAX)
-!$ACC UPDATE SELF(ZAA)
-
-PRINT *, 'IZBA', IZBA(71,:,1)
-PRINT *, 'ZAMAX', ZAMAX(71,1)
-PRINT *, 'ZAA', ZAA(1,:,1)
-PRINT *, 'R_NSMAX', R_NSMAX
-=======
->>>>>>> 875cfc03bf93a787e19fc29214127df904a723ae
 
 ITHRESHOLD=S%ITHRESHOLD
 
@@ -212,20 +210,14 @@ ITHRESHOLD=S%ITHRESHOLD
 CALL CUDA_TCGEMM_BATCHED( &
   & 'N', 'T', &
   & ITDZCA, ILDZCA, ILDZBA, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & IZBA, ITDZBA, ILDZBA, &
   & ZAA, LDZAA, TDZAA, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & IZCST, ITDZCA, ILDZCA, &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-<<<<<<< HEAD
-!$ACC UPDATE SELF(IZCST)
-PRINT *, 'IZCST', IZCST(71,1,1)
-
-=======
->>>>>>> 875cfc03bf93a787e19fc29214127df904a723ae
 !$ACC KERNELS 
 DO KMLOC=1,D_NUMP
    DO JI=1,R_NDGNH
@@ -313,16 +305,6 @@ DO KMLOC=1,D_NUMP
     ENDDO
   ENDDO
 ENDDO
-<<<<<<< HEAD
-!$ACC UPDATE SELF(IZBS)
-!$ACC UPDATE SELF(ZSMAX)
-!$ACC UPDATE SELF(ZAS)
-
-PRINT *, 'IZBS', IZBS(1:160,1,1)
-PRINT *, 'ZSMAX', ZSMAX(1:160,1)
-PRINT *, 'ZAS', ZAS(1:160,1,1)
-=======
->>>>>>> 875cfc03bf93a787e19fc29214127df904a723ae
 
 !C=A*B =>
 ! C^T=B^T*A^T
@@ -331,20 +313,14 @@ PRINT *, 'ZAS', ZAS(1:160,1,1)
 CALL CUDA_TCGEMM_BATCHED( &
   & 'N', 'T', &
   & ITDZCS, ILDZCS, ILDZBS, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & IZBS, ITDZBS, ILDZBS, &
   & ZAS, LDZAS, TDZAS, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & IZCST, ITDZCS, ILDZCS, &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-<<<<<<< HEAD
-!$ACC UPDATE SELF(IZCST)
-PRINT *, 'IZCST', IZCST(1:160,1,1)
-
-=======
->>>>>>> 875cfc03bf93a787e19fc29214127df904a723ae
 !$ACC KERNELS 
 DO KMLOC=1,D_NUMP
    DO JI=1,R_NDGNH

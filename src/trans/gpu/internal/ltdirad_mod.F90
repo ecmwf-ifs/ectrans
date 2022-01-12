@@ -1,3 +1,12 @@
+! (C) Copyright 1987- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTDIRAD_MOD
 CONTAINS
 SUBROUTINE LTDIRAD(KM,KMLOC,KF_FS,KF_UV,KF_SCALARS,KLED2,&
@@ -6,7 +15,7 @@ SUBROUTINE LTDIRAD(KM,KMLOC,KF_FS,KF_UV,KF_SCALARS,KLED2,&
  & KFLDPTRUV,KFLDPTRSC)
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY
@@ -100,9 +109,9 @@ INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
 INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
 
 !     LOCAL REALS
-REAL(KIND=JPRBT) :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
-REAL(KIND=JPRBT) :: ZEPSNM(0:R%NTMAX+2)
-REAL(KIND=JPRBT) :: ZOA1(R%NLED4,KLED2),         ZOA2(R%NLED4,MAX(4*KF_UV,1))
+REAL(KIND=JPRB) :: ZSIA(KLED2,R%NDGNH),       ZAIA(KLED2,R%NDGNH)
+REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
+REAL(KIND=JPRB) :: ZOA1(R%NLED4,KLED2),         ZOA2(R%NLED4,MAX(4*KF_UV,1))
 
 
 !     ------------------------------------------------------------------
@@ -140,7 +149,7 @@ IF( KF_UV > 0 ) THEN
   IDIVS = 2*KF_UV+1
   IDIVE = 4*KF_UV
 ! SET PART OF ZOA1 CONTAINING U AND V TO 0.
-  ZOA1(:,IUS:IVE) = 0.0_JPRBT
+  ZOA1(:,IUS:IVE) = 0.0_JPRB
   CALL UVTVDAD(KM,KF_UV,ZEPSNM,ZOA1(:,IUS:IUE),ZOA1(:,IVS:IVE),&
    & ZOA2(:,IVORS:IVORE),ZOA2(:,IDIVS:IDIVE))
 ENDIF

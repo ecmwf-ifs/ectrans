@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 PROGRAM RGRID
 
 ! Purpose :
@@ -30,7 +39,7 @@ PROGRAM RGRID
 !-----------------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRD
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 USE MPL_MODULE
 
 
@@ -64,7 +73,7 @@ LOGICAL :: LLWRITE=.FALSE.! ZGR not written to file per task
 
 REAL(KIND=JPRBT) :: ZALIAS, ZORTHO
 
-REAL(KIND=JPRBT) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !-----------------------------------------------------------------------------
 
@@ -317,8 +326,8 @@ SUBROUTINE REDUCED_GRID(KULOUT,KULERR,KDGLG,KDLON,KSMAXG,KXMAX,KNMAX,PORTHO,PALI
 ! End Modifications
 !-----------------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOO,  JPHOOK
 
 IMPLICIT NONE
 
@@ -356,9 +365,9 @@ CHARACTER(LEN=13) :: CFILE
 
 LOGICAL :: LLODD, LLINEAR
 
-REAL(KIND=JPRBT) :: ZHOOK_HANDLE0
-REAL(KIND=JPRBT) :: ZHOOK_HANDLE1
-REAL(KIND=JPRBT) :: ZHOOK_HANDLE2
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE0
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE1
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE2
 
 
 #include "setup_trans0.h"

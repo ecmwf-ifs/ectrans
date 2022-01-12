@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE LTINVAD_MOD
 CONTAINS
 SUBROUTINE LTINVAD(KM,KMLOC,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,KLEI2,KDIM1,&
@@ -5,7 +14,7 @@ SUBROUTINE LTINVAD(KM,KMLOC,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,KLEI2,KDIM1,&
  & PSPSC3A,PSPSC3B,PSPSC2 , &
  & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : LDIVGP, LVORGP, NF_SC2, NF_SC3A, NF_SC3B
@@ -94,8 +103,8 @@ EXTERNAL  FSPGL_PROC
 OPTIONAL  FSPGL_PROC
 
 REAL(KIND=JPRB) :: ZIA(R%NLEI1,KLEI2)
-REAL(KIND=JPRBT) :: ZEPSNM(0:R%NTMAX+2)
-REAL(KIND=JPRBT) :: ZSOA1(KDIM1,R%NLEI3),ZAOA1(KDIM1,R%NLEI3)
+REAL(KIND=JPRB) :: ZEPSNM(0:R%NTMAX+2)
+REAL(KIND=JPRB) :: ZSOA1(KDIM1,R%NLEI3),ZAOA1(KDIM1,R%NLEI3)
 
 
 !     LOCAL INTEGER SCALARS
@@ -144,7 +153,7 @@ IF(KF_UV > 0 .AND. .NOT. LDIVGP) THEN
   ISTA = ISTA+2*KF_UV
 ENDIF
 
-ZIA(:,ISTA:ISTA+IFC-1) = 0.0_JPRBT
+ZIA(:,ISTA:ISTA+IFC-1) = 0.0_JPRB
 
 IDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 IIFC=IFC
@@ -158,7 +167,7 @@ CALL LEINVAD(KM,KMLOC,IFC,IIFC,KF_OUT_LT,IDGLU,ZIA(:,ISTA:ISTA+IFC-1),ZAOA1,ZSOA
 !*       3.    SPECTRAL COMPUTATIONS FOR U,V AND DERIVATIVES.
 !              ----------------------------------------------
 
-ZIA(:,1:ISTA-1) = 0.0_JPRBT
+ZIA(:,1:ISTA-1) = 0.0_JPRB
 
 IFIRST = 1
 ILAST  = 4*KF_UV

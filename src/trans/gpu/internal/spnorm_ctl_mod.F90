@@ -1,8 +1,17 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE SPNORM_CTL_MOD
 CONTAINS
 SUBROUTINE SPNORM_CTL(PSPEC,KFLD,KFLD_G,KVSET,KMASTER,PMET,PNORM)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_DISTR       ,ONLY : D, MYPROC, MYSETV
@@ -20,9 +29,9 @@ REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PNORM(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFLD,KFLD_G
 INTEGER(KIND=JPIM) :: IVSET(KFLD_G)
-REAL(KIND=JPRBT)    :: ZMET(0:R%NSMAX)
-REAL(KIND=JPRBT)    :: ZSM(KFLD,D%NUMP)
-REAL(KIND=JPRBT)    :: ZGM(KFLD_G,0:R%NSMAX)
+REAL(KIND=JPRB)    :: ZMET(0:R%NSMAX)
+REAL(KIND=JPRB)    :: ZSM(KFLD,D%NUMP)
+REAL(KIND=JPRB)    :: ZGM(KFLD_G,0:R%NSMAX)
 
 !     ------------------------------------------------------------------
 
@@ -35,7 +44,7 @@ ENDIF
 IF(PRESENT(PMET)) THEN
   ZMET(:) = PMET(:)
 ELSE
-  ZMET(:) = 1.0_JPRBT
+  ZMET(:) = 1.0_JPRB
 ENDIF
 
 CALL SPNORMD(PSPEC,KFLD,ZMET,ZSM)

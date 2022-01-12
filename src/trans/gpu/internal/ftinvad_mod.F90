@@ -1,3 +1,12 @@
+! (C) Copyright 2000- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE FTINVAD_MOD
 CONTAINS
 SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
@@ -35,7 +44,7 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPIB, JPRBT
+USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_DIM         ,ONLY : R
@@ -51,7 +60,7 @@ USE TPM_DIM         ,ONLY : R
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
-REAL(KIND=JPRBT), INTENT(OUT)  :: PREEL(:,:)
+REAL(KIND=JPRB), INTENT(OUT)  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN,ITYPE
@@ -90,7 +99,7 @@ IF( .NOT. TW%LFFTW )THEN
     CALL BLUESTEIN_FFT(TB,ILOEN,ITYPE,KFIELDS,PREEL(1:KFIELDS,IOFF:IOFF+ICLEN-1))
     DO JJ=1,ICLEN
       DO JF=1,KFIELDS
-        PREEL(JF,IOFF-1+JJ)=PREEL(JF,IOFF-1+JJ)/REAL(ILOEN,JPRBT)
+        PREEL(JF,IOFF-1+JJ)=PREEL(JF,IOFF-1+JJ)/REAL(ILOEN,JPRB)
       ENDDO
     ENDDO
 
@@ -106,7 +115,7 @@ ENDIF
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRBT
+    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRB
   ENDDO
 ENDDO
 
