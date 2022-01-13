@@ -8,7 +8,7 @@
 !
 
 MODULE TPM_FFT
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
 USE BLUESTEIN_MOD ,ONLY : FFTB_TYPE
 
 ! Module for Fourier transforms.
@@ -18,7 +18,7 @@ IMPLICIT NONE
 SAVE
 
 TYPE FFT_TYPE
-  REAL(KIND=JPRB)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values
+  REAL(KIND=JPRBT)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values
   INTEGER(KIND=JPIM),ALLOCATABLE :: NFAX(:,:)  ! list of factors of truncation
   LOGICAL                        :: LBLUESTEIN=.FALSE. ! logical indicating whether some
                                                        ! latitudes require bluestein algorithm

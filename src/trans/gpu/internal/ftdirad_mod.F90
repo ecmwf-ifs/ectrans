@@ -44,7 +44,7 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G
@@ -58,11 +58,11 @@ USE TPM_DIM         ,ONLY : R
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELDS,KGL
-REAL(KIND=JPRB), INTENT(INOUT) :: PREEL(:,:)
+REAL(KIND=JPRBT),  INTENT(INOUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN,ITYPE
-REAL(KIND=JPRB) :: ZMUL
+REAL(KIND=JPRBT) :: ZMUL
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 !     ------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ ICLEN = (IRLEN/2+1)*2
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRB
+    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRBT
   ENDDO
 ENDDO
 
@@ -107,7 +107,7 @@ ENDIF
 
   ! Change of metric (not in forward routine)
 
-ZMUL = 1.0_JPRB/ILOEN
+ZMUL = 1.0_JPRBT/ILOEN
 DO JJ=1,ILOEN
   DO JF=1,KFIELDS
     PREEL(JF,IOFF-1+JJ) = PREEL(JF,IOFF-1+JJ)*ZMUL

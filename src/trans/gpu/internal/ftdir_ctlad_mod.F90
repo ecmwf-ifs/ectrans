@@ -54,7 +54,7 @@ SUBROUTINE FTDIR_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
 
 !USE TPM_GEN
 !USE TPM_DIM
@@ -84,7 +84,7 @@ REAL(KIND=JPRB),OPTIONAL    , INTENT(OUT) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    , INTENT(OUT) :: PGP2(:,:,:)
 
 ! Local variables
-REAL(KIND=JPRB) :: ZGTF(KF_FS,D%NLENGTF)
+REAL(KIND=JPRBT) :: ZGTF(KF_FS,D%NLENGTF)
 
 
 INTEGER(KIND=JPIM) :: IST

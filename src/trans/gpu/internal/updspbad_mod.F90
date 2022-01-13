@@ -54,7 +54,7 @@ SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC,KFLDPTR)
 !        L. Isaksen : 95-06-06 Reordering of spectral arrays
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_DIM         ,ONLY : R
 !USE TPM_FIELDS
@@ -63,7 +63,7 @@ USE TPM_DISTR       ,ONLY : D
 
 IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN)    :: KM,KFIELD
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: POA(:,:)
+REAL(KIND=JPRBT)   ,INTENT(OUT)   :: POA(:,:)
 REAL(KIND=JPRB)   ,INTENT(INOUT) :: PSPEC(:,:)
 INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
 
@@ -93,7 +93,7 @@ ITMAX = R%NTMAX
 IASM0 = D%NASM0(KM)
 
 
-POA(:,:) = 0.0_JPRB
+POA(:,:) = 0.0_JPRBT
 
 !*       1.1   KM=0
 
@@ -105,7 +105,7 @@ IF(KM == 0) THEN
       DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
         INM = IASM0+(ITMAX+2-JN)*2
         POA(JN,IR) = PSPEC(IFLD,INM)
-        PSPEC(IFLD,INM) = 0.0_JPRB
+        PSPEC(IFLD,INM) = 0.0_JPRBT
       ENDDO
     ENDDO
   ELSE
@@ -116,7 +116,7 @@ IF(KM == 0) THEN
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
         POA(JN,IR) = PSPEC(JFLD,INM)
-        PSPEC(JFLD,INM) = 0.0_JPRB
+        PSPEC(JFLD,INM) = 0.0_JPRBT
       ENDDO
     ENDDO
   ENDIF
@@ -132,8 +132,8 @@ ELSE
         INM = IASM0+((ITMAX+2-JN)-KM)*2
         POA(JN,IR) = PSPEC(IFLD,INM)
         POA(JN,II) = PSPEC(IFLD,INM+1)
-        PSPEC(IFLD,INM)   = 0.0_JPRB
-        PSPEC(IFLD,INM+1) = 0.0_JPRB
+        PSPEC(IFLD,INM)   = 0.0_JPRBT
+        PSPEC(IFLD,INM+1) = 0.0_JPRBT
       ENDDO
     ENDDO
   ELSE
@@ -146,8 +146,8 @@ ELSE
         II = IR+1
         POA(JN,IR) = PSPEC(JFLD,INM)
         POA(JN,II) = PSPEC(JFLD,INM+1)
-        PSPEC(JFLD,INM)   = 0.0_JPRB
-        PSPEC(JFLD,INM+1) = 0.0_JPRB
+        PSPEC(JFLD,INM)   = 0.0_JPRBT
+        PSPEC(JFLD,INM+1) = 0.0_JPRBT
       ENDDO
     ENDDO
   ENDIF

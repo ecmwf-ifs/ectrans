@@ -56,7 +56,7 @@ SUBROUTINE UVTVDAD(KM,KFIELD,PEPSNM,PU,PV,PVOR,PDIV)
 !        D. Giard : NTMAX instead of NSMAX
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F
@@ -69,16 +69,16 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM), INTENT(IN)  :: KFIELD
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM
 
-REAL(KIND=JPRB), INTENT(IN)     :: PEPSNM(0:R%NTMAX+2)
-REAL(KIND=JPRB), INTENT(IN)     :: PVOR(:,:),PDIV(:,:)
-REAL(KIND=JPRB), INTENT(INOUT)  :: PU  (:,:),PV  (:,:)
+REAL(KIND=JPRBT), INTENT(IN)     :: PEPSNM(0:R%NTMAX+2)
+REAL(KIND=JPRBT), INTENT(IN)     :: PVOR(:,:),PDIV(:,:)
+REAL(KIND=JPRBT), INTENT(INOUT)  :: PU  (:,:),PV  (:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: II, IN, IR, J, JN, ITMAX
 
 !     LOCAL REAL SCALARS
-REAL(KIND=JPRB) :: ZKM
-REAL(KIND=JPRB) :: ZN(-1:R%NTMAX+3)
+REAL(KIND=JPRBT) :: ZKM
+REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+3)
 
 
 !     ------------------------------------------------------------------

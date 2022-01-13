@@ -56,7 +56,7 @@ MODULE PRFI2B_MOD
   !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
   
   USE TPM_DIM         ,ONLY : R, R_NDGNH, R_NDGL
   USE TPM_TRANS       ,ONLY : FOUBUF
@@ -68,7 +68,7 @@ MODULE PRFI2B_MOD
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRB)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
+  REAL(KIND=JPRBT)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
   
   
   !     LOCAL INTEGER SCALARS

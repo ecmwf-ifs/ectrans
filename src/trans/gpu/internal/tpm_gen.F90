@@ -11,7 +11,7 @@ MODULE TPM_GEN
 
 ! Module for general control variables.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
 
 IMPLICIT NONE
 

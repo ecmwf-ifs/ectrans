@@ -57,7 +57,7 @@ SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&
 !        Original : 01-01-03
 
 !     ------------------------------------------------------------------
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_GEN         ,ONLY : NPROMATR
 !USE TPM_TRANS
