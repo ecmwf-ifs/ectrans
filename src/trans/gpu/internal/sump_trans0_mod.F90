@@ -13,7 +13,7 @@ SUBROUTINE SUMP_TRANS0
 
 ! Set up distributed environment for the transform package (part 0)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 USE MPL_MODULE  ,ONLY : MPL_GROUPS_CREATE, MPL_MYRANK, MPL_NPROC
 
 USE TPM_GEN         ,ONLY : NOUT, LMPOFF, NPRINTLEV

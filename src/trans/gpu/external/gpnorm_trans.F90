@@ -49,7 +49,7 @@ SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB , JPRD
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB , JPRD
 
 !ifndef INTERFACE
 

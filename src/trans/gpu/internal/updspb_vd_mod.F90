@@ -53,7 +53,7 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
   
   
   
@@ -113,16 +113,16 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
                    IR = 2*JFLD-1
                    PSPVOR(JFLD,INM)   = ZOA2(IVORS+IR-1,JN,KMLOC)
                    PSPDIV(JFLD,INM)   = ZOA2(IDIVS+IR-1,JN,KMLOC)
-                   PSPVOR(JFLD,INM+1) = 0.0_JPRB
-                   PSPDIV(JFLD,INM+1) = 0.0_JPRB
+                   PSPVOR(JFLD,INM+1) = 0.0_JPRBT
+                   PSPDIV(JFLD,INM+1) = 0.0_JPRBT
                 end if
                 IF(PRESENT(KFLDPTR)) THEN
                   IFLD = KFLDPTR(JFLD)
-                  PSPVOR(IFLD,IASM0) = 0.0_JPRB
-                  PSPDIV(IFLD,IASM0) = 0.0_JPRB
+                  PSPVOR(IFLD,IASM0) = 0.0_JPRBT
+                  PSPDIV(IFLD,IASM0) = 0.0_JPRBT
                 ELSE
-                  PSPVOR(JFLD,IASM0) = 0.0_JPRB
-                  PSPDIV(JFLD,IASM0) = 0.0_JPRB
+                  PSPVOR(JFLD,IASM0) = 0.0_JPRBT
+                  PSPDIV(JFLD,IASM0) = 0.0_JPRBT
                 ENDIF
 
              ELSE

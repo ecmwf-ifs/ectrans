@@ -74,7 +74,7 @@ SUBROUTINE SUMPLATF(KDGL,KPROCA,KMYSETA,&
 !              not lelam features in new routine sumplatb.F
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_GEOMETRY    ,ONLY : G
 

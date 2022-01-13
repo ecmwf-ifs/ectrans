@@ -44,7 +44,7 @@ SUBROUTINE TRANS_PNM(KRESOL,KM,PRPNM,LDTRANSPOSE,LDCHEAP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRD, JPIM, JPRBT
+USE PARKIND_ECTRANS  ,ONLY : JPRD, JPIM, JPRBT
 
 !ifndef INTERFACE
 

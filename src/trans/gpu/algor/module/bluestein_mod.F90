@@ -1,3 +1,12 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE BLUESTEIN_MOD
 
 ! Implementation of the Bluestein FFT algorithm as described in a paper titled
@@ -8,7 +17,7 @@ MODULE BLUESTEIN_MOD
 !
 ! The naming convention follows the algorithm description in the above paper.
 !
-USE PARKIND1, ONLY : JPIM, JPRB
+USE PARKIND_ECTRANS, ONLY : JPIM, JPRB, JPRBT
 
 IMPLICIT NONE
 
@@ -17,13 +26,13 @@ PUBLIC BLUESTEIN_FFT, BLUESTEIN_INIT, BLUESTEIN_TERM, FFTB_TYPE
 
 TYPE FFTB_PLAN
   INTEGER(KIND=JPIM)             :: NSIZE          ! latitude length security check
-  REAL(KIND=JPRB),ALLOCATABLE :: HS(:,:,:)
-  REAL(KIND=JPRB),ALLOCATABLE :: H2xT(:,:,:)
+  REAL(KIND=JPRBT),ALLOCATABLE :: HS(:,:,:)
+  REAL(KIND=JPRBT),ALLOCATABLE :: H2xT(:,:,:)
 END TYPE FFTB_PLAN
 
 TYPE FFTB_TYPE
   INTEGER(KIND=JPIM) :: NDLON ! maximum number of points on a latitude
-  REAL(KIND=JPRB)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values (PO2)
+  REAL(KIND=JPRBT)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values (PO2)
   INTEGER(KIND=JPIM),ALLOCATABLE :: NFAX(:,:)  ! list of factors of truncation (PO2)
   INTEGER(KIND=JPIM)             :: NLAT_COUNT ! number of lats requiring bluestein FFT
   INTEGER(KIND=JPIM),ALLOCATABLE :: NLATS(:)   ! the latitude lengths of these latitudes
@@ -40,10 +49,10 @@ SUBROUTINE BLUESTEIN_FFT(TB,N,KSIGN,KLOT,PDAT)
 IMPLICIT NONE
 TYPE(FFTB_TYPE),INTENT(INOUT) :: TB
 INTEGER,INTENT(IN) :: N,KSIGN,KLOT
-REAL(KIND=JPRB),INTENT(INOUT)  :: PDAT (:,:)
-REAL(KIND=JPRB),ALLOCATABLE :: ZDATAR(:,:), ZDATAI(:,:),ZY(:,:)
-REAL(KIND=JPRB) :: ZR(KLOT),ZI(KLOT),ZX0(KLOT)
-REAL(KIND=JPRB) :: ZWR,ZWI
+REAL(KIND=JPRBT),INTENT(INOUT)  :: PDAT (:,:)
+REAL(KIND=JPRBT),ALLOCATABLE :: ZDATAR(:,:), ZDATAI(:,:),ZY(:,:)
+REAL(KIND=JPRBT) :: ZR(KLOT),ZI(KLOT),ZX0(KLOT)
+REAL(KIND=JPRBT) :: ZWR,ZWI
 INTEGER(KIND=JPIM) :: I,K,M,JLOT,NN,II,IR,IPO2
 INTEGER(KIND=JPIM) :: IJUMP,ILOT,IINC,ISIGN,IFFTSIGN
 
@@ -88,7 +97,7 @@ ELSEIF( KSIGN==1 )THEN
       ZDATAI(JLOT,K)=PDAT(JLOT,K*2+2)
       ZDATAI(JLOT,N-K) = -PDAT(JLOT,K*2+2)
     ENDDO
-    ZDATAI(JLOT,0)=0._JPRB
+    ZDATAI(JLOT,0)=0._JPRBT
   ENDDO
 
 ENDIF
@@ -128,7 +137,7 @@ ENDDO
 ! zero padding of Y
 
 DO I=N,(M/2+1)*2
-  ZY(:,I) = 0._JPRB
+  ZY(:,I) = 0._JPRBT
 ENDDO
 
 ! FFT of Y
@@ -228,7 +237,7 @@ INTEGER(KIND=JPIM) :: ICURR,IPREV
 INTEGER(KIND=JPIM) :: IJUMP,ILOT,IINC,IFFTSIGN
 
 LOGICAL :: LLUSEFFT992
-REAL(KIND=JPRB) :: DEL,ANGLE,ZSIGN
+REAL(KIND=JPRBT) :: DEL,ANGLE,ZSIGN
 
 ! determine number of PO2 FFT sizes needed by Bluestein FFTs
 M=1
@@ -288,7 +297,7 @@ DO JLAT=1,TB%NLAT_COUNT
   TB%FFTB(N)%NSIZE=N
 
 
-  DEL=2.0D0*ASIN(1.0D0)/REAL(N,JPRB)
+  DEL=2.0D0*ASIN(1.0D0)/REAL(N,JPRBT)
 
   ALLOCATE(TB%FFTB(N)%HS(2,0:N-1,2))
   ALLOCATE(TB%FFTB(N)%H2xT(2,0:(M/2+1)*2,2))
@@ -306,14 +315,14 @@ DO JLAT=1,TB%NLAT_COUNT
     ! conjugate bluestein sequence
 
     DO K=0,N-1
-      ANGLE=REAL(K*K,JPRB)*DEL
+      ANGLE=REAL(K*K,JPRBT)*DEL
       TB%FFTB(N)%HS(1,K,ISIGN)=COS(ANGLE)
       TB%FFTB(N)%HS(2,K,ISIGN)=ZSIGN*SIN(ANGLE)
     ENDDO
   
     DO K=0,(M/2+1)*2
-      TB%FFTB(N)%H2xT(1,K,ISIGN) = 0._JPRB
-      TB%FFTB(N)%H2xT(2,K,ISIGN) = 0._JPRB
+      TB%FFTB(N)%H2xT(1,K,ISIGN) = 0._JPRBT
+      TB%FFTB(N)%H2xT(2,K,ISIGN) = 0._JPRBT
     ENDDO
     TB%FFTB(N)%H2xT(1,0,ISIGN) = TB%FFTB(N)%HS(1,0,ISIGN)
     TB%FFTB(N)%H2xT(2,0,ISIGN) = TB%FFTB(N)%HS(2,0,ISIGN)
@@ -326,8 +335,8 @@ DO JLAT=1,TB%NLAT_COUNT
     ENDDO
     IF( M > 2*N-2 ) THEN
       DO K=N,M-N+1
-        TB%FFTB(N)%H2xT(1,K,ISIGN)   = 0._JPRB
-        TB%FFTB(N)%H2xT(2,K,ISIGN)   = 0._JPRB
+        TB%FFTB(N)%H2xT(1,K,ISIGN)   = 0._JPRBT
+        TB%FFTB(N)%H2xT(2,K,ISIGN)   = 0._JPRBT
       ENDDO
     ENDIF
 

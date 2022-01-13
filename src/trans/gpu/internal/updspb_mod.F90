@@ -54,7 +54,7 @@ MODULE UPDSPB_MOD
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
   
   USE TPM_DIM         ,ONLY : R,R_NSMAX,R_NTMAX
   !USE TPM_FIELDS
@@ -65,7 +65,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRB)   ,INTENT(IN)  :: POA(:,:,:)
+  REAL(KIND=JPRBT)   ,INTENT(IN)  :: POA(:,:,:)
   REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
@@ -109,7 +109,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
                    INM = IASM0+(R%NTMAX+2-JN)*2
                    IR = 2*JFLD-1
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
-                   PSPEC(JFLD,INM+1) = 0.0_JPRB
+                   PSPEC(JFLD,INM+1) = 0.0_JPRBT
                    
                 end if
              ELSE

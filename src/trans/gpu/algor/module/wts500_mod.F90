@@ -1,12 +1,21 @@
+! (C) Copyright 2014- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
 MODULE WTS500_MOD
 CONTAINS
 SUBROUTINE WTS500(PX,PW,KN)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KN
-REAL(KIND=JPRB),    INTENT(OUT) :: PX(:),PW(:)
+REAL(KIND=JPRBT),    INTENT(OUT) :: PX(:),PW(:)
 
 ! This routine returns a set of Gaussian nodes and weights for
 ! integrating the functions exp(lambda*x)dx over the range x=0 to x=infinity.

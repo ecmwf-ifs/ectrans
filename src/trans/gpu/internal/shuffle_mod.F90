@@ -54,7 +54,7 @@ SUBROUTINE SHUFFLE(KF_UV_G,KF_SCALARS_G,KSHFUV_G,KIVSETUV,KSHFSC_G,KIVSETSC,&
 !        Original : 01-01-03
 
 !     ------------------------------------------------------------------
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 !USE TPM_GEN
 !USE TPM_TRANS

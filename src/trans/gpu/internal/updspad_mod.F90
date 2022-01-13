@@ -62,7 +62,7 @@ SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 !        MPP Group: 95-10-01 Support for Distributed Memory version
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
@@ -78,8 +78,8 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KF_UV,KF_SCALARS
 
-REAL(KIND=JPRB) , INTENT(OUT)  :: POA1(:,:)
-REAL(KIND=JPRB) , INTENT(OUT)  :: POA2(:,:)
+REAL(KIND=JPRBT) , INTENT(OUT)  :: POA1(:,:)
+REAL(KIND=JPRBT) , INTENT(OUT)  :: POA2(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPVOR(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPSCALAR(:,:)
@@ -112,24 +112,24 @@ IF (KF_UV > 0) THEN
     IF(PRESENT(KFLDPTRUV)) THEN
       DO JFLD=1,KF_UV
         IFLD = KFLDPTRUV(JFLD)
-        PSPVOR(IFLD,D%NASM0(0)) = 0.0_JPRB
-        PSPDIV(IFLD,D%NASM0(0)) = 0.0_JPRB
+        PSPVOR(IFLD,D%NASM0(0)) = 0.0_JPRBT
+        PSPDIV(IFLD,D%NASM0(0)) = 0.0_JPRBT
       ENDDO
       DO JN=0,R%NSMAX
         ISE = 1+JN*2+1
         DO JFLD=1,KF_UV
           IFLD = KFLDPTRUV(JFLD)
-          PSPDIV(IFLD,ISE) = 0.0_JPRB
-          PSPVOR(IFLD,ISE) = 0.0_JPRB
+          PSPDIV(IFLD,ISE) = 0.0_JPRBT
+          PSPVOR(IFLD,ISE) = 0.0_JPRBT
         ENDDO
       ENDDO
     ELSE
-      PSPVOR(:,D%NASM0(0)) = 0.0_JPRB
-      PSPDIV(:,D%NASM0(0)) = 0.0_JPRB
+      PSPVOR(:,D%NASM0(0)) = 0.0_JPRBT
+      PSPDIV(:,D%NASM0(0)) = 0.0_JPRBT
       DO JN=0,R%NSMAX
         ISE = 1+JN*2+1
-        PSPDIV(:,ISE) = 0.0_JPRB
-        PSPVOR(:,ISE) = 0.0_JPRB
+        PSPDIV(:,ISE) = 0.0_JPRBT
+        PSPVOR(:,ISE) = 0.0_JPRBT
       ENDDO
     ENDIF
   ENDIF

@@ -10,7 +10,7 @@
 PROGRAM GPWIND_COS
 ! Nils Wedi 2010, ECMWF, test transform of vor-div to u/v on lat-lon
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
 
 USE GRIB_API
 USE MPL_MODULE

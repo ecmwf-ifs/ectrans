@@ -49,7 +49,7 @@ MODULE PREPSNM_MOD
   
   !     ------------------------------------------------------------------
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
   
   USE TPM_DIM         ,ONLY : R
   USE TPM_FIELDS      ,ONLY : F
@@ -60,8 +60,8 @@ MODULE PREPSNM_MOD
   IMPLICIT NONE
   
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRB),    INTENT(OUT) :: PEPSNM(1:d%nump,0:R%NTMAX+2)
-  !REAL(KIND=JPRB),    INTENT(OUT) :: PEPSNM(:,:)
+  REAL(KIND=JPRBT),    INTENT(OUT) :: PEPSNM(1:d%nump,0:R%NTMAX+2)
+  !REAL(KIND=JPRBT),    INTENT(OUT) :: PEPSNM(:,:)
   
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: JN
@@ -87,10 +87,10 @@ MODULE PREPSNM_MOD
      
      
      IF (KM > 0) THEN
-        !PEPSNM(0:KM-1) = 0.0_JPRB
+        !PEPSNM(0:KM-1) = 0.0_JPRBT
         !$ACC loop
         DO JN=0,KM-1
-           PEPSNM(KMLOC,JN) = 0.0_JPRB
+           PEPSNM(KMLOC,JN) = 0.0_JPRBT
         ENDDO
      ENDIF
   

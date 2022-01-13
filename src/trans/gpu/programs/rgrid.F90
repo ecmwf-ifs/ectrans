@@ -38,7 +38,7 @@ PROGRAM RGRID
 ! End Modifications
 !-----------------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRBT, JPRD
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT, JPRD
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
 USE MPL_MODULE
 
@@ -326,7 +326,7 @@ SUBROUTINE REDUCED_GRID(KULOUT,KULERR,KDGLG,KDLON,KSMAXG,KXMAX,KNMAX,PORTHO,PALI
 ! End Modifications
 !-----------------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOO,  JPHOOK
 
 IMPLICIT NONE
