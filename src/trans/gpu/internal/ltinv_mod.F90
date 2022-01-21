@@ -15,7 +15,7 @@ MODULE LTINV_MOD
    & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
   
   USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,   JPRBT
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
   USE TPM_DIM         ,ONLY : R
   USE TPM_TRANS       ,ONLY : LDIVGP, LVORGP, NF_SC2, NF_SC3A, NF_SC3B, foubuf_in
@@ -33,8 +33,9 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   USE FSPGL_INT_MOD   ,ONLY : FSPGL_INT
   USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
   use ieee_arithmetic
+  !USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1,ISTAN,ISTAS,ZEPSNM
+  USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1,ZEPSNM
   
-  USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1,ISTAN,ISTAS,ZEPSNM
   
   !**** *LTINV* - Inverse Legendre transform
   !
@@ -248,6 +249,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
      ISTA = ISTA+2*KF_UV
   ENDIF
 
+  IF( KF_OUT_LT > 0 ) THEN
   !call cudaProfilerStart
   CALL LEINV(IFC,KF_OUT_LT,ZIA(ISTA:ISTA+IFC-1,:,:),ZAOA1,ZSOA1)
   !call cudaProfilerStop
@@ -258,8 +260,8 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   !              --------------------------------------------
    
   !$ACC update host(ZAOA1,ZSOA1)
-  CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
-  
+  !CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
+  CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1)
   !     ------------------------------------------------------------------
   
   !     6. OPTIONAL COMPUTATIONS IN FOURIER SPACE
@@ -271,6 +273,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
      & KFLDPTRUV,KFLDPTRSC)
   ENDIF
   
+  ENDIF
   IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
   !     ------------------------------------------------------------------
   

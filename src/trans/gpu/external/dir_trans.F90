@@ -115,6 +115,7 @@ USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, LATLON, &
      &                      NF_SC2, NF_SC3A, NF_SC3B,        &
      &                      NGPBLKS, NPROMA
 USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
+USE TPM_FIELDS      ,ONLY : IF_FS_DIR,IF_FS_DIR0,NFLEV,NFLEV0,DTDZBA,DTDZBS,DTDZCA,DTDZCS
 USE TPM_FLT, ONLY: S
 USE TPM_GEOMETRY ,ONLY : G
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL
@@ -156,7 +157,7 @@ INTEGER(KIND=JPIM) :: IUBOUND(4),J
 INTEGER(KIND=JPIM) :: IF_UV,IF_UV_G,IF_SCALARS,IF_SCALARS_G,IF_FS,IF_GP
 INTEGER(KIND=JPIM) :: IF_SC2_G,IF_SC3A_G,IF_SC3B_G
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-INTEGER(KIND=JPIM) :: JMLOC
+INTEGER(KIND=JPIM) :: JMLOC, IF_PP
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS',0,ZHOOK_HANDLE)
@@ -308,6 +309,23 @@ IF_FS = 2*IF_UV + IF_SCALARS
 !ENDIF
 
 IF_GP = 2*IF_UV_G+IF_SCALARS_G
+
+! add additional post-processing requirements
+! (copied from setup_trans.F90. Or does this need to be different here than in setup_trans.F90?)
+!IF_PP = 2*NFLEV
+!IF_PP = 0
+
+! How do I get the current number of levels? For now I use: (Andreas)
+!NFLEV = NFLEV0
+
+! set currently used array sizes for the GPU arrays: 
+IF_FS_DIR=2*IF_FS+2!2*(2*IF_UV+NFLEV+2+IF_PP)
+print*,"dir_trans: IF_FS_DIR=",IF_FS_DIR," IF_FS_DIR0=",IF_FS_DIR0
+
+DTDZBA=IF_FS_DIR
+DTDZBS=IF_FS_DIR
+DTDZCA=IF_FS_DIR
+DTDZCS=IF_FS_DIR
 
 ! Consistency checks
 

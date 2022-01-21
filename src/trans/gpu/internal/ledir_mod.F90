@@ -9,7 +9,7 @@
 
 MODULE LEDIR_MOD
 CONTAINS
-SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,PSIA,POA1)
+SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,POA1,KMODE)
 
 !**** *LEDIR* - Direct Legendre transform.
 
@@ -61,12 +61,14 @@ USE TPM_FIELDS      ,ONLY : F, &
      & ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
      & DZBST,DLDZBA,DLDZBS,DTDZBA,DTDZBS,&
      & DZCST,DZCAT,DLDZCA,DLDZCS,DTDZCA,DTDZCS,&
-     & ZAMAX, ZSMAX
+     & ZAMAX, ZSMAX,&
+     & IF_FS_DIR,ZAA0,DZBST0,DZCAT0,ZAS0,DZCST0,KMLOC0
 USE TPM_DISTR
 USE TPM_GEN, ONLY: NOUT
 USE TPM_FLT
 USE BUTTERFLY_ALG_MOD
-USE CUDA_GEMM_BATCHED_MOD, ONLY: CUDA_TCGEMM_BATCHED, CUDA_GEMM_BATCHED
+USE CUDA_GEMM_BATCHED_MOD!!, ONLY: CUDA_TCGEMM_BATCHED, CUDA_GEMM_BATCHED
+USE CUBLAS_MOD, ONLY : CUDA_DGEMM_BATCHED
 USE, INTRINSIC :: ISO_C_BINDING
 USE IEEE_ARITHMETIC
 
@@ -81,8 +83,10 @@ INTEGER(KIND=JPIM)  :: KIFC
 INTEGER(KIND=JPIM) :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_FS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KLED2
+INTEGER(KIND=JPIM), INTENT(IN)  :: KMODE
 
-REAL(KIND=JPRBT),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
+REAL(KIND=JPRBT),    INTENT(IN)  :: PAIA(:,:,:)
+!REAL(KIND=JPRBT),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
 REAL(KIND=JPRBT),    INTENT(OUT) :: POA1(:,:,:)
 
 !     LOCAL VARIABLES
@@ -101,61 +105,25 @@ KIFC = KFC
 !$ACC DATA &
 !$ACC& COPY(F,F%RW) &
 !$ACC& COPY(D,D_NUMP,D_MYMS,R,R_NDGNH,G,G_NDGLU,R_NSMAX,R_NTMAX) &
-!$ACC& PRESENT(PSIA,PAIA) &
+!$ACC& PRESENT(PAIA) &
 !$ACC& PRESENT(ZAA,ZAS,DZBST,DZCST,DZCAT) &
-!$ACC& PRESENT (ZAMAX,ZSMAX) &
-!$ACC& PRESENT(POA1)
+!$ACC& PRESENT(POA1) !&
+!! !$ACC& PRESENT (ZAMAX,ZSMAX)
 
-! Initialize rescaling arrays to zero
-!$ACC PARALLEL LOOP COLLAPSE(2)
-DO KMLOC=1,SIZE(ZAMAX,2)
-  DO JK=1,SIZE(ZAMAX,1)
-    ZAMAX(JK,KMLOC) = 0.0_JPRBT
-    ZSMAX(JK,KMLOC) = 0.0_JPRBT
-  ENDDO
-ENDDO
+
+!! Initialize rescaling arrays to zero
+!!$ACC PARALLEL LOOP COLLAPSE(2)
+!DO KMLOC=1,SIZE(ZAMAX,2)
+!  DO JK=1,SIZE(ZAMAX,1)
+!    ZAMAX(JK,KMLOC) = 0.0_JPRBT
+!    ZSMAX(JK,KMLOC) = 0.0_JPRBT
+!  ENDDO
+!ENDDO
+
 
 ! anti-symmetric
-!$ACC PARALLEL
-!$ACC LOOP
-DO KMLOC=1,D_NUMP
-  !$ACC LOOP SEQ
-  DO J=1,R_NDGNH
-    !$ACC LOOP PRIVATE(KM,KDGLU,ISKIP)
-    DO JK=1,KFC
-      KM =  D_MYMS(KMLOC)
-      KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-      IF (J .LE. KDGLU) THEN
-        ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-        IF (KM == 0) THEN
-           ISKIP = 2
-        ELSE
-           ISKIP = 1
-        ENDIF
 
-        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-          ZAMAX((JK-1)/ISKIP+1,KMLOC) = MAX(ZAMAX((JK-1)/ISKIP+1,KMLOC), ABS(PAIA(JK,ISL+J-1,KMLOC)))
-        ENDIF
-      ENDIF
-    ENDDO
-  ENDDO
-ENDDO
-!$ACC END PARALLEL
-
-!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISKIP)
-DO KMLOC=1,D_NUMP
-   DO JK=1,KFC
-      KM =  D_MYMS(KMLOC)
-      IF (KM == 0) THEN
-         ISKIP = 2
-      ELSE
-         ISKIP = 1
-      ENDIF
-      IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-         IF (ZAMAX((JK-1)/ISKIP+1,KMLOC) < 100*EPSILON(1.0_JPRB)) ZAMAX((JK-1)/ISKIP+1,KMLOC) = RRPELTMDIR
-      ENDIF
-   ENDDO
-ENDDO
+IF ( KMODE == -1 ) THEN
 
 !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP)
 DO KMLOC=1,D_NUMP
@@ -173,7 +141,8 @@ DO KMLOC=1,D_NUMP
                ISKIP = 1
             ENDIF
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)*RRPELTMDIR/ZAMAX((JK-1)/ISKIP+1,KMLOC)
+!!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)*RRPELTMDIR/ZAMAX((JK-1)/ISKIP+1,KMLOC)
+               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
             END IF
          END IF
       ENDDO
@@ -181,11 +150,15 @@ DO KMLOC=1,D_NUMP
 END DO
 
 
+! Get C in transpose format to get better memory access patterns later
+!C=A*B =>
+! C^T=B^T*A^T
 !$ACC HOST_DATA USE_DEVICE(ZAA,DZBST,DZCAT)
 !!CALL CUDA_TCGEMM_BATCHED( &  !! tensor-core version
 CALL CUDA_GEMM_BATCHED( &
+!!call CUDA_DGEMM_STRIDED_BATCHED_1D_OVERLOAD( &
   & 'N', 'N', &
-  & DTDZBA, TDZAA, DLDZBA, &
+  & DTDZBA, int(TDZAA,kind=jpim), int(DLDZBA, kind=jpim), &
   & 1.0_JPRBT, &
   & DZBST, DTDZBA, DLDZBA, &
   & ZAA, LDZAA, TDZAA, &
@@ -194,7 +167,7 @@ CALL CUDA_GEMM_BATCHED( &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA)
+!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS)
 DO KMLOC=1,D_NUMP
    DO J=1,(R_NTMAX+2)/2
       DO JK=1,KFC
@@ -210,55 +183,67 @@ DO KMLOC=1,D_NUMP
             ILA = (R_NTMAX-KM+2)/2
             IA  = 1+MOD(R_NTMAX-KM+2,2)
             IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1,J,KMLOC)*ZAMAX((JK-1)/ISKIP+1,KMLOC)/RRPELTMDIR
+!!               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1,J,KMLOC)*ZAMAX((JK-1)/ISKIP+1,KMLOC)/RRPELTMDIR
+               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*TDZAA)*IF_FS_DIR)
             END IF
          END IF
       ENDDO
    ENDDO
 ENDDO
 
-! symmetric
-!$ACC PARALLEL
-!$ACC LOOP
-DO KMLOC=1,D_NUMP
-  !$ACC LOOP SEQ
-  DO J=1,R_NDGNH
-    !$ACC LOOP PRIVATE(KM,KDGLU,ISKIP)
-    DO JK=1,KFC
-      KM =  D_MYMS(KMLOC)
-      KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-      IF (J .LE. KDGLU) THEN
-        IF (KM == 0) THEN
-           ISKIP = 2
-        ELSE
-           ISKIP = 1
-        ENDIF
+! compute m=0 in double precision:
+IF(KMLOC0 > 0) THEN
+   print*,'computing m=0 in double precision'
+   ISKIP = 2
 
-        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-          ZSMAX((JK-1)/ISKIP+1,KMLOC) = MAX(ZSMAX((JK-1)/ISKIP+1,KMLOC), ABS(PSIA(JK,ISL+J-1,KMLOC)))
-        END IF
-      ENDIF
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP)
+  DO J=1,R_NDGNH
+    DO JK=1,KFC
+
+         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
+         IF (J .LE. KDGLU) THEN
+            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+               DZBST0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+            END IF
+         END IF
     ENDDO
   ENDDO
-ENDDO
-!$ACC END PARALLEL
 
-!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISKIP)
-DO KMLOC=1,D_NUMP
+
+  ! Get C in transpose format to get better memory access patterns later
+  !C=A*B =>
+  ! C^T=B^T*A^T
+
+  print *, 'ledir just before m0 dgemm call : ', shape(dzbst0), dzbst0(1)
+  !$ACC HOST_DATA USE_DEVICE(ZAA0,DZBST0,DZCAT0)
+  CALL CUDA_DGEMM_BATCHED('N','N',DTDZBA,int(TDZAA,kind=jpim),int(DLDZBA,kind=jpim), &
+        & 1.0_JPRD,DZBST0,DTDZBA,int(DLDZBA,kind=jpim),&
+        & ZAA0,LDZAA,int(TDZAA,kind=jpim),0._JPRD,DZCAT0,DTDZCA,int(DLDZCA,kind=jpim),1)
+  !call CUDA_DGEMM('N','N',DTDZBA,TDZAA,DLDZBA,1.0_JPRD,DZBST0,DTDZBA,&
+  !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
+  !$ACC END HOST_DATA
+
+            
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS)
+   DO J=1,(R_NTMAX+2)/2
    DO JK=1,KFC
-      KM =  D_MYMS(KMLOC)
-      IF (KM == 0) THEN
-         ISKIP = 2
-      ELSE
-         ISKIP = 1
-      ENDIF
-      IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-         IF (ZSMAX((JK-1)/ISKIP+1,KMLOC) < 100*EPSILON(1.0_JPRB)) ZSMAX((JK-1)/ISKIP+1,KMLOC) = RRPELTMDIR
-      ENDIF
+         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+            ILA = (R_NTMAX+2)/2
+            IA  = 1+MOD(R_NTMAX+2,2)
+            IF (J .LE. ILA) THEN
+               POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)
+            END IF
+         END IF
    ENDDO
 ENDDO
+ENDIF
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP)
+ELSE
+
+! symmetric
+
+!$acc parallel loop collapse(3) private(KM,KDGLU,ISL,ISKIP)
 DO KMLOC=1,D_NUMP
    DO J=1,R_NDGNH   
       DO JK=1,KFC
@@ -273,18 +258,23 @@ DO KMLOC=1,D_NUMP
                ISKIP = 1
             ENDIF
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)*RRPELTMDIR/ZSMAX((JK-1)/ISKIP+1,KMLOC)
+!!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)*RRPELTMDIR/ZSMAX((JK-1)/ISKIP+1,KMLOC)
+               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
             END IF
          END IF
       ENDDO
    ENDDO
 END DO
 
+! Get C in transpose format to get better memory access patterns later
+!C=A*B =>
+! C^T=B^T*A^T
 !$ACC HOST_DATA USE_DEVICE(ZAS,DZBST,DZCST)
 !!CALL CUDA_TCGEMM_BATCHED( & !! tensor-core version
 CALL CUDA_GEMM_BATCHED( &
+!!call CUDA_DGEMM_STRIDED_BATCHED_1D_OVERLOAD( &
   & 'N', 'N', &
-  & DTDZBS, TDZAS, DLDZBS, &
+  & DTDZBS, int(TDZAS,kind=jpim), int(DLDZBS,kind=jpim), &
   & 1.0_JPRBT, &
   & DZBST, DTDZBS, DLDZBS, &
   & ZAS, LDZAS, TDZAS, &
@@ -292,23 +282,6 @@ CALL CUDA_GEMM_BATCHED( &
   & DZCST, DTDZCS, DLDZCS, &
   & D_NUMP)
 !$ACC END HOST_DATA
-!    CHARACTER,                         INTENT(IN)  :: TRANSA
-!    CHARACTER,                         INTENT(IN)  :: TRANSB
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: M
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: N
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: K
-!    REAL(KIND=JPRD),                   INTENT(IN)  :: ALPHA
-!    REAL(KIND=JPRD), DIMENSION(:,:,:), INTENT(IN)  :: AARRAY
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: LDA
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: STRIDEA
-!    REAL(KIND=JPRD), DIMENSION(:,:,:), INTENT(IN)  :: BARRAY
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: LDB
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: STRIDEB
-!    REAL(KIND=JPRD),                   INTENT(IN)  :: BETA
-!    REAL(KIND=JPRD), DIMENSION(:,:,:), INTENT(OUT) :: CARRAY
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: LDC
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: STRIDEC
-!    INTEGER(KIND=JPIM),                INTENT(IN)  :: BATCHCOUNT
 
 !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS,IS)
 DO KMLOC=1,D_NUMP
@@ -326,14 +299,63 @@ DO KMLOC=1,D_NUMP
             ILS = (R_NTMAX-KM+3)/2
             IF (J .LE. ILS) THEN
                IS  = 1+MOD(R_NTMAX-KM+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1,J,KMLOC)*ZSMAX((JK-1)/ISKIP+1,KMLOC)/RRPELTMDIR
+!!               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1,J,KMLOC)*ZSMAX((JK-1)/ISKIP+1,KMLOC)/RRPELTMDIR
+               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*TDZAS)*IF_FS_DIR)            
             END IF
          END IF
       ENDDO
    ENDDO
 ENDDO
 
-!$ACC END DATA
+IF(KMLOC0 > 0) THEN
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL)
+   DO J=1,R_NDGNH   
+      DO JK=1,KFC
+         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
+         IF (J .LE. KDGLU) THEN
+            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+           IF (MOD((JK-1),ISKIP) .eq. 0) THEN
+               DZBST0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+           END IF
+         END IF
+      ENDDO
+   ENDDO
+
+      ! Get C in transpose format to get better memory access patterns later
+      !C=A*B =>
+      ! C^T=B^T*A^T
+      !call CUDA_GEMM_BATCHED('N','N',DTDZBS,TDZAS,DLDZBS,1.0_JPRB,DZBST,DTDZBS,INT(DTDZBS*DLDZBS,JPIB),&
+      !     &ZAS,LDZAS,INT(LDZAS*TDZAS,JPIB),0._JPRB,DZCST,DTDZCS,INT(DTDZCS*DLDZCS,JPIB),D_NUMP)
+
+      !$ACC host_data use_device(ZAS0,DZBST0,DZCST0)
+      call CUDA_DGEMM_BATCHED('N','N',&
+ &                            DTDZBS,int(TDZAS,kind=jpim),int(DLDZBS,kind=jpim),&
+ &                            1.0_JPRD,DZBST0,DTDZBS,int(DLDZBS,kind=jpim),&
+ &                            ZAS0,LDZAS,int(TDZAS,kind=jpim),&
+ &                            0._JPRD,DZCST0,DTDZCS,int(DLDZCS,kind=jpim),1)
+      !call CUDA_DGEMM('N','N',DTDZBS,TDZAS,DLDZBS,1.0_JPRD,DZBST0,DTDZBS,&
+      !      &ZAS0,LDZAS,0._JPRD,DZCST0,DTDZCS)
+      !$ACC end host_data
+
+   !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS)
+   DO J=1,(R_NTMAX+3)/2
+      DO JK=1,KFC
+         if (MOD((JK-1),ISKIP) .eq. 0) then
+            ILS = (R_NTMAX+3)/2
+            if (J .le. ILS) then
+               IS  = 1+MOD(R_NTMAX+1,2)
+               POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)            
+            end if
+         end if
+      ENDDO
+   ENDDO
+
+ENDIF
+
+ENDIF
+
+!$ACC end data
+
 
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
