@@ -17,7 +17,7 @@ IMPLICIT NONE
 SAVE
 
 TYPE FFT_TYPE
-  REAL(KIND=JPRBT)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values
+  REAL(KIND=JPRBT)  ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values
   INTEGER(KIND=JPIM),ALLOCATABLE :: NFAX(:,:)  ! list of factors of truncation
 END TYPE FFT_TYPE
 

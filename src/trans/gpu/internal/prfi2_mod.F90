@@ -91,7 +91,7 @@ USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
     !*       2.    EXTRACT SYM./ANTISYM. FIELDS FROM TIME T+1.
     !              -------------------------------------------
     
-    CALL PRFI2B(KF_FS,PAIA,PSIA)
+!    CALL PRFI2B(KF_FS,PAIA,PSIA)
     
     !     ------------------------------------------------------------------
     

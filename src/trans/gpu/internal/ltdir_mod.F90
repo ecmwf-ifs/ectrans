@@ -18,18 +18,18 @@ MODULE LTDIR_MOD
   USE PARKIND1  ,ONLY : JPIM     ,JPRB
   USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
-  USE TPM_DIM         ,ONLY : R
-  USE TPM_DISTR       ,ONLY : D
+  USE TPM_DIM     ,ONLY : R
+  USE TPM_DISTR   ,ONLY : D
   USE TPM_GEOMETRY
   
-  USE PREPSNM_MOD     ,ONLY : PREPSNM
-  USE PRFI2_MOD       ,ONLY : PRFI2
-  USE LDFOU2_MOD      ,ONLY : LDFOU2
-  USE LEDIR_MOD       ,ONLY : LEDIR
+  USE PREPSNM_MOD ,ONLY : PREPSNM
+  USE PRFI2B_MOD  ,ONLY : PRFI2B
+  USE LDFOU2_MOD  ,ONLY : LDFOU2
+  USE LEDIR_MOD   ,ONLY : LEDIR
   USE UVTVD_MOD
-  USE UPDSP_MOD       ,ONLY : UPDSP
+  USE UPDSP_MOD   ,ONLY : UPDSP
    
-  USE TPM_FIELDS      ,ONLY : ZSIA,ZAIA,ZOA1,ZOA2,ZEPSNM
+  USE TPM_FIELDS      ,ONLY : ZAIA,ZOA1,ZOA2,ZEPSNM
   
   !**** *LTDIR* - Control of Direct Legendre transform step
   
@@ -141,22 +141,23 @@ MODULE LTDIR_MOD
   !*       2.    PREPARE WORK ARRAYS.
   !              --------------------
   
-  CALL PRFI2(KF_FS,ZAIA,ZSIA)
-  !$ACC update device(ZAIA,ZSIA)
-  !     ------------------------------------------------------------------
+  ! serial to save memory, Nils
   
-  !*       3.    FOURIER SPACE COMPUTATIONS.
-  !              ---------------------------
+  ! anti-symmetric
   
-  CALL LDFOU2(KF_UV,ZAIA,ZSIA)
+  CALL PRFI2B(KF_FS,ZAIA,-1)
+  !$ACC update device(ZAIA)
+  CALL LDFOU2(KF_UV,ZAIA)
+  CALL LEDIR(KF_FS,KLED2,ZAIA,ZOA1,-1)
   
-  ! !     ------------------------------------------------------------------
   
-  ! !*       4.    DIRECT LEGENDRE TRANSFORM.
-  ! !              --------------------------
-  !call cudaProfilerStart
-  CALL LEDIR(KF_FS,KLED2,ZAIA,ZSIA,ZOA1)
-  !call cudaProfilerStop
+  ! symmetric
+
+  CALL PRFI2B(KF_FS,ZAIA,1)
+  !$ACC update device(ZAIA)
+  CALL LDFOU2(KF_UV,ZAIA)
+  CALL LEDIR(KF_FS,KLED2,ZAIA,ZOA1,1)
+
   !     ------------------------------------------------------------------
   
   !*       5.    COMPUTE VORTICITY AND DIVERGENCE.

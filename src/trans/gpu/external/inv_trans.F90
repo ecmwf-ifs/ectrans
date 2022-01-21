@@ -131,6 +131,7 @@ USE TPM_GEN         ,ONLY : NERR, NOUT, NPROMATR
 USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, LATLON,  &
      &                      NF_SC2, NF_SC3A, NF_SC3B, NGPBLKS, NPROMA
 
+USE TPM_FIELDS      ,ONLY : IF_FS_INV,IF_FS_INV0,ITDZBA,ITDZBS,ITDZCA,ITDZCS
 USE TPM_FLT, ONLY: S
 USE TPM_GEOMETRY ,ONLY : G
 !USE TPM_GEOMETRY
@@ -381,7 +382,7 @@ IF(IF_UV > 0 .AND. LUVDER) THEN
   IF_FS = IF_FS+2*IF_UV
 ENDIF
 ! importance related to cuFFT
-!D%IADJUST_I=0
+D%IADJUST_I=0
 !IF(MOD(IF_FS,2)==1) THEN
 !  IF_FS = IF_FS + 1
 !  D%IADJUST_I=1
@@ -406,6 +407,17 @@ IF(IF_UV_G > 0 .AND. LUVDER) THEN
   IF_GP = IF_GP+2*IF_UV_G
   IF_UV_PAR = IF_UV_PAR+2
 ENDIF
+
+! set currently used array sizes for the GPU arrays: 
+IF_FS_INV= 8*IF_UV + 2*IF_SCALARS + 2*IF_SCDERS
+!Andreas: we were using the previous line in setup_trans but this doesn't consider derivatives. Better:
+!IF_FS_INV=2*IF_OUT_LT
+print*,"inv_trans: IF_FS_INV=",IF_FS_INV," IF_FS_INV0=",IF_FS_INV0
+
+ITDZBA=IF_FS_INV
+ITDZBS=IF_FS_INV
+ITDZCA=IF_FS_INV
+ITDZCS=IF_FS_INV
 
 ! Consistency checks
 

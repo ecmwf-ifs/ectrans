@@ -8,7 +8,8 @@
 #include "cublas_v2.h" 
 
 
-bool alreadyAllocated=false;
+bool alreadyAllocated_dgemm=false;
+bool alreadyAllocated_dgemm_handle=false;
 
 double **d_Aarray;
 double **d_Barray;
@@ -18,7 +19,7 @@ double **Aarray;
 double **Barray;
 double **Carray;
 
-cublasHandle_t handle;	
+cublasHandle_t handle_dgemm;	
 
 extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, int tda, const double *B, int ldb, int tdb, double beta, double *C, int ldc, int tdc, int batchCount)
 {
@@ -42,15 +43,17 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
   //double **Carray = (double**) malloc(batchCount*sizeof(double*));
 
 
-  if (!alreadyAllocated){
 
-     stat = cublasCreate(&handle);
+  if (!alreadyAllocated_dgemm_handle){
+     stat = cublasCreate(&handle_dgemm);
      if (stat != CUBLAS_STATUS_SUCCESS) {
         printf ("CUBLAS initialization failed\n");
         //return EXIT_FAILURE;
     }
-    printf("cublascreate return code : %d\n",stat);
+  }
+  alreadyAllocated_dgemm_handle=true;
 
+  if (!alreadyAllocated_dgemm){
     cudaError_t errcm1 = cudaMallocHost(&Aarray,batchCount*sizeof(double*));
     cudaError_t errcm2 = cudaMallocHost(&Barray,batchCount*sizeof(double*));
     cudaError_t errcm3 = cudaMallocHost(&Carray,batchCount*sizeof(double*));
@@ -58,11 +61,8 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
     cudaError_t errcm4 = cudaMalloc(&d_Aarray,batchCount*sizeof(double*));
     cudaError_t errcm5 = cudaMalloc(&d_Barray,batchCount*sizeof(double*));
     cudaError_t errcm6 = cudaMalloc(&d_Carray,batchCount*sizeof(double*));
- 
-    printf("switched alreadyAllocated to true\n");
-    printf("Allocation statuses : %d %d %d %d %d %d\n", errcm1, errcm2, errcm3, errcm4, errcm5, errcm6 );
-    alreadyAllocated=true;
-  }
+   }
+  alreadyAllocated_dgemm=true;
 
   int i;
   for(i=0;i<batchCount;i++){
@@ -76,12 +76,9 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
   cudaError_t err3 = cudaMemcpy(d_Carray,Carray,batchCount*sizeof(double*),cudaMemcpyHostToDevice);
   cudaDeviceSynchronize();
 
-  printf("made it to the call to DgemmBatched ... are we already allocated? %d and err codes : %d %d %d \n",alreadyAllocated, err1, err2, err3);
-  printf("batchCount etc : %d \n%d %d %d \n%d %d\n%d %d\n%d %d\n",batchCount, m,n,k, lda, tda, ldb,tdb, ldc,tdc);
 
-  cublasDgemmBatched(handle,op_t1,op_t2,m,n,k,&alpha,(const double**) d_Aarray,lda, (const double**) d_Barray,ldb,&beta,(double**) d_Carray,ldc,batchCount);
+  cublasDgemmBatched(handle_dgemm,op_t1,op_t2,m,n,k,&alpha,(const double**) d_Aarray,lda, (const double**) d_Barray,ldb,&beta,(double**) d_Carray,ldc,batchCount);
 
-  //printf("after dgemm\n");
   cudaDeviceSynchronize();
   
   //cudaFree(Aarray);
@@ -91,9 +88,32 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
   //cudaFree(d_Aarray);
   //cudaFree(d_Barray);
   //cudaFree(d_Carray);
-  //cublasDestroy(handle);
+  //cublasDestroy(handle_dgemm);
   
   
+}
+
+extern "C" void cublasDgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, long long tda, const double *B, int ldb, long long tdb, double beta, double *C, int ldc, long long tdc, int batchCount)
+{
+
+
+  // printf("CUBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
+
+ 
+  cublasOperation_t op_t1=CUBLAS_OP_N, op_t2=CUBLAS_OP_N;
+
+  if (transa=='T' || transa=='t')       
+    op_t1=CUBLAS_OP_T;
+
+  if (transb=='T' || transb=='t')       
+    op_t2=CUBLAS_OP_T;
+
+  if (!alreadyAllocated_dgemm_handle){
+    cublasCreate(&handle_dgemm);
+    alreadyAllocated_dgemm_handle=true;
+  }
+  cublasDgemmStridedBatched(handle_dgemm,op_t1,op_t2,m,n,k,&alpha,(const double *) A,lda,tda, (const double *) B,ldb,tdb,&beta,(double *) C,ldc,tdc,batchCount);
+
 }
 
 extern "C" void cublasDgemmBatched_finalize ()
@@ -101,7 +121,7 @@ extern "C" void cublasDgemmBatched_finalize ()
 
 
 
-  if (alreadyAllocated){
+  if (alreadyAllocated_dgemm){
   
     cudaFree(Aarray);
     cudaFree(Barray);
@@ -110,8 +130,12 @@ extern "C" void cublasDgemmBatched_finalize ()
     cudaFree(d_Aarray);
     cudaFree(d_Barray);
     cudaFree(d_Carray);
-    cublasDestroy(handle);
+    if (alreadyAllocated_dgemm_handle){
+      cublasDestroy(handle_dgemm);
+    }
+    alreadyAllocated_dgemm_handle=false;
 
   }
+  alreadyAllocated_dgemm=false;
   
 }
