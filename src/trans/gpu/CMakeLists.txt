@@ -22,15 +22,13 @@ if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
 
+
 set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 set( FFTW_dp FFTW::fftw3  )
 set( FFTW_sp FFTW::fftw3f )
 
-### olivier
-  ##if( TARGET OpenACC::OpenACC_Fortran )
-    set( IFS_ACC_Fortran_LIBRARIES OpenACC::OpenACC_Fortran PARENT_SCOPE)
-  ##endif()
+set( IFS_ACC_Fortran_LIBRARIES OpenACC::OpenACC_Fortran PARENT_SCOPE)
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
@@ -62,6 +60,9 @@ foreach( prec sp dp )
     if( HAVE_OMP )
       target_link_libraries( trans_gpu_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
+    target_link_libraries( trans_gpu_${prec} PRIVATE OpenACC::OpenACC_Fortran )
+    set_property( TARGET trans_gpu_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
+    target_compile_options( trans_gpu_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
   endif()
 endforeach()
 
@@ -71,7 +72,7 @@ ecbuild_add_library( TARGET gpu
   SOURCES
             algor/module/cublasSgemmBatched.cu
             algor/module/cublasDgemmBatched.cu
-            algor/module/cublasSTCgemmBatched.cu
+##            algor/module/cublasSTCgemmBatched.cu
             algor/module/IPC_Alltoall.cu
             algor/external/fourier/destroy_plan_fftc.cu
             algor/external/fourier/create_plan_fftc.cu
@@ -81,7 +82,7 @@ ecbuild_add_library( TARGET gpu
 )
 
 ## CUDA architecture 
-set_property( TARGET gpu PROPERTY CUDA_ARCHITECTURES 72 ) 
+set_property( TARGET gpu PROPERTY CUDA_ARCHITECTURES 70 ) 
 
 
 ## Install trans interface
