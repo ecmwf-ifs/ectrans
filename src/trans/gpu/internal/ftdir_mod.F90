@@ -95,7 +95,10 @@ IMAX = G_NLOEN_MAX + 2 + R_NNOEXTZL
 
 
 allocate(zgtf2(size(zgtf,1),size(zgtf,2)))
-!$acc data create(zgtf2) present(zgtf)
+!$ACC DATA &
+!$ACC& PRESENT(ZGTF,D,D_NSTAGTF,D_NPTRLS,G_NMEN,G_NMEN_MAX,G_NLOEN,G_NLOEN_MAX,R_NNOEXTZL)
+
+!$ACC DATA CREATE(ZGTF2)
 
 !!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(KGL,IOFF,IGLG,IPLAN_R2C,istat)
 DO KGL=IBEG,IEND,IINC
@@ -115,16 +118,12 @@ END DO
 
 istat = cuda_Synchronize()
 
-!$acc kernels
+!$acc kernels DEFAULT(NONE)
 zgtf(:,:) = zgtf2(:,:)
 !$acc end kernels
 !$acc end data
 
-!$ACC data &
-!$ACC& COPY(D,D_NSTAGTF,D_NPTRLS,G_NMEN,G_NMEN_MAX,G_NLOEN,G_NLOEN_MAX,R_NNOEXTZL) &
-!$ACC& PRESENT(ZGTF)
-
-!$ACC parallel loop collapse(3) private(JMAX,KGL,IOFF,SCAL,IST)
+!$ACC parallel loop collapse(3) private(JMAX,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
 DO IGLG=IBEG+OFFSET_VAR-1,IEND+OFFSET_VAR-1,IINC
    DO JJ=1, IMAX
       DO JF=1,KFIELDS

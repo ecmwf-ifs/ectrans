@@ -144,9 +144,9 @@ MODULE LTDIR_MOD
   ! serial to save memory, Nils
   
   ! anti-symmetric
+
   
   CALL PRFI2B(KF_FS,ZAIA,-1)
-  !$ACC update host(ZAIA)
   CALL LDFOU2(KF_UV,ZAIA)
   CALL LEDIR(KF_FS,KLED2,ZAIA,ZOA1,-1)
   
@@ -154,7 +154,6 @@ MODULE LTDIR_MOD
   ! symmetric
 
   CALL PRFI2B(KF_FS,ZAIA,1)
-  !$ACC update host(ZAIA)
   CALL LDFOU2(KF_UV,ZAIA)
   CALL LEDIR(KF_FS,KLED2,ZAIA,ZOA1,1)
 
@@ -205,6 +204,7 @@ MODULE LTDIR_MOD
   
   !end loop over wavenumber
   !END DO
+
   
   !call cudaProfilerStop
   END SUBROUTINE LTDIR

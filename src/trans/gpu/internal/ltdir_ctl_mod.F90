@@ -66,12 +66,11 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
   
-  !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
-
   ! Transposition from Fourier space distribution to spectral space distribution
   ! requires currently both on the host !!!
 
   IBLEN = D%NLENGT0B*2*KF_FS
+   !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
   CALL GSTATS(153,0)
 #ifdef USE_CUDA_AWARE_MPI_FT
   WRITE(NOUT,*) 'ltdir_ctl:TRLTOM_CUDAAWARE'
@@ -95,11 +94,11 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
           & KFLDPTRUV,KFLDPTRSC)
   
   ENDIF
+   !$ACC END DATA
   CALL GSTATS(1645,1)
   
   CALL GSTATS(103,1)
   
-  !$ACC END DATA
   !     -----------------------------------------------------------------
   
   END SUBROUTINE LTDIR_CTL
