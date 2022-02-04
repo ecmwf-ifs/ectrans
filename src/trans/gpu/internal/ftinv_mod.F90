@@ -69,6 +69,8 @@ INTEGER(KIND=JPIM) :: IPLAN_C2R
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE
 integer :: istat,idev
 
+REAL(KIND=JPRBT), allocatable  :: PREEL2(:,:)
+
 !     ------------------------------------------------------------------
 
 
@@ -110,6 +112,9 @@ DO KGL=IBEG,IEND,IINC
 END DO
 !$ACC end data
 
+allocate(preel2(size(preel,1),size(preel,2)))
+!$acc data create(preel2) present(preel)
+
 !istat = cuda_GetDevice(idev)
 !istat = cuda_Synchronize()      
 !!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(istat,KGL,IOFF,IGLG,IPLAN_C2R)
@@ -120,8 +125,8 @@ DO KGL=IBEG,IEND,IINC
 !call cudaProfilerStop()
      !istat=cuda_SetDevice(idev)
      CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELDS)
-     !$ACC host_data use_device(PREEL)
-     CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff))
+     !$ACC host_data use_device(PREEL,PREEL2)
+     CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff),PREEL2(1, ioff))
      !$ACC end host_data
 !call cudaProfilerStart()
   !ENDIF
@@ -129,6 +134,11 @@ END DO
 !!$OMP END PARALLEL DO
 istat = cuda_Synchronize()      
 
+
+!$acc kernels
+preel(:,:) = preel2(:,:)
+!$acc end kernels
+!$acc end data
 !     ------------------------------------------------------------------
 
 END SUBROUTINE FTINV

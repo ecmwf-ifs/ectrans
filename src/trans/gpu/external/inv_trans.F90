@@ -409,9 +409,9 @@ IF(IF_UV_G > 0 .AND. LUVDER) THEN
 ENDIF
 
 ! set currently used array sizes for the GPU arrays: 
-IF_FS_INV= 8*IF_UV + 2*IF_SCALARS + 2*IF_SCDERS
+!IF_FS_INV= 8*IF_UV + 2*IF_SCALARS + 2*IF_SCDERS
 !Andreas: we were using the previous line in setup_trans but this doesn't consider derivatives. Better:
-!IF_FS_INV=2*IF_OUT_LT
+IF_FS_INV=2*IF_OUT_LT
 print*,"inv_trans: IF_FS_INV=",IF_FS_INV," IF_FS_INV0=",IF_FS_INV0
 
 ITDZBA=IF_FS_INV

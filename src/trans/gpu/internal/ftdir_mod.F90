@@ -75,6 +75,7 @@ LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts on
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISCAL
 INTEGER(KIND=JPIM) :: OFFSET_VAR, IUNIT, ISIZE, II, IMAX
 integer :: istat, idev
+real(kind=jprbt), allocatable :: zgtf2(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -92,6 +93,11 @@ OFFSET_VAR=D_NPTRLS(MYSETW)
 
 IMAX = G_NLOEN_MAX + 2 + R_NNOEXTZL
 
+
+allocate(zgtf2(size(zgtf,1),size(zgtf,2)))
+!$acc data create(zgtf2) present(zgtf)
+
+!!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(KGL,IOFF,IGLG,IPLAN_R2C,istat)
 DO KGL=IBEG,IEND,IINC
 
   IOFF=D%NSTAGTF(KGL)+1
@@ -101,13 +107,18 @@ DO KGL=IBEG,IEND,IINC
   !ICLEN=(IRLEN/2+1)*2
 
   CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G%NLOEN(IGLG),KFIELDS)
-  !$ACC host_data use_device(ZGTF)
-  CALL EXECUTE_PLAN_FFTC(IPLAN_R2C,-1,ZGTF(1,IOFF))
+  !$ACC host_data use_device(ZGTF,ZGTF2)
+  CALL EXECUTE_PLAN_FFTC(IPLAN_R2C,-1,ZGTF(1,IOFF),ZGTF2(1,IOFF))
   !$ACC end host_data
 END DO
 !!$OMP END PARALLEL DO
 
 istat = cuda_Synchronize()
+
+!$acc kernels
+zgtf(:,:) = zgtf2(:,:)
+!$acc end kernels
+!$acc end data
 
 !$ACC data &
 !$ACC& COPY(D,D_NSTAGTF,D_NPTRLS,G_NMEN,G_NMEN_MAX,G_NLOEN,G_NLOEN_MAX,R_NNOEXTZL) &

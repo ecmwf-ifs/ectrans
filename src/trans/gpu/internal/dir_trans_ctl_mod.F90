@@ -81,6 +81,8 @@ USE SHUFFLE_MOD     ,ONLY : SHUFFLE
 USE FIELD_SPLIT_MOD ,ONLY : FIELD_SPLIT
 USE LTDIR_CTL_MOD   ,ONLY : LTDIR_CTL
 USE FTDIR_CTL_MOD   ,ONLY : FTDIR_CTL
+USE TPM_TRANS       ,ONLY : ZGTF
+
 !
 
 IMPLICIT NONE
@@ -123,6 +125,9 @@ INTEGER(KIND=JPIM) :: JFLD,ISTSC_G,IENSC_G,ISTSC,IENSC,IENUV,IF_GPB
 !     ------------------------------------------------------------------
 
 ! Perform transform
+
+ZGTF(:,:) = 0
+!$acc update device(zgtf)
 
 IF_GPB = 2*KF_UV_G+KF_SCALARS_G
 IF(NPROMATR > 0 .AND. IF_GPB > NPROMATR) THEN

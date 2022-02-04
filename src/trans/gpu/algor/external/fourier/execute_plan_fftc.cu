@@ -57,9 +57,9 @@
 extern "C"
 void
 #ifdef TRANS_SINGLE
-execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftComplex *data )
+execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftComplex *data_in, cufftComplex *data_out)
 #else
-execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftDoubleComplex *data )
+execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftDoubleComplex *data_in, cufftDoubleComplex *data_out)
 #endif
 {
 cufftHandle plan = *PLANp;
@@ -72,16 +72,16 @@ int ISIGN = *ISIGNp;
 
 if( ISIGN== -1 ){
   #ifdef TRANS_SINGLE
-  cufftSafeCall(cufftExecR2C(plan, (cufftReal*)data, data));
+  cufftSafeCall(cufftExecR2C(plan, (cufftReal*)data_in, data_out));
   #else
-  cufftSafeCall(cufftExecD2Z(plan, (cufftDoubleReal*)data, data));
+  cufftSafeCall(cufftExecD2Z(plan, (cufftDoubleReal*)data_in, data_out));
   #endif
 }
 else if( ISIGN== 1){
   #ifdef TRANS_SINGLE
-  cufftSafeCall(cufftExecC2R(plan, data, (cufftReal*)data));
+  cufftSafeCall(cufftExecC2R(plan, data_in, (cufftReal*)data_out));
   #else
-  cufftSafeCall(cufftExecZ2D(plan, data, (cufftDoubleReal*)data));
+  cufftSafeCall(cufftExecZ2D(plan, data_in, (cufftDoubleReal*)data_out));
   #endif
 }
 else {

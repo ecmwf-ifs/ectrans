@@ -9,7 +9,7 @@
 
 MODULE PREPSNM_MOD
   CONTAINS
-  SUBROUTINE PREPSNM(PEPSNM)
+  SUBROUTINE PREPSNM
   
   
   !**** *PREPSNM* - Prepare REPSNM for wavenumber KM
@@ -52,7 +52,7 @@ MODULE PREPSNM_MOD
   USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
   
   USE TPM_DIM         ,ONLY : R
-  USE TPM_FIELDS      ,ONLY : F
+  USE TPM_FIELDS      ,ONLY : F, ZEPSNM
   USE TPM_DISTR       ,ONLY : D
   use tpm_gen, only: nout
   !
@@ -60,8 +60,7 @@ MODULE PREPSNM_MOD
   IMPLICIT NONE
   
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT),    INTENT(OUT) :: PEPSNM(1:d%nump,0:R%NTMAX+2)
-  !REAL(KIND=JPRBT),    INTENT(OUT) :: PEPSNM(:,:)
+  !!REAL(KIND=JPRB),    INTENT(INOUT) :: PEPSNM(:,:)
   
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: JN
@@ -75,33 +74,24 @@ MODULE PREPSNM_MOD
   
   
   
-  R_NTMAX = R%NTMAX
   
-  !$ACC data &
-  !$ACC& COPYIN(D,F,D%NPMT,D%NUMP,D%MYMS,F%REPSNM) &
-  !$ACC& present(PEPSNM)
-  
-  !$ACC parallel loop
+  !!!$ACC parallel loop
   DO KMLOC=1,D%NUMP
      KM = D%MYMS(KMLOC)
      
-     
      IF (KM > 0) THEN
-        !PEPSNM(0:KM-1) = 0.0_JPRBT
         !$ACC loop
         DO JN=0,KM-1
-           PEPSNM(KMLOC,JN) = 0.0_JPRBT
+           ZEPSNM(KMLOC,JN) = 0.0_JPRBT
         ENDDO
      ENDIF
   
-     !$ACC loop
-     DO JN=KM,R_NTMAX+2
-        PEPSNM(KMLOC,JN) = F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN)
+     DO JN=KM,R%NTMAX+2
+        ZEPSNM(KMLOC,JN) = F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN)
      ENDDO
      ! end loop over wavenumber
   END DO
-
-  !$ACC end data
+  !!!!$ACC end data
   
   !     ------------------------------------------------------------------
   
