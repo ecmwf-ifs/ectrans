@@ -16,6 +16,9 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ### Find (optional) dependencies 
 
+# olivier : to add ST driver 
+ecbuild_find_package( NAME eccodes REQUIRED)
+
 ecbuild_find_package( NAME fiat REQUIRED )
 
 ecbuild_find_package( NAME MPI QUIET )
@@ -66,11 +69,11 @@ ecbuild_add_option( FEATURE ACC
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" 
                     DEFAULT OFF )
 enable_language( CUDA )
-find_package(CUDAToolkit REQUIRED)
+##find_package(CUDAToolkit REQUIRED)
 ecbuild_add_option( FEATURE GPU
                     DEFAULT ON
-                    DESCRIPTION "Compile GPU version of ectrans"
-                    CONDITION HAVE_DOUBLE_PRECISION )
+                    DESCRIPTION "Compile GPU version of ectrans" )
+##                    CONDITION HAVE_DOUBLE_PRECISION )
 set( OpenACC_Fortran_FLAGS "-acc" )
 set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -ta=tesla:lineinfo,deepcopy,fastmath" )
 set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -Mcuda" )
