@@ -47,8 +47,8 @@ if( HAVE_GPU )
                                   fiat parkind_${prec}
                                   eccodes_f90 eccodes_memfs
                                   ${MPI_Fortran_LIBRARIES}
-                                  ${CMAKE_BINARY_DIR}/lib/libtrans_gpu_static_${prec}.a
-                                  ${CMAKE_BINARY_DIR}/lib/libgpu.a
+                                  trans_gpu_static_${prec}
+                                  gpu
                                   OpenACC::OpenACC_Fortran 
                                   ${LAPACK_LIBRARIES}
                           )

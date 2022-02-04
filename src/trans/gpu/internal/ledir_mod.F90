@@ -154,15 +154,14 @@ END DO
 !C=A*B =>
 ! C^T=B^T*A^T
 !$ACC HOST_DATA USE_DEVICE(ZAA,DZBST,DZCAT)
-!CALL CUDA_GEMM_BATCHED( &
-call CUDA_DGEMM_BATCHED_1D_OVERLOAD( &
+CALL CUDA_GEMM_BATCHED( &
   & 'N', 'N', &
-  & DTDZBA, int(TDZAA,kind=jpim), int(DLDZBA, kind=jpim), &
+  & DTDZBA, TDZAA, DLDZBA, &
   & 1.0_JPRBT, &
-  & DZBST, DTDZBA, int(DLDZBA,kind=jpim), &
-  & ZAA, LDZAA, int(TDZAA,kind=jpim), &
+  & DZBST, DTDZBA, DLDZBA, &
+  & ZAA, LDZAA, TDZAA, &
   & 0._JPRBT, &
-  & DZCAT, DTDZCA, int(DLDZCA,kind=jpim), &
+  & DZCAT, DTDZCA, DLDZCA, &
   & D_NUMP)
 !$ACC END HOST_DATA
 
@@ -270,15 +269,14 @@ END DO
 !C=A*B =>
 ! C^T=B^T*A^T
 !$ACC HOST_DATA USE_DEVICE(ZAS,DZBST,DZCST)
-!CALL CUDA_GEMM_BATCHED( &
-CALL CUDA_DGEMM_BATCHED_1D_OVERLOAD( &
+CALL CUDA_GEMM_BATCHED( &
   & 'N', 'N', &
-  & DTDZBS, int(TDZAS,kind=jpim), int(DLDZBS,kind=jpim), &
+  & DTDZBS, TDZAS, DLDZBS, &
   & 1.0_JPRBT, &
-  & DZBST, DTDZBS, int(DLDZBS, jpim), &
-  & ZAS, LDZAS, int(TDZAS, jpim), &
+  & DZBST, DTDZBS, DLDZBS, &
+  & ZAS, LDZAS, TDZAS, &
   & 0._JPRBT, &
-  & DZCST, DTDZCS, int(DLDZCS, jpim), &
+  & DZCST, DTDZCS, DLDZCS, &
   & D_NUMP)
 !$ACC END HOST_DATA
 
@@ -324,17 +322,13 @@ IF(KMLOC0 > 0) THEN
       ! Get C in transpose format to get better memory access patterns later
       !C=A*B =>
       ! C^T=B^T*A^T
-      !call CUDA_GEMM_BATCHED('N','N',DTDZBS,TDZAS,DLDZBS,1.0_JPRB,DZBST,DTDZBS,INT(DTDZBS*DLDZBS,JPIB),&
-      !     &ZAS,LDZAS,INT(LDZAS*TDZAS,JPIB),0._JPRB,DZCST,DTDZCS,INT(DTDZCS*DLDZCS,JPIB),D_NUMP)
 
       !$ACC host_data use_device(ZAS0,DZBST0,DZCST0)
       call CUDA_DGEMM_BATCHED('N','N',&
- &                            DTDZBS,int(TDZAS,kind=jpim),int(DLDZBS,kind=jpim),&
- &                            1.0_JPRD,DZBST0,DTDZBS,int(DLDZBS,kind=jpim),&
- &                            ZAS0,LDZAS,int(TDZAS,kind=jpim),&
- &                            0._JPRD,DZCST0,DTDZCS,int(DLDZCS,kind=jpim),1)
-      !call CUDA_DGEMM('N','N',DTDZBS,TDZAS,DLDZBS,1.0_JPRD,DZBST0,DTDZBS,&
-      !      &ZAS0,LDZAS,0._JPRD,DZCST0,DTDZCS)
+ &                            DTDZBS,TDZAS,DLDZBS,&
+ &                            1.0_JPRD,DZBST0,DTDZBS,DLDZBS,&
+ &                            ZAS0,LDZAS,TDZAS,&
+ &                            0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
       !$ACC end host_data
 
       !$ACC update self(DZCST0)
