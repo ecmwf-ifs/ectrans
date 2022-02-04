@@ -28,6 +28,39 @@ if( HAVE_TOOLS )
 
   endforeach()
 
+
+endif()
+
+
+set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
+set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
+
+if( HAVE_GPU )
+  foreach( prec sp dp )
+    if( HAVE_${prec} )
+      ecbuild_add_executable(TARGET  driver-spectrans-${prec}
+                             SOURCES driver-spectraltransform.F90
+                             INCLUDES
+                                  ${MPI_Fortran_INCLUDE_PATH}
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/gpu/include/ectrans>
+                             LIBS 
+                                  fiat parkind_${prec}
+                                  eccodes_f90 eccodes_memfs
+                                  ${MPI_Fortran_LIBRARIES}
+                                  ${CMAKE_BINARY_DIR}/lib/libtrans_gpu_static_${prec}.a
+                                  ${CMAKE_BINARY_DIR}/lib/libgpu.a
+                                  OpenACC::OpenACC_Fortran 
+                                  ${LAPACK_LIBRARIES}
+                          )
+      #target_link_libraries( driver-spectrans PRIVATE OpenACC::OpenACC_Fortran )
+      set_property( TARGET driver-spectrans-${prec} PROPERTY CUDA_ARCHITECTURES 70 )
+      target_compile_options( driver-spectrans-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic>  )
+      set_target_properties(driver-spectrans-${prec} PROPERTIES LINK_FLAGS "-acc -cudalib=cufft,cublas -fpic")
+      message("Building ${prec} GPU driver")
+    endif()
+  endforeach()
+else()
+  ecbuild_warn("HAVE_GPU false so not building GPU driver")
 endif()
 
 foreach( prec sp dp )
