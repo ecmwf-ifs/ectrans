@@ -84,27 +84,7 @@ MODULE PRFI2B_MOD
   !*       1.    EXTRACT SYM./ANTISYM. FIELDS FROM FOURIER ARRAY.
   !              ------------------------------------------------
  
-! debugging
-!iunit=300+myproc
-!DO KMLOC=1,D_NUMP
-!  DO JGL=1,R_NDGNH
-!     DO JF=1,KFIELD*2
-!           
-!           KM = D_MYMS(KMLOC)
-!           ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-         
-!            if (JGL .ge. ISL) then
-!               IGLS = R_NDGL+1-JGL
-!             
-!            OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL))+D_NPNTGTB1(KMLOC,JGL ))*2*KFIELD
-!            OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KFIELD
-!            !if( jf.eq.1 .and. km.eq.0 ) write(iunit,*) 'fft ',D_NPROCL(JGL),D_NSTAGT1B(D_NPROCL(JGL)),D_NPNTGTB1(KMLOC,JGL ),OFFSET1,JGL,KMLOC,FOUBUF(OFFSET1+JF)
-!         endif
-!      ENDDO
-!    ENDDO
-!  ENDDO
 
-!! !$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(KMLOC,JGL,JF,KM,ISL,IGLS,OFFSET1,OFFSET2) 
 !$ACC DATA PRESENT(PAIA,FOUBUF, D_NPNTGTB1,D_NSTAGT1B,D_MYMS,R_NDGL,R_NDGNH,G_NDGLU,D_NPROCL)
 
 !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2)
@@ -129,7 +109,6 @@ DO KMLOC=1,D_NUMP
 END DO
 
 !$ACC END DATA
-!! !$OMP END PARALLEL DO
   
   !     ------------------------------------------------------------------
   

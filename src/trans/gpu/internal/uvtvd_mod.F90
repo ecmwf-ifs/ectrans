@@ -93,12 +93,6 @@ IVORE = 2*KFIELD
 IDIVS = 2*KFIELD+1
 IDIVE = 4*KFIELD
 
-!$acc data&
-!$acc& create(ZN) &
-!$acc& copy(D_MYMS,D_NUMP,R_NTMAX) &
-!$acc& copy(F,F%RN,F%NLTN) &
-!$acc& present(ZEPSNM,ZOA1,ZOA2)
-
 !     ------------------------------------------------------------------
 
 !*       1.    COMPUTE U V FROM VORTICITY AND DIVERGENCE.
@@ -109,13 +103,19 @@ PV => ZOA1(IVS:IVE,:,:)
 PVOR => ZOA2(IVORS:IVORE,:,:)
 PDIV => ZOA2(IDIVS:IDIVE,:,:)
 
-!$acc parallel loop
+!$ACC DATA&
+!$ACC& CREATE(ZN) &
+!$ACC& COPY(D_MYMS,D_NUMP,R_NTMAX) &
+!$ACC& COPY(F,F%RN,F%NLTN) &
+!$ACC& PRESENT(ZEPSNM,PU,PV,PVOR,PDIV)
+
+!$ACC PARALLEL LOOP DEFAULT(NONE)
 DO J=-1,R_NTMAX+3
   ZN(j) = F%RN(j)
 ENDDO
 !*       1.1      SET N=KM-1 COMPONENT TO 0 FOR U AND V
 
-!$ACC parallel loop collapse(2) private(KM,IN)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IN) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
   DO J=1,2*KFIELD
     KM = D_MYMS(KMLOC)
@@ -128,7 +128,7 @@ ENDDO
 
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
 
-!$ACC parallel loop collapse(3) private(IR,II,IN,KM,ZKM)
+!$ACC parallel loop collapse(3) private(IR,II,IN,KM,ZKM) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
   DO JN=0,R_NTMAX
     DO J=1,KFIELD
