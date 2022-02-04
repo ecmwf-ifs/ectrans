@@ -37,6 +37,10 @@ foreach( prec sp dp )
       TARGET           trans_gpu_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
+                       algor/external/fourier/destroy_plan_fftc.cu
+                       algor/external/fourier/create_plan_fftc.cu
+                       algor/external/fourier/storage_fftc.cu
+                       algor/external/fourier/execute_plan_fftc.cu
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
@@ -51,6 +55,10 @@ foreach( prec sp dp )
       TARGET           trans_gpu_static_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
+                       algor/external/fourier/destroy_plan_fftc.cu
+                       algor/external/fourier/create_plan_fftc.cu
+                       algor/external/fourier/storage_fftc.cu
+                       algor/external/fourier/execute_plan_fftc.cu
       TYPE             STATIC
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
@@ -95,6 +103,10 @@ foreach( prec sp dp )
     target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenACC::OpenACC_Fortran )
     set_property( TARGET trans_gpu_static_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
 
+    if( prec STREQUAL sp )
+        target_compile_definitions( trans_gpu_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
+        target_compile_definitions( trans_gpu_static_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
+    endif()
 
   endif()
 endforeach()
@@ -107,10 +119,6 @@ ecbuild_add_library( TARGET gpu
             algor/module/cublasDgemmBatched.cu
 ##            algor/module/cublasSTCgemmBatched.cu
             algor/module/IPC_Alltoall.cu
-            algor/external/fourier/destroy_plan_fftc.cu
-            algor/external/fourier/create_plan_fftc.cu
-            algor/external/fourier/storage_fftc.cu
-            algor/external/fourier/execute_plan_fftc.cu
             PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
 )
 
