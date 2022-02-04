@@ -9,7 +9,7 @@
 
 MODULE PRFI1B_MOD
   CONTAINS
-  SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KFLDPTR)
+  SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
@@ -68,6 +68,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   INTEGER(KIND=JPIM) :: KM,KMLOC
   REAL(KIND=JPRB)   ,INTENT(IN)   :: PSPEC(:,:)
   REAL(KIND=JPRB)   ,INTENT(OUT)  :: PIA(:,:,:)
+  INTEGER(KIND=JPIM),INTENT(IN) :: KDIM
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
@@ -83,7 +84,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
    ! stop 'Error: code path not (yet) supported in GPU version'
    !$ACC DATA                                                     &
    !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTR)  &
-   !$ACC      present(PIA)                                        &
+   !$ACC      COPYOUT(PIA)                                        &
    !$ACC      COPYIN (PSPEC,KFLDPTR)
    
    !loop over wavenumber
@@ -125,14 +126,16 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
   ELSE
 
+   ! needs copyout rather than present on pia , otherwise cuda-memcheck error, Nils
+
    !$ACC DATA                                                     &
    !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R)          &
-   !$ACC      present(PIA)                                        &
+   !$ACC      COPYOUT(PIA)                                        &
    !$ACC      COPYIN (PSPEC)
 
    !loop over wavenumber
 
-   !$ACC parallel loop collapse(3) private(KM,ILCM,IOFF,INM,IR,II)
+   !$ACC parallel loop !!collapse(3) private(KM,ILCM,IOFF,INM,IR,II)
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
@@ -143,8 +146,10 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
                INM = IOFF+(ILCM-J)*2
                IR = 2*(JFLD-1)+1
                II = IR+1
+               IF( INM .LT. KDIM ) THEN
                PIA(IR,J+2,KMLOC) = PSPEC(JFLD,INM  )
                PIA(II,J+2,KMLOC) = PSPEC(JFLD,INM+1)
+               ENDIF
             end if
          ENDDO
       ENDDO
@@ -152,7 +157,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
       ! end loop over wavenumber
    END DO
 
-   !$ACC parallel loop collapse(2) private(KM,ILCM)
+   !$ACC parallel loop !!collapse(2) private(KM,ILCM)
    DO KMLOC=1,D_NUMP
       DO JFLD=1,2*KFIELDS
          KM = D_MYMS(KMLOC) 
@@ -167,6 +172,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
    !$ACC end data
   END IF   
 
+  !$ACC exit data delete(PSPEC)
   !     ------------------------------------------------------------------
   
   END SUBROUTINE PRFI1B

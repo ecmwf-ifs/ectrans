@@ -166,8 +166,7 @@ MODULE LTDIR_MOD
   IF( KF_UV > 0 ) THEN
         !stop 'Error: code path not (yet) supported in GPU version'
   
-     CALL PREPSNM(ZEPSNM)
-  
+     !!CALL PREPSNM
   
      IUS = 1
      IUE = 2*KF_UV

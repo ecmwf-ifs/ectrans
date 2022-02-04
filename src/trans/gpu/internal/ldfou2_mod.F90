@@ -85,8 +85,8 @@ IFLD = 4*KF_UV
 IF( IFLD > 0 ) THEN
 
 !$ACC data &
-!$ACC& present(PAIA) &
-!$ACC& COPY(F,F%RACTHE,D,D_NUMP,D_MYMS,R_NDGNH,R_NDGL,G_NDGLU)
+!$ACC& COPY(F,F%RACTHE,D,D_NUMP,D_MYMS,R_NDGNH,R_NDGL,G_NDGLU) &
+!$ACC& COPY(PAIA)
 
 !loop over wavenumber
 !$ACC parallel loop collapse(3) private(KM,ISL,IGLS)

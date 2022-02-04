@@ -53,7 +53,7 @@ SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,POA1,KMODE)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND_ECTRANS  ,ONLY : JPIM ,JPIB    ,JPRB,  JPRBT
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX,R_NTMAX
 USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
@@ -141,8 +141,8 @@ DO KMLOC=1,D_NUMP
                ISKIP = 1
             ENDIF
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-!!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)*RRPELTMDIR/ZAMAX((JK-1)/ISKIP+1,KMLOC)
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
+               !DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
+               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
             END IF
          END IF
       ENDDO
@@ -154,18 +154,19 @@ END DO
 !C=A*B =>
 ! C^T=B^T*A^T
 !$ACC HOST_DATA USE_DEVICE(ZAA,DZBST,DZCAT)
-!!CALL CUDA_TCGEMM_BATCHED( &  !! tensor-core version
-CALL CUDA_GEMM_BATCHED( &
-!!call CUDA_DGEMM_STRIDED_BATCHED_1D_OVERLOAD( &
+!CALL CUDA_GEMM_BATCHED( &
+call CUDA_DGEMM_BATCHED_1D_OVERLOAD( &
   & 'N', 'N', &
   & DTDZBA, int(TDZAA,kind=jpim), int(DLDZBA, kind=jpim), &
   & 1.0_JPRBT, &
-  & DZBST, DTDZBA, DLDZBA, &
-  & ZAA, LDZAA, TDZAA, &
+  & DZBST, DTDZBA, int(DLDZBA,kind=jpim), &
+  & ZAA, LDZAA, int(TDZAA,kind=jpim), &
   & 0._JPRBT, &
-  & DZCAT, DTDZCA, DLDZCA, &
+  & DZCAT, DTDZCA, int(DLDZCA,kind=jpim), &
   & D_NUMP)
 !$ACC END HOST_DATA
+
+!$ACC update self(DZCAT)
 
 !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS)
 DO KMLOC=1,D_NUMP
@@ -183,8 +184,7 @@ DO KMLOC=1,D_NUMP
             ILA = (R_NTMAX-KM+2)/2
             IA  = 1+MOD(R_NTMAX-KM+2,2)
             IF (J .LE. ILA) THEN
-!!               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1,J,KMLOC)*ZAMAX((JK-1)/ISKIP+1,KMLOC)/RRPELTMDIR
-               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*TDZAA)*IF_FS_DIR)
+               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
             END IF
          END IF
       ENDDO
@@ -204,7 +204,7 @@ IF(KMLOC0 > 0) THEN
          IF (J .LE. KDGLU) THEN
             ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
             END IF
          END IF
     ENDDO
@@ -215,7 +215,6 @@ IF(KMLOC0 > 0) THEN
   !C=A*B =>
   ! C^T=B^T*A^T
 
-  print *, 'ledir just before m0 dgemm call : ', shape(dzbst0), dzbst0(1)
   !$ACC HOST_DATA USE_DEVICE(ZAA0,DZBST0,DZCAT0)
   CALL CUDA_DGEMM_BATCHED('N','N',DTDZBA,int(TDZAA,kind=jpim),int(DLDZBA,kind=jpim), &
         & 1.0_JPRD,DZBST0,DTDZBA,int(DLDZBA,kind=jpim),&
@@ -224,6 +223,7 @@ IF(KMLOC0 > 0) THEN
   !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
   !$ACC END HOST_DATA
 
+  !$ACC update self(DZCAT0)
             
    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS)
    DO J=1,(R_NTMAX+2)/2
@@ -232,7 +232,7 @@ IF(KMLOC0 > 0) THEN
             ILA = (R_NTMAX+2)/2
             IA  = 1+MOD(R_NTMAX+2,2)
             IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)
+               POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*DTDZCA)
             END IF
          END IF
    ENDDO
@@ -258,8 +258,8 @@ DO KMLOC=1,D_NUMP
                ISKIP = 1
             ENDIF
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-!!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)*RRPELTMDIR/ZSMAX((JK-1)/ISKIP+1,KMLOC)
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
+!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
+               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
             END IF
          END IF
       ENDDO
@@ -270,18 +270,19 @@ END DO
 !C=A*B =>
 ! C^T=B^T*A^T
 !$ACC HOST_DATA USE_DEVICE(ZAS,DZBST,DZCST)
-!!CALL CUDA_TCGEMM_BATCHED( & !! tensor-core version
-CALL CUDA_GEMM_BATCHED( &
-!!call CUDA_DGEMM_STRIDED_BATCHED_1D_OVERLOAD( &
+!CALL CUDA_GEMM_BATCHED( &
+CALL CUDA_DGEMM_BATCHED_1D_OVERLOAD( &
   & 'N', 'N', &
   & DTDZBS, int(TDZAS,kind=jpim), int(DLDZBS,kind=jpim), &
   & 1.0_JPRBT, &
-  & DZBST, DTDZBS, DLDZBS, &
-  & ZAS, LDZAS, TDZAS, &
+  & DZBST, DTDZBS, int(DLDZBS, jpim), &
+  & ZAS, LDZAS, int(TDZAS, jpim), &
   & 0._JPRBT, &
-  & DZCST, DTDZCS, DLDZCS, &
+  & DZCST, DTDZCS, int(DLDZCS, jpim), &
   & D_NUMP)
 !$ACC END HOST_DATA
+
+!$ACC update self(DZCST)
 
 !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS,IS)
 DO KMLOC=1,D_NUMP
@@ -299,8 +300,7 @@ DO KMLOC=1,D_NUMP
             ILS = (R_NTMAX-KM+3)/2
             IF (J .LE. ILS) THEN
                IS  = 1+MOD(R_NTMAX-KM+1,2)
-!!               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1,J,KMLOC)*ZSMAX((JK-1)/ISKIP+1,KMLOC)/RRPELTMDIR
-               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*TDZAS)*IF_FS_DIR)            
+               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)            
             END IF
          END IF
       ENDDO
@@ -315,7 +315,7 @@ IF(KMLOC0 > 0) THEN
          IF (J .LE. KDGLU) THEN
             ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
            IF (MOD((JK-1),ISKIP) .eq. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
            END IF
          END IF
       ENDDO
@@ -337,6 +337,8 @@ IF(KMLOC0 > 0) THEN
       !      &ZAS0,LDZAS,0._JPRD,DZCST0,DTDZCS)
       !$ACC end host_data
 
+      !$ACC update self(DZCST0)
+
    !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS)
    DO J=1,(R_NTMAX+3)/2
       DO JK=1,KFC
@@ -344,7 +346,7 @@ IF(KMLOC0 > 0) THEN
             ILS = (R_NTMAX+3)/2
             if (J .le. ILS) then
                IS  = 1+MOD(R_NTMAX+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*IF_FS_DIR)            
+               POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
             end if
          end if
       ENDDO
