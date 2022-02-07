@@ -68,7 +68,8 @@ ELSE
   IINC=-1
 ENDIF
 
-!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(KGL,JM,JF,IGLG,IPROC,ISTA)
+!$acc data copyin(foubuf) copy(preel)
+!$ACC DATA PRESENT(FOUBUF,PREEL,D_NPTRLS,G_NMEN,D_NPROCM,D_NSTAGTF,D_NSTAGT0B,D_MSTABF,D_NPNTGTB0)
 DO KGL=IBEG,IEND,IINC
    DO JM=0,G_NMEN_MAX      
       DO JF=1,KFIELDS     
@@ -92,8 +93,11 @@ DO KGL=IBEG,IEND,IINC
          end if
       ENDDO
    ENDDO
-END DO
-!$OMP END PARALLEL DO
+ENDDO
+
+!$ACC END DATA
+!$acc end data
+!! !$OMP END PARALLEL DO
 
 !iimax1=0
 !iimax2=0
@@ -121,6 +125,6 @@ END DO
 !write(iunit,*) 'max_in ',iimax1,size(PREEL,1),iimax2,size(PREEL,2),iimax3,size(FOUBUF)
 !     ------------------------------------------------------------------
 
-END SUBROUTINE FOURIER_IN
-END MODULE FOURIER_IN_MOD
+eND SUBROUTINE FOURIER_IN
+eND MODULE FOURIER_IN_MOD
 

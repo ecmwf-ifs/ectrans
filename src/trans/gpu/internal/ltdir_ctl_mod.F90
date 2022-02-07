@@ -66,6 +66,8 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
   
+  !$ACC DATA PRESENT(FOUBUF_IN) COPYOUT(FOUBUF)
+
   ! Transposition from Fourier space distribution to spectral space distribution
   ! requires currently both on the host !!!
 
@@ -76,6 +78,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   CALL TRLTOM_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_FS)
 #else
   CALL TRLTOM(FOUBUF_IN,FOUBUF,2*KF_FS)
+  !$ACC UPDATE DEVICE(FOUBUF)
 #endif
   CALL GSTATS(153,1)
   
@@ -86,7 +89,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   CALL GSTATS(1645,0)
   IF(KF_FS>0) THEN
 
-   CALL LTDIR(KF_FS,KF_UV,KF_SCALARS,ILED2, &
+    CALL LTDIR(KF_FS,KF_UV,KF_SCALARS,ILED2, &
           & PSPVOR,PSPDIV,PSPSCALAR,&
           & PSPSC3A,PSPSC3B,PSPSC2 , &
           & KFLDPTRUV,KFLDPTRSC)
@@ -96,6 +99,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   CALL GSTATS(103,1)
   
+  !$ACC END DATA
   !     -----------------------------------------------------------------
   
   END SUBROUTINE LTDIR_CTL
