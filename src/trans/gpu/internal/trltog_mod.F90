@@ -509,6 +509,7 @@ MODULE TRLTOG_MOD
   !
   !  Pack loop.........................................................
   
+  
   CALL GSTATS(1605,0)
  
     DO INS=1,INSEND
@@ -545,7 +546,9 @@ MODULE TRLTOG_MOD
     Tc=TIMEF()
   #endif
   
-
+  !$ACC DATA CREATE(ZCOMBUFR,ZCOMBUFS)
+  !$ACC UPDATE DEVICE(ZCOMBUFS)
+  !$ACC HOST_DATA USE_DEVICE(ZCOMBUFR, ZCOMBUFS)
   !...Receive loop.........................................................
   DO INR=1,INRECV
     IR=IR+1
@@ -571,6 +574,10 @@ MODULE TRLTOG_MOD
   IF(IR > 0) THEN
      CALL MPI_WAITALL(IR,IREQ,ISTATUS,IERROR)
   ENDIF
+  
+  !$ACC END HOST_DATA
+  !$ACC UPDATE HOST(ZCOMBUFR)
+  !$ACC END DATA
   
   #ifdef COMVERBOSE
     call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
@@ -656,7 +663,9 @@ MODULE TRLTOG_MOD
   
       IPOS=(IRECV_FLD_END-IRECV_FLD_START+1)*IPOS
     ENDDO
+
   
+
   #ifdef COMVERBOSE
     call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
     Tc=(TIMEF()-Tc)/1000.0_JPRBT

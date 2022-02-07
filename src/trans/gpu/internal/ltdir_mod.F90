@@ -146,7 +146,7 @@ MODULE LTDIR_MOD
   ! anti-symmetric
   
   CALL PRFI2B(KF_FS,ZAIA,-1)
-  !$ACC update device(ZAIA)
+  !$ACC update host(ZAIA)
   CALL LDFOU2(KF_UV,ZAIA)
   CALL LEDIR(KF_FS,KLED2,ZAIA,ZOA1,-1)
   
@@ -154,7 +154,7 @@ MODULE LTDIR_MOD
   ! symmetric
 
   CALL PRFI2B(KF_FS,ZAIA,1)
-  !$ACC update device(ZAIA)
+  !$ACC update host(ZAIA)
   CALL LDFOU2(KF_UV,ZAIA)
   CALL LEDIR(KF_FS,KLED2,ZAIA,ZOA1,1)
 

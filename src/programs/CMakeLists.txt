@@ -51,6 +51,7 @@ if( HAVE_GPU )
                                   gpu
                                   OpenACC::OpenACC_Fortran 
                                   ${LAPACK_LIBRARIES}
+                                  nvhpcwrapnvtx
                           )
 	ecbuild_add_executable(TARGET  driver-spectrans-CA-${prec}
                              SOURCES driver-spectraltransform.F90
