@@ -70,6 +70,25 @@ foreach( prec sp dp )
                        fiat
       PRIVATE_LIBS     ${LAPACK_LIBRARIES}
     )
+    ecbuild_add_library( 
+      TARGET           trans_gpu_static_CA_${prec}
+      LINKER_LANGUAGE  Fortran
+      SOURCES          ${trans_src}
+                       algor/external/fourier/destroy_plan_fftc.cu
+                       algor/external/fourier/create_plan_fftc.cu
+                       algor/external/fourier/storage_fftc.cu
+                       algor/external/fourier/execute_plan_fftc.cu
+      TYPE             STATIC
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+      PRIVATE_INCLUDES  ${MPI_Fortran_INCLUDE_PATH}
+      PUBLIC_LIBS      parkind_${prec}
+                       fiat
+      PRIVATE_LIBS     ${LAPACK_LIBRARIES}
+    )
 
     ectrans_target_fortran_module_directory(
       TARGET            trans_gpu_${prec}
@@ -81,32 +100,46 @@ foreach( prec sp dp )
       MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_static_${prec}
       INSTALL_DIRECTORY module/trans_gpu_static_${prec}
     )
+    ectrans_target_fortran_module_directory(
+      TARGET            trans_gpu_static_CA_${prec}
+      MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_static_CA_${prec}
+      INSTALL_DIRECTORY module/trans_gpu_static_CA_${prec}
+    )
 
     if( HAVE_FFTW )
       target_link_libraries( trans_gpu_${prec} PRIVATE ${FFTW_LIBRARIES} )
       target_link_libraries( trans_gpu_static_${prec} PRIVATE ${FFTW_LIBRARIES} )
+      target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE ${FFTW_LIBRARIES} )
       target_include_directories( trans_gpu_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
       target_include_directories( trans_gpu_static_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+      target_include_directories( trans_gpu_static_CA_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
       target_compile_definitions( trans_gpu_${prec} PRIVATE WITH_FFTW )
     endif()
 
     if( HAVE_OMP )
       target_link_libraries( trans_gpu_${prec} PRIVATE OpenMP::OpenMP_Fortran )
       target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 
     target_link_libraries( trans_gpu_${prec} PRIVATE OpenACC::OpenACC_Fortran )
     set_property( TARGET trans_gpu_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
     target_compile_options( trans_gpu_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
     target_compile_options( trans_gpu_static_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
+    target_compile_options( trans_gpu_static_CA_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
 
     target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenACC::OpenACC_Fortran )
     set_property( TARGET trans_gpu_static_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
 
+    target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE OpenACC::OpenACC_Fortran )
+    set_property( TARGET trans_gpu_static_CA_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
+
     if( prec STREQUAL sp )
         target_compile_definitions( trans_gpu_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
         target_compile_definitions( trans_gpu_static_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
+	target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
     endif()
+    target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC USE_CUDA_AWARE_MPI_FT )
 
   endif()
 endforeach()
