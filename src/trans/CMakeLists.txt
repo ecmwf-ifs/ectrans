@@ -6,6 +6,19 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+## Apply workarounds for some known compilers
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Cray")
+  if( CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 8.7 )
+
+    # Fix for IFS "CONGRAD: SPTSV/DPTSV returned non-zero info with crayftn 8.7.7 (cdt/18.12)
+    ectrans_add_compile_options(
+        SOURCES internal/ftinv_ctlad_mod.F90
+        FLAGS   "-O0,fp1,omp")
+
+  endif()
+endif()
+
 ## Assemble sources
 
 ecbuild_list_add_pattern( LIST trans_src
