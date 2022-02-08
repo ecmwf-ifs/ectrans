@@ -79,17 +79,21 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
+
+  !$ACC DATA &
+  !$ACC      PRESENT(D_NUMP,R_NSMAX,D_MYMS,D_NASM0) &
+  !$ACC      PRESENT(PIA) &
+  !$ACC      PRESENT(PSPEC)
+
+  !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR)
+
   
   IF(PRESENT(KFLDPTR)) THEN
-   ! stop 'Error: code path not (yet) supported in GPU version'
-   !$ACC DATA                                                     &
-   !$ACC      PRESENT(D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTR)  &
-   !$ACC      PRESENT(PIA,PSPEC)                                        &
-   !$ACC      COPYIN (KFLDPTR)
+   
    
    !loop over wavenumber
    
-   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
+   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
@@ -121,20 +125,12 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
       ENDDO 
       ! end loop over wavenumber
    END DO
-   
-   !$ACC end data
 
   ELSE
 
-   ! needs copyout rather than present on pia , otherwise cuda-memcheck error, Nils
-
-   !$ACC DATA                                                     &
-   !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R)          &
-   !$ACC      PRESENT(PIA,PSPEC)
-
    !loop over wavenumber
 
-   !$ACC parallel loop !!collapse(3) private(KM,ILCM,IOFF,INM,IR,II)
+   !$ACC PARALLEL LOOP !!COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
@@ -156,7 +152,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
       ! end loop over wavenumber
    END DO
 
-   !$ACC parallel loop !!collapse(2) private(KM,ILCM)
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ILCM)
    DO KMLOC=1,D_NUMP
       DO JFLD=1,2*KFIELDS
          KM = D_MYMS(KMLOC) 
@@ -168,10 +164,11 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
       ! end loop over wavenumber
    END DO
    
-   !$ACC end data
   END IF   
 
-!  !$ACC exit data delete(PSPEC)
+   !$ACC END DATA
+   !$ACC END DATA
+
   !     ------------------------------------------------------------------
   
   END SUBROUTINE PRFI1B

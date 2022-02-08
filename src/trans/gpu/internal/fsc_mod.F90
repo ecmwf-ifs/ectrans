@@ -103,10 +103,8 @@ IF (LUVDER) THEN
   PUVDERS => ZGTF(2*KST_uvders-1:2*(KST_uvders+2*KF_UV-1),:)
 ENDIF
 
-!$ACC data present(ZGTF) &
-!$ACC& COPY (D,G,F) &
-!$ACC& COPY (D%NSTAGTF,D%NPTRLS,G%NMEN,G%NLOEN,F%RACTHE) &
-!$ACC& present(PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
+!$ACC DATA PRESENT(ZGTF) &
+!$ACC& PRESENT(PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
 
 DO KGL=IBEG,IEND,IINC
   
@@ -230,7 +228,7 @@ IF(KF_SCDERS > 0)THEN
 ENDIF
 
 enddo
-!$ACC end data
+!$ACC END DATA
 !     ------------------------------------------------------------------
 
 END SUBROUTINE FSC

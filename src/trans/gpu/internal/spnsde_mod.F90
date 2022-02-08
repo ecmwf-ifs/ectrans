@@ -88,8 +88,8 @@ REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 
 !$ACC DATA                             &
 !$ACC      CREATE (ZN,ZZEPSNM)         &
-!$ACC      COPYIN (D,D%MYMS,F,F%RN)   &
-!$ACC      present (PEPSNM, PF, PNSD)
+!$ACC      PRESENT (F,F%RN)   &
+!$ACC      PRESENT (PEPSNM, PF, PNSD)
 
 !     ------------------------------------------------------------------
 
