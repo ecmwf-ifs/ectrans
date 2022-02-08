@@ -89,9 +89,7 @@ REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 !$ACC DATA                             &
 !$ACC      CREATE (ZN,ZZEPSNM)         &
 !$ACC      COPYIN (D,D%MYMS,F,F%RN)   &
-!$ACC      present (PEPSNM, PF)         &
-!$ACC      copy (PNSD)
-!! !$ACC      present (PNSD)
+!$ACC      present (PEPSNM, PF, PNSD)
 
 !     ------------------------------------------------------------------
 
@@ -105,7 +103,7 @@ ISMAX = R%NSMAX
 !loop over wavenumber
 DO KMLOC=1,D%NUMP
   KM = D%MYMS(KMLOC)
-  !$ACC parallel loop private(IJ)
+  !$ACC PARALLEL LOOP PRIVATE(IJ)
   DO JN=KM-1,ISMAX+2
    IJ = ISMAX+3-JN
    ZN(IJ) = F%RN(JN)
@@ -125,7 +123,7 @@ DO KMLOC=1,D%NUMP
       ENDDO
   ELSE  
 
-    !$ACC parallel loop collapse(2) private(IR,II)
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR,II)
     DO J=1,KF_SCALARS
       DO JI=2,ISMAX+3-KM
         IR = 2*J-1

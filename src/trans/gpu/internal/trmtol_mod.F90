@@ -121,7 +121,7 @@ IF(NPROC > 1) THEN
 !   CALL MPL_BARRIER(CDSTRING='TRMTOL')
 ! ENDIF
 
-!$acc data copyin(pfbuf_in) copyout(pfbuf)
+! !$acc data copyin(pfbuf_in) copyout(pfbuf)
   !$ACC DATA present(PFBUF_IN, PFBUF)
   !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
   CALL GSTATS(807,0)
@@ -134,7 +134,7 @@ IF(NPROC > 1) THEN
 
   !$ACC END HOST_DATA
   !$ACC END DATA
-!$acc end data
+! !$acc end data
 
   CALL GSTATS(807,1)
   IF (LHOOK) CALL DR_HOOK('TRMTOL_BAR2',0,ZHOOK_HANDLE_BAR2)

@@ -83,9 +83,9 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   IF(PRESENT(KFLDPTR)) THEN
    ! stop 'Error: code path not (yet) supported in GPU version'
    !$ACC DATA                                                     &
-   !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTR)  &
-   !$ACC      COPYOUT(PIA)                                        &
-   !$ACC      COPYIN (PSPEC,KFLDPTR)
+   !$ACC      PRESENT(D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTR)  &
+   !$ACC      PRESENT(PIA,PSPEC)                                        &
+   !$ACC      COPYIN (KFLDPTR)
    
    !loop over wavenumber
    
@@ -130,8 +130,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
    !$ACC DATA                                                     &
    !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R)          &
-   !$ACC      COPYOUT(PIA)                                        &
-   !$ACC      COPYIN (PSPEC)
+   !$ACC      PRESENT(PIA,PSPEC)
 
    !loop over wavenumber
 
@@ -172,7 +171,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
    !$ACC end data
   END IF   
 
-  !$ACC exit data delete(PSPEC)
+!  !$ACC exit data delete(PSPEC)
   !     ------------------------------------------------------------------
   
   END SUBROUTINE PRFI1B

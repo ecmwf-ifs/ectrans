@@ -68,7 +68,7 @@ ELSE
   IINC=-1
 ENDIF
 
-!$acc data copyin(foubuf) copy(preel)
+!$acc data present_or_copyin(foubuf) copy(preel)
 !$ACC DATA PRESENT(FOUBUF,PREEL,D_NPTRLS,G_NMEN,D_NPROCM,D_NSTAGTF,D_NSTAGT0B,D_MSTABF,D_NPNTGTB0)
 DO KGL=IBEG,IEND,IINC
    DO JM=0,G_NMEN_MAX      
