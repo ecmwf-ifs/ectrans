@@ -66,7 +66,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
   
-  !$ACC DATA PRESENT(FOUBUF_IN) COPYOUT(FOUBUF)
+  !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
 
   ! Transposition from Fourier space distribution to spectral space distribution
   ! requires currently both on the host !!!
