@@ -92,8 +92,8 @@ REAL(KIND=JPRBT) :: ZEPSNM(-1:R%NSMAX+4)
 !$ACC DATA                                     &
 !$ACC      CREATE (ZEPSNM, ZN, ZLAPIN)         &
 !$ACC      COPYIN (D,D%MYMS,F,F%RLAPIN,F%RN)   &
-!$ACC      present(PEPSNM, PVOR, PDIV)         &
-!$ACC      present(PU, PV)
+!$ACC      PRESENT(PEPSNM, PVOR, PDIV)         &
+!$ACC      PRESENT(PU, PV)
 
 
 !     ------------------------------------------------------------------
@@ -104,19 +104,25 @@ REAL(KIND=JPRBT) :: ZEPSNM(-1:R%NSMAX+4)
 ISMAX = R%NSMAX
 DO KMLOC=1,D%NUMP
   ZKM = D%MYMS(KMLOC)
-  !$ACC parallel loop
+  !$ACC PARALLEL LOOP DEFAULT(NONE)
   DO JN=ZKM-1,ISMAX+2
     IJ = ISMAX+3-JN
     ZN(IJ) = F%RN(JN)
     ZLAPIN(IJ) = F%RLAPIN(JN)
-    IF( JN >= 0 ) ZEPSNM(IJ) = PEPSNM(KMLOC,JN)
+    IF( JN >= 0 ) THEN
+        ZEPSNM(IJ) = PEPSNM(KMLOC,JN) 
+    ELSE
+        ZEPSNM(IJ) = 0
+    ENDIF
   ENDDO
+  !$ACC KERNELS DEFAULT(NONE)
   ZN(0) = F%RN(ISMAX+3)
+  !$ACC END KERNELS
 
 !*       1.1      U AND V (KM=0) .
 
 IF(ZKM == 0) THEN
-  !$ACC PARALLEL LOOP
+  !$ACC PARALLEL LOOP DEFAULT(NONE)
   DO J=1,KFIELD
     IR = 2*J-1
     DO JI=2,ISMAX+3
@@ -131,7 +137,7 @@ IF(ZKM == 0) THEN
 ELSE
 !*       1.2      U AND V (KM!=0) .
 
-    !$ACC parallel loop collapse(2)
+    !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE)
     DO J=1,KFIELD
       DO JI=2,ISMAX+3-ZKM
         !ZKM = D_MYMS(KMLOC)
