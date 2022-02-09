@@ -282,6 +282,7 @@ ELSE
   !$ACC DATA CREATE(FOUBUF)
 
   ! No splitting of fields, transform done in one go
+  ! from PSPXXX to FOUBUF
   call nvtxStartRange("LTINV")
   CALL LTINV_CTL(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS, &
    &PSPVOR=PSPVOR,PSPDIV=PSPDIV,PSPSCALAR=PSPSCALAR,&
@@ -289,6 +290,7 @@ ELSE
    &FSPGL_PROC=FSPGL_PROC)
   call nvtxEndRange
 
+  ! from FOUBUF to PGPXXX
   call nvtxStartRange("FTINV")
   CALL FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
    & KF_UV,KF_SCALARS,KF_SCDERS,KF_GP,KF_FS,KF_OUT_LT,&
