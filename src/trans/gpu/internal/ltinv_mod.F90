@@ -166,6 +166,8 @@ MODULE LTINV_MOD
   !  !$ACC update host(ZEPSNM)
   !ENDIF
 
+! COPY FROM PSPXXXX TO ZIA
+
   IF (KF_UV > 0) THEN
     IVORL = 1
     IVORU = 2*KF_UV
@@ -254,6 +256,8 @@ MODULE LTINV_MOD
   
   !*       4.    INVERSE LEGENDRE TRANSFORM.
   !              ---------------------------
+
+  ! FROM ZIA TO ZAOA1 and ZSOA1
   
   ISTA = 1
   IFC  = 2*KF_OUT_LT
@@ -273,6 +277,8 @@ MODULE LTINV_MOD
   
   !*       5.    RECOMBINATION SYMMETRIC/ANTISYMMETRIC PART.
   !              --------------------------------------------
+
+  !FROM ZAOA1/ZSOA to FOUBUF_IN
    
   !CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
   CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1)
