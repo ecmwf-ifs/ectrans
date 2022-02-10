@@ -161,6 +161,7 @@ INTEGER(KIND=JPIM) :: JMLOC, IF_PP
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS',0,ZHOOK_HANDLE)
+CALL GSTATS(440,0)
 CALL GSTATS(1808,0)
 ! Set current resolution
 CALL SET_RESOL(KRESOL)
@@ -526,6 +527,7 @@ CALL DIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
 
  IF (LHOOK) CALL DR_HOOK('DIR_TRANS',1,ZHOOK_HANDLE)
+CALL GSTATS(440,1)
 
 !     ------------------------------------------------------------------
 !endif INTERFACE
