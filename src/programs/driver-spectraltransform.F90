@@ -165,7 +165,7 @@ LEQ_REGIONS=.TRUE.
 ! Message Passing switch
 LMPOFF=.FALSE.
 ! Activate barrier sync
-LSYNC_TRANS=.FALSE.
+LSYNC_TRANS=.true.
 ! Number of procs
 NPROC=0
 ! Grid-point decomp
