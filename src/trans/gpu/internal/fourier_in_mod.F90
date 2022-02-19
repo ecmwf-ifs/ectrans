@@ -122,6 +122,6 @@ ENDDO
 !write(iunit,*) 'max_in ',iimax1,size(PREEL,1),iimax2,size(PREEL,2),iimax3,size(FOUBUF)
 !     ------------------------------------------------------------------
 
-eND SUBROUTINE FOURIER_IN
-eND MODULE FOURIER_IN_MOD
+END SUBROUTINE FOURIER_IN
+END MODULE FOURIER_IN_MOD
 
