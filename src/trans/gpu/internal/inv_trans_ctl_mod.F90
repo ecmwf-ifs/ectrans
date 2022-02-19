@@ -280,7 +280,6 @@ ELSE
   call nvtxStartRange("INVTRANS")
 
   !$ACC DATA CREATE(FOUBUF)
-
   ! No splitting of fields, transform done in one go
   ! from PSPXXX to FOUBUF
   call nvtxStartRange("LTINV")
