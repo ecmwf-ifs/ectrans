@@ -5,9 +5,10 @@ Introduction
 ============
 
 ecTrans is the global spherical Harmonics transforms library, extracted from the IFS.
-It is using a hybrid of MPI and OpenMP parallelisation strategies.
-The package contains both single- and double precision Fortran libraries (trans_sp, trans_dp),
-as well as a C interface to the double-precision version (transi_dp)
+It contains both CPU and GPU (Nvidia) code-paths.
+The CPU version uses a hybrid of MPI and OpenMP parallelisation strategies, while the GPU version combines MPI and OpenACC.
+A default installation builds both CPU libraries (trans_sp, trans_dp) and various flavours of GPU libraries in (trans_gpu_{sp/dp} shared library, trans_gpu_static_{sp/dp} static library, trans_gpu_static_CA_{sp/dp} static library requiring CUDA-aware MPI implementation),
+as well as a C interface to the double-precision version (transi_dp).
 
 License
 =======
@@ -21,22 +22,16 @@ Installing ecTrans
 Supported Platforms
 -------------------
 
-- Linux
-- Apple MacOS
-
-Other UNIX-like operating systems may work too out of the box.
+The GPU codepath has only been tested with NVHPC compilers on recent Nvidia GPUs.
 
 Requirements
 ------------
-- Fortran compiler with OpenMP support
-- C compiler
+- MPI-enabled Fortran compiler with OpenACC support
 - FIAT (see https://github.com/ecmwf-ifs/fiat )
 - ecBuild (see https://github.com/ecmwf/ecbuild)
 - CMake (see https://cmake.org)
-- A BLAS library
-
-Further optional recommended dependencies:
-- FFTW (http://www.fftw.org)
+- CUDA toolkit (compiler, and CUBLAS and CUFFT libraries)
+- ecCodes (see https://github.com/ecmwf/eccodes ) if building the drivers
 
 Building ecTrans
 ----------------
@@ -69,6 +64,8 @@ Extra options can be added to the `cmake` command to control the build:
  - `-DENABLE_DOUBLE_PRECISION=<ON|OFF>` default=ON
  - `-DENABLE_TRANSI=<ON|OFF>`           default=ON
  - `-DENABLE_MKL=<ON|OFF>`              default=ON
+ -  -DENABLE_GPU=ON
+ -  -DENABLE_FFTW=OFF
  - `-DCMAKE_INSTALL_PREFIX=<install-prefix>`
 
 More options to control compilation flags, only when defaults are not sufficient
