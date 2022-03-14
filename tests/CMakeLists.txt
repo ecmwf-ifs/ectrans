@@ -10,6 +10,11 @@
 
 if( HAVE_TESTS )
 
+  find_package( MPI )
+  set( LAUNCH )
+  if( MPI_FOUND )
+    set( LAUNCH "${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1" )
+  endif()
   configure_file( test-install.sh.in ${CMAKE_CURRENT_BINARY_DIR}/test-install.sh @ONLY )
 
   unset( _test_args )

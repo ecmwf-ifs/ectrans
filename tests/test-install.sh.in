@@ -56,7 +56,7 @@ if [ -f bin/main_sp ]; then
   bin/main_sp
 fi
 if [ -f bin/transi_sptogp ]; then
-  bin/transi_sptogp
+  @LAUNCH@ bin/transi_sptogp
 fi
 
 { set +ex; } 2>/dev/null
