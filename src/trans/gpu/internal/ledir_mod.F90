@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -78,29 +79,21 @@ IMPLICIT NONE
 !     DUMMY ARGUMENTS
 INTEGER(KIND=JPIM)  :: KM
 INTEGER(KIND=JPIM)  :: KMLOC
-INTEGER(KIND=JPIM)  :: KFC
-INTEGER(KIND=JPIM)  :: KIFC
 INTEGER(KIND=JPIM) :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_FS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KLED2
 INTEGER(KIND=JPIM), INTENT(IN)  :: KMODE
 
 REAL(KIND=JPRBT),    INTENT(IN)  :: PAIA(:,:,:)
-!REAL(KIND=JPRBT),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
 REAL(KIND=JPRBT),    INTENT(OUT) :: POA1(:,:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK, IRET
-INTEGER(KIND=JPIM) :: ITHRESHOLD
-REAL(KIND=JPRB) :: RRPELTMDIR = 100.0_JPRB
+INTEGER(KIND=JPIM) :: IA, IS, ISL, J, JK
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 INTEGER :: ISTAT
 
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
-
-KFC = 2*KF_FS
-KIFC = KFC
 
 !$ACC DATA &
 !$ACC& PRESENT(F,F%RW) &
@@ -124,28 +117,19 @@ KIFC = KFC
 
 IF ( KMODE == -1 ) THEN
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISL) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH   
-      DO JK=1,KFC
-         
-         KM = D_MYMS(KMLOC)   
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            ENDIF
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               !DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-            END IF
-         END IF
+  DO JK=1,2*KF_FS
+    KM = D_MYMS(KMLOC)
+    IF (KM /= 0) THEN
+      ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+
+      !$ACC LOOP SEQ
+      DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
+        DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
       ENDDO
-   ENDDO
+    ENDIF
+  ENDDO
 END DO
 
 
@@ -164,45 +148,29 @@ CALL CUDA_GEMM_BATCHED( &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,(R_NTMAX+2)/2
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
-            ISKIP = 2
-         ELSE
-            ISKIP = 1
-         ENDIF
-         
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILA = (R_NTMAX-KM+2)/2
-            IA  = 1+MOD(R_NTMAX-KM+2,2)
-            IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
-            END IF
-         END IF
+  DO JK=1,2*KF_FS
+    KM = D_MYMS(KMLOC)
+    IF (KM /= 0) THEN
+      IA  = 1+MOD(R_NTMAX-KM+2,2)
+      !$ACC LOOP SEQ
+      DO J=1,(R_NTMAX-KM+2)/2
+        POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
       ENDDO
-   ENDDO
+    ENDIF
+  ENDDO
 ENDDO
 
 ! compute m=0 in double precision:
 IF(KMLOC0 > 0) THEN
    print*,'computing m=0 in double precision'
-   ISKIP = 2
 
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
-  DO J=1,R_NDGNH
-    DO JK=1,KFC
-
-         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
-            END IF
-         END IF
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE)
+  DO J=1,MIN(R_NDGNH,G_NDGLU(0))
+    DO JK=1,2*KF_FS,2
+      ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+      DZBST0((JK-1)/2+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
     ENDDO
   ENDDO
 
@@ -219,45 +187,32 @@ IF(KMLOC0 > 0) THEN
   !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
   !$ACC END HOST_DATA
 
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE)
-   DO J=1,(R_NTMAX+2)/2
-   DO JK=1,KFC
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILA = (R_NTMAX+2)/2
-            IA  = 1+MOD(R_NTMAX+2,2)
-            IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*DTDZCA)
-            END IF
-         END IF
-   ENDDO
-ENDDO
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE)
+  DO J=1,(R_NTMAX+2)/2
+    DO JK=1,2*KF_FS,2
+      IA  = 1+MOD(R_NTMAX+2,2)
+      POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/2+1+(J-1)*DTDZCA)
+    ENDDO
+  ENDDO
 ENDIF
 
 ELSE
 
 ! symmetric
 
-!$acc parallel loop collapse(3) private(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISL) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH   
-      DO JK=1,KFC
-         KM = D_MYMS(KMLOC)   
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            ENDIF
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-            END IF
-         END IF
+  DO JK=1,2*KF_FS
+    KM = D_MYMS(KMLOC)
+    IF (KM /= 0) THEN
+      ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+
+      !$ACC LOOP SEQ
+      DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
+        DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
       ENDDO
-   ENDDO
+    ENDIF
+  ENDDO
 END DO
 
 ! Get C in transpose format to get better memory access patterns later
@@ -275,41 +230,27 @@ CALL CUDA_GEMM_BATCHED( &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS,IS) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,(R_NTMAX+3)/2
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
-            ISKIP = 2
-         ELSE
-            ISKIP = 1
-         ENDIF
-         
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILS = (R_NTMAX-KM+3)/2
-            IF (J .LE. ILS) THEN
-               IS  = 1+MOD(R_NTMAX-KM+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)            
-            END IF
-         END IF
+  DO JK=1,2*KF_FS
+    KM = D_MYMS(KMLOC)
+    IF (KM /= 0) THEN
+      IS  = 1+MOD(R_NTMAX-KM+1,2)
+      !$ACC LOOP SEQ
+      DO J=1,(R_NTMAX-KM+3)/2
+        POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
       ENDDO
-   ENDDO
+    ENDIF
+  ENDDO
 ENDDO
 
 IF(KMLOC0 > 0) THEN
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE)
-   DO J=1,R_NDGNH   
-      DO JK=1,KFC
-         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
-           IF (MOD((JK-1),ISKIP) .eq. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
-           END IF
-         END IF
-      ENDDO
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE)
+   DO J=1,MIN(R_NDGNH,G_NDGLU(0))
+     DO JK=1,2*KF_FS,2
+       ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+       DZBST0((JK-1)/2+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+     ENDDO
    ENDDO
 
       ! Get C in transpose format to get better memory access patterns later
@@ -324,18 +265,13 @@ IF(KMLOC0 > 0) THEN
  &                            0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
       !$ACC end host_data
 
-   !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS) DEFAULT(NONE)
-   DO J=1,(R_NTMAX+3)/2
-      DO JK=1,KFC
-         if (MOD((JK-1),ISKIP) .eq. 0) then
-            ILS = (R_NTMAX+3)/2
-            if (J .le. ILS) then
-               IS  = 1+MOD(R_NTMAX+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
-            end if
-         end if
-      ENDDO
-   ENDDO
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IS) DEFAULT(NONE)
+  DO J=1,(R_NTMAX+3)/2
+    DO JK=1,2*KF_FS,2
+      IS  = 1+MOD(R_NTMAX+1,2)
+      POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/2+1+(J-1)*DTDZCS)
+    ENDDO
+  ENDDO
 
 ENDIF
 
