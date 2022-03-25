@@ -58,7 +58,7 @@ endforeach()
 
 ## Install trans interface
 
-file( GLOB trans_interface interface/* )
+file( GLOB trans_interface include/ectrans/* )
 install(
   FILES        ${trans_interface}
   DESTINATION  include/ectrans
