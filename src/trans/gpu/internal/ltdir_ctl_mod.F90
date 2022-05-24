@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -64,14 +65,13 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRUV(:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRSC(:)
   
-  INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
+  INTEGER(KIND=JPIM) :: JM,IM,ILED2
   
   !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
 
   ! Transposition from Fourier space distribution to spectral space distribution
   ! requires currently both on the host !!!
 
-  IBLEN = D%NLENGT0B*2*KF_FS
   CALL GSTATS(153,0)
 #ifdef USE_CUDA_AWARE_MPI_FT
   WRITE(NOUT,*) 'ltdir_ctl:TRLTOM_CUDAAWARE'
