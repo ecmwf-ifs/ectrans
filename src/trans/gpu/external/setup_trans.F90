@@ -130,11 +130,9 @@ USE SUFFT_MOD       ,ONLY : SUFFT
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE SHAREDMEM_MOD    ,ONLY : SHAREDMEM_CREATE
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
-USE CUDA_DEVICE_MOD
 USE PREPSNM_MOD     ,ONLY : PREPSNM
-#ifdef _OPENACC
-use openacc
-#endif
+USE CUDAFOR
+USE OPENACC
 
 !endif INTERFACE
 
@@ -444,13 +442,12 @@ IF( .NOT.D%LGRIDONLY ) THEN
 iunit=300+myproc
 
 #ifdef _OPENACC
-!!idevtype=acc_device_nvidia
 idevtype=acc_get_device_type()
 inumdevs = acc_get_num_devices(idevtype)
 mygpu = mod(MYPROC-1,inumdevs)
 CALL acc_set_device_num(mygpu, idevtype)
 mygpu = acc_get_device_num(idevtype)
-istat  = cuda_GetDevice(idev)
+istat  = cudaGetDevice(idev)
 WRITE(iunit,*) '===now going to allocate GPU arrays on processor: ', myproc, ' device = ', mygpu, ' ',idev, ' of ', inumdevs
 #endif
 
