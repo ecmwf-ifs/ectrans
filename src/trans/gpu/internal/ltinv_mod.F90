@@ -109,11 +109,12 @@ MODULE LTINV_MOD
   EXTERNAL  FSPGL_PROC
   OPTIONAL  FSPGL_PROC
   
-  INTEGER(KIND=JPIM) :: ISTA, IIFC, IDGLU
-  INTEGER(KIND=JPIM) :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
-  INTEGER(KIND=JPIM) :: IFIRST, ILAST, IDIM1,IDIM2,IDIM3,J3
+  INTEGER(KIND=JPIM) :: IIFC, IDGLU
+  INTEGER(KIND=JPIM) :: IFIRST, J3
 
-  REAL(KIND=JPRB), ALLOCATABLE :: PIA(:,:,:)
+  REAL(KIND=JPRB), ALLOCATABLE, TARGET :: PIA(:,:,:)
+  REAL(KIND=JPRB), POINTER :: PU(:,:,:), PV(:,:,:), PVOR(:,:,:), PDIV(:,:,:)
+  REAL(KIND=JPRB), POINTER :: PSCALARS(:,:,:), PSCALARS_NSDER(:,:,:)
 
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   !CHARACTER(LEN=10) :: CLHOOK
@@ -161,119 +162,102 @@ MODULE LTINV_MOD
   IFIRST = IFIRST + 2*KF_SCALARS ! Scalars
   IF (LSCDERS) IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
 
+  ! Allocate data accordingly
   ALLOCATE(PIA(IFIRST,R%NSMAX+3,D%NUMP))
   !$ACC ENTER DATA CREATE(PIA)
 
+  ! And reiterate domain decomposition to assign pointers
+  IFIRST = 0
+  IF (.NOT. LVORGP .OR. LDIVGP) THEN
+    ! Usually we want to store vorticity first
+    PVOR => PIA(IFIRST+1:IFIRST+2*KF_UV,:,:)
+    IFIRST = IFIRST + 2*KF_UV ! Vorticity
 
-  IFIRST = 1
-  ILAST  = 0
-  
+    PDIV => PIA(IFIRST+1:IFIRST+2*KF_UV,:,:)
+    IFIRST = IFIRST + 2*KF_UV ! Divergence
+  ELSE
+    ! Except if we want to translate Vorticity but not Divergence, we should have Divergence first
+    ! Then we have all buffers that move on in a contiguous buffer
+    PDIV => PIA(IFIRST+1:IFIRST+2*KF_UV,:,:)
+    IFIRST = IFIRST + 2*KF_UV ! Divergence
+
+    PVOR => PIA(IFIRST+1:IFIRST+2*KF_UV,:,:)
+    IFIRST = IFIRST + 2*KF_UV ! Vorticity
+  ENDIF
+  PU => PIA(IFIRST+1:IFIRST+2*KF_UV,:,:)
+  IFIRST = IFIRST + 2*KF_UV ! U
+  PV => PIA(IFIRST+1:IFIRST+2*KF_UV,:,:)
+  IFIRST = IFIRST + 2*KF_UV ! V
+  PSCALARS => PIA(IFIRST+1:IFIRST+2*KF_SCALARS,:,:)
+  IFIRST = IFIRST + 2*KF_SCALARS ! Scalars
+  PSCALARS_NSDER => PIA(IFIRST+1:IFIRST+2*KF_SCALARS,:,:)
+  IF (LSCDERS) IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
+
   CALL GSTATS(431,1)
   IF (KF_UV > 0) THEN
-    IVORL = 1
-    IVORU = 2*KF_UV
-    IDIVL = 2*KF_UV+1
-    IDIVU = 4*KF_UV
-    IUL   = 4*KF_UV+1
-    IUU   = 6*KF_UV
-    IVL   = 6*KF_UV+1
-    IVU   = 8*KF_UV
-  
-    IDIM2=UBOUND(PSPVOR,2)
-    CALL PRFI1B(PIA(IVORL:IVORU,:,:),PSPVOR,KF_UV,IDIM2,KFLDPTRUV)
-    CALL PRFI1B(PIA(IDIVL:IDIVU,:,:),PSPDIV,KF_UV,IDIM2,KFLDPTRUV)
-  
-  !     ------------------------------------------------------------------
-  
-    CALL VDTUV(KF_UV,ZEPSNM,PIA(IVORL:IVORU,:,:),PIA(IDIVL:IDIVU,:,:),&
-             & PIA(IUL:IUU,:,:),PIA(IVL:IVU,:,:))
-    ILAST = ILAST+8*KF_UV
-  
+    CALL PRFI1B(PVOR,PSPVOR,KF_UV,UBOUND(PSPVOR,2),KFLDPTRUV)
+    CALL PRFI1B(PDIV,PSPDIV,KF_UV,UBOUND(PSPDIV,2),KFLDPTRUV)
+
+    ! Compute U and V for VOR and DIV
+    CALL VDTUV(KF_UV,ZEPSNM,PVOR,PDIV,PU,PV)
   ENDIF
-  
-  IF(KF_SCALARS > 0)THEN
+
+  IF (KF_SCALARS > 0) THEN
     IF(PRESENT(PSPSCALAR)) THEN
-      IFIRST = ILAST+1
-      ILAST  = IFIRST - 1 + 2*KF_SCALARS
-  
-      IDIM2=UBOUND(PSPSCALAR,2)
-      CALL PRFI1B(PIA(IFIRST:ILAST,:,:),PSPSCALAR(:,:),KF_SCALARS,IDIM2,KFLDPTRSC)
+      CALL PRFI1B(PSCALARS,PSPSCALAR,KF_SCALARS,UBOUND(PSPSCALAR,2),KFLDPTRSC)
     ELSE
+      IFIRST = 1
       IF(PRESENT(PSPSC2) .AND. NF_SC2 > 0) THEN
-        IFIRST = ILAST+1
-        ILAST  = IFIRST-1+2*NF_SC2
-        IDIM2=UBOUND(PSPSC2,2)
-        CALL PRFI1B(PIA(IFIRST:ILAST,:,:),PSPSC2(:,:),NF_SC2,IDIM2)
+        CALL PRFI1B(PSCALARS(IFIRST:IFIRST+2*NF_SC2-1,:,:),PSPSC2(:,:),NF_SC2,UBOUND(PSPSC2,2))
+        IFIRST  = IFIRST+2*NF_SC2
       ENDIF
       IF(PRESENT(PSPSC3A) .AND. NF_SC3A > 0) THEN
-        IDIM1=NF_SC3A
-        IDIM3=UBOUND(PSPSC3A,3)
-        IFIRST = ILAST+1
-        ILAST  = IFIRST-1+2*IDIM1
-        IDIM2=UBOUND(PSPSC3A,2)
-        DO J3=1,IDIM3
-          CALL PRFI1B(PIA(IFIRST:ILAST,:,:),PSPSC3A(:,:,J3),IDIM1,IDIM2)
+        DO J3=1,UBOUND(PSPSC3A,3)
+          CALL PRFI1B(PSCALARS(IFIRST:IFIRST+2*NF_SC3A-1,:,:),PSPSC3A(:,:,J3),NF_SC3A,UBOUND(PSPSC3A,2))
+          IFIRST  = IFIRST+2*NF_SC3A
         ENDDO
       ENDIF
       IF(PRESENT(PSPSC3B) .AND. NF_SC3B > 0) THEN
-        IDIM1=NF_SC3B
-        IDIM3=UBOUND(PSPSC3B,3)
-        IDIM2=UBOUND(PSPSC3B,2)
-        DO J3=1,IDIM3
-          IFIRST = ILAST+1
-          ILAST  = IFIRST-1+2*IDIM1
-  
-          CALL PRFI1B(PIA(IFIRST:ILAST,:,:),PSPSC3B(:,:,J3),IDIM1,IDIM2)
+        DO J3=1,UBOUND(PSPSC3B,3)
+          CALL PRFI1B(PSCALARS(IFIRST:IFIRST+2*NF_SC3B-1,:,:),PSPSC3B(:,:,J3),NF_SC3B,UBOUND(PSPSC3B,2))
+          IFIRST  = IFIRST+2*NF_SC3B
         ENDDO
+      ENDIF
+      IF(IFIRST-1 /= 2*KF_SCALARS) THEN
+        WRITE(0,*) 'LTINV:KF_SCALARS,IFIRST',KF_SCALARS,IFIRST
+        CALL ABORT_TRANS('LTINV_MOD:IFIRST /= 2*KF_SCALARS')
       ENDIF
     ENDIF
   ENDIF
-  IF(ILAST /= 8*KF_UV+2*KF_SCALARS) THEN
-    WRITE(0,*) 'LTINV:KF_UV,KF_SCALARS,ILAST ',KF_UV,KF_SCALARS,ILAST
-    CALL ABORT_TRANS('LTINV_MOD:ILAST /= 8*KF_UV+2*KF_SCALARS')
-  ENDIF
   !$ACC END DATA
   !$ACC END DATA
   !$ACC END DATA
   !$ACC END DATA
   !$ACC END DATA
-  
+
   IF (KF_SCDERS > 0) THEN
-  !   stop 'Error: code path not (yet) supported in GPU version'
-     ISL = 2*(4*KF_UV)+1
-     ISU = ISL+2*KF_SCALARS-1
-     IDL = 2*(4*KF_UV+KF_SCALARS)+1
-     IDU = IDL+2*KF_SCDERS-1
-     CALL SPNSDE(KF_SCALARS,ZEPSNM,PIA(ISL:ISU,:,:),PIA(IDL:IDU,:,:))
- ENDIF
-  
+    CALL SPNSDE(KF_SCALARS,ZEPSNM,PSCALARS,PSCALARS_NSDER)
+  ENDIF
+
   !     ------------------------------------------------------------------
-  
-  
+
+
   !*       4.    INVERSE LEGENDRE TRANSFORM.
   !              ---------------------------
 
-  ! FROM ZIA TO ZAOA1 and ZSOA1
-  
-  ISTA = 1
-  IF(KF_UV > 0 .AND. .NOT. LVORGP) THEN
-     ISTA = ISTA+2*KF_UV
-  ENDIF
-  IF(KF_UV > 0 .AND. .NOT. LDIVGP) THEN
-     ISTA = ISTA+2*KF_UV
-  ENDIF
+  ! Forget aobut Vorticity and divergence if we don't need it in the output
+  IFIRST = 1
+  IF(.NOT. LVORGP) IFIRST = IFIRST+2*KF_UV
+  IF(.NOT. LDIVGP) IFIRST = IFIRST+2*KF_UV
 
-  IF( KF_OUT_LT > 0 ) THEN
-    CALL LEINV(KF_OUT_LT,PIA(ISTA:ISTA+2*KF_OUT_LT-1,:,:))
-
-    IF(PRESENT(FSPGL_PROC)) THEN
-     stop 'Error: SPGL_PROC is not (yet) optimized in GPU version. Need to figure out how to implement'
-    ENDIF
-  
+  ! Output is being stored in FOUBUF_IN
+  IF (KF_OUT_LT > 0) THEN
+    CALL LEINV(KF_OUT_LT,PIA(IFIRST:,:,:))
   ENDIF
 
   !$ACC EXIT DATA DELETE(PIA)
   DEALLOCATE(PIA)
+
   IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
   !     ------------------------------------------------------------------
   
