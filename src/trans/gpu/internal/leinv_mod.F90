@@ -225,27 +225,17 @@ DO KMLOC=1,D_NUMP
       DO J=1,(R_NSMAX-KM+2)/2
         ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
       ENDDO
-    ELSEIF (MOD((JK+1),2) .EQ. 0) THEN
+    ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
+      ! every other field is sufficient because Im(KM=0) == 0
 #ifdef ACCGPU
       !$ACC LOOP SEQ
 #endif
       DO J=1,(R_NSMAX+2)/2
-        ZINP((JK-1)/2+1+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
+        ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
       ENDDO
     ENDIF
   ENDDO
 ENDDO
-IF (KMLOC0 > 0) THEN
-#ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE)
-#endif
-  DO J=1,(R_NSMAX+2)/2
-    DO JK=1,KFIELDS,2
-      IA  = 1+MOD(R_NSMAX+2,2)
-      ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC0)
-    ENDDO
-  ENDDO
-ENDIF
 
 ! operate on full arrays, where non-relavent entries have been set to zero
 ! Get C in transpose format to get better memory access patterns later
@@ -355,27 +345,16 @@ DO KMLOC=1,D_NUMP
       DO J=1,(R_NSMAX-KM+3)/2
         ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
       ENDDO
-    ELSEIF (MOD((JK+1),2) .EQ. 0) THEN
+    ELSEIF (MOD((JK-1),2) == 0) THEN
 #ifdef ACCGPU
       !$ACC LOOP SEQ
 #endif
       DO J=1,(R_NSMAX+3)/2
-        ZINP((JK-1)/2+1+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
+        ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
       ENDDO
     ENDIF
   ENDDO
 ENDDO
-IF (KMLOC0 > 0) THEN
-#ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE)
-#endif
-  DO J=1,(R_NSMAX+3)/2
-    DO JK=1,KFIELDS,2
-      IS  = 1+MOD(R_NSMAX+1,2)
-      ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC0)
-    ENDDO
-  ENDDO
-ENDIF
 
 
 !C=A*B =>
@@ -460,16 +439,8 @@ IF (KMLOC0 > 0) THEN
 #endif
   DO JGL=1,G_NDGLU(0)
     DO JK=1,KFIELDS,2
-        ! ZAOA = ZOUTA((JK-1)/2+1+(JGL-ISL+(KMLOC-1)*R_NDGNH)*KFIELDS)
       ZOUTA((JK-1)/2+1+(JGL-1)*IOUT_STRIDES0+(KMLOC0-1)*IOUT_STRIDES1) &
         & = ZOUTA0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
-    ENDDO
-  ENDDO
-#ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE)
-#endif
-  DO JGL=1,G_NDGLU(0)
-    DO JK=1,KFIELDS,2
       ZOUTS((JK-1)/2+1+(JGL-1)*IOUT_STRIDES0+(KMLOC0-1)*IOUT_STRIDES1) &
         & = ZOUTS0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
     ENDDO

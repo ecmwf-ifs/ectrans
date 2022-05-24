@@ -364,7 +364,7 @@ DO KMLOC=1,D_NUMP
       !$ACC LOOP SEQ
 #endif
       DO J=1,(R_NSMAX+2)/2
-        POA1(JF,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
+        POA1(JF,IA+1+(J-1)*2,KMLOC) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
       ENDDO
     ENDIF
   ENDDO
@@ -472,7 +472,7 @@ DO KMLOC=1,D_NUMP
       !$ACC LOOP SEQ
 #endif
       DO J=1,(R_NSMAX+3)/2
-        POA1(JF,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
+        POA1(JF,IS+1+(J-1)*2,KMLOC) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
       ENDDO
     ENDIF
   ENDDO
