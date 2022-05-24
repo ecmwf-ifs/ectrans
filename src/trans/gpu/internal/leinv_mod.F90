@@ -223,12 +223,13 @@ IF(KMLOC0 > 0) THEN
   KS(KMLOC0) = 0
 ENDIF
 CALL HIP_GEMM( &
+  & 11, & ! unique identifier
   & 'N', 'T', &
   & KFIELDS, NS(:), KS(:), &
   & 1.0_JPRBT, &
   & ZINP, IIN_STRIDES0, AOFFSETS, &
   & ZAA, SIZE(ZAA,1), BOFFSETS, &
-  & 0._JPRBT, &
+  & 0.0_JPRBT, &
   & ZOUTA, IOUT_STRIDES0, COFFSETS, &
   & D_NUMP)
 #ifdef OMPGPU
@@ -355,6 +356,7 @@ IF(KMLOC0 > 0) THEN
   KS(KMLOC0) = 0
 ENDIF
 CALL HIP_GEMM( &
+  & 12, & ! unique identifier
   & 'N', 'T', &
   & KFIELDS, NS(:), KS(:), &
   & 1.0_JPRBT, &

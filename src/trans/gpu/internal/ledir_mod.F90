@@ -228,6 +228,7 @@ IF(KMLOC0 > 0) THEN
   KS(KMLOC0) = 0
 ENDIF
 CALL HIP_GEMM( &
+  & 21, & ! unique identifier
   & 'N', 'N', &
   & 2*KF_FS, NS(:), KS(:), &
   & 1.0_JPRBT, &
@@ -362,6 +363,7 @@ IF(KMLOC0 > 0) THEN
   KS(KMLOC0) = 0
 ENDIF
 CALL HIP_GEMM( &
+  & 22, & ! unique identifier
   & 'N', 'N', &
   & 2*KF_FS, NS(:), KS(:), &
   & 1.0_JPRBT, &
