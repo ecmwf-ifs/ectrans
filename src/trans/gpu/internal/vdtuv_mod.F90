@@ -88,7 +88,7 @@ INTEGER(KIND=JPIM) :: II, IJ, IR, J, JN, JI
 REAL(KIND=JPRBT) :: ZKM
 
 !$ACC DATA                                     &
-!$ACC      COPYIN (D,D%MYMS,F,F%RLAPIN,F%RN)   &
+!$ACC      PRESENT(D,D%MYMS,F,F%RLAPIN,F%RN)   &
 !$ACC      PRESENT(PEPSNM, PVOR, PDIV)         &
 !$ACC      PRESENT(PU, PV, D_MYMS)
 

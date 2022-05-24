@@ -158,7 +158,7 @@ DO KMLOC=1,D_NUMP
       IA  = 1+MOD(R_NTMAX-KM+2,2)
       !$ACC LOOP SEQ
       DO J=1,(R%NSMAX-KM+2)/2
-        POA1(JK,IA+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
+        POA1(JK,IA+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
       ENDDO
     ENDIF
   ENDDO
@@ -197,7 +197,7 @@ IF(KMLOC0 > 0) THEN
   DO J=1,(R_NSMAX+2)/2
     DO JK=1,2*KF_FS,2
       IA  = 1+MOD(R_NTMAX+2,2)
-      POA1(JK,IA+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
+      POA1(JK,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
     ENDDO
   ENDDO
 ENDIF
@@ -246,7 +246,7 @@ DO KMLOC=1,D_NUMP
       IS  = 1+MOD(R_NTMAX-KM+1,2)
       !$ACC LOOP SEQ
       DO J=1,(R_NSMAX-KM+3)/2
-        POA1(JK,IS+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
+        POA1(JK,IS+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
       ENDDO
     ENDIF
   ENDDO
@@ -281,7 +281,7 @@ IF(KMLOC0 > 0) THEN
   DO J=1,(R_NSMAX+3)/2
     DO JK=1,2*KF_FS,2
       IS  = 1+MOD(R_NTMAX+1,2)
-      POA1(JK,IS+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
+      POA1(JK,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
     ENDDO
   ENDDO
 
