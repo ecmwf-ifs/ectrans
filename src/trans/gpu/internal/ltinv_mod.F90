@@ -30,7 +30,6 @@ MODULE LTINV_MOD
   USE VDTUV_MOD       ,ONLY : VDTUV
   USE SPNSDE_MOD      ,ONLY : SPNSDE
   USE LEINV_MOD       ,ONLY : LEINV
-  USE ASRE1B_MOD      ,ONLY : ASRE1B
   USE FSPGL_INT_MOD   ,ONLY : FSPGL_INT
   USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
   use ieee_arithmetic
@@ -73,7 +72,6 @@ MODULE LTINV_MOD
   !         VDTUV   - compute u and v from vorticity and divergence
   !         SPNSDE  - compute north-south derivatives
   !         LEINV   - Inverse Legendre transform
-  !         ASRE1   - recombination of symmetric/antisymmetric part
   
   !     Reference.
   !     ----------
@@ -280,29 +278,11 @@ MODULE LTINV_MOD
   ENDIF
 
   IF( KF_OUT_LT > 0 ) THEN
-  !call cudaProfilerStart
-  CALL LEINV(IFC,KF_OUT_LT,ZIA(ISTA:ISTA+IFC-1,:,:),ZAOA1,ZSOA1)
-  !call cudaProfilerStop
+    CALL LEINV(IFC,KF_OUT_LT,ZIA(ISTA:ISTA+IFC-1,:,:),ZAOA1,ZSOA1)
 
-  !     ------------------------------------------------------------------
-  
-  !*       5.    RECOMBINATION SYMMETRIC/ANTISYMMETRIC PART.
-  !              --------------------------------------------
-
-  !FROM ZAOA1/ZSOA to FOUBUF_IN
-   
-  !CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
-  CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1)
-  !     ------------------------------------------------------------------
-  
-  !     6. OPTIONAL COMPUTATIONS IN FOURIER SPACE
-  
-  
-  IF(PRESENT(FSPGL_PROC)) THEN
-   stop 'Error: SPGL_PROC is not (yet) optimized in GPU version'
-    CALL FSPGL_INT(KF_UV,KF_SCALARS,KF_SCDERS,KF_OUT_LT,FSPGL_PROC,&
-     & KFLDPTRUV,KFLDPTRSC)
-  ENDIF
+    IF(PRESENT(FSPGL_PROC)) THEN
+     stop 'Error: SPGL_PROC is not (yet) optimized in GPU version. Need to figure out how to implement'
+    ENDIF
   
   ENDIF
   IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
