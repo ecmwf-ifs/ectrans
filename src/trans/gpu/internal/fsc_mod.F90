@@ -136,13 +136,6 @@ ZGTF_START(ZGTF_START_INDEX_END) = IST
 !$OMP& MAP(ALLOC:PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
 #endif
 
-!!DO KGL=IBEG,IEND,IINC
-!!
-!!IGLG    = D_NPTRLS(MYSETW)+KGL-1
-!!IMEN    = G_NMEN(IGLG)
-!!ISTAGTF = D_NSTAGTF(KGL)
-!!ZACHTE2  = ZACHTE(IGLG)
-
 !     ------------------------------------------------------------------
 
 !*       1.    DIVIDE U V AND N-S DERIVATIVES BY A*COS(THETA)
