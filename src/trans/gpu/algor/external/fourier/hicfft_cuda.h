@@ -35,12 +35,29 @@
 #define hipfftReal cufftReal
 #define hipfftDoubleComplex cufftDoubleComplex
 #define hipfftDoubleReal cufftDoubleReal
+#define hipGraph_t cudaGraph_t
+#define hipGraphNode_t cudaGraphNode_t
+#define hipGraphExec_t cudaGraphExec_t
+#define hipStream_t cudaStream_t
 
 #define hipfftCreate cufftCreate
 #define hipfftDestroy cufftDestroy
 #define hipfftPlanMany cufftPlanMany
 #define hipfftGetSize cufftGetSize
 #define hipfftSetAutoAllocation cufftSetAutoAllocation 
+#define hipfftSetStream cufftSetStream
+#define hipStreamCreate  cudaStreamCreate
+#define hipStreamDestroy  cudaStreamDestroy
+#define hipSetStream  cudaSetStream
+#define hipGraphCreate  cudaGraphCreate
+#define hipGraphDestroy  cudaGraphDestroy
+#define hipGraphLaunch cudaGraphLaunch
+#define hipGraphExecDestroy cudaGraphExecDestroy
+#define hipStreamCaptureModeGlobal cudaStreamCaptureModeGlobal
+#define hipStreamBeginCapture cudaStreamBeginCapture
+#define hipStreamEndCapture cudaStreamEndCapture
+#define hipGraphAddChildGraphNode cudaGraphAddChildGraphNode
+#define hipGraphInstantiate cudaGraphInstantiate
 
 #define hipfftExecR2C cufftExecR2C
 #define hipfftExecC2R cufftExecC2R
@@ -109,5 +126,15 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
 
     return "<unknown>";
 }
+
+  #define HIC_CHECK(e)                                                         \
+  {                                                                            \
+    cudaError_t err = (e);                                                     \
+    if (err != cudaSuccess) {                                                  \
+      fprintf(stderr, "CUDA error: %s, line %d, %s: %s\n", __FILE__, __LINE__, \
+              #e, cudaGetErrorString(err));                                    \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  }
 
 #endif

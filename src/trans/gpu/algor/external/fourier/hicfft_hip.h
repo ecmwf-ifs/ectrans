@@ -76,5 +76,16 @@ inline static const char * _fftGetErrorEnum(hipfftResult error)
 
     return "<unknown>";
 }
+  
+#define HIC_CHECK(e)                                                         \
+  {                                                                            \
+    hipError_t err = (e);                                                     \
+    if (err != hipSuccess) {                                                  \
+      fprintf(stderr, "HIP error: %s, line %d, %s: %s\n", __FILE__, __LINE__, \
+              #e, hipGetErrorString(err));                                    \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  }
+
 
 #endif

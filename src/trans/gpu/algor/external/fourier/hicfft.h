@@ -19,6 +19,9 @@
 #define __HICFFT_H__
 
 #include <stdio.h>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
 
 #ifdef HIPGPU
 #include "hicfft_hip.h"
