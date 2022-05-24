@@ -56,13 +56,12 @@ USE MPL_MODULE      ,ONLY : MPL_BARRIER
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELD
-REAL(KIND=JPRBT), INTENT(INOUT)  :: PREEL(:,:)
+REAL(KIND=JPRBT), INTENT(INOUT), POINTER :: PREEL(:,:)
 
-INTEGER(KIND=JPIM) :: IGLG,IOFF,KGL
+INTEGER(KIND=JPIM) :: IGLG,IOFF,KGL,IRET
 INTEGER(KIND=JPIM) :: IPLAN_C2R
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC
-
-REAL(KIND=JPRBT), allocatable  :: PREEL2(:,:)
+REAL(KIND=JPRBT), POINTER  :: PREEL2(:,:), TMP(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -78,8 +77,10 @@ ELSE
   IINC=-1
 ENDIF
 
-allocate(preel2(size(preel,1),size(preel,2)))
-!$acc data create(preel2) present(preel)
+ALLOCATE(PREEL2(SIZE(PREEL,1),SIZE(PREEL,2)))
+!$ACC ENTER DATA CREATE(PREEL2)
+
+!$ACC DATA PRESENT(PREEL,PREEL2)
 
 IF (LSYNC_TRANS) THEN
   CALL MPL_BARRIER(CDSTRING='FTINV BARRIER')
@@ -97,15 +98,24 @@ DO KGL=IBEG,IEND,IINC
   !$ACC END HOST_DATA
 END DO
 
+IRET = CUDA_SYNCHRONIZE()
+
 IF (LSYNC_TRANS) THEN
   CALL MPL_BARRIER(CDSTRING='FTINV BARRIER')
 ENDIF
 CALL GSTATS(451,1)
 
-!$acc kernels
-preel(:,:) = preel2(:,:)
-!$acc end kernels
-!$acc end data
+!$ACC END DATA
+
+! Swap pointers
+TMP => PREEL
+PREEL => PREEL2
+PREEL2 => TMP
+
+! and deallocate the local pointer
+!$ACC EXIT DATA DELETE(PREEL2)
+DEALLOCATE(PREEL2)
+
 !     ------------------------------------------------------------------
 
 END SUBROUTINE FTINV
