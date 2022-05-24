@@ -91,7 +91,7 @@ REAL(KIND=JPRBT),    INTENT(IN)  :: PAIA(:,:,:)
 REAL(KIND=JPRBT),    INTENT(OUT) :: POA1(:,:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK, IRET
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISL, IF, J, JK, IRET
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB) :: RRPELTMDIR = 100.0_JPRB
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
@@ -167,7 +167,6 @@ ENDDO
 ! compute m=0 in double precision:
 IF(KMLOC0 > 0) THEN
    print*,'computing m=0 in double precision'
-   ISKIP = 2
 
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE)
   DO J=1,MIN(R_NDGNH,G_NDGLU(0))
@@ -190,18 +189,16 @@ IF(KMLOC0 > 0) THEN
   !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
   !$ACC END HOST_DATA
 
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE)
-   DO J=1,(R_NTMAX+2)/2
-   DO JK=1,KFC
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILA = (R_NTMAX+2)/2
-            IA  = 1+MOD(R_NTMAX+2,2)
-            IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*DTDZCA)
-            END IF
-         END IF
-   ENDDO
-ENDDO
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE)
+  DO J=1,(R_NTMAX+2)/2
+    DO JK=1,KFC,2
+      ILA = (R_NTMAX+2)/2
+      IA  = 1+MOD(R_NTMAX+2,2)
+      IF (J .LE. ILA) THEN
+        POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/2+1+(J-1)*DTDZCA)
+      END IF
+    ENDDO
+  ENDDO
 ENDIF
 
 ELSE
@@ -247,7 +244,6 @@ DO KMLOC=1,D_NUMP
 ENDDO
 
 IF(KMLOC0 > 0) THEN
-   ISKIP = 2
    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE)
    DO J=1,MIN(R_NDGNH,G_NDGLU(0))
      DO JK=1,KFC,2
@@ -268,18 +264,16 @@ IF(KMLOC0 > 0) THEN
  &                            0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
       !$ACC end host_data
 
-   !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS) DEFAULT(NONE)
-   DO J=1,(R_NTMAX+3)/2
-      DO JK=1,KFC
-         if (MOD((JK-1),ISKIP) .eq. 0) then
-            ILS = (R_NTMAX+3)/2
-            if (J .le. ILS) then
-               IS  = 1+MOD(R_NTMAX+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
-            end if
-         end if
-      ENDDO
-   ENDDO
+  !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS) DEFAULT(NONE)
+  DO J=1,(R_NTMAX+3)/2
+    DO JK=1,KFC,2
+      ILS = (R_NTMAX+3)/2
+      if (J .le. ILS) then
+        IS  = 1+MOD(R_NTMAX+1,2)
+        POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/2+1+(J-1)*DTDZCS)
+      end if
+    ENDDO
+  ENDDO
 
 ENDIF
 
