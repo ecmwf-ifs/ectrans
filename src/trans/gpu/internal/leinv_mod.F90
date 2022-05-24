@@ -215,6 +215,10 @@ DO KMLOC=1,D_NUMP
       ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
         ZSOA = ZOUTS((JK-1)/2+1+(JGL-ISL+(KMLOC-1)*R_NDGNH)*2*KF_LT)
         ZAOA = ZOUTA((JK-1)/2+1+(JGL-ISL+(KMLOC-1)*R_NDGNH)*2*KF_LT)
+      ELSE
+        ! Imaginary values of KM=0 is zero, though I don't think we care
+        ZSOA = 0_JPRBT
+        ZAOA = 0_JPRBT
       ENDIF
 
       FOUBUF_IN(OFFSET1+JK) = ZAOA+ZSOA
