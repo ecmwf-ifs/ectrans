@@ -14,7 +14,7 @@ MODULE LEINV_MOD
   IMPLICIT NONE
 
   PRIVATE
-  PUBLIC :: LEINV_STRIDES, LEINV, LEINV_PACK
+  PUBLIC :: LEINV_STRIDES, LEINV
 
   INTEGER(KIND=JPIM) :: A = 8 !Alignment
 
@@ -314,113 +314,4 @@ CONTAINS
     !     ------------------------------------------------------------------
 
   END SUBROUTINE LEINV
-  SUBROUTINE LEINV_PACK(ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN,KF_LEG)
-
-    !**** *TRMTOL_PACK* - Packing buffer for TRMTOL
-
-    !     Purpose.
-    !     --------
-    !        Packs data from LTINV outputs into FOUBUF for conversion to fourier space
-
-    !**   Interface.
-    !     ----------
-    !        CALL TRMTOL_PACK(...)
-
-    !        Explicit arguments :  ZOUTS - symmetric data
-    !        --------------------  ZOUTA - asymmetric data
-    !                              ZOUTS0 - symmetric data for KMLOC0
-    !                              ZOUTA0 - asymmetric data for KMLOC0
-    !                              FOUBUF_IN - output towards TRMTOL
-    !                              KF_LEG - number of fields (we have 2XKF_LEG because complex)
-
-    !        Implicit arguments :  None.
-    !        --------------------
-
-    !     Externals.
-    !     ----------
-
-    !     Reference.
-    !     ----------
-    !        ECMWF Research Department documentation of the IFS
-
-    !     Author.
-    !     -------
-    !      Nils Wedi + Mats Hamrud + George Modzynski
-    !
-    !     Modifications.
-    !     --------------
-    !        J.Hague : Oct 2012 DR_HOOK round calls to DGEMM:
-    !      F. Vana  05-Mar-2015  Support for single precision
-    !     ------------------------------------------------------------------
-
-    USE PARKIND_ECTRANS  ,ONLY : JPIM,JPRB,JPRBT,JPRD
-    USE YOMHOOK, ONLY : LHOOK,DR_HOOK, JPHOOK
-    USE TPM_DIM, ONLY : R, R_NDGNH,R_NDGL
-    USE TPM_GEOMETRY,ONLY : G,G_NDGLU
-    USE TPM_DISTR, ONLY : D,D_NUMP,D_MYMS,D_NPNTGTB1
-
-    IMPLICIT NONE
-
-
-    !     DUMMY ARGUMENTS
-    REAL(KIND=JPRB),    INTENT(OUT) :: FOUBUF_IN(:)
-    REAL(KIND=JPRBT), INTENT(IN) :: ZOUTS(:), ZOUTA(:)
-    REAL(KIND=JPRD), INTENT(IN) :: ZOUTS0(:), ZOUTA0(:)
-    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
-
-    !     LOCAL
-    REAL(KIND=JPRBT) :: ZAOA, ZSOA
-
-    INTEGER(KIND=JPIM) :: KMLOC, KM, ISL, JGL, JK, IGLS, OFFSET1, OFFSET2
-    INTEGER(KIND=JPIM)  :: IOUT_STRIDES0, IOUT_STRIDES1
-    INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_STRIDES1
-
-    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-
-    IF (LHOOK) CALL DR_HOOK('LEINV_PACK',0,ZHOOK_HANDLE)
-
-    CALL LEINV_STRIDES(KF_LEG,IOUT_STRIDES0=IOUT_STRIDES0,IOUT_STRIDES1=IOUT_STRIDES1,&
-                       IOUT0_STRIDES0=IOUT0_STRIDES0,IOUT0_STRIDES1=IOUT0_STRIDES1)
-
-    !$ACC DATA PRESENT(D,D_MYMS,D_NPNTGTB1,G,G_NDGLU) &
-    !$ACC&     PRESENT(ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
-
-    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,ZAOA,ZSOA) ASYNC(1)
-    DO KMLOC=1,D_NUMP
-      DO JGL=1,R_NDGNH
-        DO JK=1,2*KF_LEG
-          KM = D_MYMS(KMLOC)
-          ISL = R_NDGNH-G_NDGLU(KM)+1
-          IF (JGL >= ISL) THEN
-            !(DO JGL=ISL,R_NDGNH)
-            IGLS = R_NDGL+1-JGL
-            OFFSET1 = D_NPNTGTB1(KMLOC,JGL )*2*KF_LEG
-            OFFSET2 = D_NPNTGTB1(KMLOC,IGLS)*2*KF_LEG
-
-            IF(KM /= 0) THEN
-              ZSOA = ZOUTS(JK+(JGL-ISL)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
-              ZAOA = ZOUTA(JK+(JGL-ISL)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
-            ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
-              ZSOA = ZOUTS0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
-              ZAOA = ZOUTA0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
-            ELSE
-              ! Imaginary values of KM=0 is zero, though I don't think we care
-              ZSOA = 0_JPRBT
-              ZAOA = 0_JPRBT
-            ENDIF
-
-            FOUBUF_IN(OFFSET1+JK) = ZAOA+ZSOA
-            FOUBUF_IN(OFFSET2+JK) = ZSOA-ZAOA
-          ENDIF
-        ENDDO
-      ENDDO
-    ENDDO
-
-    !$ACC WAIT(1)
-
-    !$ACC END DATA
-
-    IF (LHOOK) CALL DR_HOOK('LEINV_PACK',1,ZHOOK_HANDLE)
-
-  END SUBROUTINE LEINV_PACK
 END MODULE LEINV_MOD
