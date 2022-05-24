@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -229,6 +230,10 @@ CALL GSTATS_LABEL(430,'   ','DIR COPIES')
 CALL GSTATS_LABEL(431,'   ','INV COPIES')
 CALL GSTATS_LABEL(440,'   ','FULL DIRTRANS')
 CALL GSTATS_LABEL(441,'   ','FULL INVTRANS')
+CALL GSTATS_LABEL(450,'   ','FFTDIR - PLANS')
+CALL GSTATS_LABEL(451,'   ','FFTINV - PLANS')
+CALL GSTATS_LABEL(452,'   ','LEDIR')
+CALL GSTATS_LABEL(453,'   ','LEINV')
 
 !   counters 500 to 2000
 CALL GSTATS_LABEL(501,'MPL','SLCOMM2_COMMS PART1')

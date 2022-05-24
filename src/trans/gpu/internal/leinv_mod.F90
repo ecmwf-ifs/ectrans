@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -64,9 +65,10 @@ USE TPM_FIELDS      ,ONLY : F, ZIA, &
  &                          IZCS,IZCST,ILDZCA,ILDZCS,ITDZCA,ITDZCS,&
  &                          TDZAS, IF_FS_INV, ZAMAX, ZSMAX
 USE TPM_DISTR       ,ONLY : D_NUMP,D_MYMS, MYPROC
-USE TPM_GEN         ,ONLY : NOUT
+USE TPM_GEN         ,ONLY : NOUT, LSYNC_TRANS
 USE TPM_FLT
 USE HICBLAS_MOD     ,ONLY : HIP_SGEMM_BATCHED, HIP_DGEMM_BATCHED
+USE MPL_MODULE      ,ONLY : MPL_BARRIER
 #ifdef TRANS_SINGLE
 #define HIP_GEMM_BATCHED HIP_SGEMM_BATCHED
 #else
@@ -97,9 +99,13 @@ INTEGER(KIND=JPIM) :: ISTAT
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
-!*       1.1      PREPARATIONS.
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
+
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='LEINV BARRIER')
+ENDIF
+CALL GSTATS(453,0)
 
 !*       1.       PERFORM LEGENDRE TRANFORM.
 !                 --------------------------
@@ -322,7 +328,11 @@ END DO
 !$ACC END DATA
 #endif
 
-!*       1.       PERFORM LEGENDRE TRANFORM.
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='LEINV BARRIER')
+ENDIF
+CALL GSTATS(453,1)
+
 
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
