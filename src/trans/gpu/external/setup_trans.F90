@@ -110,7 +110,7 @@ USE TPM_DISTR       ,ONLY : D, DISTR_RESOL,NPROC,nprtrv, D_NUMP,D_MYMS,D_NSTAGT0
 USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL, G_NDGLU, G_NMEN, G_NMEN_MAX,G_NLOEN, G_NLOEN_MAX
 USE TPM_FIELDS      ,ONLY : FIELDS_RESOL, F,F_RW, ZEPSNM, &
 & ZAA,ZAS,TDZAA,TDZAS,&
-& IF_FS_INV0,IF_FS_DIR0,NFLEV0,ZAA0,&
+& ZAA0,&
 & ZAS0,KMLOC0
 USE TPM_FFT         ,ONLY : T, FFT_RESOL
 #ifdef WITH_FFTW
@@ -171,8 +171,7 @@ INTEGER(C_SIZE_T) ,OPTIONAL,INTENT(IN) :: KLEGPOLPTR_LEN
 ! Local variables
 INTEGER(KIND=JPIM),PARAMETER :: IMAXFLD=240
 INTEGER(KIND=JPIM) :: JGL,JRES,IDEF_RESOL
-INTEGER(KIND=JPIM) :: NFLEVL, JMLOC, KM, ILA, ILS, KMLOC, KDGLU, JK, i, J, IF_FS, IF_OUT_LT, IF_UV, IF_SCALARS
-INTEGER(KIND=JPIM) :: IPPNUM, IF_PP
+INTEGER(KIND=JPIM) :: JMLOC, KM, ILA, ILS, KMLOC, KDGLU, JK, i, J
 
 LOGICAL :: LLP1,LLP2, LLSPSETUPONLY
 REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
@@ -444,19 +443,6 @@ IF (LHOOK) CALL DR_HOOK('SETUP_TRANS',1,ZHOOK_HANDLE)
 
 IF( .NOT.D%LGRIDONLY ) THEN
 
-!allocating arrays for the GPU:
-IF(PRESENT(KFLEV)) THEN
-  NFLEV0 = KFLEV
-!  NFLEVL = NFLEV0/NPRTRV
-ELSE
-  NFLEV0 = ceiling(REAL(IMAXFLD)/NPRTRV)
-ENDIF
-
-! need to get local rank to be able to set device (1GPU == 1 MPI-rank)
-!ilocal_rank = 0
-!call GETENV("OMPI_COMM_WORLD_LOCAL_RANK",comm_local_rank)
-!read(comm_local_rank,'(I2)') ilocal_rank
-
 iunit=300+myproc
 
 #ifdef _OPENACC
@@ -470,48 +456,6 @@ istat  = cuda_GetDevice(idev)
 WRITE(iunit,*) '===now going to allocate GPU arrays on processor: ', myproc, ' device = ', mygpu, ' ',idev, ' of ', inumdevs
 #endif
 
-!dimensions of matrices for Legendre Transforms for RAPS ?
-!IF_OUT_LT = 5*NFLEV0+2
-!IF_FS = 6*NFLEV0+3
-
-! add additional post-processing requirements
-!IF_PP = 2*NFLEV0
-IF_PP = 0
-
-! u/v + scalars 3d + scalars 2d
-IF_UV = NFLEV0
-! SCALARS INCLUDING DERIVATIVES
-IF_SCALARS = NFLEV0 + 2*NFLEV0 + 1 + 2 + IF_PP
-IF_OUT_LT = 4*IF_UV+3*NFLEV0+3+IF_PP
-!IF_OUT_LT = 4*IF_UV+3*NFLEV0+3
-!8*KF_UV+2*KF_SCALARS
-!ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS
-IF_FS_INV0=8*IF_UV+2*IF_SCALARS
-
-! fields in Fourier space for inv trans the same
-!IF_FS=4*IF_UV+1*NFLEV0+2
-IF_FS=4*IF_UV+1*NFLEV0+2
-! for derivatives u/v add
-!IF_FS=IFS_FS+2*(2*NFLEV0)
-! for each 3d scalar derivative add
-IF_FS=IF_FS+2*NFLEV0 ! temperature
-! for each 2d scalar derivative add
-IF_FS=IF_FS+2 ! sfc pressure
-IF_FS=IF_FS+IF_PP
-
-! u/v + scalars for direct transforms
-! plus postprocessing buffer
-!ippnum=NFLEV0
-IF_FS_DIR0=2*(2*IF_UV+NFLEV0+2+IF_PP)
-!QUESTION: Why do we have NFLEV0 here? (Andreas)
-
-! fields in Fourier space for dir trans
-!IF_FS = 2*IF_UV + IF_SCALARS
-! plus add 2*scalar_derivatives + add vorg/divg + 2*IF_UV for u/v zonal derivatives
-
-write(nout,*)'setup_trans: if_uv=',if_uv,' if_out_lt=',if_out_lt,' IF_FS_DIR0=',IF_FS_DIR0,'IF_FS_INV0= ',IF_FS_INV0
-IF(MOD(IF_FS,2)==1) IF_FS = IF_FS + 1
-
 !leading and trailing dimensions of A for symmetric and antisymmetric cases
 ! (same for ltinv and ltdir)
 TDZAA=(R%NTMAX+2)/2
@@ -521,7 +465,7 @@ print*,'R%NSMAX=',R%NSMAX
 
 !$ACC ENTER DATA &
 !$ACC& COPYIN(F,F%RN,F%RLAPIN,S,S%FA,S%ITHRESHOLD,S%LUSEFLT,D,D%NUMP,D%MYMS,R,R%NDGNH,R%NSMAX,G,G%NDGLU) &
-!$ACC& copyin(D%NPNTGTB0,D%NPNTGTB1,D%NSTAGT0B,D%NSTAGT1B,D%NSTAGTF,G%NMEN,D%NPROCM,D%NPTRLS,G,G%NLOEN,D%MSTABF)
+!$ACC& COPYIN(D%NPNTGTB0,D%NPNTGTB1,D%NSTAGT0B,D%NSTAGT1B,D%NSTAGTF,G%NMEN,D%NPROCM,D%NPTRLS,G,G%NLOEN,D%MSTABF)
 
 ! Initialize A arrays
 

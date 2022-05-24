@@ -116,7 +116,6 @@ USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, LATLON, &
      &                      NF_SC2, NF_SC3A, NF_SC3B,        &
      &                      NGPBLKS, NPROMA
 USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
-USE TPM_FIELDS      ,ONLY : IF_FS_DIR,IF_FS_DIR0,NFLEV,NFLEV0
 USE TPM_FLT, ONLY: S
 USE TPM_GEOMETRY ,ONLY : G
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL
@@ -309,25 +308,7 @@ ENDIF
 NGPBLKS = (D%NGPTOT-1)/NPROMA+1
 
 IF_FS = 2*IF_UV + IF_SCALARS
-!D%IADJUST_D=0
-!IF(MOD(IF_FS,2)==1) THEN
-!  IF_FS = IF_FS + 1
-!  D%IADJUST_D=1
-!ENDIF
-
 IF_GP = 2*IF_UV_G+IF_SCALARS_G
-
-! add additional post-processing requirements
-! (copied from setup_trans.F90. Or does this need to be different here than in setup_trans.F90?)
-!IF_PP = 2*NFLEV
-!IF_PP = 0
-
-! How do I get the current number of levels? For now I use: (Andreas)
-!NFLEV = NFLEV0
-
-! set currently used array sizes for the GPU arrays: 
-IF_FS_DIR=2*IF_FS+2!2*(2*IF_UV+NFLEV+2+IF_PP)
-print*,"dir_trans: IF_FS_DIR=",IF_FS_DIR," IF_FS_DIR0=",IF_FS_DIR0
 
 ! Consistency checks
 

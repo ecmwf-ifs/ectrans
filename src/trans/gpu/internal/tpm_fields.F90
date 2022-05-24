@@ -50,16 +50,6 @@ INTEGER(KIND=JPIM) :: KMLOC0
 INTEGER(KIND=JPIM) :: TDZAA
 INTEGER(KIND=JPIM) :: TDZAS
 
-! enable calling setup_trans with a different set of fields than inv_trans and dir_trans:
-! IF_FS_INV0: size used for the allocation in setup_trans
-! IF_FS_INV: size used in inv_trans and dir_Trans, needs to be <= IF_FS_INV0 
-INTEGER(KIND=JPIM) :: IF_FS_INV, IF_FS_INV0
-INTEGER(KIND=JPIM) :: IF_FS_DIR, IF_FS_DIR0
-INTEGER(KIND=JPIM) :: NFLEV, NFLEV0
-
-REAL(KIND=JPRB),ALLOCATABLE, TARGET :: ZIA(:,:,:)
 REAL(KIND=JPRBT),ALLOCATABLE :: ZEPSNM(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE, TARGET :: ZOA1(:,:,:)
-REAL(KIND=JPRBT),ALLOCATABLE, TARGET :: ZOA2(:,:,:)
 
 END MODULE TPM_FIELDS
