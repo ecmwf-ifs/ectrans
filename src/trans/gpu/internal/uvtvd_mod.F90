@@ -11,7 +11,7 @@
 
 MODULE UVTVD_MOD
 CONTAINS
-SUBROUTINE UVTVD(KF_UV)
+SUBROUTINE UVTVD(KF_UV,PU,PV,PVOR,PDIV)
 
 !**** *UVTVD* - Compute vor/div from u and v in spectral space
 
@@ -54,41 +54,27 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
 USE TPM_DIM         ,ONLY : R, R_NTMAX
 USE TPM_FIELDS      ,ONLY : F_RN
 USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS
-USE TPM_FIELDS      ,ONLY : ZOA1,ZOA2,ZEPSNM
+USE TPM_FIELDS      ,ONLY : ZEPSNM
 !
 
 IMPLICIT NONE
 
 !     DUMMY INTEGER SCALARS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_UV
+REAL(KIND=JPRBT), INTENT(OUT)    :: PVOR(:,:,:),PDIV(:,:,:)
+REAL(KIND=JPRBT), INTENT(INOUT)  :: PU  (:,:,:),PV  (:,:,:)
 INTEGER(KIND=JPIM)  :: KM, KMLOC
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: II, IN, IR, J, JN, ITMAX
-INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
 
 !     LOCAL REAL SCALARS
 REAL(KIND=JPRBT) :: ZKM,ZJN
-REAL(KIND=JPRBT), POINTER :: PU(:,:,:),PV(:,:,:),PVOR(:,:,:),PDIV(:,:,:)
-
-IUS = 1
-IUE = 2*KF_UV
-IVS = 2*KF_UV+1
-IVE = 4*KF_UV
-IVORS = 1
-IVORE = 2*KF_UV
-IDIVS = 2*KF_UV+1
-IDIVE = 4*KF_UV
 
 !     ------------------------------------------------------------------
 
 !*       1.    COMPUTE U V FROM VORTICITY AND DIVERGENCE.
 !              ------------------------------------------
-
-PU => ZOA1(IUS:IUE,:,:)
-PV => ZOA1(IVS:IVE,:,:)
-PVOR => ZOA2(IVORS:IVORE,:,:)
-PDIV => ZOA2(IDIVS:IDIVE,:,:)
 
 #ifdef ACCGPU
 !$ACC DATA &

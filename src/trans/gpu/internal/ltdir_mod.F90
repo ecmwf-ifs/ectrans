@@ -11,7 +11,7 @@
 
 MODULE LTDIR_MOD
   CONTAINS
-  SUBROUTINE LTDIR(KF_FS,KF_UV,KF_SCALARS,KLED2,&
+  SUBROUTINE LTDIR(KF_FS,KF_UV,KF_SCALARS,&
  &                 PSPVOR,PSPDIV,PSPSCALAR,&
  &                 PSPSC3A,PSPSC3B,PSPSC2, &
  &                 KFLDPTRUV,KFLDPTRSC)
@@ -28,6 +28,7 @@ MODULE LTDIR_MOD
   USE LEDIR_MOD   ,ONLY : LEDIR
   USE UVTVD_MOD
   USE UPDSP_MOD   ,ONLY : UPDSP
+  USE UPDSPB_MOD  ,ONLY : UPDSPB
    
   USE TPM_FIELDS  ,ONLY : ZOA1,ZOA2,ZEPSNM
   
@@ -87,26 +88,11 @@ MODULE LTDIR_MOD
   
   IMPLICIT NONE
   
-  INTERFACE
-     SUBROUTINE cudaProfilerStart() BIND(C,name='cudaProfilerStart')
-       USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
-       IMPLICIT NONE
-     END SUBROUTINE cudaProfilerStart
-  END INTERFACE
-  
-  INTERFACE
-     SUBROUTINE cudaProfilerStop() BIND(C,name='cudaProfilerStop')
-       USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
-       IMPLICIT NONE
-     END SUBROUTINE cudaProfilerStop
-  END INTERFACE
-  
-  
   
   !     DUMMY INTEGER SCALARS
   INTEGER(KIND=JPIM)  :: KM
   INTEGER(KIND=JPIM)  :: KMLOC
-  INTEGER(KIND=JPIM),INTENT(IN)   :: KF_FS,KF_UV,KF_SCALARS,KLED2
+  INTEGER(KIND=JPIM),INTENT(IN)   :: KF_FS,KF_UV,KF_SCALARS
   
   REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
   REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
@@ -121,6 +107,7 @@ MODULE LTDIR_MOD
   INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
   INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
   
+  REAL(KIND=JPRB), ALLOCATABLE :: POA2(:,:,:)
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   
   
@@ -150,7 +137,6 @@ MODULE LTDIR_MOD
   !              ---------------------------------
   
   IF( KF_UV > 0 ) THEN
-        !stop 'Error: code path not (yet) supported in GPU version'
   
      !!CALL PREPSNM
   
@@ -162,9 +148,30 @@ MODULE LTDIR_MOD
      IVORE = 2*KF_UV
      IDIVS = 2*KF_UV+1
      IDIVE = 4*KF_UV
-     CALL UVTVD(KF_UV)
-     !     CALL UVTVD(KF_UV,ZEPSNM,ZOA1(IUS:IUE,:,:),ZOA1(IVS:IVE,:,:),&
-!      & ZOA2(IVORS:IVORE,:,:),ZOA2(IDIVS:IDIVE,:,:))
+
+     ALLOCATE(POA2(4*KF_UV,R%NTMAX+3,D%NUMP))
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+     !$ACC ENTER DATA CREATE(POA2)
+#endif
+
+
+     ! Compute vorticity and divergence
+     CALL UVTVD(KF_UV,ZOA1(IUS:IUE,:,:),ZOA1(IVS:IVE,:,:),&
+         & POA2(IVORS:IVORE,:,:),POA2(IDIVS:IDIVE,:,:))
+
+     ! Write back. Note, if we have UV, the contract says we *must* have VOR/DIV
+     CALL UPDSPB(KF_UV,POA2(IVORS:IVORE,:,:),PSPVOR,KFLDPTRUV)
+     CALL UPDSPB(KF_UV,POA2(IDIVS:IDIVE,:,:),PSPDIV,KFLDPTRUV)
+
+
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+     !$ACC EXIT DATA DELETE(POA2)
+#endif
+     DEALLOCATE(POA2)
   ENDIF
   !     ------------------------------------------------------------------
   
@@ -180,8 +187,8 @@ MODULE LTDIR_MOD
   !    KM = D%MYMS(KMLOC)
  
   ! this is on the host, so need to cp from device, Nils
-  CALL UPDSP(KF_UV,KF_SCALARS,ZOA1,ZOA2, &
-   & PSPVOR,PSPDIV,PSPSCALAR,&
+  CALL UPDSP(KF_UV,KF_SCALARS,ZOA1,&
+   & PSPSCALAR,&
    & PSPSC3A,PSPSC3B,PSPSC2 , &
    & KFLDPTRUV,KFLDPTRSC)
   

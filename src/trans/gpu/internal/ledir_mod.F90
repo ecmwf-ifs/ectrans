@@ -157,6 +157,7 @@ ZINPA(:) = 0
         PAIA = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
         PAIS = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
         IF (JF .LE. 4*KF_UV) THEN
+          ! Multiply in case of velocity
           PAIA = PAIA*F_RACTHE(JGL)
           PAIS = PAIS*F_RACTHE(JGL)
         ENDIF
