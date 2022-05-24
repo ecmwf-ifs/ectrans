@@ -98,9 +98,9 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
 
   if (ISIGN == -1) {
     cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
-                                stride, dist, cufft_1, LOT));
+                                stride/2, dist, cufft_1, LOT));
   } else if (ISIGN == 1) {
-    cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
+    cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride/2, dist, embed,
                                 stride, dist, cufft_2, LOT));
   } else {
     abort();

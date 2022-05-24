@@ -85,8 +85,8 @@ DO KGL=IBEG,IEND,IINC
       ISTA  = (D_NSTAGT0B(IPROC)+D_NPNTGTB0(JM,KGL))*KFIELDS*2
 
       ! This is not contiguous in PREEL due to the memory layout.
-      FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL(2*JF-1, 2*JM+IOFF)
-      FOUBUF_IN(ISTA+2*JF  ) = SCAL * PREEL(2*JF  , 2*JM+IOFF)
+      FOUBUF_IN(ISTA+2*JF-1) = SCAL * PREEL(2*JF-1, JM+IOFF)
+      FOUBUF_IN(ISTA+2*JF  ) = SCAL * PREEL(2*JF  , JM+IOFF)
     ENDDO
   ENDDO
 ENDDO
