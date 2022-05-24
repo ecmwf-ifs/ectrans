@@ -188,6 +188,7 @@ void execute_fft(typename Type::real *data_real, typename Type::cmplx *data_comp
 template <class Type, hipfftType Direction>
 void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
+  constexpr bool is_forward = Direction == HIPFFT_R2C || Direction == HIPFFT_D2Z;
   using real = typename Type::real;
   using cmplx = typename Type::cmplx;
 
@@ -225,8 +226,10 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
             fftSafeCall(hipfftCreate(&plan));
             int dist = offsets[i+1] - offsets[i];
             int embed[] = {1};
-            fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
-                                      1, dist / 2, Direction, kfield));
+            //fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
+            //                          1, dist / 2, Direction, kfield));
+            fftSafeCall(cufftPlanMany(&plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed,
+                                      1, is_forward ? dist / 2 : dist, Direction, kfield));
             newPlans[i] = plan;
           }
           fftPlansCache.insert({kfield, newPlans});
@@ -301,7 +304,8 @@ void execute_dir_fft_float(float *data_real, hipfftComplex *data_complex,
 }
 void execute_inv_fft_float(hipfftComplex *data_complex, float *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
-    execute_fft<Float, HIPFFT_C2R>(data_real, data_complex, kfield, loens, offsets, nfft);
+    //execute_fft<Float, HIPFFT_C2R>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Float, HIPFFT_C2R>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 void execute_dir_fft_double(double *data_real, hipfftDoubleComplex *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
@@ -310,7 +314,8 @@ void execute_dir_fft_double(double *data_real, hipfftDoubleComplex *data_complex
 }
 void execute_inv_fft_double(hipfftDoubleComplex *data_complex, double *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
-    execute_fft<Double, HIPFFT_Z2D>(data_real, data_complex, kfield, loens, offsets, nfft);
+    //execute_fft<Double, HIPFFT_Z2D>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Double, HIPFFT_Z2D>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 }
 
