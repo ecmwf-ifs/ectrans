@@ -125,28 +125,25 @@ KIFC = KFC
 
 IF ( KMODE == -1 ) THEN
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH   
-      DO JK=1,KFC
-         
-         KM = D_MYMS(KMLOC)   
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            ENDIF
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               !DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
+  DO JK=1,KFC
+    KM = D_MYMS(KMLOC)   
+    KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
+    DO J=1,R_NDGNH
+      IF (J .LE. KDGLU) THEN
+        ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+        IF(KM == 0)THEN
+          ISKIP = 2
+        ELSE
+          ISKIP = 1
+        ENDIF
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
+        END IF
+      END IF
+    ENDDO
+  ENDDO
 END DO
 
 
@@ -197,13 +194,13 @@ IF(KMLOC0 > 0) THEN
   DO J=1,R_NDGNH
     DO JK=1,KFC
 
-         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
-            END IF
-         END IF
+      KDGLU = MIN(R_NDGNH,G_NDGLU(0))
+      IF (J .LE. KDGLU) THEN
+        ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+        END IF
+      END IF
     ENDDO
   ENDDO
 
@@ -238,27 +235,26 @@ ELSE
 
 ! symmetric
 
-!$acc parallel loop collapse(3) private(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH   
-      DO JK=1,KFC
-         KM = D_MYMS(KMLOC)   
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            ENDIF
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
+  DO JK=1,KFC
+    KM = D_MYMS(KMLOC)
+    KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
+    DO J=1,R_NDGNH   
+      IF (J .LE. KDGLU) THEN
+        ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+
+        IF(KM == 0)THEN
+          ISKIP = 2
+        ELSE
+          ISKIP = 1
+        ENDIF
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
+        END IF
+      END IF
+    ENDDO
+  ENDDO
 END DO
 
 ! Get C in transpose format to get better memory access patterns later
@@ -303,15 +299,15 @@ IF(KMLOC0 > 0) THEN
    ISKIP = 2
    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE)
    DO J=1,R_NDGNH   
-      DO JK=1,KFC
-         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
-           IF (MOD((JK-1),ISKIP) .eq. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
-           END IF
+     DO JK=1,KFC
+       KDGLU = MIN(R_NDGNH,G_NDGLU(0))
+       IF (J .LE. KDGLU) THEN
+         ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+         IF (MOD((JK-1),ISKIP) .eq. 0) THEN
+           DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
          END IF
-      ENDDO
+       END IF
+     ENDDO
    ENDDO
 
       ! Get C in transpose format to get better memory access patterns later
