@@ -33,7 +33,6 @@ void cublas_dgemm_wrapper(cublasOperation_t transa, cublasOperation_t transb,
   CUBLAS_CHECK(cublasDgemmStridedBatched(handle, transa, transb, m, n, k,
                                          &alpha, A, lda, tda, B, ldb, tdb,
                                          &beta, C, ldc, tdc, batchCount));
-  CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 void cublas_sgemm_wrapper(cublasOperation_t transa, cublasOperation_t transb,
@@ -48,6 +47,5 @@ void cublas_sgemm_wrapper(cublasOperation_t transa, cublasOperation_t transb,
   CUBLAS_CHECK(cublasSgemmStridedBatched(handle, transa, transb, m, n, k,
                                          &alpha, A, lda, tda, B, ldb, tdb,
                                          &beta, C, ldc, tdc, batchCount));
-  CUDA_CHECK(cudaDeviceSynchronize());
 }
 }

@@ -163,6 +163,7 @@ DO KMLOC=1,D_NUMP
       & 1)
   ENDIF
 ENDDO
+CALL cudaDeviceSynchronize()
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,0)
   CALL MPL_BARRIER(CDSTRING='')
@@ -210,6 +211,7 @@ IF(KMLOC0 > 0) THEN
     & 0.0_JPRD, &
     & ZOUT0, KF_FS, TDZAA*KF_FS, &
     & 1)
+  CALL cudaDeviceSynchronize()
 
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE)
   DO J=1,(R_NSMAX+2)/2
@@ -245,6 +247,7 @@ DO KMLOC=1,D_NUMP
       & 1)
   ENDIF
 ENDDO
+CALL cudaDeviceSynchronize()
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,0)
   CALL MPL_BARRIER(CDSTRING='')
@@ -288,6 +291,7 @@ IF(KMLOC0 > 0) THEN
     & 0.0_JPRD, &
     & ZOUT0, KF_FS, TDZAS*KF_FS, &
     & 1)
+  call cudaDeviceSynchronize()
 
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IS) DEFAULT(NONE)
   DO J=1,(R_NSMAX+3)/2
