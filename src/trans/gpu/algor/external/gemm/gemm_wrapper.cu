@@ -93,61 +93,6 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
   
 }
 
-extern "C" void cublasDgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, long long tda, const double *B, int ldb, long long tdb, double beta, double *C, int ldc, long long tdc, int batchCount)
-{
-
-
-  // printf("CUBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
-
- 
-  cublasOperation_t op_t1=CUBLAS_OP_N, op_t2=CUBLAS_OP_N;
-
-  if (transa=='T' || transa=='t')       
-    op_t1=CUBLAS_OP_T;
-
-  if (transb=='T' || transb=='t')       
-    op_t2=CUBLAS_OP_T;
-
-  if (!alreadyAllocated_dgemm_handle){
-    cublasCreate(&handle_dgemm);
-    alreadyAllocated_dgemm_handle=true;
-  }
-  cublasDgemmStridedBatched(handle_dgemm,op_t1,op_t2,m,n,k,&alpha,(const double *) A,lda,tda, (const double *) B,ldb,tdb,&beta,(double *) C,ldc,tdc,batchCount);
-
-}
-
-extern "C" void cublasDgemmBatched_finalize ()
-{
-
-
-
-  if (alreadyAllocated_dgemm){
-  
-    cudaFree(Aarray);
-    cudaFree(Barray);
-    cudaFree(Carray);
-    
-    cudaFree(d_Aarray);
-    cudaFree(d_Barray);
-    cudaFree(d_Carray);
-    if (alreadyAllocated_dgemm_handle){
-      cublasDestroy(handle_dgemm);
-    }
-    alreadyAllocated_dgemm_handle=false;
-
-  }
-  alreadyAllocated_dgemm=false;
-  
-}
-//
-// Wrapper for cublasSgemm function. 
-//
-// Alan Gray, NVIDIA
-//
-
-#include <stdio.h>
-#include "cublas_v2.h" 
-
 
 bool alreadyAllocated_sgemm=false;
 bool alreadyAllocated_sgemm_handle=false;
@@ -221,46 +166,3 @@ extern "C" void cublasSgemmBatched_wrapper (char transa, char transb, int m, int
   
 }
 
-extern "C" void cublasSgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, float alpha, const float *A, int lda, long long tda, const float *B, int ldb, long long tdb, float beta, float *C, int ldc, long long tdc, int batchCount)
-{
-
-
-  // printf("CUBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
-
- 
-  cublasOperation_t op_t1=CUBLAS_OP_N, op_t2=CUBLAS_OP_N;
-
-  if (transa=='T' || transa=='t')       
-    op_t1=CUBLAS_OP_T;
-
-  if (transb=='T' || transb=='t')       
-    op_t2=CUBLAS_OP_T;
-
-  if (!alreadyAllocated_sgemm_handle){
-    cublasCreate(&handle_sgemm);
-    alreadyAllocated_sgemm_handle=true;
-  }
-  cublasSgemmStridedBatched(handle_sgemm,op_t1,op_t2,m,n,k,&alpha,(const float *) A,lda,tda, (const float *) B,ldb,tdb,&beta,(float*) C,ldc,tdc,batchCount);
-
-}
-
-extern "C" void cublasSgemmBatched_finalize ()
-{
-
-  if (alreadyAllocated_sgemm){
-  
-    cudaFree(Aarray_sgemm);
-    cudaFree(Barray_sgemm);
-    cudaFree(Carray_sgemm);
-    
-    cudaFree(d_Aarray_sgemm);
-    cudaFree(d_Barray_sgemm);
-    cudaFree(d_Carray_sgemm);
-
-  }
-
-  if (alreadyAllocated_sgemm_handle){
-    cublasDestroy(handle_sgemm);
-  }
-  
-}
