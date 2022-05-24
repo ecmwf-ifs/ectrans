@@ -209,6 +209,20 @@ IF (LSYNC_TRANS) THEN
   CALL GSTATS(430,1)
 ENDIF
 CALL GSTATS(414,0)
+
+IF(KMLOC0 > 0) THEN
+   print*,'computing m=0 in double precision'
+
+  CALL CUDA_GEMM_BATCHED( &
+    & CUBLAS_OP_N, CUBLAS_OP_N, &
+    & KF_FS, (R%NSMAX+2)/2, G%NDGLU(0), &
+    & 1.0_JPRD, &
+    & ZINPA0, IIN0_STRIDES0, 0, &
+    & ZAA0, SIZE(ZAA0,1), 0, &
+    & 0.0_JPRD, &
+    & ZOUT0, IOUT0_STRIDES0, 0, &
+    & 1, STREAM=ACC_ASYNC_SYNC)
+ENDIF
 ! Get C in transpose format to get better memory access patterns later
 !C=A*B =>
 ! C^T=B^T*A^T
@@ -242,27 +256,6 @@ IF (LSYNC_TRANS) THEN
 ENDIF
 CALL GSTATS(414,1)
 
-! compute m=0 in double precision:
-IF(KMLOC0 > 0) THEN
-   print*,'computing m=0 in double precision'
-
-  ! Get C in transpose format to get better memory access patterns later
-  !C=A*B =>
-  ! C^T=B^T*A^T
-
-  CALL CUDA_GEMM_BATCHED( &
-    & CUBLAS_OP_N, CUBLAS_OP_N, &
-    & KF_FS, (R%NSMAX+2)/2, G%NDGLU(0), &
-    & 1.0_JPRD, &
-    & ZINPA0, IIN0_STRIDES0, 0, &
-    & ZAA0, SIZE(ZAA0,1), 0, &
-    & 0.0_JPRD, &
-    & ZOUT0, IOUT0_STRIDES0, 0, &
-    & 1, STREAM=ACC_ASYNC_SYNC)
-  CALL cudaDeviceSynchronize()
-
-ENDIF
-
 !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
   DO JF=1,2*KF_FS
@@ -290,6 +283,20 @@ IF (LSYNC_TRANS) THEN
   CALL GSTATS(430,1)
 ENDIF
 CALL GSTATS(414,0)
+
+IF(KMLOC0 > 0) THEN
+  ! compute m=0 in double precision:
+  call CUDA_GEMM_BATCHED( &
+    & CUBLAS_OP_N, CUBLAS_OP_N, &
+    & KF_FS, (R%NSMAX+3)/2, G%NDGLU(0), &
+    & 1.0_JPRD, &
+    & ZINPS0, IIN0_STRIDES0, 0, &
+    & ZAS0, SIZE(ZAS0,1), 0, &
+    & 0.0_JPRD, &
+    & ZOUT0, IOUT0_STRIDES0, 0, &
+    & 1, STREAM=ACC_ASYNC_SYNC)
+ENDIF
+
 ! Get C in transpose format to get better memory access patterns later
 !C=A*B =>
 ! C^T=B^T*A^T
@@ -322,25 +329,6 @@ IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,1)
 ENDIF
 CALL GSTATS(414,1)
-
-IF(KMLOC0 > 0) THEN
-  ! Get C in transpose format to get better memory access patterns later
-  !C=A*B =>
-  ! C^T=B^T*A^T
-
-  call CUDA_GEMM_BATCHED( &
-    & CUBLAS_OP_N, CUBLAS_OP_N, &
-    & KF_FS, (R%NSMAX+3)/2, G%NDGLU(0), &
-    & 1.0_JPRD, &
-    & ZINPS0, IIN0_STRIDES0, 0, &
-    & ZAS0, SIZE(ZAS0,1), 0, &
-    & 0.0_JPRD, &
-    & ZOUT0, IOUT0_STRIDES0, 0, &
-    & 1, STREAM=ACC_ASYNC_SYNC)
-  call cudaDeviceSynchronize()
-
-
-ENDIF
 
 !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
