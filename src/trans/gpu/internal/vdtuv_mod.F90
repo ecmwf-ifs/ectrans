@@ -98,30 +98,19 @@ REAL(KIND=JPRBT) :: ZKM
 !*       1.    COMPUTE U V FROM VORTICITY AND DIVERGENCE.
 !              ------------------------------------------
 
-!$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,KM,ZKM,JI) DEFAULT(NONE)
 DO KMLOC=1,D%NUMP
-  DO J=1,KFIELD
-    IR = 2*J-1
-    II = IR+1
-    KM = D_MYMS(KMLOC)
-    ZKM = REAL(KM,JPRBT)
+  DO JN=0,R_NTMAX+1
+    DO J=1,KFIELD
+      IR = 2*J-1
+      II = IR+1
+      KM = D_MYMS(KMLOC)
+      ZKM = REAL(KM,JPRBT)
 
-    IF(KM == 0) THEN
-      !$ACC LOOP SEQ
-      DO JN=0,R_NTMAX+1
+      IF(KM /= 0 .AND. JN >= KM) THEN
+        ! (DO JN=KN,R_NTMAX)
         JI = R_NTMAX+3-JN
-        PU(IR,JI,KMLOC) = +&
-         &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PVOR(IR,JI+1,KMLOC)-&
-         &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PVOR(IR,JI-1,KMLOC)
-        PV(IR,JI,KMLOC) = -&
-         &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PDIV(IR,JI+1,KMLOC)+&
-         &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PDIV(IR,JI-1,KMLOC)
-      ENDDO
 
-    ELSE
-      !$ACC LOOP SEQ
-      DO JN=KM,R_NTMAX+1
-        JI = R_NTMAX+3-JN
         PU(ir,JI,kmloc) = -ZKM*F%RLAPIN(JN)*PDIV(ii,JI,kmloc)+&
          &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PVOR(ir,JI+1,kmloc)-&
          &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PVOR(ir,JI-1,kmloc)
@@ -134,8 +123,19 @@ DO KMLOC=1,D%NUMP
         PV(ii,JI,kmloc) = +ZKM*F%RLAPIN(JN)*PVOR(ir,JI,kmloc)-&
          &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PDIV(ii,JI+1,kmloc)+&
          &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PDIV(ii,JI-1,kmloc)
-      ENDDO
-    ENDIF
+
+      ELSEIF(KM == 0) THEN
+        ! (DO JN=0,R_NTMAX)
+        JI = R_NTMAX+3-JN
+
+        PU(IR,JI,KMLOC) = +&
+         &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PVOR(IR,JI+1,KMLOC)-&
+         &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PVOR(IR,JI-1,KMLOC)
+        PV(IR,JI,KMLOC) = -&
+         &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PDIV(IR,JI+1,KMLOC)+&
+         &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PDIV(IR,JI-1,KMLOC)
+      ENDIF
+    ENDDO
   ENDDO
 ENDDO
 
