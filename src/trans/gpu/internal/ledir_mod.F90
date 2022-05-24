@@ -153,27 +153,18 @@ CALL CUDA_GEMM_BATCHED( &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,(R_NTMAX+2)/2
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
-            ISKIP = 2
-         ELSE
-            ISKIP = 1
-         ENDIF
-         
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILA = (R_NTMAX-KM+2)/2
-            IA  = 1+MOD(R_NTMAX-KM+2,2)
-            IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
+  DO JK=1,KFC
+    KM = D_MYMS(KMLOC)
+    ILA = (R_NTMAX-KM+2)/2
+    IA  = 1+MOD(R_NTMAX-KM+2,2)
+    DO J=1,(R_NTMAX+2)/2
+      IF (J .LE. ILA) THEN
+        POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
+      END IF
+    ENDDO
+  ENDDO
 ENDDO
 
 ! compute m=0 in double precision:
@@ -253,27 +244,18 @@ CALL CUDA_GEMM_BATCHED( &
   & D_NUMP)
 !$ACC END HOST_DATA
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS,IS) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISKIP,ILA,IA,ILS,IS) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-   DO J=1,(R_NTMAX+3)/2
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
-            ISKIP = 2
-         ELSE
-            ISKIP = 1
-         ENDIF
-         
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILS = (R_NTMAX-KM+3)/2
-            IF (J .LE. ILS) THEN
-               IS  = 1+MOD(R_NTMAX-KM+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)            
-            END IF
-         END IF
-      ENDDO
-   ENDDO
+  DO JK=1,KFC
+    KM = D_MYMS(KMLOC)
+    ILS = (R_NTMAX-KM+3)/2
+    IS  = 1+MOD(R_NTMAX-KM+1,2)
+    DO J=1,(R_NTMAX+3)/2
+      IF (J .LE. ILS) THEN
+        POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
+      END IF
+    ENDDO
+  ENDDO
 ENDDO
 
 IF(KMLOC0 > 0) THEN
