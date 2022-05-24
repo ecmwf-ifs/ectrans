@@ -52,6 +52,11 @@ MODULE ALLOCATOR_MOD
 
 CONTAINS
 
+  ! TODO This is not perfect yet. We will over-allocate up to 2X in theory.
+  ! It would be better to always keep the previous allocation size and then
+  ! have one allocation sitting at the the top, and the double-buffer at
+  ! the bottom of the allocation.
+
   FUNCTION MAKE_BUFFERED_ALLOCATOR()
     TYPE(BUFFERED_ALLOCATOR) :: MAKE_BUFFERED_ALLOCATOR
 
@@ -90,7 +95,6 @@ CONTAINS
         OLD_PTR => ALLOCATOR%PTR
       ELSE
         ALLOCATOR%PTR(1:) => OLD_PTR(1:)
-        NULLIFY(OLD_PTR)
       ENDIF
     ELSE
       ALLOCATE(ALLOCATOR%PTR(1:SUM(ALLOCATOR%BUFR_SZ)))

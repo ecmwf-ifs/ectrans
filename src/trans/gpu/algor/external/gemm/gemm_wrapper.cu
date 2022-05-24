@@ -75,7 +75,10 @@ void run_group_graph(Gemm &&gemm, int m, int *n, int *k, Real alpha,
     // the plan is cached, but the pointers are not correct. we remove and
     // delete the graph, but we keep the cublas handles, if this happens more
     // often, we should cache this...
-    std::cout << "WARNING: POINTER CHANGE --> THIS MIGHT BE SLOW" << std::endl;
+    std::cout << "WARNING GEMM: POINTER CHANGE - Graph recreation might be slow.\n";
+    std::cout << "We have an entry with key {m=" << m << ", blas_id=" << blas_id << "}\n";
+    std::cout << "Pointers: " << std::get<0>(ptrs->second) << ", " << std::get<1>(ptrs->second) << ", " << std::get<2>(ptrs->second)  << " vs. "
+            << A << ", " << B << ", " << C << std::endl;
     CUDA_CHECK(cudaGraphExecDestroy(graphCache[key]));
     graphCache.erase(key);
     ptrCache.erase(key);

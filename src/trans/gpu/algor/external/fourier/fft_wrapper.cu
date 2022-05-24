@@ -95,7 +95,7 @@ void execute_fft(typename Type::real *data_real,
     // the plan is cached, but the pointers are not correct. we remove and
     // delete the graph, but we keep the FFT plans, if this happens more often,
     // we should cache this...
-    std::cout << "WARNING: POINTER CHANGE --> THIS MIGHT BE SLOW" << std::endl;
+    std::cout << "WARNING FFT: POINTER CHANGE --> THIS MIGHT BE SLOW" << std::endl;
     CUDA_CHECK(cudaGraphExecDestroy(graphCache[kfield]));
     graphCache.erase(kfield);
     ptrCache.erase(kfield);
