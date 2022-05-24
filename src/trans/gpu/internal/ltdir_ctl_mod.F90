@@ -47,6 +47,7 @@ MODULE LTDIR_CTL_MOD
   USE TPM_DISTR       ,ONLY : D
   USE TPM_GEOMETRY    ,ONLY : G
   USE TPM_FIELDS      ,ONLY : F
+  USE FOURIER_OUT_MOD ,ONLY : FOURIER_OUT
  
  
   USE LTDIR_MOD       ,ONLY : LTDIR
@@ -79,15 +80,14 @@ MODULE LTDIR_CTL_MOD
   !$OMP TARGET DATA MAP(ALLOC:FOUBUF_IN,FOUBUF)
 #endif
 
-  ! Transposition from Fourier space distribution to spectral space distribution
-  ! requires currently both on the host !!!
+  CALL FOURIER_OUT(KF_FS)
 
   CALL GSTATS(153,0)
 #ifdef USE_CUDA_AWARE_MPI_FT
   WRITE(NOUT,*) 'ltdir_ctl:TRLTOM_CUDAAWARE'
-  CALL TRLTOM_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_FS)
+  CALL TRLTOM_CUDAAWARE(FOUBUF_IN,FOUBUF,KF_FS)
 #else
-  CALL TRLTOM(FOUBUF_IN,FOUBUF,2*KF_FS)
+  CALL TRLTOM(FOUBUF_IN,FOUBUF,KF_FS)
 !!#ifdef ACCGPU
 !!  !$ACC UPDATE DEVICE(FOUBUF)
 !!#endif
@@ -100,25 +100,25 @@ MODULE LTDIR_CTL_MOD
   ! Direct Legendre transform
  
   CALL GSTATS(103,0)
-  ILED2 = 2*KF_FS
   CALL GSTATS(1645,0)
-  IF(KF_FS>0) THEN
 
+  IF(KF_FS>0) THEN
     CALL LTDIR(KF_FS,KF_UV,KF_SCALARS,ILED2, &
           & PSPVOR,PSPDIV,PSPSCALAR,&
           & PSPSC3A,PSPSC3B,PSPSC2 , &
           & KFLDPTRUV,KFLDPTRSC)
  
   ENDIF
+
+  CALL GSTATS(1645,1)
+  CALL GSTATS(103,1)
+
 #ifdef OMPGPU
    !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
    !$ACC END DATA
 #endif
-  CALL GSTATS(1645,1)
- 
-  CALL GSTATS(103,1)
  
   !     -----------------------------------------------------------------
 

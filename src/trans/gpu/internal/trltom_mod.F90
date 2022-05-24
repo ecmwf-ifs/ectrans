@@ -12,7 +12,7 @@
 MODULE TRLTOM_MOD
   CONTAINS
 #ifdef USE_CUDA_AWARE_MPI_FT
-  SUBROUTINE TRLTOM_CUDAAWARE(PFBUF_IN,PFBUF,KFIELD)
+  SUBROUTINE TRLTOM_CUDAAWARE(PFBUF_IN,PFBUF,KF_FS)
 
   !**** *TRLTOM * - transposition in Fourierspace
 
@@ -31,7 +31,7 @@ MODULE TRLTOM_MOD
   !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
   !        --------------------          used for both input and output.
 
-  !                             KFIELD - Number of fields communicated
+  !                             KF_FS  - Number of fields communicated
 
   !        Implicit arguments :
   !        --------------------
@@ -89,7 +89,7 @@ MODULE TRLTOM_MOD
   include 'mpif.h'
 #endif
 
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+  INTEGER(KIND=JPIM),INTENT(IN)  :: KF_FS
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF(:)
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF_IN(:)
 
@@ -121,10 +121,10 @@ MODULE TRLTOM_MOD
   ITAG = MTAGLM
 
   DO J=1,NPRTRW
-    ILENS(J) = D%NLTSGTB(J)*KFIELD
-    IOFFS(J) = D%NSTAGT1B(D%MSTABF(J))*KFIELD
-    ILENR(J) = D%NLTSFTB(J)*KFIELD
-    IOFFR(J) = D%NSTAGT1B(J)*KFIELD
+    ILENS(J) = D%NLTSGTB(J)*2*KF_FS
+    IOFFS(J) = D%NSTAGT1B(D%MSTABF(J))*2*KF_FS
+    ILENR(J) = D%NLTSFTB(J)*2*KF_FS
+    IOFFR(J) = D%NSTAGT1B(J)*2*KF_FS
   ENDDO
 
   IF(NPROC > 1) THEN
@@ -191,8 +191,8 @@ MODULE TRLTOM_MOD
 
     CALL GSTATS(806,1)
   ELSE
-    ILEN = D%NLTSGTB(MYSETW)*KFIELD
-    ISTA = D%NSTAGT1B(MYSETW)*KFIELD+1
+    ILEN = D%NLTSGTB(MYSETW)*2*KF_FS
+    ISTA = D%NSTAGT1B(MYSETW)*2*KF_FS+1
     CALL GSTATS(1607,0)
 #ifdef OMPGPU
 !WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
@@ -213,7 +213,7 @@ MODULE TRLTOM_MOD
   END SUBROUTINE TRLTOM_CUDAAWARE
 #endif
 
-  SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
+  SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KF_FS)
 
   !**** *TRLTOM * - transposition in Fourierspace
 
@@ -229,10 +229,10 @@ MODULE TRLTOM_MOD
   !     ----------
   !        *CALL* *TRLTOM(...)*
 
-  !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
+  !        Explicit arguments : PFBUF - Fourier coefficient buffer. It is
   !        --------------------          used for both input and output.
 
-  !                             KFIELD - Number of fields communicated
+  !                             KF_FS - Number of fields communicated
 
   !        Implicit arguments :
   !        --------------------
@@ -281,7 +281,7 @@ MODULE TRLTOM_MOD
 
   IMPLICIT NONE
 
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+  INTEGER(KIND=JPIM),INTENT(IN)  :: KF_FS
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF(:)
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF_IN(:)
 
@@ -307,10 +307,10 @@ MODULE TRLTOM_MOD
   ITAG = MTAGLM
 
   DO J=1,NPRTRW
-    ILENS(J) = D%NLTSGTB(J)*KFIELD
-    IOFFS(J) = D%NSTAGT1B(D%MSTABF(J))*KFIELD
-    ILENR(J) = D%NLTSFTB(J)*KFIELD
-    IOFFR(J) = D%NSTAGT1B(J)*KFIELD
+    ILENS(J) = D%NLTSGTB(J)*2*KF_FS
+    IOFFS(J) = D%NSTAGT1B(D%MSTABF(J))*2*KF_FS
+    ILENR(J) = D%NLTSFTB(J)*2*KF_FS
+    IOFFR(J) = D%NSTAGT1B(J)*2*KF_FS
   ENDDO
 
   IF(NPROC > 1) THEN
@@ -326,8 +326,8 @@ MODULE TRLTOM_MOD
 
   CALL GSTATS(806,1)
   ELSE
-    ILEN = D%NLTSGTB(MYSETW)*KFIELD
-    ISTA = D%NSTAGT1B(MYSETW)*KFIELD+1
+    ILEN = D%NLTSGTB(MYSETW)*2*KF_FS
+    ISTA = D%NSTAGT1B(MYSETW)*2*KF_FS+1
     CALL GSTATS(1607,0)
     DO J=ISTA,ISTA+ILEN-1
       PFBUF(J) = PFBUF_IN(J)
