@@ -22,7 +22,7 @@ SUBROUTINE FTINV(PREEL,KFIELD)
 !        CALL FTINV(..)
 
 !        Explicit arguments :  PREEL   - Fourier/grid-point array
-!        --------------------  KFIELDS - number of fields
+!        --------------------  KFIELD   - number of fields
 
 !     Method.
 !     -------
@@ -38,16 +38,16 @@ SUBROUTINE FTINV(PREEL,KFIELD)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-!        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
+!        G. Radnoti 01-04-24 2D model (NLOEN=1)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
 USE TPM_GEN         ,ONLY : LSYNC_TRANS
-USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
-USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
+USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G
 USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT
 USE CUDA_DEVICE_MOD
@@ -65,8 +65,6 @@ REAL(KIND=JPRBT), POINTER  :: PREEL2(:,:), TMP(:,:)
 
 !     ------------------------------------------------------------------
 
-
-
 IF(MYPROC > NPROC/2)THEN
   IBEG=1
   IEND=D%NDGL_FS
@@ -76,6 +74,7 @@ ELSE
   IEND=1
   IINC=-1
 ENDIF
+
 
 ALLOCATE(PREEL2(SIZE(PREEL,1),SIZE(PREEL,2)))
 !$ACC ENTER DATA CREATE(PREEL2)
@@ -90,7 +89,7 @@ CALL GSTATS(451,0)
 DO KGL=IBEG,IEND,IINC
 
   IOFF=D%NSTAGTF(KGL)+1
-  IGLG  = D%NPTRLS(MYSETW)+KGL-1
+  IGLG = D%NPTRLS(MYSETW)+KGL-1
 
   CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELD,KFIELD)
   !$ACC HOST_DATA USE_DEVICE(PREEL,PREEL2)
