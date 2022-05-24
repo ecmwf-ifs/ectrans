@@ -11,8 +11,9 @@
 
 MODULE FTINV_CTL_MOD
 CONTAINS
-SUBROUTINE FTINV_CTL(KFIELD,KF_UV_G,KF_SCALARS_G,&
- &                   KF_UV,KF_SCALARS,KF_SCDERS,KF_GP,KF_FS,KF_OUT_LT,FOUBUF,KVSETUV,KVSETSC,KPTRGP, &
+SUBROUTINE FTINV_CTL(KF_INPUT,KF_UV_G,KF_SCALARS_G,&
+ &                   KF_UV,KF_SCALARS,KF_GP,FOUBUF,&
+ &                   KVSETUV,KVSETSC,KPTRGP, &
  &                   KVSETSC3A,KVSETSC3B,KVSETSC2,&
  &                   PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
@@ -33,10 +34,7 @@ SUBROUTINE FTINV_CTL(KFIELD,KF_UV_G,KF_SCALARS_G,&
 !        KF_SCALARS_G - global number of scalar spectral fields
 !        KF_UV        - local number of spectral u-v fields
 !        KF_SCALARS   - local number of scalar spectral fields
-!        KF_SCDERS    - local number of derivatives of scalar spectral fields
 !        KF_GP        - total number of output gridpoint fields
-!        KF_FS        - total number of fields in fourier space
-!        KF_OUT_LT    - total number of fields coming out from inverse LT
 !        KVSETUV - "B"  set in spectral/fourier space for
 !                   u and v variables
 !        KVSETSC - "B" set in spectral/fourier space for
@@ -83,15 +81,12 @@ USE IEEE_ARITHMETIC
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM) ,INTENT(IN) :: KFIELD
+INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_INPUT
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_UV_G
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_SCALARS_G
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_UV
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_SCALARS
-INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_SCDERS
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_GP
-INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_FS
-INTEGER(KIND=JPIM) ,INTENT(IN) :: KF_OUT_LT
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3A(:)
@@ -114,7 +109,7 @@ INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)
 INTEGER(KIND=JPIM) :: IVSETSC(KF_SCALARS_G)
 INTEGER(KIND=JPIM) :: IVSET(KF_GP)
 INTEGER(KIND=JPIM) :: J3,JGL,IGL,IOFF,IFGP2,IFGP3A,IFGP3B,IGP3APAR,IGP3BPAR
-INTEGER(KIND=JPIM) :: JF_FS, IFIRST
+INTEGER(KIND=JPIM) :: KF_FS, IFIRST
 
 !     ------------------------------------------------------------------
 
@@ -131,11 +126,13 @@ IF (LDIVGP) IFIRST = IFIRST + KF_UV ! Divergence
 IFIRST = IFIRST + 2*KF_UV ! U and V
 IFIRST = IFIRST + KF_SCALARS ! Scalars
 IF (LSCDERS) IFIRST = IFIRST + KF_SCALARS ! Scalars NS Derivatives
-IF (2*IFIRST /= KFIELD) CALL ABORT_TRANS('IFIRST /= KFIELD')
+! This verifies if we get the same assumptions about how much data we get from the LT space
+IF (2*IFIRST /= KF_INPUT) CALL ABORT_TRANS('Size mismatch: LT and FT do not agree on input size')
 IF (LUVDER) IST = IST+2*KF_UV ! U and V derivatives
 IF (LSCDERS) IFIRST = IFIRST + KF_SCALARS ! Scalars EW Derivatives
+KF_FS = IFIRST
 
-ALLOCATE(ZGTF(2*IFIRST, D%NLENGTF))
+ALLOCATE(ZGTF(2*KF_FS, D%NLENGTF))
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
@@ -164,7 +161,7 @@ IF (LSCDERS) THEN
 ENDIF
 
 ! from FOUBUF to ZGTF
-CALL FOURIER_IN(FOUBUF,ZGTF,KFIELD)
+CALL FOURIER_IN(FOUBUF,ZGTF,KF_INPUT)
 
 !    2.  Fourier space computations
 
@@ -173,13 +170,12 @@ CALL FSC(KF_UV, KF_SCALARS, PUV, PSCALARS, PSCALARS_NSDER, PUV_EWDER, PSCALARS_E
  
 
 !   3.  Fourier transform
-! from ZGTF to ZGTF
+! inplace operation
 IF(KF_FS > 0) THEN
-  CALL FTINV(ZGTF,SIZE(ZGTF,1))
+  CALL FTINV(ZGTF,2*KF_FS)
 ENDIF
 
 CALL GSTATS(1639,1)
-
 CALL GSTATS(107,1)
 
 !   4.  Transposition
@@ -260,20 +256,13 @@ IF (KF_SCALARS_G > 0) THEN
 ENDIF
 
 CALL GSTATS(157,0)
-JF_FS=KF_FS-D%IADJUST_I
 #ifdef USE_CUDA_AWARE_MPI_FT
 WRITE(NOUT,*) 'ftinv_ctl:TRLTOG_CUDAAWARE'
-CALL TRLTOG_CUDAAWARE(ZGTF,JF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
+CALL TRLTOG_CUDAAWARE(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
  &                    PGP,PGPUV,PGP3A,PGP3B,PGP2)
 #else
 !WRITE(NOUT,*) 'ftinv_ctl:TRLTOG'
-#ifdef ACCGPU
-!$ACC UPDATE HOST(ZGTF)
-#endif
-#ifdef OMPGPU
-!$OMP TARGET UPDATE FROM(ZGTF)
-#endif
-CALL TRLTOG(ZGTF,JF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
+CALL TRLTOG(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
  &          PGP,PGPUV,PGP3A,PGP3B,PGP2)
 #endif
 CALL GSTATS(157,1)

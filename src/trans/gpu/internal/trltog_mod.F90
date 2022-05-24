@@ -156,6 +156,11 @@ MODULE TRLTOG_MOD
   !              --------------------
   IF (LHOOK) CALL DR_HOOK('TRLTOG',0,ZHOOK_HANDLE)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+  !$ACC UPDATE HOST(PGLAT)
+#endif
 
   CALL GSTATS(1806,0)
 
@@ -918,7 +923,12 @@ MODULE TRLTOG_MOD
   !              --------------------
   IF (LHOOK) CALL DR_HOOK('TRLTOG',0,ZHOOK_HANDLE)
 
-
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU  
+  !$ACC UPDATE HOST(PGLAT)
+#endif
+  
   CALL GSTATS(1806,0)
 
   LLINDER = .FALSE.
