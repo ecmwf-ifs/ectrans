@@ -1,4 +1,5 @@
 ! (C) Copyright 1995- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -78,21 +79,6 @@ MODULE TRLTOM_MOD
   !
   
   IMPLICIT NONE
-  
-  
-  INTERFACE
-  
-    FUNCTION ALLTOALLV_CUDAIPC(input,len,soff,output,roff,mtol_or_ltom) BIND(C,name='Alltoallv_CUDAIPC')
-      USE, INTRINSIC :: ISO_C_BINDING
-      IMPLICIT NONE
-      real(c_double), dimension(*) :: input,output
-      integer(c_int), dimension(*) :: len,soff,roff
-      integer(c_int),value :: mtol_or_ltom
-      integer(c_int) :: ALLTOALLV_CUDAIPC
-    END FUNCTION ALLTOALLV_CUDAIPC
-  
-  END INTERFACE
-  
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF(:)
@@ -258,21 +244,6 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR2
   
   IMPLICIT NONE
   
-  
-  INTERFACE
-  
-    FUNCTION ALLTOALLV_CUDAIPC(input,len,soff,output,roff,mtol_or_ltom) BIND(C,name='Alltoallv_CUDAIPC')
-      USE, INTRINSIC :: ISO_C_BINDING
-      IMPLICIT NONE
-      real(c_double), dimension(*) :: input,output
-      integer(c_int), dimension(*) :: len,soff,roff
-      integer(c_int),value :: mtol_or_ltom
-      integer(c_int) :: ALLTOALLV_CUDAIPC
-    END FUNCTION ALLTOALLV_CUDAIPC
-  
-  END INTERFACE
-  
-  
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF(:)
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF_IN(:)
@@ -307,12 +278,14 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR2
   
   IF(NPROC > 1) THEN
     CALL GSTATS(806,0)
+    !$ACC UPDATE HOST(PFBUF_IN)
   
     CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN,KSENDCOUNTS=ILENS,&
      & PRECVBUF=PFBUF,KRECVCOUNTS=ILENR,KSENDDISPL=IOFFS,KRECVDISPL=IOFFR,&
      & KCOMM=MPL_ALL_MS_COMM,CDSTRING='TRLTOM:')
 
     call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
+    !$ACC UPDATE DEVICE(PFBUF)
   CALL GSTATS(806,1)
   ELSE
     ILEN = D%NLTSGTB(MYSETW)*KFIELD
