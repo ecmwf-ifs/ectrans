@@ -133,7 +133,7 @@ USE TPM_GEN           ,ONLY : NERR, NOUT, NPROMATR, LSYNC_TRANS
 USE TPM_TRANS         ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, LATLON,  &
      &                        NF_SC2, NF_SC3A, NF_SC3B, NGPBLKS, NPROMA
 
-USE TPM_FIELDS        ,ONLY : IF_FS_INV,IF_FS_INV0,ITDZBA,ITDZBS,ITDZCA,ITDZCS
+USE TPM_FIELDS        ,ONLY : IF_FS_INV,IF_FS_INV0
 USE TPM_FLT           ,ONLY : S
 USE TPM_GEOMETRY      ,ONLY : G
 !USE TPM_GEOMETRY
@@ -421,18 +421,6 @@ ENDIF
 !Andreas: we were using the previous line in setup_trans but this doesn't consider derivatives. Better:
 IF_FS_INV=2*IF_OUT_LT
 ! PRINT*,"inv_trans: IF_FS_INV=",IF_FS_INV," IF_FS_INV0=",IF_FS_INV0
-
-ITDZBA=IF_FS_INV
-ITDZBS=IF_FS_INV
-ITDZCA=IF_FS_INV
-ITDZCS=IF_FS_INV
-! enter data statement creates the value for the rest of the run ... this is wrong, Nils
-!#ifdef ACCGPU
-!!$ACC ENTER DATA COPYIN(ITDZBA, ITDZBS, ITDZCA, ITDZCS)
-!#endif
-!#ifdef OMPGPU
-!!$OMP TARGET ENTER DATA MAP(TO:ITDZBA, ITDZBS, ITDZCA, ITDZCS)
-!#endif
 
 ! Consistency checks
 
