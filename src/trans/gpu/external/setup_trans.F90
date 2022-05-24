@@ -109,7 +109,7 @@ USE TPM_DISTR       ,ONLY : D, DISTR_RESOL,NPROC,nprtrv, D_NUMP,D_MYMS,D_NSTAGT0
 & D_NSTAGTF,D_MSTABF,D_NPNTGTB0,D_NPROCM,D_NPTRLS,mysetv,mysetw, MYPROC
 USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL, G_NDGLU, G_NMEN, G_NMEN_MAX,G_NLOEN, G_NLOEN_MAX
 USE TPM_FIELDS      ,ONLY : FIELDS_RESOL, F,F_RW, ZEPSNM, &
-& ZAA,ZAS,TDZAA,TDZAS,&
+& ZAA,ZAS,&
 & ZAA0,&
 & ZAS0,KMLOC0
 USE TPM_FFT         ,ONLY : T, FFT_RESOL
@@ -166,7 +166,6 @@ INTEGER(C_SIZE_T) ,OPTIONAL,INTENT(IN) :: KLEGPOLPTR_LEN
 !ifndef INTERFACE
 
 ! Local variables
-INTEGER(KIND=JPIM),PARAMETER :: IMAXFLD=240
 INTEGER(KIND=JPIM) :: JGL,JRES,IDEF_RESOL
 INTEGER(KIND=JPIM) :: JMLOC, KM, ILA, ILS, KMLOC, KDGLU, JK, i, J
 
@@ -451,10 +450,6 @@ istat  = cudaGetDevice(idev)
 WRITE(iunit,*) '===now going to allocate GPU arrays on processor: ', myproc, ' device = ', mygpu, ' ',idev, ' of ', inumdevs
 #endif
 
-!leading and trailing dimensions of A for symmetric and antisymmetric cases
-! (same for ltinv and ltdir)
-TDZAA=(R%NTMAX+2)/2
-TDZAS=(R%NTMAX+3)/2
 print*,'R%NTMAX=',R%NTMAX
 print*,'R%NSMAX=',R%NSMAX
 
@@ -464,37 +459,23 @@ print*,'R%NSMAX=',R%NSMAX
 
 ! Initialize A arrays
 
-ALLOCATE(ZAA(R%NDGNH,TDZAA,D%NUMP))
-ALLOCATE(ZAS(R%NDGNH,TDZAS,D%NUMP))
+ALLOCATE(ZAA(R%NDGNH,(R%NTMAX+2)/2,D%NUMP))
+ALLOCATE(ZAS(R%NDGNH,(R%NTMAX+3)/2,D%NUMP))
 
 write(nout,*)'setup_trans: sizes1 NUMP=',D%NUMP
 write(nout,*)'ZAS:',size(ZAS)
 write(nout,*)'ZAA:',size(ZAA)
 
 ZAA(:,:,:) = 0
-DO JMLOC=1,D%NUMP
-  KM = D%MYMS(JMLOC)   
-  KDGLU = MIN(R%NDGNH,G%NDGLU(KM))
-   
-  ILA = (R%NSMAX-KM+2)/2
-  DO JK=1,KDGLU
-    DO J=1,ILA
-      ZAA(JK,J,JMLOC)=S%FA(JMLOC)%RPNMA(JK,J)
-    ENDDO
-  ENDDO
-ENDDO
-
 ZAS(:,:,:) = 0
 DO JMLOC=1,D%NUMP
   KM = D%MYMS(JMLOC)
-  KDGLU = MIN(R%NDGNH,G%NDGLU(KM))
-
+  KDGLU = G%NDGLU(KM)
+  ILA = (R%NSMAX-KM+2)/2
   ILS = (R%NSMAX-KM+3)/2
-  DO JK=1,KDGLU
-    DO J=1,ILS
-      ZAS(JK,J,JMLOC)=S%FA(JMLOC)%RPNMS(JK,J)
-    ENDDO
-  ENDDO
+
+  ZAA(1:KDGLU,1:ILA,JMLOC)=S%FA(JMLOC)%RPNMA(1:KDGLU,1:ILA)
+  ZAS(1:KDGLU,1:ILS,JMLOC)=S%FA(JMLOC)%RPNMS(1:KDGLU,1:ILS)
 ENDDO
 !$ACC ENTER DATA COPYIN(ZAA,ZAS)
 
@@ -615,8 +596,8 @@ end DO
 
 ! arrays for m=0 in ledir_mod:
 IF(KMLOC0 >= 0) THEN
-  ALLOCATE(ZAA0(R%NDGNH,TDZAA))
-  ALLOCATE(ZAS0(R%NDGNH,TDZAS))
+  ALLOCATE(ZAA0(SIZE(ZAA,1),SIZE(ZAA,2)))
+  ALLOCATE(ZAS0(SIZE(ZAS,1),SIZE(ZAS,2)))
   ZAA0 = ZAA(:,:,KMLOC0)
   ZAS0 = ZAS(:,:,KMLOC0)
   !$ACC ENTER DATA COPYIN(ZAA0,ZAS0)
