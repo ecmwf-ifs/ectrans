@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -14,8 +15,7 @@ SUBROUTINE SPNSDE(KF_SCALARS,PEPSNM,PF,PNSD)
 USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_GEN, only: nout
-USE TPM_DIM         ,ONLY : R
-USE TPM_FIELDS      ,ONLY : F
+USE TPM_DIM         ,ONLY : R, R_NTMAX
 USE TPM_DISTR       ,ONLY : D
 !USE TPM_TRANS
 
@@ -82,14 +82,11 @@ REAL(KIND=JPRB),    INTENT(IN)  :: PF(:,:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: PNSD(:,:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN,JI,ISMAX, IR, II
-REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
-REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
+INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN,JI, IR, II
 
 !$ACC DATA                             &
-!$ACC      CREATE (ZN,ZZEPSNM)         &
-!$ACC      PRESENT (F,F%RN)   &
-!$ACC      PRESENT (PEPSNM, PF, PNSD)
+!$ACC      PRESENT (D)   &
+!$ACC      PRESENT (PEPSNM,PF,PNSD)
 
 !     ------------------------------------------------------------------
 
@@ -99,54 +96,32 @@ REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 
 !*       1.1      COMPUTE
 
-ISMAX = R%NSMAX
-!loop over wavenumber
+!$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR)
 DO KMLOC=1,D%NUMP
-  KM = D%MYMS(KMLOC)
-  !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IJ)
-  DO JN=KM-1,ISMAX+2
-   IJ = ISMAX+3-JN
-   ZN(IJ) = F%RN(JN)
-   IF( JN >= 0 ) THEN
-       ZZEPSNM(IJ) = PEPSNM(KMLOC,JN)
-   ELSE
-       ZZEPSNM(IJ) = 0
-   ENDIF
-   !write(nout,*) 'deriv dy debug in ; ',JN, IJ, ZN(IJ),ZZEPSNM(IJ),PEPSNM(KMLOC,JN)
+  DO J=1,KF_SCALARS
+    KM = D%MYMS(KMLOC)
+    IR = 2*J-1
+    II = IR+1
+
+    IF(KM == 0) THEN
+      !$ACC LOOP SEQ
+      DO JN=0,R_NTMAX+1
+        JI = R_NTMAX+3-JN
+        PNSD(IR,JI,KMLOC) = -(JN-1)*PEPSNM(KMLOC,JN)*PF(IR,JI+1,KMLOC)+&
+         &(JN+2)*PEPSNM(KMLOC,JN+1)*PF(IR,JI-1,KMLOC)
+      ENDDO
+
+    ELSE
+      !$ACC LOOP SEQ
+      DO JN=KM,R_NTMAX+1
+        JI = R_NTMAX+3-JN
+        PNSD(IR,JI,KMLOC) = -(JN-1)*PEPSNM(KMLOC,JN)*PF(IR,JI+1,KMLOC)+&
+         &(JN+2)*PEPSNM(KMLOC,JN+1)*PF(IR,JI-1,KMLOC)
+        PNSD(II,JI,KMLOC) = -(JN-1)*PEPSNM(KMLOC,JN)*PF(II,JI+1,KMLOC)+&
+         &(JN+2)*PEPSNM(KMLOC,JN+1)*PF(II,JI-1,KMLOC)
+      ENDDO
+    ENDIF
   ENDDO
-  !$ACC KERNELS DEFAULT(NONE)
-  ZN(0) = F%RN(ISMAX+3)
-  !$ACC END KERNELS
-
-  IF(KM == 0) THEN
-      !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IR)
-      DO J=1,KF_SCALARS
-        IR = 2*J-1
-        DO JI=2,ISMAX+3
-          PNSD(IR,JI,KMLOC) = -ZN(JI+1)*ZZEPSNM(JI)*PF(IR,JI+1,KMLOC)+&
-            &ZN(JI-2)*ZZEPSNM(JI-1)*PF(IR,JI-1,KMLOC)
-        ENDDO
-      ENDDO
-  ELSE  
-
-    !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II)
-    DO J=1,KF_SCALARS
-      DO JI=2,ISMAX+3-KM
-        IR = 2*J-1
-        II = IR+1
-        PNSD(IR,JI,KMLOC) = -ZN(JI+1)*ZZEPSNM(JI)*PF(IR,JI+1,KMLOC)+&
-          &ZN(JI-2)*ZZEPSNM(JI-1)*PF(IR,JI-1,KMLOC)
-        PNSD(II,JI,KMLOC) = -ZN(JI+1)*ZZEPSNM(JI)*PF(II,JI+1,KMLOC)+&
-          &ZN(JI-2)*ZZEPSNM(JI-1)*PF(II,JI-1,KMLOC)
-        !write(301,*) 'deriv dy debug 2nd; ',KMLOC,IR,II,JI,J,PNSD(IR,JI,KMLOC),PNSD(II,JI,KMLOC)
-        !call flush(301)
-      ENDDO
-    ENDDO
-    !write(301,*) 'deriv dy debug 2nd; ',KMLOC,maxval(PNSD(1,:,KMLOC)),maxval(PNSD(2,:,KMLOC))
-    !call flush(301)
-  ENDIF
-
-!end loop over wavenumber
 END DO
 
 !$ACC END DATA
