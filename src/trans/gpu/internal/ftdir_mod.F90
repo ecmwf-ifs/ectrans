@@ -11,7 +11,7 @@
 
 MODULE FTDIR_MOD
 CONTAINS
-SUBROUTINE FTDIR(ZGTF,KSTRIDE,KF_FS)
+SUBROUTINE FTDIR(ZGTF,KSTRIDE,KFIELD)
 
 
 !**** *FTDIR - Direct Fourier transform
@@ -23,8 +23,9 @@ SUBROUTINE FTDIR(ZGTF,KSTRIDE,KF_FS)
 !     ----------
 !        CALL FTDIR(..)
 
-!        Explicit arguments :  KSTRIDE - stride of PREEL
-!        --------------------  KF_FS   - number of fields
+!        Explicit arguments :  ZGTF    - Fourier/grid-point array
+!        --------------------  KSTRIDE - stride of PREEL
+!                              KFIELD   - number of fields
 
 !     Method.
 !     -------
@@ -62,7 +63,7 @@ use openacc
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: KSTRIDE, KF_FS
+INTEGER(KIND=JPIM),INTENT(IN)  :: KSTRIDE, KFIELD
 REAL(KIND=JPRBT), INTENT(INOUT) :: ZGTF(:,:)
 INTEGER(KIND=JPIM)  :: KGL
 
@@ -115,7 +116,7 @@ DO KGL=IBEG,IEND,IINC
   IOFF=D_NSTAGTF(KGL)+1
   IGLG = D_NPTRLS(MYSETW)+KGL-1
 
-  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G_NLOEN(IGLG),2*KF_FS,KSTRIDE)
+  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G_NLOEN(IGLG),KFIELD,KFIELD)
   CALL EXECUTE_PLAN_FFT(-1,G_NLOEN(IGLG),ZGTF(1,IOFF),ZGTF2(1,IOFF),IPLAN_R2C)
 ENDDO
 
