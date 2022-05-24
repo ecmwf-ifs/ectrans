@@ -11,477 +11,403 @@
 !
 
 MODULE LEINV_MOD
+  USE PARKIND_ECTRANS  ,ONLY : JPIM
+  IMPLICIT NONE
+
+  PRIVATE
+  PUBLIC :: LEINV_STRIDES, LEINV
+
+  INTEGER(KIND=JPIM) :: A = 8 !Alignment
+
 CONTAINS
-SUBROUTINE LEINV(PIA,FOUBUF_IN)
+  SUBROUTINE LEINV_STRIDES(KF_LEG,IOUT_STRIDES0,IOUT_STRIDES1,IIN_STRIDES0,IIN_STRIDES1,&
+                           IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
+    USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT, JPRD
+    USE TPM_DIM         ,ONLY : R
 
-!**** *LEINV* - Inverse Legendre transform.
+    IMPLICIT NONE
 
-!     Purpose.
-!     --------
-!        Inverse Legendre tranform of all variables(kernel).
+    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
 
-!**   Interface.
-!     ----------
-!        CALL LEINV(...)
+    INTEGER(KIND=JPIM), OPTIONAL :: IOUT_STRIDES0, IOUT_STRIDES1
+    INTEGER(KIND=JPIM), OPTIONAL :: IIN_STRIDES0, IIN_STRIDES1
+    INTEGER(KIND=JPIM), OPTIONAL :: IOUT0_STRIDES0, IOUT0_STRIDES1
+    INTEGER(KIND=JPIM), OPTIONAL :: IIN0_STRIDES0, IIN0_STRIDES1
 
-!        Explicit arguments :  KM - zonal wavenumber (input-c)
-!        --------------------  KFC - number of fields to tranform (input-c)
-!                              PIA - spectral fields
-!                              for zonal wavenumber KM (input)
 
-!        Implicit arguments :  None.
-!        --------------------
+    IF (PRESENT(IOUT_STRIDES0)) &
+      IOUT0_STRIDES0 = ALIGN(KF_LEG,A)
+    IF (PRESENT(IOUT_STRIDES1)) &
+      IOUT0_STRIDES1 = IOUT0_STRIDES0 * ALIGN(R%NDGNH,A)
+    IF (PRESENT(IIN_STRIDES0)) &
+      IIN_STRIDES0 = ALIGN(2*KF_LEG,A)
+    IF (PRESENT(IIN_STRIDES1)) &
+      IIN_STRIDES1 = IIN_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
+    IF (PRESENT(IOUT0_STRIDES0)) &
+      IOUT_STRIDES0 = ALIGN(2*KF_LEG,A)
+    IF (PRESENT(IOUT0_STRIDES1)) &
+      IOUT_STRIDES1 = IOUT_STRIDES0 * ALIGN(R%NDGNH,A)
+    IF (PRESENT(IIN0_STRIDES0)) &
+      IIN0_STRIDES0 = ALIGN(KF_LEG,A)
+    IF (PRESENT(IIN0_STRIDES1)) &
+      IIN0_STRIDES1 = IIN0_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
+  END SUBROUTINE
 
-!     Method.    use butterfly or dgemm
-!     -------
+  SUBROUTINE LEINV(PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
 
-!     Externals.
-!     ----------
+    !**** *LEINV* - Inverse Legendre transform.
 
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
+    !     Purpose.
+    !     --------
+    !        Inverse Legendre tranform of all variables(kernel).
 
-!     Author.
-!     -------
-!      Nils Wedi + Mats Hamrud + George Modzynski
-!
-!     Modifications.
-!     --------------
-!        J.Hague : Oct 2012 DR_HOOK round calls to DGEMM:
-!      F. Vana  05-Mar-2015  Support for single precision
-!     ------------------------------------------------------------------
+    !**   Interface.
+    !     ----------
+    !        CALL LEINV(...)
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT, JPRD
-USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE TPM_DIM         ,ONLY : R,R_NDGNH,R_NSMAX, R_NDGL
-USE TPM_GEOMETRY    ,ONLY : G,G_NDGLU
-USE TPM_TRANS       ,ONLY : REUSE_PTR
-USE TPM_FIELDS      ,ONLY : ZAA,ZAS,ZAA0,ZAS0,KMLOC0
-USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS, D_NPNTGTB1
-USE TPM_GEN         ,ONLY : NOUT, LSYNC_TRANS
-USE TPM_FLT
-USE DEVICE_MOD
-USE HICBLAS_MOD     ,ONLY : HIP_GEMM_BATCHED, HIP_DGEMM_BATCHED_OVERLOAD, &
- &                          HIP_DGEMM_GROUPED_OVERLOAD, HIP_SGEMM_GROUPED_OVERLOAD
-USE MPL_MODULE      ,ONLY : MPL_BARRIER
+    !        Explicit arguments :  KM - zonal wavenumber (input-c)
+    !        --------------------  KFC - number of fields to tranform (input-c)
+    !                              PIA - spectral fields
+    !                              for zonal wavenumber KM (input)
+
+    !        Implicit arguments :  None.
+    !        --------------------
+
+    !     Method.    use butterfly or dgemm
+    !     -------
+
+    !     Externals.
+    !     ----------
+
+    !     Reference.
+    !     ----------
+    !        ECMWF Research Department documentation of the IFS
+
+    !     Author.
+    !     -------
+    !      Nils Wedi + Mats Hamrud + George Modzynski
+    !
+    !     Modifications.
+    !     --------------
+    !        J.Hague : Oct 2012 DR_HOOK round calls to DGEMM:
+    !      F. Vana  05-Mar-2015  Support for single precision
+    !     ------------------------------------------------------------------
+
+    USE TPM_GEN         ,ONLY : LSYNC_TRANS
+    USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT, JPRD
+    USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+    USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX, R_NDGL
+    USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
+    USE TPM_FIELDS      ,ONLY : ZAA,ZAS,ZAA0,ZAS0,KMLOC0
+    USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS, D_NPNTGTB1,MYPROC
+    USE TPM_GEN, ONLY: NOUT
+    USE HICBLAS_MOD     ,ONLY : HIP_GEMM_BATCHED, HIP_DGEMM_BATCHED_OVERLOAD, &
+ &                              HIP_DGEMM_GROUPED_OVERLOAD, HIP_SGEMM_GROUPED_OVERLOAD
 #ifdef TRANS_SINGLE
 #define HIP_GEMM HIP_SGEMM_GROUPED_OVERLOAD
 #else
 #define HIP_GEMM HIP_DGEMM_GROUPED_OVERLOAD
 #endif
-USE, INTRINSIC :: ISO_C_BINDING
-USE IEEE_ARITHMETIC
-USE OPENACC
-USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
-IMPLICIT NONE
+    USE, INTRINSIC :: ISO_C_BINDING
+    USE MPL_MODULE      ,ONLY : MPL_BARRIER
+    USE IEEE_ARITHMETIC
+    USE OPENACC
+    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
-
-!     DUMMY ARGUMENTS
-REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
-REAL(KIND=JPRB),    INTENT(OUT), ALLOCATABLE :: FOUBUF_IN(:)
-
-!     LOCAL
-INTEGER(KIND=JPIM)  :: KM
-INTEGER(KIND=JPIM)  :: KMLOC
-INTEGER(KIND=JPIM)  :: KIFC
-INTEGER(KIND=JPIM)  :: IA, IS, ISL, J1, JGL, JK, J, IGLS, ISTAS, OFFSET1, OFFSET2, ISTATS
-INTEGER(KIND=JPIM)  :: KFIELDS
-INTEGER(KIND=JPIM)  :: KS(D_NUMP), NS(D_NUMP), AOFFSETS(D_NUMP), BOFFSETS(D_NUMP), COFFSETS(D_NUMP)
-
-!     LOCAL
-REAL(KIND=JPRBT), POINTER :: ZBASE(:), ZINP(:), ZOUTS(:), ZOUTA(:)
-REAL(KIND=JPRD),  POINTER :: ZBASE0(:), ZINP0(:), ZOUTS0(:), ZOUTA0(:)
-REAL(KIND=JPRBT) :: ZAOA, ZSOA
-
-INTEGER(KIND=JPIM)  :: IOUT_STRIDES0, IOUT_STRIDES1
-INTEGER(KIND=JPIM)  :: IIN_STRIDES0, IIN_STRIDES1
-INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_STRIDES1
-INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_STRIDES1
-INTEGER(KIND=8)     :: ALLOC_SZ, ALLOC_POS
+    IMPLICIT NONE
 
 
-INTEGER(KIND=JPIM) :: ISTAT
-INTEGER(KIND=JPIM) :: A = 8 !Alignment
+    !     DUMMY ARGUMENTS
+    INTEGER(KIND=JPIM)  :: KM
+    INTEGER(KIND=JPIM)  :: KMLOC
+    INTEGER(KIND=JPIM)  :: KIFC
+    INTEGER(KIND=JPIM)  :: KS(D_NUMP), NS(D_NUMP), AOFFSETS(D_NUMP), BOFFSETS(D_NUMP), COFFSETS(D_NUMP)
+    REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
+    REAL(KIND=JPRB),    INTENT(OUT) :: FOUBUF_IN(:)
+    REAL(KIND=JPRBT), INTENT(OUT) :: ZINP(:), ZOUTS(:), ZOUTA(:)
+    REAL(KIND=JPRD), INTENT(OUT) :: ZINP0(:), ZOUTS0(:), ZOUTA0(:)
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+    !     LOCAL
+    REAL(KIND=JPRBT) :: ZAOA, ZSOA
 
-IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
-!     ------------------------------------------------------------------
+    INTEGER(KIND=JPIM) :: IA, IS, ISL, J1, JGL, JK, J, IGLS, ISTAS, OFFSET1, OFFSET2
+    INTEGER(KIND=JPIM)  :: KF_LEG
+    INTEGER(KIND=JPIM)  :: IOUT_STRIDES0, IOUT_STRIDES1
+    INTEGER(KIND=JPIM)  :: IIN_STRIDES0, IIN_STRIDES1
+    INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_STRIDES1
+    INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_STRIDES1
+    INTEGER(KIND=8)  :: ALLOC_SZ, ALLOC_POS
 
-KFIELDS = SIZE(PIA,1)
+    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
-!*       1.       PERFORM LEGENDRE TRANFORM.
-!                 --------------------------
 
-!*       1.1      PREPARATIONS.
+    !*       1.1      PREPARATIONS.
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 
-IIN_STRIDES0 = ALIGN(KFIELDS,A)
-IIN_STRIDES1 = IIN_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
-IOUT_STRIDES0 = ALIGN(KFIELDS,A)
-IOUT_STRIDES1 = IOUT_STRIDES0 * ALIGN(R_NDGNH,A)
-IIN0_STRIDES0 = ALIGN(KFIELDS/2,A)
-IIN0_STRIDES1 = IIN0_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
-IOUT0_STRIDES0 = ALIGN(KFIELDS/2,A)
-IOUT0_STRIDES1 = IOUT0_STRIDES0 * ALIGN(R_NDGNH,A)
+    KF_LEG = SIZE(PIA,1)/2
+    !     ------------------------------------------------------------------
 
-! Check if the reuse buffer is large enough
-ALLOC_SZ = ALIGN(IIN_STRIDES1*D_NUMP,8)*SIZEOF(ZINP(1)) &
-    +ALIGN(IOUT_STRIDES1*D_NUMP,8)*SIZEOF(ZOUTS(1)) &
-    +ALIGN(IOUT_STRIDES1*D_NUMP,8)*SIZEOF(ZOUTA(1)) &
-    +ALIGN(IIN0_STRIDES1,8)*SIZEOF(ZINP0(1)) &
-    +ALIGN(IOUT0_STRIDES1,8)*SIZEOF(ZOUTS0(1)) &
-    +ALIGN(IOUT0_STRIDES1,8)*SIZEOF(ZOUTA0(1))
-IF (.NOT. ALLOCATED(REUSE_PTR)) THEN
-  ALLOCATE(REUSE_PTR(ALLOC_SZ/SIZEOF(REUSE_PTR(1))))
-#ifdef ACCGPU
-  !$ACC ENTER DATA CREATE(REUSE_PTR)
-#endif
-ELSEIF (SIZEOF(REUSE_PTR) <= ALLOC_SZ) THEN
-  ! and reallocate if needed
-#ifdef ACCGPU
-  !$ACC EXIT DATA DELETE(REUSE_PTR)
-#endif
-  DEALLOCATE(REUSE_PTR)
-  ALLOCATE(REUSE_PTR(ALLOC_SZ/SIZEOF(REUSE_PTR(1))))
-#ifdef ACCGPU
-  !$ACC ENTER DATA CREATE(REUSE_PTR)
-#endif
-ENDIF
+    !*       1.       PERFORM LEGENDRE TRANFORM.
+    !                 --------------------------
 
-! Figure out which pointers to use
-ALLOC_POS=1
-CALL C_F_POINTER(C_LOC(REUSE_PTR(ALLOC_POS:)), ZBASE, &
-    & [SIZEOF(REUSE_PTR(ALLOC_POS:))/SIZEOF(ZBASE(0))])
+    !*       1.1      PREPARATIONS.
 
-ZINP(1:) => ZBASE(ALLOC_POS:ALLOC_POS+IIN_STRIDES1*D_NUMP-1)
-ALLOC_POS=ALLOC_POS+ALIGN(IIN_STRIDES1*D_NUMP,8)
-ZOUTS(1:) => ZBASE(ALLOC_POS:ALLOC_POS+IOUT_STRIDES1*D_NUMP-1)
-ALLOC_POS=ALLOC_POS+ALIGN(IOUT_STRIDES1*D_NUMP,8)
-ZOUTA(1:) => ZBASE(ALLOC_POS:ALLOC_POS+IOUT_STRIDES1*D_NUMP-1)
-ALLOC_POS=ALLOC_POS+ALIGN(IOUT_STRIDES1*D_NUMP,8)
+    CALL LEINV_STRIDES(KF_LEG,IOUT_STRIDES0,IOUT_STRIDES1,IIN_STRIDES0,IIN_STRIDES1,&
+                       IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
 
-! The BASE0 pointer points to the rest, but likely in a different type!
-CALL C_F_POINTER(C_LOC(REUSE_PTR(ALLOC_POS:)), ZBASE0, &
-    & [SIZEOF(REUSE_PTR(ALLOC_POS:))/SIZEOF(ZBASE0(0))])
-ALLOC_POS=1
-ZINP0(1:) => ZBASE0(ALLOC_POS:ALLOC_POS+IIN0_STRIDES1-1)
-ALLOC_POS=ALLOC_POS+ALIGN(IIN0_STRIDES1,8)
-ZOUTS0(1:) => ZBASE0(ALLOC_POS:ALLOC_POS+IOUT0_STRIDES1-1)
-ALLOC_POS=ALLOC_POS+ALIGN(IOUT0_STRIDES1,8)
-ZOUTA0(1:) => ZBASE0(ALLOC_POS:ALLOC_POS+IOUT0_STRIDES1-1)
-ALLOC_POS=ALLOC_POS+ALIGN(IOUT0_STRIDES1,8)
 
-#ifdef ACCGPU
-!$ACC DATA  PRESENT(D_MYMS,G_NDGLU,D_NUMP,R_NDGNH,R_NSMAX) &
-!$ACC&      PRESENT(ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
-!$ACC&      PRESENT(ZAA,ZAS,PIA)  &
-!$ACC&      PRESENT(D_MYMS,D_NPNTGTB1,G_NDGLU)
-#endif
-#ifdef OMPGPU
-!$OMP TARGET DATA MAP(TO:D_MYMS,G_NDGLU,D_NUMP,R_NDGNH,R_NSMAX,ITDZBA, ITDZBS, ITDZCA, ITDZCS) &
-!$OMP&      MAP(PRESENT,ALLOC:ZAA,ZAS,IZCST,ZIA,PSOA1,PAOA1,IZBS)
-#endif
+    !$ACC DATA PRESENT(D,D_MYMS,G,G_NDGLU,R) &
+    !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
+    !$ACC&     PRESENT(ZAA,ZAS,PIA) &
+    !$ACC&     PRESENT(D_MYMS,D_NPNTGTB1,G_NDGLU)
 
-ALLOCATE(FOUBUF_IN(D%NLENGT1B*KFIELDS))
-#ifdef ACCGPU
-!$ACC ENTER DATA CREATE(FOUBUF_IN)
-#endif
-
-IF (KMLOC0 > 0) THEN
-  PRINT *,'computing m=0 in double precision'
-ENDIF
-
-! READ 2:NSMAX+3
-
-!IF KM=0 and NSMAX is 6:
-!    IA=1
-!    DO=1,6/2+1 ... 1..4
-!       PIA_2=1+1+(J-1)*2 ...2+(0..3)*2 .... 2,4,6,8
-!IF KM=0 and NSMAX is 7:
-!    IA=2
-!    DO=1,7/2+1 ... 1..4
-!       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
-
-#ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ISKIP,ILA,ILS,IA) &
-!$OMP&      SHARED(D_NUMP,R_NSMAX,KSTA,D_MYMS,IZBS,IF_FS_INV,ZIA) DEFAULT(NONE)
-#endif
-#ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) DEFAULT(NONE) &
-!$ACC&    FIRSTPRIVATE(KFIELDS)  ASYNC(1)
-#endif
-DO KMLOC=1,D_NUMP
-  DO JK=1,KFIELDS
-    KM =  D_MYMS(KMLOC)
-    IA  = 1+MOD(R_NSMAX-KM+2,2)
-    IF(KM /= 0)THEN
-#ifdef ACCGPU
-      !$ACC LOOP SEQ
-#endif
-      DO J=1,(R_NSMAX-KM+2)/2
-        ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
-      ENDDO
-    ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
-      ! every other field is sufficient because Im(KM=0) == 0
-#ifdef ACCGPU
-      !$ACC LOOP SEQ
-#endif
-      DO J=1,(R_NSMAX+2)/2
-        ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
-      ENDDO
+    IF (KMLOC0 > 0) THEN
+      print*,'computing m=0 in double precision'
     ENDIF
-  ENDDO
-ENDDO
 
-IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-  !$ACC WAIT(1)
-#endif
-  CALL GSTATS(440,0)
-  CALL MPL_BARRIER(CDSTRING='')
-  CALL GSTATS(440,1)
-ENDIF
-CALL GSTATS(424,0)
-IF (KMLOC0 > 0) THEN
-  ! compute m=0 in double precision
-#ifdef OMPGPU
-!$OMP TARGET DATA USE_DEVICE_PTR(ZAA0,ZINP0,ZOUTA0)
-#endif
-#ifdef ACCGPU
-  !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUTA0)
-#endif
-  CALL HIP_DGEMM_BATCHED_OVERLOAD( &
-    & 'N', 'T', &
-    & KFIELDS/2, G%NDGLU(0), (R%NSMAX+2)/2, &
-    & 1.0_JPRD, &
-    & ZINP0, IIN0_STRIDES0, 0, &
-    & ZAA0, SIZE(ZAA0,1), 0, &
-    & 0.0_JPRD, &
-    & ZOUTA0, IOUT0_STRIDES0, 0, &
-    & 1, 1_C_LONG)
-#ifdef ACCGPU
-  !$ACC END HOST_DATA
-#endif
-  ISTATS=DEVICE_SYNC()
-ENDIF
+    ! READ 2:NSMAX+3
 
-DO KMLOC=1,D_NUMP
-  KM = D_MYMS(KMLOC)
-  KS(KMLOC) = (R%NSMAX-KM+2)/2
-  NS(KMLOC) = G%NDGLU(KM)
-  AOFFSETS(KMLOC) = IIN_STRIDES1*(KMLOC-1)
-  BOFFSETS(KMLOC) = SIZE(ZAA,1)*SIZE(ZAA,2)*(KMLOC-1)
-  COFFSETS(KMLOC) = IOUT_STRIDES1*(KMLOC-1)
-ENDDO
-IF(KMLOC0 > 0) THEN
-  NS(KMLOC0) = 0
-  KS(KMLOC0) = 0
-ENDIF
-#ifdef ACCGPU
-!$ACC HOST_DATA USE_DEVICE(ZAA,ZINP,ZOUTA)
-#endif
-#ifdef OMPGPU
-!$OMP TARGET DATA USE_DEVICE_PTR(ZAA,ZINP,ZOUTA)
-#endif
-CALL HIP_GEMM( &
-  & 11, & ! unique identifier
-  & 'N', 'T', &
-  & KFIELDS, NS(:), KS(:), &
-  & 1.0_JPRBT, &
-  & ZINP, IIN_STRIDES0, AOFFSETS, &
-  & ZAA, SIZE(ZAA,1), BOFFSETS, &
-  & 0._JPRBT, &
-  & ZOUTA, IOUT_STRIDES0, COFFSETS, &
-  & D_NUMP, STREAM=1_C_LONG)
-#ifdef OMPGPU
-!$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-!$ACC END HOST_DATA
-#endif
+    !IF KM=0 and NSMAX is 6:
+    !    IA=1
+    !    DO=1,6/2+1 ... 1..4
+    !       PIA_2=1+1+(J-1)*2 ...2+(0..3)*2 .... 2,4,6,8
+    !IF KM=0 and NSMAX is 7:
+    !    IA=2
+    !    DO=1,7/2+1 ... 1..4
+    !       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
 
-IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-  !$ACC WAIT(1)
-#endif
-  CALL GSTATS(444,0)
-  CALL MPL_BARRIER(CDSTRING='')
-  CALL GSTATS(444,1)
-ENDIF
-CALL GSTATS(424,1)
-
-! 2. +++++++++++++ symmetric
-!IF KM=0 and NSMAX is 6:
-!    IS=2
-!    DO=1,4
-!       PIA_2=2+1+(0..3)*2 ... 3+(0..3)*2 ... 3,5,7,9
-!IF KM=0 and NSMAX is 7:
-!    IS=1
-!    DO=1,5
-!       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
-
-#ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ISKIP,ILS,IS) &
-!$OMP&      SHARED(D_NUMP,R_NSMAX,KFC,KSTA,D_MYMS,IZBS,ITDZBS,ILDZBS,ZIA) DEFAULT(NONE)
-#endif
-#ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) DEFAULT(NONE) &
-!$ACC&    FIRSTPRIVATE(KFIELDS) ASYNC(1)
-#endif
-DO KMLOC=1,D_NUMP
-  DO JK=1,KFIELDS
-    KM =  D_MYMS(KMLOC)
-    IS = 1+MOD(R_NSMAX-KM+1,2)
-    IF(KM /= 0)THEN
-#ifdef ACCGPU
-      !$ACC LOOP SEQ
-#endif
-      DO J=1,(R_NSMAX-KM+3)/2
-        ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
-      ENDDO
-    ELSEIF (MOD((JK-1),2) == 0) THEN
-#ifdef ACCGPU
-      !$ACC LOOP SEQ
-#endif
-      DO J=1,(R_NSMAX+3)/2
-        ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
-      ENDDO
-    ENDIF
-  ENDDO
-ENDDO
-
-IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-  !$ACC WAIT(1)
-#endif
-  CALL GSTATS(440,0)
-  CALL MPL_BARRIER(CDSTRING='')
-  CALL GSTATS(440,1)
-ENDIF
-CALL GSTATS(424,0)
-
-IF (KMLOC0 > 0) THEN
-#ifdef OMPGPU
-!$OMP TARGET DATA USE_DEVICE_PTR(ZAS0,ZINP0,ZOUTS0)
-#endif
-#ifdef ACCGPU
-  !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUTS0)
-#endif
-  CALL HIP_DGEMM_BATCHED_OVERLOAD( &
-    & 'N', 'T', &
-    & KFIELDS/2, G%NDGLU(0), (R%NSMAX+3)/2, &
-    & 1.0_JPRD, &
-    & ZINP0, IIN0_STRIDES0, 0, &
-    & ZAS0, SIZE(ZAS0,1), 0, &
-    & 0.0_JPRD, &
-    & ZOUTS0, IOUT0_STRIDES0, 0, &
-    & 1, STREAM=1_C_LONG)
-#ifdef ACCGPU
-  !$ACC END HOST_DATA
-#endif
-
-ENDIF
-
-DO KMLOC=1,D_NUMP
-  KM = D_MYMS(KMLOC)
-  KS(KMLOC) = (R%NSMAX-KM+3)/2
-  NS(KMLOC) = G%NDGLU(KM)
-  AOFFSETS(KMLOC) = IIN_STRIDES1*(KMLOC-1)
-  BOFFSETS(KMLOC) = SIZE(ZAS,1)*SIZE(ZAS,2)*(KMLOC-1)
-  COFFSETS(KMLOC) = IOUT_STRIDES1*(KMLOC-1)
-ENDDO
-IF(KMLOC0 > 0) THEN
-  NS(KMLOC0) = 0
-  KS(KMLOC0) = 0
-ENDIF
-#ifdef OMPGPU
-!$OMP TARGET DATA USE_DEVICE_PTR(ZAS,ZINP,ZOUTS)
-#endif
-#ifdef ACCGPU
-!$ACC HOST_DATA USE_DEVICE(ZAS,ZINP,ZOUTS)
-#endif
-CALL HIP_GEMM( &
-  & 12, & ! unique identifier
-  & 'N', 'T', &
-  & KFIELDS, NS(:), KS(:), &
-  & 1.0_JPRBT, &
-  & ZINP, IIN_STRIDES0, AOFFSETS, &
-  & ZAS, SIZE(ZAS,1), BOFFSETS, &
-  & 0.0_JPRBT, &
-  & ZOUTS, IOUT_STRIDES0, COFFSETS, &
-  & D_NUMP, STREAM=1_C_LONG)
-#ifdef OMPGPU
-!$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-!$ACC END HOST_DATA
-#endif
-IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-  !$ACC WAIT(1)
-#endif
-  CALL GSTATS(444,0)
-  CALL MPL_BARRIER(CDSTRING='')
-  CALL GSTATS(444,1)
-ENDIF
-CALL GSTATS(424,1)
-
-
-#ifdef ACCGPU
-!$ACC DATA PRESENT(FOUBUF_IN)
-#endif
-
-#ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ISKIP,ISL) &
-!$OMP&      SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,PSOA1,IZCST,ITDZCS,ILDZCS) DEFAULT(NONE)
-#endif
-#ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,ZAOA,ZSOA) DEFAULT(NONE) &
-!$ACC&    FIRSTPRIVATE(KFIELDS) PRESENT(R_NDGL) ASYNC(1)
-#endif
-DO KMLOC=1,D_NUMP
-  DO JGL=1,R_NDGNH
-    DO JK=1,KFIELDS
-      KM = D_MYMS(KMLOC)
-      ISL = R_NDGNH-G_NDGLU(KM)+1
-      IF (JGL >= ISL) THEN
-        !(DO JGL=ISL,R_NDGNH)
-        IGLS = R_NDGL+1-JGL
-        OFFSET1 = D_NPNTGTB1(KMLOC,JGL )*KFIELDS
-        OFFSET2 = D_NPNTGTB1(KMLOC,IGLS)*KFIELDS
-
-        IF(KM /= 0) THEN
-          ZSOA = ZOUTS(JK+(JGL-ISL)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
-          ZAOA = ZOUTA(JK+(JGL-ISL)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) DEFAULT(NONE) ASYNC(1)
+    DO KMLOC=1,D_NUMP
+      DO JK=1,2*KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IA  = 1+MOD(R_NSMAX-KM+2,2)
+        IF(KM /= 0)THEN
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX-KM+2)/2
+            ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
+          ENDDO
         ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
-          ZSOA = ZOUTS0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
-          ZAOA = ZOUTA0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
-        ELSE
-          ! Imaginary values of KM=0 is zero, though I don't think we care
-          ZSOA = 0_JPRBT
-          ZAOA = 0_JPRBT
+          ! every other field is sufficient because Im(KM=0) == 0
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX+2)/2
+            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
+          ENDDO
         ENDIF
-
-        FOUBUF_IN(OFFSET1+JK) = ZAOA+ZSOA
-        FOUBUF_IN(OFFSET2+JK) = ZSOA-ZAOA
-      ENDIF
-
+      ENDDO
     ENDDO
-  ENDDO
-ENDDO
+
+
+    IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
+      !$ACC WAIT(1)
+#endif
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+    CALL GSTATS(424,0)
+
+    IF (KMLOC0 > 0) THEN
+      ! compute m=0 in double precision
 #ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_PTR(ZAA0,ZINP0,ZOUTA0)
 #endif
 #ifdef ACCGPU
-!$ACC WAIT(1)
-!$ACC END DATA
-!$ACC END DATA
+      !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUTA0)
+#endif
+      CALL HIP_DGEMM_BATCHED_OVERLOAD( &
+        & 'N', 'T', &
+        & KF_LEG, G%NDGLU(0), (R%NSMAX+2)/2, &
+        & 1.0_JPRD, &
+        & ZINP0, IIN0_STRIDES0, 0, &
+        & ZAA0, SIZE(ZAA0,1), 0, &
+        & 0.0_JPRD, &
+        & ZOUTA0, IOUT0_STRIDES0, 0, &
+        & 1, STREAM=1_C_LONG)
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
+#endif
+   ENDIF
+
+
+
+    DO KMLOC=1,D_NUMP
+      KM = D_MYMS(KMLOC)
+      KS(KMLOC) = (R%NSMAX-KM+2)/2
+      NS(KMLOC) = G%NDGLU(KM)
+      AOFFSETS(KMLOC) = IIN_STRIDES1*(KMLOC-1)
+      BOFFSETS(KMLOC) = SIZE(ZAA,1)*SIZE(ZAA,2)*(KMLOC-1)
+      COFFSETS(KMLOC) = IOUT_STRIDES1*(KMLOC-1)
+    ENDDO
+    IF(KMLOC0 > 0) THEN
+      NS(KMLOC0) = 0
+      KS(KMLOC0) = 0
+    ENDIF
+#ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_PTR(ZAA,ZINP,ZOUTA)
+#endif
+#ifdef ACCGPU
+      !$ACC HOST_DATA USE_DEVICE(ZAA,ZINP,ZOUTA)
+#endif
+    CALL HIP_GEMM( &
+        & 11, & ! unique identifier
+        & 'N', 'T', &
+        & 2*KF_LEG, NS(:), KS(:), &
+        & 1.0_JPRBT, &
+        & ZINP, IIN_STRIDES0, AOFFSETS, &
+        & ZAA, SIZE(ZAA,1), BOFFSETS, &
+        & 0.0_JPRBT, &
+        & ZOUTA, IOUT_STRIDES0, COFFSETS, &
+        & D_NUMP, STREAM=1_C_LONG)
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
 #endif
 
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(444,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(444,1)
+    ENDIF
+    CALL GSTATS(424,1)
 
-IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
-!     ------------------------------------------------------------------
+    ! 2. +++++++++++++ symmetric
+    !IF KM=0 and NSMAX is 6:
+    !    IS=2
+    !    DO=1,4
+    !       PIA_2=2+1+(0..3)*2 ... 3+(0..3)*2 ... 3,5,7,9
+    !IF KM=0 and NSMAX is 7:
+    !    IS=1
+    !    DO=1,5
+    !       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
 
-END SUBROUTINE LEINV
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) DEFAULT(NONE) ASYNC(1)
+    DO KMLOC=1,D_NUMP
+      DO JK=1,2*KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IS  = 1+MOD(R_NSMAX-KM+1,2)
+        IF(KM /= 0) THEN
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX-KM+3)/2
+            ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
+          ENDDO
+        ELSEIF (MOD((JK-1),2) == 0) THEN
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX+3)/2
+            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
+          ENDDO
+        ENDIF
+      ENDDO
+    ENDDO
+
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+    CALL GSTATS(424,0)
+
+    IF (KMLOC0 > 0) THEN
+#ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_PTR(ZAS0,ZINP0,ZOUTS0)
+#endif
+#ifdef ACCGPU
+      !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUTS0)
+#endif
+      CALL HIP_DGEMM_BATCHED_OVERLOAD( &
+        & 'N', 'T', &
+        & KF_LEG, G%NDGLU(0), (R%NSMAX+3)/2, &
+        & 1.0_JPRD, &
+        & ZINP0, IIN0_STRIDES0, 0, &
+        & ZAS0, SIZE(ZAS0,1), 0, &
+        & 0.0_JPRD, &
+        & ZOUTS0, IOUT0_STRIDES0, 0, &
+        & 1, STREAM=1_C_LONG)
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
+#endif
+    ENDIF
+
+    DO KMLOC=1,D_NUMP
+      KM = D_MYMS(KMLOC)
+      KS(KMLOC) = (R%NSMAX-KM+3)/2
+      NS(KMLOC) = G%NDGLU(KM)
+      AOFFSETS(KMLOC) = IIN_STRIDES1*(KMLOC-1)
+      BOFFSETS(KMLOC) = SIZE(ZAS,1)*SIZE(ZAS,2)*(KMLOC-1)
+      COFFSETS(KMLOC) = IOUT_STRIDES1*(KMLOC-1)
+    ENDDO
+    IF(KMLOC0 > 0) THEN
+      NS(KMLOC0) = 0
+      KS(KMLOC0) = 0
+    ENDIF
+#ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_PTR(ZAS,ZINP,ZOUTS)
+#endif
+#ifdef ACCGPU
+      !$ACC HOST_DATA USE_DEVICE(ZAS,ZINP,ZOUTS)
+#endif
+    CALL HIP_GEMM( &
+      & 12, & ! unique identifier
+      & 'N', 'T', &
+      & 2*KF_LEG, NS(:), KS(:), &
+      & 1.0_JPRBT, &
+      & ZINP, IIN_STRIDES0, AOFFSETS, &
+      & ZAS, SIZE(ZAS,1), BOFFSETS, &
+      & 0.0_JPRBT, &
+      & ZOUTS, IOUT_STRIDES0, COFFSETS, &
+      & D_NUMP, STREAM=1_C_LONG)
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
+#endif
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(444,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(444,1)
+    ENDIF
+    CALL GSTATS(424,1)
+
+    !$ACC DATA PRESENT(FOUBUF_IN)
+    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,ISTAS,ZAOA,ZSOA) ASYNC(1)
+    DO KMLOC=1,D_NUMP
+      DO JGL=1,R_NDGNH
+        DO JK=1,2*KF_LEG
+          KM = D_MYMS(KMLOC)
+          ISL = R_NDGNH-G_NDGLU(KM)+1
+          IF (JGL >= ISL) THEN
+            !(DO JGL=ISL,R_NDGNH)
+            IGLS = R_NDGL+1-JGL
+            OFFSET1 = D_NPNTGTB1(KMLOC,JGL )*2*KF_LEG
+            OFFSET2 = D_NPNTGTB1(KMLOC,IGLS)*2*KF_LEG
+
+            IF(KM /= 0) THEN
+              ZSOA = ZOUTS(JK+(JGL-ISL)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
+              ZAOA = ZOUTA(JK+(JGL-ISL)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
+            ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
+              ZSOA = ZOUTS0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
+              ZAOA = ZOUTA0((JK-1)/2+1+(JGL-1)*IOUT0_STRIDES0)
+            ELSE
+              ! Imaginary values of KM=0 is zero, though I don't think we care
+              ZSOA = 0_JPRBT
+              ZAOA = 0_JPRBT
+            ENDIF
+
+            FOUBUF_IN(OFFSET1+JK) = ZAOA+ZSOA
+            FOUBUF_IN(OFFSET2+JK) = ZSOA-ZAOA
+          ENDIF
+        ENDDO
+      ENDDO
+    ENDDO
+
+    !$ACC WAIT(1)
+
+    !$ACC END DATA
+    !$ACC END DATA
+
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
+    !     ------------------------------------------------------------------
+
+  END SUBROUTINE LEINV
 END MODULE LEINV_MOD

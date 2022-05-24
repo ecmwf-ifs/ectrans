@@ -15,6 +15,7 @@ MODULE TPM_TRANS
 
 !
 USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
+USE ISO_C_BINDING, ONLY: C_INT8_T
 
 IMPLICIT NONE
 
@@ -70,11 +71,6 @@ REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
 ! we adapt the size. After 2 iterations this should lead to constant runtimes
 ! (the first iteration is used to get the max buffer size, the second iteration
 ! is going to recreate the graphs if needed)
-REAL(KIND=JPRBT),POINTER :: REUSE_PTR(:)
-
-!!! with Cray compiler this creates a lot more problems than good ... , Nils
-!!!$ACC DECLARE CREATE(FOUBUF_IN)
-!!!$ACC DECLARE CREATE(FOUBUF)
-!!!$ACC DECLARE CREATE(ZGTF)
+INTEGER(KIND=C_INT8_T),POINTER :: REUSE_PTR(:)
 
 END MODULE TPM_TRANS
