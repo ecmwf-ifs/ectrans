@@ -169,6 +169,13 @@ ZOUTS(:) = 0
 ZOUTA(:) = 0
 !$ACC END KERNELS
 
+ALLOCATE(FOUBUF_IN(D%NLENGT1B*KFIELDS))
+!$ACC ENTER DATA CREATE(FOUBUF_IN)
+
+IF (KMLOC0 > 0) THEN
+  print*,'computing m=0 in double precision'
+ENDIF
+
 ! READ 2:NSMAX+3
 
 !IF KM=0 and NSMAX is 6:
@@ -200,18 +207,27 @@ DO KMLOC=1,D_NUMP
   ENDDO
 ENDDO
 
-! operate on full arrays, where non-relavent entries have been set to zero
-! Get C in transpose format to get better memory access patterns later
-!C=A*B =>
-! C^T=B^T*A^T
-
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(440,0)
   CALL MPL_BARRIER(CDSTRING='')
   CALL GSTATS(440,1)
 ENDIF
 CALL GSTATS(424,0)
-! OVERLOADED FOR SINGLE AND DOUBLE PRECISION
+
+IF (KMLOC0 > 0) THEN
+  ! compute m=0 in double precision:
+  CALL CUDA_GEMM_BATCHED( &
+    & CUBLAS_OP_N, CUBLAS_OP_T, &
+    & KFIELDS/2, G%NDGLU(0), (R%NSMAX+2)/2, &
+    & 1.0_JPRD, &
+    & ZINP0, IIN0_STRIDES0, 0, &
+    & ZAA0, SIZE(ZAA0,1), 0, &
+    & 0.0_JPRD, &
+    & ZOUTA0, IOUT0_STRIDES0, 0, &
+    & 1, STREAM=ACC_ASYNC_SYNC)
+  CALL cudaDeviceSynchronize()
+ENDIF
+
 DO KMLOC=1,D_NUMP
   KM = D_MYMS(KMLOC)
   KS(KMLOC) = (R%NSMAX-KM+2)/2
@@ -243,22 +259,6 @@ IF (LSYNC_TRANS) THEN
 ENDIF
 CALL GSTATS(424,1)
 
-IF (KMLOC0 > 0) THEN
-  print*,'computing m=0 in double precision'
-
-  CALL CUDA_GEMM_BATCHED( &
-    & CUBLAS_OP_N, CUBLAS_OP_T, &
-    & KFIELDS/2, G%NDGLU(0), (R%NSMAX+2)/2, &
-    & 1.0_JPRD, &
-    & ZINP0, IIN0_STRIDES0, 0, &
-    & ZAA0, SIZE(ZAA0,1), 0, &
-    & 0.0_JPRD, &
-    & ZOUTA0, IOUT0_STRIDES0, 0, &
-    & 1, STREAM=ACC_ASYNC_SYNC)
-  CALL cudaDeviceSynchronize()
-
-ENDIF
-
 ! 2. +++++++++++++ symmetric
 !IF KM=0 and NSMAX is 6:
 !    IS=2
@@ -288,16 +288,26 @@ DO KMLOC=1,D_NUMP
   ENDDO
 ENDDO
 
-
-!C=A*B =>
-! C^T=B^T*A^T
-
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(440,0)
   CALL MPL_BARRIER(CDSTRING='')
   CALL GSTATS(440,1)
 ENDIF
 CALL GSTATS(424,0)
+
+IF (KMLOC0 > 0) THEN
+  CALL CUDA_GEMM_BATCHED( &
+    & CUBLAS_OP_N, CUBLAS_OP_T, &
+    & KFIELDS/2, G%NDGLU(0), (R%NSMAX+3)/2, &
+    & 1.0_JPRD, &
+    & ZINP0, IIN0_STRIDES0, 0, &
+    & ZAS0, SIZE(ZAS0,1), 0, &
+    & 0.0_JPRD, &
+    & ZOUTS0, IOUT0_STRIDES0, 0, &
+    & 1, STREAM=ACC_ASYNC_SYNC)
+  CALL cudaDeviceSynchronize()
+ENDIF
+
 DO KMLOC=1,D_NUMP
   KM = D_MYMS(KMLOC)
   KS(KMLOC) = (R%NSMAX-KM+3)/2
@@ -327,22 +337,6 @@ IF (LSYNC_TRANS) THEN
   CALL GSTATS(444,1)
 ENDIF
 CALL GSTATS(424,1)
-
-IF (KMLOC0 > 0) THEN
-  CALL CUDA_GEMM_BATCHED( &
-    & CUBLAS_OP_N, CUBLAS_OP_T, &
-    & KFIELDS/2, G%NDGLU(0), (R%NSMAX+3)/2, &
-    & 1.0_JPRD, &
-    & ZINP0, IIN0_STRIDES0, 0, &
-    & ZAS0, SIZE(ZAS0,1), 0, &
-    & 0.0_JPRD, &
-    & ZOUTS0, IOUT0_STRIDES0, 0, &
-    & 1, STREAM=ACC_ASYNC_SYNC)
-  CALL cudaDeviceSynchronize()
-ENDIF
-
-ALLOCATE(FOUBUF_IN(D%NLENGT1B*KFIELDS))
-!$ACC ENTER DATA CREATE(FOUBUF_IN)
 
 !$ACC DATA PRESENT(FOUBUF_IN)
 !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,ISTAS,ZAOA,ZSOA)
