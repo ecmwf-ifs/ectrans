@@ -32,6 +32,7 @@ MODULE LTINV_MOD
   USE TPM_FIELDS      ,ONLY : F,ZEPSNM
   USE MPL_MODULE      ,ONLY : MPL_BARRIER
   USE TPM_GEN         ,ONLY : LSYNC_TRANS
+  USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
   
   
   !**** *LTINV* - Inverse Legendre transform

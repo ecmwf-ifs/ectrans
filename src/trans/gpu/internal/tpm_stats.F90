@@ -1,0 +1,52 @@
+! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
+MODULE TPM_STATS
+
+IMPLICIT NONE
+
+CHARACTER(LEN=32) :: DESCRIPTIONS(100)
+
+CONTAINS
+
+SUBROUTINE GSTATS_LABEL_NVTX(KNUM,CTYPE,CDESC)
+USE EC_PARKIND  ,ONLY : JPIM
+IMPLICIT NONE
+INTEGER(KIND=JPIM) :: KNUM
+CHARACTER(*) CDESC
+CHARACTER(*) CTYPE
+
+IF (KNUM >= 400 .AND. KNUM < 500) THEN
+  DESCRIPTIONS(KNUM-400+1) = CDESC
+ENDIF
+CALL GSTATS_LABEL(KNUM,CTYPE,CDESC)
+END SUBROUTINE
+
+SUBROUTINE GSTATS_NVTX(KNUM,KSWITCH)
+  USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
+  USE NVTX
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=JPIM),INTENT(IN) :: KNUM
+  INTEGER(KIND=JPIM),INTENT(IN) :: KSWITCH
+
+  IF (KNUM >= 400 .AND. KNUM < 500) THEN
+    IF (KSWITCH == 0) THEN
+      CALL NVTXSTARTRANGE(DESCRIPTIONS(KNUM-400+1))
+    ELSEIF (KSWITCH == 1) THEN
+      CALL NVTXENDRANGE()
+    ENDIF
+  ENDIF
+  CALL GSTATS(KNUM,KSWITCH)
+END SUBROUTINE GSTATS_NVTX
+
+END MODULE TPM_STATS
+
