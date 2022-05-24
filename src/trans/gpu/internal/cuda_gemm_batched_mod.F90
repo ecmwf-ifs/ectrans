@@ -1,5 +1,4 @@
 MODULE CUDA_GEMM_BATCHED_MOD
-  USE CUBLAS_MOD
   USE PARKIND1, ONLY: JPRD, JPRM, JPIM
 
   IMPLICIT NONE
@@ -12,6 +11,45 @@ MODULE CUDA_GEMM_BATCHED_MOD
     MODULE PROCEDURE CUDA_DGEMM_BATCHED_1D_3D_1D_OVERLOAD
     MODULE PROCEDURE CUDA_SGEMM_BATCHED_1D_3D_1D_OVERLOAD
   END INTERFACE CUDA_GEMM_BATCHED
+
+  INTERFACE
+    SUBROUTINE CUDA_SGEMM_BATCHED(&
+        & CTA, CTB,               &
+        & M, N, K,                &
+        & ALPHA,                  &
+        & A, LDA, TDA,            &
+        & B, LDB, TDB,            &
+        & BETA,                   &
+        & C, LDC, TDC,            &
+        & BATCHCOUNT              &
+    &) BIND(C, NAME='cublasSgemmBatched_wrapper')
+        USE ISO_C_BINDING
+        CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
+        INTEGER(C_INT),      VALUE            :: M, N, K, LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
+        REAL(C_FLOAT),       VALUE            :: ALPHA, BETA
+        REAL(C_FLOAT),       DIMENSION(LDA,*) :: A
+        REAL(C_FLOAT),       DIMENSION(LDB,*) :: B
+        REAL(C_FLOAT),       DIMENSION(LDC,*) :: C
+    END SUBROUTINE CUDA_SGEMM_BATCHED
+    SUBROUTINE CUDA_DGEMM_BATCHED(&
+        & CTA, CTB,               &
+        & M, N, K,                &
+        & ALPHA,                  &
+        & A, LDA, TDA,            &
+        & B, LDB, TDB,            &
+        & BETA,                   &
+        & C, LDC, TDC,            &
+        & BATCHCOUNT              &
+    &) BIND(C, NAME='cublasDgemmBatched_wrapper')
+        USE ISO_C_BINDING
+        CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
+        INTEGER(C_INT),      VALUE            :: M, N, K, LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
+        REAL(C_DOUBLE),      VALUE            :: ALPHA,BETA
+        REAL(C_DOUBLE),      DIMENSION(LDA,*) :: A
+        REAL(C_DOUBLE),      DIMENSION(LDB,*) :: B
+        REAL(C_DOUBLE),      DIMENSION(LDC,*) :: C
+    END SUBROUTINE CUDA_DGEMM_BATCHED
+  END INTERFACE
 
 CONTAINS
 

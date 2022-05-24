@@ -38,7 +38,6 @@ foreach( prec sp dp )
       TARGET           trans_gpu_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-                       algor/external/fourier/fft_wrapper.cu
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
@@ -53,7 +52,6 @@ foreach( prec sp dp )
       TARGET           trans_gpu_static_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-                       algor/external/fourier/fft_wrapper.cu
       TYPE             STATIC
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
@@ -69,7 +67,6 @@ foreach( prec sp dp )
       TARGET           trans_gpu_static_CA_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-                       algor/external/fourier/fft_wrapper.cu
       TYPE             STATIC
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
@@ -140,10 +137,8 @@ endforeach()
 ecbuild_add_library( TARGET gpu
   TYPE STATIC
   SOURCES
-            algor/module/cublasSgemmBatched.cu
-            algor/module/cublasDgemmBatched.cu
-##            algor/module/cublasSTCgemmBatched.cu
-            algor/module/IPC_Alltoall.cu
+            algor/external/fourier/fft_wrapper.cu
+            algor/external/gemm/gemm_wrapper.cu
             PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
 )
 
