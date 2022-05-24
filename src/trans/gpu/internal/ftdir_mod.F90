@@ -10,7 +10,7 @@
 
 MODULE FTDIR_MOD
 CONTAINS
-SUBROUTINE FTDIR(ZGTF,STRIDE,KF_FS)
+SUBROUTINE FTDIR(ZGTF,STRIDE,KFIELD)
 
 
 !**** *FTDIR - Direct Fourier transform
@@ -24,7 +24,7 @@ SUBROUTINE FTDIR(ZGTF,STRIDE,KF_FS)
 
 !        Explicit arguments :  PREEL   - Fourier/grid-point array
 !        --------------------  KSTIRDE - stride of PREEL
-!                              KF_FS   - number of fields
+!                              KFIELD   - number of fields
 
 !     Method.
 !     -------
@@ -59,7 +59,7 @@ USE MPL_MODULE      ,ONLY : MPL_BARRIER
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: STRIDE,KF_FS
+INTEGER(KIND=JPIM),INTENT(IN)  :: STRIDE,KFIELD
 REAL(KIND=JPRBT), INTENT(INOUT) :: ZGTF(:,:)
 INTEGER(KIND=JPIM)  :: KGL
 
@@ -96,10 +96,10 @@ DO KGL=IBEG,IEND,IINC
   IOFF=D%NSTAGTF(KGL)+1
   IGLG = D%NPTRLS(MYSETW)+KGL-1
 
-  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G%NLOEN(IGLG),2*KF_FS,STRIDE)
-  !$ACC host_data use_device(ZGTF,ZGTF2)
+  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G%NLOEN(IGLG),KFIELD,KFIELD)
+  !$ACC HOST_DATA USE_DEVICE(ZGTF,ZGTF2)
   CALL EXECUTE_PLAN_FFTC(IPLAN_R2C,-1,ZGTF(1,IOFF),ZGTF2(1,IOFF))
-  !$ACC end host_data
+  !$ACC END HOST_DATA
 END DO
 
 IRET = CUDA_SYNCHRONIZE()
