@@ -371,8 +371,6 @@ ENDIF
 
 ! Compute derived variables
 
-IF(LVORGP) LDIVGP = .TRUE.
-
 NGPBLKS = (D%NGPTOT-1)/NPROMA+1
 
 IF_OUT_LT = 2*IF_UV + IF_SCALARS+IF_SCDERS
