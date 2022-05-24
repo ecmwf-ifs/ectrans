@@ -150,15 +150,18 @@ CALL GSTATS(414,0)
 !C=A*B =>
 ! C^T=B^T*A^T
 DO KMLOC=1,D_NUMP
-  CALL CUDA_GEMM_BATCHED( &
-    & CUBLAS_OP_N, CUBLAS_OP_N, &
-    & 2*KF_FS, TDZAA, R_NDGNH, &
-    & 1.0_JPRBT, &
-    & ZINPA((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
-    & ZAA(:,:,KMLOC), R_NDGNH, TDZAA*R_NDGNH, &
-    & 0.0_JPRBT, &
-    & ZOUT((KMLOC-1)*TDZAA*2*KF_FS+1:), 2*KF_FS, TDZAA*2*KF_FS, &
-    & 1)
+  KM = D_MYMS(KMLOC)
+  IF (KM /= 0) THEN
+    CALL CUDA_GEMM_BATCHED( &
+      & CUBLAS_OP_N, CUBLAS_OP_N, &
+      & 2*KF_FS, (R%NSMAX-KM+2)/2, G%NDGLU(KM), &
+      & 1.0_JPRBT, &
+      & ZINPA((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+      & ZAA(:,:,KMLOC), R_NDGNH, TDZAA*R_NDGNH, &
+      & 0.0_JPRBT, &
+      & ZOUT((KMLOC-1)*TDZAA*2*KF_FS+1:), 2*KF_FS, TDZAA*2*KF_FS, &
+      & 1)
+  ENDIF
 ENDDO
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,0)
@@ -200,7 +203,7 @@ IF(KMLOC0 > 0) THEN
 
   CALL CUDA_GEMM_BATCHED( &
     & CUBLAS_OP_N, CUBLAS_OP_N, &
-    & KF_FS, TDZAA, R_NDGNH, &
+    & KF_FS, (R%NSMAX+2)/2, G%NDGLU(0), &
     & 1.0_JPRD, &
     & ZINP0, KF_FS, R_NDGNH*KF_FS, &
     & ZAA0, R_NDGNH, TDZAA*R_NDGNH, &
@@ -229,15 +232,18 @@ CALL GSTATS(414,0)
 !C=A*B =>
 ! C^T=B^T*A^T
 DO KMLOC=1,D_NUMP
-  CALL CUDA_GEMM_BATCHED( &
-    & CUBLAS_OP_N, CUBLAS_OP_N, &
-    & 2*KF_FS, TDZAS, R_NDGNH, &
-    & 1.0_JPRBT, &
-    & ZINPS((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
-    & ZAS(:,:,KMLOC), R_NDGNH, TDZAS*R_NDGNH, &
-    & 0.0_JPRBT, &
-    & ZOUT((KMLOC-1)*TDZAS*2*KF_FS+1:), 2*KF_FS, TDZAS*2*KF_FS, &
-    & 1)
+  KM = D_MYMS(KMLOC)
+  IF (KM /= 0) THEN
+    CALL CUDA_GEMM_BATCHED( &
+      & CUBLAS_OP_N, CUBLAS_OP_N, &
+      & 2*KF_FS, (R%NSMAX-KM+3)/2, G%NDGLU(KM), &
+      & 1.0_JPRBT, &
+      & ZINPS((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+      & ZAS(:,:,KMLOC), R_NDGNH, TDZAS*R_NDGNH, &
+      & 0.0_JPRBT, &
+      & ZOUT((KMLOC-1)*TDZAS*2*KF_FS+1:), 2*KF_FS, TDZAS*2*KF_FS, &
+      & 1)
+  ENDIF
 ENDDO
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,0)
@@ -275,7 +281,7 @@ IF(KMLOC0 > 0) THEN
 
   call CUDA_GEMM_BATCHED( &
     & CUBLAS_OP_N, CUBLAS_OP_N, &
-    & KF_FS, TDZAS, R_NDGNH, &
+    & KF_FS, (R%NSMAX+3)/2, G%NDGLU(0), &
     & 1.0_JPRD, &
     & ZINP0, KF_FS, R_NDGNH*KF_FS, &
     & ZAS0, R_NDGNH, TDZAS*R_NDGNH, &
