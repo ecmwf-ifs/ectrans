@@ -1,4 +1,5 @@
 # (C) Copyright 2020- ECMWF.
+# (C) Copyright 2022- NVIDIA.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -37,10 +38,7 @@ foreach( prec sp dp )
       TARGET           trans_gpu_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
+                       algor/external/fourier/fft_wrapper.cu
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
@@ -55,10 +53,7 @@ foreach( prec sp dp )
       TARGET           trans_gpu_static_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
+                       algor/external/fourier/fft_wrapper.cu
       TYPE             STATIC
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
@@ -74,10 +69,7 @@ foreach( prec sp dp )
       TARGET           trans_gpu_static_CA_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
+                       algor/external/fourier/fft_wrapper.cu
       TYPE             STATIC
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
