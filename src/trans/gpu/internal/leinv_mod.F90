@@ -53,7 +53,6 @@ CONTAINS
   END SUBROUTINE
 
   SUBROUTINE LEINV(PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,KF_LEG)
-
     !**** *LEINV* - Inverse Legendre transform.
 
     !     Purpose.
@@ -312,6 +311,5 @@ CONTAINS
 
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------
-
   END SUBROUTINE LEINV
 END MODULE LEINV_MOD

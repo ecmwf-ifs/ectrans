@@ -19,7 +19,6 @@ MODULE TRLTOG_MOD
   TYPE TRLTOG_HANDLE
     TYPE(ALLOCATION_RESERVATION_HANDLE) :: HCOMBUFR_AND_COMBUFS
   END TYPE
-
 CONTAINS
   FUNCTION PREPARE_TRLTOG(ALLOCATOR,KF_FS,KF_GP) RESULT(HTRLTOG)
     USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
@@ -40,702 +39,700 @@ CONTAINS
 
     HTRLTOG%HCOMBUFR_AND_COMBUFS = RESERVE(ALLOCATOR, NELEM)
   END FUNCTION
+
   SUBROUTINE TRLTOG_CUDAAWARE(ALLOCATOR,HTRLTOG,PREEL_REAL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,KPTRGP,&
-   & KVSETUV,KVSETSC,KVSETSC3A,KVSETSC3B,KVSETSC2,&
-   & PGP,PGPUV,PGP3A,PGP3B,PGP2)
+     & KVSETUV,KVSETSC,KVSETSC3A,KVSETSC3B,KVSETSC2,&
+     & PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
-  !**** *trltog * - transposition of grid point data from latitudinal
-  !   to column structure. This takes place between inverse
-  !                 FFT and grid point calculations.
-  !                 TRLTOG is the inverse of TRGTOL
+    !**** *trltog * - transposition of grid point data from latitudinal
+    !   to column structure. This takes place between inverse
+    !                 FFT and grid point calculations.
+    !                 TRLTOG is the inverse of TRGTOL
 
-  ! Version using CUDA-aware MPI
+    ! Version using CUDA-aware MPI
 
-  !     Purpose.
-  !     --------
-
-
-  !**   Interface.
-  !     ----------
-  !        *call* *trltog(...)
-
-  !        Explicit arguments :
-  !        --------------------
-  !           PREEL_REAL    -  Latitudinal data ready for direct FFT (input)
-  !           PGP    -  Blocked grid point data    (output)
-  !           KVSET    - "v-set" for each field      (input)
-
-  !        Implicit arguments :
-  !        --------------------
-
-  !     Method.
-  !     -------
-  !        See documentation
-
-  !     Externals.
-  !     ----------
-
-  !     Reference.
-  !     ----------
-  !        ECMWF Research Department documentation of the IFS
-
-  !     Author.
-  !     -------
-  !        MPP Group *ECMWF*
-
-  !     Modifications.
-  !     --------------
-  !        Original  : 95-10-01
-  !        D.Dent    : 97-08-04 Reorganisation to allow NPRTRV
-  !                             to differ from NPRGPEW
-  !        =99-03-29= Mats Hamrud and Deborah Salmond
-  !                   JUMP in FFT's changed to 1
-  !                   INDEX introduced and ZCOMBUF not used for same PE
-  !         01-11-23  Deborah Salmond and John Hague
-  !                   LIMP_NOOLAP Option for non-overlapping message passing
-  !                               and buffer packing
-  !         01-12-18  Peter Towers
-  !                   Improved vector performance of LTOG_PACK,LTOG_UNPACK
-  !         03-0-02   G. Radnoti: Call barrier always when nproc>1
-  !         08-01-01  G.Mozdzynski: cleanup
-  !         09-01-02  G.Mozdzynski: use non-blocking recv and send
-  !     ------------------------------------------------------------------
+    !     Purpose.
+    !     --------
 
 
+    !**   Interface.
+    !     ----------
+    !        *call* *trltog(...)
 
-  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB ,  JPRBT
-  USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
-  USE MPL_MODULE      ,ONLY : MPL_WAIT, MPL_BARRIER
-  USE TPM_GEN         ,ONLY : LSYNC_TRANS
-  USE EQ_REGIONS_MOD  ,ONLY : MY_REGION_EW, MY_REGION_NS
-  USE TPM_DISTR       ,ONLY : D,MYSETV, MYSETW, MTAGLG,NPRCIDS,MYPROC,NPROC,NPRTRW,NPRTRV
-  USE PE2SET_MOD      ,ONLY : PE2SET
-  USE MPL_DATA_MODULE ,ONLY : MPL_COMM_OML
-  USE OML_MOD         ,ONLY : OML_MY_THREAD
-  USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-  USE MPI
-  USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
+    !        Explicit arguments :
+    !        --------------------
+    !           PREEL_REAL    -  Latitudinal data ready for direct FFT (input)
+    !           PGP    -  Blocked grid point data    (output)
+    !           KVSET    - "v-set" for each field      (input)
 
-  USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, NPROMA
+    !        Implicit arguments :
+    !        --------------------
 
-  IMPLICIT NONE
+    !     Method.
+    !     -------
+    !        See documentation
 
-  REAL(KIND=JPRBT),  INTENT(INOUT), POINTER  :: PREEL_REAL(:)
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KF_FS,KF_GP
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KF_UV_G, KF_SCALARS_G
-  INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
-  REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP(:,:,:)
-  REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGPUV(:,:,:,:)
-  REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP3A(:,:,:,:)
-  REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP3B(:,:,:,:)
-  REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP2(:,:,:)
-  INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
-  INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
-  INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3A(:)
-  INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3B(:)
-  INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC2(:)
+    !     Externals.
+    !     ----------
 
-  TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
-  TYPE(TRLTOG_HANDLE) :: HTRLTOG
+    !     Reference.
+    !     ----------
+    !        ECMWF Research Department documentation of the IFS
 
-  ! LOCAL VARIABLES
+    !     Author.
+    !     -------
+    !        MPP Group *ECMWF*
 
-  REAL(KIND=JPRBT), POINTER :: ZCOMBUFS(:),ZCOMBUFR(:)
+    !     Modifications.
+    !     --------------
+    !        Original  : 95-10-01
+    !        D.Dent    : 97-08-04 Reorganisation to allow NPRTRV
+    !                             to differ from NPRGPEW
+    !        =99-03-29= Mats Hamrud and Deborah Salmond
+    !                   JUMP in FFT's changed to 1
+    !                   INDEX introduced and ZCOMBUF not used for same PE
+    !         01-11-23  Deborah Salmond and John Hague
+    !                   LIMP_NOOLAP Option for non-overlapping message passing
+    !                               and buffer packing
+    !         01-12-18  Peter Towers
+    !                   Improved vector performance of LTOG_PACK,LTOG_UNPACK
+    !         03-0-02   G. Radnoti: Call barrier always when nproc>1
+    !         08-01-01  G.Mozdzynski: cleanup
+    !         09-01-02  G.Mozdzynski: use non-blocking recv and send
+    !     ------------------------------------------------------------------
 
-  INTEGER(KIND=JPIM) :: ISENDTOT (NPROC)
-  INTEGER(KIND=JPIM) :: IRECVTOT (NPROC)
-  INTEGER(KIND=JPIM) :: IREQ     (NPROC*2)
-  INTEGER(KIND=JPIM) :: IRECV_TO_PROC(NPROC)
-  INTEGER(KIND=JPIM) :: ISEND_TO_PROC(NPROC)
+    USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB ,  JPRBT
+    USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
+    USE MPL_MODULE      ,ONLY : MPL_WAIT, MPL_BARRIER
+    USE TPM_GEN         ,ONLY : LSYNC_TRANS
+    USE EQ_REGIONS_MOD  ,ONLY : MY_REGION_EW, MY_REGION_NS
+    USE TPM_DISTR       ,ONLY : D,MYSETV, MYSETW, MTAGLG,NPRCIDS,MYPROC,NPROC,NPRTRW,NPRTRV
+    USE PE2SET_MOD      ,ONLY : PE2SET
+    USE MPL_DATA_MODULE ,ONLY : MPL_COMM_OML
+    USE OML_MOD         ,ONLY : OML_MY_THREAD
+    USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+    USE MPI
+    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
-  INTEGER(KIND=JPIM) :: JFLD, J, JI, J1, J2, JGL, JK, JL, IFLDS, JROC, INR, INS
-  INTEGER(KIND=JPIM) :: IFIRSTLAT, ILASTLAT, IFLD, IGL, IGLL,&
-               &IPOS, ISETA, ISETB, ISETV, ISEND, IRECV, ISETW, IPROC, &
-               &IR, ILOCAL_LAT, ISEND_COUNTS, IRECV_COUNTS, IERROR, II, ILEN, IBUFLENS, IBUFLENR, &
-               &JBLK, ILAT_STRIP
+    USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, NPROMA
 
-  ! Contains FIELD, PARS, LEVS
-  INTEGER(KIND=JPIM) :: IGP_OFFSETS(KF_GP,3)
-  INTEGER(KIND=JPIM), PARAMETER :: IGP_OFFSETS_UV=1, IGP_OFFSETS_GP2=2, IGP_OFFSETS_GP3A=3, IGP_OFFSETS_GP3B=4
-  INTEGER(KIND=JPIM) :: IUVPAR,IGP2PAR,IGP3ALEV,IGP3APAR,IGP3BLEV,IGP3BPAR,IPAROFF,IOFF
+    IMPLICIT NONE
 
-  INTEGER(KIND=JPIM) :: IFLDA(KF_GP)
-  INTEGER(KIND=JPIM) :: IIN_TO_SEND_BUFR(D%NLENGTF,2),IIN_TO_SEND_BUFR_OFFSET(NPROC), IIN_TO_SEND_BUFR_V
-  INTEGER(KIND=JPIM) :: IRECV_FIELD_COUNT(NPRTRV),IRECV_FIELD_COUNT_V
-  INTEGER(KIND=JPIM) :: IRECV_WSET_SIZE(NPRTRW),IRECV_WSET_SIZE_V
-  INTEGER(KIND=JPIM) :: IRECV_WSET_OFFSET(NPRTRW+1), IRECV_WSET_OFFSET_V
-  INTEGER(KIND=JPIM), ALLOCATABLE :: ICOMBUFS_OFFSET(:),ICOMBUFR_OFFSET(:)
-  INTEGER(KIND=JPIM) :: ICOMBUFS_OFFSET_V, ICOMBUFR_OFFSET_V
+    REAL(KIND=JPRBT),  INTENT(INOUT), POINTER  :: PREEL_REAL(:)
+    INTEGER(KIND=JPIM),INTENT(IN)  :: KF_FS,KF_GP
+    INTEGER(KIND=JPIM),INTENT(IN)  :: KF_UV_G, KF_SCALARS_G
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
+    REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP(:,:,:)
+    REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGPUV(:,:,:,:)
+    REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP3A(:,:,:,:)
+    REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP3B(:,:,:,:)
+    REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP2(:,:,:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3A(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3B(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC2(:)
 
-  INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)
-  INTEGER(KIND=JPIM) :: IVSETSC(KF_SCALARS_G)
-  INTEGER(KIND=JPIM) :: IVSET(KF_GP)
-  INTEGER(KIND=JPIM) :: J3,IFGP2,IFGP3A,IFGP3B
+    TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
+    TYPE(TRLTOG_HANDLE) :: HTRLTOG
 
-  REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-  REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR
+    ! LOCAL VARIABLES
 
-  #ifdef PARKINDTRANS_SINGLE
-  #define TRLTOG_DTYPE MPI_REAL
-  #else
-  #define TRLTOG_DTYPE MPI_DOUBLE_PRECISION
-  #endif
+    REAL(KIND=JPRBT), POINTER :: ZCOMBUFS(:),ZCOMBUFR(:)
+
+    INTEGER(KIND=JPIM) :: ISENDTOT (NPROC)
+    INTEGER(KIND=JPIM) :: IRECVTOT (NPROC)
+    INTEGER(KIND=JPIM) :: IREQ     (NPROC*2)
+    INTEGER(KIND=JPIM) :: IRECV_TO_PROC(NPROC)
+    INTEGER(KIND=JPIM) :: ISEND_TO_PROC(NPROC)
+
+    INTEGER(KIND=JPIM) :: JFLD, J, JI, J1, J2, JGL, JK, JL, IFLDS, JROC, INR, INS
+    INTEGER(KIND=JPIM) :: IFIRSTLAT, ILASTLAT, IFLD, IGL, IGLL,&
+                 &IPOS, ISETA, ISETB, ISETV, ISEND, IRECV, ISETW, IPROC, &
+                 &IR, ILOCAL_LAT, ISEND_COUNTS, IRECV_COUNTS, IERROR, II, ILEN, IBUFLENS, IBUFLENR, &
+                 &JBLK, ILAT_STRIP
+
+    ! Contains FIELD, PARS, LEVS
+    INTEGER(KIND=JPIM) :: IGP_OFFSETS(KF_GP,3)
+    INTEGER(KIND=JPIM), PARAMETER :: IGP_OFFSETS_UV=1, IGP_OFFSETS_GP2=2, IGP_OFFSETS_GP3A=3, IGP_OFFSETS_GP3B=4
+    INTEGER(KIND=JPIM) :: IUVPAR,IGP2PAR,IGP3ALEV,IGP3APAR,IGP3BLEV,IGP3BPAR,IPAROFF,IOFF
+
+    INTEGER(KIND=JPIM) :: IFLDA(KF_GP)
+    INTEGER(KIND=JPIM) :: IIN_TO_SEND_BUFR(D%NLENGTF,2),IIN_TO_SEND_BUFR_OFFSET(NPROC), IIN_TO_SEND_BUFR_V
+    INTEGER(KIND=JPIM) :: IRECV_FIELD_COUNT(NPRTRV),IRECV_FIELD_COUNT_V
+    INTEGER(KIND=JPIM) :: IRECV_WSET_SIZE(NPRTRW),IRECV_WSET_SIZE_V
+    INTEGER(KIND=JPIM) :: IRECV_WSET_OFFSET(NPRTRW+1), IRECV_WSET_OFFSET_V
+    INTEGER(KIND=JPIM), ALLOCATABLE :: ICOMBUFS_OFFSET(:),ICOMBUFR_OFFSET(:)
+    INTEGER(KIND=JPIM) :: ICOMBUFS_OFFSET_V, ICOMBUFR_OFFSET_V
+
+    INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)
+    INTEGER(KIND=JPIM) :: IVSETSC(KF_SCALARS_G)
+    INTEGER(KIND=JPIM) :: IVSET(KF_GP)
+    INTEGER(KIND=JPIM) :: J3,IFGP2,IFGP3A,IFGP3B
+
+    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR
+
+    #ifdef PARKINDTRANS_SINGLE
+    #define TRLTOG_DTYPE MPI_REAL
+    #else
+    #define TRLTOG_DTYPE MPI_DOUBLE_PRECISION
+    #endif
 
 
-  !     ------------------------------------------------------------------
+    !     ------------------------------------------------------------------
 
-  !*       0.    Some initializations
-  !              --------------------
-  IF (LHOOK) CALL DR_HOOK('TRLTOG',0,ZHOOK_HANDLE)
+    !*       0.    Some initializations
+    !              --------------------
+    IF (LHOOK) CALL DR_HOOK('TRLTOG',0,ZHOOK_HANDLE)
 
-  ! Note we have either
-  ! - KVSETUV and KVSETSC (with PGP, which has u, v, and scalar fields), or
-  ! - KVSETUV, KVSETSC2, KVSETSC3A KVSETSC3B (with PGPUV, GP3A, PGP3B and PGP2)
-  ! KVSETs are optionals. Their sizes canalso be inferred from KV_UV_G/KV_SCALARS_G (which
-  ! should match PSPXXX and PGPXXX arrays)
+    ! Note we have either
+    ! - KVSETUV and KVSETSC (with PGP, which has u, v, and scalar fields), or
+    ! - KVSETUV, KVSETSC2, KVSETSC3A KVSETSC3B (with PGPUV, GP3A, PGP3B and PGP2)
+    ! KVSETs are optionals. Their sizes canalso be inferred from KV_UV_G/KV_SCALARS_G (which
+    ! should match PSPXXX and PGPXXX arrays)
 
 
-  ! We first get the decomposition individually
-  IVSETUV(:) = -1
-  IF (PRESENT(KVSETUV)) IVSETUV(:) = KVSETUV(:)
-  IVSETSC(:)=-1
-  IF (PRESENT(KVSETSC)) THEN
-    IVSETSC(:) = KVSETSC(:)
-  ELSE
+    ! We first get the decomposition individually
+    IVSETUV(:) = -1
+    IF (PRESENT(KVSETUV)) IVSETUV(:) = KVSETUV(:)
+    IVSETSC(:)=-1
+    IF (PRESENT(KVSETSC)) THEN
+      IVSETSC(:) = KVSETSC(:)
+    ELSE
+      IOFF=0
+      IF (PRESENT(KVSETSC2)) THEN
+        IVSETSC(IOFF+1:IOFF+SIZE(KVSETSC2))=KVSETSC2(:)
+        IOFF = IOFF+SIZE(KVSETSC2)
+      ENDIF
+      IF (PRESENT(KVSETSC3A)) THEN
+        DO J3=1,MERGE(UBOUND(PGP3A,3),UBOUND(PGP3A,3)/3,.NOT. LSCDERS)
+          IVSETSC(IOFF+1:IOFF+SIZE(KVSETSC3A))=KVSETSC3A(:)
+          IOFF=IOFF+SIZE(KVSETSC3A)
+        ENDDO
+      ENDIF
+      IF (PRESENT(KVSETSC3B)) THEN
+        ! If SCDERS is on, the size of PGP is 3X larger because it is
+        ! holding various derivatives. The problem is that those are
+        ! at different non-contiguous positions, hence we treat them
+        ! as separate fields
+        DO J3=1,MERGE(UBOUND(PGP3B,3),UBOUND(PGP3B,3)/3,.NOT. LSCDERS)
+          IVSETSC(IOFF+1:IOFF+SIZE(KVSETSC3B))=KVSETSC3B(:)
+          IOFF=IOFF+SIZE(KVSETSC3B)
+        ENDDO
+      ENDIF
+      IF (IOFF > 0 .AND. IOFF /= KF_SCALARS_G ) THEN
+        PRINT*, "TRLTOG: ERROR IN IVSETSC COMPUTATION"
+        STOP 39
+      ENDIF
+    ENDIF
+
+    ! Now from UV and Scalars decomposition we get the full decomposition
     IOFF=0
-    IF (PRESENT(KVSETSC2)) THEN
-      IVSETSC(IOFF+1:IOFF+SIZE(KVSETSC2))=KVSETSC2(:)
-      IOFF = IOFF+SIZE(KVSETSC2)
-    ENDIF
-    IF (PRESENT(KVSETSC3A)) THEN
-      DO J3=1,MERGE(UBOUND(PGP3A,3),UBOUND(PGP3A,3)/3,.NOT. LSCDERS)
-        IVSETSC(IOFF+1:IOFF+SIZE(KVSETSC3A))=KVSETSC3A(:)
-        IOFF=IOFF+SIZE(KVSETSC3A)
-      ENDDO
-    ENDIF
-    IF (PRESENT(KVSETSC3B)) THEN
-      ! If SCDERS is on, the size of PGP is 3X larger because it is
-      ! holding various derivatives. The problem is that those are
-      ! at different non-contiguous positions, hence we treat them
-      ! as separate fields
-      DO J3=1,MERGE(UBOUND(PGP3B,3),UBOUND(PGP3B,3)/3,.NOT. LSCDERS)
-        IVSETSC(IOFF+1:IOFF+SIZE(KVSETSC3B))=KVSETSC3B(:)
-        IOFF=IOFF+SIZE(KVSETSC3B)
-      ENDDO
-    ENDIF
-    IF (IOFF > 0 .AND. IOFF /= KF_SCALARS_G ) THEN
-      PRINT*, "TRLTOG: ERROR IN IVSETSC COMPUTATION"
-      STOP 39
-    ENDIF
-  ENDIF
-
-  ! Now from UV and Scalars decomposition we get the full decomposition
-  IOFF=0
-  IF (KF_UV_G > 0) THEN
-    IF (LVORGP) THEN
+    IF (KF_UV_G > 0) THEN
+      IF (LVORGP) THEN
+        IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
+        IOFF=IOFF+KF_UV_G
+      ENDIF
+      IF ( LDIVGP) THEN
+        IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
+        IOFF=IOFF+KF_UV_G
+      ENDIF
+      IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
+      IOFF=IOFF+KF_UV_G
       IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
       IOFF=IOFF+KF_UV_G
     ENDIF
-    IF ( LDIVGP) THEN
+    IF (KF_SCALARS_G > 0) THEN
+      IVSET(IOFF+1:IOFF+KF_SCALARS_G) = IVSETSC(:)
+      IOFF=IOFF+KF_SCALARS_G
+      IF (LSCDERS) THEN
+        IVSET(IOFF+1:IOFF+KF_SCALARS_G) = IVSETSC(:)
+        IOFF=IOFF+KF_SCALARS_G
+      ENDIF
+    ENDIF
+    IF (KF_UV_G > 0 .AND. LUVDER) THEN
+      IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
+      IOFF=IOFF+KF_UV_G
       IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
       IOFF=IOFF+KF_UV_G
     ENDIF
-    IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
-    IOFF=IOFF+KF_UV_G
-    IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
-    IOFF=IOFF+KF_UV_G
-  ENDIF
-  IF (KF_SCALARS_G > 0) THEN
-    IVSET(IOFF+1:IOFF+KF_SCALARS_G) = IVSETSC(:)
-    IOFF=IOFF+KF_SCALARS_G
-    IF (LSCDERS) THEN
-      IVSET(IOFF+1:IOFF+KF_SCALARS_G) = IVSETSC(:)
-      IOFF=IOFF+KF_SCALARS_G
-    ENDIF
-  ENDIF
-  IF (KF_UV_G > 0 .AND. LUVDER) THEN
-    IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
-    IOFF=IOFF+KF_UV_G
-    IVSET(IOFF+1:IOFF+KF_UV_G) = IVSETUV(:)
-    IOFF=IOFF+KF_UV_G
-  ENDIF
-  IF (KF_SCALARS_G > 0) THEN
-    IF (LSCDERS) THEN
-      IVSET(IOFF+1:IOFF+KF_SCALARS_G) = IVSETSC(:)
-      IOFF=IOFF+KF_SCALARS_G
-    ENDIF
-  ENDIF
-
-  IF (.NOT. PRESENT(PGP)) THEN
-    ! This is only relevant if we use the split interface (i.e. not PGP)
-
-    IGP2PAR = 0
-    IGP3APAR = 0
-    IGP3ALEV = 0
-    IGP3BPAR = 0
-    IGP3BLEV = 0
-    IF (PRESENT(PGP2)) THEN
-      IGP2PAR = UBOUND(PGP2,2)
-      IF(LSCDERS) IGP2PAR = IGP2PAR/3
-    ENDIF
-    IF (PRESENT(PGP3A)) THEN
-      IGP3ALEV = UBOUND(PGP3A,2)
-      IGP3APAR = UBOUND(PGP3A,3)
-      IF(LSCDERS) IGP3APAR = IGP3APAR/3
-    ENDIF
-    IF (PRESENT(PGP3B)) THEN
-      IGP3BLEV = UBOUND(PGP3B,2)
-      IGP3BPAR = UBOUND(PGP3B,3)
-      IF(LSCDERS) IGP3BPAR = IGP3BPAR/3
-    ENDIF
-    IF (IGP2PAR + IGP3ALEV*IGP3APAR + IGP3BPAR*IGP3BLEV /= KF_SCALARS_G) THEN
-        PRINT *, IGP2PAR, IGP3APAR, IGP3ALEV, IGP3BPAR, IGP3BLEV
-      CALL ABORT_TRANS("INCONSISTENCY IN SCALARS")
+    IF (KF_SCALARS_G > 0) THEN
+      IF (LSCDERS) THEN
+        IVSET(IOFF+1:IOFF+KF_SCALARS_G) = IVSETSC(:)
+        IOFF=IOFF+KF_SCALARS_G
+      ENDIF
     ENDIF
 
-    ! This is only relevant if we use the split interface (i.e. not PGP)
-    IUVPAR = 1
-    IOFF=1
-    IF(LVORGP) THEN
+    IF (.NOT. PRESENT(PGP)) THEN
+      ! This is only relevant if we use the split interface (i.e. not PGP)
+
+      IGP2PAR = 0
+      IGP3APAR = 0
+      IGP3ALEV = 0
+      IGP3BPAR = 0
+      IGP3BLEV = 0
+      IF (PRESENT(PGP2)) THEN
+        IGP2PAR = UBOUND(PGP2,2)
+        IF(LSCDERS) IGP2PAR = IGP2PAR/3
+      ENDIF
+      IF (PRESENT(PGP3A)) THEN
+        IGP3ALEV = UBOUND(PGP3A,2)
+        IGP3APAR = UBOUND(PGP3A,3)
+        IF(LSCDERS) IGP3APAR = IGP3APAR/3
+      ENDIF
+      IF (PRESENT(PGP3B)) THEN
+        IGP3BLEV = UBOUND(PGP3B,2)
+        IGP3BPAR = UBOUND(PGP3B,3)
+        IF(LSCDERS) IGP3BPAR = IGP3BPAR/3
+      ENDIF
+      IF (IGP2PAR + IGP3ALEV*IGP3APAR + IGP3BPAR*IGP3BLEV /= KF_SCALARS_G) THEN
+          PRINT *, IGP2PAR, IGP3APAR, IGP3ALEV, IGP3BPAR, IGP3BLEV
+        CALL ABORT_TRANS("INCONSISTENCY IN SCALARS")
+      ENDIF
+
+      ! This is only relevant if we use the split interface (i.e. not PGP)
+      IUVPAR = 1
+      IOFF=1
+      IF(LVORGP) THEN
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
+        IUVPAR=IUVPAR+1
+        IOFF=IOFF+KF_UV_G
+      ENDIF
+
+      IF(LDIVGP) THEN
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
+        IUVPAR=IUVPAR+1
+        IOFF=IOFF+KF_UV_G
+      ENDIF
+
+      ! U
       IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
       IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
       IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
       IUVPAR=IUVPAR+1
       IOFF=IOFF+KF_UV_G
-    ENDIF
 
-    IF(LDIVGP) THEN
+      ! V
       IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
       IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
       IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
       IUVPAR=IUVPAR+1
       IOFF=IOFF+KF_UV_G
-    ENDIF
 
-    ! U
-    IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
-    IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
-    IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
-    IUVPAR=IUVPAR+1
-    IOFF=IOFF+KF_UV_G
-
-    ! V
-    IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
-    IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
-    IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
-    IUVPAR=IUVPAR+1
-    IOFF=IOFF+KF_UV_G
-
-    ! Scalars
-    ! PGP2
-    IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,1) = IGP_OFFSETS_GP2
-    IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,2) = (/(J, J=1,IGP2PAR)/)
-    IOFF=IOFF+IGP2PAR
-    ! PGP3A
-    IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,1) = IGP_OFFSETS_GP3A
-    IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,2) = (/(1+J/IGP3ALEV, J=0,IGP3APAR*IGP3ALEV-1)/)
-    IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,3) = (/(1+MOD(J,IGP3ALEV), J=0,IGP3APAR*IGP3ALEV-1)/)
-    IOFF=IOFF+IGP3APAR*IGP3ALEV
-    ! PGP3B
-    IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,1) = IGP_OFFSETS_GP3B
-    IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,2) = (/(1+J/IGP3BLEV, J=0,IGP3BPAR*IGP3BLEV-1)/)
-    IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,3) = (/(1+MOD(J,IGP3BLEV), J=0,IGP3BPAR*IGP3BLEV-1)/)
-    IOFF=IOFF+IGP3BPAR*IGP3BLEV
-
-    IF(LSCDERS) THEN
-      !Scalars NS Derivatives
+      ! Scalars
       ! PGP2
       IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,1) = IGP_OFFSETS_GP2
-      IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,2) = (/(J+IGP2PAR, J=1,IGP2PAR)/)
+      IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,2) = (/(J, J=1,IGP2PAR)/)
       IOFF=IOFF+IGP2PAR
       ! PGP3A
       IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,1) = IGP_OFFSETS_GP3A
-      IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,2) = (/(1+IGP3APAR+J/IGP3ALEV, J=0,IGP3APAR*IGP3ALEV-1)/)
+      IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,2) = (/(1+J/IGP3ALEV, J=0,IGP3APAR*IGP3ALEV-1)/)
       IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,3) = (/(1+MOD(J,IGP3ALEV), J=0,IGP3APAR*IGP3ALEV-1)/)
       IOFF=IOFF+IGP3APAR*IGP3ALEV
       ! PGP3B
       IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,1) = IGP_OFFSETS_GP3B
-      IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,2) = (/(1+IGP3BPAR+J/IGP3BLEV, J=0,IGP3BPAR*IGP3BLEV-1)/)
+      IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,2) = (/(1+J/IGP3BLEV, J=0,IGP3BPAR*IGP3BLEV-1)/)
       IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,3) = (/(1+MOD(J,IGP3BLEV), J=0,IGP3BPAR*IGP3BLEV-1)/)
       IOFF=IOFF+IGP3BPAR*IGP3BLEV
+
+      IF(LSCDERS) THEN
+        !Scalars NS Derivatives
+        ! PGP2
+        IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,1) = IGP_OFFSETS_GP2
+        IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,2) = (/(J+IGP2PAR, J=1,IGP2PAR)/)
+        IOFF=IOFF+IGP2PAR
+        ! PGP3A
+        IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,1) = IGP_OFFSETS_GP3A
+        IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,2) = (/(1+IGP3APAR+J/IGP3ALEV, J=0,IGP3APAR*IGP3ALEV-1)/)
+        IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,3) = (/(1+MOD(J,IGP3ALEV), J=0,IGP3APAR*IGP3ALEV-1)/)
+        IOFF=IOFF+IGP3APAR*IGP3ALEV
+        ! PGP3B
+        IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,1) = IGP_OFFSETS_GP3B
+        IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,2) = (/(1+IGP3BPAR+J/IGP3BLEV, J=0,IGP3BPAR*IGP3BLEV-1)/)
+        IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,3) = (/(1+MOD(J,IGP3BLEV), J=0,IGP3BPAR*IGP3BLEV-1)/)
+        IOFF=IOFF+IGP3BPAR*IGP3BLEV
+      ENDIF
+
+      IF(LUVDER) THEN
+        ! U Derivative NS
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
+        IUVPAR=IUVPAR+1
+        IOFF=IOFF+KF_UV_G
+
+        ! V Derivative NS
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
+        IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
+        IUVPAR=IUVPAR+1
+        IOFF=IOFF+KF_UV_G
+      ENDIF
+
+      IF(LSCDERS) THEN
+        !Scalars NS Derivatives
+        ! PGP2
+        IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,1) = IGP_OFFSETS_GP2
+        IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,2) = (/(J+2*IGP2PAR, J=1,IGP2PAR)/)
+        IOFF=IOFF+IGP2PAR
+        ! PGP3A
+        IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,1) = IGP_OFFSETS_GP3A
+        IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,2) = (/(1+2*IGP3APAR+J/IGP3ALEV, J=0,IGP3APAR*IGP3ALEV-1)/)
+        IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,3) = (/(1+MOD(J,IGP3ALEV), J=0,IGP3APAR*IGP3ALEV-1)/)
+        IOFF=IOFF+IGP3APAR*IGP3ALEV
+        ! PGP3B
+        IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,1) = IGP_OFFSETS_GP3B
+        IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,2) = (/(1+2*IGP3BPAR+J/IGP3BLEV, J=0,IGP3BPAR*IGP3BLEV-1)/)
+        IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,3) = (/(1+MOD(J,IGP3BLEV), J=0,IGP3BPAR*IGP3BLEV-1)/)
+        IOFF=IOFF+IGP3BPAR*IGP3BLEV
+      ENDIF
     ENDIF
 
-    IF(LUVDER) THEN
-      ! U Derivative NS
-      IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
-      IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
-      IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
-      IUVPAR=IUVPAR+1
-      IOFF=IOFF+KF_UV_G
+    CALL GSTATS(1806,0)
 
-      ! V Derivative NS
-      IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,1) = IGP_OFFSETS_UV
-      IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,2) = IUVPAR
-      IGP_OFFSETS(IOFF:IOFF+KF_UV_G-1,3) = (/(J, J=1,KF_UV_G)/)
-      IUVPAR=IUVPAR+1
-      IOFF=IOFF+KF_UV_G
-    ENDIF
-
-    IF(LSCDERS) THEN
-      !Scalars NS Derivatives
-      ! PGP2
-      IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,1) = IGP_OFFSETS_GP2
-      IGP_OFFSETS(IOFF:IOFF+IGP2PAR-1,2) = (/(J+2*IGP2PAR, J=1,IGP2PAR)/)
-      IOFF=IOFF+IGP2PAR
-      ! PGP3A
-      IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,1) = IGP_OFFSETS_GP3A
-      IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,2) = (/(1+2*IGP3APAR+J/IGP3ALEV, J=0,IGP3APAR*IGP3ALEV-1)/)
-      IGP_OFFSETS(IOFF:IOFF+IGP3APAR*IGP3ALEV-1,3) = (/(1+MOD(J,IGP3ALEV), J=0,IGP3APAR*IGP3ALEV-1)/)
-      IOFF=IOFF+IGP3APAR*IGP3ALEV
-      ! PGP3B
-      IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,1) = IGP_OFFSETS_GP3B
-      IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,2) = (/(1+2*IGP3BPAR+J/IGP3BLEV, J=0,IGP3BPAR*IGP3BLEV-1)/)
-      IGP_OFFSETS(IOFF:IOFF+IGP3BPAR*IGP3BLEV-1,3) = (/(1+MOD(J,IGP3BLEV), J=0,IGP3BPAR*IGP3BLEV-1)/)
-      IOFF=IOFF+IGP3BPAR*IGP3BLEV
-    ENDIF
-  ENDIF
-
-  CALL GSTATS(1806,0)
-
-  ! Prepare receiver arrays
-  ! find number of fields on a certain V-set
-  IF(NPRTRV == 1) THEN
-    ! This is needed because KVSET(JFLD) == -1 if there is only one V-set
-    IRECV_FIELD_COUNT(1) = KF_GP
-  ELSE
-    IRECV_FIELD_COUNT(:) = 0
-    DO JFLD=1,KF_GP
-      IRECV_FIELD_COUNT(IVSET(JFLD)) = IRECV_FIELD_COUNT(IVSET(JFLD)) + 1
-    ENDDO
-  ENDIF
-  ! find number of grid-points on a certain W-set that overlap with myself
-  IRECV_WSET_SIZE(:) = 0
-  DO ILOCAL_LAT=D%NFRSTLAT(MY_REGION_NS),D%NLSTLAT(MY_REGION_NS)
-    ILAT_STRIP = ILOCAL_LAT-D%NFRSTLAT(MY_REGION_NS)+D%NPTRFLOFF+1
-    IRECV_WSET_SIZE(D%NPROCL(ILOCAL_LAT)) = &
-        & IRECV_WSET_SIZE(D%NPROCL(ILOCAL_LAT))+D%NONL(ILAT_STRIP,MY_REGION_EW)
-  ENDDO
-  ! sum up offsets
-  IRECV_WSET_OFFSET(1) = 0
-  DO JROC=1,NPRTRW
-    IRECV_WSET_OFFSET(JROC+1)=IRECV_WSET_OFFSET(JROC)+IRECV_WSET_SIZE(JROC)
-  ENDDO
-  DO JROC=1,NPROC
-    CALL PE2SET(JROC,ISETA,ISETB,ISETW,ISETV)
-    ! total recv size is # points per field * # fields
-    IRECVTOT(JROC) = IRECV_WSET_SIZE(ISETW)*IRECV_FIELD_COUNT(ISETV)
-  ENDDO
-
-  ! Prepare sender arrays
-  IIN_TO_SEND_BUFR_OFFSET(1) = 0
-  DO JROC=1,NPROC
-    ! Get new offset to my current KINDEX entry
-    IF (JROC > 1 .AND. KF_FS > 0) THEN
-      IIN_TO_SEND_BUFR_OFFSET(JROC) = IIN_TO_SEND_BUFR_OFFSET(JROC-1)+ISENDTOT(JROC-1)/KF_FS
-    ELSEIF (JROC > 1) THEN
-      IIN_TO_SEND_BUFR_OFFSET(JROC) = IIN_TO_SEND_BUFR_OFFSET(JROC-1)
-    ENDIF
-
-    CALL PE2SET(JROC,ISETA,ISETB,ISETW,ISETV)
-
-    ! MAX(Index of first fourier latitude for this W set, first latitude of a senders A set)
-    ! i.e. we find the overlap between what we have on sender side (others A set) and the receiver
-    ! (me, the W-set). Ideally those conincide, at least mostly.
-    IFIRSTLAT = MAX(D%NPTRLS(MYSETW),D%NFRSTLAT(ISETA))
-    ! MIN(Index of last fourier latitude for this W set, last latitude of a senders A set)
-    ILASTLAT  = MIN(D%NPTRLS(MYSETW)+D%NULTPP(MYSETW)-1,D%NLSTLAT(ISETA))
-
-    IPOS = 0
-    DO JGL=IFIRSTLAT,ILASTLAT
-      ! get from "actual" latitude to the latitude strip offset
-      IGL  = JGL-D%NFRSTLAT(ISETA)+D%NPTRFRSTLAT(ISETA)
-      ! get from "actual" latitude to the latitude offset
-      IGLL = JGL-D%NPTRLS(MYSETW)+1
-      DO JL=1,D%NONL(IGL,ISETB)
-        IPOS = IPOS+1
-        ! offset to first layer of this gridpoint
-        IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_OFFSET(JROC)+IPOS,1) = &
-            & KF_FS*D%NSTAGTF(IGLL)+(D%NSTA(IGL,ISETB)-1)+(JL-1)
-        ! distance between two layers of this gridpoint
-        IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_OFFSET(JROC)+IPOS,2) = &
-            & D%NSTAGTF(IGLL+1)-D%NSTAGTF(IGLL)
+    ! Prepare receiver arrays
+    ! find number of fields on a certain V-set
+    IF(NPRTRV == 1) THEN
+      ! This is needed because KVSET(JFLD) == -1 if there is only one V-set
+      IRECV_FIELD_COUNT(1) = KF_GP
+    ELSE
+      IRECV_FIELD_COUNT(:) = 0
+      DO JFLD=1,KF_GP
+        IRECV_FIELD_COUNT(IVSET(JFLD)) = IRECV_FIELD_COUNT(IVSET(JFLD)) + 1
       ENDDO
+    ENDIF
+    ! find number of grid-points on a certain W-set that overlap with myself
+    IRECV_WSET_SIZE(:) = 0
+    DO ILOCAL_LAT=D%NFRSTLAT(MY_REGION_NS),D%NLSTLAT(MY_REGION_NS)
+      ILAT_STRIP = ILOCAL_LAT-D%NFRSTLAT(MY_REGION_NS)+D%NPTRFLOFF+1
+      IRECV_WSET_SIZE(D%NPROCL(ILOCAL_LAT)) = &
+          & IRECV_WSET_SIZE(D%NPROCL(ILOCAL_LAT))+D%NONL(ILAT_STRIP,MY_REGION_EW)
     ENDDO
-    !we always receive the full fourier space
-    ISENDTOT(JROC) = IPOS*KF_FS
-  ENDDO
+    ! sum up offsets
+    IRECV_WSET_OFFSET(1) = 0
+    DO JROC=1,NPRTRW
+      IRECV_WSET_OFFSET(JROC+1)=IRECV_WSET_OFFSET(JROC)+IRECV_WSET_SIZE(JROC)
+    ENDDO
+    DO JROC=1,NPROC
+      CALL PE2SET(JROC,ISETA,ISETB,ISETW,ISETV)
+      ! total recv size is # points per field * # fields
+      IRECVTOT(JROC) = IRECV_WSET_SIZE(ISETW)*IRECV_FIELD_COUNT(ISETV)
+    ENDDO
 
-  !$ACC DATA COPYIN(IIN_TO_SEND_BUFR,IGP_OFFSETS) ASYNC(1)
+    ! Prepare sender arrays
+    IIN_TO_SEND_BUFR_OFFSET(1) = 0
+    DO JROC=1,NPROC
+      ! Get new offset to my current KINDEX entry
+      IF (JROC > 1 .AND. KF_FS > 0) THEN
+        IIN_TO_SEND_BUFR_OFFSET(JROC) = IIN_TO_SEND_BUFR_OFFSET(JROC-1)+ISENDTOT(JROC-1)/KF_FS
+      ELSEIF (JROC > 1) THEN
+        IIN_TO_SEND_BUFR_OFFSET(JROC) = IIN_TO_SEND_BUFR_OFFSET(JROC-1)
+      ENDIF
 
-  !$ACC DATA IF(PRESENT(PGP))   COPYOUT(PGP) ASYNC(1)
-  !$ACC DATA IF(PRESENT(PGPUV)) COPYOUT(PGPUV) ASYNC(1)
-  !$ACC DATA IF(PRESENT(PGP2))  COPYOUT(PGP2) ASYNC(1)
-  !$ACC DATA IF(PRESENT(PGP3A)) COPYOUT(PGP3A) ASYNC(1)
-  !$ACC DATA IF(PRESENT(PGP3B)) COPYOUT(PGP3B) ASYNC(1)
+      CALL PE2SET(JROC,ISETA,ISETB,ISETW,ISETV)
 
-  ! Present until self contribution and packing are done
-  !$ACC DATA PRESENT(PREEL_REAL)
-  CALL GSTATS(1806,1)
+      ! MAX(Index of first fourier latitude for this W set, first latitude of a senders A set)
+      ! i.e. we find the overlap between what we have on sender side (others A set) and the receiver
+      ! (me, the W-set). Ideally those conincide, at least mostly.
+      IFIRSTLAT = MAX(D%NPTRLS(MYSETW),D%NFRSTLAT(ISETA))
+      ! MIN(Index of last fourier latitude for this W set, last latitude of a senders A set)
+      ILASTLAT  = MIN(D%NPTRLS(MYSETW)+D%NULTPP(MYSETW)-1,D%NLSTLAT(ISETA))
 
-  ! Copy local contribution
-  IF(ISENDTOT(MYPROC) > 0) THEN
-    ! I have to send something to myself...
+      IPOS = 0
+      DO JGL=IFIRSTLAT,ILASTLAT
+        ! get from "actual" latitude to the latitude strip offset
+        IGL  = JGL-D%NFRSTLAT(ISETA)+D%NPTRFRSTLAT(ISETA)
+        ! get from "actual" latitude to the latitude offset
+        IGLL = JGL-D%NPTRLS(MYSETW)+1
+        DO JL=1,D%NONL(IGL,ISETB)
+          IPOS = IPOS+1
+          ! offset to first layer of this gridpoint
+          IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_OFFSET(JROC)+IPOS,1) = &
+              & KF_FS*D%NSTAGTF(IGLL)+(D%NSTA(IGL,ISETB)-1)+(JL-1)
+          ! distance between two layers of this gridpoint
+          IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_OFFSET(JROC)+IPOS,2) = &
+              & D%NSTAGTF(IGLL+1)-D%NSTAGTF(IGLL)
+        ENDDO
+      ENDDO
+      !we always receive the full fourier space
+      ISENDTOT(JROC) = IPOS*KF_FS
+    ENDDO
 
-    ! Input is KF_GP fields. We find the resulting KF_FS fields.
-    IFLDS = 0
-    DO JFLD=1,KF_GP
-      IF(IVSET(JFLD) == MYSETV .OR. IVSET(JFLD) == -1) THEN
-        IFLDS = IFLDS+1
-        IF(PRESENT(KPTRGP)) THEN
-          IFLDA(IFLDS) = KPTRGP(JFLD)
-        ELSE
-          IFLDA(IFLDS) = JFLD
+    !$ACC DATA COPYIN(IIN_TO_SEND_BUFR,IGP_OFFSETS) ASYNC(1)
+
+    !$ACC DATA IF(PRESENT(PGP))   COPYOUT(PGP) ASYNC(1)
+    !$ACC DATA IF(PRESENT(PGPUV)) COPYOUT(PGPUV) ASYNC(1)
+    !$ACC DATA IF(PRESENT(PGP2))  COPYOUT(PGP2) ASYNC(1)
+    !$ACC DATA IF(PRESENT(PGP3A)) COPYOUT(PGP3A) ASYNC(1)
+    !$ACC DATA IF(PRESENT(PGP3B)) COPYOUT(PGP3B) ASYNC(1)
+
+    ! Present until self contribution and packing are done
+    !$ACC DATA PRESENT(PREEL_REAL)
+    CALL GSTATS(1806,1)
+
+    ! Copy local contribution
+    IF(ISENDTOT(MYPROC) > 0) THEN
+      ! I have to send something to myself...
+
+      ! Input is KF_GP fields. We find the resulting KF_FS fields.
+      IFLDS = 0
+      DO JFLD=1,KF_GP
+        IF(IVSET(JFLD) == MYSETV .OR. IVSET(JFLD) == -1) THEN
+          IFLDS = IFLDS+1
+          IF(PRESENT(KPTRGP)) THEN
+            IFLDA(IFLDS) = KPTRGP(JFLD)
+          ELSE
+            IFLDA(IFLDS) = JFLD
+          ENDIF
+        ENDIF
+      ENDDO
+
+      !$ACC DATA COPYIN(IFLDA(1:IFLDS)) ASYNC(1)
+
+      CALL GSTATS(1604,0)
+
+      IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(MYSETW)
+      IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(MYSETW)
+      IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(MYPROC)
+      IF (PRESENT(PGP)) THEN
+        !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) ASYNC(1)
+        DO JFLD=1,KF_FS
+          DO JL=1,IRECV_WSET_SIZE_V
+            JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
+            JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
+            IFLD = IFLDA(JFLD)
+            IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
+                & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
+            PGP(JK,IFLD,JBLK) = PREEL_REAL(IPOS)
+          ENDDO
+        ENDDO
+      ELSE
+        !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) ASYNC(1)
+        DO JFLD=1,KF_FS
+          DO JL=1,IRECV_WSET_SIZE_V
+            JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
+            JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
+            IFLD = IFLDA(JFLD)
+            IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
+                & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
+            IF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_UV) THEN
+              PGPUV(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = PREEL_REAL(IPOS)
+            ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP2) THEN
+              PGP2(JK,IGP_OFFSETS(IFLD,2),JBLK)=PREEL_REAL(IPOS)
+            ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3A) THEN
+              PGP3A(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = PREEL_REAL(IPOS)
+            ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3B) THEN
+              PGP3B(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = PREEL_REAL(IPOS)
+            ENDIF
+          ENDDO
+        ENDDO
+      ENDIF
+      CALL GSTATS(1604,1)
+
+      !$ACC END DATA
+
+    ENDIF
+
+    ! Figure out processes that send or recv something
+    ISEND_COUNTS   = 0
+    IRECV_COUNTS   = 0
+    DO JROC=1,NPROC
+      IF( JROC /= MYPROC) THEN
+        IF(IRECVTOT(JROC) > 0) THEN
+          ! I have to recv something, so let me store that
+          IRECV_COUNTS = IRECV_COUNTS + 1
+          IRECV_TO_PROC(IRECV_COUNTS)=JROC
+        ENDIF
+        IF(ISENDTOT(JROC) > 0) THEN
+          ! I have to send something, so let me store that
+          ISEND_COUNTS = ISEND_COUNTS+1
+          ISEND_TO_PROC(ISEND_COUNTS)=JROC
         ENDIF
       ENDIF
     ENDDO
 
-    !$ACC DATA COPYIN(IFLDA(1:IFLDS)) ASYNC(1)
+    ALLOCATE(ICOMBUFS_OFFSET(ISEND_COUNTS+1))
+    ICOMBUFS_OFFSET(1) = 0
+    DO JROC=1,ISEND_COUNTS
+      ICOMBUFS_OFFSET(JROC+1) = ICOMBUFS_OFFSET(JROC) + ISENDTOT(ISEND_TO_PROC(JROC))
+    ENDDO
+    ALLOCATE(ICOMBUFR_OFFSET(IRECV_COUNTS+1))
+    ICOMBUFR_OFFSET(1) = 0
+    DO JROC=1,IRECV_COUNTS
+      ICOMBUFR_OFFSET(JROC+1) = ICOMBUFR_OFFSET(JROC) + IRECVTOT(IRECV_TO_PROC(JROC))
+    ENDDO
 
-    CALL GSTATS(1604,0)
+    IF (IRECV_COUNTS > 0) THEN
+      CALL ASSIGN_PTR(ZCOMBUFR, GET_ALLOCATION(ALLOCATOR, HTRLTOG%HCOMBUFR_AND_COMBUFS),&
+          & 1_C_SIZE_T, ICOMBUFR_OFFSET(IRECV_COUNTS+1)*SIZEOF(ZCOMBUFR(1)))
+    ENDIF
+    IF (ISEND_COUNTS > 0) THEN
+      CALL ASSIGN_PTR(ZCOMBUFS, GET_ALLOCATION(ALLOCATOR, HTRLTOG%HCOMBUFR_AND_COMBUFS),&
+          & ALIGN(KF_GP*D%NGPTOT*SIZEOF(ZCOMBUFR(1)),128)+1, &
+          & ICOMBUFS_OFFSET(ISEND_COUNTS+1)*SIZEOF(ZCOMBUFS(1)))
+    ENDIF
 
-    IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(MYSETW)
-    IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(MYSETW)
-    IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(MYPROC)
-    IF (PRESENT(PGP)) THEN
-      !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) ASYNC(1)
+    !$ACC DATA PRESENT(ZCOMBUFS)
+    CALL GSTATS(1605,0)
+    DO INS=1,ISEND_COUNTS
+      IPROC = ISEND_TO_PROC(INS)
+      ILEN = ISENDTOT(IPROC)/KF_FS
+      IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(IPROC)
+      ICOMBUFS_OFFSET_V = ICOMBUFS_OFFSET(INS)
+      !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IPOS) COLLAPSE(2) ASYNC(1)
       DO JFLD=1,KF_FS
-        DO JL=1,IRECV_WSET_SIZE_V
-          JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
-          JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-          IFLD = IFLDA(JFLD)
+        DO JL=1,ILEN
           IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
               & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
-          PGP(JK,IFLD,JBLK) = PREEL_REAL(IPOS)
+          ZCOMBUFS(ICOMBUFS_OFFSET_V+(JFLD-1)*ILEN+JL) = PREEL_REAL(IPOS)
         ENDDO
-      ENDDO
-    ELSE
-      !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) ASYNC(1)
-      DO JFLD=1,KF_FS
-        DO JL=1,IRECV_WSET_SIZE_V
-          JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
-          JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-          IFLD = IFLDA(JFLD)
-          IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
-              & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
-          IF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_UV) THEN
-            PGPUV(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = PREEL_REAL(IPOS)
-          ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP2) THEN
-            PGP2(JK,IGP_OFFSETS(IFLD,2),JBLK)=PREEL_REAL(IPOS)
-          ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3A) THEN
-            PGP3A(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = PREEL_REAL(IPOS)
-          ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3B) THEN
-            PGP3B(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = PREEL_REAL(IPOS)
-          ENDIF
-        ENDDO
-      ENDDO
-    ENDIF
-    CALL GSTATS(1604,1)
-
-    !$ACC END DATA
-
-  ENDIF
-
-  ! Figure out processes that send or recv something
-  ISEND_COUNTS   = 0
-  IRECV_COUNTS   = 0
-  DO JROC=1,NPROC
-    IF( JROC /= MYPROC) THEN
-      IF(IRECVTOT(JROC) > 0) THEN
-        ! I have to recv something, so let me store that
-        IRECV_COUNTS = IRECV_COUNTS + 1
-        IRECV_TO_PROC(IRECV_COUNTS)=JROC
-      ENDIF
-      IF(ISENDTOT(JROC) > 0) THEN
-        ! I have to send something, so let me store that
-        ISEND_COUNTS = ISEND_COUNTS+1
-        ISEND_TO_PROC(ISEND_COUNTS)=JROC
-      ENDIF
-    ENDIF
-  ENDDO
-
-  ALLOCATE(ICOMBUFS_OFFSET(ISEND_COUNTS+1))
-  ICOMBUFS_OFFSET(1) = 0
-  DO JROC=1,ISEND_COUNTS
-    ICOMBUFS_OFFSET(JROC+1) = ICOMBUFS_OFFSET(JROC) + ISENDTOT(ISEND_TO_PROC(JROC))
-  ENDDO
-  ALLOCATE(ICOMBUFR_OFFSET(IRECV_COUNTS+1))
-  ICOMBUFR_OFFSET(1) = 0
-  DO JROC=1,IRECV_COUNTS
-    ICOMBUFR_OFFSET(JROC+1) = ICOMBUFR_OFFSET(JROC) + IRECVTOT(IRECV_TO_PROC(JROC))
-  ENDDO
-
-  IF (IRECV_COUNTS > 0) THEN
-    CALL ASSIGN_PTR(ZCOMBUFR, GET_ALLOCATION(ALLOCATOR, HTRLTOG%HCOMBUFR_AND_COMBUFS),&
-        & 1_C_SIZE_T, ICOMBUFR_OFFSET(IRECV_COUNTS+1)*SIZEOF(ZCOMBUFR(1)))
-  ENDIF
-  IF (ISEND_COUNTS > 0) THEN
-    CALL ASSIGN_PTR(ZCOMBUFS, GET_ALLOCATION(ALLOCATOR, HTRLTOG%HCOMBUFR_AND_COMBUFS),&
-        & ALIGN(KF_GP*D%NGPTOT*SIZEOF(ZCOMBUFR(1)),128)+1, &
-        & ICOMBUFS_OFFSET(ISEND_COUNTS+1)*SIZEOF(ZCOMBUFS(1)))
-  ENDIF
-
-  !$ACC DATA PRESENT(ZCOMBUFS)
-  CALL GSTATS(1605,0)
-  DO INS=1,ISEND_COUNTS
-    IPROC = ISEND_TO_PROC(INS)
-    ILEN = ISENDTOT(IPROC)/KF_FS
-    IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(IPROC)
-    ICOMBUFS_OFFSET_V = ICOMBUFS_OFFSET(INS)
-    !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IPOS) COLLAPSE(2) ASYNC(1)
-    DO JFLD=1,KF_FS
-      DO JL=1,ILEN
-        IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
-            & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
-        ZCOMBUFS(ICOMBUFS_OFFSET_V+(JFLD-1)*ILEN+JL) = PREEL_REAL(IPOS)
       ENDDO
     ENDDO
-  ENDDO
-  CALL GSTATS(1605,1)
-  !$ACC END DATA ! ZCOMBUFS
+    CALL GSTATS(1605,1)
+    !$ACC END DATA ! ZCOMBUFS
 
-  !$ACC END DATA ! PREEL_REAL
+    !$ACC END DATA ! PREEL_REAL
 
-  !$ACC WAIT(1)
+    !$ACC WAIT(1)
 
-  CALL GSTATS(805,0)
+    CALL GSTATS(805,0)
 
-  IF (LSYNC_TRANS) THEN
-    CALL GSTATS(440,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(440,1)
-  ENDIF
-  CALL GSTATS(421,0)
+    IF (LSYNC_TRANS) THEN
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+    CALL GSTATS(421,0)
 
-  IR=0
-  !...Receive loop.........................................................
-  !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
-  DO INR=1,IRECV_COUNTS
-    IR=IR+1
-    IRECV=IRECV_TO_PROC(INR)
-    CALL MPI_IRECV(ZCOMBUFR(ICOMBUFR_OFFSET(INR)+1:ICOMBUFR_OFFSET(INR+1)), &
-      & IRECVTOT(IRECV), &
-      & TRLTOG_DTYPE,NPRCIDS(IRECV)-1, &
-      & MTAGLG, MPL_COMM_OML(OML_MY_THREAD()), IREQ(IR), &
-      & IERROR )
-  ENDDO
+    IR=0
+    !...Receive loop.........................................................
+    !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
+    DO INR=1,IRECV_COUNTS
+      IR=IR+1
+      IRECV=IRECV_TO_PROC(INR)
+      CALL MPI_IRECV(ZCOMBUFR(ICOMBUFR_OFFSET(INR)+1:ICOMBUFR_OFFSET(INR+1)), &
+        & IRECVTOT(IRECV), &
+        & TRLTOG_DTYPE,NPRCIDS(IRECV)-1, &
+        & MTAGLG, MPL_COMM_OML(OML_MY_THREAD()), IREQ(IR), &
+        & IERROR )
+    ENDDO
 
-  !...Send loop.........................................................
-  DO INS=1,ISEND_COUNTS
-    IR=IR+1
-    ISEND=ISEND_TO_PROC(INS)
-    CALL MPI_ISEND(ZCOMBUFS(ICOMBUFS_OFFSET(INS)+1:ICOMBUFS_OFFSET(INS+1)),ISENDTOT(ISEND), &
-      & TRLTOG_DTYPE, NPRCIDS(ISEND)-1,MTAGLG,MPL_COMM_OML(OML_MY_THREAD()),IREQ(IR),IERROR)
-  ENDDO
-  !$ACC END HOST_DATA
+    !...Send loop.........................................................
+    DO INS=1,ISEND_COUNTS
+      IR=IR+1
+      ISEND=ISEND_TO_PROC(INS)
+      CALL MPI_ISEND(ZCOMBUFS(ICOMBUFS_OFFSET(INS)+1:ICOMBUFS_OFFSET(INS+1)),ISENDTOT(ISEND), &
+        & TRLTOG_DTYPE, NPRCIDS(ISEND)-1,MTAGLG,MPL_COMM_OML(OML_MY_THREAD()),IREQ(IR),IERROR)
+    ENDDO
+    !$ACC END HOST_DATA
 
-  IF(IR > 0) THEN
-    CALL MPL_WAIT(KREQUEST=IREQ(1:IR), &
-    & CDSTRING='TRLTOG_CUDAAWARE: WAIT FOR SENDS AND RECEIVES')
-  ENDIF
+    IF(IR > 0) THEN
+      CALL MPL_WAIT(KREQUEST=IREQ(1:IR), &
+      & CDSTRING='TRLTOG_CUDAAWARE: WAIT FOR SENDS AND RECEIVES')
+    ENDIF
 
-  IF (LSYNC_TRANS) THEN
-    CALL GSTATS(441,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(441,1)
-  ENDIF
-  CALL GSTATS(421,1)
+    IF (LSYNC_TRANS) THEN
+      CALL GSTATS(441,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(441,1)
+    ENDIF
+    CALL GSTATS(421,1)
 
-  !$ACC DATA PRESENT(ZCOMBUFR)
-  CALL GSTATS(805,1)
+    !$ACC DATA PRESENT(ZCOMBUFR)
+    CALL GSTATS(805,1)
 
-  !  Unpack loop.........................................................
+    !  Unpack loop.........................................................
 
-  CALL GSTATS(1606,0)
-  DO INR=1,IRECV_COUNTS
-    IRECV=IRECV_TO_PROC(INR)
-    CALL PE2SET(IRECV,ISETA,ISETB,ISETW,ISETV)
+    CALL GSTATS(1606,0)
+    DO INR=1,IRECV_COUNTS
+      IRECV=IRECV_TO_PROC(INR)
+      CALL PE2SET(IRECV,ISETA,ISETB,ISETW,ISETV)
 
-    IRECV_FIELD_COUNT_V = IRECV_FIELD_COUNT(ISETV)
-    ICOMBUFR_OFFSET_V = ICOMBUFR_OFFSET(INR)
+      IRECV_FIELD_COUNT_V = IRECV_FIELD_COUNT(ISETV)
+      ICOMBUFR_OFFSET_V = ICOMBUFR_OFFSET(INR)
 
-    IFLDS = 0
-    DO JFLD=1,KF_GP
-      IF(IVSET(JFLD) == ISETV .OR. IVSET(JFLD) == -1 ) THEN
-        IFLDS = IFLDS+1
-        IF(PRESENT(KPTRGP)) THEN
-          IFLDA(IFLDS)=KPTRGP(JFLD)
-        ELSE
-          IFLDA(IFLDS)=JFLD
+      IFLDS = 0
+      DO JFLD=1,KF_GP
+        IF(IVSET(JFLD) == ISETV .OR. IVSET(JFLD) == -1 ) THEN
+          IFLDS = IFLDS+1
+          IF(PRESENT(KPTRGP)) THEN
+            IFLDA(IFLDS)=KPTRGP(JFLD)
+          ELSE
+            IFLDA(IFLDS)=JFLD
+          ENDIF
         ENDIF
+      ENDDO
+
+      !$ACC DATA COPYIN(IFLDA(1:IRECV_FIELD_COUNT_V)) ASYNC(1)
+
+      IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(ISETW)
+      IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(ISETW)
+      IF (PRESENT(PGP)) THEN
+        !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) ASYNC(1)
+        DO JFLD=1,IRECV_FIELD_COUNT_V
+          DO JL=1,IRECV_WSET_SIZE_V
+            JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
+            JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
+            IFLD=IFLDA(JFLD)
+            JI = ICOMBUFR_OFFSET_V+(JFLD-1)*IRECV_WSET_SIZE_V+JL
+            PGP(JK,IFLD,JBLK) = ZCOMBUFR(JI)
+          ENDDO
+        ENDDO
+      ELSE
+        !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) ASYNC(1)
+        DO JFLD=1,IRECV_FIELD_COUNT_V
+          DO JL=1,IRECV_WSET_SIZE_V
+            JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
+            JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
+            IFLD=IFLDA(JFLD)
+            JI = ICOMBUFR_OFFSET_V+(JFLD-1)*IRECV_WSET_SIZE_V+JL
+            IF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_UV) THEN
+              PGPUV(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
+            ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP2) THEN
+              PGP2(JK,IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
+            ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3A) THEN
+              PGP3A(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
+            ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3B) THEN
+              PGP3B(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
+            ENDIF
+          ENDDO
+        ENDDO
       ENDIF
+      !$ACC END DATA
     ENDDO
 
-    !$ACC DATA COPYIN(IFLDA(1:IRECV_FIELD_COUNT_V)) ASYNC(1)
-
-    IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(ISETW)
-    IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(ISETW)
-    IF (PRESENT(PGP)) THEN
-      !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) ASYNC(1)
-      DO JFLD=1,IRECV_FIELD_COUNT_V
-        DO JL=1,IRECV_WSET_SIZE_V
-          JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
-          JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-          IFLD=IFLDA(JFLD)
-          JI = ICOMBUFR_OFFSET_V+(JFLD-1)*IRECV_WSET_SIZE_V+JL
-          PGP(JK,IFLD,JBLK) = ZCOMBUFR(JI)
-        ENDDO
-      ENDDO
-    ELSE
-      !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) ASYNC(1)
-      DO JFLD=1,IRECV_FIELD_COUNT_V
-        DO JL=1,IRECV_WSET_SIZE_V
-          JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
-          JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-          IFLD=IFLDA(JFLD)
-          JI = ICOMBUFR_OFFSET_V+(JFLD-1)*IRECV_WSET_SIZE_V+JL
-          IF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_UV) THEN
-            PGPUV(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
-          ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP2) THEN
-            PGP2(JK,IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
-          ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3A) THEN
-            PGP3A(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
-          ELSEIF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_GP3B) THEN
-            PGP3B(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
-          ENDIF
-        ENDDO
-      ENDDO
+    !$ACC END DATA ! ZOMBUFR
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
     ENDIF
-    !$ACC END DATA
-  ENDDO
+    CALL GSTATS(422,0)
+    !$ACC END DATA ! PGP3B
+    !$ACC END DATA ! PGP3A
+    !$ACC END DATA ! PGP2
+    !$ACC END DATA ! PGPUV
+    !$ACC END DATA ! PGP
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(442,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(442,1)
+    ENDIF
+    CALL GSTATS(422,1)
+    !$ACC END DATA ! IRECVBUFR_TO_OUT,PGPINDICES
 
-  !$ACC END DATA ! ZOMBUFR
-  IF (LSYNC_TRANS) THEN
     !$ACC WAIT(1)
-    CALL GSTATS(440,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(440,1)
-  ENDIF
-  CALL GSTATS(422,0)
-  !$ACC END DATA ! PGP3B
-  !$ACC END DATA ! PGP3A
-  !$ACC END DATA ! PGP2
-  !$ACC END DATA ! PGPUV
-  !$ACC END DATA ! PGP
-  IF (LSYNC_TRANS) THEN
-    !$ACC WAIT(1)
-    CALL GSTATS(442,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(442,1)
-  ENDIF
-  CALL GSTATS(422,1)
-  !$ACC END DATA ! IRECVBUFR_TO_OUT,PGPINDICES
 
-  !$ACC WAIT(1)
+    CALL GSTATS(1606,1)
 
-  CALL GSTATS(1606,1)
-
-  IF (LHOOK) CALL DR_HOOK('TRLTOG',1,ZHOOK_HANDLE)
-
+    IF (LHOOK) CALL DR_HOOK('TRLTOG',1,ZHOOK_HANDLE)
   END SUBROUTINE TRLTOG_CUDAAWARE
-  END MODULE TRLTOG_MOD
-  
+END MODULE TRLTOG_MOD
+
