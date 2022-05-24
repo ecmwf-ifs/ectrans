@@ -63,9 +63,12 @@ REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGL(:,:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGPN(:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
 
-! This is used in fourier space. It's reused among the transforms because
-! we cannot reallocate - the captured CUDA graphs should not be modified.
-! Hence, we keep it if it is large enough, otherwise we adapt the size.
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: PREEL_PTR(:)
+! This is used in fourier space and in spectral space. It's reused among
+! the transforms because we cannot reallocate - the captured CUDA graphs
+! should not be modified. Hence, we keep it if it is large enough, otherwise
+! we adapt the size. After 2 iterations this should lead to constant runtimes
+! (the first iteration is used to get the max buffer size, the second iteration
+! is going to recreate the graphs if needed)
+REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: REUSE_PTR(:)
 
 END MODULE TPM_TRANS
