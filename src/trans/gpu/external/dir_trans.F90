@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -111,7 +112,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_GEN          ,ONLY : NERR, NOUT
+USE TPM_GEN          ,ONLY : NERR, NOUT, LSYNC_TRANS
 USE TPM_TRANS        ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, LATLON, &
      &                       NF_SC2, NF_SC3A, NF_SC3B,        &
      &                       NGPBLKS, NPROMA
@@ -123,6 +124,7 @@ USE SET_RESOL_MOD    ,ONLY : SET_RESOL
 USE DIR_TRANS_CTL_MOD,ONLY : DIR_TRANS_CTL
 USE ABORT_TRANS_MOD  ,ONLY : ABORT_TRANS
 USE YOMHOOK          ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
+USE MPL_MODULE       ,ONLY : MPL_BARRIER
 
 !endif INTERFACE
 
@@ -162,6 +164,9 @@ INTEGER(KIND=JPIM) :: JMLOC, IF_PP
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS',0,ZHOOK_HANDLE)
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='')
+ENDIF
 CALL GSTATS(440,0)
 CALL GSTATS(1808,0)
 ! Set current resolution
@@ -526,8 +531,11 @@ CALL DIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
 
+ IF (LSYNC_TRANS) THEN
+   CALL MPL_BARRIER(CDSTRING='')
+ ENDIF
+ CALL GSTATS(440,1)
  IF (LHOOK) CALL DR_HOOK('DIR_TRANS',1,ZHOOK_HANDLE)
-CALL GSTATS(440,1)
 
 !     ------------------------------------------------------------------
 !endif INTERFACE

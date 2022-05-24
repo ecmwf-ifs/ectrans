@@ -1,5 +1,6 @@
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -696,6 +697,9 @@ MODULE TRLTOG_MOD
     & CDSTRING='TRLTOG_CUDAAWARE: WAIT FOR SENDS AND RECEIVES')
   ENDIF
 
+  IF (LSYNC_TRANS) THEN
+    CALL MPL_BARRIER(CDSTRING='TRLTOG BARRIER')
+  ENDIF
   CALL GSTATS(412,1)
 #ifdef COMVERBOSE
     call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
