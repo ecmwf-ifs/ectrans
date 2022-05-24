@@ -167,7 +167,6 @@ TYPE(LTDIR_HANDLE) :: HLTDIR
   ENDIF
   HLTDIR = PREPARE_LTDIR(ALLOCATOR, KF_FS, KF_UV)
 
-  ! TODO this is going to be simplified when we have it implemented for invtrans too
   CALL INSTANTIATE_ALLOCATOR(ALLOCATOR, REUSE_PTR)
 
   ! from the PGP arrays to PREEL_REAL
