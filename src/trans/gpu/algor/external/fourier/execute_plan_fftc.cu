@@ -246,10 +246,10 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
 
             cufftHandle plan;
             CUFFT_CHECK(cufftCreate(&plan));
-            int dist = 1;
+            int dist = offsets[i+1] - offsets[i];
             int embed[] = {1};
-            CUFFT_CHECK(cufftPlanMany(&plan, 1, &nloen, embed, kfield, dist, embed,
-                                      kfield, dist, Direction, kfield));
+            CUFFT_CHECK(cufftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
+                                      1, dist / 2, Direction, kfield));
             newPlans[i] = plan;
           }
           fftPlansCache.insert({kfield, newPlans});
@@ -325,7 +325,7 @@ void execute_inv_fft_float(cufftComplex *data_complex, float *data_real,
 }
 void execute_dir_fft_double(double *data_real, cufftDoubleComplex *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
-    execute_fft<Double, CUFFT_D2Z>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Double, CUFFT_D2Z>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 void execute_inv_fft_double(cufftDoubleComplex *data_complex, double *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
