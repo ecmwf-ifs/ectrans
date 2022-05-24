@@ -49,28 +49,18 @@ USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G
-use tpm_gen, only: nout
-USE TPM_FFT         ,ONLY : T
-#ifdef WITH_FFTW
-USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
-#endif
-USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT, destroy_plan_fft
-USE TPM_DIM         ,ONLY : R
+USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT
 USE CUDA_DEVICE_MOD
 USE MPL_MODULE      ,ONLY : MPL_BARRIER
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS, STRIDE
-INTEGER(KIND=JPIM) :: KGL
 REAL(KIND=JPRBT), INTENT(INOUT)  :: PREEL(:,:)
 
-INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
-INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
-LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
+INTEGER(KIND=JPIM) :: IGLG,IOFF,KGL
 INTEGER(KIND=JPIM) :: IPLAN_C2R
-INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE
-integer :: istat,idev
+INTEGER(KIND=JPIM) :: IBEG,IEND,IINC
 
 REAL(KIND=JPRBT), allocatable  :: PREEL2(:,:)
 
@@ -88,8 +78,6 @@ ELSE
   IINC=-1
 ENDIF
 
-ISIZE=size(PREEL,1)
-
 allocate(preel2(size(preel,1),size(preel,2)))
 !$acc data create(preel2) present(preel)
 
@@ -98,30 +86,21 @@ IF (LSYNC_TRANS) THEN
 ENDIF
 CALL GSTATS(451,0)
 
-!istat = cuda_GetDevice(idev)
-!istat = cuda_Synchronize()      
-!!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(istat,KGL,IOFF,IGLG,IPLAN_C2R)
 DO KGL=IBEG,IEND,IINC
+
   IOFF=D%NSTAGTF(KGL)+1
   IGLG  = D%NPTRLS(MYSETW)+KGL-1
-  !IF (G%NLOEN(IGLG)>1) THEN
-!call cudaProfilerStop()
-     !istat=cuda_SetDevice(idev)
-     CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),2*KFIELDS,STRIDE)
-     !$ACC host_data use_device(PREEL,PREEL2)
-     CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff),PREEL2(1, ioff))
-     !$ACC end host_data
-!call cudaProfilerStart()
-  !ENDIF
+
+  CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),2*KFIELDS,STRIDE)
+  !$ACC HOST_DATA USE_DEVICE(PREEL,PREEL2)
+  CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1,IOFF),PREEL2(1,IOFF))
+  !$ACC END HOST_DATA
 END DO
-!!$OMP END PARALLEL DO
-istat = cuda_Synchronize()      
 
 IF (LSYNC_TRANS) THEN
   CALL MPL_BARRIER(CDSTRING='FTINV BARRIER')
 ENDIF
 CALL GSTATS(451,1)
-
 
 !$acc kernels
 preel(:,:) = preel2(:,:)
