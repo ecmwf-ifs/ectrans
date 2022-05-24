@@ -69,6 +69,6 @@ REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
 ! we adapt the size. After 2 iterations this should lead to constant runtimes
 ! (the first iteration is used to get the max buffer size, the second iteration
 ! is going to recreate the graphs if needed)
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: REUSE_PTR(:)
+REAL(KIND=JPRBT),POINTER :: REUSE_PTR(:)
 
 END MODULE TPM_TRANS
