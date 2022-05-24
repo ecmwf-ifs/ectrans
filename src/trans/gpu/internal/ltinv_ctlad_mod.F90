@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -58,7 +59,7 @@ USE TPM_GEN         ,ONLY : LALLOPERM
 USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
 USE TPM_DISTR       ,ONLY : D
 USE LTINVAD_MOD     ,ONLY : LTINVAD
-USE TRLTOM_MOD      ,ONLY : TRLTOM
+!USE TRLTOM_MOD      ,ONLY : TRLTOM
 
 IMPLICIT NONE
 
@@ -90,7 +91,7 @@ ELSE
   ALLOCATE(FOUBUF_IN(MAX(1,IBLEN)))
 ENDIF
 CALL GSTATS(180,0)
-CALL TRLTOM(FOUBUF,FOUBUF_IN,2*KF_OUT_LT)
+!CALL TRLTOM(FOUBUF,FOUBUF_IN,2*KF_OUT_LT)
 CALL GSTATS(180,1)
 IF (.NOT.LALLOPERM) DEALLOCATE(FOUBUF)
 
