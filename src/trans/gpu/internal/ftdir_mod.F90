@@ -102,10 +102,13 @@ CALL GSTATS(450,0)
 
 DO KGL=IBEG,IEND,IINC
 
+  ! NSTAGTF gives us space for NLOEN+3 elements
+  ! In reality, at this point we need space for at most NLOEN+2 elements
+  ! (in case NLOEN is even, otherwise NLOEN+1, due to the R2C definition)
   IOFF=D_NSTAGTF(KGL)+1
   IGLG = D_NPTRLS(MYSETW)+KGL-1
 
-  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G_NLOEN(IGLG),KFIELD/2,KFIELD)
+  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G_NLOEN(IGLG),KFIELD,KFIELD*2)
   CALL EXECUTE_PLAN_FFT(-1,G_NLOEN(IGLG),PREEL(1,IOFF),PREEL2(1,IOFF),IPLAN_R2C)
 ENDDO
 
