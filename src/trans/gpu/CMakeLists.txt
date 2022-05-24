@@ -71,6 +71,7 @@ elseif( HAVE_CUDA )
 else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
+ecbuild_find_package( NAME NvidiaCutlass REQUIRED)
 
 foreach( prec dp sp )
   if( HAVE_${prec} )

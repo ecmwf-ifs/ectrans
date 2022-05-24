@@ -1,4 +1,5 @@
 # (C) Copyright 2020- ECMWF.
+# (C) Copyright 2022- NVIDIA.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,7 +14,7 @@ cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
 
 find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
-project( ectrans LANGUAGES C Fortran CXX )
+project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
 
 option(IFS_SHARED_LIBS "Build shared libraries (overrides BUILD_SHARED_LIBS)" ON)
