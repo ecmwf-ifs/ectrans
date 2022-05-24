@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -156,9 +157,11 @@ IF(.NOT.D%LGRIDONLY) THEN
   ENDDO
   IAUX0 = MAX(D%NLTSGTB(MYSETW),IAUX0)
   IAUX1 = MAX(D%NLTSGTB(MYSETW),IAUX1)
-  DO JA=1,NPRTRNS+1
-    D%NSTAGT0B(JA) = (JA-1)*IAUX0
-    D%NSTAGT1B(JA) = (JA-1)*IAUX1
+  D%NSTAGT0B(1) = 0
+  D%NSTAGT1B(1) = 0
+  DO JA=2,NPRTRNS
+    D%NSTAGT0B(JA) = D%NSTAGT0B(JA-1)+D%NLTSGTB(JA-1)
+    D%NSTAGT1B(JA) = D%NSTAGT1B(JA-1)+D%NLTSFTB(JA-1)
   ENDDO
   D%NLENGT0B = IAUX0*NPRTRNS
   D%NLENGT1B = IAUX1*NPRTRNS

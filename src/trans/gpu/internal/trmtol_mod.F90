@@ -1,4 +1,5 @@
 ! (C) Copyright 1995- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -106,9 +107,9 @@ ITAG = MTAGML
 
 DO J=1,NPRTRW
   ILENS(J) = D%NLTSFTB(J)*KFIELD
-  IOFFS(J) = D%NSTAGT0B(J)*KFIELD
+  IOFFS(J) = D%NSTAGT1B(J)*KFIELD
   ILENR(J) = D%NLTSGTB(J)*KFIELD
-  IOFFR(J) = D%NSTAGT0B(D%MSTABF(J))*KFIELD
+  IOFFR(J) = D%NSTAGT0B(J)*KFIELD
 ENDDO
 
 !write(300+myproc,*)"0:TRMTOL:PFBUF",sum(PFBUF)
@@ -265,9 +266,9 @@ ITAG = MTAGML
 
 DO J=1,NPRTRW
   ILENS(J) = D%NLTSFTB(J)*KFIELD
-  IOFFS(J) = D%NSTAGT0B(J)*KFIELD
+  IOFFS(J) = D%NSTAGT1B(J)*KFIELD
   ILENR(J) = D%NLTSGTB(J)*KFIELD
-  IOFFR(J) = D%NSTAGT0B(D%MSTABF(J))*KFIELD
+  IOFFR(J) = D%NSTAGT0B(J)*KFIELD
 ENDDO
 
 !write(300+myproc,*)"0:TRMTOL:PFBUF",sum(PFBUF)

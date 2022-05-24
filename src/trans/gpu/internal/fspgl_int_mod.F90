@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -71,10 +72,10 @@ IDGL = R%NDGL
 !$acc parallel loop
 DO JGL=ISL,IDGNH
   IPROC = D%NPROCL(JGL)
-  ISTAN(JGL) = (D%NSTAGT0B(IPROC) + D%NPNTGTB1(KMLOC,JGL))*2*KF_OUT_LT
+  ISTAN(JGL) = (D%NSTAGT1B(IPROC) + D%NPNTGTB1(KMLOC,JGL))*2*KF_OUT_LT
   IGLS = IDGL+1-JGL
   IPROCS = D%NPROCL(IGLS)
-  ISTAS(JGL) = (D%NSTAGT0B(IPROCS) + D%NPNTGTB1(KMLOC,IGLS))*2*KF_OUT_LT
+  ISTAS(JGL) = (D%NSTAGT1B(IPROCS) + D%NPNTGTB1(KMLOC,IGLS))*2*KF_OUT_LT
 ENDDO
 
 !$acc parallel loop collapse(2)
