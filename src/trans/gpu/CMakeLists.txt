@@ -133,6 +133,8 @@ foreach( prec sp dp )
   endif()
 endforeach()
 
+ecbuild_find_package( NAME NvidiaCutlass REQUIRED)
+
 ## precision-independent GPU library with CUDA kernels
 ecbuild_add_library( TARGET gpu
   TYPE STATIC
@@ -140,6 +142,7 @@ ecbuild_add_library( TARGET gpu
             algor/external/fourier/fft_wrapper.cu
             algor/external/gemm/gemm_wrapper.cu
             PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
+            PRIVATE_LIBS nvidia::cutlass::cutlass
 )
 
 ## CUDA architecture 

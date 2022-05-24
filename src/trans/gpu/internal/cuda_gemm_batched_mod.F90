@@ -41,7 +41,7 @@ MODULE CUDA_GEMM_BATCHED_MOD
         & BETA,                   &
         & C, LDC, TDC,            &
         & BATCHCOUNT              &
-    &) BIND(C, NAME='cublas_dgemm_wrapper_grouped')
+    &) BIND(C, NAME='blas_dgemm_wrapper_grouped')
         USE ISO_C_BINDING
         INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
         REAL(C_DOUBLE), VALUE  :: ALPHA,BETA
@@ -56,7 +56,7 @@ MODULE CUDA_GEMM_BATCHED_MOD
         & BETA,                   &
         & C, LDC, TDC,            &
         & BATCHCOUNT              &
-    &) BIND(C, NAME='cublas_sgemm_wrapper_grouped')
+    &) BIND(C, NAME='blas_sgemm_wrapper_grouped')
         USE ISO_C_BINDING
         INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
         REAL(C_FLOAT), VALUE  :: ALPHA,BETA
