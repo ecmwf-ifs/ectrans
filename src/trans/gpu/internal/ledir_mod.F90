@@ -184,7 +184,7 @@ IF ( KMODE == -1 ) THEN
       IF (KM /= 0) THEN
         IA  = 1+MOD(R_NTMAX-KM+2,2)
         !$ACC LOOP SEQ
-        DO J=1,TDZAA
+        DO J=1,(R_NSMAX-KM+2)/2
           POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)+1+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
         ENDDO
       ENDIF
@@ -249,7 +249,7 @@ IF ( KMODE == -1 ) THEN
     !$ACC&    COPYIN(KMLOC0) &
     !$ACC&    PRESENT(R_NTMAX,POA1,DZCAT0)
 #endif
-    DO J=1,TDZAA
+    DO J=1,(R_NSMAX+2)/2
       DO JK=1,2*KF_FS,2
         IA  = 1+MOD(R_NTMAX+2,2)
         POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/2+1+(J-1)*2*KF_FS)
@@ -321,7 +321,7 @@ ELSE
       IF (KM /= 0) THEN
         IS  = 1+MOD(R_NTMAX-KM+1,2)
         !$ACC LOOP SEQ
-        DO J=1,TDZAS
+        DO J=1,(R_NSMAX-KM+3)/2
           POA1(JK,IS+(J-1)*2,KMLOC) = DZCST(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
         ENDDO
       ENDIF
