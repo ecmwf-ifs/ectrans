@@ -126,6 +126,7 @@ DO KMLOC=1,D_NUMP
       PAIA = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
       PAIS = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
       IF (JF .LE. 4*KF_UV) THEN
+          ! Multiply in case of velocity
         PAIA = PAIA*F%RACTHE(JGL)
         PAIS = PAIS*F%RACTHE(JGL)
       ENDIF

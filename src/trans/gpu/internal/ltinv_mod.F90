@@ -89,21 +89,6 @@ MODULE LTINV_MOD
   IMPLICIT NONE
   
   
-  INTERFACE
-    SUBROUTINE cudaProfilerStart() BIND(C,name='cudaProfilerStart')
-      USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
-      IMPLICIT NONE
-    END SUBROUTINE cudaProfilerStart
-  END INTERFACE
-  
-  INTERFACE
-    SUBROUTINE cudaProfilerStop() BIND(C,name='cudaProfilerStop')
-      USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
-      IMPLICIT NONE
-    END SUBROUTINE cudaProfilerStop
-  END INTERFACE
-  
-  
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_OUT_LT
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCALARS
@@ -134,9 +119,6 @@ MODULE LTINV_MOD
   
   INTEGER(KIND=JPIM) :: KM
   INTEGER(KIND=JPIM) :: KMLOC
-  
-  
-  !call cudaProfilerStart
   
   
   !     ------------------------------------------------------------------

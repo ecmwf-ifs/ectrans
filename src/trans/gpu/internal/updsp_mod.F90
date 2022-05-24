@@ -1,4 +1,5 @@
 ! (C) Copyright 1988- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,8 +10,8 @@
 
 MODULE UPDSP_MOD
 CONTAINS
-SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1,POA2, &
- & PSPVOR,PSPDIV,PSPSCALAR,&
+SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1, &
+ & PSPSCALAR,&
  & PSPSC3A,PSPSC3B,PSPSC2 , &
  & KFLDPTRUV,KFLDPTRSC)
 
@@ -29,9 +30,6 @@ SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1,POA2, &
 !        --------------------
 !        KM - zonal wave-number
 !        POA1 - spectral fields for zonal wavenumber KM (basic var.)
-!        POA2 - spectral fields for zonal wavenumber KM (vor. div.)
-!        PSPVOR - spectral vorticity
-!        PSPDIV - spectral divergence
 !        PSPSCALAR - spectral scalar variables
 
 !        Implicit arguments :
@@ -77,9 +75,6 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_UV,KF_SCALARS
 
 REAL(KIND=JPRBT) , INTENT(IN)  :: POA1(:,:,:)
-REAL(KIND=JPRBT) , INTENT(IN)  :: POA2(:,:,:)
-REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
-REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)
 REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT) :: PSPSC2(:,:)
 REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT) :: PSPSC3A(:,:,:)
@@ -88,7 +83,7 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRUV(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: IVORS, IVORE, IDIVS, IDIVE, IST ,IEND,JFLD,IFLD,IDIM1,IDIM3,J3
+INTEGER(KIND=JPIM) :: IST ,IEND,JFLD,IFLD,IDIM1,IDIM3,J3
 
 
 !     ------------------------------------------------------------------
@@ -98,24 +93,13 @@ INTEGER(KIND=JPIM) :: IVORS, IVORE, IDIVS, IDIVE, IST ,IEND,JFLD,IFLD,IDIM1,IDIM
 
 !*       1.1      VORTICITY AND DIVERGENCE.
 
-!$ACC DATA PRESENT(PSPVOR,PSPDIV) IF(KF_UV > 0)
 !$ACC DATA PRESENT(PSPSCALAR) IF(KF_SCALARS > 0 .AND. PRESENT(PSPSCALAR))
 !$ACC DATA PRESENT(PSPSC2) IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC2) .AND. NF_SC2 > 0)
 !$ACC DATA PRESENT(PSPSC3A) IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC3A) .AND. NF_SC3A > 0)
 !$ACC DATA PRESENT(PSPSC3B) IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC3B) .AND. NF_SC3B > 0)
 
 IST = 1
-IF (KF_UV > 0) THEN
-  !stop 'Error: code path not (yet) supported in GPU version'
-
-   IST = IST+4*KF_UV
-   IVORS = 1
-   IVORE = 2*KF_UV
-   IDIVS = 2*KF_UV+1
-   IDIVE = 4*KF_UV
-   CALL UPDSPB(KF_UV,POA2(IVORS:IVORE,:,:),PSPVOR,KFLDPTRUV)
-   CALL UPDSPB(KF_UV,POA2(IDIVS:IDIVE,:,:),PSPDIV,KFLDPTRUV)
-ENDIF
+IST = IST+4*KF_UV
 
 !*       1.2   SCALARS
 
@@ -151,7 +135,6 @@ IF (KF_SCALARS > 0) THEN
   ENDIF
 ENDIF
 
-!$ACC END DATA
 !$ACC END DATA
 !$ACC END DATA
 !$ACC END DATA
