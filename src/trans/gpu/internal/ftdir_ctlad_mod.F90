@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -172,8 +173,9 @@ IF(KF_SCALARS_G > 0) THEN
   IVSET(IST:IST+KF_SCALARS_G-1) = IVSETSC(:)
   IST = IST+KF_SCALARS_G
 ENDIF
-CALL TRLTOG(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
- &PGP,PGPUV,PGP3A,PGP3B,PGP2)
+stop 4
+!CALL TRLTOG(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
+! &PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
 CALL GSTATS(183,1)
 
