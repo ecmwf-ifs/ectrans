@@ -1,5 +1,6 @@
 ! (C) Copyright 1990- ECMWF.
 ! (C) Copyright 1990- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,7 +11,7 @@
 
 MODULE PRFI2B_MOD
   CONTAINS
-  SUBROUTINE PRFI2B(KFIELD,PAIA,KMODE)
+  SUBROUTINE PRFI2B(KF_FS,PAIA,KMODE)
   
   !**** *PRFI2B* - Prepare input work arrays for direct transform
   
@@ -25,7 +26,7 @@ MODULE PRFI2B_MOD
   !     *CALL* *PRFI2B(..)
   
   !        Explicit arguments :
-  !        -------------------   KFIELD - number of fields
+  !        -------------------   KF_FS - number of fields
   !                              KM - zonal wavenumber
   !                              KMLOC - local zonal wavenumber
   !                              PAOA - antisymmetric part of Fourier
@@ -67,11 +68,10 @@ MODULE PRFI2B_MOD
  
   IMPLICIT NONE
  
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+  INTEGER(KIND=JPIM),INTENT(IN)  :: KF_FS
   INTEGER(KIND=JPIM),INTENT(IN)  :: KMODE
-  INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT)  , INTENT(OUT) :: PAIA(:,:,:)
-!!  REAL(KIND=JPRBT)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
+  REAL(KIND=JPRBT)  ,INTENT(OUT) :: PAIA(:,:,:)
+  INTEGER(KIND=JPIM) :: KM,KMLOC
  
  
   !     LOCAL INTEGER SCALARS
@@ -95,33 +95,31 @@ MODULE PRFI2B_MOD
 #endif
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2) &
-!$OMP&    SHARED(D_NUMP,R_NDGNH,KFIELD,D_MYMS,G_NDGLU,R_NDGL,D_NSTAGT1B,D_NPROCL,D_NPNTGTB1,KMODE,PAIA,FOUBUF)
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,JGL) &
+!$OMP&    SHARED(D_NUMP,R_NDGNH,KF_FS,D_MYMS,G_NDGLU,R_NDGL,D_NSTAGT1B,D_NPROCL,D_NPNTGTB1,KMODE,PAIA,FOUBUF)
 #endif
 #ifdef ACCGPU
-!$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2) &
-!$ACC&    COPYIN(KFIELD,KMODE) &
+!$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,JGL) &
+!$ACC&    COPYIN(KF_FS,KMODE) &
 !$ACC&    PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,R_NDGL,D_NSTAGT1B,D_NPROCL,D_NPNTGTB1,PAIA,FOUBUF)
 #endif
 DO KMLOC=1,D_NUMP
-     DO JGL=1,R_NDGNH
-        DO JF=1,KFIELD*2
-           KM = D_MYMS(KMLOC)
-           ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-           if (JGL .ge. ISL) then
-              IGLS = R_NDGL+1-JGL
-              OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL) )+D_NPNTGTB1(KMLOC,JGL ))*2*KFIELD
-              OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KFIELD
-              IF( KMODE == -1 ) THEN
-                PAIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
-              ELSE
-                PAIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
-!                PSIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
-              ENDIF
-           end if
-        ENDDO
-     ENDDO
-END DO
+  DO JF=1,KF_FS*2
+    KM = D_MYMS(KMLOC)
+    ISL = R_NDGNH-G_NDGLU(KM)+1
+    !$ACC LOOP SEQ
+    DO JGL=ISL,R_NDGNH
+      IGLS = R_NDGL+1-JGL
+      OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL) )+D_NPNTGTB1(KMLOC,JGL ))*2*KF_FS
+      OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KF_FS
+      IF( KMODE == -1 ) THEN
+        PAIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
+      ELSE
+        PAIA(JF,JGL,KMLOC) = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
+      ENDIF
+    ENDDO
+  ENDDO
+ENDDO
 
 #ifdef OMPGPU
 !$OMP END TARGET DATA
