@@ -189,14 +189,11 @@ IF(KMLOC0 > 0) THEN
   !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
   !$ACC END HOST_DATA
 
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE)
   DO J=1,(R_NTMAX+2)/2
     DO JK=1,KFC,2
-      ILA = (R_NTMAX+2)/2
       IA  = 1+MOD(R_NTMAX+2,2)
-      IF (J .LE. ILA) THEN
-        POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/2+1+(J-1)*DTDZCA)
-      END IF
+      POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/2+1+(J-1)*DTDZCA)
     ENDDO
   ENDDO
 ENDIF
@@ -264,14 +261,11 @@ IF(KMLOC0 > 0) THEN
  &                            0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
       !$ACC end host_data
 
-  !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS) DEFAULT(NONE)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IS) DEFAULT(NONE)
   DO J=1,(R_NTMAX+3)/2
     DO JK=1,KFC,2
-      ILS = (R_NTMAX+3)/2
-      if (J .le. ILS) then
-        IS  = 1+MOD(R_NTMAX+1,2)
-        POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/2+1+(J-1)*DTDZCS)
-      end if
+      IS  = 1+MOD(R_NTMAX+1,2)
+      POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/2+1+(J-1)*DTDZCS)
     ENDDO
   ENDDO
 
