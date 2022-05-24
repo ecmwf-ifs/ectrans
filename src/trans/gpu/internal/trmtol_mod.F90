@@ -9,9 +9,29 @@
 !
 
 MODULE TRMTOL_MOD
+  USE ALLOCATOR_MOD
+  IMPLICIT NONE
+
+  PRIVATE
+  PUBLIC :: TRMTOL_CUDAAWARE, PREPARE_TRMTOL, TRMTOL_HANDLE
+
+  TYPE TRMTOL_HANDLE
+  END TYPE
 
 CONTAINS
-SUBROUTINE TRMTOL_CUDAAWARE(PFBUF_IN,PFBUF,KFIELD)
+  FUNCTION PREPARE_TRMTOL(ALLOCATOR, KF_FS) RESULT(HTRMTOL)
+    USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
+    USE TPM_DISTR, ONLY: D
+
+    IMPLICIT NONE
+
+    TYPE(BUFFERED_ALLOCATOR), INTENT(INOUT) :: ALLOCATOR
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
+    TYPE(TRMTOL_HANDLE) :: HTRMTOL
+
+    REAL(KIND=JPRBT) :: DUMMY
+  END FUNCTION
+SUBROUTINE TRMTOL_CUDAAWARE(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KFIELD)
 
 !**** *trmtol * - transposition in Fourier space
 
@@ -81,6 +101,9 @@ INTEGER(KIND=JPIM) :: ILENS(NPRTRW),IOFFS(NPRTRW),ILENR(NPRTRW),IOFFR(NPRTRW)
 INTEGER(KIND=JPIM) :: J, ILEN, ISTA, FROM_SEND, TO_SEND, FROM_RECV, TO_RECV, IRANK
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 INTEGER(KIND=JPIM) :: IERROR
+
+TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
+TYPE(TRMTOL_HANDLE), INTENT(IN) :: HTRMTOL
 
 #ifdef PARKINDTRANS_SINGLE
 #define TRMTOL_DTYPE MPI_REAL
@@ -162,114 +185,4 @@ IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 END SUBROUTINE TRMTOL_CUDAAWARE
 
-SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
-
-!**** *TRMTOL * - transposition in Fourier space
-
-!     Purpose.
-!     --------
-!              Transpose Fourier buffer data from partitioning
-!              over wave numbers to partitioning over latitudes.
-!              It is called between direct FFT and direct Legendre
-!              transform.
-!              This routine is the inverse of TRLTOM.
-
-
-!**   Interface.
-!     ----------
-!        *CALL* *TRMTOL(...)*
-
-!        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
-!        --------------------          used for both input and output.
-!                             KFIELD - Number of fields communicated
-
-!        Implicit arguments :
-!        --------------------
-
-!     Method.
-!     -------
-!        See documentation
-
-!     Externals.
-!     ----------
-
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
-
-!     Author.
-!     -------
-!        MPP Group *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 95-10-01
-!        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
-!                                            (NCOMBFLEN) for nphase.eq.1
-!        Modified : 99-05-28  D.Salmond - Optimise copies.
-!        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
-!        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
-!                             passing and buffer packing
-!        G.Mozdzynski: 08-01-01 Cleanup
-!        Y.Seity   : 07-08-31 Add barrier synchronisation under LSYNC_TRANS
-!     ------------------------------------------------------------------
-
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM
-USE TPM_DISTR       ,ONLY : D, NPRTRW, NPROC, MYPROC, MYSETW
-USE TPM_GEN         ,ONLY : LSYNC_TRANS
-USE MPI
-
-IMPLICIT NONE
-
-INTEGER(KIND=JPIM) ,INTENT(IN)  :: KFIELD
-REAL(KIND=JPRBT), INTENT(OUT), ALLOCATABLE  :: PFBUF(:)
-REAL(KIND=JPRBT), INTENT(IN), ALLOCATABLE  :: PFBUF_IN(:)
-
-INTEGER(KIND=JPIM) :: ILENS(NPRTRW),IOFFS(NPRTRW),ILENR(NPRTRW),IOFFR(NPRTRW)
-INTEGER(KIND=JPIM) :: J, ILEN, ISTA
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-INTEGER(KIND=JPIM) :: IERROR
-
-IF (LHOOK) CALL DR_HOOK('TRMTOL',0,ZHOOK_HANDLE)
-
-ALLOCATE(PFBUF(D%NLENGT0B*KFIELD))
-!$ACC ENTER DATA CREATE(PFBUF)
-
-IF(NPROC > 1) THEN
-  DO J=1,NPRTRW
-    ILENS(J) = D%NLTSFTB(J)*KFIELD
-    IOFFS(J) = D%NSTAGT1B(J)*KFIELD
-    ILENR(J) = D%NLTSGTB(J)*KFIELD
-    IOFFR(J) = D%NSTAGT0B(J)*KFIELD
-  ENDDO
-
-  CALL GSTATS(807,0)
-  !$ACC UPDATE HOST(PFBUF_IN)
-
-  CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN,KSENDCOUNTS=ILENS,&
-   & PRECVBUF=PFBUF,KRECVCOUNTS=ILENR,KSENDDISPL=IOFFS,KRECVDISPL=IOFFR,&
-   & KCOMM=MPL_ALL_MS_COMM,CDSTRING='TRMTOL:')
-
-  !$ACC UPDATE DEVICE(PFBUF)
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IERROR)
-  CALL GSTATS(807,1)
-ELSE
-  ILEN = D%NLTSGTB(MYSETW)*KFIELD
-  ISTA = D%NSTAGT0B(MYSETW)*KFIELD+1
-  CALL GSTATS(1608,0)
-  !$ACC PARALLEL LOOP DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN)
-  DO J=ISTA,ISTA+ILEN-1
-    PFBUF(J) = PFBUF_IN(J)
-  ENDDO
-  CALL GSTATS(1608,1)
-ENDIF
-
-!$ACC EXIT DATA DELETE(PFBUF_IN)
-DEALLOCATE(PFBUF_IN)
-
-IF (LHOOK) CALL DR_HOOK('TRMTOL',1,ZHOOK_HANDLE)
-!     ------------------------------------------------------------------
-END SUBROUTINE TRMTOL
 END MODULE TRMTOL_MOD
