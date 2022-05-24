@@ -11,8 +11,7 @@
 
 MODULE FTDIR_MOD
 CONTAINS
-SUBROUTINE FTDIR(ZGTF,KSTRIDE,KFIELD)
-
+SUBROUTINE FTDIR(ZGTF,KFIELD)
 
 !**** *FTDIR - Direct Fourier transform
 
@@ -24,8 +23,7 @@ SUBROUTINE FTDIR(ZGTF,KSTRIDE,KFIELD)
 !        CALL FTDIR(..)
 
 !        Explicit arguments :  ZGTF    - Fourier/grid-point array
-!        --------------------  KSTRIDE - stride of PREEL
-!                              KFIELD   - number of fields
+!        --------------------  KFIELD  - number of fields
 
 !     Method.
 !     -------
@@ -45,7 +43,6 @@ SUBROUTINE FTDIR(ZGTF,KSTRIDE,KFIELD)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
-
 !     ------------------------------------------------------------------
 
 USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
@@ -63,8 +60,9 @@ use openacc
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: KSTRIDE, KFIELD
-REAL(KIND=JPRBT), INTENT(INOUT) :: ZGTF(:,:)
+INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+REAL(KIND=JPRBT), INTENT(INOUT), POINTER :: ZGTF(:,:)
+
 INTEGER(KIND=JPIM)  :: KGL
 
 INTEGER(KIND=JPIM) :: IGLG,JM,JF,IST1,IPROC,ISTA
@@ -73,8 +71,7 @@ TYPE(C_PTR)        :: IPLAN_R2C
 
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,IRET,D_NDGL_FS
 INTEGER(KIND=JPIM) :: ISIZE, II, IMAX, IDIM1, IDIM2, I, J
-REAL(KIND=JPRBT), ALLOCATABLE :: ZGTF2(:,:)
-
+REAL(KIND=JPRBT), POINTER :: ZGTF2(:,:), TMP(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -97,10 +94,9 @@ IDIM2=SIZE(ZGTF,2)
 ALLOCATE(ZGTF2(IDIM1,IDIM2))
 
 #ifdef ACCGPU
-!$ACC DATA PRESENT(ZGTF, &
-!$ACC&             D_NSTAGTF,D_NSTAGT0B,D_NPTRLS,D_NPROCM,D_NPNTGTB0,G_NMEN, &
-!$ACC&             G_NLOEN) &
-!$ACC&     CREATE(ZGTF2)
+!$ACC ENTER DATA CREATE(ZGTF2)
+!$ACC DATA PRESENT(ZGTF, ZGTF2, &
+!$ACC&             D_NSTAGTF,D_NSTAGT0B,D_NPTRLS,D_NPROCM,D_NPNTGTB0,G_NMEN,G_NLOEN)
 #endif
 #ifdef OMPGPU
 !$OMP TARGET DATA MAP(ALLOC:ZGTF2)
@@ -127,14 +123,6 @@ IF (LSYNC_TRANS) THEN
 ENDIF
 CALL GSTATS(450,1)
 
-#ifdef ACCGPU
-!$ACC KERNELS DEFAULT(NONE)
-#endif
-ZGTF(:,:) = ZGTF2(:,:)
-#ifdef ACCGPU
-!$ACC END KERNELS
-#endif
-
 
 #ifdef ACCGPU
 !$ACC END DATA
@@ -145,7 +133,15 @@ ZGTF(:,:) = ZGTF2(:,:)
 #endif
 
 
+! Swap pointers
+TMP => ZGTF
+ZGTF => ZGTF2
+ZGTF2 => TMP
+
+! and deallocate the local pointer
+!$ACC EXIT DATA DELETE(ZGTF2)
 DEALLOCATE(ZGTF2)
+
 !     ------------------------------------------------------------------
 
 END SUBROUTINE FTDIR
