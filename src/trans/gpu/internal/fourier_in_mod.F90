@@ -71,13 +71,13 @@ OFFSET_VAR=D_NPTRLS(MYSETW)
 !$ACC& ASYNC(1)
 DO KGL=IBEG,IEND,IINC
   DO JF=1,KF_CURRENT
-    DO JM=0,(G_NLOEN_MAX+4)/2-1
+    DO JM=0,G_NLOEN_MAX/2
       IGLG = OFFSET_VAR+KGL-1
 
-      ! Truncation (not sure what is the exact upper bound here...)
-      ! Same is also in FSC for the new fields. I *think* it should be N/2+1 elements in total
-      ! TODO: Make sure this is correct
-      IF (JM <= (G_NLOEN(IGLG)+4)/2-1) THEN
+      ! FFT transforms NLON real values to floor(NLON/2)+1 complex numbers. Hence we have
+      ! to fill those floor(NLON/2)+1 values.
+      ! Truncation happens starting at G_NMEN+1. Hence, we zero-fill those values.
+      IF (JM <= G_NLOEN(IGLG)/2) THEN
         IOFF_LAT = KF_TOTAL*D_NSTAGTF(KGL)+(JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
         RET_REAL = 0.0_JPRBT
         RET_COMPLEX = 0.0_JPRBT
