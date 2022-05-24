@@ -245,7 +245,7 @@ READ(NULNAM,NAMTRANS)
 ! Participating processors limited by -P option
 
 !--------------------------
-CALL MPL_INIT()
+CALL MPL_INIT(LDENV=.false.)
 !IF( LSTATS ) CALL GSTATS(0,0)
 ZTINIT=TIMEF()
 
