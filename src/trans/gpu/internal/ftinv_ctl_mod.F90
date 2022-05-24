@@ -123,7 +123,7 @@ IFIRST = IFIRST + KF_SCALARS ! Scalars
 IF (LSCDERS) IFIRST = IFIRST + KF_SCALARS ! Scalars NS Derivatives
 ! This verifies if we get the same assumptions about how much data we get from the LT space
 IF (2*IFIRST /= KF_INPUT) CALL ABORT_TRANS('Size mismatch: LT and FT do not agree on input size')
-IF (LUVDER) IST = IST+2*KF_UV ! U and V derivatives
+IF (LUVDER) IFIRST = IFIRST+2*KF_UV ! U and V derivatives
 IF (LSCDERS) IFIRST = IFIRST + KF_SCALARS ! Scalars EW Derivatives
 KF_FS = IFIRST
 
@@ -144,7 +144,7 @@ IF (LSCDERS) THEN
 ENDIF
 IF (LUVDER) THEN
   PUV_EWDER => ZGTF(2*IFIRST+1:2*(IFIRST+2*KF_UV),:)
-  IST = IST+2*KF_UV ! U and V derivatives
+  IFIRST = IFIRST+2*KF_UV ! U and V derivatives
 ENDIF
 IF (LSCDERS) THEN
   PSCALARS_EWDER => ZGTF(2*IFIRST+1:2*(IFIRST+KF_SCALARS),:)
@@ -248,7 +248,7 @@ ENDIF
 CALL GSTATS(157,0)
 #ifdef USE_CUDA_AWARE_MPI_FT
 WRITE(NOUT,*) 'ftinv_ctl:TRLTOG_CUDAAWARE'
-CALL TRLTOG_CUDAAWARE(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
+CALL TRLTOG_CUDAAWARE(ZGTF,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,IVSET,KPTRGP,&
  &PGP,PGPUV,PGP3A,PGP3B,PGP2)
 #else
 !WRITE(NOUT,*) 'ftinv_ctl:TRLTOG'
