@@ -30,8 +30,6 @@ MODULE LTDIR_MOD
   USE UPDSP_MOD   ,ONLY : UPDSP
   USE UPDSPB_MOD  ,ONLY : UPDSPB
    
-  USE TPM_FIELDS  ,ONLY : ZOA1,ZOA2,ZEPSNM
-  
   !**** *LTDIR* - Control of Direct Legendre transform step
   
   !     Purpose.
@@ -108,6 +106,7 @@ MODULE LTDIR_MOD
   INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
   INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
   
+  REAL(KIND=JPRB), ALLOCATABLE :: POA1(:,:,:)
   REAL(KIND=JPRB), ALLOCATABLE :: POA2(:,:,:)
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   
@@ -127,9 +126,14 @@ MODULE LTDIR_MOD
   
   !*       2.    PREPARE WORK ARRAYS.
   !              --------------------
+
+  ALLOCATE(POA1(2*KF_FS,R%NTMAX+3,D%NUMP))
+#ifdef ACCGPU
+  !$ACC ENTER DATA CREATE(POA1)
+#endif
   
   ! do the legendre transform
-  CALL LEDIR(FOUBUF,ZOA1,KF_FS,KF_UV)
+  CALL LEDIR(FOUBUF,POA1,KF_FS,KF_UV)
 
   !     ------------------------------------------------------------------
   
@@ -157,7 +161,7 @@ MODULE LTDIR_MOD
 
 
      ! Compute vorticity and divergence
-     CALL UVTVD(KF_UV,ZOA1(IUS:IUE,:,:),ZOA1(IVS:IVE,:,:),&
+     CALL UVTVD(KF_UV,POA1(IUS:IUE,:,:),POA1(IVS:IVE,:,:),&
          & POA2(IVORS:IVORE,:,:),POA2(IDIVS:IDIVE,:,:))
 
      ! Write back. Note, if we have UV, the contract says we *must* have VOR/DIV
@@ -186,11 +190,16 @@ MODULE LTDIR_MOD
   !    KM = D%MYMS(KMLOC)
  
   ! this is on the host, so need to cp from device, Nils
-  CALL UPDSP(KF_UV,KF_SCALARS,ZOA1,&
+  CALL UPDSP(KF_UV,KF_SCALARS,POA1,&
    & PSPSCALAR,&
    & PSPSC3A,PSPSC3B,PSPSC2 , &
    & KFLDPTRUV,KFLDPTRSC)
   
+#ifdef ACCGPU
+  !$ACC EXIT DATA DELETE(POA1)
+#endif
+  DEALLOCATE(POA1)
+
   !     ------------------------------------------------------------------
   
   IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',1,ZHOOK_HANDLE)
