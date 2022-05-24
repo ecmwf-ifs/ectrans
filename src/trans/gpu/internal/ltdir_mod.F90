@@ -28,7 +28,7 @@ MODULE LTDIR_MOD
   USE UVTVD_MOD
   USE UPDSP_MOD   ,ONLY : UPDSP
    
-  USE TPM_FIELDS      ,ONLY : ZAIA,ZOA1,ZOA2,ZEPSNM
+  USE TPM_FIELDS      ,ONLY : ZOA1,ZOA2,ZEPSNM
   
   !**** *LTDIR* - Control of Direct Legendre transform step
   

@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -107,15 +108,10 @@ USE TPM_DIM         ,ONLY : R, DIM_RESOL, R_NSMAX,R_NTMAX, R_NDGNH, R_NDGL, R_NN
 USE TPM_DISTR       ,ONLY : D, DISTR_RESOL,NPROC,nprtrv, D_NUMP,D_MYMS,D_NSTAGT0B,D_NSTAGT1B,D_NPROCL,D_NPNTGTB1, D_NASM0, &
 & D_NSTAGTF,D_MSTABF,D_NPNTGTB0,D_NPROCM,D_NPTRLS,mysetv,mysetw, MYPROC
 USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL, G_NDGLU, G_NMEN, G_NMEN_MAX,G_NLOEN, G_NLOEN_MAX
-USE TPM_FIELDS      ,ONLY : FIELDS_RESOL, F,F_RW, ZIA,ZEPSNM,ZSOA1,ZAOA1,ISTAN,ISTAS,ZAIA,ZOA1,ZOA2, &
-& ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
-& IZBS,ILDZBA,ILDZBS,ITDZBA0,ITDZBS0,&
-& IZCA,IZCS,IZCST,ILDZCA,ILDZCS,ITDZCA0,ITDZCS0,&
-& DZBAT,DZBST,DLDZBA,DLDZBS,DTDZBA0,DTDZBS0,&
-& DZCAT,DZCST,DLDZCA,DLDZCS,DTDZCA0,DTDZCS0,&
-& IF_FS_INV0,IF_FS_DIR0,NFLEV0,ZAA0,DZBST0,DZCAT0,&
-& ZAS0,DZCST0,KMLOC0
-! IZBA,IZCAT
+USE TPM_FIELDS      ,ONLY : FIELDS_RESOL, F,F_RW, ZIA,ZEPSNM,ZOA1,ZOA2, &
+& ZAA,ZAS,TDZAA,TDZAS,&
+& IF_FS_INV0,IF_FS_DIR0,NFLEV0,ZAA0,&
+& ZAS0,KMLOC0
 USE TPM_FFT         ,ONLY : T, FFT_RESOL
 #ifdef WITH_FFTW
 USE TPM_FFTW        ,ONLY : TW, FFTW_RESOL
@@ -518,113 +514,25 @@ IF(MOD(IF_FS,2)==1) IF_FS = IF_FS + 1
 
 !leading and trailing dimensions of A for symmetric and antisymmetric cases
 ! (same for ltinv and ltdir)
-LDZAA=R%NDGNH
-LDZAS=R%NDGNH
 TDZAA=(R%NTMAX+2)/2
 TDZAS=(R%NTMAX+3)/2
 print*,'R%NTMAX=',R%NTMAX
 print*,'R%NSMAX=',R%NSMAX
-!similarly for B (ltinv)
-ILDZBA=(R%NSMAX+2)/2
-ILDZBS=(R%NSMAX+3)/2
-ITDZBA0=IF_FS_INV0
-ITDZBS0=IF_FS_INV0
 
-!similarly for C (ltinv)
-ILDZCA=R%NDGNH
-ILDZCS=R%NDGNH
-ITDZCA0=IF_FS_INV0
-ITDZCS0=IF_FS_INV0
-
-!similarly for B (ltdir)
-DLDZBA=R%NDGNH
-DLDZBS=R%NDGNH
-DTDZBA0=IF_FS_DIR0
-DTDZBS0=IF_FS_DIR0
-
-!similarly for C (ltdir)
-DLDZCA=(R%NTMAX+2)/2
-DLDZCS=(R%NTMAX+3)/2
-DTDZCA0=IF_FS_DIR0
-DTDZCS0=IF_FS_DIR0
-
-! competition: NPRTRV ... larger == NUMP ... larger == NSMAX/NPRTRW
-!              setting NPRTRV=20 ... leads to 7GB ZAA since NUMP==55
-
-!allocate matrices for matrix multiplications
-!ALLOCATE(IZBA(IF_FS_INV0*TDZAA*D%NUMP))
-ALLOCATE(IZBS(IF_FS_INV0*TDZAS*D%NUMP))
-print*,"New: allocating IZBS as a 1D array!"
-! just use IZBS
-!IZBA=>IZBS(:,1:TDZAA,:)
-
-ALLOCATE(ZAA(R%NDGNH,TDZAA,D%NUMP))
-ALLOCATE(ZAS(R%NDGNH,TDZAS,D%NUMP))
-
-! Allocate matrices for rescaling to allow half-precision Legendre transforms
-!ALLOCATE(ZAMAX(IF_FS_INV0,D%NUMP))
-!ALLOCATE(ZSMAX(IF_FS_INV0,D%NUMP))
-
-! transpose of C (for better memory access patterns)
-!ALLOCATE(IZCAT(IF_FS_INV0,R%NDGNH,D%NUMP))
-ALLOCATE(IZCST(IF_FS_INV0*R%NDGNH*D%NUMP))
-
-!ALLOCATE(DZBAT(IF_FS_DIR0,R%NDGNH,D%NUMP))
-ALLOCATE(DZBST(IF_FS_DIR0*R%NDGNH*D%NUMP))
-
-! transpose of C (for better memory access patterns)
-ALLOCATE(DZCAT(IF_FS_DIR0*TDZAA*D%NUMP))
-ALLOCATE(DZCST(IF_FS_DIR0*TDZAS*D%NUMP))
-DZCAT(:) = 0
-DZCST(:) = 0
-IZCST(:) = 0
-!DZCAT=>DZCST(:,1:TDZAA,:)
-
-write(nout,*)'setup_trans: sizes1 NUMP=',D%NUMP
-write(nout,*)'ZAS:',size(ZAS)
-write(nout,*)'IZBS :',size(IZBS )
-write(nout,*)'IZCST:',size(IZCST)
-write(nout,*)'DZBST:',size(DZBST)
-write(nout,*)'DZCST:',size(DZCST)
-write(nout,*)'DZCAT:',size(DZCAT)
-!!!$ACC ENTER DATA CREATE(ZAA,ZAS,IZBA,IZBS,IZCAT,IZCST,DZBAT,DZBST,DZCAT,DZCST) 
-!$ACC ENTER DATA COPYIN(ZAA,ZAS,IZBS,IZCST,DZBST,DZCST,DZCAT) &
+!$ACC ENTER DATA &
 !$ACC& COPYIN(F,F%RN,F%RLAPIN,S,S%FA,S%ITHRESHOLD,S%LUSEFLT,D,D%NUMP,D%MYMS,R,R%NDGNH,R%NSMAX,G,G%NDGLU) &
 !$ACC& copyin(D%NPNTGTB0,D%NPNTGTB1,D%NSTAGT0B,D%NSTAGT1B,D%NSTAGTF,G%NMEN,D%NPROCM,D%NPTRLS,G,G%NLOEN,D%MSTABF)
 
 ! Initialize A arrays
 
-izbs = 0._JPRBT
-!$acc update device(izbs)
-dzbst = 0._JPRBT
-!$acc update device(dzbst)
+ALLOCATE(ZAA(R%NDGNH,TDZAA,D%NUMP))
+ALLOCATE(ZAS(R%NDGNH,TDZAS,D%NUMP))
 
-! zero arrays
-!$ACC PARALLEL LOOP
-DO JMLOC=1,D%NUMP
-  !$ACC loop
-  DO JK=1,TDZAA
-    !$ACC loop
-    DO J=1,LDZAA
-      ZAA(J,JK,JMLOC)=0._JPRBT
-    ENDDO
-  ENDDO
-ENDDO
+write(nout,*)'setup_trans: sizes1 NUMP=',D%NUMP
+write(nout,*)'ZAS:',size(ZAS)
+write(nout,*)'ZAA:',size(ZAA)
 
-!$ACC PARALLEL LOOP
-DO JMLOC=1,D%NUMP
-  !$ACC loop
-  DO JK=1,TDZAS
-    !$ACC LOOP
-    DO J=1,LDZAS
-      ZAS(J,JK,JMLOC)=0._JPRBT
-    ENDDO
-  ENDDO
-ENDDO
-
-! Do this on the host
-
-zaa(:,:,:) = 0
+ZAA(:,:,:) = 0
 DO JMLOC=1,D%NUMP
   KM = D%MYMS(JMLOC)   
   KDGLU = MIN(R%NDGNH,G%NDGLU(KM))
@@ -649,11 +557,7 @@ DO JMLOC=1,D%NUMP
     ENDDO
   ENDDO
 ENDDO
-
-! permanent copy of Legendre polynomials into device
-
-!$ACC update device(ZAA)
-!$ACC update device(ZAS)
+!$ACC ENTER DATA COPYIN(ZAA,ZAS)
 
 IF_FOUBUF=MAX(IF_OUT_LT,IF_FS)
 ALLOCATE(FOUBUF_IN(MAX(1,D%NLENGT0B*2*IF_FOUBUF)))
@@ -662,46 +566,23 @@ ALLOCATE(FOUBUF(MAX(1,D%NLENGT0B*2*IF_FOUBUF)))
 
 ALLOCATE(ZGTF(2*IF_FS,D%NLENGTF))
 write(nout,*)'ZGTF :',size(ZGTF)
-!$ACC enter data create(ZGTF)
+!$ACC ENTER DATA CREATE(ZGTF)
 
 ALLOCATE(ZIA(IF_FS_INV0,R%NLEI1,D%NUMP))
-ALLOCATE(ZEPSNM(d%nump,0:R%NTMAX+2))
-ALLOCATE(ZSOA1(2*IF_OUT_LT,R%NLEI3,D%NUMP))
-ALLOCATE(ZAOA1(2*IF_OUT_LT,R%NLEI3,D%NUMP))
-ALLOCATE(ISTAN(D%NUMP,R%NDGNH))
-ALLOCATE(ISTAS(D%NUMP,R%NDGNH))
-!ALLOCATE(ZSIA(IF_FS_INV0,R%NDGNH,D%NUMP))
-ALLOCATE(ZAIA(IF_FS_INV0,R%NDGNH,D%NUMP))
 ALLOCATE(ZOA1(4*IF_FS_DIR0,R%NLED4,D%NUMP))
 ALLOCATE(ZOA2(MAX(4*IF_UV,1),R%NLED4,D%NUMP))
+ALLOCATE(ZEPSNM(d%nump,0:R%NTMAX+2))
 write(nout,*)'ZIA  :',size(ZIA  )
-write(nout,*)'ZSOA1:',size(ZSOA1)
-write(nout,*)'ZAOA1:',size(ZAOA1)
-write(nout,*)'ZAIA :',size(ZAIA )
 write(nout,*)'ZOA1 :',size(ZOA1 )
 write(nout,*)'ZOA2 :',size(ZOA2 )
-!!!$ACC enter data create(ZIA,ZEPSNM,ZSOA1,ZAOA1,ISTAN,ISTAS,ZSIA,ZAIA,ZOA1,ZOA2)
-!$ACC enter data create(ZIA,ZEPSNM,ZSOA1,ZAOA1,ZAIA,ZOA1,ZOA2)
 
-zepsnm = 0._JPRBT
+ZEPSNM = 0._JPRBT
 CALL PREPSNM
-!$acc update device(zepsnm)
-zgtf = 0._JPRBT
-!$acc update device(zgtf)
-zia = 0._JPRBT
-!$acc update device(zia)
-!zsia = 0._JPRBT
-!!!$acc update device(zsia)
-zaia = 0._JPRBT
-!$acc update device(zaia)
-zoa1 = 0._JPRBT
-!$acc update device(zoa1)
-zoa2 = 0._JPRBT
-!$acc update device(zoa2)
-zaoa1 = 0._JPRBT
-!$acc update device(zaoa1)
-zsoa1 = 0._JPRBT
-!$acc update device(zsoa1)
+ZGTF = 0._JPRBT
+ZIA = 0._JPRBT
+ZOA1 = 0._JPRBT
+ZOA2 = 0._JPRBT
+!$ACC ENTER DATA COPYIN(ZIA,ZEPSNM,ZOA1,ZOA2)
 
 ! add arrays for GPNORM1
 ALLOCATE(ZAVE(IF_FS,R%NDGL))
@@ -709,18 +590,13 @@ ALLOCATE(ZMINGL(IF_FS,R%NDGL))
 ALLOCATE(ZMAXGL(IF_FS,R%NDGL))
 ALLOCATE(ZMINGPN(IF_FS))
 ALLOCATE(ZMAXGPN(IF_FS))
-!$ACC enter data create(ZAVE,ZMINGL,ZMAXGL,ZMINGPN,ZMAXGPN)
 
-zave = 0._JPRBT
-!$acc update device(zave)
-zmingl = 0._JPRBT
-!$acc update device(zmingl)
-zmaxgl = 0._JPRBT
-!$acc update device(zmaxgl)
-zmingpn = 0._JPRBT
-!$acc update device(zmingpn)
-zmaxgpn = 0._JPRBT
-!$acc update device(zmaxgpn)
+ZAVE = 0._JPRBT
+ZMINGL = 0._JPRBT
+ZMAXGL = 0._JPRBT
+ZMINGPN = 0._JPRBT
+ZMAXGPN = 0._JPRBT
+!$ACC ENTER DATA COPYIN(ZAVE,ZMINGL,ZMAXGL,ZMINGPN,ZMAXGPN)
 
 !set up flat copies of constant data
 R_NSMAX=R%NSMAX
@@ -821,18 +697,9 @@ end DO
 IF(KMLOC0 >= 0) THEN
   ALLOCATE(ZAA0(R%NDGNH,TDZAA))
   ALLOCATE(ZAS0(R%NDGNH,TDZAS))
-  ALLOCATE(DZBST0(IF_FS_DIR0*R%NDGNH))
-  ALLOCATE(DZCAT0(IF_FS_DIR0*TDZAA))
-  ALLOCATE(DZCST0(IF_FS_DIR0*TDZAS))
-  DZCAT0(:) = 0
-  DZCST0(:) = 0
-  !$ACC ENTER DATA COPYIN(ZAA0,DZBST0,DZCAT0,ZAS0,DZCST0)
   ZAA0 = ZAA(:,:,KMLOC0)
   ZAS0 = ZAS(:,:,KMLOC0)
-  !$ACC update device(ZAA0)
-  !$ACC update device(ZAS0)
-  dzbst0 = 0._JPRD
-  !$acc update device(dzbst0)
+  !$ACC ENTER DATA COPYIN(ZAA0,ZAS0)
   WRITE(NOUT,*) 'GPU arrays for m=0 successfully allocated'
 ENDIF
 
