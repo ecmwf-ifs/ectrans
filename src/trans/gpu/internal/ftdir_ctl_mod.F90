@@ -73,19 +73,6 @@ use ieee_arithmetic
 IMPLICIT NONE
 
 
-INTERFACE
-  SUBROUTINE cudaProfilerStart() BIND(C,name='cudaProfilerStart')
-    USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
-    IMPLICIT NONE
-  END SUBROUTINE cudaProfilerStart
-END INTERFACE
-
-INTERFACE
-  SUBROUTINE cudaProfilerStop() BIND(C,name='cudaProfilerStop')
-    USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
-    IMPLICIT NONE
-  END SUBROUTINE cudaProfilerStop
-END INTERFACE
 
 ! Dummy arguments
 
@@ -116,8 +103,6 @@ INTEGER(KIND=JPIM) :: ISIZE,IFIELDS,ICHUNK,ICHUNKS,JK
 !     ------------------------------------------------------------------
 
 ! Field distribution in Spectral/Fourier space
-
-!call cudaProfilerStart()
 
 IF(PRESENT(KVSETUV)) THEN
   IVSETUV(:) = KVSETUV(:)
@@ -202,14 +187,13 @@ CALL GSTATS(106,0)
 
 CALL GSTATS(1640,0)
 IF (KF_FS > 0) THEN
-  CALL FTDIR(SIZE(ZGTF,1),KF_FS)
+  CALL FTDIR(ZGTF,FOUBUF_IN,SIZE(ZGTF,1),KF_FS)
 ENDIF
 
 CALL GSTATS(1640,1)
 !DEALLOCATE(ZGTF)
 CALL GSTATS(106,1)
 !     ------------------------------------------------------------------
-!call cudaProfilerStop()
 END SUBROUTINE FTDIR_CTL
 END MODULE FTDIR_CTL_MOD
 
