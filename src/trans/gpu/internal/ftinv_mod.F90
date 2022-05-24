@@ -90,29 +90,6 @@ ENDIF
 
 ISIZE=size(PREEL,1)
 
-!$ACC DATA &
-!$ACC& PRESENT(PREEL)
-
-!$ACC PARALLEL LOOP DEFAULT(NONE)
-DO KGL=IBEG,IEND,IINC
-
-  IOFF  = D%NSTAGTF(KGL)+1
-  IGLG  = D%NPTRLS(MYSETW)+KGL-1
-  IST   = 2*(G%NMEN(IGLG)+1)
-  ILEN  = G%NLOEN(IGLG)+R%NNOEXTZL+2-IST
-  IST1=1
-  IF (G%NLOEN(IGLG)==1) IST1=0
-
-  !$ACC loop collapse(2)
-  DO JJ=IST1,ILEN
-     DO JF=1,KFIELDS
-        PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
-     ENDDO
-  ENDDO
-
-END DO
-!$ACC end data
-
 allocate(preel2(size(preel,1),size(preel,2)))
 !$acc data create(preel2) present(preel)
 
