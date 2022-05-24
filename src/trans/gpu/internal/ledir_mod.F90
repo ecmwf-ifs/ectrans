@@ -180,6 +180,7 @@ IF(KMLOC0 > 0) THEN
   KS(KMLOC0) = 0
 ENDIF
 CALL CUDA_GEMM_BATCHED( &
+  & 21, & ! unique identifier
   & CUBLAS_OP_N, CUBLAS_OP_N, &
   & 2*KF_FS, NS(:), KS(:), &
   & 1.0_JPRBT, &
@@ -271,6 +272,7 @@ IF(KMLOC0 > 0) THEN
   KS(KMLOC0) = 0
 ENDIF
 CALL CUDA_GEMM_BATCHED( &
+  & 22, & ! unique identifier
   & CUBLAS_OP_N, CUBLAS_OP_N, &
   & 2*KF_FS, NS(:), KS(:), &
   & 1.0_JPRBT, &

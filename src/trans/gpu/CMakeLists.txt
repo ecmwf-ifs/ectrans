@@ -144,6 +144,7 @@ ecbuild_add_library( TARGET gpu
             PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
             PRIVATE_LIBS nvidia::cutlass::cutlass
 )
+target_compile_features(gpu PRIVATE cxx_std_17)
 
 ## CUDA architecture 
 set_property( TARGET gpu PROPERTY CUDA_ARCHITECTURES 70 ) 
