@@ -237,29 +237,29 @@ DO KMLOC=1,D_NUMP
 ENDDO
 
 IF(KMLOC0 > 0) THEN
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE)
-   DO J=1,G_NDGLU(0)
-     DO JK=1,2*KF_FS,2
-       ISL = R_NDGNH-G_NDGLU(0)+1
-       DZBST0((JK-1)/2+1+(J-1)*2*KF_FS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
-     ENDDO
-   ENDDO
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE)
+  DO J=1,G_NDGLU(0)
+    DO JK=1,2*KF_FS,2
+      ISL = R_NDGNH-G_NDGLU(0)+1
+      DZBST0((JK-1)/2+1+(J-1)*2*KF_FS)=PAIA(JK,ISL+J-1,KMLOC0)*F%RW(ISL+J-1)
+    ENDDO
+  ENDDO
 
-      ! Get C in transpose format to get better memory access patterns later
-      !C=A*B =>
-      ! C^T=B^T*A^T
+  ! Get C in transpose format to get better memory access patterns later
+  !C=A*B =>
+  ! C^T=B^T*A^T
 
-      !$ACC host_data use_device(ZAS0,DZBST0,DZCST0)
-      call CUDA_DGEMM_BATCHED( &
-        & 'N', 'N', &
-        & 2*KF_FS, TDZAS, R_NDGNH, &
-        & 1.0_JPRD, &
-        & DZBST0, 2*KF_FS, R_NDGNH, &
-        & ZAS0, R_NDGNH, TDZAS, &
-        & 0.0_JPRD, &
-        & DZCST0, 2*KF_FS, TDZAS, &
-        & 1)
-      !$ACC end host_data
+  !$ACC host_data use_device(ZAS0,DZBST0,DZCST0)
+  call CUDA_DGEMM_BATCHED( &
+    & 'N', 'N', &
+    & 2*KF_FS, TDZAS, R_NDGNH, &
+    & 1.0_JPRD, &
+    & DZBST0, 2*KF_FS, R_NDGNH, &
+    & ZAS0, R_NDGNH, TDZAS, &
+    & 0.0_JPRD, &
+    & DZCST0, 2*KF_FS, TDZAS, &
+    & 1)
+  !$ACC end host_data
 
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IS) DEFAULT(NONE)
   DO J=1,TDZAS
