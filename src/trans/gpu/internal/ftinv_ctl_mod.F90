@@ -158,7 +158,7 @@ IF (LSCDERS) THEN
 ENDIF
 
 ! from FOUBUF to PREEL_COMPLEX. Divide by two because we consider this complex space now
-CALL FOURIER_IN(FOUBUF,PREEL_COMPLEX_2D,KF_INPUT/2)
+CALL FOURIER_IN(FOUBUF,PREEL_COMPLEX,KF_INPUT/2,KF_FS)
 
 !    2.  Fourier space computations
 
