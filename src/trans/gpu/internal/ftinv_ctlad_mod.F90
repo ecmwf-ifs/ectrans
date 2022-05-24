@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -195,8 +196,11 @@ IF(KF_SCALARS_G > 0) THEN
 ENDIF
 
 CALL GSTATS(182,0)
-CALL TRGTOL(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
- &PGP,PGPUV,PGP3A,PGP3B,PGP2)
+print *, "not supported..."
+flush(6)
+stop
+! CALL TRGTOL(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
+ ! &PGP,PGPUV,PGP3A,PGP3B,PGP2)
 CALL GSTATS(182,1)
 
 !   3.  Fourier transform

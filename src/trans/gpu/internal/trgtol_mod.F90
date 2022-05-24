@@ -10,7 +10,7 @@
 
 MODULE TRGTOL_MOD
   CONTAINS
-  SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KVSET,KPTRGP,&
+  SUBROUTINE TRGTOL_CUDAAWARE(PREEL_REAL,KF_FS,KF_GP,KVSET,KPTRGP,&
    &PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
   !**** *TRGTOL * - transposition of grid point data from column
@@ -29,7 +29,7 @@ MODULE TRGTOL_MOD
 
   !        Explicit arguments :
   !        --------------------
-  !           PGLAT    -  Latitudinal data ready for direct FFT (output)
+  !           PREEL_REAL    -  Latitudinal data ready for direct FFT (output)
   !           PGP    -  Blocked grid point data    (input)
 
   !        Implicit arguments :
@@ -87,7 +87,7 @@ MODULE TRGTOL_MOD
 
   IMPLICIT NONE
 
-  REAL(KIND=JPRBT),INTENT(OUT)   :: PGLAT(:,:)
+  REAL(KIND=JPRBT),INTENT(OUT)   :: PREEL_REAL(:)
   INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(:)
   INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP
   INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
@@ -224,7 +224,7 @@ MODULE TRGTOL_MOD
     IRECVTOT(JROC) = IPOS*KF_FS
   ENDDO
 
-  !$ACC DATA COPYIN(IRECV_BUFR_TO_OUT,PGP_INDICES) PRESENT(PGLAT) ASYNC(1)
+  !$ACC DATA COPYIN(IRECV_BUFR_TO_OUT,PGP_INDICES) PRESENT(PREEL_REAL) ASYNC(1)
 
   CALL GSTATS(1805,1)
 
@@ -281,7 +281,7 @@ MODULE TRGTOL_MOD
           JBLK = (ISEND_WSET_OFFSET_V+JL-1)/NPROMA+1
           IFLD = IFLDA(JFLD)
           IPOS = IRECV_BUFR_TO_OUT_V+JL
-          PGLAT(JFLD,IRECV_BUFR_TO_OUT(IPOS)) = PGP(JK,IFLD,JBLK)
+          PREEL_REAL(JFLD+KF_FS*(IRECV_BUFR_TO_OUT(IPOS)-1)) = PGP(JK,IFLD,JBLK)
         ENDDO
       ENDDO
     ELSE
@@ -291,22 +291,22 @@ MODULE TRGTOL_MOD
           JK = MOD(ISEND_WSET_OFFSET_V+JL-1,NPROMA)+1
           JBLK = (ISEND_WSET_OFFSET_V+JL-1)/NPROMA+1
           IFLD = IFLDA(JFLD)
-          IPOS = IRECV_BUFR_TO_OUT(IRECV_BUFR_TO_OUT_V+JL)
+          IPOS = IRECV_BUFR_TO_OUT(IRECV_BUFR_TO_OUT_V+JL)-1
           IF(IFLD < PGP_INDICES(PGP_INDICES_UV+1)) THEN
             IOFF=IFLD-PGP_INDICES(PGP_INDICES_UV)
             PBOUND=UBOUND(PGPUV,2)
-            PGLAT(JFLD,IPOS) = PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+            PREEL_REAL(JFLD+KF_FS*IPOS) = PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
           ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP2+1)) THEN
             IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP2)
-            PGLAT(JFLD,IPOS) = PGP2(JK,IOFF+1,JBLK)
+            PREEL_REAL(JFLD+KF_FS*IPOS) = PGP2(JK,IOFF+1,JBLK)
           ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3A+1)) THEN
             IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3A)
             PBOUND=UBOUND(PGP3A,2)
-            PGLAT(JFLD,IPOS) = PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+            PREEL_REAL(JFLD+KF_FS*IPOS) = PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
           ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3B+1)) THEN
             IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3B)
             PBOUND=UBOUND(PGP3B,2)
-            PGLAT(JFLD,IPOS) = PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+            PREEL_REAL(JFLD+KF_FS*IPOS) = PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
           ENDIF
         ENDDO
       ENDDO
@@ -486,8 +486,8 @@ MODULE TRGTOL_MOD
     !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(II) ASYNC(1)
     DO JFLD=1,KF_FS
       DO JL=1,ILEN
-        II = IRECV_BUFR_TO_OUT(IRECV_BUFR_TO_OUT_V+JL)
-        PGLAT(JFLD,II) = ZCOMBUFR(ICOMBUFR_OFFSET_V+JL+(JFLD-1)*ILEN)
+        II = IRECV_BUFR_TO_OUT(IRECV_BUFR_TO_OUT_V+JL)-1
+        PREEL_REAL(JFLD+KF_FS*II) = ZCOMBUFR(ICOMBUFR_OFFSET_V+JL+(JFLD-1)*ILEN)
       ENDDO
     ENDDO
   ENDDO
@@ -504,7 +504,7 @@ MODULE TRGTOL_MOD
 
   END SUBROUTINE TRGTOL_CUDAAWARE
 
-  SUBROUTINE TRGTOL(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
+  SUBROUTINE TRGTOL(PREEL_REAL,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
    &PGP,PGPUV,PGP3A,PGP3B,PGP2)
   
   !**** *TRGTOL * - transposition of grid point data from column
@@ -521,7 +521,7 @@ MODULE TRGTOL_MOD
   
   !        Explicit arguments :
   !        --------------------
-  !           PGLAT    -  Latitudinal data ready for direct FFT (output)
+  !           PREEL_REAL    -  Latitudinal data ready for direct FFT (output)
   !           PGP    -  Blocked grid point data    (input)
   
   !        Implicit arguments :
@@ -583,7 +583,7 @@ MODULE TRGTOL_MOD
   
   IMPLICIT NONE
   
-  REAL(KIND=JPRBT),INTENT(OUT)   :: PGLAT(:,:)
+  REAL(KIND=JPRBT),INTENT(OUT)   :: PREEL_REAL(:)
   INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(:)
   INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP
   INTEGER(KIND=JPIM),INTENT(IN) :: KF_SCALARS_G
@@ -941,10 +941,10 @@ MODULE TRGTOL_MOD
         ILAST = IGPTRSEND(2,JBLK,MYSETW)
         IF(LLPGPONLY) THEN
           DO JK=IFIRST,ILAST
-            IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
+            IPOS = KINDEX(INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1)-1
             DO JFLD=1,IFLDS
               IFLD = IFLDOFF(JFLD)
-              PGLAT(JFLD,KINDEX(IPOS)) = PGP(JK,IFLD,JBLK)
+              PREEL_REAL(JFLD+KF_FS*IPOS) = PGP(JK,IFLD,JBLK)
             ENDDO
           ENDDO
         ELSE
@@ -952,26 +952,23 @@ MODULE TRGTOL_MOD
             IFLD = IFLDOFF(JFLD)
             IF(LLUV(IFLD)) THEN
               DO JK=IFIRST,ILAST
-                IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
-                PGLAT(JFLD,KINDEX(IPOS)) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK)
-                !if(jfld<=5 .and. kindex(ipos)<5) write(nout,*)'trgtol: ipos=',ipos,' idx=',kindex(ipos),' jk=',jk,' lev=',iuvlevs(ifld),' pars=',iuvpars(ifld),' pglat=',PGLAT(JFLD,KINDEX(IPOS))
-                !if( jfld.eq.1 ) write(nout,*)'trgtoluv: ',kindex(ipos),' lev=',iuvlevs(ifld),' pars=',iuvpars(ifld),' pglat=',PGLAT(JFLD,KINDEX(IPOS))
+                IPOS = KINDEX(INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1)-1
+                PREEL_REAL(JFLD+KF_FS*IPOS) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK)
               ENDDO
             ELSEIF(LLGP2(IFLD)) THEN
               DO JK=IFIRST,ILAST
-                IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
-                PGLAT(JFLD,KINDEX(IPOS)) = PGP2(JK,IGP2PARS(IFLD),JBLK)
+                IPOS = KINDEX(INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1)-1
+                PREEL_REAL(JFLD+KF_FS*IPOS) = PGP2(JK,IGP2PARS(IFLD),JBLK)
               ENDDO
             ELSEIF(LLGP3A(IFLD)) THEN
               DO JK=IFIRST,ILAST
-                IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
-                PGLAT(JFLD,KINDEX(IPOS)) = PGP3A(JK,IGP3ALEVS(IFLD),IGP3APARS(IFLD),JBLK)
-                !if( jk.eq.ifirst ) write(iunit,*)'trgtol: ',JK,JFLD,IFLD,kindex(ipos),' lev=',IGP3ALEVS(ifld),' pars=',IGP3APARS(ifld),' pglat=',PGLAT(JFLD,KINDEX(IPOS))
+                IPOS = KINDEX(INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1)-1
+                PREEL_REAL(JFLD+KF_FS*IPOS) = PGP3A(JK,IGP3ALEVS(IFLD),IGP3APARS(IFLD),JBLK)
               ENDDO
             ELSEIF(LLGP3B(IFLD)) THEN
               DO JK=IFIRST,ILAST
-                IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
-                PGLAT(JFLD,KINDEX(IPOS)) = PGP3B(JK,IGP3BLEVS(IFLD),IGP3BPARS(IFLD),JBLK)
+                IPOS = KINDEX(INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1)-1
+                PREEL_REAL(JFLD+KF_FS*IPOS) = PGP3B(JK,IGP3BLEVS(IFLD),IGP3BPARS(IFLD),JBLK)
               ENDDO
             ELSE
               CALL ABORT_TRANS('TRLTOG_MOD: ERROR')
@@ -1142,31 +1139,19 @@ MODULE TRGTOL_MOD
       IRECV_FLD_END   = ZCOMBUFR(0,INR)
       DO JFLD=IRECV_FLD_START,IRECV_FLD_END
         DO JL=1,ILEN
-          II = KINDEX(INDOFF(IRECV)+JL)
-          PGLAT(JFLD,II) = ZCOMBUFR(JL+(JFLD-IRECV_FLD_START)*ILEN,INR)
+          II = KINDEX(INDOFF(IRECV)+JL)-1
+          PREEL_REAL(JFLD+KF_FS*II) = ZCOMBUFR(JL+(JFLD-IRECV_FLD_START)*ILEN,INR)
         ENDDO
       ENDDO
   ENDDO
   !$OMP END PARALLEL DO
-
-  ! this appears to be important (otherwise, old data picked in PGLAT)
-  ! in particular, one would have thought that above ACC copy and update on the
-  ! device is the same as OMP loop + update device command below, but it seems not, and winds still in field index 1 from prev inv_trans !!!
-  !$ACC update device(PGLAT)
-  !$ACC wait
-  
-  !#ifdef COMVERBOSE
-  !  call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
-  !  Tc=(TIMEF()-Tc)/1000.0_JPRBT
-  !  !IF(irank==0) WRITE(*,*) "unpacking (trgtol) in sec: ", Tc
-  !#endif
 
   CALL GSTATS(1603,1)
   
   IF (IBUFLENS > 0) DEALLOCATE(ZCOMBUFS)
   IF (IBUFLENR > 0) DEALLOCATE(ZCOMBUFR)
 
-  !$ACC UPDATE DEVICE(PGLAT)
+  !$ACC UPDATE DEVICE(PREEL_REAL)
 
   IF (LHOOK) CALL DR_HOOK('TRGTOL',1,ZHOOK_HANDLE)
   

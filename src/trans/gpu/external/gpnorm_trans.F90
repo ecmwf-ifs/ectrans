@@ -1,4 +1,5 @@
 ! (C) Copyright 2008- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -166,7 +167,10 @@ ENDDO
 
 ! done in setup_trans
 LGPNORM=.TRUE.
-CALL TRGTOL(ZGTF,IF_FS,IF_GP,IF_SCALARS_G,IVSET,PGP=PGP)
+print *, "not supported"
+flush(6)
+stop 1
+! CALL TRGTOL(ZGTF,IF_FS,IF_GP,IF_SCALARS_G,IVSET,PGP=PGP)
 LGPNORM=.FALSE.
 
 ! ZGTF is now on GPU
