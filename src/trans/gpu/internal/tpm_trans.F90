@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -61,5 +62,10 @@ REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGL(:,:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGL(:,:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGPN(:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
+
+! This is used in fourier space. It's reused among the transforms because
+! we cannot reallocate - the captured CUDA graphs should not be modified.
+! Hence, we keep it if it is large enough, otherwise we adapt the size.
+REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: PREEL_PTR(:)
 
 END MODULE TPM_TRANS
