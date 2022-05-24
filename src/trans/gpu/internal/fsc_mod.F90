@@ -153,10 +153,12 @@ IF (KUV_EWDER_OFFSET >= 0) THEN
   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) ASYNC(1)
   DO KGL=IBEG,IEND,IINC
     DO JF=1,2*KF_UV
-      DO JM=0,(G_NLOEN_MAX+4)/2-1
+      DO JM=0,G_NLOEN_MAX/2
         IGLG = OFFSET_VAR+KGL-1
-        ! see comment in fourier_in
-        IF (JM <= (G_NLOEN(IGLG)+4)/2-1) THEN
+        ! FFT transforms NLON real values to floor(NLON/2)+1 complex numbers. Hence we have
+        ! to fill those floor(NLON/2)+1 values.
+        ! Truncation happens starting at G_NMEN+1. Hence, we zero-fill those values.
+        IF (JM <= G_NLOEN(IGLG)/2) THEN
           IOFF_LAT = KF_FS*D_NSTAGTF(KGL)
           IOFF_UV = IOFF_LAT+(KUV_OFFSET+JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
           IOFF_UV_EWDER = IOFF_LAT+(KUV_EWDER_OFFSET+JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
@@ -172,7 +174,6 @@ IF (KUV_EWDER_OFFSET >= 0) THEN
             RET_COMPLEX =  &
                 &  PREEL_COMPLEX(IOFF_UV+2*JM+1)*ZACHTE2*REAL(JM,JPRBT)
           ENDIF
-          ! The rest from G_NMEN(IGLG)+1...MAX is zero truncated
           PREEL_COMPLEX(IOFF_UV_EWDER+2*JM+1) = RET_REAL
           PREEL_COMPLEX(IOFF_UV_EWDER+2*JM+2) = RET_COMPLEX
         ENDIF
@@ -187,10 +188,12 @@ IF (KSCALARS_EWDER_OFFSET > 0) THEN
   !$ACC& PRIVATE(IGLG,IOFF_LAT,IOFF_SCALARS_EWDER,IOFF_SCALARS,ZACHTE2)
   DO KGL=IBEG,IEND,IINC
     DO JF=1,KF_SCALARS
-      DO JM=0,(G_NLOEN_MAX+4)/2-1
+      DO JM=0,G_NLOEN_MAX/2
         IGLG = OFFSET_VAR+KGL-1
-        ! see comment in fourier_in
-        IF (JM <= (G_NLOEN(IGLG)+4)/2-1) THEN
+        ! FFT transforms NLON real values to floor(NLON/2)+1 complex numbers. Hence we have
+        ! to fill those floor(NLON/2)+1 values.
+        ! Truncation happens starting at G_NMEN+1. Hence, we zero-fill those values.
+        IF (JM <= G_NLOEN(IGLG)/2) THEN
           IOFF_LAT = KF_FS*D_NSTAGTF(KGL)
           IOFF_SCALARS_EWDER = IOFF_LAT+(KSCALARS_EWDER_OFFSET+JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
           IOFF_SCALARS = IOFF_LAT+(KSCALARS_OFFSET+JF-1)*(D_NSTAGTF(KGL+1)-D_NSTAGTF(KGL))
