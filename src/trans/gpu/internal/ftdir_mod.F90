@@ -10,7 +10,7 @@
 
 MODULE FTDIR_MOD
 CONTAINS
-SUBROUTINE FTDIR(KFIELDS)
+SUBROUTINE FTDIR(STRIDE,KF_FS)
 
 
 !**** *FTDIR - Direct Fourier transform
@@ -23,7 +23,8 @@ SUBROUTINE FTDIR(KFIELDS)
 !        CALL FTDIR(..)
 
 !        Explicit arguments :  PREEL   - Fourier/grid-point array
-!        --------------------  KFIELDS - number of fields
+!        --------------------  KSTIRDE - stride of PREEL
+!                              KF_FS   - number of fields
 
 !     Method.
 !     -------
@@ -62,20 +63,19 @@ USE CUDA_DEVICE_MOD
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELDS
+INTEGER(KIND=JPIM),INTENT(IN)  :: STRIDE,KF_FS
 INTEGER(KIND=JPIM)  :: KGL
-!!!REAL(KIND=JPRBT), INTENT(INOUT) :: PREEL(KFIELDS,D%NLENGTF)
+!!!REAL(KIND=JPRBT), INTENT(INOUT) :: PREEL(STRIDE,D%NLENGTF)
 
-INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
-INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
+INTEGER(KIND=JPIM) :: IGLG,IST,JJ,JF,IST1
+INTEGER(KIND=JPIM) :: IOFF
 INTEGER(KIND=JPIM) :: IPLAN_R2C
 INTEGER(KIND=JPIM) :: JMAX
 REAL(KIND=JPRBT)    :: SCAL
-LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISCAL
-INTEGER(KIND=JPIM) :: OFFSET_VAR, IUNIT, ISIZE, II, IMAX
-integer :: istat, idev
+INTEGER(KIND=JPIM) :: OFFSET_VAR
+integer :: istat
 real(kind=jprbt), allocatable :: zgtf2(:,:)
 
 !     ------------------------------------------------------------------
@@ -102,11 +102,8 @@ DO KGL=IBEG,IEND,IINC
 
   IOFF=D%NSTAGTF(KGL)+1
   IGLG = D%NPTRLS(MYSETW)+KGL-1
-  !ILEN = G_NLOEN(IGLG)+R_NNOEXTZL+3-IST
-  !IRLEN=G_NLOEN(IGLG)+R_NNOEXTZL
-  !ICLEN=(IRLEN/2+1)*2
 
-  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G%NLOEN(IGLG),KFIELDS)
+  CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G%NLOEN(IGLG),2*KF_FS,STRIDE)
   !$ACC host_data use_device(ZGTF,ZGTF2)
   CALL EXECUTE_PLAN_FFTC(IPLAN_R2C,-1,ZGTF(1,IOFF),ZGTF2(1,IOFF))
   !$ACC end host_data
@@ -118,7 +115,7 @@ istat = cuda_Synchronize()
 OFFSET_VAR=D_NPTRLS(MYSETW)
 !$ACC parallel loop collapse(2) private(JMAX,JJ,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
 DO IGLG=IBEG+OFFSET_VAR-1,IEND+OFFSET_VAR-1,IINC
-   DO JF=1,KFIELDS
+   DO JF=1,2*KF_FS
      JMAX = G_NLOEN(IGLG)
      SCAL = 1._JPRBT/REAL(JMAX,JPRBT)
      IST  = 2*(G_NMEN(IGLG)+1)

@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -122,7 +123,7 @@ DO KGL=IBEG,IEND,IINC
   !IF (G%NLOEN(IGLG)>1) THEN
 !call cudaProfilerStop()
      !istat=cuda_SetDevice(idev)
-     CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELDS)
+     CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELDS,KFIELDS)
      !$ACC host_data use_device(PREEL,PREEL2)
      CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff),PREEL2(1, ioff))
      !$ACC end host_data

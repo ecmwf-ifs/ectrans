@@ -61,11 +61,12 @@ static int planWorkspaceSize=100*1024*1024; //100MB
  
 extern "C"
 void
-create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np, int *LOTp)
+create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np, int *LOTp, int *stridep)
 {
 int ISIGN = *ISIGNp;
 int N = *Np;
 int LOT = *LOTp;
+int stride = *stridep;
 
 cufftHandle plan;
 
@@ -86,7 +87,6 @@ if (cudaDeviceSynchronize() != cudaSuccess){
 //  cufftSetAutoAllocation(plan, false);
 
 int embed[1];
-int stride;
 int dist;
 
 #ifdef TRANS_SINGLE
@@ -98,7 +98,6 @@ cufftType cufft_2 = CUFFT_Z2D;
 #endif
 
 embed[0] = 1;
-stride   = LOT;
 dist     = 1;
 
 cufftSafeCall(cufftCreate(&plan));

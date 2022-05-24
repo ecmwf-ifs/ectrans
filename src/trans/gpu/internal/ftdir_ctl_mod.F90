@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -217,7 +218,7 @@ IF(KF_FS>0) THEN
     IOFF=1
     !ICHUNK=2*KF_FS+2
     ICHUNK=ISIZE
-    CALL FTDIR(ICHUNK)
+    CALL FTDIR(ICHUNK,KF_FS)
   !ENDDO
 ENDIF
 
