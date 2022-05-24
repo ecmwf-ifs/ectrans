@@ -86,11 +86,8 @@ INTEGER(KIND=JPIM) :: II, IJ, IR, J, JN, ISMAX,JI
 
 !     LOCAL REAL SCALARS
 REAL(KIND=JPRBT) :: ZKM
-REAL(KIND=JPRBT) :: ZLAPIN(-1:R%NSMAX+4)
-REAL(KIND=JPRBT) :: ZEPSNM(-1:R%NSMAX+4)
 
 !$ACC DATA                                     &
-!$ACC      CREATE (ZEPSNM, ZLAPIN)         &
 !$ACC      COPYIN (D,D%MYMS,F,F%RLAPIN,F%RN)   &
 !$ACC      PRESENT(PEPSNM, PVOR, PDIV)         &
 !$ACC      PRESENT(PU, PV, D_MYMS)
@@ -105,16 +102,6 @@ ISMAX = R%NSMAX
 DO KMLOC=1,D%NUMP
   KM = D_MYMS(KMLOC)
   ZKM = REAL(KM,JPRBT)
-  !$ACC PARALLEL LOOP DEFAULT(NONE)
-  DO JN=KM-1,ISMAX+2
-    IJ = ISMAX+3-JN
-    ZLAPIN(IJ) = F%RLAPIN(JN)
-    IF( JN >= 0 ) THEN
-        ZEPSNM(ISMAX+3-JN) = PEPSNM(KMLOC,JN) 
-    ELSE
-        ZEPSNM(ISMAX+3-JN) = 0
-    ENDIF
-  ENDDO
 
 !*       1.1      U AND V (KM=0) .
 
@@ -126,11 +113,11 @@ IF(KM == 0) THEN
     DO JN=0,R_NTMAX+1
       JI = R_NTMAX+3-JN
       PU(IR,JI,KMLOC) = +&
-      &(JN-1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(IR,JI+1,KMLOC)-&
-      &(JN+2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(IR,JI-1,KMLOC)
+      &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PVOR(IR,JI+1,KMLOC)-&
+      &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PVOR(IR,JI-1,KMLOC)
       PV(IR,JI,KMLOC) = -&
-      &(JN-1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(IR,JI+1,KMLOC)+&
-      &(JN+2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(IR,JI-1,KMLOC)
+      &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PDIV(IR,JI+1,KMLOC)+&
+      &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PDIV(IR,JI-1,KMLOC)
     ENDDO
   ENDDO
 ELSE
@@ -138,24 +125,23 @@ ELSE
 
     !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE)
     DO J=1,KFIELD
-
       DO JN=KM,R_NTMAX+1
         JI = R_NTMAX+3-JN
         IR = 2*J-1
         II = IR+1
         !IF (ZKM>0 .AND. JI<=ISMAX+3-zKM) THEN
-          PU(ir,JI,kmloc) = -ZKM*ZLAPIN(JI)*PDIV(ii,JI,kmloc)+&
-          &(JN-1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(ir,JI+1,kmloc)-&
-          &(JN+2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(ir,JI-1,kmloc)
-          PU(ii,JI,kmloc) = +ZKM*ZLAPIN(JI)*PDIV(ir,JI,kmloc)+&
-          &(JN-1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(ii,JI+1,kmloc)-&
-          &(JN+2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(ii,JI-1,kmloc)
-          PV(ir,JI,kmloc) = -ZKM*ZLAPIN(JI)*PVOR(ii,JI,kmloc)-&
-          &(JN-1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(ir,JI+1,kmloc)+&
-          &(JN+2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(ir,JI-1,kmloc)
-          PV(ii,JI,kmloc) = +ZKM*ZLAPIN(JI)*PVOR(ir,JI,kmloc)-&
-          &(JN-1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(ii,JI+1,kmloc)+&
-          &(JN+2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(ii,JI-1,kmloc)
+          PU(ir,JI,kmloc) = -ZKM*F%RLAPIN(JN)*PDIV(ii,JI,kmloc)+&
+          &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PVOR(ir,JI+1,kmloc)-&
+          &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PVOR(ir,JI-1,kmloc)
+          PU(ii,JI,kmloc) = +ZKM*F%RLAPIN(JN)*PDIV(ir,JI,kmloc)+&
+          &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PVOR(ii,JI+1,kmloc)-&
+          &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PVOR(ii,JI-1,kmloc)
+          PV(ir,JI,kmloc) = -ZKM*F%RLAPIN(JN)*PVOR(ii,JI,kmloc)-&
+          &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PDIV(ir,JI+1,kmloc)+&
+          &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PDIV(ir,JI-1,kmloc)
+          PV(ii,JI,kmloc) = +ZKM*F%RLAPIN(JN)*PVOR(ir,JI,kmloc)-&
+          &(JN-1)*PEPSNM(KMLOC,JN)*F%RLAPIN(JN-1)*PDIV(ii,JI+1,kmloc)+&
+          &(JN+2)*PEPSNM(KMLOC,JN+1)*F%RLAPIN(JN+1)*PDIV(ii,JI-1,kmloc)
         !ENDIF
       ENDDO
     ENDDO
