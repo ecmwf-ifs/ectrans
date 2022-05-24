@@ -19,7 +19,6 @@ MODULE TRMTOL_MOD
   TYPE TRMTOL_HANDLE
     TYPE(ALLOCATION_RESERVATION_HANDLE) :: HPFBUF
   END TYPE
-
 CONTAINS
   FUNCTION PREPARE_TRMTOL(ALLOCATOR, KF_LEG) RESULT(HTRMTOL)
     USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
@@ -35,205 +34,152 @@ CONTAINS
 
     HTRMTOL%HPFBUF = RESERVE(ALLOCATOR, D%NLENGT0B*2*KF_LEG*SIZEOF(DUMMY))
   END FUNCTION
-SUBROUTINE TRMTOL_CUDAAWARE(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
 
-!**** *trmtol * - transposition in Fourier space
+  SUBROUTINE TRMTOL_CUDAAWARE(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
+    !**** *trmtol * - transposition in Fourier space
 
-!     Purpose.
-!     --------
-!              Transpose Fourier buffer data from partitioning
-!              over wave numbers to partitioning over latitudes.
-!              It is called between direct FFT and direct Legendre
-!              transform.
-!              This routine is the inverse of TRLTOM.
-
-
-!**   Interface.
-!     ----------
-!        *call* *trmtol(...)*
-
-!        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
-!        --------------------          used for both input and output.
-!                             KF_LEG - Number of fields communicated
-
-!        Implicit arguments :
-!        --------------------
-
-!     Method.
-!     -------
-!        See documentation
-
-!     Externals.
-!     ----------
-
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
-
-!     Author.
-!     -------
-!        MPP Group *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 95-10-01
-!        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
-!                                            (NCOMBFLEN) for nphase.eq.1
-!        Modified : 99-05-28  D.Salmond - Optimise copies.
-!        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
-!        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
-!                             passing and buffer packing
-!        G.Mozdzynski: 08-01-01 Cleanup
-!        Y.Seity   : 07-08-31 add barrien synchronisation under LSYNC_TRANS
-!     ------------------------------------------------------------------
+    !     Purpose.
+    !     --------
+    !              Transpose Fourier buffer data from partitioning
+    !              over wave numbers to partitioning over latitudes.
+    !              It is called between direct FFT and direct Legendre
+    !              transform.
+    !              This routine is the inverse of TRLTOM.
 
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
-USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE MPL_MODULE      ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_WAIT, &
- &                          JP_NON_BLOCKING_STANDARD, MPL_MYRANK
-USE TPM_DISTR       ,ONLY : D, NPRTRW, NPROC, MYPROC, MYSETW
-USE TPM_GEN         ,ONLY : LSYNC_TRANS
-USE TPM_STATS       ,ONLY : GSTATS => GSTATS_NVTX
+    !**   Interface.
+    !     ----------
+    !        *call* *trmtol(...)*
 
-#ifdef ACCGPU
-USE MPI
-#endif
+    !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
+    !        --------------------          used for both input and output.
+    !                             KF_LEG - Number of fields communicated
 
-IMPLICIT NONE
+    !        Implicit arguments :
+    !        --------------------
 
-#ifdef OMPGPU
-include 'mpif.h'
-#endif
+    !     Method.
+    !     -------
+    !        See documentation
 
-INTEGER(KIND=JPIM) ,INTENT(IN)  :: KF_LEG
-REAL(KIND=JPRBT), INTENT(OUT), POINTER  :: PFBUF(:)
-REAL(KIND=JPRBT), INTENT(IN) :: PFBUF_IN(:)
+    !     Externals.
+    !     ----------
 
-INTEGER(KIND=JPIM) :: ILENS(NPRTRW),IOFFS(NPRTRW),ILENR(NPRTRW),IOFFR(NPRTRW)
+    !     Reference.
+    !     ----------
+    !        ECMWF Research Department documentation of the IFS
 
-INTEGER(KIND=JPIM) :: J, ILEN, ISTA, FROM_SEND, TO_SEND, FROM_RECV, TO_RECV, IRANK, IERROR
-REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
+    !     Author.
+    !     -------
+    !        MPP Group *ECMWF*
 
-TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
-TYPE(TRMTOL_HANDLE), INTENT(IN) :: HTRMTOL
+    !     Modifications.
+    !     --------------
+    !        Original : 95-10-01
+    !        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
+    !                                            (NCOMBFLEN) for nphase.eq.1
+    !        Modified : 99-05-28  D.Salmond - Optimise copies.
+    !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
+    !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
+    !                             passing and buffer packing
+    !        G.Mozdzynski: 08-01-01 Cleanup
+    !        Y.Seity   : 07-08-31 add barrier synchronisation under LSYNC_TRANS
+    !     ------------------------------------------------------------------
 
-#ifdef PARKINDTRANS_SINGLE
-#define TRMTOL_DTYPE MPI_REAL
-#else
-#define TRMTOL_DTYPE MPI_DOUBLE_PRECISION
-#endif
+    USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+    USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+    USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK
+    USE TPM_DISTR       ,ONLY : D, NPRTRW, NPROC, MYPROC, MYSETW
+    USE TPM_GEN         ,ONLY : LSYNC_TRANS
+    USE MPI
+    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
-!     ------------------------------------------------------------------
+    IMPLICIT NONE
 
-IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',0,ZHOOK_HANDLE)
+    INTEGER(KIND=JPIM) ,INTENT(IN)  :: KF_LEG
+    REAL(KIND=JPRBT), INTENT(OUT), POINTER  :: PFBUF(:)
+    REAL(KIND=JPRBT), INTENT(IN) :: PFBUF_IN(:)
 
-CALL ASSIGN_PTR(PFBUF, GET_ALLOCATION(ALLOCATOR, HTRMTOL%HPFBUF),&
-    & 1_C_SIZE_T, D%NLENGT0B*2*KF_LEG*SIZEOF(PFBUF(1)))
+    INTEGER(KIND=JPIM) :: ILENS(NPRTRW),IOFFS(NPRTRW),ILENR(NPRTRW),IOFFR(NPRTRW)
+    INTEGER(KIND=JPIM) :: J, ILEN, ISTA, FROM_SEND, TO_SEND, FROM_RECV, TO_RECV, IRANK
+    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+    INTEGER(KIND=JPIM) :: IERROR
 
-IF(NPROC > 1) THEN
-  DO J=1,NPRTRW
-    ILENS(J) = D%NLTSFTB(J)*2*KF_LEG
-    IOFFS(J) = D%NSTAGT1B(J)*2*KF_LEG
-    ILENR(J) = D%NLTSGTB(J)*2*KF_LEG
-    IOFFR(J) = D%NSTAGT0B(J)*2*KF_LEG
-  ENDDO
+    TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
+    TYPE(TRMTOL_HANDLE), INTENT(IN) :: HTRMTOL
 
-  CALL GSTATS(807,0)
+    #ifdef PARKINDTRANS_SINGLE
+    #define TRMTOL_DTYPE MPI_REAL
+    #else
+    #define TRMTOL_DTYPE MPI_DOUBLE_PRECISION
+    #endif
 
-  ! copy to self workaround
-  IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
-  IF (ILENS(IRANK) .ne. ILENR(IRANK)) THEN
-      PRINT *, "ERROR", ILENS(IRANK), ILENR(IRANK)
-      stop 1
-  ENDIF
-  IF (ILENS(IRANK) > 0) THEN
-      FROM_SEND = IOFFS(IRANK) + 1
-      TO_SEND = FROM_SEND + ILENS(IRANK) - 1
-      FROM_RECV = IOFFR(IRANK) + 1
-      TO_RECV = FROM_RECV + ILENR(IRANK) - 1
-#ifdef OMPGPU
-      !$OMP TARGET
-#endif
-#ifdef ACCGPU
-#if defined(__NVCOMPILER) || defined(__PGI)
-      !$ACC KERNELS DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN)
-#elif defined(_CRAYFTN)
-      !$ACC KERNELS DEFAULT(NONE) COPYIN(FROM_RECV,TO_RECV,FROM_SEND,TO_SEND) &
-      !$ACC& PRESENT(PFBUF,PFBUF_IN)
-#endif
-#endif
-      PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
-#ifdef ACCGPU
-      !$ACC END KERNELS
-#endif
-#ifdef OMPGPU
-      !$OMP END TARGET
-#endif
-      ILENS(IRANK) = 0
-      ILENR(IRANK) = 0
-  ENDIF
+    IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',0,ZHOOK_HANDLE)
 
+    CALL ASSIGN_PTR(PFBUF, GET_ALLOCATION(ALLOCATOR, HTRMTOL%HPFBUF),&
+        & 1_C_SIZE_T, D%NLENGT0B*2*KF_LEG*SIZEOF(PFBUF(1)))
 
-  IF (LSYNC_TRANS) THEN
-    CALL GSTATS(440,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(440,1)
-  ENDIF
-  CALL GSTATS(421,0)
-#ifdef ACCGPU
-  !$ACC DATA PRESENT(PFBUF_IN,PFBUF) COPYIN(ILENS,ILENR,IOFFS,IOFFR)
-  !$ACC HOST_DATA USE_DEVICE(PFBUF_IN,PFBUF)
-#endif
-#ifdef OMPGPU
-  !$OMP TARGET DATA MAP(PRESENT,ALLOC:PFBUF_IN, PFBUF)
-  !$OMP TARGET DATA USE_DEVICE_PTR(PFBUF_IN, PFBUF)
-#endif
-  CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRMTOL_DTYPE,&
-   & PFBUF,ILENR,IOFFR,TRMTOL_DTYPE,&
-   & MPL_ALL_MS_COMM,IERROR)
+    IF(NPROC > 1) THEN
+      DO J=1,NPRTRW
+        ILENS(J) = D%NLTSFTB(J)*2*KF_LEG
+        IOFFS(J) = D%NSTAGT1B(J)*2*KF_LEG
+        ILENR(J) = D%NLTSGTB(J)*2*KF_LEG
+        IOFFR(J) = D%NSTAGT0B(J)*2*KF_LEG
+      ENDDO
 
-#ifdef OMPGPU
-  !$OMP END TARGET DATA
-  !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-  !$ACC END HOST_DATA
-  !$ACC END DATA
-#endif
-  !! !$OMP BARRIER
-  IF (LSYNC_TRANS) THEN
-    CALL GSTATS(441,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(441,1)
-  ENDIF
-  CALL GSTATS(421,1)
+      CALL GSTATS(807,0)
 
-#ifdef ACCGPU
-  !$ACC WAIT(1)
-#endif
-  CALL GSTATS(807,1)
-ELSE
-  ILEN = D%NLTSGTB(MYSETW)*2*KF_LEG
-  ISTA = D%NSTAGT0B(MYSETW)*2*KF_LEG+1
-  CALL GSTATS(1608,0)
-#ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) MAP(PRESENT,ALLOC:PFBUF,PFBUF_IN) &
-  !$OMP& SHARED(ISTA,ILEN,PFBUF,PFBUF_IN)
-#endif
-#ifdef ACCGPU
-  !$ACC PARALLEL LOOP DEFAULT(NONE) COPYIN(ISTA,ILEN) PRESENT(PFBUF,PFBUF_IN)
-#endif
-  DO J=ISTA,ISTA+ILEN-1
-    PFBUF(J) = PFBUF_IN(J)
-  ENDDO
-  CALL GSTATS(1608,1)
-ENDIF
+      ! copy to self workaround
+      IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
+      IF (ILENS(IRANK) .ne. ILENR(IRANK)) THEN
+          PRINT *, "ERROR", ILENS(IRANK), ILENR(IRANK)
+          stop 1
+      ENDIF
+      IF (ILENS(IRANK) > 0) THEN
+          FROM_SEND = IOFFS(IRANK) + 1
+          TO_SEND = FROM_SEND + ILENS(IRANK) - 1
+          FROM_RECV = IOFFR(IRANK) + 1
+          TO_RECV = FROM_RECV + ILENR(IRANK) - 1
+          !$ACC KERNELS ASYNC(1) DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN)
+          PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
+          !$ACC END KERNELS
+          ILENS(IRANK) = 0
+          ILENR(IRANK) = 0
+      ENDIF
 
-IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',1,ZHOOK_HANDLE)
+      IF (LSYNC_TRANS) THEN
+        CALL GSTATS(440,0)
+        CALL MPL_BARRIER(CDSTRING='')
+        CALL GSTATS(440,1)
+      ENDIF
+      CALL GSTATS(421,0)
+      !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
+      CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRMTOL_DTYPE,&
+       & PFBUF,ILENR,IOFFR,TRMTOL_DTYPE,&
+       & MPL_ALL_MS_COMM,IERROR)
+      !$ACC END HOST_DATA
+      IF (LSYNC_TRANS) THEN
+        CALL GSTATS(441,0)
+        CALL MPL_BARRIER(CDSTRING='')
+        CALL GSTATS(441,1)
+      ENDIF
+      CALL GSTATS(421,1)
 
-!     ------------------------------------------------------------------
+      !$ACC WAIT(1)
+      CALL GSTATS(807,1)
+    ELSE
+      ILEN = D%NLTSGTB(MYSETW)*2*KF_LEG
+      ISTA = D%NSTAGT0B(MYSETW)*2*KF_LEG+1
+      CALL GSTATS(1608,0)
+      !$ACC PARALLEL LOOP DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN)
+      DO J=ISTA,ISTA+ILEN-1
+        PFBUF(J) = PFBUF_IN(J)
+      ENDDO
+      CALL GSTATS(1608,1)
+    ENDIF
 
-END SUBROUTINE TRMTOL_CUDAAWARE
+    IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',1,ZHOOK_HANDLE)
 
+    !     ------------------------------------------------------------------
+  END SUBROUTINE TRMTOL_CUDAAWARE
 END MODULE TRMTOL_MOD

@@ -21,107 +21,96 @@ CONTAINS
     TYPE(FTDIR_HANDLE) :: HFTDIR
   END FUNCTION
 
-SUBROUTINE FTDIR(HFTDIR,PREEL_REAL,PREEL_COMPLEX,KFIELD)
+  SUBROUTINE FTDIR(HFTDIR,PREEL_REAL,PREEL_COMPLEX,KFIELD)
+    !**** *FTDIR - Direct Fourier transform
 
-!**** *FTDIR - Direct Fourier transform
+    !     Purpose. Routine for Grid-point to Fourier transform
+    !     --------
 
-!     Purpose. Routine for Grid-point to Fourier transform
-!     --------
+    !**   Interface.
+    !     ----------
+    !        CALL FTDIR(..)
 
-!**   Interface.
-!     ----------
-!        CALL FTDIR(..)
+    !        Explicit arguments :  PREEL   - Fourier/grid-point array
+    !        --------------------  KFIELD   - number of fields
 
-!        Explicit arguments :  PREEL   - Fourier/grid-point array
-!        --------------------  KFIELD  - number of fields
+    !     Method.
+    !     -------
 
-!     Method.
-!     -------
+    !     Externals.  FFT992 - FFT routine
+    !     ----------
+    !
 
-!     Externals.  FFT992 - FFT routine
-!     ----------
-!
+    !     Author.
+    !     -------
+    !        Mats Hamrud *ECMWF*
 
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
+    !     Modifications.
+    !     --------------
+    !        Original : 00-03-03
+    !        G. Radnoti 01-04-24 2D model (NLOEN=1)
+    !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
+    !        G. Mozdzynski (Oct 2014): support for FFTW transforms
+    !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
+    !     ------------------------------------------------------------------
 
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-!        G. Radnoti 01-04-24 2D model (NLOEN=1)
-!        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
-!        G. Mozdzynski (Oct 2014): support for FFTW transforms
-!        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
-!     ------------------------------------------------------------------
+    USE TPM_GEN         ,ONLY : LSYNC_TRANS
+    USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
-USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
+    USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC, D_NSTAGT0B, D_NSTAGTF,D_NPTRLS, D_NPNTGTB0, D_NPROCM
+    USE TPM_GEOMETRY    ,ONLY : G, G_NMEN, G_NLOEN
+    USE TPM_HICFFT      ,ONLY : EXECUTE_DIR_FFT
+    USE MPL_MODULE      ,ONLY : MPL_BARRIER
+    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
-USE TPM_GEN         ,ONLY : LSYNC_TRANS
-USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC,D_NSTAGTF,D_NPTRLS, D_NSTAGT0B, D_NPNTGTB0, D_NPROCM
-USE TPM_GEOMETRY    ,ONLY : G,G_NMEN,G_NLOEN
-USE TPM_FFT         ,ONLY : T
-USE TPM_HICFFT      ,ONLY : CREATE_PLAN_FFT, EXECUTE_PLAN_FFT, EXECUTE_DIR_FFT
-USE MPL_MODULE      ,ONLY : MPL_BARRIER
-USE TPM_STATS       ,ONLY : GSTATS => GSTATS_NVTX
-USE DEVICE_MOD
-USE ISO_C_BINDING
-use openacc
-!
+    IMPLICIT NONE
 
-IMPLICIT NONE
+    INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+    REAL(KIND=JPRBT), INTENT(INOUT), POINTER :: PREEL_REAL(:)
+    REAL(KIND=JPRBT), INTENT(OUT), POINTER :: PREEL_COMPLEX(:)
+    TYPE(FTDIR_HANDLE) :: HFTDIR
 
-TYPE(FTDIR_HANDLE) :: HFTDIR
-INTEGER(KIND=JPIM),INTENT(IN) :: KFIELD
-REAL(KIND=JPRBT), INTENT(INOUT), POINTER :: PREEL_REAL(:)
-REAL(KIND=JPRBT), INTENT(OUT),   POINTER :: PREEL_COMPLEX(:)
+    INTEGER(KIND=JPIM) :: KGL, D_NDGL_FS
 
-INTEGER(KIND=JPIM) :: D_NDGL_FS,IGLG,KGL
-TYPE(C_PTR)        :: IPLAN_R2C
+    D_NDGL_FS = D%NDGL_FS
 
-!     ------------------------------------------------------------------
-
-D_NDGL_FS = D%NDGL_FS
-
-PREEL_COMPLEX => PREEL_REAL
+    PREEL_COMPLEX => PREEL_REAL
 
 #ifdef ACCGPU
-!$ACC DATA PRESENT(PREEL_REAL, PREEL_COMPLEX, &
-!$ACC&             D_NSTAGTF,D_NSTAGT0B,D_NPTRLS,D_NPROCM,D_NPNTGTB0,G_NMEN,G_NLOEN)
+    !$ACC DATA PRESENT(PREEL_REAL, PREEL_COMPLEX, &
+    !$ACC&             D_NSTAGTF,D_NSTAGT0B,D_NPTRLS,D_NPROCM,D_NPNTGTB0,G_NMEN,G_NLOEN)
 #endif
 #ifdef OMPGPU
-!$OMP TARGET DATA MAP(ALLOC:PREEL_COMPLEX)
+    !$OMP TARGET DATA MAP(ALLOC:PREEL_COMPLEX)
 #endif
 
-IF (LSYNC_TRANS) THEN
-  CALL GSTATS(430,0)
-  CALL MPL_BARRIER(CDSTRING='')
-  CALL GSTATS(430,1)
-ENDIF
-CALL GSTATS(413,0)
+    IF (LSYNC_TRANS) THEN
+      CALL GSTATS(430,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(430,1)
+    ENDIF
+    CALL GSTATS(413,0)
+    CALL EXECUTE_DIR_FFT(PREEL_REAL(:),PREEL_COMPLEX(:),KFIELD, &
+        & LOENS=G%NLOEN(D%NPTRLS(MYSETW):D%NPTRLS(MYSETW)+D%NDGL_FS-1), &
+        & OFFSETS=D%NSTAGTF(1:D%NDGL_FS+1))
 
-CALL EXECUTE_DIR_FFT(PREEL_REAL(:),PREEL_COMPLEX(:),KFIELD, &
-    & LOENS=G%NLOEN(D%NPTRLS(MYSETW):D%NPTRLS(MYSETW)+D%NDGL_FS-1), &
-    & OFFSETS=D%NSTAGTF(1:D%NDGL_FS+1))
-
-IF (LSYNC_TRANS) THEN
-  CALL GSTATS(433,0)
-  CALL MPL_BARRIER(CDSTRING='')
-  CALL GSTATS(433,1)
-ENDIF
-CALL GSTATS(413,1)
-
+    IF (LSYNC_TRANS) THEN
+      CALL GSTATS(433,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(433,1)
+    ENDIF
+    CALL GSTATS(413,1)
 
 #ifdef ACCGPU
-!$ACC END DATA
+    !$ACC END DATA
 #endif
 
 #ifdef OMPGPU
-!$OMP END TARGET DATA
+    !$OMP END TARGET DATA
 #endif
 
-NULLIFY(PREEL_REAL)
-!     ------------------------------------------------------------------
+    NULLIFY(PREEL_REAL)
 
-END SUBROUTINE FTDIR
+    !     ------------------------------------------------------------------
+  END SUBROUTINE FTDIR
 END MODULE FTDIR_MOD
