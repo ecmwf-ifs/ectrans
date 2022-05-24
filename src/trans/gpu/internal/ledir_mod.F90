@@ -104,8 +104,8 @@ IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 ALLOCATE(ZINPA(2*KF_FS*R_NDGNH*D_NUMP))
 ALLOCATE(ZINPS(2*KF_FS*R_NDGNH*D_NUMP))
 ALLOCATE(ZOUT(2*KF_FS*TDZAS*D_NUMP))
-ALLOCATE(ZINP0(2*KF_FS*R_NDGNH))
-ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
+ALLOCATE(ZINP0(KF_FS*R_NDGNH))
+ALLOCATE(ZOUT0(KF_FS*TDZAS))
 
 #ifdef ACCGPU
 !$ACC DATA &
@@ -245,7 +245,7 @@ IF(KMLOC0 > 0) THEN
 #endif
   DO JGL=1,G_NDGLU(0)
     DO JF=1,2*KF_FS,2
-      ZINP0((JF-1)/2+1+(JGL-1)*2*KF_FS) &
+      ZINP0((JF-1)/2+1+(JGL-1)*KF_FS) &
           & = ZINPA((JF-1)+1+(JGL-1+(KMLOC0-1)*R_NDGNH)*2*KF_FS)
     ENDDO
   ENDDO
@@ -263,12 +263,12 @@ IF(KMLOC0 > 0) THEN
 #endif
   CALL HIP_DGEMM_BATCHED( &
     & 'N','N', &
-    & 2*KF_FS, TDZAA, R_NDGNH, &
+    & KF_FS, TDZAA, R_NDGNH, &
     & 1.0_JPRD, &
-    & ZINP0, 2*KF_FS, R_NDGNH, &
+    & ZINP0, KF_FS, R_NDGNH, &
     & ZAA0, R_NDGNH, TDZAA, &
     & 0.0_JPRD, &
-    & ZOUT0, 2*KF_FS, TDZAA, &
+    & ZOUT0, KF_FS, TDZAA, &
     & 1)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
@@ -287,11 +287,10 @@ IF(KMLOC0 > 0) THEN
   DO J=1,(R_NSMAX+2)/2
     DO JK=1,2*KF_FS,2
       IA  = 1+MOD(R_NTMAX+2,2)
-      POA1(JK,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
+      POA1(JK,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*KF_FS)
     ENDDO
   ENDDO
 ENDIF
-
 
 ! symmetric
 
@@ -362,7 +361,7 @@ IF(KMLOC0 > 0) THEN
 #endif
   DO JGL=1,G_NDGLU(0)
     DO JF=1,2*KF_FS,2
-      ZINP0((JF-1)/2+1+(JGL-1)*2*KF_FS) &
+      ZINP0((JF-1)/2+1+(JGL-1)*KF_FS) &
           & = ZINPS((JF-1)+1+(JGL-1+(KMLOC0-1)*R_NDGNH)*2*KF_FS)
     ENDDO
   ENDDO
@@ -378,12 +377,12 @@ IF(KMLOC0 > 0) THEN
   !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUT0)
 #endif
   CALL HIP_DGEMM_BATCHED('N','N',&
- &                        2*KF_FS, TDZAS, R_NDGNH, &
+ &                        KF_FS, TDZAS, R_NDGNH, &
  &                        1.0_JPRD,&
- &                        ZINP0, 2*KF_FS, R_NDGNH, &
+ &                        ZINP0, KF_FS, R_NDGNH, &
  &                        ZAS0, R_NDGNH, TDZAS, &
  &                        0._JPRD, &
- &                        ZOUT0, 2*KF_FS, TDZAS, &
+ &                        ZOUT0, KF_FS, TDZAS, &
  &                        1)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
@@ -403,7 +402,7 @@ IF(KMLOC0 > 0) THEN
   DO J=1,(R_NSMAX+3)/2
     DO JK=1,2*KF_FS,2
       IS  = 1+MOD(R_NTMAX+1,2)
-      POA1(JK,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
+      POA1(JK,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*KF_FS)
     ENDDO
   ENDDO
 
