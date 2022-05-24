@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -89,10 +90,6 @@ ELSE
   IINC=-1
 ENDIF
 
-OFFSET_VAR=D_NPTRLS(MYSETW)
-
-IMAX = G_NLOEN_MAX + 2 + R_NNOEXTZL
-
 
 allocate(zgtf2(size(zgtf,1),size(zgtf,2)))
 !$ACC DATA &
@@ -118,31 +115,30 @@ END DO
 
 istat = cuda_Synchronize()
 
-!$acc kernels DEFAULT(NONE)
-zgtf(:,:) = zgtf2(:,:)
-!$acc end kernels
-!$acc end data
-
-!$ACC parallel loop collapse(3) private(JMAX,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
+OFFSET_VAR=D_NPTRLS(MYSETW)
+!$ACC parallel loop collapse(2) private(JMAX,JJ,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
 DO IGLG=IBEG+OFFSET_VAR-1,IEND+OFFSET_VAR-1,IINC
-   DO JJ=1, IMAX
-      DO JF=1,KFIELDS
-         JMAX = G_NLOEN(IGLG)
-         IST  = 2*(G_NMEN(IGLG)+1)
-         if (JJ .le. JMAX) then
-           KGL=IGLG-OFFSET_VAR+1
-           IOFF=D_NSTAGTF(KGL)+1
-           SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
-           ZGTF(JF,IOFF+JJ-1)= SCAL * ZGTF(JF, IOFF+JJ-1)
-         end if
+   DO JF=1,KFIELDS
+     JMAX = G_NLOEN(IGLG)
+     SCAL = 1._JPRBT/REAL(JMAX,JPRBT)
+     IST  = 2*(G_NMEN(IGLG)+1)
+     KGL=IGLG-OFFSET_VAR+1
+     IOFF=D_NSTAGTF(KGL)+1
 
-         ! case JJ>0
-         IF( JJ .le. (JMAX+R_NNOEXTZL+2-IST)) ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
-         ! case JJ=0
-         IF (G_NLOEN(IGLG)==1) ZGTF(JF,IST+IOFF-1) = 0.0_JPRBT
+     !$ACC LOOP SEQ
+     DO JJ=1, JMAX
+        ZGTF(JF,IOFF+JJ-1)= SCAL * ZGTF2(JF, IOFF+JJ-1)
+      ENDDO
+
+      !! WHAT'S GOING ON HERE? TRUNCATING?
+      IF (JMAX== 1) ZGTF(JF,IST+IOFF-1) = 0.0_JPRBT
+      !$ACC LOOP SEQ
+      DO JJ=1,JMAX+R%NNOEXTZL+3-IST
+        ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
       ENDDO
    ENDDO
 ENDDO
+!$acc end data
 
 !$ACC end data
 
