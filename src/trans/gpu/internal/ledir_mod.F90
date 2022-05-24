@@ -143,26 +143,24 @@ KIFC = KFC
 IF ( KMODE == -1 ) THEN
 
 #ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,KDGLU,ISL) DEFAULT(NONE) &
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ISL) DEFAULT(NONE) &
   !$OMP&     SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,DZBST,DLDZBA,DTDZBA,PAIA,F_RW)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL) DEFAULT(NONE) &
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISL) DEFAULT(NONE) &
   !$ACC&     COPYIN(KFC,DZBST,DLDZBA,DTDZBA) &
   !$ACC&     PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,PAIA,F_RW)
 #endif
   DO KMLOC=1,D_NUMP
     DO JK=1,KFC
       KM = D_MYMS(KMLOC)
-      KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-      DO J=1,R_NDGNH
-        IF (J .LE. KDGLU) THEN
-          ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-          DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
-        END IF
+      ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+ 
+      DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
+        DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
       ENDDO
     ENDDO
-  END DO
+  ENDDO
 
 
   ! Get C in transpose format to get better memory access patterns later
@@ -215,8 +213,8 @@ IF ( KMODE == -1 ) THEN
           IA  = 1+MOD(R_NTMAX-KM+2,2)
           IF (J .LE. ILA) THEN
             POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
-          END IF
-        END IF
+          ENDIF
+        ENDIF
       ENDDO
     ENDDO
   ENDDO
@@ -242,8 +240,8 @@ IF ( KMODE == -1 ) THEN
           ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
           IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
             DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F_RW(ISL+J-1)
-          END IF
-        END IF
+          ENDIF
+        ENDIF
       ENDDO
     ENDDO
 
@@ -292,8 +290,8 @@ IF ( KMODE == -1 ) THEN
           IA  = 1+MOD(R_NTMAX+2,2)
           IF (J .LE. ILA) THEN
             POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*DTDZCA)
-          END IF
-        END IF
+          ENDIF
+        ENDIF
       ENDDO
     ENDDO
   ENDIF
@@ -303,26 +301,23 @@ ELSE
 ! symmetric
 
 #ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,KDGLU,ISL) DEFAULT(NONE) &
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ISL) DEFAULT(NONE) &
   !$OMP&     SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,DZBST,DLDZBS,DTDZBS,PAIA,F_RW)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL) DEFAULT(NONE) &
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISL) DEFAULT(NONE) &
   !$ACC &    COPYIN(KFC,DLDZBS,DTDZBS) &
   !$ACC &    PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,DZBST,PAIA,F_RW)
 #endif
   DO KMLOC=1,D_NUMP
     DO JK=1,KFC
       KM = D_MYMS(KMLOC)
-      KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-      DO J=1,R_NDGNH
-        IF (J .LE. KDGLU) THEN
-          ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-          DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
-        END IF
+      ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+      DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
+        DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
       ENDDO
     ENDDO
-  END DO
+  ENDDO
 
   ! Get C in transpose format to get better memory access patterns later
   !C=A*B =>
@@ -374,8 +369,8 @@ ELSE
           IF (J .LE. ILS) THEN
             IS  = 1+MOD(R_NTMAX-KM+1,2)
             POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
-          END IF
-        END IF
+          ENDIF
+        ENDIF
       ENDDO
     ENDDO
   ENDDO
@@ -398,8 +393,8 @@ ELSE
           ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
           IF (MOD((JK-1),ISKIP) .eq. 0) THEN
             DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F_RW(ISL+J-1)
-          END IF
-        END IF
+          ENDIF
+        ENDIF
       ENDDO
     ENDDO
 
@@ -441,8 +436,8 @@ ELSE
           IF (J .LE. ILS) THEN
             IS  = 1+MOD(R_NTMAX+1,2)
             POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
-          END IF
-        END IF
+          ENDIF
+        ENDIF
       ENDDO
     ENDDO
   
