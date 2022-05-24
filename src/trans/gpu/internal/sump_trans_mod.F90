@@ -263,6 +263,11 @@ IF(.NOT.D%LGRIDONLY) THEN
     D%NSTAGTF(JGL) = IOFF
     IGL = D%NPTRLS(MYSETW) + JGL - 1
     IOFF = IOFF + G%NLOEN(IGL)+3
+    ! Make sure IOFF is even. This could really lead to slightly too large buffers
+    ! esp because the (+3) above (needed?), but it is crucial to have those even
+    ! because with these offsets we can store complex numbers, and CUFFT won't accept
+    ! unaligned complex buffers
+    IOFF = (IOFF+1)/2*2
   ENDDO
   D%NLENGTF = IOFF
 ENDIF

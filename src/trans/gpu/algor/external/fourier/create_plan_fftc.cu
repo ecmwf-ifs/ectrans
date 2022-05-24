@@ -1,4 +1,3 @@
-#define cufftSafeCall(err) __cufftSafeCall(err, __FILE__, __LINE__)
 #include "cufft.h"
 #include "stdio.h"
 static const char *_cudaGetErrorEnum(cufftResult error) {
@@ -36,25 +35,17 @@ static const char *_cudaGetErrorEnum(cufftResult error) {
 
   return "<unknown>";
 }
-
-inline void __cufftSafeCall(cufftResult err, const char *file, const int line) {
-  if (CUFFT_SUCCESS != err) {
-    fprintf(stderr, "CUFFT error at 1\n");
-    fprintf(stderr, "CUFFT error in file '%s'\n", __FILE__);
-    fprintf(stderr, "CUFFT error at 2\n");
-    /*fprintf(stderr, "CUFFT error line '%s'\n",__LINE__);*/
-    fprintf(stderr, "CUFFT error at 3\n");
-    /*fprintf(stderr, "CUFFT error in file '%s', line %d\n %s\nerror %d:
-    %s\nterminating!\n",__FILE__, __LINE__,err, \
-    _cudaGetErrorEnum(err)); \*/
-    fprintf(stderr, "CUFFT error %d: %s\nterminating!\n", err,
-            _cudaGetErrorEnum(err));
-    cudaDeviceReset();
-    return;
-  }
+#define CUFFT_CHECK(e) { \
+	cufftResult_t err = (e); \
+	if (err != CUFFT_SUCCESS) \
+	{ \
+		fprintf(stderr, "CUFFT error: %s, line %d, %s: %s\n", \
+			__FILE__, __LINE__, #e, _cudaGetErrorEnum(err)); \
+		exit(EXIT_FAILURE); \
+	} \
 }
 
-void *planWorkspace;
+void *planWorkspace = nullptr;
 static int currentWorkspaceSize = 0;
 
 extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
@@ -85,10 +76,10 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
   embed[0] = 1;
   dist = 1;
 
-  cufftSafeCall(cufftCreate(&plan));
+  CUFFT_CHECK(cufftCreate(&plan));
 
   // Disable auto allocation
-  cufftSetAutoAllocation(plan, false);
+  CUFFT_CHECK(cufftSetAutoAllocation(plan, false));
 
   // printf("CreatePlan cuFFT\n","N=",N);
   // printf("%s %d \n","plan=",plan);
@@ -97,10 +88,10 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
   // printf("%s %d \n","Np=",*Np);
 
   if (ISIGN == -1) {
-    cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
-                                stride/2, dist, cufft_1, LOT));
+    CUFFT_CHECK(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
+                                stride, dist, cufft_1, LOT));
   } else if (ISIGN == 1) {
-    cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride/2, dist, embed,
+    CUFFT_CHECK(cufftPlanMany(&plan, 1, &N, embed, stride/2, dist, embed,
                                 stride, dist, cufft_2, LOT));
   } else {
     abort();
@@ -108,7 +99,7 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
 
   // get size used by this plan
   size_t thisWorkplanSize;
-  cufftGetSize(plan, &thisWorkplanSize);
+  CUFFT_CHECK(cufftGetSize(plan, &thisWorkplanSize));
 
   // check if this the work space is sufficiently large
   if (thisWorkplanSize > currentWorkspaceSize) {
