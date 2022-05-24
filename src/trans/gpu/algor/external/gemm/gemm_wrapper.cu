@@ -34,10 +34,10 @@ constexpr bool use_cutlass = true;
 
 template <cublasOperation_t TransA, cublasOperation_t TransB>
 void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
-                                     const float *A, int lda, int tda,
-                                     const float *B, int ldb, int tdb,
-                                     float beta, float *C, int ldc, int tdc,
-                                     int batchCount) {
+                                     const float *A, int lda, int *offsetsA,
+                                     const float *B, int ldb, int *offsetsB,
+                                     float beta, float *C, int ldc,
+                                     int *offsetsC, int batchCount) {
 #if 0
   // we will enable this later (this ifdefs did not work, so I am going to enable this properly ltaer)
   // this was verified using Ampere and uses 3XTF32
@@ -117,10 +117,10 @@ void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
                            {(m + sz_align - 1) / sz_align * sz_align,
                             (n[i] + sz_align - 1) / sz_align * sz_align,
                             (k[i] + sz_align - 1) / sz_align * sz_align},
-                           {const_cast<float *>(A + i * tda), lda},
-                           {const_cast<float *>(B + i * tdb), ldb},
-                           {C + i * tdc, ldc},
-                           {C + i * tdc, ldc},
+                           {const_cast<float *>(A + offsetsA[i]), lda},
+                           {const_cast<float *>(B + offsetsB[i]), ldb},
+                           {C + offsetsC[i], ldc},
+                           {C + offsetsC[i], ldc},
                            {alpha, beta}}));
   }
   CUDA_CHECK(cudaDeviceSynchronize());
@@ -128,58 +128,59 @@ void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
 void cutlass_sgemm_wrapper_grouped(cublasOperation_t transa,
                                    cublasOperation_t transb, int m, int *n,
                                    int *k, float alpha, const float *A, int lda,
-                                   int tda, const float *B, int ldb, int tdb,
-                                   float beta, float *C, int ldc, int tdc,
-                                   int batchCount) {
+                                   int *offsetsA, const float *B, int ldb,
+                                   int *offsetsB, float beta, float *C, int ldc,
+                                   int *offsetsC, int batchCount) {
   if (transa == CUBLAS_OP_N && transb == CUBLAS_OP_N)
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_N, CUBLAS_OP_N>(
-        m, n, k, alpha, A, lda, tda, B, ldb, tdb, beta, C, ldc, tdc,
-        batchCount);
+        m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc,
+        offsetsC, batchCount);
   else if (transa == CUBLAS_OP_N && transb == CUBLAS_OP_T)
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_N, CUBLAS_OP_T>(
-        m, n, k, alpha, A, lda, tda, B, ldb, tdb, beta, C, ldc, tdc,
-        batchCount);
+        m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc,
+        offsetsC, batchCount);
   else if (transa == CUBLAS_OP_T && transb == CUBLAS_OP_N)
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_T, CUBLAS_OP_N>(
-        m, n, k, alpha, A, lda, tda, B, ldb, tdb, beta, C, ldc, tdc,
-        batchCount);
+        m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc,
+        offsetsC, batchCount);
   else if (transa == CUBLAS_OP_T && transb == CUBLAS_OP_T)
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_T, CUBLAS_OP_T>(
-        m, n, k, alpha, A, lda, tda, B, ldb, tdb, beta, C, ldc, tdc,
-        batchCount);
+        m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc,
+        offsetsC, batchCount);
   else
     assert(false);
 }
 void cublas_sgemm_wrapper_grouped(cublasOperation_t transa,
                                   cublasOperation_t transb, int m, int *n,
                                   int *k, float alpha, const float *A, int lda,
-                                  int tda, const float *B, int ldb, int tdb,
-                                  float beta, float *C, int ldc, int tdc,
-                                  int batchCount) {
+                                  int *offsetsA, const float *B, int ldb,
+                                  int *offsetsB, float beta, float *C, int ldc,
+                                  int *offsetsC, int batchCount) {
   static cublasHandle_t handle = nullptr;
   if (!handle)
     CUBLAS_CHECK(cublasCreate(&handle));
 
   for (int i = 0; i < batchCount; ++i) {
     CUBLAS_CHECK(cublasSgemm(handle, transa, transb, m, n[i], k[i], &alpha,
-                             A + i * tda, lda, B + i * tdb, ldb, &beta,
-                             C + i * tdc, ldc));
+                             A + offsetsA[i], lda, B + offsetsB[i], ldb, &beta,
+                             C + offsetsC[i], ldc));
   }
 }
 void cublas_dgemm_wrapper_grouped(cublasOperation_t transa,
                                   cublasOperation_t transb, int m, int *n,
                                   int *k, double alpha, const double *A,
-                                  int lda, int tda, const double *B, int ldb,
-                                  int tdb, double beta, double *C, int ldc,
-                                  int tdc, int batchCount) {
+                                  int lda, int *offsetsA, const double *B,
+                                  int ldb, int *offsetsB, double beta,
+                                  double *C, int ldc, int *offsetsC,
+                                  int batchCount) {
   static cublasHandle_t handle = nullptr;
   if (!handle)
     CUBLAS_CHECK(cublasCreate(&handle));
 
   for (int i = 0; i < batchCount; ++i) {
     CUBLAS_CHECK(cublasDgemm(handle, transa, transb, m, n[i], k[i], &alpha,
-                             A + i * tda, lda, B + i * tdb, ldb, &beta,
-                             C + i * tdc, ldc));
+                             A + offsetsA[i], lda, B + offsetsB[i], ldb, &beta,
+                             C + offsetsC[i], ldc));
   }
 }
 
@@ -214,22 +215,27 @@ void cublas_sgemm_wrapper(cublasOperation_t transa, cublasOperation_t transb,
 
 void blas_sgemm_wrapper_grouped(cublasOperation_t transa,
                                 cublasOperation_t transb, int m, int *n, int *k,
-                                float alpha, const float *A, int lda, int tda,
-                                const float *B, int ldb, int tdb, float beta,
-                                float *C, int ldc, int tdc, int batchCount) {
+                                float alpha, const float *A, int lda,
+                                int *offsetsA, const float *B, int ldb,
+                                int *offsetsB, float beta, float *C, int ldc,
+                                int *offsetsC, int batchCount) {
   if (use_cutlass)
-    cutlass_sgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda, tda,
-                                  B, ldb, tdb, beta, C, ldc, tdc, batchCount);
+    cutlass_sgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda,
+                                  offsetsA, B, ldb, offsetsB, beta, C, ldc,
+                                  offsetsC, batchCount);
   else
-    cublas_sgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda, tda, B,
-                                 ldb, tdb, beta, C, ldc, tdc, batchCount);
+    cublas_sgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda,
+                                 offsetsA, B, ldb, offsetsB, beta, C, ldc,
+                                 offsetsC, batchCount);
 }
 void blas_dgemm_wrapper_grouped(cublasOperation_t transa,
                                 cublasOperation_t transb, int m, int *n, int *k,
-                                double alpha, const double *A, int lda, int tda,
-                                const double *B, int ldb, int tdb, double beta,
-                                double *C, int ldc, int tdc, int batchCount) {
-  cublas_dgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda, tda, B,
-                               ldb, tdb, beta, C, ldc, tdc, batchCount);
+                                double alpha, const double *A, int lda,
+                                int *offsetsA, const double *B, int ldb,
+                                int *offsetsB, double beta, double *C, int ldc,
+                                int *offsetsC, int batchCount) {
+  cublas_dgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda, offsetsA,
+                               B, ldb, offsetsB, beta, C, ldc, offsetsC,
+                               batchCount);
 }
 }

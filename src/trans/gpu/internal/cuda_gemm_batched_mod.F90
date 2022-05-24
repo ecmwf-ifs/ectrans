@@ -36,14 +36,14 @@ MODULE CUDA_GEMM_BATCHED_MOD
         & CTA, CTB,               &
         & M, N, K,                &
         & ALPHA,                  &
-        & A, LDA, TDA,            &
-        & B, LDB, TDB,            &
+        & A, LDA, OFFSETA,        &
+        & B, LDB, OFFSETB,        &
         & BETA,                   &
-        & C, LDC, TDC,            &
+        & C, LDC, OFFSETC,        &
         & BATCHCOUNT              &
     &) BIND(C, NAME='blas_dgemm_wrapper_grouped')
         USE ISO_C_BINDING
-        INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
+        INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
         REAL(C_DOUBLE), VALUE  :: ALPHA,BETA
         REAL(C_DOUBLE)         :: A(*), B(*), C(*)
     END SUBROUTINE CUDA_DGEMM_GROUPED
@@ -51,14 +51,14 @@ MODULE CUDA_GEMM_BATCHED_MOD
         & CTA, CTB,               &
         & M, N, K,                &
         & ALPHA,                  &
-        & A, LDA, TDA,            &
-        & B, LDB, TDB,            &
+        & A, LDA, OFFSETA,        &
+        & B, LDB, OFFSETB,        &
         & BETA,                   &
-        & C, LDC, TDC,            &
+        & C, LDC, OFFSETC,        &
         & BATCHCOUNT              &
     &) BIND(C, NAME='blas_sgemm_wrapper_grouped')
         USE ISO_C_BINDING
-        INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
+        INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
         REAL(C_FLOAT), VALUE  :: ALPHA,BETA
         REAL(C_FLOAT)         :: A(*), B(*), C(*)
     END SUBROUTINE CUDA_SGEMM_GROUPED
@@ -165,10 +165,10 @@ SUBROUTINE CUDA_DGEMM_BATCHED_OVERLOAD( &
       & TRANSA, TRANSB, &
       & M, N, K, &
       & ALPHA, &
-      & AARRAY, LDA, STRIDEA, &
-      & BARRAY, LDB, STRIDEB, &
+      & AARRAY, LDA, OFFSETA, &
+      & BARRAY, LDB, OFFSETB, &
       & BETA, &
-      & CARRAY, LDC, STRIDEC, &
+      & CARRAY, LDC, OFFSETC, &
       & BATCHCOUNT)
     INTEGER(KIND=C_INT), INTENT(IN) :: TRANSA
     INTEGER(KIND=C_INT), INTENT(IN) :: TRANSB
@@ -178,14 +178,14 @@ SUBROUTINE CUDA_DGEMM_BATCHED_OVERLOAD( &
     REAL(KIND=JPRD) :: ALPHA
     REAL(KIND=JPRD), DIMENSION(*) :: AARRAY
     INTEGER(KIND=JPIM) :: LDA
-    INTEGER(KIND=JPIM) :: STRIDEA
+    INTEGER(KIND=JPIM) :: OFFSETA(:)
     REAL(KIND=JPRD), DIMENSION(*) :: BARRAY
     INTEGER(KIND=JPIM) :: LDB
-    INTEGER(KIND=JPIM) :: STRIDEB
+    INTEGER(KIND=JPIM) :: OFFSETB(:)
     REAL(KIND=JPRD) :: BETA
     REAL(KIND=JPRD), DIMENSION(*) :: CARRAY
     INTEGER(KIND=JPIM) :: LDC
-    INTEGER(KIND=JPIM) :: STRIDEC
+    INTEGER(KIND=JPIM) :: OFFSETC(:)
     INTEGER(KIND=JPIM) :: BATCHCOUNT
 
     !$ACC HOST_DATA USE_DEVICE(AARRAY,BARRAY,CARRAY)
@@ -193,10 +193,10 @@ SUBROUTINE CUDA_DGEMM_BATCHED_OVERLOAD( &
       & TRANSA, TRANSB, &
       & M, N, K, &
       & ALPHA, &
-      & AARRAY, LDA, STRIDEA, &
-      & BARRAY, LDB, STRIDEB, &
+      & AARRAY, LDA, OFFSETA, &
+      & BARRAY, LDB, OFFSETB, &
       & BETA, &
-      & CARRAY, LDC, STRIDEC, &
+      & CARRAY, LDC, OFFSETC, &
       & BATCHCOUNT)
     !$ACC END HOST_DATA
   END SUBROUTINE CUDA_DGEMM_GROUPED_OVERLOAD
@@ -205,10 +205,10 @@ SUBROUTINE CUDA_DGEMM_BATCHED_OVERLOAD( &
       & TRANSA, TRANSB, &
       & M, N, K, &
       & ALPHA, &
-      & AARRAY, LDA, STRIDEA, &
-      & BARRAY, LDB, STRIDEB, &
+      & AARRAY, LDA, OFFSETA, &
+      & BARRAY, LDB, OFFSETB, &
       & BETA, &
-      & CARRAY, LDC, STRIDEC, &
+      & CARRAY, LDC, OFFSETC, &
       & BATCHCOUNT)
     INTEGER(KIND=C_INT), INTENT(IN) :: TRANSA
     INTEGER(KIND=C_INT), INTENT(IN) :: TRANSB
@@ -218,14 +218,14 @@ SUBROUTINE CUDA_DGEMM_BATCHED_OVERLOAD( &
     REAL(KIND=JPRM) :: ALPHA
     REAL(KIND=JPRM), DIMENSION(*) :: AARRAY
     INTEGER(KIND=JPIM) :: LDA
-    INTEGER(KIND=JPIM) :: STRIDEA
+    INTEGER(KIND=JPIM) :: OFFSETA(:)
     REAL(KIND=JPRM), DIMENSION(*) :: BARRAY
     INTEGER(KIND=JPIM) :: LDB
-    INTEGER(KIND=JPIM) :: STRIDEB
+    INTEGER(KIND=JPIM) :: OFFSETB(:)
     REAL(KIND=JPRM) :: BETA
     REAL(KIND=JPRM), DIMENSION(*) :: CARRAY
     INTEGER(KIND=JPIM) :: LDC
-    INTEGER(KIND=JPIM) :: STRIDEC
+    INTEGER(KIND=JPIM) :: OFFSETC(:)
     INTEGER(KIND=JPIM) :: BATCHCOUNT
 
     !$ACC HOST_DATA USE_DEVICE(AARRAY,BARRAY,CARRAY)
@@ -233,10 +233,10 @@ SUBROUTINE CUDA_DGEMM_BATCHED_OVERLOAD( &
       & TRANSA, TRANSB, &
       & M, N, K, &
       & ALPHA, &
-      & AARRAY, LDA, STRIDEA, &
-      & BARRAY, LDB, STRIDEB, &
+      & AARRAY, LDA, OFFSETA, &
+      & BARRAY, LDB, OFFSETB, &
       & BETA, &
-      & CARRAY, LDC, STRIDEC, &
+      & CARRAY, LDC, OFFSETC, &
       & BATCHCOUNT)
     !$ACC END HOST_DATA
   END SUBROUTINE CUDA_SGEMM_GROUPED_OVERLOAD
