@@ -433,21 +433,9 @@ MODULE TRLTOG_MOD
 
 #ifdef ACCGPU
   !$ACC DATA CREATE(ZCOMBUFS,ZCOMBUFR)
-
-  !$ACC KERNELS DEFAULT(NONE)
 #endif
 #ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:ZCOMBUFS,ZCOMBUFR)
-
-  !$OMP TARGET
-#endif
-  ZCOMBUFS(:,:) = 0.
-  ZCOMBUFR(:,:) = 0.
-#ifdef ACCGPU
-    !$ACC END KERNELS
-#endif
-#ifdef OMPGPU
-    !$OMP END TARGET
 #endif
 
 #ifdef ACCGPU
@@ -524,11 +512,10 @@ MODULE TRLTOG_MOD
               IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JKL
               IF(LLINDER) THEN
                 IFLD = KPTRGP(JFLD)
-                PGP(JK,IFLD,JBLK) = PGLAT(JFLD,KINDEX(IPOS))
               ELSE
                 IFLD = IFLDOFF(JFLD)
-                PGP(JK,IFLD,JBLK) = PGLAT(JFLD,KINDEX(IPOS))
               ENDIF
+              PGP(JK,IFLD,JBLK) = PGLAT(JFLD,KINDEX(IPOS))
             ENDIF
           ENDDO
         ENDDO
