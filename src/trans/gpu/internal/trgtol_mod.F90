@@ -129,7 +129,7 @@ MODULE TRGTOL_MOD
   INTEGER(KIND=JPIM) :: IGP3APARS(KF_GP),IGP3ALEVS(KF_GP),IGP3BPARS(KF_GP),IGP3BLEVS(KF_GP)
   INTEGER(KIND=JPIM) :: IUVPAR,IUVLEV,IGP2PAR,IGP3ALEV,IGP3APAR,IGP3BLEV,IGP3BPAR
   INTEGER(KIND=JPIM) :: IOFF,IOFF1,J1,J2
-  INTEGER(KIND=JPIM) :: KINDEX(D%NLENGTF),INDOFF(NPROC),IFLDOFF(KF_FS)
+  INTEGER(KIND=JPIM) :: KINDEX(D%NLENGTF),INDOFF(NPROC)
   INTEGER(KIND=JPIM) :: ISEND_FLD_TOTAL(NPROC),ISEND_FLD_CNT
   INTEGER(KIND=JPIM) :: INUMFLDS
   INTEGER(KIND=JPIM) :: IGPTRSEND(2,NGPBLKS,NPRTRNS)
@@ -223,8 +223,6 @@ MODULE TRGTOL_MOD
 
   CALL INIGPTR(IGPTRSEND,IGPTRRECV)
 
-  IBUFLENS = 0
-  INSEND   = 0
   ! Prepare sender arrays
   DO JROC=1,NPROC
 
@@ -244,19 +242,8 @@ MODULE TRGTOL_MOD
     ! the W-set is horizontal distribution only - how much data are we going to send to
     ! that process? IGPTRRECV tells me about one layer.
     ISENDTOT(JROC) = IGPTRRECV(ISETW)*ISEND_FLD_TOTAL(JROC)
-  
-    IF( JROC /= MYPROC) THEN
-      ! IBUFLENS sums up all but my process
-      IBUFLENS = MAX(IBUFLENS,ISENDTOT(JROC))
-      IF(ISENDTOT(JROC) > 0) THEN
-        ! I have to send something, so let me store that
-        INSEND = INSEND+1
-        JSEND(INSEND)=JROC
-      ENDIF
-    ENDIF
   ENDDO
 
-  INRECV   = 0
   INDOFFX  = 0
   IBUFLENR = 0
   ! Prepare receiver arrays
@@ -280,16 +267,6 @@ MODULE TRGTOL_MOD
     ENDDO
     ! We always receive the full fourier space
     IRECVTOT(JROC) = IPOS*KF_FS
-
-    IF( JROC /= MYPROC) THEN
-      ! IBUFLENR sums up all but my process
-      IBUFLENR = MAX(IBUFLENR,IRECVTOT(JROC))
-      IF(IRECVTOT(JROC) > 0) THEN
-        ! I have to recv something, so let me store that
-        INRECV = INRECV + 1
-        JRECV(INRECV)=JROC
-      ENDIF
-    ENDIF
 
     IF(IRECVTOT(JROC) > 0) THEN
       ! If  I have to recv something, we need to fill KINDEX, this is the unpacking instruction...
@@ -334,9 +311,9 @@ MODULE TRGTOL_MOD
       IF(KVSET(JFLD) == MYSETV .OR. KVSET(JFLD) == -1) THEN
         IFLDS = IFLDS+1
         IF(PRESENT(KPTRGP)) THEN
-          IFLDOFF(IFLDS) = KPTRGP(JFLD)
+          IFLDA(IFLDS) = KPTRGP(JFLD)
         ELSE
-          IFLDOFF(IFLDS) = JFLD
+          IFLDA(IFLDS) = JFLD
         ENDIF
       ENDIF
     ENDDO
@@ -347,7 +324,7 @@ MODULE TRGTOL_MOD
     ENDDO
     JK_MAX = MAXVAL(IGPTRSEND(2,:,MYSETW)-IGPTRSEND(1,:,MYSETW))+1
 
-    !$ACC DATA COPYIN(IFLDOFF,IGPTROFF) ASYNC(1)
+    !$ACC DATA COPYIN(IFLDA(1:IFLDS),IGPTROFF) ASYNC(1)
 
     CALL GSTATS(1601,0)
     IF(PRESENT(PGP)) THEN
@@ -360,7 +337,7 @@ MODULE TRGTOL_MOD
             JK = JKL+IFIRST-1
             IF(IFIRST > 0 .AND. JK <= ILAST) THEN
               IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JKL
-              PGLAT(JFLD,KINDEX(IPOS)) = PGP(JK,IFLDOFF(JFLD),JBLK)
+              PGLAT(JFLD,KINDEX(IPOS)) = PGP(JK,IFLDA(JFLD),JBLK)
             ENDIF
           ENDDO
         ENDDO
@@ -375,7 +352,7 @@ MODULE TRGTOL_MOD
             JK = JKL+IFIRST-1
             IF(IFIRST > 0 .AND. JK <= ILAST) THEN
               IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JKL
-              IFLD = IFLDOFF(JFLD)
+              IFLD = IFLDA(JFLD)
               IF(LLUV(IFLD)) THEN
                 PGLAT(JFLD,KINDEX(IPOS)) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK)
               ELSEIF(LLGP2(IFLD)) THEN
@@ -389,6 +366,10 @@ MODULE TRGTOL_MOD
           ENDDO
         ENDDO
       ENDDO
+
+      ! send to self is done, so set those parts to 0
+      ISENDTOT(MYPROC) = 0
+      IRECVTOT(MYPROC) = 0
     ENDIF
     CALL GSTATS(1601,1)
 
@@ -396,6 +377,25 @@ MODULE TRGTOL_MOD
 
   ENDIF
 
+  IBUFLENR = MAXVAL(IRECVTOT)
+  IBUFLENS = MAXVAL(ISENDTOT)
+  ! Figure out processes that send or recv something
+  INSEND   = 0
+  INRECV   = 0
+  DO JROC=1,NPROC
+    IF( JROC /= MYPROC) THEN
+      IF(IRECVTOT(JROC) > 0) THEN
+        ! I have to recv something, so let me store that
+        INRECV = INRECV + 1
+        JRECV(INRECV)=JROC
+      ENDIF
+      IF(ISENDTOT(JROC) > 0) THEN
+        ! I have to send something, so let me store that
+        INSEND = INSEND+1
+        JSEND(INSEND)=JROC
+      ENDIF
+    ENDIF
+  ENDDO
   ! Send loop.............................................................
 
   
@@ -413,59 +413,57 @@ MODULE TRGTOL_MOD
     DO INS=1,INSEND
       ISEND=JSEND(INS)
       CALL PE2SET(ISEND,ISETA,ISETB,ISETW,ISETV)
+
       ISEND_FLD_CNT = ISEND_FLD_TOTAL(ISEND)
-      IFLD = 0
+
+      IFLDS = 0
       DO JFLD=1,KF_GP
         IF(KVSET(JFLD) == ISETV .OR. KVSET(JFLD) == -1 ) THEN
-          IFLD = IFLD+1
-          IFLDA(IFLD)=JFLD
+          IFLDS = IFLDS+1
+          IF(PRESENT(KPTRGP)) THEN
+            IFLDA(IFLDS)=KPTRGP(JFLD)
+          ELSE
+            IFLDA(IFLDS)=JFLD
+          ENDIF
         ENDIF
       ENDDO
-  
-      IPOS = 0
-      DO JBLK=1,NGPBLKS
-        IFIRST = IGPTRSEND(1,JBLK,ISETW)
-        ILAST = IGPTRSEND(2,JBLK,ISETW)
-        IPOS = IPOS+ILAST-IFIRST+1
-      ENDDO
+
       IGPTROFF(1)=0
       DO JBLK=2,NGPBLKS
         IGPTROFF(JBLK)=IGPTROFF(JBLK-1)+IGPTRSEND(2,JBLK-1,ISETW)-IGPTRSEND(1,JBLK-1,ISETW)+1
       ENDDO
       JK_MAX = MAXVAL(IGPTRSEND(2,:,ISETW)-IGPTRSEND(1,:,ISETW))+1
 
-      !$ACC DATA COPYIN(IGPTROFF,IFLDA) ASYNC(1)
+      ! Total send size
+      IPOS = IGPTRRECV(ISETW)
+
+      !$ACC DATA COPYIN(IGPTROFF,IFLDA(1:ISEND_FLD_CNT)) ASYNC(1)
 
       IF(PRESENT(PGP)) THEN
         !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(JK,JI,IFLDT,IFIRST,ILAST) ASYNC(1)
-        DO JJ=1,ISEND_FLD_CNT
-          DO JBLK=1,NGPBLKS
+        DO JBLK=1,NGPBLKS
+          DO JFLD=1,ISEND_FLD_CNT
             DO JKL=1, JK_MAX
-              IFLDT=IFLDA(JJ)
               IFIRST = IGPTRSEND(1,JBLK,ISETW)
               ILAST = IGPTRSEND(2,JBLK,ISETW)
               JK = JKL+IFIRST-1
-              JI=(JJ-1)*IPOS+IGPTROFF(JBLK)+JKL
+              JI=(JFLD-1)*IPOS+IGPTROFF(JBLK)+JKL
               IF(IFIRST > 0 .AND. JK <= ILAST) THEN
-                IF(PRESENT(KPTRGP)) THEN
-                  ZCOMBUFS(JI,INS) = PGP(JK,KPTRGP(IFLDT),JBLK)
-                ELSE
-                  ZCOMBUFS(JI,INS) = PGP(JK,IFLDT,JBLK)
-                ENDIF
+                ZCOMBUFS(JI,INS) = PGP(JK,IFLDA(JFLD),JBLK)
               ENDIF
             ENDDO
           ENDDO
         ENDDO
       ELSE
         !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(JK,JI,IFLDT,IFIRST,ILAST) ASYNC(1)
-        DO JJ=1,ISEND_FLD_CNT
-          DO JBLK=1,NGPBLKS
+        DO JBLK=1,NGPBLKS
+          DO JFLD=1,ISEND_FLD_CNT
             DO JKL=1, JK_MAX
-              IFLDT=IFLDA(JJ)
+              IFLDT=IFLDA(JFLD)
               IFIRST = IGPTRSEND(1,JBLK,ISETW)
               ILAST = IGPTRSEND(2,JBLK,ISETW)
               JK = JKL+IFIRST-1
-              JI=(JJ-1)*IPOS+IGPTROFF(JBLK)+JKL
+              JI=(JFLD-1)*IPOS+IGPTROFF(JBLK)+JKL
               IF(IFIRST > 0 .AND. JK <= ILAST) THEN
                 IF(LLUV(IFLDT)) THEN
                   ZCOMBUFS(JI,INS) = PGPUV(JK,IUVLEVS(IFLDT),IUVPARS(IFLDT),JBLK)
