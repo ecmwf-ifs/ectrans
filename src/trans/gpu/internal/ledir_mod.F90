@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -299,6 +300,7 @@ DO KMLOC=1,D_NUMP
 ENDDO
 
 IF(KMLOC0 > 0) THEN
+   ISKIP = 2
    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE)
    DO J=1,R_NDGNH   
       DO JK=1,KFC
