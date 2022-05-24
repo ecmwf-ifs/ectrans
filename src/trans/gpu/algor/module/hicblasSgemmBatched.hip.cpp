@@ -88,7 +88,7 @@ extern "C" void hipblasSgemmBatched_wrapper (char transa, char transb, int m, in
 
 }
 
-extern "C" void hipblasSgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, float alpha, const float *A, int lda, long long tda, const float *B, int ldb, long long tdb, float beta, float *C, int ldc, long long tdc, int batchCount)
+extern "C" void hipblasSgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, float alpha, const float *A, int lda, int tda, const float *B, int ldb, int tdb, float beta, float *C, int ldc, int tdc, int batchCount)
 {
 
 

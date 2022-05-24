@@ -74,7 +74,9 @@ INTERFACE
         REAL(C_DOUBLE),      DIMENSION(LDB,*) :: B
         REAL(C_DOUBLE),      DIMENSION(LDC,*) :: C
     END SUBROUTINE HIP_DGEMM_BATCHED
+END INTERFACE
 
+INTERFACE
     SUBROUTINE HIP_DGEMM_STRIDED_BATCHED(&
         & CTA, CTB,               &
         & M, N, K,                &
@@ -88,12 +90,15 @@ INTERFACE
         USE ISO_C_BINDING
         CHARACTER(1,C_CHAR),  VALUE            :: CTA, CTB
         INTEGER(C_INT),       VALUE            :: M, N, K, LDA, LDB, LDC, BATCHCOUNT
-        INTEGER(C_LONG_LONG), VALUE            :: TDA,TDB,TDC
-        REAL(C_DOUBLE),        VALUE            :: ALPHA, BETA
-        REAL(C_DOUBLE),        DIMENSION(LDA,*) :: A
-        REAL(C_DOUBLE),        DIMENSION(LDB,*) :: B
-        REAL(C_DOUBLE),        DIMENSION(LDC,*) :: C
+        INTEGER(C_INT),       VALUE            :: TDA,TDB,TDC
+        REAL(C_DOUBLE),       VALUE            :: ALPHA, BETA
+        REAL(C_DOUBLE),       DIMENSION(LDA,*) :: A
+        REAL(C_DOUBLE),       DIMENSION(LDB,*) :: B
+        REAL(C_DOUBLE),       DIMENSION(LDC,*) :: C
     END SUBROUTINE HIP_DGEMM_STRIDED_BATCHED
+END INTERFACE
+
+INTERFACE
 
     subroutine hip_dgemm_batched_finalize() bind(C,name='hipblasDgemmBatched_finalize')
     end subroutine hip_dgemm_batched_finalize
@@ -120,9 +125,9 @@ INTERFACE
         REAL(C_FLOAT),       DIMENSION(LDB,*) :: B
         REAL(C_FLOAT),       DIMENSION(LDC,*) :: C
     END SUBROUTINE HIP_SGEMM_BATCHED
-!!END INTERFACE
+END INTERFACE
 
-!!INTERFACE
+INTERFACE
     SUBROUTINE HIP_SGEMM_STRIDED_BATCHED(&
         & CTA, CTB,               &
         & M, N, K,                &
@@ -136,13 +141,16 @@ INTERFACE
         USE ISO_C_BINDING
         CHARACTER(1,C_CHAR),  VALUE            :: CTA, CTB
         INTEGER(C_INT),       VALUE            :: M, N, K, LDA, LDB, LDC, BATCHCOUNT
-        INTEGER(C_LONG_LONG), VALUE            :: TDA,TDB,TDC
+        INTEGER(C_INT),       VALUE            :: TDA,TDB,TDC
         REAL(C_FLOAT),        VALUE            :: ALPHA, BETA
         REAL(C_FLOAT),        DIMENSION(LDA,*) :: A
         REAL(C_FLOAT),        DIMENSION(LDB,*) :: B
         REAL(C_FLOAT),        DIMENSION(LDC,*) :: C
     END SUBROUTINE HIP_SGEMM_STRIDED_BATCHED
 
+END INTERFACE
+
+INTERFACE
     subroutine hip_sgemm_batched_finalize() bind(C,name='hipblasSgemmBatched_finalize')
     end subroutine hip_sgemm_batched_finalize
 

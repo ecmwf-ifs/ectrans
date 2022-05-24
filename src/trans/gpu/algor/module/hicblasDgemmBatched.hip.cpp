@@ -101,7 +101,7 @@ extern "C" void hipblasDgemmBatched_wrapper (char transa, char transb, int m, in
 
 }
 
-extern "C" void hipblasDgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, long long tda, const double *B, int ldb, long long tdb, double beta, double *C, int ldc, long long tdc, int batchCount)
+extern "C" void hipblasDgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, int tda, const double *B, int ldb, int tdb, double beta, double *C, int ldc, int tdc, int batchCount)
 {
 
 
