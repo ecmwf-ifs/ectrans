@@ -194,21 +194,8 @@ CALL GSTATS(106,0)
 !write(301,*) 'sizey: ', myproc, size(zgtf,1), KF_FS
 
 CALL GSTATS(1640,0)
-!!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,IGL)
-IF(KF_FS>0) THEN
-  ! TRY THIS IN CHUNKS, ISIZE is even, need equal and even chunks too
-  ISIZE=size(zgtf,1)
-  !ICHUNKS=2
-  !ICHUNK=ISIZE/ICHUNKS
-  !ICHUNK=ICHUNK+MOD(ICHUNK,2)
-  !DO JK=ICHUNKS,1,-1
-    ! repeat some fields to have constant chunk size
-    !IOFF=MAX(1,ISIZE-(ICHUNKS-JK+1)*ICHUNK+1)
-    IOFF=1
-    !ICHUNK=2*KF_FS+2
-    ICHUNK=ISIZE
-    CALL FTDIR(ICHUNK,KF_FS)
-  !ENDDO
+IF (KF_FS > 0) THEN
+  CALL FTDIR(SIZE(ZGTF,1),KF_FS)
 ENDIF
 
 CALL GSTATS(1640,1)
