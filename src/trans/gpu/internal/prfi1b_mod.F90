@@ -87,7 +87,8 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
   
   IF(PRESENT(KFLDPTR)) THEN
-   
+   PRINT *, "Not implemented"
+   STOP 4
    
    !loop over wavenumber
    
@@ -128,34 +129,28 @@ ELSE
 
   !loop over wavenumber
 
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IASM0,INM,JN) DEFAULT(NONE)
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE)
   DO KMLOC=1,D_NUMP
-    DO JFLD=1,KFIELDS
-      KM = D_MYMS(KMLOC)
-      IASM0 = D_NASM0(KM)
+    DO JN=0,R_NSMAX+3
+      DO JFLD=1,KFIELDS
+        KM = D_MYMS(KMLOC)
 
-      !$ACC LOOP SEQ
-      DO JN=2,R_NSMAX+2-KM
-        INM = IASM0+((R_NSMAX+2-JN)-KM)*2
-        IF( INM .LT. KDIM ) THEN ! TODO is this really needed, we don't have it in the reverse...
+        IF (JN <= 1) THEN
+          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+        ELSEIF (JN <= R_NSMAX+2-KM) THEN
+          IASM0 = D_NASM0(KM)
+          INM = IASM0+((R_NSMAX+2-JN)-KM)*2
           PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
           PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
-        END IF
+        ELSEIF (JN <= R_NSMAX+3-KM) THEN
+          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+        ENDIF
       ENDDO
     ENDDO
-  END DO
+  ENDDO
 
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,JN)
-  DO KMLOC=1,D_NUMP
-    DO JFLD=1,2*KFIELDS
-      PIA(JFLD,1,KMLOC) = 0.0_JPRB
-      PIA(JFLD,2,KMLOC) = 0.0_JPRB
-
-      KM = D_MYMS(KMLOC)
-      JN = R_NSMAX+3-KM
-      PIA(JFLD,JN+1,KMLOC) = 0.0_JPRB
-    ENDDO
-  END DO
 END IF
 
    !$ACC END DATA
