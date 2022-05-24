@@ -190,15 +190,17 @@ CALL GSTATS(414,0)
 #ifdef ACCGPU
 !$ACC HOST_DATA USE_DEVICE(ZAA,ZINPA,ZOUT)
 #endif
-CALL HIP_GEMM_BATCHED( &
-  & 'N', 'N', &
-  & 2*KF_FS, TDZAA, R_NDGNH, &
-  & 1.0_JPRBT, &
-  & ZINPA, 2*KF_FS, R_NDGNH, &
-  & ZAA, R_NDGNH, TDZAA, &
-  & 0.0_JPRBT, &
-  & ZOUT, 2*KF_FS, TDZAA, &
-  & D_NUMP)
+DO KMLOC=1,D_NUMP
+  CALL HIP_GEMM_BATCHED( &
+    & 'N', 'N', &
+    & 2*KF_FS, TDZAA, R_NDGNH, &
+    & 1.0_JPRBT, &
+    & ZINPA((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+    & ZAA(:,:,KMLOC), R_NDGNH, TDZAA*R_NDGNH, &
+    & 0.0_JPRBT, &
+    & ZOUT((KMLOC-1)*TDZAA*2*KF_FS+1:), 2*KF_FS, TDZAA*2*KF_FS, &
+    & 1)
+ENDDO
 #ifdef OMPGPU
 !$OMP END TARGET DATA
 #endif
@@ -309,15 +311,17 @@ CALL GSTATS(414,0)
 #ifdef ACCGPU
 !$ACC HOST_DATA USE_DEVICE(ZAS,ZINPS,ZOUT)
 #endif
-CALL HIP_GEMM_BATCHED( &
-  & 'N', 'N', &
-  & 2*KF_FS, TDZAS, R_NDGNH, &
-  & 1.0_JPRBT, &
-  & ZINPS, 2*KF_FS, R_NDGNH, &
-  & ZAS, R_NDGNH, TDZAS, &
-  & 0.0_JPRBT, &
-  & ZOUT, 2*KF_FS, TDZAS, &
-  & D_NUMP)
+DO KMLOC=1,D_NUMP
+  CALL HIP_GEMM_BATCHED( &
+    & 'N', 'N', &
+    & 2*KF_FS, TDZAS, R_NDGNH, &
+    & 1.0_JPRBT, &
+    & ZINPS((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+    & ZAS(:,:,KMLOC), R_NDGNH, TDZAS*R_NDGNH, &
+    & 0.0_JPRBT, &
+    & ZOUT((KMLOC-1)*TDZAS*2*KF_FS+1:), 2*KF_FS, TDZAS*2*KF_FS, &
+    & 1)
+ENDDO
 #ifdef OMPGPU
 !$OMP END TARGET DATA
 #endif
