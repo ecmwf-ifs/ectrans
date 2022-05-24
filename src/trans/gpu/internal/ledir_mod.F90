@@ -146,12 +146,14 @@ IF ( KMODE == -1 ) THEN
   DO KMLOC=1,D_NUMP
     DO JK=1,2*KF_FS
       KM = D_MYMS(KMLOC)
-      ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+      IF (KM /= 0) THEN
+        ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
  
-      !$ACC LOOP SEQ
-      DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
-        DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
-      ENDDO
+        !$ACC LOOP SEQ
+        DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
+          DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
+        ENDDO
+      ENDIF
     ENDDO
   ENDDO
 
@@ -193,11 +195,13 @@ IF ( KMODE == -1 ) THEN
   DO KMLOC=1,D_NUMP
     DO JK=1,2*KF_FS
       KM = D_MYMS(KMLOC)
-      IA  = 1+MOD(R_NTMAX-KM+2,2)
-      !$ACC LOOP SEQ
-      DO J=1,(R_NTMAX-KM+2)/2
-        POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
-      ENDDO
+      IF (KM /= 0) THEN
+        IA  = 1+MOD(R_NTMAX-KM+2,2)
+        !$ACC LOOP SEQ
+        DO J=1,(R_NTMAX-KM+2)/2
+          POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
+        ENDDO
+      ENDIF
     ENDDO
   ENDDO
 
@@ -283,11 +287,13 @@ ELSE
   DO KMLOC=1,D_NUMP
     DO JK=1,2*KF_FS
       KM = D_MYMS(KMLOC)
-      ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-      !$ACC LOOP SEQ
-      DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
-        DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
-      ENDDO
+      IF (KM /= 0) THEN
+        ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+        !$ACC LOOP SEQ
+        DO J=1,MIN(R_NDGNH,G_NDGLU(KM))
+          DZBST((JK-1)+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
+        ENDDO
+      ENDIF
     ENDDO
   ENDDO
 
@@ -328,11 +334,13 @@ ELSE
   DO KMLOC=1,D_NUMP
     DO JK=1,2*KF_FS
       KM = D_MYMS(KMLOC)
-      IS  = 1+MOD(R_NTMAX-KM+1,2)
-      !$ACC LOOP SEQ
-      DO J=1,(R_NTMAX-KM+3)/2
-        POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
-      ENDDO
+      IF (KM /= 0) THEN
+        IS  = 1+MOD(R_NTMAX-KM+1,2)
+        !$ACC LOOP SEQ
+        DO J=1,(R_NTMAX-KM+3)/2
+          POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
+        ENDDO
+      ENDIF
     ENDDO
   ENDDO
 
