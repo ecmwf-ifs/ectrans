@@ -310,7 +310,11 @@ ELSE
     IF( NPRTRV*NPRTRW /= NPROC ) CYCLE
     IF( NPRTRV > NPRTRW ) EXIT
     IF( NPRTRW > NSPECRESMIN ) CYCLE
+! With CUDA AWARE MPI we don't need any OpenMP so there is no need for this! Effectively this is even
+! undesireable because it may trigger different domain decompositions for no reasons on different machines
+#ifndef USE_CUDA_AWARE_MPI_FT
     IF( NPRTRW <= NSPECRESMIN/(2*OML_MAX_THREADS()) ) EXIT
+#endif
   ENDDO
   ! GO FOR APPROX SQUARE PARTITION FOR BACKUP
   IF( NPRTRV*NPRTRW /= NPROC .OR. NPRTRW > NSPECRESMIN .OR. NPRTRV > NPRTRW ) THEN
