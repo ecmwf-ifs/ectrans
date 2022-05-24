@@ -67,15 +67,14 @@ INTEGER(KIND=JPIM),INTENT(IN)  :: STRIDE,KF_FS
 INTEGER(KIND=JPIM)  :: KGL
 !!!REAL(KIND=JPRBT), INTENT(INOUT) :: PREEL(STRIDE,D%NLENGTF)
 
-INTEGER(KIND=JPIM) :: IGLG,IST,JJ,JF,IST1
+INTEGER(KIND=JPIM) :: IGLG,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF
 INTEGER(KIND=JPIM) :: IPLAN_R2C
 INTEGER(KIND=JPIM) :: JMAX
 REAL(KIND=JPRBT)    :: SCAL
 
-INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISCAL
+INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,JTRUNC_START
 INTEGER(KIND=JPIM) :: OFFSET_VAR
-integer :: istat
 real(kind=jprbt), allocatable :: zgtf2(:,:)
 
 !     ------------------------------------------------------------------
@@ -97,7 +96,6 @@ allocate(zgtf2(size(zgtf,1),size(zgtf,2)))
 
 !$ACC DATA CREATE(ZGTF2)
 
-!!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(KGL,IOFF,IGLG,IPLAN_R2C,istat)
 DO KGL=IBEG,IEND,IINC
 
   IOFF=D%NSTAGTF(KGL)+1
@@ -108,31 +106,31 @@ DO KGL=IBEG,IEND,IINC
   CALL EXECUTE_PLAN_FFTC(IPLAN_R2C,-1,ZGTF(1,IOFF),ZGTF2(1,IOFF))
   !$ACC end host_data
 END DO
-!!$OMP END PARALLEL DO
-
-istat = cuda_Synchronize()
 
 OFFSET_VAR=D_NPTRLS(MYSETW)
-!$ACC parallel loop collapse(2) private(JMAX,JJ,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
-DO IGLG=IBEG+OFFSET_VAR-1,IEND+OFFSET_VAR-1,IINC
+!$ACC parallel loop collapse(2) private(JMAX,JJ,IOFF,SCAL,JTRUNC_START) DEFAULT(NONE)
+DO KGL=IBEG,IEND,IINC
    DO JF=1,2*KF_FS
-     JMAX = G_NLOEN(IGLG)
-     SCAL = 1._JPRBT/REAL(JMAX,JPRBT)
-     IST  = 2*(G_NMEN(IGLG)+1)
-     KGL=IGLG-OFFSET_VAR+1
+     IGLG = OFFSET_VAR+KGL-1
      IOFF=D_NSTAGTF(KGL)+1
 
-     !$ACC LOOP SEQ
-     DO JJ=1, JMAX
-        ZGTF(JF,IOFF+JJ-1)= SCAL * ZGTF2(JF, IOFF+JJ-1)
-      ENDDO
+     JMAX = G_NLOEN(IGLG)
+     ! Multiply with two because we are in complex domain
+     ! TODO I am not sure if this is +1,0,-1
+     JTRUNC_START = MIN(2*(G_NMEN(IGLG)+1)-1,JMAX)
 
-      !! WHAT'S GOING ON HERE? TRUNCATING?
-      IF (JMAX== 1) ZGTF(JF,IST+IOFF-1) = 0.0_JPRBT
-      !$ACC LOOP SEQ
-      DO JJ=1,JMAX+R%NNOEXTZL+3-IST
-        ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
-      ENDDO
+     SCAL = 1._JPRBT/REAL(JMAX,JPRBT)
+     !$ACC LOOP SEQ
+     DO JJ=1, JTRUNC_START, 2
+        ZGTF(JF,IOFF+JJ-1)= SCAL * ZGTF2(JF, IOFF+JJ-1)
+     ENDDO
+
+     ! In fact this is not needed, probably, because FOURIER_OUT could only pack
+     ! what it needs
+     !$ACC LOOP SEQ
+     DO JJ=JTRUNC_START + 1, JMAX, 2
+        ZGTF(JF,IOFF+JJ-1)= 0.0_JPRBT
+     ENDDO
    ENDDO
 ENDDO
 !$acc end data
