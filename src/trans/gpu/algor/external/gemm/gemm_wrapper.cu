@@ -93,7 +93,7 @@ void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
                          cutlass::layout::RowMajor>,                //
       float, cutlass::layout::ColumnMajor,                          //
       float,                                                        //
-      OperatorClass, cutlass::arch::Sm50,                           //
+      OperatorClass, cutlass::arch::Sm70,                           //
       ThreadblockShape, WarpShape, InstructionShape,                //
       cutlass::epilogue::thread::LinearCombination<                 //
           float,                                                    //
