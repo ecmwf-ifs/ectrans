@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -66,10 +67,10 @@ INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 TYPE(C_PTR) :: IPLAN_C2R
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE, IDIM2
-integer :: istat,idev, iunit
+INTEGER :: ISTAT,IDEV, IUNIT
 INTEGER :: I, J
 
-REAL(KIND=JPRBT), allocatable  :: ZREEL2(:,:)
+REAL(KIND=JPRBT), ALLOCATABLE  :: ZREEL2(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -131,8 +132,8 @@ ISTAT = DEVICE_SYNCHRONIZE()
 DO KGL=IBEG,IEND,IINC
   IOFF=D_NSTAGTF(KGL)+1
   IGLG  = D_NPTRLS(MYSETW)+KGL-1
-  CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G_NLOEN(IGLG),KFIELDS)
-  CALL EXECUTE_PLAN_FFT(1,G_NLOEN(IGLG),PREEL(1, ioff),ZREEL2(1, ioff),IPLAN_C2R)
+  CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G_NLOEN(IGLG),KFIELDS,KFIELDS)
+  CALL EXECUTE_PLAN_FFT(1,G_NLOEN(IGLG),PREEL(1, IOFF),ZREEL2(1, IOFF),IPLAN_C2R)
 END DO
 
 ISTAT = DEVICE_SYNCHRONIZE()

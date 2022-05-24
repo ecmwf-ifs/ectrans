@@ -8,11 +8,12 @@
 
 extern "C"
 void
-hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp)
+hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *stridep)
 {
     int ISIGN = *ISIGNp;
     int N = *Np;
     int LOT = *LOTp;
+    int stride = *stridep;
 
     *plan = new hipfftHandle;
 
@@ -32,7 +33,6 @@ hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp)
     //  hipfftSetAutoAllocation(plan, false);
 
     int embed[1];
-    int stride;
     int dist;
 
     #ifdef TRANS_SINGLE
@@ -44,7 +44,6 @@ hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp)
     #endif
 
     embed[0] = 1;
-    stride   = LOT;
     dist     = 1;
 
     fftSafeCall(hipfftCreate(*plan));
