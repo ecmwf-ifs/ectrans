@@ -110,6 +110,19 @@ IF(.NOT.D%LGRIDONLY) THEN
   ALLOCATE(D%NPNTGTB1(D%NUMP,R%NDGL))
   IF(LLP2)WRITE(NOUT,9) 'D%NPNTGTB1 ',SIZE(D%NPNTGTB1 ),SHAPE(D%NPNTGTB1 )
 
+  ! Global offsets of processors
+  D%NSTAGT0B(1) = 0
+  D%NSTAGT1B(1) = 0
+  DO JA=2,NPRTRNS
+    D%NSTAGT0B(JA) = D%NSTAGT0B(JA-1)+D%NLTSGTB(JA-1)
+    D%NSTAGT1B(JA) = D%NSTAGT1B(JA-1)+D%NLTSFTB(JA-1)
+  ENDDO
+
+  ! Global size of foubuf
+  D%NLENGT0B = D%NSTAGT0B(NPRTRNS)+D%NLTSGTB(NPRTRNS)
+  D%NLENGT1B = D%NSTAGT1B(NPRTRNS)+D%NLTSFTB(NPRTRNS)
+
+  ! Global offsets of grid points
   DO JA=1,NPRTRW
     IPOS = 0
     DO JGL=1,D%NULTPP(MYSETW)
@@ -117,7 +130,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       DO JML=D%NPTRMS(JA),D%NPTRMS(JA)+D%NUMPP(JA)-1
         IM = D%NALLMS(JML)
         IF (IM  <=  G%NMEN(IGL)) THEN
-          D%NPNTGTB0(IM,JGL) = IPOS
+          D%NPNTGTB0(IM,JGL) = D%NSTAGT0B(D%NPROCM(IM)) + IPOS
           IPOS = IPOS+1
         ELSE
           D%NPNTGTB0(IM,JGL) = -99
@@ -133,7 +146,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       DO JM=1,D%NUMP
         IM = D%MYMS(JM)
         IF (IM  <=  G%NMEN(IGL)) THEN
-          D%NPNTGTB1(JM,IGL) = IPOS
+          D%NPNTGTB1(JM,IGL) = D%NSTAGT1B(D%NPROCL(IGL)) + IPOS
           IPOS = IPOS+1
         ELSE
           D%NPNTGTB1(JM,IGL) = -99
@@ -141,18 +154,9 @@ IF(.NOT.D%LGRIDONLY) THEN
       ENDDO
     ENDDO
   ENDDO
-
-  D%NSTAGT0B(1) = 0
-  D%NSTAGT1B(1) = 0
-  DO JA=2,NPRTRNS
-    D%NSTAGT0B(JA) = D%NSTAGT0B(JA-1)+D%NLTSGTB(JA-1)
-    D%NSTAGT1B(JA) = D%NSTAGT1B(JA-1)+D%NLTSFTB(JA-1)
-  ENDDO
   ! D%NSTAGT0B / D%NSTAGT1B: offset of peer rank in send/recv buffer
   ! D%NLTSGTB  / D%NLTSFTB : size of peer rank in send/recv buffer
-  ! D%NPNTGTB0 / D%NPNTGTB1: translation inp to send buffer / recv to out buffer
-  D%NLENGT0B = D%NSTAGT0B(NPRTRNS)+D%NLTSGTB(NPRTRNS)
-  D%NLENGT1B = D%NSTAGT1B(NPRTRNS)+D%NLTSFTB(NPRTRNS)
+  ! D%NPNTGTB0 / D%NPNTGTB1: translation inp to global send buffer / recv to out buffer
 ENDIF
   
 ! GRIDPOINT SPACE
