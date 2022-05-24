@@ -1,4 +1,5 @@
 ! (C) Copyright 1995- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -432,7 +433,7 @@ MODULE TRGTOL_MOD
   
   ! Copy local contribution
   !$ACC DATA PRESENT(PGLAT) COPYIN(KPTRGP,INDOFF,KINDEX)
-  !$ACC DATA IF(PRESENT(PGP))   PRESENT(PGP)   COPYIN(IGPTROFF)
+  !$ACC DATA IF(PRESENT(PGP))   PRESENT(PGP)
   !$ACC DATA IF(PRESENT(PGPUV)) PRESENT(PGPUV) COPYIN(IUVLEVS,IUVPARS)
   !$ACC DATA IF(PRESENT(PGP2))  PRESENT(PGP2)  COPYIN(IGP2PARS)
   !$ACC DATA IF(PRESENT(PGP3A)) PRESENT(PGP3A) COPYIN(IGP3ALEVS,IGP3APARS)
