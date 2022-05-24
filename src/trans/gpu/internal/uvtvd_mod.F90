@@ -103,17 +103,17 @@ ENDDO
 
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
 
-!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR,II,IN,KM,ZKM,JN,ZJN) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM,JN,ZJN) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
-  DO J=1,KF_UV
-    IR = 2*J-1
-    II = IR+1
-    KM = D_MYMS(KMLOC)
-    ZKM = REAL(KM,JPRBT)
+  DO JN=0,R_NTMAX
+    DO J=1,KF_UV
+      IR = 2*J-1
+      II = IR+1
+      KM = D_MYMS(KMLOC)
+      ZKM = REAL(KM,JPRBT)
 
-    IF(KM /= 0) THEN
-      !$ACC LOOP SEQ
-      DO JN=KM,R_NTMAX
+      IF(KM /= 0 .AND. JN >= KM) THEN
+        ! (DO JN=KN,R_NTMAX)
         IN = R_NTMAX+3-JN
         ZJN = JN
 
@@ -129,10 +129,8 @@ DO KMLOC=1,D_NUMP
         PDIV(II,IN,kmloc) = +ZKM*PU(IR,IN,kmloc)+&
          &ZJN*ZEPSNM(KMLOC,JN+1)*PV(II,IN-1,kmloc)-&
          &(ZJN+1)*ZEPSNM(KMLOC,JN)*PV(II,IN+1,kmloc)
-      ENDDO
-    ELSE
-      !$ACC LOOP SEQ
-      DO JN=0,R_NTMAX
+      ELSEIF(KM == 0) THEN
+        ! (DO JN=0,R_NTMAX)
         IN = R_NTMAX+3-JN
         ZJN = JN
 
@@ -142,8 +140,8 @@ DO KMLOC=1,D_NUMP
         PDIV(IR,IN,kmloc) = &
          &ZJN*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,kmloc)-&
          &(ZJN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,kmloc)
-      ENDDO
-    ENDIF
+      ENDIF
+    ENDDO
   ENDDO
 ENDDO
 !$acc end data

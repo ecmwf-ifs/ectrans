@@ -96,27 +96,25 @@ USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
 
   !loop over wavenumber
   !$ACC DATA PRESENT(PSPEC,POA,R,D)
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE)
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE)
   DO KMLOC=1,D%NUMP
-    DO JFLD=1,KFIELD
-      KM = D%MYMS(KMLOC)
-      IASM0 = D%NASM0(KM)
+    DO JN=3,R%NTMAX+3
+      DO JFLD=1,KFIELD
+        KM = D%MYMS(KMLOC)
+        IASM0 = D%NASM0(KM)
 
-      IF(KM == 0) THEN
-        !$ACC LOOP SEQ
-        DO JN=3,R%NTMAX+3
-          INM = IASM0+(R%NTMAX+3-JN)*2
-          PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
-          PSPEC(JFLD,INM+1) = 0.0_JPRBT
-        ENDDO
-      ELSE
-        !$ACC LOOP SEQ
-        DO JN=3,R%NTMAX+3-KM
+        IF(KM /= 0 .AND. JN <= R%NTMAX+3-KM) THEN
+        !(DO JN=3,R%NTMAX+3-KM)
           INM = IASM0+((R%NTMAX+3-JN)-KM)*2
           PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
           PSPEC(JFLD,INM+1) = POA(2*JFLD  ,JN,KMLOC)
-        ENDDO
-      END IF
+        ELSEIF (KM == 0) THEN
+          !(DO JN=3,R%NTMAX+3)
+          INM = IASM0+(R%NTMAX+3-JN)*2
+          PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
+          PSPEC(JFLD,INM+1) = 0.0_JPRBT
+        END IF
+      ENDDO
     ENDDO
   ENDDO
 !$ACC END PARALLEL
