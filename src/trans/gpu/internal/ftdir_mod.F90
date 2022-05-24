@@ -10,8 +10,7 @@
 
 MODULE FTDIR_MOD
 CONTAINS
-SUBROUTINE FTDIR(ZGTF,STRIDE,KFIELD)
-
+SUBROUTINE FTDIR(ZGTF,KFIELD)
 
 !**** *FTDIR - Direct Fourier transform
 
@@ -23,8 +22,7 @@ SUBROUTINE FTDIR(ZGTF,STRIDE,KFIELD)
 !        CALL FTDIR(..)
 
 !        Explicit arguments :  PREEL   - Fourier/grid-point array
-!        --------------------  KSTIRDE - stride of PREEL
-!                              KFIELD   - number of fields
+!        --------------------  KFIELD   - number of fields
 
 !     Method.
 !     -------
@@ -44,7 +42,6 @@ SUBROUTINE FTDIR(ZGTF,STRIDE,KFIELD)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
-
 !     ------------------------------------------------------------------
 
 USE TPM_GEN         ,ONLY : LSYNC_TRANS
@@ -55,12 +52,12 @@ USE TPM_GEOMETRY    ,ONLY : G
 USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT
 USE CUDA_DEVICE_MOD
 USE MPL_MODULE      ,ONLY : MPL_BARRIER
-!
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: STRIDE,KFIELD
-REAL(KIND=JPRBT), INTENT(INOUT) :: ZGTF(:,:)
+INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+REAL(KIND=JPRBT), INTENT(INOUT), POINTER :: ZGTF(:,:)
+
 INTEGER(KIND=JPIM)  :: KGL
 
 INTEGER(KIND=JPIM) :: IGLG,JM,JF,IST1, IPROC, ISTA
@@ -68,7 +65,7 @@ INTEGER(KIND=JPIM) :: IOFF
 INTEGER(KIND=JPIM) :: IPLAN_R2C
 
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC, IRET
-real(kind=jprbt), allocatable :: zgtf2(:,:)
+REAL(KIND=JPRBT), POINTER :: ZGTF2(:,:), TMP(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -83,8 +80,10 @@ ELSE
 ENDIF
 
 
-allocate(zgtf2(size(zgtf,1),size(zgtf,2)))
-!$ACC DATA CREATE(ZGTF2) PRESENT(ZGTF)
+ALLOCATE(ZGTF2(SIZE(ZGTF,1),SIZE(ZGTF,2)))
+!$ACC ENTER DATA CREATE(ZGTF2)
+
+!$ACC DATA PRESENT(ZGTF,ZGTF2)
 
 IF (LSYNC_TRANS) THEN
   CALL MPL_BARRIER(CDSTRING='FTDIR BARRIER')
@@ -109,11 +108,16 @@ IF (LSYNC_TRANS) THEN
 ENDIF
 CALL GSTATS(450,1)
 
-!$ACC KERNELS DEFAULT(NONE)
-ZGTF(:,:) = ZGTF2(:,:)
-!$ACC END KERNELS
-
 !$ACC END DATA
+
+! Swap pointers
+TMP => ZGTF
+ZGTF => ZGTF2
+ZGTF2 => TMP
+
+! and deallocate the local pointer
+!$ACC EXIT DATA DELETE(ZGTF2)
+DEALLOCATE(ZGTF2)
 
 !     ------------------------------------------------------------------
 
