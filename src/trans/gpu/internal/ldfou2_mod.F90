@@ -1,5 +1,6 @@
 ! (C) Copyright 1991- ECMWF.
 ! (C) Copyright 1991- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -72,18 +73,16 @@ INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV
 INTEGER(KIND=JPIM) :: KM,KMLOC
 
 REAL(KIND=JPRBT) ,INTENT(INOUT) :: PAIA(:,:,:)
-!REAL(KIND=JPRBT) ,INTENT(INOUT) :: PSIA(:,:,:),   PAIA(:,:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: J, JGL ,IFLD ,ISL, IGLS
+INTEGER(KIND=JPIM) :: J, JGL, ISL
 
 !     ------------------------------------------------------------------
 
 !*       1.    DIVIDE U V BY A*COS(THETA)
 !              --------------------------
 
-IFLD = 4*KF_UV
-IF( IFLD > 0 ) THEN
+IF( KF_UV > 0 ) THEN
 
 #ifdef ACCGPU
 !$ACC DATA &
@@ -98,27 +97,24 @@ IF( IFLD > 0 ) THEN
 #endif
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3)
-!! DEFAULT(NONE) PRIVATE(KM,ISL,IGLS) &
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2)
+!! DEFAULT(NONE) PRIVATE(KM,ISL) &
 !!$OMP&      SHARED(D_NUMP,R_NDGNH,KF_UV,D_MYMS,R_NDGNH,G_NDGLU,R_NDGL,PAIA,F_RACTHE)
 #endif
 #ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISL,IGLS) DEFAULT(NONE) &
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ISL) DEFAULT(NONE) &
 !$ACC&      PRESENT(D_NUMP,R_NDGNH,KF_UV,D_MYMS,R_NDGNH,G_NDGLU,R_NDGL,PAIA,F_RACTHE)
 #endif
 DO KMLOC=1,D_NUMP
-  DO JGL=1,R_NDGNH
-    DO J=1,4*KF_UV
-       KM = D_MYMS(KMLOC)
-       ISL  = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+  DO J=1,4*KF_UV ! (real+complex) * (U+V)
+    KM = D_MYMS(KMLOC)
+    ISL  = R_NDGNH-G_NDGLU(KM)+1
+    !$ACC LOOP SEQ
+    DO JGL=ISL,R_NDGNH
 !*       1.1      U AND V
-       if (JGL .ge. ISL) then
-         IGLS = R_NDGL+1-JGL
-         PAIA(J,JGL,KMLOC) = PAIA(J,JGL,KMLOC)*F_RACTHE(JGL)
-!         PSIA(J,JGL,KMLOC) = PSIA(J,JGL,KMLOC)*F_RACTHE(JGL)
-       endif
-     ENDDO
-   ENDDO
+      PAIA(J,JGL,KMLOC) = PAIA(J,JGL,KMLOC)*F_RACTHE(JGL)
+    ENDDO
+  ENDDO
 ENDDO
 #ifdef OMPGPU
 !$OMP END TARGET DATA
