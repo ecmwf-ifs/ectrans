@@ -127,6 +127,7 @@ IF (LUVDER) IFIRST = IFIRST+2*KF_UV ! U and V derivatives
 IF (LSCDERS) IFIRST = IFIRST + KF_SCALARS ! Scalars EW Derivatives
 KF_FS = IFIRST
 
+! Note that this buffer is 2X too large, we will need to transpose ZGTF to get rid of this
 ALLOCATE(ZGTF(2*KF_FS, D%NLENGTF))
 !$ACC ENTER DATA CREATE(ZGTF)
 
@@ -151,8 +152,8 @@ IF (LSCDERS) THEN
   IFIRST = IFIRST + KF_SCALARS ! Scalars EW Derivatives
 ENDIF
 
-! from FOUBUF to ZGTF
-CALL FOURIER_IN(FOUBUF,ZGTF,KF_INPUT)
+! from FOUBUF to ZGTF. Divide by two because we move into complex space now
+CALL FOURIER_IN(FOUBUF,ZGTF,KF_INPUT/2)
 
 !    2.  Fourier space computations
 
@@ -162,7 +163,7 @@ CALL FSC(KF_UV, KF_SCALARS, PUV, PSCALARS, PSCALARS_NSDER, PUV_EWDER, PSCALARS_E
 !   3.  Fourier transform
 ! inplace operation
 IF(KF_FS > 0) THEN
-  CALL FTINV(ZGTF,2*KF_FS)
+  CALL FTINV(ZGTF,KF_FS)
 ENDIF
 
 CALL GSTATS(1639,1)
