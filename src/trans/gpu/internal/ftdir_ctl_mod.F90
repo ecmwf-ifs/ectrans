@@ -69,6 +69,7 @@ USE TRGTOL_MOD      ,ONLY : TRGTOL
 #endif
 USE FTDIR_MOD       ,ONLY : FTDIR
 USE MPL_MODULE      ,ONLY : MPL_BARRIER
+USE TPM_STATS       ,ONLY : GSTATS => GSTATS_NVTX
 use ieee_arithmetic
 !
 
