@@ -1,5 +1,6 @@
 ! (C) Copyright 2001- ECMWF.
 ! (C) Copyright 2001- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -126,24 +127,6 @@ INTEGER(KIND=JPIM) :: JFLD,ISTSC_G,IENSC_G,ISTSC,IENSC,IENUV,IF_GPB
 !     ------------------------------------------------------------------
 
 ! Perform transform
-
-! just removed this, why needed ? Nils
-!#ifdef OMPGPU
-!!$OMP TARGET
-!#endif
-!#ifdef ACCGPU
-!!$ACC KERNELS
-!#endif
-
-!!ZGTF(:,:) = 0._JPRBT
-!!$ACC UPDATE DEVICE(ZGTF)
-
-!#ifdef ACCGPU
-!!$ACC END KERNELS
-!#endif
-!#ifdef OMPGPU
-!!$OMP END TARGET
-!#endif
 
 IF_GPB = 2*KF_UV_G+KF_SCALARS_G
 IF(NPROMATR > 0 .AND. IF_GPB > NPROMATR) THEN
