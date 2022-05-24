@@ -149,15 +149,17 @@ CALL GSTATS(414,0)
 ! Get C in transpose format to get better memory access patterns later
 !C=A*B =>
 ! C^T=B^T*A^T
-CALL CUDA_GEMM_BATCHED( &
-  & CUBLAS_OP_N, CUBLAS_OP_N, &
-  & 2*KF_FS, TDZAA, R_NDGNH, &
-  & 1.0_JPRBT, &
-  & ZINPA, 2*KF_FS, R_NDGNH*2*KF_FS, &
-  & ZAA, R_NDGNH, TDZAA*R_NDGNH, &
-  & 0.0_JPRBT, &
-  & ZOUT, 2*KF_FS, TDZAA*2*KF_FS, &
-  & D_NUMP)
+DO KMLOC=1,D_NUMP
+  CALL CUDA_GEMM_BATCHED( &
+    & CUBLAS_OP_N, CUBLAS_OP_N, &
+    & 2*KF_FS, TDZAA, R_NDGNH, &
+    & 1.0_JPRBT, &
+    & ZINPA((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+    & ZAA(:,:,KMLOC), R_NDGNH, TDZAA*R_NDGNH, &
+    & 0.0_JPRBT, &
+    & ZOUT((KMLOC-1)*TDZAA*2*KF_FS+1:), 2*KF_FS, TDZAA*2*KF_FS, &
+    & 1)
+ENDDO
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,0)
   CALL MPL_BARRIER(CDSTRING='')
@@ -226,15 +228,17 @@ CALL GSTATS(414,0)
 ! Get C in transpose format to get better memory access patterns later
 !C=A*B =>
 ! C^T=B^T*A^T
-CALL CUDA_GEMM_BATCHED( &
-  & CUBLAS_OP_N, CUBLAS_OP_N, &
-  & 2*KF_FS, TDZAS, R_NDGNH, &
-  & 1.0_JPRBT, &
-  & ZINPS, 2*KF_FS, R_NDGNH*2*KF_FS, &
-  & ZAS, R_NDGNH, TDZAS*R_NDGNH, &
-  & 0.0_JPRBT, &
-  & ZOUT, 2*KF_FS, TDZAS*2*KF_FS, &
-  & D_NUMP)
+DO KMLOC=1,D_NUMP
+  CALL CUDA_GEMM_BATCHED( &
+    & CUBLAS_OP_N, CUBLAS_OP_N, &
+    & 2*KF_FS, TDZAS, R_NDGNH, &
+    & 1.0_JPRBT, &
+    & ZINPS((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+    & ZAS(:,:,KMLOC), R_NDGNH, TDZAS*R_NDGNH, &
+    & 0.0_JPRBT, &
+    & ZOUT((KMLOC-1)*TDZAS*2*KF_FS+1:), 2*KF_FS, TDZAS*2*KF_FS, &
+    & 1)
+ENDDO
 IF (LSYNC_TRANS) THEN
   CALL GSTATS(434,0)
   CALL MPL_BARRIER(CDSTRING='')
