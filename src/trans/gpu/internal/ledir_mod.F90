@@ -84,6 +84,7 @@ USE DEVICE_MOD
 #endif
 USE, INTRINSIC :: ISO_C_BINDING
 USE IEEE_ARITHMETIC
+USE OPENACC
 
 IMPLICIT NONE
 
@@ -168,7 +169,7 @@ ALLOC_POS=ALLOC_POS+ALIGN(IOUT0_STRIDES1,8)
 
 #ifdef ACCGPU
 !$ACC DATA &
-!$ACC& CREATE(ZINPA,ZINPS,ZOUT,ZINP0,ZOUT0) &
+!$ACC& PRESENT(ZINPA,ZINPS,ZOUT,ZINP0,ZOUT0) &
 !$ACC& PRESENT(F_RW,F_RACTHE,D_NUMP,D_MYMS) &
 !$ACC& PRESENT(R_NDGNH,R_NDGL,G_NDGLU,R_NSMAX,R_NTMAX) &
 !$ACC& PRESENT(ZAA,ZAS,POA1) &
@@ -274,7 +275,7 @@ CALL HIP_GEMM( &
   & ZAA, SIZE(ZAA,1), BOFFSETS, &
   & 0.0_JPRBT, &
   & ZOUT, IOUT_STRIDES0, COFFSETS, &
-  & D_NUMP)
+  & D_NUMP, STREAM=ACC_ASYNC_SYNC)
 #ifdef OMPGPU
 !$OMP END TARGET DATA
 #endif
@@ -348,7 +349,7 @@ IF(KMLOC0 > 0) THEN
     & ZAA0, SIZE(ZAA0,1), 0, &
     & 0.0_JPRD, &
     & ZOUT0, IOUT0_STRIDES0, 0, &
-    & 1)
+    & 1, STREAM=ACC_ASYNC_SYNC)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
 #endif
@@ -411,7 +412,7 @@ CALL HIP_GEMM( &
   & ZAS, SIZE(ZAS,1), BOFFSETS, &
   & 0.0_JPRBT, &
   & ZOUT, IOUT_STRIDES0, COFFSETS, &
-  & D_NUMP)
+  & D_NUMP, STREAM=ACC_ASYNC_SYNC)
 #ifdef OMPGPU
 !$OMP END TARGET DATA
 #endif
@@ -480,7 +481,7 @@ IF(KMLOC0 > 0) THEN
  &                                ZAS0, SIZE(ZAS0,1), 0, &
  &                                0._JPRD, &
  &                                ZOUT0, IOUT0_STRIDES0, 0, &
- &                                1)
+ &                                1, STREAM=ACC_ASYNC_SYNC)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
 #endif

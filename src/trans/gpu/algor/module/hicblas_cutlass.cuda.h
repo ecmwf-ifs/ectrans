@@ -85,11 +85,12 @@ void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
                                       float alpha, const float *A, int lda,
                                       int *offsetsA, const float *B, int ldb,
                                       int *offsetsB, float beta, float *C,
-                                      int ldc, int *offsetsC, int batchCount) {
+                                      int ldc, int *offsetsC, int batchCount,
+				      cudaStream_t stream) {
   using namespace detail;
   run_group_graph(cutlass_sgemm_grouped<TransA, TransB>(), m, n, k, alpha, A,
                   lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
-                  batchCount, blas_id);
+                  batchCount, stream, blas_id);
 }
 
 void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
@@ -97,24 +98,24 @@ void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    const float *A, int lda, int *offsetsA,
                                    const float *B, int ldb, int *offsetsB, float beta,
                                    float *C, int ldc, int *offsetsC,
-                                   int batchCount) {
+                                   int batchCount, cudaStream_t stream) {
 
   if (transa == 'N' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_N, CUBLAS_OP_N>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount);
+        ldc, offsetsC, batchCount, stream);
   else if (transa == 'N' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_N, CUBLAS_OP_T>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount);
+        ldc, offsetsC, batchCount, stream);
   else if (transa == 'T' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_T, CUBLAS_OP_N>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount);
+        ldc, offsetsC, batchCount, stream);
   else if (transa == 'T' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_T, CUBLAS_OP_T>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount);
+        ldc, offsetsC, batchCount, stream);
   else
     assert(false);
 }

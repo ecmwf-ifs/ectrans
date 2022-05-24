@@ -44,7 +44,8 @@ template <typename Gemm, typename Real>
 void run_group_graph(Gemm &&gemm, int m, int *n, int *k, Real alpha,
                      const Real *A, int lda, int *offsetsA, const Real *B,
                      int ldb, int *offsetsB, Real beta, Real *C, int ldc,
-                     int *offsetsC, int batchCount, int blas_id = -1) {
+                     int *offsetsC, int batchCount, hipStream_t stream,
+                     int blas_id = -1) {
   // we store at most one graph per "m" (# fields) and "blas id"
   static std::unordered_map<std::pair<int, int>, hipGraphExec_t,
                             detail::pair_hash>
@@ -100,7 +101,7 @@ void run_group_graph(Gemm &&gemm, int m, int *n, int *k, Real alpha,
     ptrCache.insert({key, std::make_tuple(A, B, C)});
   }
 
-  HIC_CHECK(hipGraphLaunch(graphCache.at(key), 0));
+  HIC_CHECK(hipGraphLaunch(graphCache.at(key), stream));
 }
 
 // stupid simple gemm calls
@@ -108,10 +109,10 @@ template <typename Gemm, typename Real>
 void run_group(Gemm &&gemm, int m, int *n, int *k, Real alpha, const Real *A,
                int lda, int *offsetsA, const Real *B, int ldb, int *offsetsB,
                Real beta, Real *C, int ldc, int *offsetsC, int batchCount,
-               int = -1) {
+               hipStream_t stream, int = -1) {
   for (int i = 0; i < batchCount; ++i) {
     if (m == 0 || n[i] == 0 || k[i] == 0) continue;
-    gemm(0, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i], ldb,
+    gemm(stream, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i], ldb,
          beta, C + offsetsC[i], ldc);
   }
 }
@@ -159,7 +160,7 @@ void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    const float *A, int lda, int *offsetsA,
                                    const float *B, int ldb, int *offsetsB, float beta,
                                    float *C, int ldc, int *offsetsC,
-                                   int batchCount) {
+                                   int batchCount, hipStream_t stream) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
   if (transa=='T' || transa=='t')
@@ -170,7 +171,7 @@ void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
   using namespace detail;
   run_group_graph(hipblas_gemm_grouped<float>(op_t1, op_t2), m, n, k, alpha, A,
                   lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
-                  batchCount, blas_id);
+                  batchCount, stream, blas_id);
 }
 
 void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
@@ -180,7 +181,7 @@ void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    const double *B, int ldb, int *offsetsB,
                                    double beta,
                                    double *C, int ldc, int *offsetsC,
-                                   int batchCount) {
+                                   int batchCount, hipStream_t stream) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
   if (transa=='T' || transa=='t')
@@ -191,7 +192,7 @@ void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
   using namespace detail;
   run_group_graph(hipblas_gemm_grouped<double>(op_t1, op_t2), m, n, k, alpha,
                   A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
-                  batchCount, blas_id);
+                  batchCount, stream, blas_id);
 }
 }  // namespace
 
@@ -200,7 +201,8 @@ void hipblas_dgemm_wrapper (char transa, char transb,
                             int m, int n,int k, double alpha,
                             const double *A, int lda, int tda,
                             const double *B, int ldb, int tdb, double beta,
-                            double *C, int ldc, int tdc, int batchCount) {
+                            double *C, int ldc, int tdc, int batchCount,
+                            size_t stream) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
 
@@ -213,7 +215,11 @@ void hipblas_dgemm_wrapper (char transa, char transb,
     hipblasCreate(&handle_hip_dgemm);
     hip_alreadyAllocated_dgemm_handle=true;
   }
-  HICBLAS_CHECK(hipblasDgemmStridedBatched(handle_hip_dgemm,op_t1,op_t2,m,n,k,
+  hipblasHandle_t handle = detail::get_hipblas_handle();
+  HICBLAS_CHECK(
+      hipblasSetStream(handle, *(hipStream_t*)stream));
+
+  HICBLAS_CHECK(hipblasDgemmStridedBatched(handle,op_t1,op_t2,m,n,k,
                                            &alpha,(const double *) A,lda,tda, (const double *) B,ldb,tdb,
                                            &beta,(double *) C,ldc,tdc,batchCount));
 
@@ -248,14 +254,16 @@ void blas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 const float *A, int lda, int *offsetsA,
                                 const float *B, int ldb, int *offsetsB, float beta,
                                 float *C, int ldc, int *offsetsC,
-                                int batchCount) {
+                                int batchCount, size_t stream) {
 #ifdef USE_CUTLASS
     cutlass_sgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda, offsetsA,
-                                  B, ldb, offsetsB, beta, C, ldc, offsetsC, batchCount);
+                                  B, ldb, offsetsB, beta, C, ldc, offsetsC, batchCount,
++                                 *(hipStream_t*)stream);
 #else
     hipblas_sgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda,
                                   offsetsA, B, ldb, offsetsB, beta, C, ldc,
-                                  offsetsC, batchCount);
+                                  offsetsC, batchCount,
++                                 *(hipStream_t*)stream);
 #endif
 }
 
@@ -264,9 +272,10 @@ void blas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 const double *A, int lda, int *offsetsA,
                                 const double *B, int ldb, int *offsetsB, double beta,
                                 double *C, int ldc, int *offsetsC,
-                                int batchCount) {
+                                int batchCount, size_t stream) {
     hipblas_dgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda, offsetsA, B,
-                                ldb, offsetsB, beta, C, ldc, offsetsC, batchCount);
+                                ldb, offsetsB, beta, C, ldc, offsetsC, batchCount,
++                               *(hipStream_t*)stream);
 }
 }
 
