@@ -64,9 +64,7 @@ INTEGER(KIND=JPIM) :: IGLG,KGL,IRET
 
 !     ------------------------------------------------------------------
 
-
-ALLOCATE(PREEL_REAL(KFIELD*D%NLENGTF))
-!$ACC ENTER DATA CREATE(PREEL_REAL)
+PREEL_REAL => PREEL_COMPLEX
 
 !$ACC DATA PRESENT(PREEL_REAL,PREEL_COMPLEX)
 
@@ -90,8 +88,7 @@ CALL GSTATS(423,1)
 
 !$ACC END DATA
 
-!$ACC EXIT DATA DELETE(PREEL_COMPLEX)
-DEALLOCATE(PREEL_COMPLEX)
+NULLIFY(PREEL_COMPLEX)
 
 !     ------------------------------------------------------------------
 
