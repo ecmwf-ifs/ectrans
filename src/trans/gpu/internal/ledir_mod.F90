@@ -55,8 +55,8 @@ SUBROUTINE LEDIR(FOUBUF,POA1,KF_FS,KF_UV)
 
 USE PARKIND_ECTRANS  ,ONLY : JPIM ,JPRB,  JPRBT
 USE YOMHOOK          ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE TPM_DIM          ,ONLY : R_NDGNH,R_NSMAX,R_NTMAX,R_NDGL
-USE TPM_GEOMETRY     ,ONLY : G_NDGLU
+USE TPM_DIM          ,ONLY : R,R_NDGNH,R_NSMAX,R_NTMAX,R_NDGL
+USE TPM_GEOMETRY     ,ONLY : G,G_NDGLU
 USE TPM_FIELDS       ,ONLY : F_RW, F_RACTHE,&
                            & ZAA,ZAS,&
                            & ZAA0,ZAS0,&
@@ -191,15 +191,18 @@ CALL GSTATS(414,0)
 !$ACC HOST_DATA USE_DEVICE(ZAA,ZINPA,ZOUT)
 #endif
 DO KMLOC=1,D_NUMP
-  CALL HIP_GEMM_BATCHED( &
-    & 'N', 'N', &
-    & 2*KF_FS, TDZAA, R_NDGNH, &
-    & 1.0_JPRBT, &
-    & ZINPA((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
-    & ZAA(:,:,KMLOC), R_NDGNH, TDZAA*R_NDGNH, &
-    & 0.0_JPRBT, &
-    & ZOUT((KMLOC-1)*TDZAA*2*KF_FS+1:), 2*KF_FS, TDZAA*2*KF_FS, &
-    & 1)
+  KM = D_MYMS(KMLOC)
+  IF (KM /= 0) THEN
+    CALL HIP_GEMM_BATCHED( &
+      & 'N', 'N', &
+      & 2*KF_FS, (R%NSMAX-KM+2)/2, G%NDGLU(KM), &
+      & 1.0_JPRBT, &
+      & ZINPA((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+      & ZAA(:,:,KMLOC), R_NDGNH, TDZAA*R_NDGNH, &
+      & 0.0_JPRBT, &
+      & ZOUT((KMLOC-1)*TDZAA*2*KF_FS+1:), 2*KF_FS, TDZAA*2*KF_FS, &
+      & 1)
+  ENDIF
 ENDDO
 #ifdef OMPGPU
 !$OMP END TARGET DATA
@@ -265,7 +268,7 @@ IF(KMLOC0 > 0) THEN
 #endif
   CALL HIP_DGEMM_BATCHED( &
     & 'N','N', &
-    & KF_FS, TDZAA, R_NDGNH, &
+    & KF_FS, (R%NSMAX+2)/2, G%NDGLU(0), &
     & 1.0_JPRD, &
     & ZINP0, KF_FS, R_NDGNH, &
     & ZAA0, R_NDGNH, TDZAA, &
@@ -312,15 +315,18 @@ CALL GSTATS(414,0)
 !$ACC HOST_DATA USE_DEVICE(ZAS,ZINPS,ZOUT)
 #endif
 DO KMLOC=1,D_NUMP
-  CALL HIP_GEMM_BATCHED( &
-    & 'N', 'N', &
-    & 2*KF_FS, TDZAS, R_NDGNH, &
-    & 1.0_JPRBT, &
-    & ZINPS((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
-    & ZAS(:,:,KMLOC), R_NDGNH, TDZAS*R_NDGNH, &
-    & 0.0_JPRBT, &
-    & ZOUT((KMLOC-1)*TDZAS*2*KF_FS+1:), 2*KF_FS, TDZAS*2*KF_FS, &
-    & 1)
+  KM = D_MYMS(KMLOC)
+  IF (KM /= 0) THEN
+    CALL HIP_GEMM_BATCHED( &
+      & 'N', 'N', &
+      & 2*KF_FS, (R%NSMAX-KM+3)/2, G%NDGLU(KM), &
+      & 1.0_JPRBT, &
+      & ZINPS((KMLOC-1)*R_NDGNH*2*KF_FS+1:), 2*KF_FS, R_NDGNH*2*KF_FS, &
+      & ZAS(:,:,KMLOC), R_NDGNH, TDZAS*R_NDGNH, &
+      & 0.0_JPRBT, &
+      & ZOUT((KMLOC-1)*TDZAS*2*KF_FS+1:), 2*KF_FS, TDZAS*2*KF_FS, &
+      & 1)
+  ENDIF
 ENDDO
 #ifdef OMPGPU
 !$OMP END TARGET DATA
@@ -381,12 +387,12 @@ IF(KMLOC0 > 0) THEN
   !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUT0)
 #endif
   CALL HIP_DGEMM_BATCHED('N','N',&
- &                        KF_FS, TDZAS, R_NDGNH, &
+ &                        KF_FS, (R%NSMAX+3)/2, G%NDGLU(0), &
  &                        1.0_JPRD,&
- &                        ZINP0, KF_FS, R_NDGNH, &
- &                        ZAS0, R_NDGNH, TDZAS, &
+ &                        ZINP0, KF_FS, R_NDGNH*KF_FS, &
+ &                        ZAS0, R_NDGNH, TDZAS*R_NDGNH, &
  &                        0._JPRD, &
- &                        ZOUT0, KF_FS, TDZAS, &
+ &                        ZOUT0, KF_FS, TDZAS*KF_FS, &
  &                        1)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
