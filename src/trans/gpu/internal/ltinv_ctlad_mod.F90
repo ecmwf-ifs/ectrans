@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -11,9 +11,9 @@
 MODULE LTINV_CTLAD_MOD
 CONTAINS
 SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
- &                     PSPVOR,PSPDIV,PSPSCALAR,&
- &                     PSPSC3A,PSPSC3B,PSPSC2,&
- &                     KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
+ & PSPVOR,PSPDIV,PSPSCALAR,&
+ & PSPSC3A,PSPSC3B,PSPSC2,&
+ & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
 
 !**** *LTINV_CTLAD* - Control routine for inverse Legandre transform - adj.
 
@@ -52,14 +52,14 @@ SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
 !        Original : 00-06-03
 
 !     ------------------------------------------------------------------
-USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : LALLOPERM
 !USE TPM_DIM
 USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
 USE TPM_DISTR       ,ONLY : D
 USE LTINVAD_MOD     ,ONLY : LTINVAD
-USE TRLTOM_MOD      ,ONLY : TRLTOM
+!USE TRLTOM_MOD      ,ONLY : TRLTOM
 
 IMPLICIT NONE
 
@@ -91,7 +91,7 @@ ELSE
   ALLOCATE(FOUBUF_IN(MAX(1,IBLEN)))
 ENDIF
 CALL GSTATS(180,0)
-CALL TRLTOM(FOUBUF,FOUBUF_IN,2*KF_OUT_LT)
+!CALL TRLTOM(FOUBUF,FOUBUF_IN,2*KF_OUT_LT)
 CALL GSTATS(180,1)
 IF (.NOT.LALLOPERM) DEALLOCATE(FOUBUF)
 
