@@ -86,7 +86,7 @@ REAL(KIND=JPRBT) :: ZKM,ZJN
 !              ------------------------------------------
 
 !$ACC DATA&
-!$ACC& PRESENT(D_MYMS,D_NUMP,R_NTMAX) &
+!$ACC& PRESENT(D_MYMS) &
 !$ACC& PRESENT(F,F%RN,F%NLTN) &
 !$ACC& PRESENT(ZEPSNM,PU,PV,PVOR,PDIV)
 

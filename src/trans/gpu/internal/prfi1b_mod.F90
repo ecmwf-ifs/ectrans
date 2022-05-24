@@ -81,10 +81,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
 
-  !$ACC DATA &
-  !$ACC      PRESENT(D_NUMP,R_NSMAX,D_MYMS,D_NASM0) &
-  !$ACC      PRESENT(PIA) &
-  !$ACC      PRESENT(PSPEC)
+  !$ACC DATA PRESENT(D_MYMS,D_NASM0,PIA,PSPEC)
 
   !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR)
 

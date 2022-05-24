@@ -107,6 +107,13 @@ ALLOCATE(ZOUTA(KFIELDS*R_NDGNH*D_NUMP))
 !$ACC&     PRESENT(ZAA,ZAS,PIA) &
 !$ACC&     PRESENT(D_MYMS,D_NPROCL,D_NSTAGT1B,D_NPNTGTB1,G_NDGLU)
 
+! TODO this doesn't make sense that we need it (???)
+!$ACC KERNELS
+ZINP(:) = 0
+ZOUTS(:) = 0
+ZOUTA(:) = 0
+!$ACC END KERNELS
+
 ! READ 2:NSMAX+3
 
 !IF KM=0 and NSMAX is 6:
