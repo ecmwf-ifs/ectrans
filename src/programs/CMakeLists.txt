@@ -26,12 +26,8 @@ if( HAVE_TOOLS AND TARGET eccodes_f90 )
       LIBS ${trans} eccodes_f90
       LINKER_LANGUAGE Fortran
       DEFINITIONS ECTRANS_TOOLS_RTABLE_PATH="${ECTRANS_TOOLS_RTABLE_PATH}" )
-
   endforeach()
-
-
 endif()
-
 
 set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
@@ -39,22 +35,7 @@ set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 if( HAVE_GPU )
   foreach( prec sp dp )
     if( HAVE_${prec} )
-      ecbuild_add_executable(TARGET  driver-spectrans-${prec}
-                             SOURCES driver-spectraltransform.F90
-                             INCLUDES
-                                  ${MPI_Fortran_INCLUDE_PATH}
-                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/gpu/include/ectrans>
-                             LIBS 
-                                  fiat parkind_${prec}
-                                  eccodes_f90 eccodes_memfs
-                                  ${MPI_Fortran_LIBRARIES}
-                                  trans_gpu_static_${prec}
-                                  gpu
-                                  OpenACC::OpenACC_Fortran 
-                                  ${LAPACK_LIBRARIES}
-                                  nvhpcwrapnvtx
-                          )
-	ecbuild_add_executable(TARGET  driver-spectrans-CA-${prec}
+      ecbuild_add_executable(TARGET  driver-spectrans-CA-${prec}
                              SOURCES driver-spectraltransform.F90
                              INCLUDES
                                   ${MPI_Fortran_INCLUDE_PATH}
@@ -69,16 +50,8 @@ if( HAVE_GPU )
                                   ${LAPACK_LIBRARIES}
                                   nvhpcwrapnvtx
                           )
-		  #trans_gpu_static_${prec}
-		  #gpu
-		  #${CMAKE_BINARY_DIR}/lib/libtrans_gpu_static_${prec}.a
-		  #${CMAKE_BINARY_DIR}/lib/libgpu.a
-      #target_link_libraries( driver-spectrans PRIVATE OpenACC::OpenACC_Fortran )
-      set_property( TARGET driver-spectrans-${prec} PROPERTY CUDA_ARCHITECTURES 70 )
       set_property( TARGET driver-spectrans-CA-${prec} PROPERTY CUDA_ARCHITECTURES 70 )
-      target_compile_options( driver-spectrans-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc,pinned -cudalib=cufft,cublas -fpic>  )
       target_compile_options( driver-spectrans-CA-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc,pinned -cudalib=cufft,cublas -fpic>  )
-      set_target_properties(driver-spectrans-${prec} PROPERTIES LINK_FLAGS "-acc -cudalib=cufft,cublas -fpic -gpu=cc70,pinned")
       set_target_properties(driver-spectrans-CA-${prec} PROPERTIES LINK_FLAGS "-acc -cudalib=cufft,cublas -fpic -gpu=cc70,pinned")
       message("Building ${prec} GPU driver")
     endif()
