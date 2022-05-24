@@ -91,7 +91,7 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
     CUFFT_CHECK(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
                                 stride, dist, cufft_1, LOT));
   } else if (ISIGN == 1) {
-    CUFFT_CHECK(cufftPlanMany(&plan, 1, &N, embed, stride/2, dist, embed,
+    CUFFT_CHECK(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
                                 stride, dist, cufft_2, LOT));
   } else {
     abort();
