@@ -141,7 +141,6 @@ ELSE
       DO JN=2,R_NSMAX+2-KM
         INM = IASM0+((R_NSMAX+2-JN)-KM)*2
         IF( INM .LT. KDIM ) THEN ! TODO is this really needed, we don't have it in the reverse...
-          ! TODO THIS IS NOT JN+1 in the reverse code but JN
           PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
           PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
         END IF
