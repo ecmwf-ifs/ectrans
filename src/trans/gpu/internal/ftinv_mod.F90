@@ -44,6 +44,7 @@ SUBROUTINE FTINV(PREEL,KFIELDS)
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
+USE TPM_GEN         ,ONLY : LSYNC_TRANS
 USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
@@ -56,6 +57,7 @@ USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
 USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT, destroy_plan_fft
 USE TPM_DIM         ,ONLY : R
 USE CUDA_DEVICE_MOD
+USE MPL_MODULE      ,ONLY : MPL_BARRIER
 
 IMPLICIT NONE
 
@@ -114,6 +116,11 @@ END DO
 allocate(preel2(size(preel,1),size(preel,2)))
 !$acc data create(preel2) present(preel)
 
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='FTINV BARRIER')
+ENDIF
+CALL GSTATS(451,0)
+
 !istat = cuda_GetDevice(idev)
 !istat = cuda_Synchronize()      
 !!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(istat,KGL,IOFF,IGLG,IPLAN_C2R)
@@ -132,6 +139,11 @@ DO KGL=IBEG,IEND,IINC
 END DO
 !!$OMP END PARALLEL DO
 istat = cuda_Synchronize()      
+
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='FTINV BARRIER')
+ENDIF
+CALL GSTATS(451,1)
 
 
 !$acc kernels

@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -53,6 +54,7 @@ SUBROUTINE LEINV(KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
   
+USE TPM_GEN         ,ONLY : LSYNC_TRANS
 USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX
@@ -68,6 +70,7 @@ USE TPM_FLT
 USE BUTTERFLY_ALG_MOD
 USE CUDA_GEMM_BATCHED_MOD
 USE, INTRINSIC :: ISO_C_BINDING
+USE MPL_MODULE      ,ONLY : MPL_BARRIER
 USE IEEE_ARITHMETIC
 
 IMPLICIT NONE
@@ -103,6 +106,10 @@ IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 !                 --------------------------
 
 !*       1.1      PREPARATIONS.
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='LEINV BARRIER')
+ENDIF
+CALL GSTATS(453,0)
 
 ALLOCATE(ZZBA(ITDZBA,ILDZBA,D_NUMP))
 ALLOCATE(ZZCSTA(ITDZCA,ILDZCA,D_NUMP))
@@ -292,6 +299,11 @@ DEALLOCATE(ZZBS)
 DEALLOCATE(ZZBA)
 DEALLOCATE(ZZCSTS)
 DEALLOCATE(ZZCSTA)
+
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='LEINV BARRIER')
+ENDIF
+CALL GSTATS(453,1)
 
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
