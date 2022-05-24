@@ -14,7 +14,7 @@ MODULE LEINV_MOD
   IMPLICIT NONE
 
   PRIVATE
-  PUBLIC :: LEINV_STRIDES, LEINV
+  PUBLIC :: LEINV_STRIDES, LEINV, LEINV_PACK
 
   INTEGER(KIND=JPIM) :: A = 8 !Alignment
 
@@ -52,7 +52,7 @@ CONTAINS
       IIN0_STRIDES1 = IIN0_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
   END SUBROUTINE
 
-  SUBROUTINE LEINV(PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
+  SUBROUTINE LEINV(PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,KF_LEG)
 
     !**** *LEINV* - Inverse Legendre transform.
 
@@ -72,7 +72,7 @@ CONTAINS
     !        Implicit arguments :  None.
     !        --------------------
 
-    !     Method.    use butterfly or dgemm
+    !     Method.
     !     -------
 
     !     Externals.
@@ -93,43 +93,30 @@ CONTAINS
     !     ------------------------------------------------------------------
 
     USE TPM_GEN         ,ONLY : LSYNC_TRANS
-    USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT, JPRD
+    USE PARKIND_ECTRANS  ,ONLY : JPIM,JPRB,  JPRBT, JPRD
     USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
     USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX, R_NDGL
     USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
     USE TPM_FIELDS      ,ONLY : ZAA,ZAS,ZAA0,ZAS0,KMLOC0
-    USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS, D_NPNTGTB1,MYPROC
-    USE TPM_GEN, ONLY: NOUT
+    USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,MYPROC
     USE CUDA_GEMM_BATCHED_MOD
-    USE, INTRINSIC :: ISO_C_BINDING
     USE MPL_MODULE      ,ONLY : MPL_BARRIER
-    USE IEEE_ARITHMETIC
-    USE OPENACC
     USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
     IMPLICIT NONE
 
-
-    !     DUMMY ARGUMENTS
-    INTEGER(KIND=JPIM)  :: KM
-    INTEGER(KIND=JPIM)  :: KMLOC
-    INTEGER(KIND=JPIM)  :: KIFC
-    INTEGER(KIND=JPIM)  :: KS(D_NUMP), NS(D_NUMP), AOFFSETS(D_NUMP), BOFFSETS(D_NUMP), COFFSETS(D_NUMP)
     REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
-    REAL(KIND=JPRB),    INTENT(OUT) :: FOUBUF_IN(:)
+    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
     REAL(KIND=JPRBT), INTENT(OUT) :: ZINP(:), ZOUTS(:), ZOUTA(:)
     REAL(KIND=JPRD), INTENT(OUT) :: ZINP0(:), ZOUTS0(:), ZOUTA0(:)
 
     !     LOCAL
-    REAL(KIND=JPRBT) :: ZAOA, ZSOA
-
-    INTEGER(KIND=JPIM) :: IA, IS, ISL, J1, JGL, JK, J, IGLS, ISTAS, OFFSET1, OFFSET2
-    INTEGER(KIND=JPIM)  :: KF_LEG
+    INTEGER(KIND=JPIM)  :: KS(D_NUMP), NS(D_NUMP), AOFFSETS(D_NUMP), BOFFSETS(D_NUMP), COFFSETS(D_NUMP)
+    INTEGER(KIND=JPIM)  :: KM, KMLOC, IA, IS, ISL, J1, JGL, JK, J
     INTEGER(KIND=JPIM)  :: IOUT_STRIDES0, IOUT_STRIDES1
     INTEGER(KIND=JPIM)  :: IIN_STRIDES0, IIN_STRIDES1
     INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_STRIDES1
     INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_STRIDES1
-    INTEGER(KIND=8)  :: ALLOC_SZ, ALLOC_POS
 
     REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -137,7 +124,6 @@ CONTAINS
     !*       1.1      PREPARATIONS.
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 
-    KF_LEG = SIZE(PIA,1)/2
     !     ------------------------------------------------------------------
 
     !*       1.       PERFORM LEGENDRE TRANFORM.
@@ -152,7 +138,7 @@ CONTAINS
     !$ACC DATA PRESENT(D,D_MYMS,G,G_NDGLU,R) &
     !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
     !$ACC&     PRESENT(ZAA,ZAS,PIA) &
-    !$ACC&     PRESENT(D_MYMS,D_NPNTGTB1,G_NDGLU)
+    !$ACC&     PRESENT(D_MYMS,G_NDGLU)
 
     IF (KMLOC0 > 0) THEN
       print*,'computing m=0 in double precision'
@@ -320,8 +306,86 @@ CONTAINS
     ENDIF
     CALL GSTATS(424,1)
 
-    !$ACC DATA PRESENT(FOUBUF_IN)
-    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,ISTAS,ZAOA,ZSOA) ASYNC(1)
+    !$ACC WAIT(1)
+
+    !$ACC END DATA
+
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
+    !     ------------------------------------------------------------------
+
+  END SUBROUTINE LEINV
+  SUBROUTINE LEINV_PACK(ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN,KF_LEG)
+
+    !**** *TRMTOL_PACK* - Packing buffer for TRMTOL
+
+    !     Purpose.
+    !     --------
+    !        Packs data from LTINV outputs into FOUBUF for conversion to fourier space
+
+    !**   Interface.
+    !     ----------
+    !        CALL TRMTOL_PACK(...)
+
+    !        Explicit arguments :  ZOUTS - symmetric data
+    !        --------------------  ZOUTA - asymmetric data
+    !                              ZOUTS0 - symmetric data for KMLOC0
+    !                              ZOUTA0 - asymmetric data for KMLOC0
+    !                              FOUBUF_IN - output towards TRMTOL
+    !                              KF_LEG - number of fields (we have 2XKF_LEG because complex)
+
+    !        Implicit arguments :  None.
+    !        --------------------
+
+    !     Externals.
+    !     ----------
+
+    !     Reference.
+    !     ----------
+    !        ECMWF Research Department documentation of the IFS
+
+    !     Author.
+    !     -------
+    !      Nils Wedi + Mats Hamrud + George Modzynski
+    !
+    !     Modifications.
+    !     --------------
+    !        J.Hague : Oct 2012 DR_HOOK round calls to DGEMM:
+    !      F. Vana  05-Mar-2015  Support for single precision
+    !     ------------------------------------------------------------------
+
+    USE PARKIND_ECTRANS  ,ONLY : JPIM,JPRB,JPRBT,JPRD
+    USE YOMHOOK, ONLY : LHOOK,DR_HOOK, JPHOOK
+    USE TPM_DIM, ONLY : R, R_NDGNH,R_NDGL
+    USE TPM_GEOMETRY,ONLY : G,G_NDGLU
+    USE TPM_DISTR, ONLY : D,D_NUMP,D_MYMS,D_NPNTGTB1
+
+    IMPLICIT NONE
+
+
+    !     DUMMY ARGUMENTS
+    REAL(KIND=JPRB),    INTENT(OUT) :: FOUBUF_IN(:)
+    REAL(KIND=JPRBT), INTENT(IN) :: ZOUTS(:), ZOUTA(:)
+    REAL(KIND=JPRD), INTENT(IN) :: ZOUTS0(:), ZOUTA0(:)
+    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
+
+    !     LOCAL
+    REAL(KIND=JPRBT) :: ZAOA, ZSOA
+
+    INTEGER(KIND=JPIM) :: KMLOC, KM, ISL, JGL, JK, IGLS, OFFSET1, OFFSET2
+    INTEGER(KIND=JPIM)  :: IOUT_STRIDES0, IOUT_STRIDES1
+    INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_STRIDES1
+
+    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+
+    IF (LHOOK) CALL DR_HOOK('LEINV_PACK',0,ZHOOK_HANDLE)
+
+    CALL LEINV_STRIDES(KF_LEG,IOUT_STRIDES0=IOUT_STRIDES0,IOUT_STRIDES1=IOUT_STRIDES1,&
+                       IOUT0_STRIDES0=IOUT0_STRIDES0,IOUT0_STRIDES1=IOUT0_STRIDES1)
+
+    !$ACC DATA PRESENT(D,D_MYMS,D_NPNTGTB1,G,G_NDGLU) &
+    !$ACC&     PRESENT(ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
+
+    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,ZAOA,ZSOA) ASYNC(1)
     DO KMLOC=1,D_NUMP
       DO JGL=1,R_NDGNH
         DO JK=1,2*KF_LEG
@@ -355,10 +419,8 @@ CONTAINS
     !$ACC WAIT(1)
 
     !$ACC END DATA
-    !$ACC END DATA
 
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
-    !     ------------------------------------------------------------------
+    IF (LHOOK) CALL DR_HOOK('LEINV_PACK',1,ZHOOK_HANDLE)
 
-  END SUBROUTINE LEINV
+  END SUBROUTINE LEINV_PACK
 END MODULE LEINV_MOD

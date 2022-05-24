@@ -102,7 +102,7 @@ MODULE LTINV_MOD
 
   SUBROUTINE LTINV(ALLOCATOR,HLTINV,KF_UV,KF_SCALARS,&
    & PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2, &
-   & FOUBUF_IN,FOUBUF_KFIELD)
+   & FOUBUF_IN)
 
   USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,   JPRBT
   USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
@@ -185,7 +185,6 @@ MODULE LTINV_MOD
   REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)  :: PSPSC3A(:,:,:)
   REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)  :: PSPSC3B(:,:,:)
   REAL(KIND=JPRB), POINTER, INTENT(OUT)  :: FOUBUF_IN(:)
-  INTEGER(KIND=JPIM), INTENT(OUT) :: FOUBUF_KFIELD
 
   INTEGER(KIND=JPIM) :: IFIRST, J3
 
@@ -288,40 +287,7 @@ MODULE LTINV_MOD
   CALL ASSIGN_PTR(FOUBUF_IN, GET_ALLOCATION(ALLOCATOR, HLTINV%HFOUBUF_IN),&
       & 1_C_SIZE_T, IALLOC_SZ)
 
-  !     ------------------------------------------------------------------
-
-
-  !*       3.    SPECTRAL COMPUTATIONS FOR U,V AND DERIVATIVES.
-  !              ----------------------------------------------
-
-  IF (LSYNC_TRANS) THEN
-    CALL GSTATS(440,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(440,1)
-  ENDIF
-  CALL GSTATS(422,0)
-  !$ACC DATA COPYIN(PSPVOR,PSPDIV) IF(KF_UV > 0)
-  !$ACC DATA COPYIN(PSPSCALAR) IF(PRESENT(PSPSCALAR) .AND. KF_SCALARS > 0)
-  !$ACC DATA COPYIN(PSPSC2) IF(NF_SC2 > 0)
-  !$ACC DATA COPYIN(PSPSC3A) IF(NF_SC3A > 0)
-  !$ACC DATA COPYIN(PSPSC3B) IF(NF_SC3B > 0)
-  IF (LSYNC_TRANS) THEN
-    CALL GSTATS(442,0)
-    CALL MPL_BARRIER(CDSTRING='')
-    CALL GSTATS(442,1)
-  ENDIF
-  CALL GSTATS(422,1)
-
-  ! Compute PIA Domain decomposition
-  IFIRST = 0
-  IFIRST = IFIRST + 2*KF_UV ! Vorticity or divergence
-  IFIRST = IFIRST + 2*KF_UV ! Vorticity or divergence
-  IFIRST = IFIRST + 2*KF_UV ! U
-  IFIRST = IFIRST + 2*KF_UV ! V
-  IFIRST = IFIRST + 2*KF_SCALARS ! Scalars
-  IF (LSCDERS) IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
-
-  ! And reiterate domain decomposition to assign pointers
+  ! Assign pointers do the different components of PIA
   IFIRST = 0
   IF (.NOT. LVORGP .OR. LDIVGP) THEN
     ! Usually we want to store vorticity first
@@ -349,6 +315,30 @@ MODULE LTINV_MOD
     PSCALARS_NSDER => PIA(IFIRST+1:IFIRST+2*KF_SCALARS,:,:)
     IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
   ENDIF
+
+  !     ------------------------------------------------------------------
+
+
+  !*       3.    SPECTRAL COMPUTATIONS FOR U,V AND DERIVATIVES.
+  !              ----------------------------------------------
+
+  IF (LSYNC_TRANS) THEN
+    CALL GSTATS(440,0)
+    CALL MPL_BARRIER(CDSTRING='')
+    CALL GSTATS(440,1)
+  ENDIF
+  CALL GSTATS(422,0)
+  !$ACC DATA COPYIN(PSPVOR,PSPDIV) IF(KF_UV > 0)
+  !$ACC DATA COPYIN(PSPSCALAR) IF(PRESENT(PSPSCALAR) .AND. KF_SCALARS > 0)
+  !$ACC DATA COPYIN(PSPSC2) IF(NF_SC2 > 0)
+  !$ACC DATA COPYIN(PSPSC3A) IF(NF_SC3A > 0)
+  !$ACC DATA COPYIN(PSPSC3B) IF(NF_SC3B > 0)
+  IF (LSYNC_TRANS) THEN
+    CALL GSTATS(442,0)
+    CALL MPL_BARRIER(CDSTRING='')
+    CALL GSTATS(442,1)
+  ENDIF
+  CALL GSTATS(422,1)
 
   IF (KF_UV > 0) THEN
     CALL PRFI1B(PVOR,PSPVOR,KF_UV,UBOUND(PSPVOR,2))
@@ -391,6 +381,7 @@ MODULE LTINV_MOD
   !$ACC END DATA
   !$ACC END DATA
 
+  ! Compute NS derivatives if needed
   IF (LSCDERS) THEN
     CALL SPNSDE(KF_SCALARS,ZEPSNM,PSCALARS,PSCALARS_NSDER)
   ENDIF
@@ -401,18 +392,10 @@ MODULE LTINV_MOD
   !*       4.    INVERSE LEGENDRE TRANSFORM.
   !              ---------------------------
 
-  ! Forget about Vorticity and divergence if we don't need it in the output
-  IFIRST = 1
-  IF(.NOT. LVORGP) IFIRST = IFIRST+2*KF_UV
-  IF(.NOT. LDIVGP) IFIRST = IFIRST+2*KF_UV
-
-  ! Keep this for next functions because we have to remember this
-  FOUBUF_KFIELD = SIZE(PIA,1)-IFIRST+1
-
-  ! Transform PIA into FOUBUF_IN
-  IF (FOUBUF_KFIELD > 0) THEN
-    CALL LEINV(PIA(IFIRST:,:,:),ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
-  ENDIF
+  ! Legendre transforms. When converting PIA into ZOUT, we ignore the first entries of LEINV.
+  ! This is because vorticity and divergence is not necessarily converted to GP space.
+  CALL LEINV(PIA(2*(IF_READIN-IF_LEG)+1:IF_READIN,:,:),ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,IF_LEG)
+  CALL LEINV_PACK(ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN,IF_LEG)
 
   IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
   !     ------------------------------------------------------------------
