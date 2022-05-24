@@ -1,3 +1,4 @@
+#define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2022- NVIDIA.
 ! 
@@ -459,8 +460,8 @@ print*,'R%NSMAX=',R%NSMAX
 
 ! Initialize A arrays
 
-ALLOCATE(ZAA(R%NDGNH,(R%NTMAX+2)/2,D%NUMP))
-ALLOCATE(ZAS(R%NDGNH,(R%NTMAX+3)/2,D%NUMP))
+ALLOCATE(ZAA(ALIGN(R%NDGNH,8),ALIGN((R%NTMAX+2)/2,8),D%NUMP))
+ALLOCATE(ZAS(ALIGN(R%NDGNH,8),ALIGN((R%NTMAX+3)/2,8),D%NUMP))
 
 write(nout,*)'setup_trans: sizes1 NUMP=',D%NUMP
 write(nout,*)'ZAS:',size(ZAS)
