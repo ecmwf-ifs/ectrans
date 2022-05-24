@@ -28,6 +28,9 @@ MODULE LTDIR_MOD
   USE UVTVD_MOD
   USE UPDSP_MOD   ,ONLY : UPDSP
   USE UPDSPB_MOD   ,ONLY : UPDSPB
+  USE MPL_MODULE      ,ONLY : MPL_BARRIER
+  USE TPM_GEN         ,ONLY : LSYNC_TRANS
+  USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
   
   !**** *LTDIR* - Control of Direct Legendre transform step
   
@@ -128,6 +131,12 @@ MODULE LTDIR_MOD
   ! do the legendre transform
   CALL LEDIR(FOUBUF,POA1,KF_FS,KF_UV)
 
+  !$ACC DATA COPYOUT(PSPVOR,PSPDIV) IF(KF_UV > 0)
+  !$ACC DATA COPYOUT(PSPSCALAR) IF(PRESENT(PSPSCALAR) .AND. KF_SCALARS > 0)
+  !$ACC DATA COPYOUT(PSPSC2) IF(NF_SC2 > 0)
+  !$ACC DATA COPYOUT(PSPSC3A) IF(NF_SC3A > 0)
+  !$ACC DATA COPYOUT(PSPSC3B) IF(NF_SC3B > 0)
+
   !     ------------------------------------------------------------------
   
   !*       5.    COMPUTE VORTICITY AND DIVERGENCE.
@@ -172,6 +181,20 @@ MODULE LTDIR_MOD
   
   !$ACC EXIT DATA DELETE(POA1)
   DEALLOCATE(POA1)
+
+  IF (LSYNC_TRANS) THEN
+    CALL MPL_BARRIER(CDSTRING='')
+  ENDIF
+  CALL GSTATS(430,0)
+  !$ACC END DATA
+  !$ACC END DATA
+  !$ACC END DATA
+  !$ACC END DATA
+  !$ACC END DATA
+  IF (LSYNC_TRANS) THEN
+    CALL MPL_BARRIER(CDSTRING='')
+  ENDIF
+  CALL GSTATS(430,1)
 
   !     ------------------------------------------------------------------
   
