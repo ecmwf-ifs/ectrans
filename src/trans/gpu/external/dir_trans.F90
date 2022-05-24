@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -122,6 +123,8 @@ USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 USE DIR_TRANS_CTL_MOD ,ONLY : DIR_TRANS_CTL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
+USE MPL_MODULE      ,ONLY : MPL_BARRIER
+USE TPM_GEN         ,ONLY : LSYNC_TRANS
 
 !endif INTERFACE
 
@@ -161,6 +164,9 @@ INTEGER(KIND=JPIM) :: JMLOC, IF_PP
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS',0,ZHOOK_HANDLE)
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='')
+ENDIF
 CALL GSTATS(440,0)
 CALL GSTATS(1808,0)
 ! Set current resolution
@@ -527,6 +533,9 @@ CALL DIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
 
  IF (LHOOK) CALL DR_HOOK('DIR_TRANS',1,ZHOOK_HANDLE)
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='')
+ENDIF
 CALL GSTATS(440,1)
 
 !     ------------------------------------------------------------------
