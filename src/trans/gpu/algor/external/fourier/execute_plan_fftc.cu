@@ -211,6 +211,7 @@ void execute_fft(typename Type::real *data_real, typename Type::cmplx *data_comp
 template <class Type, cufftType Direction>
 void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
+  constexpr bool is_forward = Direction == CUFFT_R2C || Direction == CUFFT_D2Z;
   using real = typename Type::real;
   using cmplx = typename Type::cmplx;
 
@@ -248,8 +249,8 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
             CUFFT_CHECK(cufftCreate(&plan));
             int dist = offsets[i+1] - offsets[i];
             int embed[] = {1};
-            CUFFT_CHECK(cufftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
-                                      1, dist / 2, Direction, kfield));
+            CUFFT_CHECK(cufftPlanMany(&plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed,
+                                      1, is_forward ? dist / 2 : dist, Direction, kfield));
             newPlans[i] = plan;
           }
           fftPlansCache.insert({kfield, newPlans});
@@ -321,7 +322,7 @@ void execute_dir_fft_float(float *data_real, cufftComplex *data_complex,
 }
 void execute_inv_fft_float(cufftComplex *data_complex, float *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
-    execute_fft<Float, CUFFT_C2R>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Float, CUFFT_C2R>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 void execute_dir_fft_double(double *data_real, cufftDoubleComplex *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
@@ -329,6 +330,6 @@ void execute_dir_fft_double(double *data_real, cufftDoubleComplex *data_complex,
 }
 void execute_inv_fft_double(cufftDoubleComplex *data_complex, double *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
-    execute_fft<Double, CUFFT_Z2D>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Double, CUFFT_Z2D>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 }
