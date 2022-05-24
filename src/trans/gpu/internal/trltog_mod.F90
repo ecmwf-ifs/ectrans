@@ -784,6 +784,7 @@ MODULE TRLTOG_MOD
   !              --------------------
   IF (LHOOK) CALL DR_HOOK('TRLTOG',0,ZHOOK_HANDLE)
   
+  !$ACC UPDATE HOST(PGLAT)
   
   CALL GSTATS(1806,0)
   
