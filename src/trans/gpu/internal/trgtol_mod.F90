@@ -176,6 +176,11 @@ MODULE TRGTOL_MOD
 
   !*       0.    Some initializations
   !              --------------------
+  ! Note we have either
+  ! - KVSETUV and KVSETSC (with PGP, which has u, v, and scalar fields), or
+  ! - KVSETUV, KVSETSC2, KVSETSC3A KVSETSC3B (with PGPUV, GP3A, PGP3B and PGP2)
+  ! KVSETs are optionals. Their sizes canalso be inferred from KV_UV_G/KV_SCALARS_G (which
+  ! should match PSPXXX and PGPXXX arrays)
   IOFF=0
   IF(PRESENT(KVSETUV)) THEN
     IVSET(IOFF+1:IOFF+KF_UV_G) = KVSETUV(:)
