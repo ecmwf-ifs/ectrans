@@ -103,15 +103,13 @@ MODULE LTDIR_MOD
   REAL(KIND=JPRBT),  ALLOCATABLE, INTENT(INOUT) :: FOUBUF(:)
  
   !     LOCAL INTEGER SCALARS
-  INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU
-  INTEGER(KIND=JPIM) :: IUS, IUE, IVS, IVE, IVORS, IVORE, IDIVS, IDIVE
+  INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU, IFIRST
   
-  REAL(KIND=JPRB), ALLOCATABLE :: POA1(:,:,:)
-  REAL(KIND=JPRB), ALLOCATABLE :: POA2(:,:,:)
+  REAL(KIND=JPRB), ALLOCATABLE, TARGET :: POA1(:,:,:)
+  REAL(KIND=JPRB), ALLOCATABLE, TARGET :: POA2(:,:,:)
+  REAL(KIND=JPRB), POINTER :: PU(:,:,:), PV(:,:,:), PVOR(:,:,:), PDIV(:,:,:)
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   
-  
-  !call cudaProfilerStart
   
   !     ------------------------------------------------------------------
   IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',0,ZHOOK_HANDLE)
@@ -143,15 +141,6 @@ MODULE LTDIR_MOD
   IF( KF_UV > 0 ) THEN
      !!CALL PREPSNM
 
-     IUS = 1
-     IUE = 2*KF_UV
-     IVS = 2*KF_UV+1
-     IVE = 4*KF_UV
-     IVORS = 1
-     IVORE = 2*KF_UV
-     IDIVS = 2*KF_UV+1
-     IDIVE = 4*KF_UV
-
      ALLOCATE(POA2(4*KF_UV,R%NTMAX+3,D%NUMP))
 #ifdef OMPGPU
 #endif
@@ -159,14 +148,23 @@ MODULE LTDIR_MOD
      !$ACC ENTER DATA CREATE(POA2)
 #endif
 
+     ! U and V are in POA1
+     IFIRST = 0
+     PU => POA1(IFIRST+1:IFIRST+2*KF_UV,:,:)
+     IFIRST = IFIRST + 2*KF_UV
+     PV => POA1(IFIRST+1:IFIRST+2*KF_UV,:,:)
+     ! Compute VOR and DIV ino POA2
+     IFIRST = 0
+     PVOR => POA2(IFIRST+1:IFIRST+2*KF_UV,:,:)
+     IFIRST = IFIRST + 2*KF_UV
+     PDIV => POA2(IFIRST+1:IFIRST+2*KF_UV,:,:)
 
      ! Compute vorticity and divergence
-     CALL UVTVD(KF_UV,POA1(IUS:IUE,:,:),POA1(IVS:IVE,:,:),&
-         & POA2(IVORS:IVORE,:,:),POA2(IDIVS:IDIVE,:,:))
+     CALL UVTVD(KF_UV,PU,PV,PVOR,PDIV)
 
      ! Write back. Note, if we have UV, the contract says we *must* have VOR/DIV
-     CALL UPDSPB(KF_UV,POA2(IVORS:IVORE,:,:),PSPVOR,KFLDPTRUV)
-     CALL UPDSPB(KF_UV,POA2(IDIVS:IDIVE,:,:),PSPDIV,KFLDPTRUV)
+     CALL UPDSPB(KF_UV,PVOR,PSPVOR,KFLDPTRUV)
+     CALL UPDSPB(KF_UV,PDIV,PSPDIV,KFLDPTRUV)
 
 
 #ifdef OMPGPU
@@ -181,14 +179,6 @@ MODULE LTDIR_MOD
   !*       6.    UPDATE SPECTRAL ARRAYS.
   !              -----------------------
   
-  !end loop over wavenumber
-  
-  !END DO
-  
-  !loop over wavenumber
-  !DO KMLOC=1,D%NUMP
-  !    KM = D%MYMS(KMLOC)
- 
   ! this is on the host, so need to cp from device, Nils
   CALL UPDSP(KF_UV,KF_SCALARS,POA1,&
    & PSPSCALAR,&
@@ -204,10 +194,5 @@ MODULE LTDIR_MOD
   
   IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',1,ZHOOK_HANDLE)
   
-  !end loop over wavenumber
-  !END DO
-
-  
-  !call cudaProfilerStop
   END SUBROUTINE LTDIR
   END MODULE LTDIR_MOD
