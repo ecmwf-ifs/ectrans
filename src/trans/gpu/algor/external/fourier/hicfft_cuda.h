@@ -39,6 +39,8 @@
 #define hipfftCreate cufftCreate
 #define hipfftDestroy cufftDestroy
 #define hipfftPlanMany cufftPlanMany
+#define hipfftGetSize cufftGetSize
+#define hipfftSetAutoAllocation cufftSetAutoAllocation 
 
 #define hipfftExecR2C cufftExecR2C
 #define hipfftExecC2R cufftExecC2R
@@ -49,6 +51,8 @@
 #define hipDeviceSynchronize cudaDeviceSynchronize
 #define hipDeviceReset cudaDeviceReset
 #define _hipGetErrorEnum _cudaGetErrorEnum
+#define hipFree cudaFree
+#define hipMalloc cudaMalloc
 
 inline static const char * _fftGetErrorEnum(cufftResult error)
 {

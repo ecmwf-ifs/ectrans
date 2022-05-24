@@ -5,10 +5,12 @@
 // static int allocatedWorkspace=0;
 // static void* planWorkspace;
 // static int planWorkspaceSize=100*1024*1024; //100MB
+void *planWorkspace;
+static int currentWorkspaceSize = 0;
 
 extern "C"
 void
-hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *stridep)
+hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *stridep, int *plan_size)
 {
     int ISIGN = *ISIGNp;
     int N = *Np;
@@ -21,16 +23,6 @@ hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *
       fprintf(stderr, "GPU runtime error: Failed to synchronize\n");
       return;
     }
-
-    // //create a single re-usable workspace
-    // if(!allocatedWorkspace){
-    //   allocatedWorkspace=1;
-    //   //allocate plan workspace
-    //   hipMalloc(&planWorkspace,planWorkspaceSize);
-    // }
-    //
-    // //disable auto allocation so we can re-use a single workspace (created above)
-    //  hipfftSetAutoAllocation(plan, false);
 
     int embed[1];
     int dist;
@@ -48,54 +40,41 @@ hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *
 
     fftSafeCall(hipfftCreate(*plan));
 
+    // Disable auto allocation
+    fftSafeCall(hipfftSetAutoAllocation(**plan, false));
+
     if( ISIGN== -1 ){
       fftSafeCall(hipfftPlanMany(*plan, 1, &N,
                     embed, stride, dist,
                     embed, stride, dist,
                     fft_dir, LOT));
-      //fftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_D2Z, LOT));
     }
     else if( ISIGN== 1){
       fftSafeCall(hipfftPlanMany(*plan, 1, &N,
                     embed, stride, dist,
                     embed, stride, dist,
                     fft_inv, LOT));
-      //fftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_Z2D, LOT));
     }
     else {
       abort();
     }
 
-    // // use our reusaable work area for the plan
-    // hipfftSetWorkArea(plan,planWorkspace);
+    // get size used by this plan
+    size_t thisWorkplanSize;
+    hipfftGetSize(**plan, &thisWorkplanSize);
 
-    /*
-    if( ISIGN== -1 ){
-      fftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_D2Z, LOT));
+    // check if this the work space is sufficiently large
+    if (thisWorkplanSize > currentWorkspaceSize) {
+      hipDeviceSynchronize();
+      hipFree(planWorkspace);
+      hipMalloc(&planWorkspace, thisWorkplanSize);
+      currentWorkspaceSize = thisWorkplanSize;
     }
-    else if( ISIGN== 1){
-      fftSafeCall(hipfftPlan1d(&plan, N, HIPFFT_Z2D, LOT));
-    }
-    else {
-      abort();
-    }
-    */
 
     if (hipDeviceSynchronize() != hipSuccess){
       fprintf(stderr, "GPU runtime error: Failed to synchronize\n");
       return;
     }
-
-    // // get size used by this plan
-    // size_t workSize;
-    // hipfftGetSize(plan,&workSize);
-    //
-    // // exit if we don't have enough space for the work area in the re-usable workspace
-    // if(workSize > planWorkspaceSize){
-    //   printf("create_plan_ffth: plan workspace size not large enough - exiting\n");
-    // exit(1);
-    // }
-
 
     return;
 
