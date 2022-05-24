@@ -54,6 +54,8 @@ inline void __cufftSafeCall(cufftResult err, const char *file, const int line) {
   }
 }
 
+extern void *planWorkspace;
+
 extern "C" void
 #ifdef TRANS_SINGLE
 execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftComplex *data_in,
@@ -66,10 +68,7 @@ execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftDoubleComplex *data_in,
   cufftHandle plan = *PLANp;
   int ISIGN = *ISIGNp;
 
-  /*if (cudaDeviceSynchronize() != cudaSuccess){
-          fprintf(stderr, "Cuda error: Failed to synchronize\n");
-          return;
-  }*/
+  cufftSafeCall(cufftSetWorkArea(plan, planWorkspace));
 
   if (ISIGN == -1) {
 #ifdef TRANS_SINGLE
@@ -86,11 +85,4 @@ execute_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, cufftDoubleComplex *data_in,
   } else {
     abort();
   }
-
-  // cudaDeviceSynchronize();
-
-  // if (cudaDeviceSynchronize() != cudaSuccess){
-  //	fprintf(stderr, "Cuda error: Failed to synchronize\n");
-  //	return;
-  //}
 }

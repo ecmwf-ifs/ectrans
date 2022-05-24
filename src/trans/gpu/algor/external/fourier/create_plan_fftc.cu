@@ -54,12 +54,11 @@ inline void __cufftSafeCall(cufftResult err, const char *file, const int line) {
   }
 }
 
-static int allocatedWorkspace = 0;
-static void *planWorkspace;
-static int planWorkspaceSize = 100 * 1024 * 1024; // 100MB
+void *planWorkspace;
+static int currentWorkspaceSize = 0;
 
 extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
-                                  int *LOTp, int *stridep) {
+                                  int *LOTp, int *stridep, int *plan_size) {
   int ISIGN = *ISIGNp;
   int N = *Np;
   int LOT = *LOTp;
@@ -71,17 +70,6 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
     fprintf(stderr, "Cuda error: Failed to synchronize\n");
     return;
   }
-
-  // //create a single re-usable workspace
-  // if(!allocatedWorkspace){
-  //   allocatedWorkspace=1;
-  //   //allocate plan workspace
-  //   cudaMalloc(&planWorkspace,planWorkspaceSize);
-  // }
-  //
-  // //disable auto allocation so we can re-use a single workspace (created
-  // above)
-  //  cufftSetAutoAllocation(plan, false);
 
   int embed[1];
   int dist;
@@ -99,6 +87,9 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
 
   cufftSafeCall(cufftCreate(&plan));
 
+  // Disable auto allocation
+  cufftSetAutoAllocation(plan, false);
+
   // printf("CreatePlan cuFFT\n","N=",N);
   // printf("%s %d \n","plan=",plan);
   // printf("%s %d \n","LOT=",LOT);
@@ -108,29 +99,24 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
   if (ISIGN == -1) {
     cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
                                 stride, dist, cufft_1, LOT));
-    // cufftSafeCall(cufftPlan1d(&plan, N, CUFFT_D2Z, LOT));
   } else if (ISIGN == 1) {
     cufftSafeCall(cufftPlanMany(&plan, 1, &N, embed, stride, dist, embed,
                                 stride, dist, cufft_2, LOT));
-    // cufftSafeCall(cufftPlan1d(&plan, N, CUFFT_Z2D, LOT));
   } else {
     abort();
   }
 
-  // // use our reusaable work area for the plan
-  // cufftSetWorkArea(plan,planWorkspace);
+  // get size used by this plan
+  size_t thisWorkplanSize;
+  cufftGetSize(plan, &thisWorkplanSize);
 
-  /*
-  if( ISIGN== -1 ){
-    cufftSafeCall(cufftPlan1d(&plan, N, CUFFT_D2Z, LOT));
+  // check if this the work space is sufficiently large
+  if (thisWorkplanSize > currentWorkspaceSize) {
+    cudaDeviceSynchronize();
+    cudaFree(planWorkspace);
+    cudaMalloc(&planWorkspace, thisWorkplanSize);
+    currentWorkspaceSize = thisWorkplanSize;
   }
-  else if( ISIGN== 1){
-    cufftSafeCall(cufftPlan1d(&plan, N, CUFFT_Z2D, LOT));
-  }
-  else {
-    abort();
-  }
-  */
 
   if (cudaDeviceSynchronize() != cudaSuccess) {
     fprintf(stderr, "Cuda error: Failed to synchronize\n");
@@ -138,17 +124,7 @@ extern "C" void create_plan_fftc_(cufftHandle *PLANp, int *ISIGNp, int *Np,
   }
 
   *PLANp = plan;
-
-  // // get size used by this plan
-  // size_t workSize;
-  // cufftGetSize(plan,&workSize);
-  //
-  // // exit if we don't have enough space for the work area in the re-usable
-  // workspace if(workSize > planWorkspaceSize){
-  //   printf("create_plan_fftc: plan workspace size not large enough -
-  //   exiting\n");
-  // exit(1);
-  // }
+  *plan_size = thisWorkplanSize;
 
   return;
 }
