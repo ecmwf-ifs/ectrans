@@ -46,6 +46,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   USE TPM_DISTR       ,ONLY : D
   USE TPM_GEOMETRY    ,ONLY : G
   USE TPM_FIELDS      ,ONLY : F
+  USE FOURIER_OUT_MOD ,ONLY : FOURIER_OUT
   
   
   USE LTDIR_MOD       ,ONLY : LTDIR
@@ -69,35 +70,33 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
 
-  ! Transposition from Fourier space distribution to spectral space distribution
-  ! requires currently both on the host !!!
+  CALL FOURIER_OUT(KF_FS)
 
   CALL GSTATS(153,0)
 #ifdef USE_CUDA_AWARE_MPI_FT
   WRITE(NOUT,*) 'ltdir_ctl:TRLTOM_CUDAAWARE'
-  CALL TRLTOM_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_FS)
+  CALL TRLTOM_CUDAAWARE(FOUBUF_IN,FOUBUF,KF_FS)
 #else
-  CALL TRLTOM(FOUBUF_IN,FOUBUF,2*KF_FS)
+  CALL TRLTOM(FOUBUF_IN,FOUBUF,KF_FS)
 #endif
   CALL GSTATS(153,1)
   
   ! Direct Legendre transform
   
   CALL GSTATS(103,0)
-  ILED2 = 2*KF_FS
   CALL GSTATS(1645,0)
-  IF(KF_FS>0) THEN
 
+  IF (KF_FS > 0) THEN
     CALL LTDIR(KF_FS,KF_UV,KF_SCALARS,ILED2, &
           & PSPVOR,PSPDIV,PSPSCALAR,&
           & PSPSC3A,PSPSC3B,PSPSC2 , &
           & KFLDPTRUV,KFLDPTRSC)
-  
   ENDIF
-   !$ACC END DATA
   CALL GSTATS(1645,1)
   
   CALL GSTATS(103,1)
+
+  !$ACC END DATA
   
   !     -----------------------------------------------------------------
   
