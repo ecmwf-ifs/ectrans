@@ -1,6 +1,8 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 !
+! (C) Copyright 2022- NVIDIA.
+! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -64,8 +66,8 @@ USE TPM_FIELDS       ,ONLY : F_RW, &
  &                           DZCST,DZCAT,DLDZCA,DLDZCS,DTDZCA,DTDZCS,&
  &                           ZAMAX, ZSMAX,&
  &                           IF_FS_DIR,ZAA0,DZBST0,DZCAT0,ZAS0,DZCST0,KMLOC0
-USE TPM_DISTR
 USE TPM_GEN          ,ONLY : NOUT
+USE TPM_DISTR
 USE TPM_FLT
 USE BUTTERFLY_ALG_MOD
 USE HICBLAS_MOD      ,ONLY : HIP_DGEMM_BATCHED, HIP_SGEMM_BATCHED
@@ -141,142 +143,53 @@ KIFC = KFC
 IF ( KMODE == -1 ) THEN
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
-!$OMP&     SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,DZBST,DLDZBA,DTDZBA,PAIA,F_RW)
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
+  !$OMP&     SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,DZBST,DLDZBA,DTDZBA,PAIA,F_RW)
 #endif
 #ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
-!$ACC&     COPYIN(KFC,DZBST,DLDZBA,DTDZBA) &
-!$ACC&     PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,PAIA,F_RW)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
+  !$ACC&     COPYIN(KFC,DZBST,DLDZBA,DTDZBA) &
+  !$ACC&     PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,PAIA,F_RW)
 #endif
-DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            ENDIF
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
-END DO
-
-
-! Get C in transpose format to get better memory access patterns later
-!C=A*B =>
-! C^T=B^T*A^T
-#ifdef OMPGPU
-!$OMP TARGET DATA USE_DEVICE_PTR(ZAA,DZBST,DZCAT)
-#endif
-#ifdef ACCGPU
-!$ACC HOST_DATA USE_DEVICE(ZAA,DZBST,DZCAT)
-#endif
-CALL HIP_GEMM_BATCHED( &
-  & 'N', 'N', &
-  & DTDZBA, TDZAA, DLDZBA, &
-  & 1.0_JPRBT, &
-  & DZBST, DTDZBA, DLDZBA, &
-  & ZAA, LDZAA, TDZAA, &
-  & 0._JPRBT, &
-  & DZCAT, DTDZCA, DLDZCA, &
-  & D_NUMP)
-#ifdef OMPGPU
-!$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-!$ACC END HOST_DATA
-#endif
-
-#ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE) &
-!$OMP&    SHARED(D_NUMP,R_NTMAX,KFC,D_MYMS,POA1,DZCAT,DLDZCA,DTDZCA)
-#endif
-#ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE) &
-!$ACC&    COPYIN(KFC,DLDZCA,DTDZCA) &
-!$ACC&    PRESENT(D_NUMP,R_NTMAX,D_MYMS,POA1,DZCAT)
-#endif
-DO KMLOC=1,D_NUMP
-   DO J=1,(R_NTMAX+2)/2
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
-            ISKIP = 2
-         ELSE
-            ISKIP = 1
-         ENDIF
-
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILA = (R_NTMAX-KM+2)/2
-            IA  = 1+MOD(R_NTMAX-KM+2,2)
-            IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
-ENDDO
-
-! compute m=0 in double precision:
-IF(KMLOC0 > 0) THEN
-   PRINT*,'computing m=0 in double precision'
-   ISKIP = 2
-
-#ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
-  !$OMP&     SHARED(R_NDGNH,KFC,G_NDGLU,DZBST0,DTDZBA,PAIA,KMLOC0,F_RW,ISKIP)
-#endif
-#ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
-  !$ACC&     COPYIN(KFC,DTDZBA,KMLOC0,ISKIP) &
-  !$ACC&     PRESENT(R_NDGNH,G_NDGLU,DZBST0,PAIA,F_RW)
-#endif
-   DO J=1,R_NDGNH
+  DO KMLOC=1,D_NUMP
     DO JK=1,KFC
-
-         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F_RW(ISL+J-1)
-            END IF
-         END IF
+      KM = D_MYMS(KMLOC)
+      KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
+      DO J=1,R_NDGNH
+        IF (J .LE. KDGLU) THEN
+          ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+          IF(KM == 0)THEN
+            ISKIP = 2
+          ELSE
+            ISKIP = 1
+          ENDIF
+          IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+            DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
+          END IF
+        END IF
+      ENDDO
     ENDDO
-  ENDDO
+  END DO
 
 
   ! Get C in transpose format to get better memory access patterns later
   !C=A*B =>
   ! C^T=B^T*A^T
-
 #ifdef OMPGPU
-  !$OMP TARGET DATA USE_DEVICE_PTR(ZAA0,DZBST0,DZCAT0)
+  !$OMP TARGET DATA USE_DEVICE_PTR(ZAA,DZBST,DZCAT)
 #endif
 #ifdef ACCGPU
-  !$ACC HOST_DATA USE_DEVICE(ZAA0,DZBST0,DZCAT0)
+  !$ACC HOST_DATA USE_DEVICE(ZAA,DZBST,DZCAT)
 #endif
-  CALL HIP_DGEMM_BATCHED( &
-       & 'N','N', &
-       & DTDZBA, TDZAA, DLDZBA, &
-       & 1.0_JPRD, &
-       & DZBST0,DTDZBA, DLDZBA,&
-       & ZAA0,LDZAA, TDZAA, &
-       & 0._JPRD, &
-       & DZCAT0,DTDZCA, DLDZCA, &
-       & 1)
-  !CALL HIP_DGEMM('N','N',DTDZBA,TDZAA,DLDZBA,1.0_JPRD,DZBST0,DTDZBA,&
-  !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
+  CALL HIP_GEMM_BATCHED( &
+    & 'N', 'N', &
+    & DTDZBA, TDZAA, DLDZBA, &
+    & 1.0_JPRBT, &
+    & DZBST, DTDZBA, DLDZBA, &
+    & ZAA, LDZAA, TDZAA, &
+    & 0._JPRBT, &
+    & DZCAT, DTDZCA, DLDZCA, &
+    & D_NUMP)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
 #endif
@@ -285,184 +198,269 @@ IF(KMLOC0 > 0) THEN
 #endif
 
 #ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE) &
-   !$OMP&    SHARED(R_NTMAX,KFC,POA1,DZCAT0,DTDZCA,KMLOC0,ISKIP)
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE) &
+  !$OMP&    SHARED(D_NUMP,R_NTMAX,KFC,D_MYMS,POA1,DZCAT,DLDZCA,DTDZCA)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE) &
-   !$ACC&    COPYIN(KFC,DTDZCA,KMLOC0,ISKIP) &
-   !$ACC&    PRESENT(R_NTMAX,POA1,DZCAT0)
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IA,ILS) DEFAULT(NONE) &
+  !$ACC&    COPYIN(KFC,DLDZCA,DTDZCA) &
+  !$ACC&    PRESENT(D_NUMP,R_NTMAX,D_MYMS,POA1,DZCAT)
 #endif
-   DO J=1,(R_NTMAX+2)/2
-   DO JK=1,KFC
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILA = (R_NTMAX+2)/2
-            IA  = 1+MOD(R_NTMAX+2,2)
-            IF (J .LE. ILA) THEN
-               POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*DTDZCA)
-            END IF
-         END IF
-   ENDDO
-ENDDO
-ENDIF
+  DO KMLOC=1,D_NUMP
+    DO J=1,(R_NTMAX+2)/2
+      DO JK=1,KFC
+  
+        KM = D_MYMS(KMLOC)
+        IF(KM == 0)THEN
+          ISKIP = 2
+        ELSE
+          ISKIP = 1
+        ENDIF
+  
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          ILA = (R_NTMAX-KM+2)/2
+          IA  = 1+MOD(R_NTMAX-KM+2,2)
+          IF (J .LE. ILA) THEN
+            POA1(JK,IA+(J-1)*2,KMLOC) = DZCAT((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCA)*DTDZCA)
+          END IF
+        END IF
+      ENDDO
+    ENDDO
+  ENDDO
+
+! compute m=0 in double precision:
+  IF(KMLOC0 > 0) THEN
+    PRINT*,'computing m=0 in double precision'
+    ISKIP = 2
+
+#ifdef OMPGPU
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
+    !$OMP&     SHARED(R_NDGNH,KFC,G_NDGLU,DZBST0,DTDZBA,PAIA,KMLOC0,F_RW,ISKIP)
+#endif
+#ifdef ACCGPU
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
+    !$ACC&     COPYIN(KFC,DTDZBA,KMLOC0,ISKIP) &
+    !$ACC&     PRESENT(R_NDGNH,G_NDGLU,DZBST0,PAIA,F_RW)
+#endif
+    DO J=1,R_NDGNH
+      DO JK=1,KFC
+        KDGLU = MIN(R_NDGNH,G_NDGLU(0))
+        IF (J .LE. KDGLU) THEN
+          ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+          IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+            DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC0)*F_RW(ISL+J-1)
+          END IF
+        END IF
+      ENDDO
+    ENDDO
+
+
+    ! Get C in transpose format to get better memory access patterns later
+    !C=A*B =>
+    ! C^T=B^T*A^T
+
+#ifdef OMPGPU
+    !$OMP TARGET DATA USE_DEVICE_PTR(ZAA0,DZBST0,DZCAT0)
+#endif
+#ifdef ACCGPU
+    !$ACC HOST_DATA USE_DEVICE(ZAA0,DZBST0,DZCAT0)
+#endif
+    CALL HIP_DGEMM_BATCHED( &
+         & 'N','N', &
+         & DTDZBA, TDZAA, DLDZBA, &
+         & 1.0_JPRD, &
+         & DZBST0,DTDZBA, DLDZBA,&
+         & ZAA0,LDZAA, TDZAA, &
+         & 0._JPRD, &
+         & DZCAT0,DTDZCA, DLDZCA, &
+         & 1)
+    !CALL HIP_DGEMM('N','N',DTDZBA,TDZAA,DLDZBA,1.0_JPRD,DZBST0,DTDZBA,&
+    !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
+#ifdef OMPGPU
+    !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+    !$ACC END HOST_DATA
+#endif
+
+#ifdef OMPGPU
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE) &
+    !$OMP&    SHARED(R_NTMAX,KFC,POA1,DZCAT0,DTDZCA,KMLOC0,ISKIP)
+#endif
+#ifdef ACCGPU
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS) DEFAULT(NONE) &
+    !$ACC&    COPYIN(KFC,DTDZCA,KMLOC0,ISKIP) &
+    !$ACC&    PRESENT(R_NTMAX,POA1,DZCAT0)
+#endif
+    DO J=1,(R_NTMAX+2)/2
+      DO JK=1,KFC
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          ILA = (R_NTMAX+2)/2
+          IA  = 1+MOD(R_NTMAX+2,2)
+          IF (J .LE. ILA) THEN
+            POA1(JK,IA+(J-1)*2,KMLOC0) = DZCAT0((JK-1)/ISKIP+1+(J-1)*DTDZCA)
+          END IF
+        END IF
+      ENDDO
+    ENDDO
+  ENDIF
 
 ELSE
 
 ! symmetric
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
-!$OMP&     SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,DZBST,DLDZBS,DTDZBS,PAIA,F_RW)
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
+  !$OMP&     SHARED(D_NUMP,R_NDGNH,KFC,D_MYMS,G_NDGLU,DZBST,DLDZBS,DTDZBS,PAIA,F_RW)
 #endif
 #ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
-!$ACC &    COPYIN(KFC,DLDZBS,DTDZBS) &
-!$ACC &    PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,DZBST,PAIA,F_RW)
-#endif
-DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH
-      DO JK=1,KFC
-         KM = D_MYMS(KMLOC)
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            ENDIF
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
-END DO
-
-! Get C in transpose format to get better memory access patterns later
-!C=A*B =>
-! C^T=B^T*A^T
-#ifdef OMPGPU
-!$OMP TARGET DATA USE_DEVICE_PTR(ZAS,DZBST,DZCST)
-#endif
-#ifdef ACCGPU
-!$ACC HOST_DATA USE_DEVICE(ZAS,DZBST,DZCST)
-#endif
-CALL HIP_GEMM_BATCHED( &
-  & 'N', 'N', &
-  & DTDZBS, TDZAS, DLDZBS, &
-  & 1.0_JPRBT, &
-  & DZBST, DTDZBS, DLDZBS, &
-  & ZAS, LDZAS, TDZAS, &
-  & 0._JPRBT, &
-  & DZCST, DTDZCS, DLDZCS, &
-  & D_NUMP)
-#ifdef OMPGPU
-!$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-!$ACC END HOST_DATA
-#endif
-
-#ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IS,ILS) DEFAULT(NONE) &
-!$OMP&    SHARED(D_NUMP,R_NTMAX,KFC,D_MYMS,POA1,DZCST,DLDZCS,DTDZCS)
-#endif
-#ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,ILS,IS) DEFAULT(NONE) &
-!$ACC&    COPYIN(KFC,DLDZCS,DTDZCS) &
-!$ACC&    PRESENT(D_NUMP,R_NTMAX,D_MYMS,POA1,DZCST)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE) &
+  !$ACC &    COPYIN(KFC,DLDZBS,DTDZBS) &
+  !$ACC &    PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,DZBST,PAIA,F_RW)
 #endif
   DO KMLOC=1,D_NUMP
-   DO J=1,(R_NTMAX+3)/2
-      DO JK=1,KFC
-
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
+    DO JK=1,KFC
+      KM = D_MYMS(KMLOC)
+      KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
+      DO J=1,R_NDGNH
+        IF (J .LE. KDGLU) THEN
+          ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
+          IF(KM == 0)THEN
             ISKIP = 2
-         ELSE
+          ELSE
             ISKIP = 1
-         ENDIF
-
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILS = (R_NTMAX-KM+3)/2
-            IF (J .LE. ILS) THEN
-               IS  = 1+MOD(R_NTMAX-KM+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
-            END IF
-         END IF
+          ENDIF
+          IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+            DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F_RW(ISL+J-1)
+          END IF
+        END IF
       ENDDO
-   ENDDO
-ENDDO
+    ENDDO
+  END DO
 
-IF(KMLOC0 > 0) THEN
-   ISKIP=2
+  ! Get C in transpose format to get better memory access patterns later
+  !C=A*B =>
+  ! C^T=B^T*A^T
 #ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
-   !$OMP&     SHARED(R_NDGNH,KFC,G_NDGLU,DZBST0,DTDZBS,PAIA,KMLOC0,F_RW,ISKIP)
+  !$OMP TARGET DATA USE_DEVICE_PTR(ZAS,DZBST,DZCST)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
-   !$ACC&     COPYIN(KFC,DTDZBS,KMLOC0,ISKIP) &
-   !$ACC&     PRESENT(R_NDGNH,G_NDGLU,DZBST0,PAIA,F_RW)
+  !$ACC HOST_DATA USE_DEVICE(ZAS,DZBST,DZCST)
 #endif
-   DO J=1,R_NDGNH
+  CALL HIP_GEMM_BATCHED( &
+    & 'N', 'N', &
+    & DTDZBS, TDZAS, DLDZBS, &
+    & 1.0_JPRBT, &
+    & DZBST, DTDZBS, DLDZBS, &
+    & ZAS, LDZAS, TDZAS, &
+    & 0._JPRBT, &
+    & DZCST, DTDZCS, DLDZCS, &
+    & D_NUMP)
+#ifdef OMPGPU
+  !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+  !$ACC END HOST_DATA
+#endif
+
+#ifdef OMPGPU
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,IS,ILS) DEFAULT(NONE) &
+  !$OMP&    SHARED(D_NUMP,R_NTMAX,KFC,D_MYMS,POA1,DZCST,DLDZCS,DTDZCS)
+#endif
+#ifdef ACCGPU
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,ILS,IS) DEFAULT(NONE) &
+  !$ACC&    COPYIN(KFC,DLDZCS,DTDZCS) &
+  !$ACC&    PRESENT(D_NUMP,R_NTMAX,D_MYMS,POA1,DZCST)
+#endif
+  DO KMLOC=1,D_NUMP
+    DO J=1,(R_NTMAX+3)/2
       DO JK=1,KFC
-         KDGLU = MIN(R_NDGNH,G_NDGLU(0))
-         IF (J .LE. KDGLU) THEN
-            ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
-           IF (MOD((JK-1),ISKIP) .eq. 0) THEN
-               DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F_RW(ISL+J-1)
-           END IF
-         END IF
+  
+        KM = D_MYMS(KMLOC)
+        IF(KM == 0)THEN
+          ISKIP = 2
+        ELSE
+          ISKIP = 1
+        ENDIF
+  
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          ILS = (R_NTMAX-KM+3)/2
+          IF (J .LE. ILS) THEN
+            IS  = 1+MOD(R_NTMAX-KM+1,2)
+            POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
+          END IF
+        END IF
       ENDDO
-   ENDDO
+    ENDDO
+  ENDDO
 
-      ! Get C in transpose format to get better memory access patterns later
-      !C=A*B =>
-      ! C^T=B^T*A^T
-
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(ZAS0,DZBST0,DZCST0)
-#endif
+  IF(KMLOC0 > 0) THEN
+    ISKIP=2
 #ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_PTR(ZAS0,DZBST0,DZCST0)
-#endif
-      CALL HIP_DGEMM_BATCHED('N','N',&
- &                            DTDZBS,TDZAS,DLDZBS,&
- &                            1.0_JPRD,DZBST0,DTDZBS,DLDZBS,&
- &                            ZAS0,LDZAS,TDZAS,&
- &                            0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
+    !$OMP&     SHARED(R_NDGNH,KFC,G_NDGLU,DZBST0,DTDZBS,PAIA,KMLOC0,F_RW,ISKIP)
 #endif
 #ifdef ACCGPU
-      !$ACC END HOST_DATA
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KDGLU,ISL) DEFAULT(NONE) &
+    !$ACC&     COPYIN(KFC,DTDZBS,KMLOC0,ISKIP) &
+    !$ACC&     PRESENT(R_NDGNH,G_NDGLU,DZBST0,PAIA,F_RW)
 #endif
-
-#ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ILA,ILS,IS) DEFAULT(NONE) &
-   !$OMP&    SHARED(R_NTMAX,KFC,POA1,DZCST0,DTDZCS,KMLOC0,ISKIP)
-#endif
-#ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,ILS,IS) DEFAULT(NONE) &
-   !$ACC&    COPYIN(KFC,DTDZCS,KMLOC0,ISKIP) &
-   !$ACC&    PRESENT(R_NTMAX,POA1,DZCST0)
-#endif
-   DO J=1,(R_NTMAX+3)/2
+    DO J=1,R_NDGNH
       DO JK=1,KFC
-         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-            ILS = (R_NTMAX+3)/2
-            IF (J .LE. ILS) THEN
-               IS  = 1+MOD(R_NTMAX+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
-            end if
-         end if
+        KDGLU = MIN(R_NDGNH,G_NDGLU(0))
+        IF (J .LE. KDGLU) THEN
+          ISL = MAX(R_NDGNH-G_NDGLU(0)+1,1)
+          IF (MOD((JK-1),ISKIP) .eq. 0) THEN
+            DZBST0((JK-1)/ISKIP+1+(J-1)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC0)*F_RW(ISL+J-1)
+          END IF
+        END IF
       ENDDO
-   ENDDO
+    ENDDO
 
-ENDIF
+    ! Get C in transpose format to get better memory access patterns later
+    !C=A*B =>
+    ! C^T=B^T*A^T
+
+#ifdef OMPGPU
+    !$OMP TARGET DATA USE_DEVICE_PTR(ZAS0,DZBST0,DZCST0)
+#endif
+#ifdef ACCGPU
+    !$ACC HOST_DATA USE_DEVICE(ZAS0,DZBST0,DZCST0)
+#endif
+    CALL HIP_DGEMM_BATCHED('N','N',&
+ &                          DTDZBS,TDZAS,DLDZBS,&
+ &                          1.0_JPRD,DZBST0,DTDZBS,DLDZBS,&
+ &                          ZAS0,LDZAS,TDZAS,&
+ &                          0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
+#ifdef OMPGPU
+    !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+    !$ACC END HOST_DATA
+#endif
+
+#ifdef OMPGPU
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ILA,ILS,IS) DEFAULT(NONE) &
+    !$OMP&    SHARED(R_NTMAX,KFC,POA1,DZCST0,DTDZCS,KMLOC0,ISKIP)
+#endif
+#ifdef ACCGPU
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,ILS,IS) DEFAULT(NONE) &
+    !$ACC&    COPYIN(KFC,DTDZCS,KMLOC0,ISKIP) &
+    !$ACC&    PRESENT(R_NTMAX,POA1,DZCST0)
+#endif
+    DO J=1,(R_NTMAX+3)/2
+      DO JK=1,KFC
+        IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
+          ILS = (R_NTMAX+3)/2
+          IF (J .LE. ILS) THEN
+            IS  = 1+MOD(R_NTMAX+1,2)
+            POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
+          END IF
+        END IF
+      ENDDO
+    ENDDO
+  
+  ENDIF
 
 ENDIF
 
