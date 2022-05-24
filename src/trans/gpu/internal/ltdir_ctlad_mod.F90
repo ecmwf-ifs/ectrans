@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -33,7 +33,7 @@ SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : LALLOPERM
 !USE TPM_DIM
@@ -41,7 +41,7 @@ USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
 USE TPM_DISTR       ,ONLY : D
 
 USE LTDIRAD_MOD     ,ONLY : LTDIRAD
-USE TRMTOL_MOD      ,ONLY : TRMTOL
+!USE TRMTOL_MOD      ,ONLY : TRMTOL
 !
 
 IMPLICIT NONE
@@ -101,7 +101,7 @@ CALL GSTATS(1646,1)
 CALL GSTATS(105,1)
 
 CALL GSTATS(181,0)
-CALL TRMTOL(FOUBUF,FOUBUF_IN,2*KF_FS)
+!CALL TRMTOL(FOUBUF,FOUBUF_IN,2*KF_FS)
 CALL GSTATS(181,1)
 IF (.NOT.LALLOPERM) DEALLOCATE(FOUBUF)
 !     ------------------------------------------------------------------
