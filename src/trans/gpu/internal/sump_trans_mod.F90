@@ -262,12 +262,12 @@ IF(.NOT.D%LGRIDONLY) THEN
   DO JGL=1,D%NDGL_FS
     D%NSTAGTF(JGL) = IOFF
     IGL = D%NPTRLS(MYSETW) + JGL - 1
-    IOFF = IOFF + G%NLOEN(IGL)+3
-    ! Make sure IOFF is even. This could really lead to slightly too large buffers
-    ! esp because the (+3) above (needed?), but it is crucial to have those even
-    ! because with these offsets we can store complex numbers, and CUFFT won't accept
-    ! unaligned complex buffers
-    IOFF = (IOFF+1)/2*2
+    ! Each latitude should be able to store NLON real values, or floor(NLON/2)+1
+    ! complex values. Note that IOFF should always be even, because we need to
+    ! store complex values (i.e. 2 floats), but this is the case anyway.
+    ! WARNING: Extra padding changes results, potentially, though it does not
+    ! cause wrong results.
+    IOFF = IOFF + (G%NLOEN(IGL)/2+1)*2
   ENDDO
   D%NSTAGTF(D%NDGL_FS+1) = IOFF
   D%NLENGTF = IOFF
