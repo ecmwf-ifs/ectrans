@@ -114,8 +114,6 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
   REAL(KIND=JPRBT),ALLOCATABLE :: ZCOMBUFS(:,:),ZCOMBUFR(:,:)
   REAL(KIND=JPRBT) :: ZDUM(2)
 
-  INTEGER(KIND=JPIM) :: ISENT    (NPROC)
-  INTEGER(KIND=JPIM) :: IRCVD    (NPROC)
   INTEGER(KIND=JPIM) :: ISENDTOT (NPROC)
   INTEGER(KIND=JPIM) :: IRECVTOT (NPROC)
   INTEGER(KIND=JPIM) :: IREQ     (NPROC*2)
@@ -125,8 +123,8 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: IFIRST, IFIRSTLAT, IGL, IGLL, ILAST,&
                &ILASTLAT, ILEN, JROC, IPOS, ISETA, &
-               &ISETB, IRECV, IRECVSET, &
-               &ISETV, ISEND, ISENDSET, ITAG, J, JBLK, JFLD, &
+               &ISETB, IRECV, &
+               &ISETV, ISEND, ITAG, J, JBLK, JFLD, &
                &JGL, JK, JL, JLOOP, ISETW,  IFLD, &
                &II,INDOFFX,IBUFLENS,IBUFLENR,INRECV, IPROC,IFLDS, &
                &INSEND,INS,INR,IR, IUNIT, JKL, JK_MAX
@@ -363,69 +361,91 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
   DO JROC=1,NPROC
 
     CALL PE2SET(JROC,ISETA,ISETB,ISETW,ISETV)
-    IRECVSET = ISETA
+    
     ISEND = JROC
-    ISENDSET = ISETV
-    ISENT(JROC) = 0
-    IRCVD(JROC) = 0
 
-  !             count up expected number of fields
+    !             count up expected number of fields
+    ! if fields are not distributed over processes, KVSET=-=1, so IPOS=KF_GP,
+    ! otherwise we count how many fields are stored in this V-set. This is used to figure out
+    ! how much data we are going to send *to* that process JROC. Keep in mind at this point (g-space)
+    ! all fields are on this process so we have total overlap!
+    ! basically we count the size of the V set
     IPOS = 0
     DO JFLD=1,KF_GP
-      IF(KVSET(JFLD) == ISENDSET .OR. KVSET(JFLD) == -1) IPOS = IPOS+1
+      IF(KVSET(JFLD) == ISETV .OR. KVSET(JFLD) == -1) IPOS = IPOS+1
     ENDDO
     ISEND_FLD_TOTAL(JROC) = IPOS
+    ! the W-set is horizontal distribution only - how much data are we going to send to
+    ! that process? IGPTRRECV tells me about one layer.
     ISENDTOT(JROC) = IGPTRRECV(ISETW)*IPOS
 
     IF( JROC /= MYPROC) THEN
+      ! IBUFLENS sums up all but my process
       IBUFLENS = MAX(IBUFLENS,ISENDTOT(JROC))
       IF(ISENDTOT(JROC) > 0) THEN
+        ! I have to send something, so let me store that
         INSEND = INSEND+1
         JSEND(INSEND)=JROC
       ENDIF
     ENDIF
 
-    IFIRSTLAT = MAX(D%NPTRLS(MYSETW),D%NFRSTLAT(IRECVSET))
-    ILASTLAT  = MIN(D%NPTRLS(MYSETW)+D%NULTPP(MYSETW)-1,D%NLSTLAT(IRECVSET))
+    ! THIS IS RECEIVER SIDE:
+
+    ! MAX(Index of first fourier latitude for this W set, first latitude of a senders A set)
+    ! i.e. we find the overlap between what we have on sender side (others A set) and the receiver
+    ! (me, the W-set). Ideally those conincide, at least mostly.
+    IFIRSTLAT = MAX(D%NPTRLS(MYSETW),D%NFRSTLAT(ISETA))
+    ! MIN(Index of last fourier latitude for this W set, last latitude of a senders A set)
+    ILASTLAT  = MIN(D%NPTRLS(MYSETW)+D%NULTPP(MYSETW)-1,D%NLSTLAT(ISETA))
 
     IPOS = 0
     DO JGL=IFIRSTLAT,ILASTLAT
-      IGL  = D%NPTRFRSTLAT(IRECVSET)+JGL-D%NFRSTLAT(IRECVSET)
+      ! get from "actual" latitude to the latitude strip offset
+      IGL  = D%NPTRFRSTLAT(ISETA)+JGL-D%NFRSTLAT(ISETA)
+      ! number of gridpoints on this latitude strip on my process
       IPOS = IPOS+D%NONL(IGL,ISETB)
     ENDDO
 
+    ! We always receive the full fourier space
     IRECVTOT(JROC) = IPOS*KF_FS
 
-    IF(IRECVTOT(JROC) > 0 .AND. MYPROC /= JROC) THEN
-      INRECV = INRECV + 1
-      JRECV(INRECV)=JROC
+    IF( JROC /= MYPROC) THEN
+      ! IBUFLENR sums up all but my process
+      IBUFLENR = MAX(IBUFLENR,IRECVTOT(JROC))
+      IF(IRECVTOT(JROC) > 0) THEN
+        ! I have to recv something, so let me store that
+        INRECV = INRECV + 1
+        JRECV(INRECV)=JROC
+      ENDIF
     ENDIF
 
-    IF( JROC /= MYPROC) IBUFLENR = MAX(IBUFLENR,IRECVTOT(JROC))
+    IF(IRECVTOT(JROC) > 0) THEN
+      ! If  I have to recv something, we need to fill KINDEX, this is the unpacking instruction...
 
-    IF(IPOS > 0) THEN
+      ! INDOFF is the offset to the first gridpoint on this process, only considering a
+      ! single layer, e.g KF_FS=1
       INDOFF(JROC) = INDOFFX
-      INDOFFX = INDOFFX+IPOS
+      INDOFFX = INDOFFX+IRECVTOT(JROC)/KF_FS
+
       IPOS = 0
       DO JGL=IFIRSTLAT,ILASTLAT
-        IGL  = D%NPTRFRSTLAT(IRECVSET)+JGL-D%NFRSTLAT(IRECVSET)
+        ! get from "actual" latitude to the latitude strip offset
+        IGL  = D%NPTRFRSTLAT(ISETA)+JGL-D%NFRSTLAT(ISETA)
+        ! get from "actual" latitude to the latitude offset
         IGLL = JGL-D%NPTRLS(MYSETW)+1
         DO JL=D%NSTA(IGL,ISETB)+D%NSTAGTF(IGLL),&
          &D%NSTA(IGL,ISETB)+D%NSTAGTF(IGLL)+D%NONL(IGL,ISETB)-1
           IPOS = IPOS+1
-          KINDEX(IPOS+INDOFF(JROC)) = JL
+          ! indicates where the data has to be stored
+          KINDEX(INDOFF(JROC)+IPOS) = JL
         ENDDO
       ENDDO
     ENDIF
 
   ENDDO
 
-  ISENDCOUNT=0
-  IRECVCOUNT=0
-  DO J=1,NPROC
-    ISENDCOUNT=MAX(ISENDCOUNT,ISENDTOT(J))
-    IRECVCOUNT=MAX(IRECVCOUNT,IRECVTOT(J))
-  ENDDO
+  ISENDCOUNT=MAXVAL(ISENDTOT)
+  IRECVCOUNT=MAXVAL(IRECVTOT)
 
   IF (IBUFLENS > 0) THEN
     ALLOCATE(ZCOMBUFS(ISENDCOUNT,INSEND))
@@ -481,6 +501,8 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
 #endif
 
   IF(ISENDTOT(MYPROC) > 0 )THEN
+    ! I have to send something to myself...
+
     ! Input is KF_GP fields. We find the resulting KF_FS fields.
     IFLDS = 0
     DO JFLD=1,KF_GP
@@ -530,9 +552,8 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
           ILAST = IGPTRSEND(2,JBLK,MYSETW)
           JK = JKL+IFIRST-1
           IF(IFIRST > 0 .AND. JK <= ILAST) THEN
-            IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
-            IFLD = IFLDOFF(JFLD)
-            PGLAT(JFLD,KINDEX(IPOS)) = PGP(JK,IFLD,JBLK)
+            IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JKL
+            PGLAT(JFLD,KINDEX(IPOS)) = PGP(JK,IFLDOFF(JFLD),JBLK)
           ENDIF
         ENDDO
       ENDDO
@@ -565,7 +586,7 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
           ILAST = IGPTRSEND(2,JBLK,MYSETW)
           JK = JKL+IFIRST-1
           IF(IFIRST > 0 .AND. JK <= ILAST) THEN
-            IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
+            IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JKL
             IFLD = IFLDOFF(JFLD)
             IF(LLUV(IFLD)) THEN
               PGLAT(JFLD,KINDEX(IPOS)) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK)
@@ -602,12 +623,11 @@ SUBROUTINE TRGTOL_CUDAAWARE(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,KPTRGP,&
     DO INS=1,INSEND
       ISEND=JSEND(INS)
       CALL PE2SET(ISEND,ISETA,ISETB,ISETW,ISETV)
-      ISENDSET = ISETV
       ISEND_FLD_CNT = ISEND_FLD_TOTAL(ISEND)
       IFLD = 0
       IPOS = 0
       DO JFLD=1,KF_GP
-        IF(KVSET(JFLD) == ISENDSET .OR. KVSET(JFLD) == -1 ) THEN
+        IF(KVSET(JFLD) == ISETV .OR. KVSET(JFLD) == -1 ) THEN
           IFLD = IFLD+1
           IFLDA(IFLD)=JFLD
         ENDIF
