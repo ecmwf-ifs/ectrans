@@ -77,7 +77,7 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
   cudaDeviceSynchronize();
 
 
-  cublasDgemmBatched(handle_dgemm,op_t1,op_t2,m,n,k,&alpha,(const double**) d_Aarray,lda, (const double**) d_Barray,ldb,&beta,(double**) d_Carray,ldc,batchCount);
+  cublasDgemmStridedBatched(handle_dgemm,op_t1,op_t2,m,n,k,&alpha,A,lda, lda*tda,B,ldb,ldb*tdb,&beta,C,ldc,ldc*tdc,batchCount);
 
   cudaDeviceSynchronize();
   
@@ -150,7 +150,7 @@ extern "C" void cublasSgemmBatched_wrapper (char transa, char transb, int m, int
   cudaMemcpy(d_Barray_sgemm,Barray_sgemm,batchCount*sizeof(float*),cudaMemcpyHostToDevice);
   cudaMemcpy(d_Carray_sgemm,Carray_sgemm,batchCount*sizeof(float*),cudaMemcpyHostToDevice);
 
-  cublasSgemmBatched(handle_sgemm,op_t1,op_t2,m,n,k,&alpha,(const float**) d_Aarray_sgemm,lda, (const float**) d_Barray_sgemm,ldb,&beta,(float**) d_Carray_sgemm,ldc,batchCount);
+  cublasSgemmStridedBatched(handle_sgemm,op_t1,op_t2,m,n,k,&alpha,A,lda, lda*tda,B,ldb,ldb*tdb,&beta,C,ldc,ldc*tdc,batchCount);
 
   //printf("after sgemm\n");
   cudaDeviceSynchronize();
