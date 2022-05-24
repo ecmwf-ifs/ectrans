@@ -10,10 +10,9 @@
 
 MODULE LTINV_CTL_MOD
   CONTAINS
-  SUBROUTINE LTINV_CTL(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
-   & PSPVOR,PSPDIV,PSPSCALAR,&
-   & PSPSC3A,PSPSC3B,PSPSC2,&
-   & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
+  SUBROUTINE LTINV_CTL(KF_UV,KF_SCALARS,&
+   & PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
+   & KFLDPTRUV,KFLDPTRSC)
   
   !**** *LTINV_CTL* - Control routine for inverse Legandre transform.
   
@@ -24,17 +23,13 @@ MODULE LTINV_CTL_MOD
   !**   Interface.
   !     ----------
   !     CALL INV_TRANS_CTL(...)
-  !     KF_OUT_LT    - number of fields coming out from inverse LT
   !     KF_UV        - local number of spectral u-v fields
   !     KF_SCALARS   - local number of scalar spectral fields
-  !     KF_SCDERS    - local number of derivatives of scalar spectral fields
   !     PSPVOR(:,:)  - spectral vorticity (input)
   !     PSPDIV(:,:)  - spectral divergence (input)
   !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
   !     KFLDPTRUV(:) - field pointer array for vor./div.
   !     KFLDPTRSC(:) - field pointer array for PSPSCALAR
-  !     FSPGL_PROC  - external procedure to be executed in fourier space
-  !                   before transposition
   
   !     Method.
   !     -------
@@ -60,7 +55,6 @@ MODULE LTINV_CTL_MOD
   USE TPM_TRANS       ,ONLY : FOUBUF
   USE TPM_DISTR       ,ONLY : D
   USE TPM_GEOMETRY    ,ONLY : G
-  USE TPM_FIELDS      ,ONLY : ZGTF_START, ZGTF_START_INDEX_NSDERS
   
   USE TPM_FLT
   
@@ -69,7 +63,7 @@ MODULE LTINV_CTL_MOD
   
   IMPLICIT NONE
   
-  INTEGER(KIND=JPIM),INTENT(IN) :: KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS
+  INTEGER(KIND=JPIM),INTENT(IN) :: KF_UV,KF_SCALARS
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPVOR(:,:)
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPDIV(:,:)
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPSCALAR(:,:)
@@ -78,8 +72,6 @@ MODULE LTINV_CTL_MOD
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPSC2(:,:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRUV(:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRSC(:)
-  EXTERNAL  FSPGL_PROC
-  OPTIONAL  FSPGL_PROC
   
   INTEGER(KIND=JPIM) :: JM,IM,i, j, KFIELD
   REAL(KIND=JPRB), ALLOCATABLE :: FOUBUF_IN(:)
