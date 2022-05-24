@@ -223,10 +223,10 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
 
             hipfftHandle plan;
             fftSafeCall(hipfftCreate(&plan));
-            int dist = 1;
+            int dist = offsets[i+1] - offsets[i];
             int embed[] = {1};
-            fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, kfield, dist, embed,
-                                      kfield, dist, Direction, kfield));
+            fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
+                                      1, dist / 2, Direction, kfield));
             newPlans[i] = plan;
           }
           fftPlansCache.insert({kfield, newPlans});
@@ -305,7 +305,8 @@ void execute_inv_fft_float(hipfftComplex *data_complex, float *data_real,
 }
 void execute_dir_fft_double(double *data_real, hipfftDoubleComplex *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
-    execute_fft<Double, HIPFFT_D2Z>(data_real, data_complex, kfield, loens, offsets, nfft);
+    //execute_fft<Double, HIPFFT_D2Z>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Double, HIPFFT_D2Z>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 void execute_inv_fft_double(hipfftDoubleComplex *data_complex, double *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
