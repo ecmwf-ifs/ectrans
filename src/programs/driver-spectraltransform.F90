@@ -77,6 +77,10 @@ REAL(KIND=JPRB), POINTER :: ZDIV(:,:) => NULL()
 REAL(KIND=JPRB), POINTER :: ZT(:,:,:) => NULL()
 REAL(KIND=JPRB), ALLOCATABLE :: ZSP(:,:)
 
+REAL(KIND=JPRB),ALLOCATABLE :: PAVE(:)
+REAL(KIND=JPRB),ALLOCATABLE :: PMIN(:)
+REAL(KIND=JPRB),ALLOCATABLE :: PMAX(:)
+
 LOGICAL :: LSTACK
 LOGICAL :: LDONE,LSTDEV
 LOGICAL :: LUSERPNM, LKEEPRPNM, LUSEFLT
@@ -149,6 +153,7 @@ NAMELIST/NAMTRANS/ LSTATS, LBARRIER_STATS, LBARRIER_STATS2, LDETAILED_STATS, &
 #include "setup_trans.h"
 #include "inv_trans.h"
 #include "dir_trans.h"
+#include "gpnorm_trans.h"
 #include "dist_spec.h"
 #include "gath_grid.h"
 #include "trans_inq.h"
@@ -776,6 +781,10 @@ ALLOCATE(ZWINDS(NPROMA,NFLEVG,4,NGPBLKS))
 ALLOCATE(ZGMV(NPROMA,NFLEVG,NDIMGMV,NGPBLKS))
 ALLOCATE(ZGMVS(NPROMA,NDIMGMVS,NGPBLKS))
 
+ALLOCATE(PMIN(NFLEVG))
+ALLOCATE(PMAX(NFLEVG))
+ALLOCATE(PAVE(NFLEVG))
+
 ALLOCATE(ZNORMSP(1))
 ALLOCATE(ZNORMSP1(1))
 ALLOCATE(ZNORMVOR(NFLEVG))
@@ -944,6 +953,18 @@ DO JSTEP=1,ITERS
   ! !call acc_present_dump()
   ! !call sleep (10000)
 ENDDO
+
+CALL GPNORM_TRANS(ZWINDS(:,:,2,:),NFLEVG,KPROMA=NPROMA,PAVE=PAVE,PMIN=PMIN,PMAX=PMAX,LDAVE_ONLY=.false.,KRESOL=1)
+if (myproc == 1) then
+    OPEN(800+myproc, FORM="UNFORMATTED")
+    write(800+myproc) "pave", sum(pave)/size(pave)
+    write(800+myproc) "pmin", sum(pmin)/size(pmin)
+    write(800+myproc) "pmax", sum(pmax)/size(pmax)
+    close(800+myproc)
+    print *, "pave", sum(pave)/size(pave)
+    print *, "pmin", sum(pmin)/size(pmin)
+    print *, "pmax", sum(pmax)/size(pmax)
+endif
 
 ZTLOOP=(TIMEF()-ZTLOOP)/1000.0_JPRD
 
