@@ -144,7 +144,7 @@ NAMELIST/NAMTRANS/ LSTATS, LBARRIER_STATS, LBARRIER_STATS2, LDETAILED_STATS, &
                  & NPRINTLEV, NPRTRW, NPRTRV, NSPECRESMIN, NFLEVG, MBX_SIZE, LSTACK, &
                  & LFFTW
 
-!     ------------------------------------------------------------------
+!===================================================================================================
 
 #include "setup_trans0.h"
 #include "setup_trans.h"
@@ -157,7 +157,10 @@ NAMELIST/NAMTRANS/ LSTATS, LBARRIER_STATS, LBARRIER_STATS2, LDETAILED_STATS, &
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 
-! Default initializations
+!===================================================================================================
+! Initialize parameters
+!===================================================================================================
+
 NERR = 0
 NOUT = 6
 ! Unit number for file to dump 2D fields to
@@ -238,10 +241,11 @@ ITERS=10
 ! Locals
 ILASTLEV = 0
 
+!===================================================================================================
 ! Message passing setup
 ! Participating processors limited by -P option
+!===================================================================================================
 
-!--------------------------
 CALL MPL_INIT()
 !IF( LSTATS ) CALL GSTATS(0,0)
 ZTINIT=TIMEF()
@@ -267,7 +271,7 @@ IF(LDETAILED_STATS)THEN
 !  LSTATS_ALLOC=.TRUE.
 ENDIF
 
-!-------------------------
+!===================================================================================================
 
 ALLOCATE(NPRCIDS(NPROC))
 DO JJ=1,NPROC
@@ -389,7 +393,10 @@ ENDIF
 
 ICODE = 0
 
+!===================================================================================================
 ! Set resolution parameters
+!===================================================================================================
+
 ! Spectral truncation
 NSMAX = 79
 NDGL = 2 * (NSMAX + 1)
@@ -401,6 +408,10 @@ DO I = 1, NDGL / 2
   NLOEN(I) = MIN_OCTA_POINTS + 4 * (I - 1)
   NLOEN(NDGL - I + 1) = NLOEN(I)
 END DO
+
+!===================================================================================================
+! Call ecTrans setup routines
+!===================================================================================================
 
 CALL SETUP_TRANS0(KOUT=NOUT,KERR=NERR,KPRINTLEV=NPRINTLEV,KMAX_RESOL=NMAX_RESOL, &
 &                 KPROMATR=NPROMATR,KPRGPNS=NPRGPNS,KPRGPEW=NPRGPEW,KPRTRW=NPRTRW, &
@@ -414,12 +425,15 @@ CALL SETUP_TRANS(KSMAX=NSMAX,KDGL=NDGL,KLOEN=NLOEN,LDSPLIT=.TRUE.,&
 !
 CALL TRANS_INQ(KSPEC2=NSPEC2,KSPEC2G=NSPEC2G,KGPTOT=NGPTOT,KGPTOTG=NGPTOTG)
 
-
 ! Default, no blocking
 NPROMA=NGPTOT
 
 ! Calculate number of NPROMA blocks
 NGPBLKS=(NGPTOT-1)/NPROMA+1
+
+!===================================================================================================
+! Initialize spectral arrays
+!===================================================================================================
 
 ! Allocate spectral arrays
 ! Try to mimick IFS layout as much as possible
@@ -616,6 +630,10 @@ IF( NFLEVG > ILASTLEV ) THEN
   ENDIF
 ENDIF
 
+!===================================================================================================
+! Print information before starting
+!===================================================================================================
+
 WRITE(NOUT,'(" ")')
 WRITE(NOUT,'("SPECTRAL FIELDS HAVE BEEN SUCCESSFULY READ, IFLDS=",I3)')IFLDS
 WRITE(NOUT,'(" ")')
@@ -748,6 +766,10 @@ ZTLOOP=TIMEF()
 !skip time measurements for first iteration
 YLSTATS = .false.
 
+!===================================================================================================
+! Do spectral transform loop
+!===================================================================================================
+
 DO JSTEP=1,ITERS
   IF (JSTEP > 1) YLSTATS = .true.
   ZTSTEP(JSTEP)=TIMEF()
@@ -814,6 +836,9 @@ DO JSTEP=1,ITERS
   ZTSTEPMIN2=MIN(ZTSTEP2(JSTEP),ZTSTEPMIN2)
   ZTSTEPMAX2=MAX(ZTSTEP2(JSTEP),ZTSTEPMAX2)
 
+  !===================================================================================================
+  ! Print norms
+  !===================================================================================================
 
   IF( NPRINTNORMS > 1 )THEN
     CALL SPECNORM(PSPEC=ZSP(1:1,:),       PNORM=ZNORMSP, KVSET=IVSETSC(1:1))
@@ -992,12 +1017,14 @@ IF( LSTACK ) THEN
 ENDIF
 
 
-!--------------------------
+!===================================================================================================
+
 IF( LSTATS ) THEN
   CALL GSTATS(0,1)
   CALL GSTATS_PRINT(NOUT,ZAVEAVE,JPMAXSTAT)
 ENDIF
-!--------------------------
+
+!===================================================================================================
 
 ! CLOSE FILE
 IF( NPROC > 1 ) THEN
@@ -1010,17 +1037,18 @@ DEALLOCATE(ZWINDS)
 DEALLOCATE(ZGMV)
 DEALLOCATE(ZGMVS)
 
-!--------------------------
+!===================================================================================================
+! Finalize MPI
+!===================================================================================================
+
 CALL MPL_BARRIER()
 CALL MPL_END()
-!--------------------------
 
-
-
+!===================================================================================================
 
 CONTAINS
 
-!     ------------------------------------------------------------------
+!===================================================================================================
 
 SUBROUTINE SORT(A, N)
     IMPLICIT NONE
@@ -1039,7 +1067,7 @@ SUBROUTINE SORT(A, N)
     END DO
 END SUBROUTINE
 
-!     ------------------------------------------------------------------
+!===================================================================================================
 
 SUBROUTINE DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, FLD, FLDCHAR, NOUTDUMP)
 
@@ -1066,3 +1094,5 @@ CLOSE(NOUTDUMP)
 END SUBROUTINE DUMP_GRIDPOINT_FIELD
 
 END PROGRAM TRANSFORM_TEST
+
+!===================================================================================================
