@@ -30,6 +30,30 @@ if( HAVE_TOOLS AND TARGET eccodes_f90 )
 
 endif()
 
+set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
+set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
+
+foreach( prec sp dp )
+  if( HAVE_${prec} )
+    ecbuild_add_executable(TARGET  driver-spectrans-${prec}
+                           SOURCES driver-spectraltransform.F90
+                           INCLUDES
+                             ${MPI_Fortran_INCLUDE_PATH}
+                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/include/ectrans>
+                           LIBS
+                             fiat parkind_${prec}
+                             eccodes_f90 eccodes_memfs
+                             ${MPI_Fortran_LIBRARIES}
+                             ${CMAKE_BINARY_DIR}/lib/libtrans_${prec}.dylib
+                             ${LAPACK_LIBRARIES}
+                          )
+
+    #target_compile_options( driver-spectrans-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic>  )
+    #target_compile_options( driver-spectrans-CA-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic>  )
+    message("Building ${prec} driver")
+  endif()
+endforeach()
+
 # ectrans information tool
 
 get_property( langs GLOBAL PROPERTY ENABLED_LANGUAGES )
