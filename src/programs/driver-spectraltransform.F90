@@ -42,7 +42,7 @@ REAL(KIND=JPRB), DIMENSION(1)  :: ZMAXERR(5), ZERR(5)
 REAL(KIND=JPRB) :: ZMAXERRG
 
 INTEGER(KIND=JPIM) :: NRGRI(JPMLAT)
-INTEGER(KIND=JPIM) :: NERR,NULNAM,NLIN,INSF,NSMAX,NDGL,NQ
+INTEGER(KIND=JPIM) :: NERR,NLIN,INSF,NSMAX,NDGL,NQ
 INTEGER(KIND=JPIM) :: ITABLE,NOUT,NOUTDUMP,NSPEC2,NGPTOT,NGPTOTG,IFLD,IFLDS,ICODE,IOUTSF,JROC,JB
 INTEGER(KIND=JPIM) :: IERR,ITAG,NSPEC2G,IRET,NTYPE,I,IGRIBOUT,IMAX_FLDS_IN
 INTEGER(KIND=JPIM) :: JF,JA,IB,JPRTRV
@@ -86,7 +86,7 @@ LOGICAL :: LXML_STATS
 LOGICAL :: LFFTW
 INTEGER(KIND=JPIM) :: NSTATS_MEM, NTRACE_STATS, NPRNT_STATS
 ! 0 - no output, 1 - init and final result, 2 - every timestep
-INTEGER(KIND=JPIM) :: NPRINTNORMS=0
+INTEGER(KIND=JPIM) :: NPRINTNORMS=2
 LOGICAL :: LMPOFF
 INTEGER(KIND=JPIM) :: ITERS=100
 
@@ -157,14 +157,13 @@ NAMELIST/NAMTRANS/ LSTATS, LBARRIER_STATS, LBARRIER_STATS2, LDETAILED_STATS, &
 
 ! Default initializations
 NERR = 0
-NULNAM = 4
 NOUT = 6
 ! Unit number for file to dump 2D fields to
 NOUTDUMP = 7
 ! Max number of resolutions
 NMAX_RESOL=37
 ! Print level
-NPRINTLEV=0
+NPRINTLEV=2
 ! NPROMA for trans lib
 NPROMATR=0
 ! Size of comm buffer
@@ -185,13 +184,13 @@ NPRTRW=0
 NPRTRV=0
 ! Minimum spectral resolution
 ! Used for controlling NPRTRW
-NSPECRESMIN=0
+NSPECRESMIN=80
 ! Message passing type
 MP_TYPE=2
 ! Mailbox size
 MBX_SIZE=150000000
 ! GSTATS statistics
-LSTATS=.FALSE.
+LSTATS=.TRUE.
 LDETAILED_STATS=.FALSE.
 LSTATS_OMP=.FALSE.
 LSTATS_COMMS=.FALSE.
@@ -227,17 +226,16 @@ NDIMGMVS=3
 CINSF   = ' '
 CTYPEG  = 'r'
 LSTDEV    = .FALSE.
-NLIN    = 1
+NLIN    = 0
 NDGL    = 0
-NQ      = 0
+NQ      = 2
 CRTABLE = '.'
+
+! Number of iterations for transform test
+ITERS=10
 
 ! Locals
 ILASTLEV = 0
-
-! Read NAMELIST to override defaults
-REWIND(NULNAM)
-READ(NULNAM,NAMTRANS)
 
 ! Message passing setup
 ! Participating processors limited by -P option
@@ -507,9 +505,7 @@ CALL TRANS_INQ(KSPEC2=NSPEC2,KSPEC2G=NSPEC2G,KGPTOT=NGPTOT,KGPTOTG=NGPTOTG)
 
 ! Default, no blocking
 NPROMA=NGPTOT
-! allow NPROMA to be overidden by namelist value
-REWIND(NULNAM)
-READ(NULNAM,NAMTRANS)
+
 ! Calculate number of NPROMA blocks
 NGPBLKS=(NGPTOT-1)/NPROMA+1
 
@@ -555,10 +551,6 @@ LDONE = .FALSE.
 ! it is not a problem if there are less fields as the actual number of fields
 ! that will transformed will be replicated from the actual number of fields read
 IMAX_FLDS_IN=412
-
-! allow IMAX_FLDS_IN to be overidden by namelist value
-REWIND(NULNAM)
-READ(NULNAM,NAMTRANS)
 
 ! Inititialize GRIB_API handles to zero
 IGRIB(:) = 0
