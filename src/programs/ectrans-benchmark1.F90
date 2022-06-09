@@ -164,6 +164,10 @@ logical :: llinfo
 integer(kind=jpim) :: ndimgmv  = 9 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
 integer(kind=jpim) :: ndimgmvs = 3 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
 
+character(len=16) :: cgrid
+integer(kind=jpim) :: nscal    ! ignored for now (TODO)
+integer(kind=jpim) :: nvordiv  ! ignored for now (TODO)
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -177,10 +181,11 @@ integer(kind=jpim) :: ndimgmvs = 3 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)
 
 !===================================================================================================
 
-call get_command_line_arguments(nsmax, iters, verbose)
-
+call get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbose)
+if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 write(nout,"(a)") "Running spectral transform test"
-write(nout,"(a,i4)") "Resolution: TCO", nsmax
+write(nout,"(a,i4)") "Spectral truncation:", nsmax
+write(nout,"(a,a)") "Grid: ", cgrid
 write(nout,"(a,i4)") "Iterations: ", iters
 
 !===================================================================================================
@@ -326,15 +331,26 @@ icode = 0
 !===================================================================================================
 
 ! Calculate number of latitudes
-ndgl = 2 * (nsmax + 1)
+if (cgrid(1:1) == 'O') then ! Octahedral Gaussian grid
+  read(cgrid(2:len_trim(cgrid)),*) ndgl
+  ndgl = ndgl*2
+  ! Calculate number of points at each latitude for octahedral grid
+  allocate(nloen(ndgl))
+  do i = 1, ndgl / 2
+    nloen(i) = min_octa_points + 4 * (i - 1)
+    nloen(ndgl - i + 1) = nloen(i)
+  end do
+else if (cgrid(1:1) == 'F') then ! Regular Gaussian grid
+  read(cgrid(2:len_trim(cgrid)),*) ndgl
+  ndgl = ndgl*2
+  allocate(nloen(ndgl))
+  nloen(:) = ndgl * 2
+else
+  write(nout,"(a,a)") "Unsupported grid ", cgrid
+  stop
+endif
 
-! Calculate number of points at each latitude for octahedral grid
-allocate(nloen(ndgl))
 
-do i = 1, ndgl / 2
-  nloen(i) = min_octa_points + 4 * (i - 1)
-  nloen(ndgl - i + 1) = nloen(i)
-end do
 
 !===================================================================================================
 ! Call ecTrans setup routines
@@ -399,7 +415,6 @@ if (verbose .and. myproc == 1) then
   write(nout,'("ngptot= ",i10)') ngptot
   write(nout,'("ngptotg=",i10)') ngptotg
   write(nout,'("nflevg= ",i10)') nflevg
-  write(nout,'("iflds=  ",i10)') iflds
   write(nout,'("nspec2= ",i10)') nspec2
   write(nout,'("nspec2g=",i10)') nspec2g
   write(nout,'("luseflt=",l10)') luseflt
@@ -772,16 +787,23 @@ call mpl_end()
 
 contains
 
-subroutine get_command_line_arguments(nsmax, iters, verbose)
+subroutine get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbose)
 
   integer, intent(inout) :: nsmax   ! Spectral truncation
+  character(len=16), intent(out) :: cgrid ! Spectral truncation
   integer, intent(inout) :: iters   ! Number of iterations for transform test
+  integer, intent(inout) :: nscal   ! Number of scalar fields
+  integer, intent(inout) :: nvordiv ! Number of vorticity/divergence fields
   logical, intent(inout) :: verbose ! Print verbose output or not
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
   integer            :: verbosity = 0 ! Level of verbosity (0, 1 or 2)
   integer            :: stat          ! For storing success status of string->integer conversion
+
+  cgrid = ''
+  nscal = 1
+  nvordiv = 0
 
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
@@ -795,7 +817,7 @@ subroutine get_command_line_arguments(nsmax, iters, verbose)
       case('-v')
         verbosity = 1
       ! Parse number of iterations argument
-      case('-n')
+      case('--niter')
         iarg = iarg + 1
         call get_command_argument(iarg, carg)
         call str2int(carg, iters, stat)
@@ -804,7 +826,7 @@ subroutine get_command_line_arguments(nsmax, iters, verbose)
           call abor1("Invalid argument for -n: " // carg)
         end if
       ! Parse spectral truncation argument
-      case('-t')
+      case('--truncation')
         iarg = iarg + 1
         call get_command_argument(iarg, carg)
         call str2int(carg, nsmax, stat)
@@ -812,6 +834,19 @@ subroutine get_command_line_arguments(nsmax, iters, verbose)
           call print_help()
           call abor1("Invalid argument for -t: " // carg)
         end if
+      case('--grid')
+        iarg = iarg + 1
+        call get_command_argument(iarg, carg)
+        cgrid = carg
+      case('--nscal')
+        iarg = iarg + 1
+        call get_command_argument(iarg, carg)
+        call str2int(carg, nscal, stat)
+      case('--nvordiv')
+        iarg = iarg + 1
+        call get_command_argument(iarg, carg)
+        call str2int(carg, nvordiv, stat)
+      case('')
     end select
     iarg = iarg + 1
   end do
@@ -820,6 +855,14 @@ subroutine get_command_line_arguments(nsmax, iters, verbose)
   verbose = verbosity == 1
 
 end subroutine get_command_line_arguments
+
+!===================================================================================================
+
+function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
+    character(len=16) :: cgrid
+    integer, intent(in) :: nsmax
+    write(cgrid,'(a,i0)') 'O',nsmax+1
+end function
 
 !===================================================================================================
 
@@ -862,10 +905,11 @@ subroutine print_help
   write(nout, "(a)") ""
 
   if (jprb == jprd) then
-    write(nout, "(a)") "NAME    driver-spectrans-dp"
+    write(nout, "(a)") "NAME    ectrans-benchmark1-dp"
   else
-    write(nout, "(a)") "NAME    driver-spectrans-sp"
+    write(nout, "(a)") "NAME    ectrans-benchmark1-sp"
   end if
+  write(nout, "(a)") ""
 
   write(nout, "(a)") "DESCRIPTION"
   write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth &
@@ -879,19 +923,21 @@ subroutine print_help
 
   write(nout, "(a)") "USAGE"
   if (jprb == jprd) then
-    write(nout, "(a)") "        driver-spectrans-dp [options]"
+    write(nout, "(a)") "        ectrans-benchmark1-dp [options]"
   else
-    write(nout, "(a)") "        driver-spectrans-sp [options]"
+    write(nout, "(a)") "        ectrans-benchmark1-sp [options]"
   end if
+  write(nout, "(a)") ""
 
   write(nout, "(a)") "OPTIONS"
-  write(nout, "(a)") "        -h      Print this message"
-  write(nout, "(a)") "        -n iterations"
-  write(nout, "(a)") "                Run for this many inverse/direct transform iterations"
-  write(nout, "(a)") "        -t truncation"
-  write(nout, "(a)") "                Run with this triangular spectral truncation"
-
-  write(nout, "(a)") ""
+  write(nout, "(a)") "    -h                  Print this message"
+  write(nout, "(a)") "    -v                  Run with verbose output"
+  write(nout, "(a)") "    --truncation T      Run with this triangular spectral truncation (default = 79)"
+  write(nout, "(a)") "    --grid GRID         Run with this grid. Possible values: O<N>, F<N>"
+  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1 (cubic relation)"
+  write(nout, "(a)") "    --niter NITER       Run for this many inverse/direct transform iterations (default = 10)"
+  write(nout, "(a)") "    --nscal NSCAL       Number of scalar fields (default = 1)"
+  write(nout, "(a)") "    --nvordiv NVORDIV   Number of vorticity/divergence fields (default = 0)"
   write(nout, "(a)") ""
 
 end subroutine print_help

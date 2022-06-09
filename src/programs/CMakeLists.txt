@@ -35,8 +35,8 @@ set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
-    ecbuild_add_executable(TARGET  driver-spectrans-${prec}
-                           SOURCES driver-spectraltransform.F90
+    ecbuild_add_executable(TARGET  ectrans-benchmark1-${prec}
+                           SOURCES ectrans-benchmark1.F90
                            LIBS
                              fiat
                              parkind_${prec}

@@ -38,6 +38,8 @@ ecbuild_add_option( FEATURE SINGLE_PRECISION
 if( HAVE_SINGLE_PRECISION )
   set( single "single" )
 endif()
+set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
+set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
 ecbuild_add_option( FEATURE MKL
                     DESCRIPTION "Use MKL for BLAS and/or FFTW"

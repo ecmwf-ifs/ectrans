@@ -50,6 +50,14 @@ if( TEST ectrans_test_adjoint AND HAVE_OMP )
   target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
 endif()
 
+foreach( prec dp sp )
+  ecbuild_add_test( TARGET ectrans_test_benchmark1_${prec}_T31_O32_mpi1_omp1
+      COMMAND ectrans-benchmark1-${prec} ARGS --truncation 31 --grid O32 --niter 2
+      MPI 1
+      OMP 1
+  )
+endforeach()
+
 
 if( HAVE_TRANSI )
 
