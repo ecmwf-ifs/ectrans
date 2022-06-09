@@ -388,14 +388,9 @@ nullify(zt)
 allocate(sp3d(nflevl,nspec2,3))
 allocate(zsp(1,nspec2))
 
-sp3d(:,:,:) =  0.0_jprb
-zsp(:,:)    =  0.0_jprb
+call initialize_spectral_arrays(nsmax, zsp, sp3d)
 
-! Initialize all fields to be a randomly chosen spherical harmonic
-zsp(1,162)    = 1.0
-sp3d(:,162,:) = 1.0
-
-! Point convenience variables to storage variable SP3D
+! Point convenience variables to storage variable sp3d
 zvor => sp3d(:,:,1)
 zdiv => sp3d(:,:,2)
 zt   => sp3d(:,:,3:3)
@@ -801,32 +796,90 @@ contains
 !===================================================================================================
 
 subroutine sort(a, n)
-    implicit none
-    integer(kind=jpim) :: n, i, j
-    real(kind=jprd)    :: a(n), x
 
-    do i = 2, n
-        x = a(i)
-        j = i - 1
-        do while (j >= 1)
-            if (a(j) <= x) exit
-            a(j + 1) = a(j)
-            j = j - 1
-        end do
-        a(j + 1) = x
-    end do
-end subroutine
+  real(kind=jprd), intent(inout) :: a(n)
+  integer(kind=jpim), intent(in) :: n
+
+  real(kind=jprd) :: x
+
+  integer :: i, j
+
+  do i = 2, n
+    x = a(i)
+    j = i - 1
+    do while (j >= 1)
+      if (a(j) <= x) exit
+        a(j + 1) = a(j)
+        j = j - 1
+      end do
+    a(j + 1) = x
+  end do
+
+end subroutine sort
 
 !===================================================================================================
 
 subroutine print_help
+
   write(nout, "(a)") "Spectral transform driver"
   write(nout, "(a)") "This program tests ectrans by transforming fields back and forth between"
   write(nout, "(a)") "spectral space and grid-point space"
   write(nout, "(a)") "Command-line options:"
   write(nout, "(a)") " -v, --verbose    print verbose output"
   write(nout, "(a)") " -h, --help       print this message"
+
 end subroutine print_help
+
+!===================================================================================================
+
+subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
+
+  integer, intent(in) :: nsmax
+  real(kind=jprb), intent(inout) :: zsp(:,:)
+  real(kind=jprb), intent(inout) :: sp3d(:,:,:)
+
+  integer(kind=jpim) :: nflevl
+  integer(kind=jpim) :: nfield
+
+  integer :: i, j
+
+  nflevl = size(sp3d, 1)
+  nfield = size(sp3d, 3)
+
+  call initialize_2d_spectral_field(nsmax, zsp(1,:))
+
+  do i = 1, nflevl
+    do j = 1, nfield
+      call initialize_2d_spectral_field(nsmax, sp3d(i,:,j))
+    end do
+  end do
+
+end subroutine initialize_spectral_arrays
+
+!===================================================================================================
+
+subroutine initialize_2d_spectral_field(nsmax, field)
+
+  integer, intent(in) :: nsmax ! Spectral truncation
+  real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
+
+  integer :: i, index
+
+  ! Choose a spherical harmonic to initialize arrays
+  integer :: m_num = 4  ! Zonal wavenumber
+  integer :: l_num = 11 ! Total wavenumber
+
+  ! First initialise all spectral coefficients to zero
+  field(:) = 0.0
+
+  ! Then compute the array index corresponding to the chosen (m,l) pair
+  ! The factors of two are because the spectral coefficients are actually complex numbers
+  index = (nsmax + 1) * 2 * m_num + 2 * l_num
+
+  ! Initialize all fields to be a randomly chosen spherical harmonic
+  field(index) = 1.0
+
+end subroutine initialize_2d_spectral_field
 
 !===================================================================================================
 
