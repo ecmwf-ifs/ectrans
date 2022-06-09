@@ -19,7 +19,7 @@ program transform_test
 ! Author : George Mozdzynski
 !
 
-use parkind1  ,only  : jpim     ,jprb, jprd
+use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use mpl_mpif
 use mpl_module
@@ -164,9 +164,6 @@ logical :: llinfo
 integer(kind=jpim) :: ndimgmv  = 9 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
 integer(kind=jpim) :: ndimgmvs = 3 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
 
-! For processing command line arguments
-character(len=32) :: arg
-
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -179,23 +176,12 @@ character(len=32) :: arg
 #include "gstats_setup.intfb.h"
 
 !===================================================================================================
-! Read command-line arguments
-!===================================================================================================
 
-do i = 1, command_argument_count()
-  call get_command_argument(i, arg)
+call get_command_line_arguments(nsmax, iters, verbose)
 
-  select case(arg)
-    ! verbose output
-    case("-v", "--verbose")
-      verbose = .true.
-    case("-h", "--help")
-      call print_help()
-      stop
-    case default
-      call abor1("Unrecognized command-line option: " // arg)
-  end select
-end do
+write(nout,"(a)") "Running spectral transform test"
+write(nout,"(a,i4)") "Resolution: TCO", nsmax
+write(nout,"(a,i4)") "Iterations: ", iters
 
 !===================================================================================================
 ! Message passing setup
@@ -786,6 +772,57 @@ call mpl_end()
 
 contains
 
+subroutine get_command_line_arguments(nsmax, iters, verbose)
+
+  integer, intent(inout) :: nsmax   ! Spectral truncation
+  integer, intent(inout) :: iters   ! Number of iterations for transform test
+  logical, intent(inout) :: verbose ! Print verbose output or not
+
+  character(len=32) :: arg       ! Storage variable for command line arguments
+  integer           :: verbosity ! Level of verbosity (0, 1 or 2)
+  integer           :: stat      ! For storing success status of string->integer conversion
+
+  if (command_argument_count() /= 3) then
+    call print_help()
+    stop
+  end if
+
+  ! Parse spectral truncation argument
+  call get_command_argument(1, arg)
+  call str2int(arg, nsmax, stat)
+  if (stat /= 0) then
+    call abor1("Cannot read positional argument 1")
+  end if
+
+  ! Parse number of iterations argument
+  call get_command_argument(2, arg)
+  call str2int(arg, iters, stat)
+  if (stat /= 0) then
+    call abor1("Cannot read positional argument 2")
+  end if
+
+  ! Parse verbosity argument
+  call get_command_argument(3, arg)
+  call str2int(arg, verbosity, stat)
+  if (stat /= 0) then
+    call abor1("Cannot read positional argument 3")
+  end if
+
+  ! TODO: implement different levels of verbosity
+  verbose = verbosity == 1
+
+end subroutine get_command_line_arguments
+
+!===================================================================================================
+
+subroutine str2int(str, int, stat)
+  character(len=*), intent(in) :: str
+  integer, intent(out) :: int
+  integer, intent(out) :: stat
+
+  read(str, *, iostat=stat) int
+end subroutine str2int
+
 !===================================================================================================
 
 subroutine sort(a, n)
@@ -817,9 +854,13 @@ subroutine print_help
   write(nout, "(a)") "Spectral transform driver"
   write(nout, "(a)") "This program tests ectrans by transforming fields back and forth between"
   write(nout, "(a)") "spectral space and grid-point space"
-  write(nout, "(a)") "Command-line options:"
-  write(nout, "(a)") " -v, --verbose    print verbose output"
-  write(nout, "(a)") " -h, --help       print this message"
+  if (jprb == jprd) then
+    write(nout, "(a)") "usage: driver-spectrans-dp <spectral truncation> <number of iterations> &
+      &<verbosity>"
+  else
+    write(nout, "(a)") "usage: driver-spectrans-sp <spectral truncation> <number of iterations> &
+      &<verbosity>"
+  end if
 
 end subroutine print_help
 
