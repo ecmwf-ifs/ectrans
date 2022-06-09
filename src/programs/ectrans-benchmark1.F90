@@ -165,8 +165,7 @@ integer(kind=jpim) :: ndimgmv  = 9 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,n
 integer(kind=jpim) :: ndimgmvs = 3 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
 
 character(len=16) :: cgrid
-integer(kind=jpim) :: nscal    ! ignored for now (TODO)
-integer(kind=jpim) :: nvordiv  ! ignored for now (TODO)
+integer(kind=jpim) :: nfld    ! ignored for now (TODO)
 
 !===================================================================================================
 
@@ -181,7 +180,7 @@ integer(kind=jpim) :: nvordiv  ! ignored for now (TODO)
 
 !===================================================================================================
 
-call get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbose)
+call get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 write(nout,"(a)") "Running spectral transform test"
 write(nout,"(a,i4)") "Spectral truncation:", nsmax
@@ -787,13 +786,12 @@ call mpl_end()
 
 contains
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbose)
+subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
 
   integer, intent(inout) :: nsmax   ! Spectral truncation
   character(len=16), intent(out) :: cgrid ! Spectral truncation
   integer, intent(inout) :: iters   ! Number of iterations for transform test
-  integer, intent(inout) :: nscal   ! Number of scalar fields
-  integer, intent(inout) :: nvordiv ! Number of vorticity/divergence fields
+  integer, intent(inout) :: nfld    ! Number of scalar fields
   logical, intent(inout) :: verbose ! Print verbose output or not
 
   character(len=128) :: carg          ! Storage variable for command line arguments
@@ -802,22 +800,21 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbo
   integer            :: stat          ! For storing success status of string->integer conversion
 
   cgrid = ''
-  nscal = 1
-  nvordiv = 0
+  nfld = 1
 
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
     select case(carg)
       ! Parse help argument
-      case('-h')
+      case('-h','--help')
         call print_help()
         stop
       ! Parse verbosity argument
       case('-v')
         verbosity = 1
       ! Parse number of iterations argument
-      case('--niter')
+      case('-n','--niter')
         iarg = iarg + 1
         call get_command_argument(iarg, carg)
         call str2int(carg, iters, stat)
@@ -826,7 +823,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbo
           call abor1("Invalid argument for -n: " // carg)
         end if
       ! Parse spectral truncation argument
-      case('--truncation')
+      case('-t','--truncation')
         iarg = iarg + 1
         call get_command_argument(iarg, carg)
         call str2int(carg, nsmax, stat)
@@ -834,19 +831,18 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nscal, nvordiv, verbo
           call print_help()
           call abor1("Invalid argument for -t: " // carg)
         end if
-      case('--grid')
+      case('-g', '--grid')
         iarg = iarg + 1
         call get_command_argument(iarg, carg)
         cgrid = carg
-      case('--nscal')
+      case('-f','--nfld')
         iarg = iarg + 1
         call get_command_argument(iarg, carg)
-        call str2int(carg, nscal, stat)
-      case('--nvordiv')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        call str2int(carg, nvordiv, stat)
-      case('')
+        call str2int(carg, nfld, stat)
+      case default
+        call print_help()
+        call abor1("Unrecognised argument: " // carg)
+
     end select
     iarg = iarg + 1
   end do
@@ -932,12 +928,11 @@ subroutine print_help
   write(nout, "(a)") "OPTIONS"
   write(nout, "(a)") "    -h                  Print this message"
   write(nout, "(a)") "    -v                  Run with verbose output"
-  write(nout, "(a)") "    --truncation T      Run with this triangular spectral truncation (default = 79)"
-  write(nout, "(a)") "    --grid GRID         Run with this grid. Possible values: O<N>, F<N>"
+  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation (default = 79)"
+  write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
   write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1 (cubic relation)"
-  write(nout, "(a)") "    --niter NITER       Run for this many inverse/direct transform iterations (default = 10)"
-  write(nout, "(a)") "    --nscal NSCAL       Number of scalar fields (default = 1)"
-  write(nout, "(a)") "    --nvordiv NVORDIV   Number of vorticity/divergence fields (default = 0)"
+  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform iterations (default = 10)"
+  write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") ""
 
 end subroutine print_help
