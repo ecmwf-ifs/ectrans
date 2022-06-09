@@ -31,23 +31,53 @@ implicit none
 integer(kind=jpim), parameter :: min_octa_points = 20
 
 integer(kind=jpim) :: istack, getstackusage
-real(kind=jprb), dimension(1)  :: zmaxerr(5), zerr(5)
+real(kind=jprb), dimension(1) :: zmaxerr(5), zerr(5)
 real(kind=jprb) :: zmaxerrg
 
-integer(kind=jpim) :: nerr = 0, nout = 6
-integer(kind=jpim) :: nlin,insf,nsmax,ndgl,nq,noutdump,nspec2,ngptot,ngptotg,ifld,iflds,icode,ioutsf,jroc,jb
-integer(kind=jpim) :: ierr,nspec2g,iret,ntype,i
-integer(kind=jpim) :: ja,ib,jprtrv
-integer(kind=jpim) ,allocatable :: nloen(:),ito(:),nprcids(:)
-integer(kind=jpim) :: myproc,jj
-integer   :: jstep
-real(kind=jprd)    :: ztinit,ztloop,timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
-real(kind=jprd)    :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
-real(kind=jprd)    :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
-real(kind=jprd),allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
-real(kind=jprb),allocatable :: znormsp(:),znormsp1(:),znormdiv(:),znormdiv1(:)
-real(kind=jprb),allocatable :: znormvor(:),znormvor1(:),znormt(:),znormt1(:)
-real(kind=jprb),allocatable :: znorm(:),znorm1(:)
+! Output unit numbers
+integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
+integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
+integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
+
+! Default parameters
+integer(kind=jpim) :: nlin   = 0   ! Linear grid (1) or not (0)
+integer(kind=jpim) :: nq     = 2   ! Cubic grid (1) or cubic grid + collignon (2) or not (0)
+integer(kind=jpim) :: nsmax  = 79  ! Spectral truncation
+integer(kind=jpim) :: iters  = 100 ! Number of iterations for transform test
+integer(kind=jpim) :: nflevg = 137 ! Default number of vertical levels
+
+integer(kind=jpim) :: ndgl ! Number of latitudes
+integer(kind=jpim) :: noutdum
+integer(kind=jpim) :: nspec2
+integer(kind=jpim) :: ngptot
+integer(kind=jpim) :: ngptotg
+integer(kind=jpim) :: ifld
+integer(kind=jpim) :: iflds
+integer(kind=jpim) :: icode
+integer(kind=jpim) :: ioutsf
+integer(kind=jpim) :: jroc
+integer(kind=jpim) :: jb
+integer(kind=jpim) :: ierr
+integer(kind=jpim) :: nspec2g
+integer(kind=jpim) :: iret
+integer(kind=jpim) :: ntype
+integer(kind=jpim) :: i
+integer(kind=jpim) :: ja
+integer(kind=jpim) :: ib
+integer(kind=jpim) :: jprtrv
+
+integer(kind=jpim), allocatable :: nloen(:), nprcids(:)
+integer(kind=jpim) :: myproc, jj
+integer :: jstep
+
+real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
+real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
+real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
+real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
+
+real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
+real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
+real(kind=jprb), allocatable :: znorm(:), znorm1(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
@@ -65,46 +95,61 @@ real(kind=jprb), pointer :: zdiv(:,:) => null()
 real(kind=jprb), pointer :: zt(:,:,:) => null()
 real(kind=jprb), allocatable :: zsp(:,:)
 
-logical :: lstack
-logical :: luserpnm, lkeeprpnm, luseflt
-logical :: ltrace_stats,lstats_omp, lstats_comms, lstats_mpl
-logical :: lstats,lbarrier_stats, lbarrier_stats2, ldetailed_stats
-logical :: lstats_alloc, lsyncstats, lstatscpu, lstats_mem
-logical :: lxml_stats
-logical :: lfftw
-integer(kind=jpim) :: nstats_mem, ntrace_stats, nprnt_stats
-logical :: lmpoff
-integer(kind=jpim) :: iters=100
+logical :: lstack = .false. ! Output stack info
+logical :: luserpnm = .false.
+logical :: lkeeprpnm = .false.
+logical :: luseflt = .false. ! Use fast legendre transforms
+logical :: ltrace_stats = .false.
+logical :: lstats_omp = .false.
+logical :: lstats_comms = .false.
+logical :: lstats_mpl = .false.
+logical :: lstats = .true. ! gstats statistics
+logical :: lbarrier_stats = .false.
+logical :: lbarrier_stats2 = .false.
+logical :: ldetailed_stats = .false.
+logical :: lstats_alloc = .false.
+logical :: lsyncstats = .false.
+logical :: lstatscpu = .false.
+logical :: lstats_mem = .false.
+logical :: lxml_stats = .false.
+logical :: lfftw = .true. ! Use FFTW for Fourier transforms
+
+integer(kind=jpim) :: nstats_mem = 0
+integer(kind=jpim) :: ntrace_stats = 0
+integer(kind=jpim) :: nprnt_stats = 1
+
+logical :: lmpoff = .false. ! Message passing switch
 
 ! Whether to print verbose output or not
 logical :: verbose = .false.
 
 real(kind=jprb) :: zra=6371229._jprb
 
-integer(kind=jpim) :: nmax_resol
-integer(kind=jpim) :: npromatr
-integer(kind=jpim) :: ncombflen
+integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
+integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
+integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
 
-integer(kind=jpim) :: nproc
+integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
-integer(kind=jpim) :: nprgpns
-integer(kind=jpim) :: nprgpew
-integer(kind=jpim) :: nprtrv
-integer(kind=jpim) :: nprtrw
-integer(kind=jpim) :: nspecresmin
+integer(kind=jpim) :: nprgpns ! Grid-point decomp
+integer(kind=jpim) :: nprgpew ! Grid-point decomp
+integer(kind=jpim) :: nprtrv ! Spectral decomp
+integer(kind=jpim) :: nprtrw ! Spectral decomp
+integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
 integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
-integer(kind=jpim) :: mp_type
-integer(kind=jpim) :: mbx_size
+integer(kind=jpim) :: mp_type = 2 ! Message passing type
+integer(kind=jpim) :: mbx_size = 150000000 ! Mailbox size
 
 integer(kind=jpim), allocatable :: numll(:), ivset(:)
 integer(kind=jpim) :: ivsetsc(1)
 
-integer(kind=jpim) :: nflevg, nflevl
+integer(kind=jpim) :: nflevl
+
 ! sumpini
 integer(kind=jpim) :: isqr
-logical :: lsync_trans
-logical :: leq_regions
+logical :: lsync_trans = .true. ! Activate barrier sync
+logical :: leq_regions = .true. ! Eq regions flag
 
 
 integer(kind=jpim) :: nproma
@@ -116,8 +161,8 @@ integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 
 logical :: llinfo
 
-integer(kind=jpim) :: ndimgmv ! Third dim. of GMV "(NPROMA,NFLEVG,NDIMGMV,NGPBLKS)"
-integer(kind=jpim) :: ndimgmvs ! Second dim. GMVS "(NPROMA,NDIMGMVS,NGPBLKS)"
+integer(kind=jpim) :: ndimgmv  = 9 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
+integer(kind=jpim) :: ndimgmvs = 3 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
 
 ! For processing command line arguments
 character(len=32) :: arg
@@ -132,54 +177,6 @@ character(len=32) :: arg
 #include "specnorm.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
-
-!===================================================================================================
-! Initialize default parameters
-!===================================================================================================
-
-noutdump = 7 ! Unit number for file to dump 2d fields to
-nmax_resol = 37 ! Max number of resolutions
-npromatr = 0 ! nproma for trans lib
-ncombflen = 1800000 ! Size of comm buffer
-leq_regions = .true. ! Eq regions flag
-lmpoff = .false. ! Message passing switch
-lsync_trans = .true. ! Activate barrier sync
-nproc = 0! Number of procs
-nprgpns = 0 ! Grid-point decomp
-nprgpew = 0 ! Grid-point decomp
-nprtrw = 0 ! Spectral decomp
-nprtrv = 0 ! Spectral decomp
-nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
-mp_type = 2 ! Message passing type
-mbx_size = 150000000 ! Mailbox size
-lstats = .true. ! gstats statistics
-ldetailed_stats = .false.
-lstats_omp = .false.
-lstats_comms = .false.
-lstats_mpl = .false.
-lbarrier_stats = .false.
-lbarrier_stats2 = .false.
-lstatscpu = .false.
-lsyncstats = .false.
-lxml_stats = .false.
-ltrace_stats = .false.
-nstats_mem = 0
-lstats_mem = .false.
-lstats_alloc = .false.
-ntrace_stats = 0
-nprnt_stats = 1
-luserpnm = .false.
-lkeeprpnm = .false.
-luseflt = .false. ! Use fast legendre transforms
-lstack = .false. ! Output stack info
-lfftw = .true. ! Use fftw
-nflevg = 137 ! Default number of vertical levels
-ndimgmv = 9 ! Number of 3d grid-point fields in gmv
-ndimgmvs = 3 ! Number of 2d grid-point fields in gmvs, surf. pres., north south der, east-west der
-nlin = 0 ! Linear grid (1) or not (0)
-ndgl = 0
-nq   = 2 ! Cubic grid (1) or cubic grid + collignon (2) or not (0)
-iters = 10 ! Number of iterations for transform test
 
 !===================================================================================================
 ! Read command-line arguments
@@ -342,8 +339,7 @@ icode = 0
 ! Set resolution parameters
 !===================================================================================================
 
-! Spectral truncation
-nsmax = 79
+! Calculate number of latitudes
 ndgl = 2 * (nsmax + 1)
 
 ! Calculate number of points at each latitude for octahedral grid
@@ -435,9 +431,6 @@ do jb=1,nprtrv
     ivset(ilev) = jb
   enddo
 enddo
-
-allocate(ito(iflds))
-ito(:)=1
 
 ! Allocate grid-point arrays
 allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
