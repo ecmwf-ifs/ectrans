@@ -77,6 +77,7 @@ INTEGER(KIND=JPIM) :: NSTATS_MEM, NTRACE_STATS, NPRNT_STATS
 LOGICAL :: LMPOFF
 INTEGER(KIND=JPIM) :: ITERS=100
 
+! Whether to print verbose output or not
 LOGICAL :: VERBOSE = .FALSE.
 
 REAL(KIND=JPRB) :: ZRA=6371229._JPRB
@@ -118,6 +119,9 @@ LOGICAL :: LLINFO
 
 INTEGER(KIND=JPIM) :: NDIMGMV ! Third dim. of GMV "(NPROMA,NFLEVG,NDIMGMV,NGPBLKS)"
 INTEGER(KIND=JPIM) :: NDIMGMVS ! Second dim. GMVS "(NPROMA,NDIMGMVS,NGPBLKS)"
+
+! For processing command line arguments
+CHARACTER(LEN=32) :: ARG
 
 !===================================================================================================
 
@@ -211,6 +215,22 @@ ITERS=10
 
 ! Locals
 ILASTLEV = 0
+
+!===================================================================================================
+! Read command-line arguments
+!===================================================================================================
+
+DO I = 1, COMMAND_ARGUMENT_COUNT()
+  CALL GET_COMMAND_ARGUMENT(I, ARG)
+
+  SELECT CASE(ARG)
+    ! Verbose output
+    CASE("-v", "--verbose")
+      VERBOSE = .TRUE.
+    CASE DEFAULT
+      CALL ABOR1("Unrecognized command-line option: " // ARG)
+  END SELECT
+END DO
 
 !===================================================================================================
 ! Message passing setup
