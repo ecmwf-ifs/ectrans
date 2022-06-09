@@ -43,7 +43,7 @@ integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
 integer(kind=jpim) :: nlin   = 0   ! Linear grid (1) or not (0)
 integer(kind=jpim) :: nq     = 2   ! Cubic grid (1) or cubic grid + collignon (2) or not (0)
 integer(kind=jpim) :: nsmax  = 79  ! Spectral truncation
-integer(kind=jpim) :: iters  = 100 ! Number of iterations for transform test
+integer(kind=jpim) :: iters  = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nflevg = 137 ! Default number of vertical levels
 
 integer(kind=jpim) :: ndgl ! Number of latitudes
@@ -778,35 +778,43 @@ subroutine get_command_line_arguments(nsmax, iters, verbose)
   integer, intent(inout) :: iters   ! Number of iterations for transform test
   logical, intent(inout) :: verbose ! Print verbose output or not
 
-  character(len=32) :: arg       ! Storage variable for command line arguments
-  integer           :: verbosity ! Level of verbosity (0, 1 or 2)
-  integer           :: stat      ! For storing success status of string->integer conversion
+  character(len=128) :: carg          ! Storage variable for command line arguments
+  integer            :: iarg = 1      ! Argument index
+  integer            :: verbosity = 0 ! Level of verbosity (0, 1 or 2)
+  integer            :: stat          ! For storing success status of string->integer conversion
 
-  if (command_argument_count() /= 3) then
-    call print_help()
-    stop
-  end if
+  do while (iarg <= command_argument_count())
+    call get_command_argument(iarg, carg)
 
-  ! Parse spectral truncation argument
-  call get_command_argument(1, arg)
-  call str2int(arg, nsmax, stat)
-  if (stat /= 0) then
-    call abor1("Cannot read positional argument 1")
-  end if
-
-  ! Parse number of iterations argument
-  call get_command_argument(2, arg)
-  call str2int(arg, iters, stat)
-  if (stat /= 0) then
-    call abor1("Cannot read positional argument 2")
-  end if
-
-  ! Parse verbosity argument
-  call get_command_argument(3, arg)
-  call str2int(arg, verbosity, stat)
-  if (stat /= 0) then
-    call abor1("Cannot read positional argument 3")
-  end if
+    select case(carg)
+      ! Parse help argument
+      case('-h')
+        call print_help()
+        stop
+      ! Parse verbosity argument
+      case('-v')
+        verbosity = 1
+      ! Parse number of iterations argument
+      case('-n')
+        iarg = iarg + 1
+        call get_command_argument(iarg, carg)
+        call str2int(carg, iters, stat)
+        if (stat /= 0 .or. iters < 1) then
+          call print_help()
+          call abor1("Invalid argument for -n: " // carg)
+        end if
+      ! Parse spectral truncation argument
+      case('-t')
+        iarg = iarg + 1
+        call get_command_argument(iarg, carg)
+        call str2int(carg, nsmax, stat)
+        if (stat /= 0 .or. nsmax < 1) then
+          call print_help()
+          call abor1("Invalid argument for -t: " // carg)
+        end if
+    end select
+    iarg = iarg + 1
+  end do
 
   ! TODO: implement different levels of verbosity
   verbose = verbosity == 1
@@ -851,16 +859,40 @@ end subroutine sort
 
 subroutine print_help
 
-  write(nout, "(a)") "Spectral transform driver"
-  write(nout, "(a)") "This program tests ectrans by transforming fields back and forth between"
-  write(nout, "(a)") "spectral space and grid-point space"
+  write(nout, "(a)") ""
+
   if (jprb == jprd) then
-    write(nout, "(a)") "usage: driver-spectrans-dp <spectral truncation> <number of iterations> &
-      &<verbosity>"
+    write(nout, "(a)") "NAME    driver-spectrans-dp"
   else
-    write(nout, "(a)") "usage: driver-spectrans-sp <spectral truncation> <number of iterations> &
-      &<verbosity>"
+    write(nout, "(a)") "NAME    driver-spectrans-dp"
   end if
+
+  write(nout, "(a)") "DESCRIPTION"
+  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
+    &between spectral "
+  if (jprb == jprd) then
+    write(nout, "(a)") "        space and grid-point space (double-precision version)"
+  else
+    write(nout, "(a)") "        space and grid-point space (single-precision version)"
+  end if
+  write(nout, "(a)") ""
+
+  write(nout, "(a)") "USAGE"
+  if (jprb == jprd) then
+    write(nout, "(a)") "        driver-spectrans-dp [options]"
+  else
+    write(nout, "(a)") "        driver-spectrans-sp [options]"
+  end if
+
+  write(nout, "(a)") "OPTIONS"
+  write(nout, "(a)") "        -h      Print this message"
+  write(nout, "(a)") "        -n iterations"
+  write(nout, "(a)") "                Run for this many inverse/direct transform iterations"
+  write(nout, "(a)") "        -t truncation"
+  write(nout, "(a)") "                Run with this triangular spectral truncation"
+
+  write(nout, "(a)") ""
+  write(nout, "(a)") ""
 
 end subroutine print_help
 
