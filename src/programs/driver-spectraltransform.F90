@@ -129,8 +129,6 @@ CHARACTER(LEN=32) :: ARG
 #include "setup_trans.h"
 #include "inv_trans.h"
 #include "dir_trans.h"
-#include "dist_spec.h"
-#include "gath_grid.h"
 #include "trans_inq.h"
 #include "specnorm.h"
 #include "abor1.intfb.h"
