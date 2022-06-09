@@ -34,8 +34,8 @@ INTEGER(KIND=JPIM) :: ISTACK, GETSTACKUSAGE
 REAL(KIND=JPRB), DIMENSION(1)  :: ZMAXERR(5), ZERR(5)
 REAL(KIND=JPRB) :: ZMAXERRG
 
-INTEGER(KIND=JPIM) :: NERR,NLIN,INSF,NSMAX,NDGL,NQ
-INTEGER(KIND=JPIM) :: NOUT,NOUTDUMP,NSPEC2,NGPTOT,NGPTOTG,IFLD,IFLDS,ICODE,IOUTSF,JROC,JB
+INTEGER(KIND=JPIM) :: NERR = 0, NOUT = 6
+INTEGER(KIND=JPIM) :: NLIN,INSF,NSMAX,NDGL,NQ,NOUTDUMP,NSPEC2,NGPTOT,NGPTOTG,IFLD,IFLDS,ICODE,IOUTSF,JROC,JB
 INTEGER(KIND=JPIM) :: IERR,NSPEC2G,IRET,NTYPE,I
 INTEGER(KIND=JPIM) :: JA,IB,JPRTRV
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLOEN(:),ITO(:),NPRCIDS(:)
@@ -113,7 +113,7 @@ INTEGER(KIND=JPIM) :: NGPBLKS
 ! LOCALS
 INTEGER(KIND=JPIM) :: IPRTRV
 INTEGER(KIND=JPIM) :: IPRTRW
-INTEGER(KIND=JPIM) :: IPRUSED, ILEVPP, IREST, ILEV, JLEV, ILASTLEV
+INTEGER(KIND=JPIM) :: IPRUSED, ILEVPP, IREST, ILEV, JLEV
 
 LOGICAL :: LLINFO
 
@@ -137,84 +137,52 @@ CHARACTER(LEN=32) :: ARG
 #include "gstats_setup.intfb.h"
 
 !===================================================================================================
-! Initialize parameters
+! Initialize default parameters
 !===================================================================================================
 
-NERR = 0
-NOUT = 6
-! Unit number for file to dump 2D fields to
-NOUTDUMP = 7
-! Max number of resolutions
-NMAX_RESOL=37
-
-! NPROMA for trans lib
-NPROMATR=0
-! Size of comm buffer
-NCOMBFLEN=1800000
-! EQ REGIONS flag
-LEQ_REGIONS=.TRUE.
-! Message Passing switch
-LMPOFF=.FALSE.
-! Activate barrier sync
-LSYNC_TRANS=.true.
-! Number of procs
-NPROC=0
-! Grid-point decomp
-NPRGPNS=0
-NPRGPEW=0
-! Spectral decomp
-NPRTRW=0
-NPRTRV=0
-! Minimum spectral resolution
-! Used for controlling NPRTRW
-NSPECRESMIN=80
-! Message passing type
-MP_TYPE=2
-! Mailbox size
-MBX_SIZE=150000000
-! GSTATS statistics
-LSTATS=.TRUE.
-LDETAILED_STATS=.FALSE.
-LSTATS_OMP=.FALSE.
-LSTATS_COMMS=.FALSE.
-LSTATS_MPL=.FALSE.
-LBARRIER_STATS=.FALSE.
-LBARRIER_STATS2=.FALSE.
-LSTATSCPU=.FALSE.
-LSYNCSTATS=.FALSE.
-LXML_STATS=.FALSE.
-LTRACE_STATS=.FALSE.
-NSTATS_MEM=0
-LSTATS_MEM=.FALSE.
-LSTATS_ALLOC=.FALSE.
-NTRACE_STATS=0
-NPRNT_STATS=1
-LUSERPNM=.FALSE.
-LKEEPRPNM=.FALSE.
-! Use fast Legendre transforms
-LUSEFLT=.FALSE.
-! Output stack info
-LSTACK=.FALSE.
-! Use FFTW
-LFFTW=.TRUE.
-
-! Default number of vertical levels
-NFLEVG=137
-! Number of 3D grid-point fields in GMV
-NDIMGMV=9
-! Number of 2D grid-point fields in GMVS
-! surface pressure, north south der, east-west der
-NDIMGMVS=3
-! Set defaults for options
-NLIN    = 0
-NDGL    = 0
-NQ      = 2
-
-! Number of iterations for transform test
-ITERS=10
-
-! Locals
-ILASTLEV = 0
+NOUTDUMP = 7 ! Unit number for file to dump 2D fields to
+NMAX_RESOL = 37 ! Max number of resolutions
+NPROMATR = 0 ! NPROMA for trans lib
+NCOMBFLEN = 1800000 ! Size of comm buffer
+LEQ_REGIONS = .TRUE. ! EQ REGIONS flag
+LMPOFF = .FALSE. ! Message Passing switch
+LSYNC_TRANS = .true. ! Activate barrier sync
+NPROC = 0! Number of procs
+NPRGPNS = 0 ! Grid-point decomp
+NPRGPEW = 0 ! Grid-point decomp
+NPRTRW = 0 ! Spectral decomp
+NPRTRV = 0 ! Spectral decomp
+NSPECRESMIN = 80 ! Minimum spectral resolution, for controlling NPRTRW
+MP_TYPE = 2 ! Message passing type
+MBX_SIZE = 150000000 ! Mailbox size
+LSTATS = .TRUE. ! GSTATS statistics
+LDETAILED_STATS = .FALSE.
+LSTATS_OMP = .FALSE.
+LSTATS_COMMS = .FALSE.
+LSTATS_MPL = .FALSE.
+LBARRIER_STATS = .FALSE.
+LBARRIER_STATS2 = .FALSE.
+LSTATSCPU = .FALSE.
+LSYNCSTATS = .FALSE.
+LXML_STATS = .FALSE.
+LTRACE_STATS = .FALSE.
+NSTATS_MEM = 0
+LSTATS_MEM = .FALSE.
+LSTATS_ALLOC = .FALSE.
+NTRACE_STATS = 0
+NPRNT_STATS = 1
+LUSERPNM = .FALSE.
+LKEEPRPNM = .FALSE.
+LUSEFLT = .FALSE. ! Use fast Legendre transforms
+LSTACK = .FALSE. ! Output stack info
+LFFTW = .TRUE. ! Use FFTW
+NFLEVG = 137 ! Default number of vertical levels
+NDIMGMV = 9 ! Number of 3D grid-point fields in GMV
+NDIMGMVS = 3 ! Number of 2D grid-point fields in GMVS, surf. pres., north south der, east-west der
+NLIN = 0 ! Linear grid (1) or not (0)
+NDGL = 0
+NQ   = 2 ! Cubic grid (1) or cubic grid + Collignon (2) or not (0)
+ITERS = 10 ! Number of iterations for transform test
 
 !===================================================================================================
 ! Read command-line arguments
