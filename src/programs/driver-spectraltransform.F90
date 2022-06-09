@@ -868,9 +868,9 @@ end subroutine print_help
 
 subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
 
-  integer, intent(in) :: nsmax
-  real(kind=jprb), intent(inout) :: zsp(:,:)
-  real(kind=jprb), intent(inout) :: sp3d(:,:,:)
+  integer,         intent(in)    :: nsmax       ! Spectral truncation
+  real(kind=jprb), intent(inout) :: zsp(:,:)    ! Surface pressure
+  real(kind=jprb), intent(inout) :: sp3d(:,:,:) ! 3D fields
 
   integer(kind=jpim) :: nflevl
   integer(kind=jpim) :: nfield
@@ -880,8 +880,10 @@ subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
   nflevl = size(sp3d, 1)
   nfield = size(sp3d, 3)
 
+  ! First initialize surface pressure
   call initialize_2d_spectral_field(nsmax, zsp(1,:))
 
+  ! Then initialize all of the 3D fields
   do i = 1, nflevl
     do j = 1, nfield
       call initialize_2d_spectral_field(nsmax, sp3d(i,:,j))
@@ -894,24 +896,38 @@ end subroutine initialize_spectral_arrays
 
 subroutine initialize_2d_spectral_field(nsmax, field)
 
-  integer, intent(in) :: nsmax ! Spectral truncation
+  integer,         intent(in)    :: nsmax    ! Spectral truncation
   real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
 
-  integer :: i, index
+  integer :: i, index, num_my_zon_wns
+  integer, allocatable :: my_zon_wns(:), nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays
   integer :: m_num = 4  ! Zonal wavenumber
-  integer :: l_num = 11 ! Total wavenumber
+  integer :: l_num = 19  ! Total wavenumber
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
 
-  ! Then compute the array index corresponding to the chosen (m,l) pair
-  ! The factors of two are because the spectral coefficients are actually complex numbers
-  index = (nsmax + 1) * 2 * m_num + 2 * l_num
+  ! Get zonal wavenumbers this rank is responsible for
+  call trans_inq(knump=num_my_zon_wns)
+  allocate(my_zon_wns(num_my_zon_wns))
+  call trans_inq(kmyms=my_zon_wns)
 
-  ! Initialize all fields to be a randomly chosen spherical harmonic
-  field(index) = 1.0
+  ! If rank is responsible for the chosen zonal wavenumber...
+  if (any(my_zon_wns == m_num) ) then
+    ! Get array of spectral array addresses (this maps (m, n=m) to array index)
+    allocate(nasm0(0:nsmax))
+    call trans_inq(kasm0=nasm0)
+
+    ! Find out local array index of chosen spherical harmonic
+    index = nasm0(m_num) + 2 * (l_num - m_num) + 1
+
+    ! Set just that element to a constant value
+    field(index) = 1.0
+  else
+    return
+  end if
 
 end subroutine initialize_2d_spectral_field
 
