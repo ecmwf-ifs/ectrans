@@ -10,10 +10,10 @@
 
 ecbuild_list_add_pattern( LIST trans_src
                           GLOB
+                                sharedmem/*
                                 algor/*
                                 internal/*
                                 external/*
-                                sharedmem/*
                           QUIET
                         )
 
@@ -41,8 +41,8 @@ foreach( prec sp dp )
                        algor/external/fourier/create_plan_fftc.cu
                        algor/external/fourier/storage_fftc.cu
                        algor/external/fourier/execute_plan_fftc.cu
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
@@ -60,8 +60,8 @@ foreach( prec sp dp )
                        algor/external/fourier/storage_fftc.cu
                        algor/external/fourier/execute_plan_fftc.cu
       TYPE             STATIC
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
@@ -79,8 +79,8 @@ foreach( prec sp dp )
                        algor/external/fourier/storage_fftc.cu
                        algor/external/fourier/execute_plan_fftc.cu
       TYPE             STATIC
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
@@ -157,12 +157,3 @@ ecbuild_add_library( TARGET gpu
 
 ## CUDA architecture 
 set_property( TARGET gpu PROPERTY CUDA_ARCHITECTURES 70 ) 
-
-
-## Install trans interface
-
-file( GLOB trans_interface interface/* )
-install(
-  FILES        ${trans_interface}
-  DESTINATION  include/ectrans
-)

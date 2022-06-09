@@ -44,8 +44,8 @@ foreach( prec sp dp )
       TARGET           trans_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
       PUBLIC_LIBS      fiat parkind_${prec}
@@ -74,11 +74,3 @@ foreach( prec sp dp )
 
   endif()
 endforeach()
-
-## Install trans interface
-
-file( GLOB trans_interface include/ectrans/* )
-install(
-  FILES        ${trans_interface}
-  DESTINATION  include/ectrans
-)
