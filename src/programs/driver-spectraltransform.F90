@@ -864,7 +864,7 @@ subroutine print_help
   if (jprb == jprd) then
     write(nout, "(a)") "NAME    driver-spectrans-dp"
   else
-    write(nout, "(a)") "NAME    driver-spectrans-dp"
+    write(nout, "(a)") "NAME    driver-spectrans-sp"
   end if
 
   write(nout, "(a)") "DESCRIPTION"
