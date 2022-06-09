@@ -51,7 +51,6 @@ real(kind=jprb),allocatable :: znorm(:),znorm1(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
-real(kind=jprb), allocatable :: zwinds (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
 
@@ -446,7 +445,6 @@ allocate(ito(iflds))
 ito(:)=1
 
 ! Allocate grid-point arrays
-allocate(zwinds(nproma,nflevg,4,ngpblks))
 allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
 allocate(zgmvs(nproma,ndimgmvs,ngpblks))
 
@@ -540,7 +538,7 @@ do jstep=1,iters
      & ldscders=.true.,ldvorgp=.false.,lddivgp=.true.,lduvder=.false.,&
      & kresol=1,kproma=nproma,kvsetuv=ivset,kvsetsc2=ivsetsc(1:1),&
      & kvsetsc3a=ivset,&
-     & pgpuv=zwinds(:,:,2:4,:),pgp2=zgmvs(:,1:3,:),&
+     & pgpuv=zgmv(:,:,2:4,:),pgp2=zgmvs(:,1:3,:),&
      & pgp3a=zgmv(:,:,5:7,:))
   ztstep1(jstep)=(timef()-ztstep1(jstep))/1000.0_jprd
 
@@ -550,8 +548,8 @@ do jstep=1,iters
 
   ! dump a field to a binary file
   call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmvs(:,1,:), 'S', noutdump)
-  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zwinds(:,nflevg,3,:),  'U', noutdump)
-  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zwinds(:,nflevg,4,:),  'V', noutdump)
+  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,3,:),  'U', noutdump)
+  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,4,:),  'V', noutdump)
   call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,5,:),  'T', noutdump)
 
   !=================================================================================================
@@ -563,7 +561,7 @@ do jstep=1,iters
       & pspsc2=zsp(1:1,:),pspsc3a=zt,&
       & kresol=1,kproma=nproma,kvsetuv=ivset,kvsetsc2=ivsetsc(1:1),&
       & kvsetsc3a=ivset,&
-      & pgpuv=zwinds(:,:,3:4,:),pgp2=zgmvs(:,1:1,:),&
+      & pgpuv=zgmv(:,:,3:4,:),pgp2=zgmvs(:,1:1,:),&
       & pgp3a=zgmv(:,:,5:5,:))
   ztstep2(jstep)=(timef()-ztstep2(jstep))/1000.0_jprd
 
@@ -786,7 +784,6 @@ if( nproc > 1 ) then
   endif
 endif
 
-deallocate(zwinds)
 deallocate(zgmv)
 deallocate(zgmvs)
 
