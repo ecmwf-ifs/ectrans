@@ -530,29 +530,19 @@ IF( LSTATS ) THEN
 ENDIF
 
 ZTLOOP=TIMEF()
-! simulated time stepping loop
-
-!skip time measurements for first iteration
-YLSTATS = .false.
 
 !===================================================================================================
 ! Do spectral transform loop
 !===================================================================================================
 
 DO JSTEP=1,ITERS
-  IF (JSTEP > 1) YLSTATS = .true.
   ZTSTEP(JSTEP)=TIMEF()
+
+  !=================================================================================================
+  ! Do inverse transform
+  !=================================================================================================
+
   ZTSTEP1(JSTEP)=TIMEF()
-  print*,'driver: now calling trans scalar as in specrt'
-  CALL INV_TRANS(PSPSCALAR=ZT(1:NFLEVL,:,1),KPROMA=NPROMA,PGP=ZGMV(:,:,5,:),KVSETSC=IVSET)
-  print*,'driver: now calling trans scalar as in suorog'
-  CALL INV_TRANS(PSPSCALAR=ZSP(1:1,:),LDSCDERS=.FALSE.,KPROMA=NPROMA,PGP=ZGMVS(:,1:1,:),KVSETSC=IVSETSC(1:1))
-  print*,'driver: now calling inv_trans vector only'
-  CALL INV_TRANS(PSPVOR=ZVOR,PSPDIV=ZDIV,&
-     & LDVORGP=.FALSE.,LDDIVGP=.false.,LDUVDER=.FALSE.,&
-     & KRESOL=1,KPROMA=NPROMA,KVSETUV=IVSET,&
-     & PGPUV=ZWINDS(:,:,3:4,:))
-  print*,'driver: now calling inv_trans vector full'
   CALL INV_TRANS(PSPVOR=ZVOR,PSPDIV=ZDIV,PSPSC2=ZSP(1:1,:),&
      & PSPSC3A=ZT,&
      & LDSCDERS=.TRUE.,LDVORGP=.FALSE.,LDDIVGP=.TRUE.,LDUVDER=.FALSE.,&
@@ -562,11 +552,19 @@ DO JSTEP=1,ITERS
      & PGP3A=ZGMV(:,:,5:7,:))
   ZTSTEP1(JSTEP)=(TIMEF()-ZTSTEP1(JSTEP))/1000.0_JPRD
 
+  !=================================================================================================
+  ! While in grid point space, dump the values to disk
+  !=================================================================================================
+
   ! Dump a field to a binary file
   CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZGMVS(:,1,:), 'S', NOUTDUMP)
   CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZWINDS(:,NFLEVG,3,:),  'U', NOUTDUMP)
   CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZWINDS(:,NFLEVG,4,:),  'V', NOUTDUMP)
   CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZGMV(:,NFLEVG,5,:),  'T', NOUTDUMP)
+
+  !=================================================================================================
+  ! Do direct transform
+  !=================================================================================================
 
   ZTSTEP2(JSTEP)=TIMEF()
   CALL DIR_TRANS(PSPVOR=ZVOR,PSPDIV=ZDIV,&
@@ -575,21 +573,11 @@ DO JSTEP=1,ITERS
       & KVSETSC3A=IVSET,&
       & PGPUV=ZWINDS(:,:,3:4,:),PGP2=ZGMVS(:,1:1,:),&
       & PGP3A=ZGMV(:,:,5:5,:))
-
-!!new from nils
-    CALL DIR_TRANS(PSPSCALAR=ZSP(1:1,:),&
-       & KRESOL=1,KPROMA=NPROMA,KVSETSC=IVSETSC(1:1),&
-       & PGP=ZGMVS(:,1:1,:))
-  !CALL DIR_TRANS(PSPVOR=ZVOR(:,:),PSPDIV=ZDIV(:,:),&
-  !   & KRESOL=1,KPROMA=NPROMA,KVSETUV=IVSET(:),&
-    !   & PGPUV=ZWINDS(:,:,3:4,:))
-    !print*,'driver: now calling dir_trans scalar'
-    !CALL DIR_TRANS(PSPSCALAR=ZSPEC(1:1,:),KPROMA=NPROMA,PGP=ZGP(:,1:1,:),KVSETSC=IVSETSC(1:1))
-    !CALL DIR_TRANS(PSPSCALAR=ZSPEC(1:1,:),KPROMA=NPROMA,PGP=ZGP(:,1:1,:),KVSETSC=IVSETSC(1:1))
-
-    CALL DIR_TRANS(PSPSCALAR=ZT(1:NFLEVL,:,1),KPROMA=NPROMA,PGP=ZGMV(:,:,5,:),KVSETSC=IVSET)
-
   ZTSTEP2(JSTEP)=(TIMEF()-ZTSTEP2(JSTEP))/1000.0_JPRD
+
+  !=================================================================================================
+  ! Calculate timings
+  !=================================================================================================
 
   ZTSTEP(JSTEP)=(TIMEF()-ZTSTEP(JSTEP))/1000.0_JPRD
 
@@ -605,9 +593,9 @@ DO JSTEP=1,ITERS
   ZTSTEPMIN2=MIN(ZTSTEP2(JSTEP),ZTSTEPMIN2)
   ZTSTEPMAX2=MAX(ZTSTEP2(JSTEP),ZTSTEPMAX2)
 
-  !===================================================================================================
+  !=================================================================================================
   ! Print norms
-  !===================================================================================================
+  !=================================================================================================
 
   IF( VERBOSE )THEN
     CALL SPECNORM(PSPEC=ZSP(1:1,:),       PNORM=ZNORMSP, KVSET=IVSETSC(1:1))
