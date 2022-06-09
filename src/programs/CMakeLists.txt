@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-if( HAVE_TOOLS AND TARGET eccodes_f90 )
+if( HAVE_TOOLS )
 
   if( HAVE_DOUBLE_PRECISION )
     set( trans trans_dp )
@@ -22,7 +22,7 @@ if( HAVE_TOOLS AND TARGET eccodes_f90 )
 
     ecbuild_add_executable(TARGET ${_program}
       SOURCES ${_program}.F90
-      LIBS ${trans} eccodes_f90
+      LIBS ${trans}
       LINKER_LANGUAGE Fortran
       DEFINITIONS ECTRANS_TOOLS_RTABLE_PATH="${ECTRANS_TOOLS_RTABLE_PATH}" )
 
@@ -42,7 +42,6 @@ foreach( prec sp dp )
                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/include/ectrans>
                            LIBS
                              fiat parkind_${prec}
-                             eccodes_f90 eccodes_memfs
                              ${MPI_Fortran_LIBRARIES}
                              ${CMAKE_BINARY_DIR}/lib/libtrans_${prec}.dylib
                              ${LAPACK_LIBRARIES}
