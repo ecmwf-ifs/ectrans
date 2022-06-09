@@ -23,11 +23,9 @@ USE PARKIND1  ,ONLY  : JPIM     ,JPRB, JPRD
 USE OML_MOD ,ONLY : OML_MAX_THREADS
 USE MPL_MPIF
 USE MPL_MODULE
-USE YOMGSTATS, ONLY: JPMAXSTAT, YLSTATS => LSTATS
+USE YOMGSTATS, ONLY: JPMAXSTAT
 
 IMPLICIT NONE
-
-INTEGER(KIND=JPIM) :: RETURN_CODE
 
 ! Number of points in top/bottom latitudes
 INTEGER(KIND=JPIM), PARAMETER :: MIN_OCTA_POINTS = 20
@@ -414,10 +412,6 @@ SP3D(1,162,:) = 1.0
 !===================================================================================================
 ! Print information before starting
 !===================================================================================================
-
-WRITE(NOUT,'(" ")')
-WRITE(NOUT,'("SPECTRAL FIELDS HAVE BEEN SUCCESSFULY READ, IFLDS=",I3)')IFLDS
-WRITE(NOUT,'(" ")')
 
 ! PRINT CONFIGURATION DETAILS
 WRITE(NOUT,'(A)')'===-=== START OF  RUNTIME PARAMETERS ===-==='
