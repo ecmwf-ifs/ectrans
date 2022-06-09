@@ -868,7 +868,7 @@ subroutine print_help
   end if
 
   write(nout, "(a)") "DESCRIPTION"
-  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
+  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth &
     &between spectral "
   if (jprb == jprd) then
     write(nout, "(a)") "        space and grid-point space (double-precision version)"
