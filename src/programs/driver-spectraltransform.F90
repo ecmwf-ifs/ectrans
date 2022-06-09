@@ -227,6 +227,9 @@ DO I = 1, COMMAND_ARGUMENT_COUNT()
     ! Verbose output
     CASE("-v", "--verbose")
       VERBOSE = .TRUE.
+    CASE("-h", "--help")
+      CALL PRINT_HELP()
+      STOP
     CASE DEFAULT
       CALL ABOR1("Unrecognized command-line option: " // ARG)
   END SELECT
@@ -840,6 +843,17 @@ SUBROUTINE SORT(A, N)
         A(J + 1) = X
     END DO
 END SUBROUTINE
+
+!===================================================================================================
+
+SUBROUTINE PRINT_HELP
+  WRITE(NOUT, "(A)") "Spectral transform driver"
+  WRITE(NOUT, "(A)") "This program tests ecTrans by transforming fields back and forth between"
+  WRITE(NOUT, "(A)") "spectral space and grid-point space"
+  WRITE(NOUT, "(A)") "Command-line options:"
+  WRITE(NOUT, "(A)") " -v, --verbose    print verbose output"
+  WRITE(NOUT, "(A)") " -h, --help       print this message"
+END SUBROUTINE PRINT_HELP
 
 !===================================================================================================
 
