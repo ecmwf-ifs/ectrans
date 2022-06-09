@@ -402,12 +402,15 @@ ALLOCATE(ZSP(1,NSPEC2))
 
 SP3D(:,:,:) =  0.0_JPRB
 ZSP(:,:)    =  0.0_JPRB
-ZVOR        => SP3D(:,:,1)
-ZDIV        => SP3D(:,:,2)
-ZT          => SP3D(:,:,3:3)
 
 ! Initialize all fields to be a randomly chosen spherical harmonic
-SP3D(1,162,:) = 1.0
+ZSP(1,162)    = 1.0
+SP3D(:,162,:) = 1.0
+
+! Point convenience variables to storage variable SP3D
+ZVOR => SP3D(:,:,1)
+ZDIV => SP3D(:,:,2)
+ZT   => SP3D(:,:,3:3)
 
 !===================================================================================================
 ! Print information before starting
