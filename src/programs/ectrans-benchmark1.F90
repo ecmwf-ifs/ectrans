@@ -133,8 +133,8 @@ integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
 integer(kind=jpim) :: nprgpns ! Grid-point decomp
 integer(kind=jpim) :: nprgpew ! Grid-point decomp
-integer(kind=jpim) :: nprtrv ! Spectral decomp
-integer(kind=jpim) :: nprtrw ! Spectral decomp
+integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
+integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
 integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
 integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
