@@ -7,7 +7,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-PROGRAM TRANSFORM_TEST
+program transform_test
 
 !
 ! Spectral transform test
@@ -19,109 +19,109 @@ PROGRAM TRANSFORM_TEST
 ! Author : George Mozdzynski
 !
 
-USE PARKIND1  ,ONLY  : JPIM     ,JPRB, JPRD
-USE OML_MOD ,ONLY : OML_MAX_THREADS
-USE MPL_MPIF
-USE MPL_MODULE
-USE YOMGSTATS, ONLY: JPMAXSTAT
+use parkind1  ,only  : jpim     ,jprb, jprd
+use oml_mod ,only : oml_max_threads
+use mpl_mpif
+use mpl_module
+use yomgstats, only: jpmaxstat
 
-IMPLICIT NONE
+implicit none
 
 ! Number of points in top/bottom latitudes
-INTEGER(KIND=JPIM), PARAMETER :: MIN_OCTA_POINTS = 20
+integer(kind=jpim), parameter :: min_octa_points = 20
 
-INTEGER(KIND=JPIM) :: ISTACK, GETSTACKUSAGE
-REAL(KIND=JPRB), DIMENSION(1)  :: ZMAXERR(5), ZERR(5)
-REAL(KIND=JPRB) :: ZMAXERRG
+integer(kind=jpim) :: istack, getstackusage
+real(kind=jprb), dimension(1)  :: zmaxerr(5), zerr(5)
+real(kind=jprb) :: zmaxerrg
 
-INTEGER(KIND=JPIM) :: NERR = 0, NOUT = 6
-INTEGER(KIND=JPIM) :: NLIN,INSF,NSMAX,NDGL,NQ,NOUTDUMP,NSPEC2,NGPTOT,NGPTOTG,IFLD,IFLDS,ICODE,IOUTSF,JROC,JB
-INTEGER(KIND=JPIM) :: IERR,NSPEC2G,IRET,NTYPE,I
-INTEGER(KIND=JPIM) :: JA,IB,JPRTRV
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLOEN(:),ITO(:),NPRCIDS(:)
-INTEGER(KIND=JPIM) :: MYPROC,JJ
-INTEGER   :: JSTEP
-REAL(KIND=JPRD)    :: ZTINIT,ZTLOOP,TIMEF, ZTSTEPMAX, ZTSTEPMIN, ZTSTEPAVG, ZTSTEPMED
-REAL(KIND=JPRD)    :: ZTSTEPMAX1, ZTSTEPMIN1, ZTSTEPAVG1, ZTSTEPMED1
-REAL(KIND=JPRD)    :: ZTSTEPMAX2, ZTSTEPMIN2, ZTSTEPAVG2, ZTSTEPMED2
-REAL(KIND=JPRD),ALLOCATABLE :: ZTSTEP(:), ZTSTEP1(:), ZTSTEP2(:)
-REAL(KIND=JPRB),ALLOCATABLE :: ZNORMSP(:),ZNORMSP1(:),ZNORMDIV(:),ZNORMDIV1(:)
-REAL(KIND=JPRB),ALLOCATABLE :: ZNORMVOR(:),ZNORMVOR1(:),ZNORMT(:),ZNORMT1(:)
-REAL(KIND=JPRB),ALLOCATABLE :: ZNORM(:),ZNORM1(:)
-REAL(KIND=JPRD) :: ZAVEAVE(0:JPMAXSTAT)
+integer(kind=jpim) :: nerr = 0, nout = 6
+integer(kind=jpim) :: nlin,insf,nsmax,ndgl,nq,noutdump,nspec2,ngptot,ngptotg,ifld,iflds,icode,ioutsf,jroc,jb
+integer(kind=jpim) :: ierr,nspec2g,iret,ntype,i
+integer(kind=jpim) :: ja,ib,jprtrv
+integer(kind=jpim) ,allocatable :: nloen(:),ito(:),nprcids(:)
+integer(kind=jpim) :: myproc,jj
+integer   :: jstep
+real(kind=jprd)    :: ztinit,ztloop,timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
+real(kind=jprd)    :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
+real(kind=jprd)    :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
+real(kind=jprd),allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
+real(kind=jprb),allocatable :: znormsp(:),znormsp1(:),znormdiv(:),znormdiv1(:)
+real(kind=jprb),allocatable :: znormvor(:),znormvor1(:),znormt(:),znormt1(:)
+real(kind=jprb),allocatable :: znorm(:),znorm1(:)
+real(kind=jprd) :: zaveave(0:jpmaxstat)
 
-! GRID-POINT SPACE DATA STRUCTURES
-REAL(KIND=JPRB), ALLOCATABLE :: ZWINDS (:,:,:,:) ! Multilevel fields at t and t-dt
-REAL(KIND=JPRB), ALLOCATABLE, TARGET :: ZGMV   (:,:,:,:) ! Multilevel fields at t and t-dt
-REAL(KIND=JPRB), ALLOCATABLE, TARGET :: ZGMVS  (:,:,:)   ! Single level fields at t and t-dt
+! Grid-point space data structures
+real(kind=jprb), allocatable :: zwinds (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
 
-! SPECTRAL SPACE DATA STRUCTURES
-REAL(KIND=JPRB), ALLOCATABLE :: ZSPVORG(:,:)
-REAL(KIND=JPRB), ALLOCATABLE :: ZSPDIVG(:,:)
-REAL(KIND=JPRB), ALLOCATABLE :: ZSPSPG(:,:)
-REAL(KIND=JPRB), ALLOCATABLE :: ZSPTG(:,:,:)
-REAL(KIND=JPRB), ALLOCATABLE, TARGET :: SP3D(:,:,:)
-REAL(KIND=JPRB), POINTER :: ZVOR(:,:) => NULL()
-REAL(KIND=JPRB), POINTER :: ZDIV(:,:) => NULL()
-REAL(KIND=JPRB), POINTER :: ZT(:,:,:) => NULL()
-REAL(KIND=JPRB), ALLOCATABLE :: ZSP(:,:)
+! Spectral space data structures
+real(kind=jprb), allocatable :: zspvorg(:,:)
+real(kind=jprb), allocatable :: zspdivg(:,:)
+real(kind=jprb), allocatable :: zspspg(:,:)
+real(kind=jprb), allocatable :: zsptg(:,:,:)
+real(kind=jprb), allocatable, target :: sp3d(:,:,:)
+real(kind=jprb), pointer :: zvor(:,:) => null()
+real(kind=jprb), pointer :: zdiv(:,:) => null()
+real(kind=jprb), pointer :: zt(:,:,:) => null()
+real(kind=jprb), allocatable :: zsp(:,:)
 
-LOGICAL :: LSTACK
-LOGICAL :: LUSERPNM, LKEEPRPNM, LUSEFLT
-LOGICAL :: LTRACE_STATS,LSTATS_OMP, LSTATS_COMMS, LSTATS_MPL
-LOGICAL :: LSTATS,LBARRIER_STATS, LBARRIER_STATS2, LDETAILED_STATS
-LOGICAL :: LSTATS_ALLOC, LSYNCSTATS, LSTATSCPU, LSTATS_MEM
-LOGICAL :: LXML_STATS
-LOGICAL :: LFFTW
-INTEGER(KIND=JPIM) :: NSTATS_MEM, NTRACE_STATS, NPRNT_STATS
-LOGICAL :: LMPOFF
-INTEGER(KIND=JPIM) :: ITERS=100
+logical :: lstack
+logical :: luserpnm, lkeeprpnm, luseflt
+logical :: ltrace_stats,lstats_omp, lstats_comms, lstats_mpl
+logical :: lstats,lbarrier_stats, lbarrier_stats2, ldetailed_stats
+logical :: lstats_alloc, lsyncstats, lstatscpu, lstats_mem
+logical :: lxml_stats
+logical :: lfftw
+integer(kind=jpim) :: nstats_mem, ntrace_stats, nprnt_stats
+logical :: lmpoff
+integer(kind=jpim) :: iters=100
 
 ! Whether to print verbose output or not
-LOGICAL :: VERBOSE = .FALSE.
+logical :: verbose = .false.
 
-REAL(KIND=JPRB) :: ZRA=6371229._JPRB
+real(kind=jprb) :: zra=6371229._jprb
 
-INTEGER(KIND=JPIM) :: NMAX_RESOL
-INTEGER(KIND=JPIM) :: NPROMATR
-INTEGER(KIND=JPIM) :: NCOMBFLEN
+integer(kind=jpim) :: nmax_resol
+integer(kind=jpim) :: npromatr
+integer(kind=jpim) :: ncombflen
 
-INTEGER(KIND=JPIM) :: NPROC
-INTEGER(KIND=JPIM) :: NTHREAD
-INTEGER(KIND=JPIM) :: NPRGPNS
-INTEGER(KIND=JPIM) :: NPRGPEW
-INTEGER(KIND=JPIM) :: NPRTRV
-INTEGER(KIND=JPIM) :: NPRTRW
-INTEGER(KIND=JPIM) :: NSPECRESMIN
-INTEGER(KIND=JPIM) :: MYSETV
-INTEGER(KIND=JPIM) :: MYSETW
-INTEGER(KIND=JPIM) :: MP_TYPE
-INTEGER(KIND=JPIM) :: MBX_SIZE
+integer(kind=jpim) :: nproc
+integer(kind=jpim) :: nthread
+integer(kind=jpim) :: nprgpns
+integer(kind=jpim) :: nprgpew
+integer(kind=jpim) :: nprtrv
+integer(kind=jpim) :: nprtrw
+integer(kind=jpim) :: nspecresmin
+integer(kind=jpim) :: mysetv
+integer(kind=jpim) :: mysetw
+integer(kind=jpim) :: mp_type
+integer(kind=jpim) :: mbx_size
 
-INTEGER(KIND=JPIM), ALLOCATABLE :: NUMLL(:), IVSET(:)
-INTEGER(KIND=JPIM) :: IVSETSC(1)
+integer(kind=jpim), allocatable :: numll(:), ivset(:)
+integer(kind=jpim) :: ivsetsc(1)
 
-INTEGER(KIND=JPIM) :: NFLEVG, NFLEVL
-! SUMPINI
-INTEGER(KIND=JPIM) :: ISQR
-LOGICAL :: LSYNC_TRANS
-LOGICAL :: LEQ_REGIONS
+integer(kind=jpim) :: nflevg, nflevl
+! sumpini
+integer(kind=jpim) :: isqr
+logical :: lsync_trans
+logical :: leq_regions
 
 
-INTEGER(KIND=JPIM) :: NPROMA
-INTEGER(KIND=JPIM) :: NGPBLKS
-! LOCALS
-INTEGER(KIND=JPIM) :: IPRTRV
-INTEGER(KIND=JPIM) :: IPRTRW
-INTEGER(KIND=JPIM) :: IPRUSED, ILEVPP, IREST, ILEV, JLEV
+integer(kind=jpim) :: nproma
+integer(kind=jpim) :: ngpblks
+! locals
+integer(kind=jpim) :: iprtrv
+integer(kind=jpim) :: iprtrw
+integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 
-LOGICAL :: LLINFO
+logical :: llinfo
 
-INTEGER(KIND=JPIM) :: NDIMGMV ! Third dim. of GMV "(NPROMA,NFLEVG,NDIMGMV,NGPBLKS)"
-INTEGER(KIND=JPIM) :: NDIMGMVS ! Second dim. GMVS "(NPROMA,NDIMGMVS,NGPBLKS)"
+integer(kind=jpim) :: ndimgmv ! Third dim. of GMV "(NPROMA,NFLEVG,NDIMGMV,NGPBLKS)"
+integer(kind=jpim) :: ndimgmvs ! Second dim. GMVS "(NPROMA,NDIMGMVS,NGPBLKS)"
 
 ! For processing command line arguments
-CHARACTER(LEN=32) :: ARG
+character(len=32) :: arg
 
 !===================================================================================================
 
@@ -138,244 +138,244 @@ CHARACTER(LEN=32) :: ARG
 ! Initialize default parameters
 !===================================================================================================
 
-NOUTDUMP = 7 ! Unit number for file to dump 2D fields to
-NMAX_RESOL = 37 ! Max number of resolutions
-NPROMATR = 0 ! NPROMA for trans lib
-NCOMBFLEN = 1800000 ! Size of comm buffer
-LEQ_REGIONS = .TRUE. ! EQ REGIONS flag
-LMPOFF = .FALSE. ! Message Passing switch
-LSYNC_TRANS = .true. ! Activate barrier sync
-NPROC = 0! Number of procs
-NPRGPNS = 0 ! Grid-point decomp
-NPRGPEW = 0 ! Grid-point decomp
-NPRTRW = 0 ! Spectral decomp
-NPRTRV = 0 ! Spectral decomp
-NSPECRESMIN = 80 ! Minimum spectral resolution, for controlling NPRTRW
-MP_TYPE = 2 ! Message passing type
-MBX_SIZE = 150000000 ! Mailbox size
-LSTATS = .TRUE. ! GSTATS statistics
-LDETAILED_STATS = .FALSE.
-LSTATS_OMP = .FALSE.
-LSTATS_COMMS = .FALSE.
-LSTATS_MPL = .FALSE.
-LBARRIER_STATS = .FALSE.
-LBARRIER_STATS2 = .FALSE.
-LSTATSCPU = .FALSE.
-LSYNCSTATS = .FALSE.
-LXML_STATS = .FALSE.
-LTRACE_STATS = .FALSE.
-NSTATS_MEM = 0
-LSTATS_MEM = .FALSE.
-LSTATS_ALLOC = .FALSE.
-NTRACE_STATS = 0
-NPRNT_STATS = 1
-LUSERPNM = .FALSE.
-LKEEPRPNM = .FALSE.
-LUSEFLT = .FALSE. ! Use fast Legendre transforms
-LSTACK = .FALSE. ! Output stack info
-LFFTW = .TRUE. ! Use FFTW
-NFLEVG = 137 ! Default number of vertical levels
-NDIMGMV = 9 ! Number of 3D grid-point fields in GMV
-NDIMGMVS = 3 ! Number of 2D grid-point fields in GMVS, surf. pres., north south der, east-west der
-NLIN = 0 ! Linear grid (1) or not (0)
-NDGL = 0
-NQ   = 2 ! Cubic grid (1) or cubic grid + Collignon (2) or not (0)
-ITERS = 10 ! Number of iterations for transform test
+noutdump = 7 ! Unit number for file to dump 2d fields to
+nmax_resol = 37 ! Max number of resolutions
+npromatr = 0 ! nproma for trans lib
+ncombflen = 1800000 ! Size of comm buffer
+leq_regions = .true. ! Eq regions flag
+lmpoff = .false. ! Message passing switch
+lsync_trans = .true. ! Activate barrier sync
+nproc = 0! Number of procs
+nprgpns = 0 ! Grid-point decomp
+nprgpew = 0 ! Grid-point decomp
+nprtrw = 0 ! Spectral decomp
+nprtrv = 0 ! Spectral decomp
+nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
+mp_type = 2 ! Message passing type
+mbx_size = 150000000 ! Mailbox size
+lstats = .true. ! gstats statistics
+ldetailed_stats = .false.
+lstats_omp = .false.
+lstats_comms = .false.
+lstats_mpl = .false.
+lbarrier_stats = .false.
+lbarrier_stats2 = .false.
+lstatscpu = .false.
+lsyncstats = .false.
+lxml_stats = .false.
+ltrace_stats = .false.
+nstats_mem = 0
+lstats_mem = .false.
+lstats_alloc = .false.
+ntrace_stats = 0
+nprnt_stats = 1
+luserpnm = .false.
+lkeeprpnm = .false.
+luseflt = .false. ! Use fast legendre transforms
+lstack = .false. ! Output stack info
+lfftw = .true. ! Use fftw
+nflevg = 137 ! Default number of vertical levels
+ndimgmv = 9 ! Number of 3d grid-point fields in gmv
+ndimgmvs = 3 ! Number of 2d grid-point fields in gmvs, surf. pres., north south der, east-west der
+nlin = 0 ! Linear grid (1) or not (0)
+ndgl = 0
+nq   = 2 ! Cubic grid (1) or cubic grid + collignon (2) or not (0)
+iters = 10 ! Number of iterations for transform test
 
 !===================================================================================================
 ! Read command-line arguments
 !===================================================================================================
 
-DO I = 1, COMMAND_ARGUMENT_COUNT()
-  CALL GET_COMMAND_ARGUMENT(I, ARG)
+do i = 1, command_argument_count()
+  call get_command_argument(i, arg)
 
-  SELECT CASE(ARG)
-    ! Verbose output
-    CASE("-v", "--verbose")
-      VERBOSE = .TRUE.
-    CASE("-h", "--help")
-      CALL PRINT_HELP()
-      STOP
-    CASE DEFAULT
-      CALL ABOR1("Unrecognized command-line option: " // ARG)
-  END SELECT
-END DO
+  select case(arg)
+    ! verbose output
+    case("-v", "--verbose")
+      verbose = .true.
+    case("-h", "--help")
+      call print_help()
+      stop
+    case default
+      call abor1("Unrecognized command-line option: " // arg)
+  end select
+end do
 
 !===================================================================================================
 ! Message passing setup
 ! Participating processors limited by -P option
 !===================================================================================================
 
-CALL MPL_INIT()
-!IF( LSTATS ) CALL GSTATS(0,0)
-ZTINIT=TIMEF()
+call mpl_init()
+!if( lstats ) call gstats(0,0)
+ztinit=timef()
 
-NPROC= MPL_NPROC()
-MYPROC = MPL_MYRANK()
-NTHREAD= OML_MAX_THREADS()
+nproc= mpl_nproc()
+myproc = mpl_myrank()
+nthread= oml_max_threads()
 
-! ONLY OUTPUT TO STDOUT ON PE 1
-IF( NPROC > 1 ) THEN
-  IF( MYPROC /= 1 ) THEN
-    OPEN(UNIT=NOUT, FILE='/dev/null')
-  ENDIF
-ENDIF
+! only output to stdout on pe 1
+if( nproc > 1 ) then
+  if( myproc /= 1 ) then
+    open(unit=nout, file='/dev/null')
+  endif
+endif
 
-IF(LDETAILED_STATS)THEN
-  LSTATS_OMP=.TRUE.
-  LSTATS_COMMS=.TRUE.
-  LSTATS_MPL=.TRUE.
-  LSTATSCPU=.TRUE.
-  NPRNT_STATS=NPROC
-!  LSTATS_MEM=.TRUE.
-!  LSTATS_ALLOC=.TRUE.
-ENDIF
+if(ldetailed_stats)then
+  lstats_omp=.true.
+  lstats_comms=.true.
+  lstats_mpl=.true.
+  lstatscpu=.true.
+  nprnt_stats=nproc
+!  lstats_mem=.true.
+!  lstats_alloc=.true.
+endif
 
 !===================================================================================================
 
-ALLOCATE(NPRCIDS(NPROC))
-DO JJ=1,NPROC
-  NPRCIDS(JJ) = JJ
-ENDDO
+allocate(nprcids(nproc))
+do jj=1,nproc
+  nprcids(jj) = jj
+enddo
 
-IF( NPROC <= 1 ) LMPOFF=.TRUE.
-! COMPUTE NPRGPNS and NPRGPEW
-! THIS VERSION SELECTS MOST SQUARE-LIKE DISTRIBUTION
-! THESE WILL CHANGE IF LEQ_REGIONS=.TRUE.
-IF( NPROC == 0 ) NPROC = 1
-ISQR=INT(SQRT(REAL(NPROC,JPRB)))
-DO JA=ISQR,NPROC
-  IB=NPROC/JA
-  IF( JA*IB == NPROC ) THEN
-    NPRGPNS=MAX(JA,IB)
-    NPRGPEW=MIN(JA,IB)
-    EXIT
-  ENDIF
-ENDDO
+if( nproc <= 1 ) lmpoff=.true.
+! Compute nprgpns and nprgpew
+! This version selects most square-like distribution
+! These will change if leq_regions=.true.
+if( nproc == 0 ) nproc = 1
+isqr=int(sqrt(real(nproc,jprb)))
+do ja=isqr,nproc
+  ib=nproc/ja
+  if( ja*ib == nproc ) then
+    nprgpns=max(ja,ib)
+    nprgpew=min(ja,ib)
+    exit
+  endif
+enddo
 
-! FROM SUMPINI, ALTHOUGH THIS
-! SHOULD BE SPECIFIED IN NAMELIST
-IF( NSPECRESMIN==0 ) NSPECRESMIN=NPROC
+! From sumpini, although this
+! should be specified in namelist
+if( nspecresmin==0 ) nspecresmin=nproc
 
-! COMPUTE NPRTRV AND NPRTRW
-! IF NOT PROVIDED IN NAMELIST
-IF( NPRTRV > 0 .OR. NPRTRW > 0 ) THEN
-  IF( NPRTRV == 0 ) NPRTRV=NPROC/NPRTRW
-  IF( NPRTRW == 0 ) NPRTRW=NPROC/NPRTRV
-  IF( NPRTRW*NPRTRV /= NPROC ) CALL ABOR1('TRANSFORM_TEST:NPRTRW*NPRTRV /= NPROC')
-  IF( NPRTRW > NSPECRESMIN ) CALL ABOR1('TRANSFORM_TEST:NPRTRW > NSPECRESMIN')
-ELSE
-  DO JPRTRV=4,NPROC
-    NPRTRV=JPRTRV
-    NPRTRW=NPROC/NPRTRV
-    IF( NPRTRV*NPRTRW /= NPROC ) CYCLE
-    IF( NPRTRV > NPRTRW ) EXIT
-    IF( NPRTRW > NSPECRESMIN ) CYCLE
-    IF( NPRTRW <= NSPECRESMIN/(2*OML_MAX_THREADS()) ) EXIT
-  ENDDO
-  ! GO FOR APPROX SQUARE PARTITION FOR BACKUP
-  IF( NPRTRV*NPRTRW /= NPROC .OR. NPRTRW > NSPECRESMIN .OR. NPRTRV > NPRTRW ) THEN
-    ISQR=INT(SQRT(REAL(NPROC,JPRB)))
-    DO JA=ISQR,NPROC
-      IB=NPROC/JA
-      IF (JA*IB == NPROC) THEN
-        NPRTRW=MAX(JA,IB)
-        NPRTRV=MIN(JA,IB)
-        IF (NPRTRW > NSPECRESMIN ) CALL ABOR1('TRANSFORM_TEST:NPRTRW &
-                                           & (approx square value) > NSPECRESMIN')
-        EXIT
-      ENDIF
-    ENDDO
-  ENDIF
-ENDIF
+! Compute nprtrv and nprtrw
+! if not provided in namelist
+if( nprtrv > 0 .or. nprtrw > 0 ) then
+  if( nprtrv == 0 ) nprtrv=nproc/nprtrw
+  if( nprtrw == 0 ) nprtrw=nproc/nprtrv
+  if( nprtrw*nprtrv /= nproc ) call abor1('transform_test:nprtrw*nprtrv /= nproc')
+  if( nprtrw > nspecresmin ) call abor1('transform_test:nprtrw > nspecresmin')
+else
+  do jprtrv=4,nproc
+    nprtrv=jprtrv
+    nprtrw=nproc/nprtrv
+    if( nprtrv*nprtrw /= nproc ) cycle
+    if( nprtrv > nprtrw ) exit
+    if( nprtrw > nspecresmin ) cycle
+    if( nprtrw <= nspecresmin/(2*oml_max_threads()) ) exit
+  enddo
+  ! Go for approx square partition for backup
+  if( nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw ) then
+    isqr=int(sqrt(real(nproc,jprb)))
+    do ja=isqr,nproc
+      ib=nproc/ja
+      if (ja*ib == nproc) then
+        nprtrw=max(ja,ib)
+        nprtrv=min(ja,ib)
+        if (nprtrw > nspecresmin ) call abor1('transform_test:nprtrw &
+                                           & (approx square value) > nspecresmin')
+        exit
+      endif
+    enddo
+  endif
+endif
 
-! Create communicators for MPI groups
-IF (.NOT.LMPOFF) THEN
-  CALL MPL_GROUPS_CREATE(NPRTRW,NPRTRV)
-ENDIF
+! Create communicators for mpi groups
+if (.not.lmpoff) then
+  call mpl_groups_create(nprtrw,nprtrv)
+endif
 
-IF (LMPOFF) THEN
-  MYSETW=(MYPROC-1)/NPRTRV+1
-  MYSETV=MOD(MYPROC-1,NPRTRV)+1
-ELSE
-  CALL MPL_CART_COORDS(MYPROC,MYSETW,MYSETV)
+if (lmpoff) then
+  mysetw=(myproc-1)/nprtrv+1
+  mysetv=mod(myproc-1,nprtrv)+1
+else
+  call mpl_cart_coords(myproc,mysetw,mysetv)
   ! Just checking for now...
-  IPRTRV=MOD(MYPROC-1,NPRTRV)+1
-  IPRTRW=(MYPROC-1)/NPRTRV+1
-  IF (IPRTRV/=MYSETV .OR. IPRTRW/=MYSETW) THEN
-    CALL ABOR1('TRANSFORM_TEST:Inconsistency when computing MYSETW and MYSETV')
-  ENDIF
-ENDIF
+  iprtrv=mod(myproc-1,nprtrv)+1
+  iprtrw=(myproc-1)/nprtrv+1
+  if (iprtrv/=mysetv .or. iprtrw/=mysetw) then
+    call abor1('transform_test:inconsistency when computing mysetw and mysetv')
+  endif
+endif
 
-IF (.NOT.LMPOFF) THEN
-  LLINFO=.FALSE.
-  IF (MYPROC == 1) LLINFO=.TRUE.
-  CALL MPL_BUFFER_METHOD(KMP_TYPE=MP_TYPE,KMBX_SIZE=MBX_SIZE,KPROCIDS=NPRCIDS,LDINFO=LLINFO)
-ENDIF
+if (.not.lmpoff) then
+  llinfo=.false.
+  if (myproc == 1) llinfo=.true.
+  call mpl_buffer_method(kmp_type=mp_type,kmbx_size=mbx_size,kprocids=nprcids,ldinfo=llinfo)
+endif
 
-! Determine number of local levels for Fourier and Legendre calculations
-! based on the values of NFLEVG and NPRTRV
-ALLOCATE(NUMLL(NPRTRV+1))
+! Determine number of local levels for fourier and legendre calculations
+! based on the values of nflevg and nprtrv
+allocate(numll(nprtrv+1))
 
 ! Calculate remainder
-IPRUSED=MIN(NFLEVG+1,NPRTRV)
-ILEVPP=NFLEVG/NPRTRV
-IREST=NFLEVG-ILEVPP*NPRTRV
-DO JROC=1,NPRTRV
-  IF(JROC <= IREST) THEN
-    NUMLL(JROC)=ILEVPP+1
-  ELSE
-    NUMLL(JROC)=ILEVPP
-  ENDIF
-ENDDO
-NUMLL(IPRUSED+1:NPRTRV+1)=0
+iprused=min(nflevg+1,nprtrv)
+ilevpp=nflevg/nprtrv
+irest=nflevg-ilevpp*nprtrv
+do jroc=1,nprtrv
+  if(jroc <= irest) then
+    numll(jroc)=ilevpp+1
+  else
+    numll(jroc)=ilevpp
+  endif
+enddo
+numll(iprused+1:nprtrv+1)=0
 
-NFLEVL=NUMLL(MYSETV)
+nflevl=numll(mysetv)
 
-IVSETSC(1)=IPRUSED
+ivsetsc(1)=iprused
 
-IFLD=0
-IFLDS=0
+ifld=0
+iflds=0
 
-ICODE = 0
+icode = 0
 
 !===================================================================================================
 ! Set resolution parameters
 !===================================================================================================
 
 ! Spectral truncation
-NSMAX = 79
-NDGL = 2 * (NSMAX + 1)
+nsmax = 79
+ndgl = 2 * (nsmax + 1)
 
 ! Calculate number of points at each latitude for octahedral grid
-ALLOCATE(NLOEN(NDGL))
+allocate(nloen(ndgl))
 
-DO I = 1, NDGL / 2
-  NLOEN(I) = MIN_OCTA_POINTS + 4 * (I - 1)
-  NLOEN(NDGL - I + 1) = NLOEN(I)
-END DO
+do i = 1, ndgl / 2
+  nloen(i) = min_octa_points + 4 * (i - 1)
+  nloen(ndgl - i + 1) = nloen(i)
+end do
 
 !===================================================================================================
 ! Call ecTrans setup routines
 !===================================================================================================
 
-CALL SETUP_TRANS0(KOUT=NOUT,KERR=NERR,KPRINTLEV=MERGE(2, 0, VERBOSE),KMAX_RESOL=NMAX_RESOL, &
-&                 KPROMATR=NPROMATR,KPRGPNS=NPRGPNS,KPRGPEW=NPRGPEW,KPRTRW=NPRTRW, &
-&                 KCOMBFLEN=NCOMBFLEN,LDMPOFF=LMPOFF,LDSYNC_TRANS=LSYNC_TRANS, &
-&                 LDEQ_REGIONS=LEQ_REGIONS, &
-&                 PRAD=ZRA,LDALLOPERM=.TRUE.)
+call setup_trans0(kout=nout,kerr=nerr,kprintlev=merge(2, 0, verbose),kmax_resol=nmax_resol, &
+&                 kpromatr=npromatr,kprgpns=nprgpns,kprgpew=nprgpew,kprtrw=nprtrw, &
+&                 kcombflen=ncombflen,ldmpoff=lmpoff,ldsync_trans=lsync_trans, &
+&                 ldeq_regions=leq_regions, &
+&                 prad=zra,ldalloperm=.true.)
 
-CALL SETUP_TRANS(KSMAX=NSMAX,KDGL=NDGL,KLOEN=NLOEN,LDSPLIT=.TRUE.,&
-&                 LDUSEFFTW=.false., LDUSERPNM=LUSERPNM,LDKEEPRPNM=LKEEPRPNM, &
-&                 LDUSEFLT=LUSEFLT)
+call setup_trans(ksmax=nsmax,kdgl=ndgl,kloen=nloen,ldsplit=.true.,&
+&                 ldusefftw=.false., lduserpnm=luserpnm,ldkeeprpnm=lkeeprpnm, &
+&                 lduseflt=luseflt)
 !
-CALL TRANS_INQ(KSPEC2=NSPEC2,KSPEC2G=NSPEC2G,KGPTOT=NGPTOT,KGPTOTG=NGPTOTG)
+call trans_inq(kspec2=nspec2,kspec2g=nspec2g,kgptot=ngptot,kgptotg=ngptotg)
 
 ! Default, no blocking
-NPROMA=NGPTOT
+nproma=ngptot
 
 ! Calculate number of NPROMA blocks
-NGPBLKS=(NGPTOT-1)/NPROMA+1
+ngpblks=(ngptot-1)/nproma+1
 
 !===================================================================================================
 ! Initialize spectral arrays
@@ -383,480 +383,480 @@ NGPBLKS=(NGPTOT-1)/NPROMA+1
 
 ! Allocate spectral arrays
 ! Try to mimick IFS layout as much as possible
-NULLIFY(ZVOR)
-NULLIFY(ZDIV)
-NULLIFY(ZT)
-ALLOCATE(SP3D(NFLEVL,NSPEC2,3))
-ALLOCATE(ZSP(1,NSPEC2))
+nullify(zvor)
+nullify(zdiv)
+nullify(zt)
+allocate(sp3d(nflevl,nspec2,3))
+allocate(zsp(1,nspec2))
 
-SP3D(:,:,:) =  0.0_JPRB
-ZSP(:,:)    =  0.0_JPRB
+sp3d(:,:,:) =  0.0_jprb
+zsp(:,:)    =  0.0_jprb
 
 ! Initialize all fields to be a randomly chosen spherical harmonic
-ZSP(1,162)    = 1.0
-SP3D(:,162,:) = 1.0
+zsp(1,162)    = 1.0
+sp3d(:,162,:) = 1.0
 
 ! Point convenience variables to storage variable SP3D
-ZVOR => SP3D(:,:,1)
-ZDIV => SP3D(:,:,2)
-ZT   => SP3D(:,:,3:3)
+zvor => sp3d(:,:,1)
+zdiv => sp3d(:,:,2)
+zt   => sp3d(:,:,3:3)
 
 !===================================================================================================
 ! Print information before starting
 !===================================================================================================
 
-! PRINT CONFIGURATION DETAILS
-IF (VERBOSE .AND. MYPROC == 1) THEN
-  WRITE(NOUT,'(A)')'===-=== START OF  RUNTIME PARAMETERS ===-==='
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'("NLIN=   ",I10)') NLIN
-  WRITE(NOUT,'("NQ=     ",I10)') NQ
-  WRITE(NOUT,'("NSMAX=  ",I10)') NSMAX
-  WRITE(NOUT,'("NDGL=   ",I10)') NDGL
-  WRITE(NOUT,'("NPROC=  ",I10)') NPROC
-  WRITE(NOUT,'("NTHREAD=",I10)') NTHREAD
-  WRITE(NOUT,'("NPRGPNS=",I10)') NPRGPNS
-  WRITE(NOUT,'("NPRGPEW=",I10)') NPRGPEW
-  WRITE(NOUT,'("NPRTRW= ",I10)') NPRTRW
-  WRITE(NOUT,'("NPRTRV= ",I10)') NPRTRV
-  WRITE(NOUT,'("NPROMA= ",I10)') NPROMA
-  WRITE(NOUT,'("NGPTOT= ",I10)') NGPTOT
-  WRITE(NOUT,'("NGPTOTG=",I10)') NGPTOTG
-  WRITE(NOUT,'("NFLEVG= ",I10)') NFLEVG
-  WRITE(NOUT,'("IFLDS=  ",I10)') IFLDS
-  WRITE(NOUT,'("NSPEC2= ",I10)') NSPEC2
-  WRITE(NOUT,'("NSPEC2G=",I10)') NSPEC2G
-  WRITE(NOUT,'("LUSEFLT=",L10)') LUSEFLT
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'(A)') '===-=== END OF   RUNTIME PARAMETERS ===-==='
-END IF
+! Print configuration details
+if (verbose .and. myproc == 1) then
+  write(nout,'(a)')'===-=== Start of  runtime parameters ===-==='
+  write(nout,'(" ")')
+  write(nout,'("nlin=   ",i10)') nlin
+  write(nout,'("nq=     ",i10)') nq
+  write(nout,'("nsmax=  ",i10)') nsmax
+  write(nout,'("ndgl=   ",i10)') ndgl
+  write(nout,'("nproc=  ",i10)') nproc
+  write(nout,'("nthread=",i10)') nthread
+  write(nout,'("nprgpns=",i10)') nprgpns
+  write(nout,'("nprgpew=",i10)') nprgpew
+  write(nout,'("nprtrw= ",i10)') nprtrw
+  write(nout,'("nprtrv= ",i10)') nprtrv
+  write(nout,'("nproma= ",i10)') nproma
+  write(nout,'("ngptot= ",i10)') ngptot
+  write(nout,'("ngptotg=",i10)') ngptotg
+  write(nout,'("nflevg= ",i10)') nflevg
+  write(nout,'("iflds=  ",i10)') iflds
+  write(nout,'("nspec2= ",i10)') nspec2
+  write(nout,'("nspec2g=",i10)') nspec2g
+  write(nout,'("luseflt=",l10)') luseflt
+  write(nout,'(" ")')
+  write(nout,'(a)') '===-=== End of   runtime parameters ===-==='
+end if
 
-ALLOCATE(IVSET(NFLEVG))
+allocate(ivset(nflevg))
 
 ! Compute spectral distribution
-ILEV = 0
-DO JB=1,NPRTRV
-  DO JLEV=1,NUMLL(JB)
-    ILEV = ILEV + 1
-    IVSET(ILEV) = JB
-  ENDDO
-ENDDO
+ilev = 0
+do jb=1,nprtrv
+  do jlev=1,numll(jb)
+    ilev = ilev + 1
+    ivset(ilev) = jb
+  enddo
+enddo
 
-ALLOCATE(ITO(IFLDS))
-ITO(:)=1
+allocate(ito(iflds))
+ito(:)=1
 
-! ALLOCATE GRID-POINT ARRAYS
-ALLOCATE(ZWINDS(NPROMA,NFLEVG,4,NGPBLKS))
-ALLOCATE(ZGMV(NPROMA,NFLEVG,NDIMGMV,NGPBLKS))
-ALLOCATE(ZGMVS(NPROMA,NDIMGMVS,NGPBLKS))
+! Allocate grid-point arrays
+allocate(zwinds(nproma,nflevg,4,ngpblks))
+allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
+allocate(zgmvs(nproma,ndimgmvs,ngpblks))
 
-ALLOCATE(ZNORMSP(1))
-ALLOCATE(ZNORMSP1(1))
-ALLOCATE(ZNORMVOR(NFLEVG))
-ALLOCATE(ZNORMVOR1(NFLEVG))
-ALLOCATE(ZNORMDIV(NFLEVG))
-ALLOCATE(ZNORMDIV1(NFLEVG))
-ALLOCATE(ZNORMT(NFLEVG))
-ALLOCATE(ZNORMT1(NFLEVG))
+allocate(znormsp(1))
+allocate(znormsp1(1))
+allocate(znormvor(nflevg))
+allocate(znormvor1(nflevg))
+allocate(znormdiv(nflevg))
+allocate(znormdiv1(nflevg))
+allocate(znormt(nflevg))
+allocate(znormt1(nflevg))
 
-IF( VERBOSE ) THEN
-  CALL SPECNORM(PSPEC=ZVOR(1:NFLEVL,:),PNORM=ZNORMVOR1,KVSET=IVSET(1:NFLEVG))
-  CALL SPECNORM(PSPEC=ZDIV(1:NFLEVL,:),PNORM=ZNORMDIV1,KVSET=IVSET(1:NFLEVG))
-  CALL SPECNORM(PSPEC=ZT(1:NFLEVL,:,1),PNORM=ZNORMT1,KVSET=IVSET(1:NFLEVG))
-  CALL SPECNORM(PSPEC=ZSP(1:1,:),      PNORM=ZNORMSP1,KVSET=IVSETSC(1:1))
+if( verbose ) then
+  call specnorm(pspec=zvor(1:nflevl,:),pnorm=znormvor1,kvset=ivset(1:nflevg))
+  call specnorm(pspec=zdiv(1:nflevl,:),pnorm=znormdiv1,kvset=ivset(1:nflevg))
+  call specnorm(pspec=zt(1:nflevl,:,1),pnorm=znormt1,kvset=ivset(1:nflevg))
+  call specnorm(pspec=zsp(1:1,:),      pnorm=znormsp1,kvset=ivsetsc(1:1))
 
-  IF(MYPROC == 1) THEN
-    DO IFLD=1,1
-      WRITE(NOUT,'("SP  ZNORM(",I4,")=",F20.15)') IFLD,ZNORMSP1(IFLD)
-    ENDDO
-    DO IFLD=1,NFLEVG
-      WRITE(NOUT,'("DIV ZNORM(",I4,")=",F20.15)') IFLD,ZNORMDIV1(IFLD)
-    ENDDO
-    DO IFLD=1,NFLEVG
-      WRITE(NOUT,'("VOR ZNORM(",I4,")=",F20.15)') IFLD,ZNORMVOR1(IFLD)
-    ENDDO
-    DO IFLD=1,NFLEVG
-      WRITE(NOUT,'("T   ZNORM(",I4,")=",F20.15)') IFLD,ZNORMT1(IFLD)
-    ENDDO
-  ENDIF
-ENDIF
+  if(myproc == 1) then
+    do ifld=1,1
+      write(nout,'("sp  znorm(",i4,")=",f20.15)') ifld,znormsp1(ifld)
+    enddo
+    do ifld=1,nflevg
+      write(nout,'("div znorm(",i4,")=",f20.15)') ifld,znormdiv1(ifld)
+    enddo
+    do ifld=1,nflevg
+      write(nout,'("vor znorm(",i4,")=",f20.15)') ifld,znormvor1(ifld)
+    enddo
+    do ifld=1,nflevg
+      write(nout,'("t   znorm(",i4,")=",f20.15)') ifld,znormt1(ifld)
+    enddo
+  endif
+endif
 
-ZTINIT=(TIMEF()-ZTINIT)/1000.0_JPRD
-IF (VERBOSE .AND. MYPROC == 1) THEN
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'(a,I6,a,F9.2,a)') "TRANSFORM_TEST initialisation, on",NPROC,&
-                                & " tasks, took",ZTINIT," sec"
-  WRITE(NOUT,'(" ")')
-END IF
+ztinit=(timef()-ztinit)/1000.0_jprd
+if (verbose .and. myproc == 1) then
+  write(nout,'(" ")')
+  write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
+                                & " tasks, took",ztinit," sec"
+  write(nout,'(" ")')
+end if
 
-IF(ITERS<=0) CALL ABOR1('TRANSFORM_TEST:ITERS <= 0')
+if(iters<=0) call abor1('transform_test:iters <= 0')
 
-ALLOCATE(ZTSTEP(ITERS))
-ALLOCATE(ZTSTEP1(ITERS))
-ALLOCATE(ZTSTEP2(ITERS))
+allocate(ztstep(iters))
+allocate(ztstep1(iters))
+allocate(ztstep2(iters))
 
-ZTSTEPAVG=0._JPRD
-ZTSTEPMAX=0._JPRD
-ZTSTEPMIN=9999999999999999._JPRD
-ZTSTEPAVG1=0._JPRD
-ZTSTEPMAX1=0._JPRD
-ZTSTEPMIN1=9999999999999999._JPRD
-ZTSTEPAVG2=0._JPRD
-ZTSTEPMAX2=0._JPRD
-ZTSTEPMIN2=9999999999999999._JPRD
+ztstepavg=0._jprd
+ztstepmax=0._jprd
+ztstepmin=9999999999999999._jprd
+ztstepavg1=0._jprd
+ztstepmax1=0._jprd
+ztstepmin1=9999999999999999._jprd
+ztstepavg2=0._jprd
+ztstepmax2=0._jprd
+ztstepmin2=9999999999999999._jprd
 
-IF (VERBOSE .AND. MYPROC == 1) THEN
-  WRITE(NOUT,'(A)') '===-=== START OF  SPEC TRANSFORMS  ===-==='
-  WRITE(NOUT,'(" ")')
-END IF
+if (verbose .and. myproc == 1) then
+  write(nout,'(a)') '===-=== start of  spec transforms  ===-==='
+  write(nout,'(" ")')
+end if
 
-IF( LSTATS ) THEN
-  CALL GSTATS(0,0)
-  CALL GSTATS_SETUP(NPROC,MYPROC,NPRCIDS,&
-   & LSTATS,LSTATSCPU,LSYNCSTATS,LDETAILED_STATS,LBARRIER_STATS,LBARRIER_STATS2,&
-   & LSTATS_OMP,LSTATS_COMMS,LSTATS_MEM,NSTATS_MEM,LSTATS_ALLOC,&
-   & LTRACE_STATS,NTRACE_STATS,NPRNT_STATS,LXML_STATS)
-  CALL GSTATS_PSUT
-  ! TODO: What is this?
-  !CALL GSTATS_LABEL_IFS
-ENDIF
+if( lstats ) then
+  call gstats(0,0)
+  call gstats_setup(nproc,myproc,nprcids,&
+   & lstats,lstatscpu,lsyncstats,ldetailed_stats,lbarrier_stats,lbarrier_stats2,&
+   & lstats_omp,lstats_comms,lstats_mem,nstats_mem,lstats_alloc,&
+   & ltrace_stats,ntrace_stats,nprnt_stats,lxml_stats)
+  call gstats_psut
+  ! TODO: what is this?
+  !call gstats_label_ifs
+endif
 
-ZTLOOP=TIMEF()
+ztloop=timef()
 
 !===================================================================================================
 ! Do spectral transform loop
 !===================================================================================================
 
-DO JSTEP=1,ITERS
-  ZTSTEP(JSTEP)=TIMEF()
+do jstep=1,iters
+  ztstep(jstep)=timef()
 
   !=================================================================================================
   ! Do inverse transform
   !=================================================================================================
 
-  ZTSTEP1(JSTEP)=TIMEF()
-  CALL INV_TRANS(PSPVOR=ZVOR,PSPDIV=ZDIV,PSPSC2=ZSP(1:1,:),&
-     & PSPSC3A=ZT,&
-     & LDSCDERS=.TRUE.,LDVORGP=.FALSE.,LDDIVGP=.TRUE.,LDUVDER=.FALSE.,&
-     & KRESOL=1,KPROMA=NPROMA,KVSETUV=IVSET,KVSETSC2=IVSETSC(1:1),&
-     & KVSETSC3A=IVSET,&
-     & PGPUV=ZWINDS(:,:,2:4,:),PGP2=ZGMVS(:,1:3,:),&
-     & PGP3A=ZGMV(:,:,5:7,:))
-  ZTSTEP1(JSTEP)=(TIMEF()-ZTSTEP1(JSTEP))/1000.0_JPRD
+  ztstep1(jstep)=timef()
+  call inv_trans(pspvor=zvor,pspdiv=zdiv,pspsc2=zsp(1:1,:),&
+     & pspsc3a=zt,&
+     & ldscders=.true.,ldvorgp=.false.,lddivgp=.true.,lduvder=.false.,&
+     & kresol=1,kproma=nproma,kvsetuv=ivset,kvsetsc2=ivsetsc(1:1),&
+     & kvsetsc3a=ivset,&
+     & pgpuv=zwinds(:,:,2:4,:),pgp2=zgmvs(:,1:3,:),&
+     & pgp3a=zgmv(:,:,5:7,:))
+  ztstep1(jstep)=(timef()-ztstep1(jstep))/1000.0_jprd
 
   !=================================================================================================
   ! While in grid point space, dump the values to disk
   !=================================================================================================
 
-  ! Dump a field to a binary file
-  CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZGMVS(:,1,:), 'S', NOUTDUMP)
-  CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZWINDS(:,NFLEVG,3,:),  'U', NOUTDUMP)
-  CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZWINDS(:,NFLEVG,4,:),  'V', NOUTDUMP)
-  CALL DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, ZGMV(:,NFLEVG,5,:),  'T', NOUTDUMP)
+  ! dump a field to a binary file
+  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmvs(:,1,:), 'S', noutdump)
+  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zwinds(:,nflevg,3,:),  'U', noutdump)
+  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zwinds(:,nflevg,4,:),  'V', noutdump)
+  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,5,:),  'T', noutdump)
 
   !=================================================================================================
   ! Do direct transform
   !=================================================================================================
 
-  ZTSTEP2(JSTEP)=TIMEF()
-  CALL DIR_TRANS(PSPVOR=ZVOR,PSPDIV=ZDIV,&
-      & PSPSC2=ZSP(1:1,:),PSPSC3A=ZT,&
-      & KRESOL=1,KPROMA=NPROMA,KVSETUV=IVSET,KVSETSC2=IVSETSC(1:1),&
-      & KVSETSC3A=IVSET,&
-      & PGPUV=ZWINDS(:,:,3:4,:),PGP2=ZGMVS(:,1:1,:),&
-      & PGP3A=ZGMV(:,:,5:5,:))
-  ZTSTEP2(JSTEP)=(TIMEF()-ZTSTEP2(JSTEP))/1000.0_JPRD
+  ztstep2(jstep)=timef()
+  call dir_trans(pspvor=zvor,pspdiv=zdiv,&
+      & pspsc2=zsp(1:1,:),pspsc3a=zt,&
+      & kresol=1,kproma=nproma,kvsetuv=ivset,kvsetsc2=ivsetsc(1:1),&
+      & kvsetsc3a=ivset,&
+      & pgpuv=zwinds(:,:,3:4,:),pgp2=zgmvs(:,1:1,:),&
+      & pgp3a=zgmv(:,:,5:5,:))
+  ztstep2(jstep)=(timef()-ztstep2(jstep))/1000.0_jprd
 
   !=================================================================================================
   ! Calculate timings
   !=================================================================================================
 
-  ZTSTEP(JSTEP)=(TIMEF()-ZTSTEP(JSTEP))/1000.0_JPRD
+  ztstep(jstep)=(timef()-ztstep(jstep))/1000.0_jprd
 
-  ZTSTEPAVG=ZTSTEPAVG+ZTSTEP(JSTEP)
-  ZTSTEPMIN=MIN(ZTSTEP(JSTEP),ZTSTEPMIN)
-  ZTSTEPMAX=MAX(ZTSTEP(JSTEP),ZTSTEPMAX)
+  ztstepavg=ztstepavg+ztstep(jstep)
+  ztstepmin=min(ztstep(jstep),ztstepmin)
+  ztstepmax=max(ztstep(jstep),ztstepmax)
 
-  ZTSTEPAVG1=ZTSTEPAVG1+ZTSTEP1(JSTEP)
-  ZTSTEPMIN1=MIN(ZTSTEP1(JSTEP),ZTSTEPMIN1)
-  ZTSTEPMAX1=MAX(ZTSTEP1(JSTEP),ZTSTEPMAX1)
+  ztstepavg1=ztstepavg1+ztstep1(jstep)
+  ztstepmin1=min(ztstep1(jstep),ztstepmin1)
+  ztstepmax1=max(ztstep1(jstep),ztstepmax1)
 
-  ZTSTEPAVG2=ZTSTEPAVG2+ZTSTEP2(JSTEP)
-  ZTSTEPMIN2=MIN(ZTSTEP2(JSTEP),ZTSTEPMIN2)
-  ZTSTEPMAX2=MAX(ZTSTEP2(JSTEP),ZTSTEPMAX2)
+  ztstepavg2=ztstepavg2+ztstep2(jstep)
+  ztstepmin2=min(ztstep2(jstep),ztstepmin2)
+  ztstepmax2=max(ztstep2(jstep),ztstepmax2)
 
   !=================================================================================================
   ! Print norms
   !=================================================================================================
 
-  IF( VERBOSE )THEN
-    CALL SPECNORM(PSPEC=ZSP(1:1,:),       PNORM=ZNORMSP, KVSET=IVSETSC(1:1))
-    CALL SPECNORM(PSPEC=ZVOR(1:NFLEVL,:), PNORM=ZNORMVOR,KVSET=IVSET(1:NFLEVG))
-    CALL SPECNORM(PSPEC=ZDIV(1:NFLEVL,:), PNORM=ZNORMDIV,KVSET=IVSET(1:NFLEVG))
-    CALL SPECNORM(PSPEC=ZT(1:NFLEVL,:,1), PNORM=ZNORMT, KVSET=IVSET(1:NFLEVG))
+  if( verbose )then
+    call specnorm(pspec=zsp(1:1,:),       pnorm=znormsp, kvset=ivsetsc(1:1))
+    call specnorm(pspec=zvor(1:nflevl,:), pnorm=znormvor,kvset=ivset(1:nflevg))
+    call specnorm(pspec=zdiv(1:nflevl,:), pnorm=znormdiv,kvset=ivset(1:nflevg))
+    call specnorm(pspec=zt(1:nflevl,:,1), pnorm=znormt, kvset=ivset(1:nflevg))
 
-    IF( MYPROC==1 ) THEN
-      ! SURFACE PRESSURE
-      ZMAXERR(:)=-999.0
-      DO IFLD=1,1
-        ZERR(1)=ABS(ZNORMSP1(IFLD)/ZNORMSP(IFLD)-1.0_JPRB)
-        ZMAXERR(1)=MAX(ZMAXERR(1),ZERR(1))
-      ENDDO
-      ! DIVERGENCE
-      DO IFLD=1,NFLEVG
-        ZERR(2)=ABS(ZNORMDIV1(IFLD)/ZNORMDIV(IFLD)-1.0_JPRB)
-        ZMAXERR(2)=MAX(ZMAXERR(2),ZERR(2))
-      ENDDO
-      ! VORTICITY
-      DO IFLD=1,NFLEVG
-        ZERR(3)=ABS(ZNORMVOR1(IFLD)/ZNORMVOR(IFLD)-1.0_JPRB)
-        ZMAXERR(3)=MAX(ZMAXERR(3),ZERR(3))
-      ENDDO
-      ! TEMPERATURE
-      DO IFLD=1,NFLEVG
-        ZERR(4)=ABS(ZNORMT1(IFLD)/ZNORMT(IFLD)-1.0_JPRB)
-        ZMAXERR(4)=MAX(ZMAXERR(4),ZERR(4))
-      ENDDO
-      WRITE(NOUT,'("time step ",I6," took", F8.4," | SP max err="E10.3,&
-                 & " | DIV max err="E10.3," | VOR max err="E10.3," | T max err="E10.3)') &
-                 &  JSTEP,ZTSTEP(JSTEP),ZMAXERR(1),ZMAXERR(2),ZMAXERR(3),ZMAXERR(4)
-    ENDIF
-  ELSE
-    IF (VERBOSE .AND. MYPROC == 1) THEN
-      WRITE(NOUT,'("time step ",I6," took", F8.4)') JSTEP,ZTSTEP(JSTEP)
-    END IF
-  ENDIF
-ENDDO
+    if( myproc==1 ) then
+      ! Surface pressure
+      zmaxerr(:)=-999.0
+      do ifld=1,1
+        zerr(1)=abs(znormsp1(ifld)/znormsp(ifld)-1.0_jprb)
+        zmaxerr(1)=max(zmaxerr(1),zerr(1))
+      enddo
+      ! Divergence
+      do ifld=1,nflevg
+        zerr(2)=abs(znormdiv1(ifld)/znormdiv(ifld)-1.0_jprb)
+        zmaxerr(2)=max(zmaxerr(2),zerr(2))
+      enddo
+      ! Vorticity
+      do ifld=1,nflevg
+        zerr(3)=abs(znormvor1(ifld)/znormvor(ifld)-1.0_jprb)
+        zmaxerr(3)=max(zmaxerr(3),zerr(3))
+      enddo
+      ! Temperature
+      do ifld=1,nflevg
+        zerr(4)=abs(znormt1(ifld)/znormt(ifld)-1.0_jprb)
+        zmaxerr(4)=max(zmaxerr(4),zerr(4))
+      enddo
+      write(nout,'("time step ",i6," took", f8.4," | sp max err="e10.3,&
+                 & " | div max err="e10.3," | vor max err="e10.3," | t max err="e10.3)') &
+                 &  jstep,ztstep(jstep),zmaxerr(1),zmaxerr(2),zmaxerr(3),zmaxerr(4)
+    endif
+  else
+    if (verbose .and. myproc == 1) then
+      write(nout,'("time step ",i6," took", f8.4)') jstep,ztstep(jstep)
+    end if
+  endif
+enddo
 
-ZTLOOP=(TIMEF()-ZTLOOP)/1000.0_JPRD
+ztloop=(timef()-ztloop)/1000.0_jprd
 
-IF (VERBOSE .AND. MYPROC == 1) THEN
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'(A)') '===-=== END OF   SPEC TRANSFORMS  ===-==='
-  WRITE(NOUT,'(" ")')
-END IF
-
-
-IF( VERBOSE ) THEN
-  CALL SPECNORM(PSPEC=ZVOR(1:NFLEVL,:),PNORM=ZNORMVOR,KVSET=IVSET(1:NFLEVG))
-  CALL SPECNORM(PSPEC=ZDIV(1:NFLEVL,:),PNORM=ZNORMDIV,KVSET=IVSET(1:NFLEVG))
-  CALL SPECNORM(PSPEC=ZT(1:NFLEVL,:,1),PNORM=ZNORMT,KVSET=IVSET(1:NFLEVG))
-  CALL SPECNORM(PSPEC=ZSP(1:1,:),      PNORM=ZNORMSP,KVSET=IVSETSC(1:1))
-
-  IF(MYPROC == 1) THEN
-    ! SURFACE PRESSURE
-    ZMAXERR(:)=-999.0
-    DO IFLD=1,1
-      ZERR(1)=ABS(ZNORMSP1(IFLD)/ZNORMSP(IFLD)-1.0D0)
-      ZMAXERR(1)=MAX(ZMAXERR(1),ZERR(1))
-      WRITE(NOUT,'("SP ZNORM(",I4,")=",F20.15," ERR=",E10.3)') IFLD,ZNORMSP(IFLD),ZERR(1)
-    ENDDO
-    ! DIVERGENCE
-    DO IFLD=1,NFLEVG
-      ZERR(2)=ABS(ZNORMDIV1(IFLD)/ZNORMDIV(IFLD)-1.0D0)
-      ZMAXERR(2)=MAX(ZMAXERR(2),ZERR(2))
-      WRITE(NOUT,'("DIV ZNORM(",I4,")=",F20.15," ERR=",E10.3)') IFLD,ZNORMDIV(IFLD),ZERR(2)
-    ENDDO
-    ! VORTICITY
-    DO IFLD=1,NFLEVG
-      ZERR(3)=ABS(ZNORMVOR1(IFLD)/ZNORMVOR(IFLD)-1.0D0)
-      ZMAXERR(3)=MAX(ZMAXERR(3),ZERR(3))
-      WRITE(NOUT,'("VOR ZNORM(",I4,")=",F20.15," ERR=",E10.3)') IFLD,ZNORMVOR(IFLD),ZERR(3)
-    ENDDO
-    ! TEMPERATURE
-    DO IFLD=1,NFLEVG
-      ZERR(4)=ABS(ZNORMT1(IFLD)/ZNORMT(IFLD)-1.0D0)
-      ZMAXERR(4)=MAX(ZMAXERR(4),ZERR(4))
-      WRITE(NOUT,'("T ZNORM(",I4,")=",F20.15," ERR=",E10.3)') IFLD,ZNORMT(IFLD),ZERR(4)
-    ENDDO
-    ! MAXIMUM ERROR ACROSS ALL FIELDS
-    ZMAXERRG=MAX(MAX(ZMAXERR(1),ZMAXERR(2)),MAX(ZMAXERR(2),ZMAXERR(3)))
-
-    WRITE(NOUT,'("SURFACE PRESSURE MAX ERROR=",E10.3)')ZMAXERR(1)
-    WRITE(NOUT,'("DIVERGENCE       MAX ERROR=",E10.3)')ZMAXERR(2)
-    WRITE(NOUT,'("VORTICITY        MAX ERROR=",E10.3)')ZMAXERR(3)
-    WRITE(NOUT,'("TEMPERATURE      MAX ERROR=",E10.3)')ZMAXERR(4)
-    WRITE(NOUT,'("GLOBAL           MAX ERROR=",E10.3)')ZMAXERRG
-
-  ENDIF
-ENDIF
-
-CALL MPL_ALLREDUCE(ZTLOOP,     'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEP,     'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPAVG,  'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPMAX,  'MAX', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPMIN,  'MIN', LDREPROD=.FALSE.)
-
-CALL MPL_ALLREDUCE(ZTSTEP1,    'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPAVG1, 'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPMAX1, 'MAX', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPMIN1, 'MIN', LDREPROD=.FALSE.)
-
-CALL MPL_ALLREDUCE(ZTSTEP2,    'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPAVG2, 'SUM', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPMAX2, 'MAX', LDREPROD=.FALSE.)
-CALL MPL_ALLREDUCE(ZTSTEPMIN2, 'MIN', LDREPROD=.FALSE.)
+if (verbose .and. myproc == 1) then
+  write(nout,'(" ")')
+  write(nout,'(a)') '===-=== End of   spec transforms  ===-==='
+  write(nout,'(" ")')
+end if
 
 
-ZTSTEPAVG=(ZTSTEPAVG/REAL(NPROC,JPRB))/REAL(ITERS,JPRD)
-ZTLOOP=ZTLOOP/REAL(NPROC,JPRD)
-ZTSTEP(:)=ZTSTEP(:)/REAL(NPROC,JPRD)
+if( verbose ) then
+  call specnorm(pspec=zvor(1:nflevl,:),pnorm=znormvor,kvset=ivset(1:nflevg))
+  call specnorm(pspec=zdiv(1:nflevl,:),pnorm=znormdiv,kvset=ivset(1:nflevg))
+  call specnorm(pspec=zt(1:nflevl,:,1),pnorm=znormt,kvset=ivset(1:nflevg))
+  call specnorm(pspec=zsp(1:1,:),      pnorm=znormsp,kvset=ivsetsc(1:1))
 
-CALL SORT(ZTSTEP,ITERS)
-ZTSTEPMED = ZTSTEP(ITERS/2)
+  if(myproc == 1) then
+    ! surface pressure
+    zmaxerr(:)=-999.0
+    do ifld=1,1
+      zerr(1)=abs(znormsp1(ifld)/znormsp(ifld)-1.0d0)
+      zmaxerr(1)=max(zmaxerr(1),zerr(1))
+      write(nout,'("sp znorm(",i4,")=",f20.15," err=",e10.3)') ifld,znormsp(ifld),zerr(1)
+    enddo
+    ! divergence
+    do ifld=1,nflevg
+      zerr(2)=abs(znormdiv1(ifld)/znormdiv(ifld)-1.0d0)
+      zmaxerr(2)=max(zmaxerr(2),zerr(2))
+      write(nout,'("div znorm(",i4,")=",f20.15," err=",e10.3)') ifld,znormdiv(ifld),zerr(2)
+    enddo
+    ! vorticity
+    do ifld=1,nflevg
+      zerr(3)=abs(znormvor1(ifld)/znormvor(ifld)-1.0d0)
+      zmaxerr(3)=max(zmaxerr(3),zerr(3))
+      write(nout,'("vor znorm(",i4,")=",f20.15," err=",e10.3)') ifld,znormvor(ifld),zerr(3)
+    enddo
+    ! temperature
+    do ifld=1,nflevg
+      zerr(4)=abs(znormt1(ifld)/znormt(ifld)-1.0d0)
+      zmaxerr(4)=max(zmaxerr(4),zerr(4))
+      write(nout,'("t znorm(",i4,")=",f20.15," err=",e10.3)') ifld,znormt(ifld),zerr(4)
+    enddo
+    ! maximum error across all fields
+    zmaxerrg=max(max(zmaxerr(1),zmaxerr(2)),max(zmaxerr(2),zmaxerr(3)))
 
-ZTSTEPAVG1=(ZTSTEPAVG1/REAL(NPROC,JPRB))/REAL(ITERS,JPRD)
-ZTSTEP1(:)=ZTSTEP1(:)/REAL(NPROC,JPRD)
+    write(nout,'("surface pressure max error=",e10.3)')zmaxerr(1)
+    write(nout,'("divergence       max error=",e10.3)')zmaxerr(2)
+    write(nout,'("vorticity        max error=",e10.3)')zmaxerr(3)
+    write(nout,'("temperature      max error=",e10.3)')zmaxerr(4)
+    write(nout,'("global           max error=",e10.3)')zmaxerrg
 
-CALL SORT(ZTSTEP1,ITERS)
-ZTSTEPMED1 = ZTSTEP1(ITERS/2)
+  endif
+endif
 
-ZTSTEPAVG2=(ZTSTEPAVG2/REAL(NPROC,JPRB))/REAL(ITERS,JPRD)
-ZTSTEP2(:)=ZTSTEP2(:)/REAL(NPROC,JPRD)
+call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
+call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
+call mpl_allreduce(ztstepavg,  'sum', ldreprod=.false.)
+call mpl_allreduce(ztstepmax,  'max', ldreprod=.false.)
+call mpl_allreduce(ztstepmin,  'min', ldreprod=.false.)
 
-CALL SORT(ZTSTEP2,ITERS)
-ZTSTEPMED2 = ZTSTEP2(ITERS/2)
+call mpl_allreduce(ztstep1,    'sum', ldreprod=.false.)
+call mpl_allreduce(ztstepavg1, 'sum', ldreprod=.false.)
+call mpl_allreduce(ztstepmax1, 'max', ldreprod=.false.)
+call mpl_allreduce(ztstepmin1, 'min', ldreprod=.false.)
 
-IF (VERBOSE .AND. MYPROC == 1) THEN
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'(A)') '===-=== START   OF TIME STEP STATS ===-==='
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'("INVERSE TRANSFORMS")')
-  WRITE(NOUT,'("------------------")')
-  WRITE(NOUT,'("AVG  (s): ",F8.4)') ZTSTEPAVG1
-  WRITE(NOUT,'("MIN  (s): ",F8.4)') ZTSTEPMIN1
-  WRITE(NOUT,'("MAX  (s): ",F8.4)') ZTSTEPMAX1
-  WRITE(NOUT,'("MED  (s): ",F8.4)') ZTSTEPMED1
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'("DIRECT TRANSFORMS")')
-  WRITE(NOUT,'("-----------------")')
-  WRITE(NOUT,'("AVG  (s): ",F8.4)') ZTSTEPAVG2
-  WRITE(NOUT,'("MIN  (s): ",F8.4)') ZTSTEPMIN2
-  WRITE(NOUT,'("MAX  (s): ",F8.4)') ZTSTEPMAX2
-  WRITE(NOUT,'("MED  (s): ",F8.4)') ZTSTEPMED2
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'("INVERSE-DIRECT TRANSFORMS")')
-  WRITE(NOUT,'("-------------------------")')
-  WRITE(NOUT,'("AVG  (s): ",F8.4)') ZTSTEPAVG
-  WRITE(NOUT,'("MIN  (s): ",F8.4)') ZTSTEPMIN
-  WRITE(NOUT,'("MAX  (s): ",F8.4)') ZTSTEPMAX
-  WRITE(NOUT,'("MED  (s): ",F8.4)') ZTSTEPMED
-  WRITE(NOUT,'("LOOP (s): ",F8.4)') ZTLOOP
-  WRITE(NOUT,'(" ")')
-  WRITE(NOUT,'(A)') '===-=== END     OF TIME STEP STATS ===-==='
-  WRITE(NOUT,'(" ")')
-ENDIF
+call mpl_allreduce(ztstep2,    'sum', ldreprod=.false.)
+call mpl_allreduce(ztstepavg2, 'sum', ldreprod=.false.)
+call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
+call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
 
-IF( LSTACK ) THEN
-!           gather stack usage statistics
-  ISTACK = GETSTACKUSAGE()
-  IF(MYPROC == 1) THEN
-    PRINT 9000, istack
-    9000 FORMAT("Stack Utilisation Information",/,&
+
+ztstepavg=(ztstepavg/real(nproc,jprb))/real(iters,jprd)
+ztloop=ztloop/real(nproc,jprd)
+ztstep(:)=ztstep(:)/real(nproc,jprd)
+
+call sort(ztstep,iters)
+ztstepmed = ztstep(iters/2)
+
+ztstepavg1=(ztstepavg1/real(nproc,jprb))/real(iters,jprd)
+ztstep1(:)=ztstep1(:)/real(nproc,jprd)
+
+call sort(ztstep1,iters)
+ztstepmed1 = ztstep1(iters/2)
+
+ztstepavg2=(ztstepavg2/real(nproc,jprb))/real(iters,jprd)
+ztstep2(:)=ztstep2(:)/real(nproc,jprd)
+
+call sort(ztstep2,iters)
+ztstepmed2 = ztstep2(iters/2)
+
+if (verbose .and. myproc == 1) then
+  write(nout,'(" ")')
+  write(nout,'(a)') '===-=== Start   of time step stats ===-==='
+  write(nout,'(" ")')
+  write(nout,'("Inverse transforms")')
+  write(nout,'("------------------")')
+  write(nout,'("avg  (s): ",f8.4)') ztstepavg1
+  write(nout,'("min  (s): ",f8.4)') ztstepmin1
+  write(nout,'("max  (s): ",f8.4)') ztstepmax1
+  write(nout,'("med  (s): ",f8.4)') ztstepmed1
+  write(nout,'(" ")')
+  write(nout,'("Direct transforms")')
+  write(nout,'("-----------------")')
+  write(nout,'("avg  (s): ",f8.4)') ztstepavg2
+  write(nout,'("min  (s): ",f8.4)') ztstepmin2
+  write(nout,'("max  (s): ",f8.4)') ztstepmax2
+  write(nout,'("med  (s): ",f8.4)') ztstepmed2
+  write(nout,'(" ")')
+  write(nout,'("Inverse-direct transforms")')
+  write(nout,'("-------------------------")')
+  write(nout,'("avg  (s): ",f8.4)') ztstepavg
+  write(nout,'("min  (s): ",f8.4)') ztstepmin
+  write(nout,'("max  (s): ",f8.4)') ztstepmax
+  write(nout,'("med  (s): ",f8.4)') ztstepmed
+  write(nout,'("loop (s): ",f8.4)') ztloop
+  write(nout,'(" ")')
+  write(nout,'(a)') '===-=== End     of time step stats ===-==='
+  write(nout,'(" ")')
+endif
+
+if( lstack ) then
+!           Gather stack usage statistics
+  istack = getstackusage()
+  if(myproc == 1) then
+    print 9000, istack
+    9000 format("Stack utilisation information",/,&
          &"=============================",//,&
-         &"Task           Size(Bytes)",/,&
+         &"Task           size(bytes)",/,&
          &"====           ===========",//,&
-         &"   1",11x,I10)
+         &"   1",11x,i10)
 
-    DO I=2,NPROC
-      CALL MPL_RECV(ISTACK,KSOURCE=NPRCIDS(I),KTAG=I, &
-           & CDSTRING='TRANSFORM_TEST:')
-      PRINT '(I4,11X,I10)', I,ISTACK
-    ENDDO
-  ELSE
-    CALL MPL_SEND(ISTACK,KDEST=NPRCIDS(1),KTAG=MYPROC, &
-             &   CDSTRING='TRANSFORM_TEST:')
-  ENDIF
-ENDIF
+    do i=2,nproc
+      call mpl_recv(istack,ksource=nprcids(i),ktag=i, &
+           & cdstring='transform_test:')
+      print '(i4,11x,i10)', i,istack
+    enddo
+  else
+    call mpl_send(istack,kdest=nprcids(1),ktag=myproc, &
+             &   cdstring='transform_test:')
+  endif
+endif
 
-
-!===================================================================================================
-
-IF( LSTATS ) THEN
-  CALL GSTATS(0,1)
-  CALL GSTATS_PRINT(NOUT,ZAVEAVE,JPMAXSTAT)
-ENDIF
 
 !===================================================================================================
 
-! CLOSE FILE
-IF( NPROC > 1 ) THEN
-  IF( MYPROC /= 1 ) THEN
-    CLOSE(UNIT=NOUT)
-  ENDIF
-ENDIF
+if( lstats ) then
+  call gstats(0,1)
+  call gstats_print(nout,zaveave,jpmaxstat)
+endif
 
-DEALLOCATE(ZWINDS)
-DEALLOCATE(ZGMV)
-DEALLOCATE(ZGMVS)
+!===================================================================================================
+
+! Close file
+if( nproc > 1 ) then
+  if( myproc /= 1 ) then
+    close(unit=nout)
+  endif
+endif
+
+deallocate(zwinds)
+deallocate(zgmv)
+deallocate(zgmvs)
 
 !===================================================================================================
 ! Finalize MPI
 !===================================================================================================
 
-CALL MPL_BARRIER()
-CALL MPL_END()
+call mpl_barrier()
+call mpl_end()
 
 !===================================================================================================
 
-CONTAINS
+contains
 
 !===================================================================================================
 
-SUBROUTINE SORT(A, N)
-    IMPLICIT NONE
-    INTEGER(KIND=JPIM) :: N, I, J
-    REAL(KIND=JPRD)    :: A(N), X
+subroutine sort(a, n)
+    implicit none
+    integer(kind=jpim) :: n, i, j
+    real(kind=jprd)    :: a(n), x
 
-    DO I = 2, N
-        X = A(I)
-        J = I - 1
-        DO WHILE (J >= 1)
-            IF (A(J) <= X) EXIT
-            A(J + 1) = A(J)
-            J = J - 1
-        END DO
-        A(J + 1) = X
-    END DO
-END SUBROUTINE
-
-!===================================================================================================
-
-SUBROUTINE PRINT_HELP
-  WRITE(NOUT, "(A)") "Spectral transform driver"
-  WRITE(NOUT, "(A)") "This program tests ecTrans by transforming fields back and forth between"
-  WRITE(NOUT, "(A)") "spectral space and grid-point space"
-  WRITE(NOUT, "(A)") "Command-line options:"
-  WRITE(NOUT, "(A)") " -v, --verbose    print verbose output"
-  WRITE(NOUT, "(A)") " -h, --help       print this message"
-END SUBROUTINE PRINT_HELP
+    do i = 2, n
+        x = a(i)
+        j = i - 1
+        do while (j >= 1)
+            if (a(j) <= x) exit
+            a(j + 1) = a(j)
+            j = j - 1
+        end do
+        a(j + 1) = x
+    end do
+end subroutine
 
 !===================================================================================================
 
-SUBROUTINE DUMP_GRIDPOINT_FIELD(JSTEP, MYPROC, NPROMA, NGPBLKS, FLD, FLDCHAR, NOUTDUMP)
+subroutine print_help
+  write(nout, "(a)") "Spectral transform driver"
+  write(nout, "(a)") "This program tests ectrans by transforming fields back and forth between"
+  write(nout, "(a)") "spectral space and grid-point space"
+  write(nout, "(a)") "Command-line options:"
+  write(nout, "(a)") " -v, --verbose    print verbose output"
+  write(nout, "(a)") " -h, --help       print this message"
+end subroutine print_help
 
-! Dump a 2D field to a binary file.
+!===================================================================================================
 
-INTEGER(KIND=JPIM), INTENT(IN) :: JSTEP ! Time step, used for naming file
-INTEGER(KIND=JPIM), INTENT(IN) :: MYPROC ! MPI rank, used for naming file
-INTEGER(KIND=JPIM), INTENT(IN) :: NPROMA ! Size of NPROMA
-INTEGER(KIND=JPIM), INTENT(IN) :: NGPBLKS ! Number of NPROMA blocks
-REAL(KIND=JPRB)   , INTENT(IN) :: FLD(NPROMA,NGPBLKS) ! 2D field
-CHARACTER         , INTENT(IN) :: FLDCHAR ! Single character field identifier
-INTEGER(KIND=JPIM), INTENT(IN) :: NOUTDUMP ! Unit number for output file
+subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, noutdump)
 
-CHARACTER(LEN=14) :: FILENAME = "X.XXX.XXXX.dat"
+! Dump a 2d field to a binary file.
 
-WRITE(FILENAME(1:1),'(A1)') FLDCHAR
-WRITE(FILENAME(3:5),'(I3.3)') JSTEP
-WRITE(FILENAME(7:10),'(I4.4)') MYPROC
+integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
+integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
+integer(kind=jpim), intent(in) :: nproma ! Size of nproma
+integer(kind=jpim), intent(in) :: ngpblks ! Number of nproma blocks
+real(kind=jprb)   , intent(in) :: fld(nproma,ngpblks) ! 2D field
+character         , intent(in) :: fldchar ! Single character field identifier
+integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
 
-OPEN(NOUTDUMP, FILE=FILENAME, FORM="UNFORMATTED")
-WRITE(NOUTDUMP) RESHAPE(FLD, (/ NPROMA*NGPBLKS /))
-CLOSE(NOUTDUMP)
+character(len=14) :: filename = "x.xxx.xxxx.dat"
 
-END SUBROUTINE DUMP_GRIDPOINT_FIELD
+write(filename(1:1),'(a1)') fldchar
+write(filename(3:5),'(i3.3)') jstep
+write(filename(7:10),'(i4.4)') myproc
 
-END PROGRAM TRANSFORM_TEST
+open(noutdump, file=filename, form="unformatted")
+write(noutdump) reshape(fld, (/ nproma*ngpblks /))
+close(noutdump)
+
+end subroutine dump_gridpoint_field
+
+end program transform_test
 
 !===================================================================================================
