@@ -16,7 +16,10 @@ program transform_test
 ! timed loop.
 !
 !
-! Author : George Mozdzynski
+! Authors : George Mozdzynski
+!           Willem Deconinck
+!           Ioan Hadade
+!           Sam Hatfield
 !
 
 use parkind1, only: jpim, jprb, jprd
@@ -40,8 +43,6 @@ integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
 
 ! Default parameters
-integer(kind=jpim) :: nlin   = 0   ! Linear grid (1) or not (0)
-integer(kind=jpim) :: nq     = 2   ! Cubic grid (1) or cubic grid + collignon (2) or not (0)
 integer(kind=jpim) :: nsmax  = 79  ! Spectral truncation
 integer(kind=jpim) :: iters  = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nflevg = 137 ! Default number of vertical levels
@@ -152,7 +153,7 @@ logical :: lsync_trans = .true. ! Activate barrier sync
 logical :: leq_regions = .true. ! Eq regions flag
 
 
-integer(kind=jpim) :: nproma
+integer(kind=jpim) :: nproma = 0
 integer(kind=jpim) :: ngpblks
 ! locals
 integer(kind=jpim) :: iprtrv
@@ -180,25 +181,24 @@ integer(kind=jpim) :: nfld    ! ignored for now (TODO)
 
 !===================================================================================================
 
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
+! Setup
+call get_command_line_arguments(nsmax, cgrid, iters, nfld, luseflt, nproma, verbose)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
-write(nout,"(a)") "Running spectral transform test"
-write(nout,"(a,i4)") "Spectral truncation:", nsmax
-write(nout,"(a,a)") "Grid: ", cgrid
-write(nout,"(a,i4)") "Iterations: ", iters
+call parse_grid(cgrid,ndgl,nloen)
+nflevg = nfld
 
-!===================================================================================================
-! Message passing setup
-! Participating processors limited by -P option
 !===================================================================================================
 
 call mpl_init()
-!if( lstats ) call gstats(0,0)
-ztinit=timef()
-
 nproc= mpl_nproc()
 myproc = mpl_myrank()
 nthread= oml_max_threads()
+
+!===================================================================================================
+
+!if( lstats ) call gstats(0,0)
+ztinit=timef()
+
 
 ! only output to stdout on pe 1
 if( nproc > 1 ) then
@@ -326,34 +326,12 @@ iflds=0
 icode = 0
 
 !===================================================================================================
-! Set resolution parameters
-!===================================================================================================
-
-! Calculate number of latitudes
-if (cgrid(1:1) == 'O') then ! Octahedral Gaussian grid
-  read(cgrid(2:len_trim(cgrid)),*) ndgl
-  ndgl = ndgl*2
-  ! Calculate number of points at each latitude for octahedral grid
-  allocate(nloen(ndgl))
-  do i = 1, ndgl / 2
-    nloen(i) = min_octa_points + 4 * (i - 1)
-    nloen(ndgl - i + 1) = nloen(i)
-  end do
-else if (cgrid(1:1) == 'F') then ! Regular Gaussian grid
-  read(cgrid(2:len_trim(cgrid)),*) ndgl
-  ndgl = ndgl*2
-  allocate(nloen(ndgl))
-  nloen(:) = ndgl * 2
-else
-  write(nout,"(a,a)") "Unsupported grid ", cgrid
-  stop
-endif
-
-
-
-!===================================================================================================
 ! Call ecTrans setup routines
 !===================================================================================================
+
+if (verbose) then
+  write(nout,'(a)')'======= Setup ectrans ======='
+endif
 
 call setup_trans0(kout=nout,kerr=nerr,kprintlev=merge(2, 0, verbose),kmax_resol=nmax_resol, &
 &                 kpromatr=npromatr,kprgpns=nprgpns,kprgpew=nprgpew,kprtrw=nprtrw, &
@@ -367,8 +345,9 @@ call setup_trans(ksmax=nsmax,kdgl=ndgl,kloen=nloen,ldsplit=.true.,&
 !
 call trans_inq(kspec2=nspec2,kspec2g=nspec2g,kgptot=ngptot,kgptotg=ngptotg)
 
-! Default, no blocking
-nproma=ngptot
+if (nproma == 0) then ! no blocking (default when not specified)
+  nproma=ngptot
+endif
 
 ! Calculate number of NPROMA blocks
 ngpblks=(ngptot-1)/nproma+1
@@ -397,28 +376,30 @@ zt   => sp3d(:,:,3:3)
 !===================================================================================================
 
 ! Print configuration details
-if (verbose .and. myproc == 1) then
-  write(nout,'(a)')'===-=== Start of  runtime parameters ===-==='
+if ( myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'("nlin=   ",i10)') nlin
-  write(nout,'("nq=     ",i10)') nq
-  write(nout,'("nsmax=  ",i10)') nsmax
-  write(nout,'("ndgl=   ",i10)') ndgl
-  write(nout,'("nproc=  ",i10)') nproc
-  write(nout,'("nthread=",i10)') nthread
-  write(nout,'("nprgpns=",i10)') nprgpns
-  write(nout,'("nprgpew=",i10)') nprgpew
-  write(nout,'("nprtrw= ",i10)') nprtrw
-  write(nout,'("nprtrv= ",i10)') nprtrv
-  write(nout,'("nproma= ",i10)') nproma
-  write(nout,'("ngptot= ",i10)') ngptot
-  write(nout,'("ngptotg=",i10)') ngptotg
-  write(nout,'("nflevg= ",i10)') nflevg
-  write(nout,'("nspec2= ",i10)') nspec2
-  write(nout,'("nspec2g=",i10)') nspec2g
-  write(nout,'("luseflt=",l10)') luseflt
+  write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
-  write(nout,'(a)') '===-=== End of   runtime parameters ===-==='
+  write(nout,'("nsmax     ",i0)') nsmax
+  write(nout,'("grid      ",a)') trim(cgrid)
+  write(nout,'("ndgl      ",i0)') ndgl
+  write(nout,'("nproc     ",i0)') nproc
+  write(nout,'("nthread   ",i0)') nthread
+  write(nout,'("nprgpns   ",i0)') nprgpns
+  write(nout,'("nprgpew   ",i0)') nprgpew
+  write(nout,'("nprtrw    ",i0)') nprtrw
+  write(nout,'("nprtrv    ",i0)') nprtrv
+  write(nout,'("ngptot    ",i0)') ngptot
+  write(nout,'("ngptotg   ",i0)') ngptotg
+  write(nout,'("nflevg    ",i0)') nflevg
+  write(nout,'("nproma    ",i0)') nproma
+  write(nout,'("ngpblks   ",i0)') ngpblks
+  write(nout,'("nspec2    ",i0)') nspec2
+  write(nout,'("nspec2g   ",i0)') nspec2g
+  write(nout,'("luseflt   ",l)') luseflt
+  write(nout,'(" ")')
+  write(nout,'(a)') '======= End of runtime parameters ======='
+  write(nout,'(" ")')
 end if
 
 allocate(ivset(nflevg))
@@ -492,7 +473,7 @@ ztstepmax2=0._jprd
 ztstepmin2=9999999999999999._jprd
 
 if (verbose .and. myproc == 1) then
-  write(nout,'(a)') '===-=== start of  spec transforms  ===-==='
+  write(nout,'(a)') '======= Start of spectral transforms  ======='
   write(nout,'(" ")')
 end if
 
@@ -618,7 +599,7 @@ ztloop=(timef()-ztloop)/1000.0_jprd
 
 if (verbose .and. myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'(a)') '===-=== End of   spec transforms  ===-==='
+  write(nout,'(a)') '======= End of spectral transforms  ======='
   write(nout,'(" ")')
 end if
 
@@ -705,7 +686,7 @@ ztstepmed2 = ztstep2(iters/2)
 
 if (verbose .and. myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'(a)') '===-=== Start   of time step stats ===-==='
+  write(nout,'(a)') '======= Start of time step stats ======='
   write(nout,'(" ")')
   write(nout,'("Inverse transforms")')
   write(nout,'("------------------")')
@@ -729,7 +710,7 @@ if (verbose .and. myproc == 1) then
   write(nout,'("med  (s): ",f8.4)') ztstepmed
   write(nout,'("loop (s): ",f8.4)') ztloop
   write(nout,'(" ")')
-  write(nout,'(a)') '===-=== End     of time step stats ===-==='
+  write(nout,'(a)') '======= End of time step stats ======='
   write(nout,'(" ")')
 endif
 
@@ -761,6 +742,7 @@ endif
 if( lstats ) then
   call gstats(0,1)
   call gstats_print(nout,zaveave,jpmaxstat)
+  write(nout,'(" ")')
 endif
 
 !===================================================================================================
@@ -786,12 +768,67 @@ call mpl_end()
 
 contains
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
+subroutine parse_grid(cgrid,ndgl,nloen)
+  character(len=*) :: cgrid
+  integer, intent(inout) :: ndgl
+  integer, intent(inout), allocatable :: nloen(:)
+  integer :: ios
+  integer :: gaussian_number
+  read(cgrid(2:len_trim(cgrid)),*,IOSTAT=ios) gaussian_number
+  if (ios==0) then
+    ndgl = 2 * gaussian_number
+    allocate(nloen(ndgl))
+    if (cgrid(1:1) == 'F') then ! Regular Gaussian grid
+      nloen(:) = gaussian_number * 4
+      return
+    endif
+    if (cgrid(1:1) == 'O') then ! Octahedral Gaussian grid
+      do i = 1, ndgl / 2
+        nloen(i) = 20 + 4 * (i - 1)
+        nloen(ndgl - i + 1) = nloen(i)
+      end do
+      return
+    endif
+  endif
+  call parsing_failed("ERROR: Unsupported grid specified: "// trim(cgrid))
+end subroutine
+
+function get_int_value(iarg) result(value)
+  integer :: value
+  integer, intent(inout) :: iarg
+  character(len=128) :: carg
+  integer :: stat
+  iarg = iarg + 1
+  call get_command_argument(iarg, carg)
+  call str2int(carg, value, stat)
+end function
+function get_str_value(iarg) result(value)
+  character(len=128) :: value
+  integer, intent(inout) :: iarg
+  iarg = iarg + 1
+  call get_command_argument(iarg, value)
+end function
+
+
+subroutine parsing_failed(message)
+  character(len=*), intent(in) :: message
+  call mpl_init(ldinfo=.false.)
+  if( mpl_myrank() == 1 ) then
+    write(nerr,"(a)") trim(message)
+    call print_help(unit=nerr)
+  endif
+  call mpl_end(ldmeminfo=.false.)
+  stop
+end subroutine
+
+subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, lflt, nproma, verbose)
 
   integer, intent(inout) :: nsmax   ! Spectral truncation
-  character(len=16), intent(out) :: cgrid ! Spectral truncation
+  character(len=16), intent(inout) :: cgrid ! Spectral truncation
   integer, intent(inout) :: iters   ! Number of iterations for transform test
   integer, intent(inout) :: nfld    ! Number of scalar fields
+  logical, intent(inout) :: lflt    ! use fast Legendre transforms
+  integer, intent(inout) :: nproma  ! NPROMA
   logical, intent(inout) :: verbose ! Print verbose output or not
 
   character(len=128) :: carg          ! Storage variable for command line arguments
@@ -808,7 +845,9 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
     select case(carg)
       ! Parse help argument
       case('-h','--help')
+        call mpl_init(ldinfo=.false.)
         call print_help()
+        call mpl_end(ldmeminfo=.false.)
         stop
       ! Parse verbosity argument
       case('-v')
@@ -819,8 +858,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
         call get_command_argument(iarg, carg)
         call str2int(carg, iters, stat)
         if (stat /= 0 .or. iters < 1) then
-          call print_help()
-          call abor1("Invalid argument for -n: " // carg)
+          call parsing_failed("Invalid argument for -n: " // trim(carg))
         end if
       ! Parse spectral truncation argument
       case('-t','--truncation')
@@ -828,20 +866,14 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, verbose)
         call get_command_argument(iarg, carg)
         call str2int(carg, nsmax, stat)
         if (stat /= 0 .or. nsmax < 1) then
-          call print_help()
-          call abor1("Invalid argument for -t: " // carg)
+          call parsing_failed("Invalid argument for -t: " // carg)
         end if
-      case('-g', '--grid')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        cgrid = carg
-      case('-f','--nfld')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        call str2int(carg, nfld, stat)
+      case('-g', '--grid'); cgrid = get_str_value(iarg)
+      case('-f','--nfld'); nfld = get_int_value(iarg)
+      case('--flt'); lflt = .True.
+      case('--nproma'); nproma = get_int_value(iarg)
       case default
-        call print_help()
-        call abor1("Unrecognised argument: " // carg)
+        call parsing_failed("Unrecognised argument: " // trim(carg))
 
     end select
     iarg = iarg + 1
@@ -866,7 +898,6 @@ subroutine str2int(str, int, stat)
   character(len=*), intent(in) :: str
   integer, intent(out) :: int
   integer, intent(out) :: stat
-
   read(str, *, iostat=stat) int
 end subroutine str2int
 
@@ -896,7 +927,19 @@ end subroutine sort
 
 !===================================================================================================
 
-subroutine print_help
+subroutine print_help(unit)
+  integer, optional :: unit
+  integer :: nout = 6
+  if (present(unit)) then
+    nout = unit
+  endif
+  if (mpl_numproc == -1 ) then
+    call mpl_init(ldinfo=.false.)
+  endif
+
+  if (mpl_myrank()/=1) then
+    return
+  endif
 
   write(nout, "(a)") ""
 
@@ -926,13 +969,15 @@ subroutine print_help
   write(nout, "(a)") ""
 
   write(nout, "(a)") "OPTIONS"
-  write(nout, "(a)") "    -h                  Print this message"
+  write(nout, "(a)") "    -h, --help          Print this message"
   write(nout, "(a)") "    -v                  Run with verbose output"
   write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation (default = 79)"
   write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
   write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1 (cubic relation)"
   write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform iterations (default = 10)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
+  write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
+  write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
   write(nout, "(a)") ""
 
 end subroutine print_help
