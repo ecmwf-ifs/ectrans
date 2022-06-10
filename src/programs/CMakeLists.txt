@@ -30,9 +30,6 @@ if( HAVE_TOOLS )
 
 endif()
 
-set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
-set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
-
 foreach( prec sp dp )
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
@@ -42,8 +39,6 @@ foreach( prec sp dp )
                              parkind_${prec}
                              trans_${prec}
                           )
-
-    message("Building ${prec} driver")
   endif()
 endforeach()
 

@@ -40,6 +40,7 @@ void write_rspecg( struct Trans_t* trans, double* rspecg[], int nfld );
 
 int main ( int arc, char **argv )
 {
+  trans_use_mpi(0);
   int jfld;
   struct Trans_t trans;
   trans_new(&trans);

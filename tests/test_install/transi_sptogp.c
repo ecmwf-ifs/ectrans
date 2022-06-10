@@ -40,6 +40,7 @@ void write_rgpg( struct Trans_t* trans, double* rgpg[], int nfld );
 
 int main ( int arc, char **argv )
 {
+  trans_use_mpi(0);
   int jfld;
   struct Trans_t trans;
   TRANS_CHECK(trans_new(&trans));
