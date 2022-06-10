@@ -42,7 +42,6 @@ program transform_test
 
 use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
-use mpl_mpif
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
@@ -207,6 +206,8 @@ integer(kind=jpim) :: jend_vder_EW = 0
 
 logical :: ldump_values = .false.
 
+integer, external :: ec_mpisize, ec_mpirank
+logical :: luse_mpi = .true.
 
 character(len=16) :: cgrid
 
@@ -223,6 +224,10 @@ character(len=16) :: cgrid
 
 !===================================================================================================
 
+if (ec_mpisize() == 1 ) then
+  luse_mpi = .false.
+endif
+
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, luseflt, nproma, verbose, ldump_values)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
@@ -231,11 +236,16 @@ nflevg = nfld
 
 !===================================================================================================
 
-call mpl_init()
 call dr_hook_init()
-nproc= mpl_nproc()
-myproc = mpl_myrank()
-nthread= oml_max_threads()
+if (luse_mpi) then
+  call mpl_init()
+  nproc  = mpl_nproc()
+  myproc = mpl_myrank()
+else
+  nproc = 1
+  myproc = 1
+endif
+nthread = oml_max_threads()
 
 !===================================================================================================
 
@@ -378,9 +388,9 @@ endif
 
 call setup_trans0(kout=nout,kerr=nerr,kprintlev=merge(2, 0, verbose),kmax_resol=nmax_resol, &
 &                 kpromatr=npromatr,kprgpns=nprgpns,kprgpew=nprgpew,kprtrw=nprtrw, &
-&                 kcombflen=ncombflen,ldmpoff=lmpoff,ldsync_trans=lsync_trans, &
+&                 kcombflen=ncombflen,ldsync_trans=lsync_trans, &
 &                 ldeq_regions=leq_regions, &
-&                 prad=zra,ldalloperm=.true.)
+&                 prad=zra,ldalloperm=.true.,ldmpoff=.not.luse_mpi)
 
 call setup_trans(ksmax=nsmax,kdgl=ndgl,kloen=nloen,ldsplit=.true.,&
 &                 ldusefftw=.false., lduserpnm=luserpnm,ldkeeprpnm=lkeeprpnm, &
@@ -786,22 +796,23 @@ if( verbose ) then
   endif
 endif
 
-call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
-call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
-call mpl_allreduce(ztstepavg,  'sum', ldreprod=.false.)
-call mpl_allreduce(ztstepmax,  'max', ldreprod=.false.)
-call mpl_allreduce(ztstepmin,  'min', ldreprod=.false.)
+if (luse_mpi) then
+  call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstepavg,  'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstepmax,  'max', ldreprod=.false.)
+  call mpl_allreduce(ztstepmin,  'min', ldreprod=.false.)
 
-call mpl_allreduce(ztstep1,    'sum', ldreprod=.false.)
-call mpl_allreduce(ztstepavg1, 'sum', ldreprod=.false.)
-call mpl_allreduce(ztstepmax1, 'max', ldreprod=.false.)
-call mpl_allreduce(ztstepmin1, 'min', ldreprod=.false.)
+  call mpl_allreduce(ztstep1,    'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstepavg1, 'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstepmax1, 'max', ldreprod=.false.)
+  call mpl_allreduce(ztstepmin1, 'min', ldreprod=.false.)
 
-call mpl_allreduce(ztstep2,    'sum', ldreprod=.false.)
-call mpl_allreduce(ztstepavg2, 'sum', ldreprod=.false.)
-call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
-call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
-
+  call mpl_allreduce(ztstep2,    'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstepavg2, 'sum', ldreprod=.false.)
+  call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
+  call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
+endif
 
 ztstepavg=(ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop=ztloop/real(nproc,jprd)
@@ -899,8 +910,10 @@ deallocate(zgmvs)
 ! Finalize MPI
 !===================================================================================================
 
-call mpl_barrier()
-call mpl_end()
+if (luse_mpi) then
+  call mpl_barrier()
+  call mpl_end()
+endif
 
 !===================================================================================================
 
@@ -950,12 +963,12 @@ end function
 
 subroutine parsing_failed(message)
   character(len=*), intent(in) :: message
-  call mpl_init(ldinfo=.false.)
-  if( mpl_myrank() == 1 ) then
+  if (luse_mpi) call mpl_init(ldinfo=.false.)
+  if( ec_mpirank()==0 ) then
     write(nerr,"(a)") trim(message)
     call print_help(unit=nerr)
   endif
-  call mpl_end(ldmeminfo=.false.)
+  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
   stop
 end subroutine
 
@@ -979,7 +992,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   integer            :: iarg = 1      ! Argument index
   integer            :: verbosity = 0 ! Level of verbosity (0, 1 or 2)
   integer            :: stat          ! For storing success status of string->integer conversion
-
+  integer            :: myproc
   cgrid = ''
   lvordiv = .false.
   lscders = .false.
@@ -992,9 +1005,9 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
     select case(carg)
       ! Parse help argument
       case('-h','--help')
-        call mpl_init(ldinfo=.false.)
-        call print_help()
-        call mpl_end(ldmeminfo=.false.)
+        if (luse_mpi) call mpl_init(ldinfo=.false.)
+        if (ec_mpirank()==0) call print_help()
+        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
         stop
       ! Parse verbosity argument
       case('-v')
@@ -1088,13 +1101,6 @@ subroutine print_help(unit)
   integer :: nout = 6
   if (present(unit)) then
     nout = unit
-  endif
-  if (mpl_numproc == -1 ) then
-    call mpl_init(ldinfo=.false.)
-  endif
-
-  if (mpl_myrank()/=1) then
-    return
   endif
 
   write(nout, "(a)") ""
