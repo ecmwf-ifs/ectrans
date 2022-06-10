@@ -51,11 +51,47 @@ if( TEST ectrans_test_adjoint AND HAVE_OMP )
 endif()
 
 foreach( prec dp sp )
-  ecbuild_add_test( TARGET ectrans_test_benchmark1_${prec}_T31_O32_mpi1_omp1
-      COMMAND ectrans-benchmark1-${prec} ARGS --truncation 31 --grid O32 --niter 2
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld0
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 0
       MPI 1
       OMP 1
   )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10
+      MPI 1
+      OMP 1
+  )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10_nlev20
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10 --nlev 20
+      MPI 1
+      OMP 1
+  )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10_nlev20_scders
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10 --nlev 20 --scders
+      MPI 1
+      OMP 1
+  )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10_nlev20_vordiv
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10 --nlev 20 --vordiv
+      MPI 1
+      OMP 1
+  )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10_nlev20_vordiv_uvders
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10 --nlev 20 --vordiv --uvders
+      MPI 1
+      OMP 1
+  )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10_nlev20_flt
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10 --nlev 20 --flt
+      MPI 1
+      OMP 1
+  )
+  ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T31_O32_mpi1_omp1_nfld10_nlev20_nproma16
+      COMMAND ectrans-benchmark-${prec} ARGS --truncation 31 --grid O32 --niter 2 --nfld 10 --nlev 20 --nproma 16
+      MPI 1
+      OMP 1
+  )
+
 endforeach()
 
 
