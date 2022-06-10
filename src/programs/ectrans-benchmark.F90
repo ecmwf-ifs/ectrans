@@ -205,6 +205,8 @@ integer(kind=jpim) :: jend_uder_EW = 0
 integer(kind=jpim) :: jbegin_vder_EW = 0
 integer(kind=jpim) :: jend_vder_EW = 0
 
+logical :: ldump_values = .false.
+
 
 character(len=16) :: cgrid
 
@@ -222,7 +224,7 @@ character(len=16) :: cgrid
 !===================================================================================================
 
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, luseflt, nproma, verbose)
+call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, luseflt, nproma, verbose, ldump_values)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid,ndgl,nloen)
 nflevg = nfld
@@ -630,14 +632,16 @@ do jstep=1,iters
   ztstep1(jstep)=(timef()-ztstep1(jstep))/1000.0_jprd
 
   !=================================================================================================
-  ! While in grid point space, dump the values to disk
+  ! While in grid point space, dump the values to disk, for debugging only
   !=================================================================================================
 
-  ! dump a field to a binary file
-  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmvs(:,1,:), 'S', noutdump)
-  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,3,:),  'U', noutdump)
-  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,4,:),  'V', noutdump)
-  call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgmv(:,nflevg,5,:),  'T', noutdump)
+  if (ldump_values) then
+    ! dump a field to a binary file
+    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),          'S', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:),  'U', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,2,:),  'V', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp3a(:,nflevg,1,:),  'T', noutdump)
+  endif
 
   !=================================================================================================
   ! Do direct transform
@@ -955,7 +959,8 @@ subroutine parsing_failed(message)
   stop
 end subroutine
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lflt, nproma, verbose)
+subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lflt, &
+  &                                   nproma, verbose, ldump_values)
 
   integer, intent(inout) :: nsmax   ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -968,6 +973,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lflt    ! use fast Legendre transforms
   integer, intent(inout) :: nproma  ! NPROMA
   logical, intent(inout) :: verbose ! Print verbose output or not
+  logical, intent(inout) :: ldump_values
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1017,6 +1023,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--uvders'); luvders = .True.
       case('--flt'); lflt = .True.
       case('--nproma'); nproma = get_int_value(iarg)
+      case('--dump-values'); ldump_values = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1131,6 +1138,9 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only when also --vordiv is given"
   write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
   write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
+  write(nout, "(a)") ""
+  write(nout, "(a)") "DEBUGGING"
+  write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
   write(nout, "(a)") ""
 
 end subroutine print_help
