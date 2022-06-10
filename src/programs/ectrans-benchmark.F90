@@ -45,6 +45,7 @@ use oml_mod ,only : oml_max_threads
 use mpl_mpif
 use mpl_module
 use yomgstats, only: jpmaxstat
+use yomhook, only : dr_hook_init
 
 implicit none
 
@@ -229,6 +230,7 @@ nflevg = nfld
 !===================================================================================================
 
 call mpl_init()
+call dr_hook_init()
 nproc= mpl_nproc()
 myproc = mpl_myrank()
 nthread= oml_max_threads()
