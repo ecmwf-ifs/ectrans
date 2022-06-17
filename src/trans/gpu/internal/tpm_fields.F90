@@ -17,19 +17,19 @@ IMPLICIT NONE
 SAVE
 
 TYPE FIELDS_TYPE
-REAL(KIND=JPRD) ,ALLOCATABLE :: RPNM(:,:) ! Legendre polynomials
-REAL(KIND=JPRD) ,ALLOCATABLE :: RMU(:)    ! sin(theta) for Gaussian latitudes
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RW(:)     ! Weights of the Gaussian quadrature
-REAL(KIND=JPRBT) ,ALLOCATABLE :: R1MU2(:)  ! 1.-MU*MU, cos(theta)**2
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RACTHE(:) ! 1./SQRT(R1MU2), 1/(cos(theta))
+REAL(KIND=JPRD)    ,ALLOCATABLE :: RPNM(:,:) ! Legendre polynomials
+REAL(KIND=JPRD)    ,ALLOCATABLE :: RMU(:)    ! sin(theta) for Gaussian latitudes
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: RW(:)     ! Weights of the Gaussian quadrature
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: R1MU2(:)  ! 1.-MU*MU, cos(theta)**2
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: RACTHE(:) ! 1./SQRT(R1MU2), 1/(cos(theta))
 
-REAL(KIND=JPRBT) ,ALLOCATABLE :: REPSNM(:) ! eps(n,m) used in the Legendre transforms
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RN(:)     ! n (to avoid integer to real conversion)
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RLAPIN(:) ! eigen-values of the inverse Laplace operator
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTN(:) ! R%NTMAX+2-JN
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: REPSNM(:) ! eps(n,m) used in the Legendre transforms
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: RN(:)     ! n (to avoid integer to real conversion)
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: RLAPIN(:) ! eigen-values of the inverse Laplace operator
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTN(:)   ! R%NTMAX+2-JN
 
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RMU2(:)    ! sin(theta) for dual input/output latitudes
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RACTHE2(:) ! 1./SQRT(R1MU2), 1/(cos(theta)) dual input/output latitudes
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: RMU2(:)   ! sin(theta) for dual input/output latitudes
+REAL(KIND=JPRBT)   ,ALLOCATABLE :: RACTHE2(:)! 1./SQRT(R1MU2), 1/(cos(theta)) dual input/output latitudes
 END TYPE FIELDS_TYPE
 
 !flat copies of the above

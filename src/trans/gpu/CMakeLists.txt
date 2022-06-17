@@ -17,9 +17,24 @@ ecbuild_list_add_pattern( LIST trans_src
                           QUIET
                         )
 
+
+## for reduced memory option, remove duplicate source files
+if( HAVE_REDUCED_MEMORY )
+  ecbuild_list_add_pattern( LIST reducedmem_files
+                            GLOB internal_reducedmem/* QUIET )
+  ecbuild_list_add_pattern( LIST trans_src
+	                    GLOB internal_reducedmem/* QUIET )
+  foreach( src_file ${reducedmem_files} )
+    get_filename_component( base_name ${src_file} NAME )
+    list(REMOVE_ITEM trans_src "internal/${base_name}" )
+  endforeach()
+endif()
+
 ecbuild_list_exclude_pattern( LIST trans_src REGEX dilatation_mod.F90 )
+ecbuild_list_exclude_pattern( LIST trans_src_reducedmem REGEX dilatation_mod.F90 )
 if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
+  ecbuild_list_exclude_pattern( LIST trans_src_reducedmem REGEX tpm_fftw.F90 )
 endif()
 
 
@@ -29,11 +44,13 @@ set( FFTW_dp FFTW::fftw3  )
 set( FFTW_sp FFTW::fftw3f )
 
 set( IFS_ACC_Fortran_LIBRARIES OpenACC::OpenACC_Fortran PARENT_SCOPE)
+set( Debug_Compile_Flags -g -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays -traceback )
+set( Release_Compile_Flags -gopt -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
 
-    ecbuild_add_library( 
+    ecbuild_add_library(
       TARGET           trans_gpu_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
@@ -51,7 +68,7 @@ foreach( prec sp dp )
                        fiat
       PRIVATE_LIBS     ${LAPACK_LIBRARIES}
     )
-    ecbuild_add_library( 
+    ecbuild_add_library(
       TARGET           trans_gpu_static_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
@@ -70,7 +87,7 @@ foreach( prec sp dp )
                        fiat
       PRIVATE_LIBS     ${LAPACK_LIBRARIES}
     )
-    ecbuild_add_library( 
+    ecbuild_add_library(
       TARGET           trans_gpu_static_CA_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
@@ -123,22 +140,28 @@ foreach( prec sp dp )
     endif()
 
     target_link_libraries( trans_gpu_${prec} PRIVATE OpenACC::OpenACC_Fortran )
-    set_property( TARGET trans_gpu_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
-    target_compile_options( trans_gpu_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
-    target_compile_options( trans_gpu_static_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
-    target_compile_options( trans_gpu_static_CA_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc> )
-
     target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenACC::OpenACC_Fortran )
-    set_property( TARGET trans_gpu_static_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
-
     target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE OpenACC::OpenACC_Fortran )
-    set_property( TARGET trans_gpu_static_CA_${prec} PROPERTY CUDA_ARCHITECTURES 70 )
+
+    target_compile_options( trans_gpu_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${Debug_Compile_Flags}> 
+	    $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>> )
+    target_compile_options( trans_gpu_static_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${Debug_Compile_Flags}> 
+	    $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>> )
+    target_compile_options( trans_gpu_static_CA_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:${Debug_Compile_Flags}>> 
+	    $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>> )
+
 
     if( prec STREQUAL sp )
         target_compile_definitions( trans_gpu_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
         target_compile_definitions( trans_gpu_static_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
 	target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
     endif()
+    if( HAVE_REDUCED_MEMORY )
+	target_compile_definitions( trans_gpu_${prec} PUBLIC REDUCED_MEM )
+	target_compile_definitions( trans_gpu_static_${prec} PUBLIC REDUCED_MEM )
+	target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC REDUCED_MEM )
+    endif()
+
     target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC USE_CUDA_AWARE_MPI_FT )
 
   endif()
@@ -154,6 +177,3 @@ ecbuild_add_library( TARGET gpu
             algor/module/IPC_Alltoall.cu
             PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
 )
-
-## CUDA architecture 
-set_property( TARGET gpu PROPERTY CUDA_ARCHITECTURES 70 ) 

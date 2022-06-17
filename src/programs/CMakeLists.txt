@@ -28,7 +28,6 @@ if( HAVE_TOOLS )
 
   endforeach()
 
-
 endif()
 
 
@@ -36,13 +35,15 @@ set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
 if( HAVE_GPU )
+  set( Debug_Compile_Flags   -g -O0 -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic -traceback ) 
+  set( Release_Compile_Flags -gopt -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic ) 
   foreach( prec sp dp )
     if( HAVE_${prec} )
       ecbuild_add_executable(TARGET  driver-spectrans-${prec}
                              SOURCES driver-spectraltransform.F90
                              INCLUDES
                                   ${MPI_Fortran_INCLUDE_PATH}
-                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/gpu/include/ectrans>
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/include/ectrans>
                              LIBS 
                                   fiat parkind_${prec}
                                   eccodes_f90 eccodes_memfs
@@ -57,13 +58,13 @@ if( HAVE_GPU )
                              SOURCES driver-spectraltransform.F90
                              INCLUDES
                                   ${MPI_Fortran_INCLUDE_PATH}
-                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/gpu/include/ectrans>
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../trans/include/ectrans>
                              LIBS 
                                   fiat parkind_${prec}
                                   eccodes_f90 eccodes_memfs
                                   ${MPI_Fortran_LIBRARIES}
-                                  trans_gpu_static_CA_${prec}
-                                  gpu
+				  trans_gpu_static_CA_${prec}
+		                  gpu
                                   OpenACC::OpenACC_Fortran 
                                   ${LAPACK_LIBRARIES}
                                   nvhpcwrapnvtx
@@ -72,11 +73,10 @@ if( HAVE_GPU )
 		  #gpu
 		  #${CMAKE_BINARY_DIR}/lib/libtrans_gpu_static_${prec}.a
 		  #${CMAKE_BINARY_DIR}/lib/libgpu.a
-      #target_link_libraries( driver-spectrans PRIVATE OpenACC::OpenACC_Fortran )
-      set_property( TARGET driver-spectrans-${prec} PROPERTY CUDA_ARCHITECTURES 70 )
-      set_property( TARGET driver-spectrans-CA-${prec} PROPERTY CUDA_ARCHITECTURES 70 )
-      target_compile_options( driver-spectrans-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic>  )
-      target_compile_options( driver-spectrans-CA-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:-g -acc -Minfo=acc -gpu=cc70,lineinfo,deepcopy,fastmath,nordc -cudalib=cufft,cublas -fpic>  )
+      target_compile_options( driver-spectrans-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:Debug_Compile_Flags>> 
+	     $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>>   )
+      target_compile_options( driver-spectrans-CA-${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:Debug_Compile_Flags>>  
+	     $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>>  )
       set_target_properties(driver-spectrans-${prec} PROPERTIES LINK_FLAGS "-acc -cudalib=cufft,cublas -fpic")
       set_target_properties(driver-spectrans-CA-${prec} PROPERTIES LINK_FLAGS "-acc -cudalib=cufft,cublas -fpic")
       message("Building ${prec} GPU driver")
@@ -120,4 +120,3 @@ install( FILES
   PERMISSIONS
   OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
-
