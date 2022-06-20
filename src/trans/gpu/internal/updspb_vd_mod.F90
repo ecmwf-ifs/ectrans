@@ -52,18 +52,16 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
   !                       first and last field
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
-  
-  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
-  
-  
-  
+ 
+  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+
   USE TPM_DIM         ,ONLY : R,R_NSMAX,R_NTMAX
   USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
   USE TPM_FIELDS      ,ONLY : ZOA2
   !
-  
+ 
   IMPLICIT NONE
-  
+ 
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM)  :: KM,KMLOC
   REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPVOR(:,:)
@@ -73,13 +71,13 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
   INTEGER(KIND=JPIM) :: IVORS, IDIVS
-  
-  
+
+
   !     ------------------------------------------------------------------
-  
+
   !*       0.    NOTE.
   !              -----
-  
+
   ! The following transfer reads :
   ! SPEC(k,NASM0(m)+NLTN(n)*2)  =POA(nn,2*k-1) (real part)
   ! SPEC(k,NASM0(m)+NLTN(n)*2+1)=POA(nn,2*k  ) (imaginary part)
@@ -93,29 +91,29 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
 
   !*       1.    UPDATE SPECTRAL FIELDS.
   !              -----------------------
-  !$ACC data &
-  !$ACC& present(ZOA2) &
-  !$ACC& copy(PSPVOR,PSPDIV) &
-  !$ACC& copy(D,D_NUMP,D_MYMS,R,R_NSMAX,R_NTMAX,D,D_NASM0)
+  !$ACC DATA &
+  !$ACC& PRESENT(ZOA2) &
+  !$ACC& COPY(PSPVOR,PSPDIV) &
+  !$ACC& COPY(D,D_NUMP,D_MYMS,R,R_NSMAX,R_NTMAX,D,D_NASM0)
  
-  !$ACC parallel loop collapse(3) private(KM,INM,IR,II,IASM0,IFLD)
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,INM,IR,II,IASM0,IFLD)
   DO KMLOC=1,D_NUMP     
        DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2
           DO JFLD=1,KFIELD
-             
+ 
              KM = D_MYMS(KMLOC)
              IASM0 = D_NASM0(KM)
-             
+ 
              IF(KM == 0) THEN
-       
-                if (JN .le. R_NTMAX+2-KM) then              
+
+                IF (JN .LE. R_NTMAX+2-KM) THEN
                    INM = IASM0+(R_NTMAX+2-JN)*2
                    IR = 2*JFLD-1
                    PSPVOR(JFLD,INM)   = ZOA2(IVORS+IR-1,JN,KMLOC)
                    PSPDIV(JFLD,INM)   = ZOA2(IDIVS+IR-1,JN,KMLOC)
                    PSPVOR(JFLD,INM+1) = 0.0_JPRBT
                    PSPDIV(JFLD,INM+1) = 0.0_JPRBT
-                end if
+                END IF
                 IF(PRESENT(KFLDPTR)) THEN
                   IFLD = KFLDPTR(JFLD)
                   PSPVOR(IFLD,IASM0) = 0.0_JPRBT
@@ -126,29 +124,29 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
                 ENDIF
 
              ELSE
-                
-                
-                if (JN .le. R_NTMAX+2-KM) then              
+ 
+ 
+                IF (JN .LE. R_NTMAX+2-KM) THEN
                    INM = IASM0+((R_NTMAX+2-JN)-KM)*2
-                   
+ 
                    IR = 2*JFLD-1
                    II = IR+1
                    PSPVOR(JFLD,INM)   = ZOA2(IVORS+IR-1,JN,KMLOC)
                    PSPVOR(JFLD,INM+1) = ZOA2(IVORS+II-1,JN,KMLOC)
                    PSPDIV(JFLD,INM)   = ZOA2(IDIVS+IR-1,JN,KMLOC)
                    PSPDIV(JFLD,INM+1) = ZOA2(IDIVS+II-1,JN,KMLOC)
-                   
-                end if
-             end if
-             
+ 
+                END IF
+             END IF
+ 
           ENDDO
-          
+ 
        ENDDO
        !end loop over wavenumber
    END DO
    !$ACC end data
-        
+ 
   !     ------------------------------------------------------------------
-  
+ 
   END SUBROUTINE UPDSPB_VD
-  END MODULE UPDSPB_VD_MOD
+END MODULE UPDSPB_VD_MOD

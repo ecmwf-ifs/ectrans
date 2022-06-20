@@ -55,7 +55,7 @@ SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC,KFLDPTR)
 !        L. Isaksen : 95-06-06 Reordering of spectral arrays
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_DIM         ,ONLY : R
 !USE TPM_FIELDS

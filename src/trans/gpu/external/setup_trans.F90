@@ -96,7 +96,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE PARKIND1        ,ONLY : JPIM     ,JPRB ,  JPRD
+USE PARKIND1        ,ONLY : JPIM    ,JPRB ,  JPRD
 USE PARKIND_ECTRANS ,ONLY : JPRBT
 USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
 
@@ -187,7 +187,7 @@ LOGICAL :: LLP1,LLP2, LLSPSETUPONLY
 REAL(KIND=JPRD)    :: ZTIME0,ZTIME1,ZTIME2
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
-integer :: idevtype, inumdevs, mygpu, iunit, istat, idev
+INTEGER :: IDEVTYPE, INUMDEVS, MYGPU, IUNIT, ISTAT, IDEV
 
 #include "user_clock.intfb.h"
 !     ------------------------------------------------------------------

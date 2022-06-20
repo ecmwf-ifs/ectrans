@@ -12,9 +12,9 @@ MODULE SPNSDE_MOD
 CONTAINS
 SUBROUTINE SPNSDE(KF_SCALARS,PEPSNM,PF,PNSD)
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
-USE TPM_GEN, only: nout
+USE TPM_GEN         ,ONLY : NOUT
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F
 USE TPM_DISTR       ,ONLY : D
@@ -113,7 +113,6 @@ DO KMLOC=1,D%NUMP
    ELSE
        ZZEPSNM(IJ) = 0
    ENDIF
-   !write(nout,*) 'deriv dy debug in ; ',JN, IJ, ZN(IJ),ZZEPSNM(IJ),PEPSNM(KMLOC,JN)
   ENDDO
   !$ACC KERNELS DEFAULT(NONE)
   ZN(0) = F%RN(ISMAX+3)
@@ -139,12 +138,8 @@ DO KMLOC=1,D%NUMP
           &ZN(JI-2)*ZZEPSNM(JI-1)*PF(IR,JI-1,KMLOC)
         PNSD(II,JI,KMLOC) = -ZN(JI+1)*ZZEPSNM(JI)*PF(II,JI+1,KMLOC)+&
           &ZN(JI-2)*ZZEPSNM(JI-1)*PF(II,JI-1,KMLOC)
-        !write(301,*) 'deriv dy debug 2nd; ',KMLOC,IR,II,JI,J,PNSD(IR,JI,KMLOC),PNSD(II,JI,KMLOC)
-        !call flush(301)
       ENDDO
     ENDDO
-    !write(301,*) 'deriv dy debug 2nd; ',KMLOC,maxval(PNSD(1,:,KMLOC)),maxval(PNSD(2,:,KMLOC))
-    !call flush(301)
   ENDIF
 
 !end loop over wavenumber

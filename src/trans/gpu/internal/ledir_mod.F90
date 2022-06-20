@@ -55,21 +55,21 @@ SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,POA1,KMODE)
 !     ------------------------------------------------------------------
 
 USE PARKIND_ECTRANS  ,ONLY : JPIM ,JPIB    ,JPRB,  JPRBT
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX,R_NTMAX
-USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
-USE TPM_FIELDS      ,ONLY : F, &
-     & ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
-     & DZBST,DLDZBA,DLDZBS,DTDZBA,DTDZBS,&
-     & DZCST,DZCAT,DLDZCA,DLDZCS,DTDZCA,DTDZCS,&
-     & ZAMAX, ZSMAX,&
-     & IF_FS_DIR,ZAA0,DZBST0,DZCAT0,ZAS0,DZCST0,KMLOC0
+USE YOMHOOK          ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+USE TPM_DIM          ,ONLY : R, R_NDGNH,R_NSMAX,R_NTMAX
+USE TPM_GEOMETRY     ,ONLY : G, G_NDGLU
+USE TPM_FIELDS       ,ONLY : F, &
+ &                           ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
+ &                           DZBST,DLDZBA,DLDZBS,DTDZBA,DTDZBS,&
+ &                           DZCST,DZCAT,DLDZCA,DLDZCS,DTDZCA,DTDZCS,&
+ &                           ZAMAX, ZSMAX,&
+ &                           IF_FS_DIR,ZAA0,DZBST0,DZCAT0,ZAS0,DZCST0,KMLOC0
 USE TPM_DISTR
-USE TPM_GEN, ONLY: NOUT
+USE TPM_GEN          ,ONLY : NOUT
 USE TPM_FLT
 USE BUTTERFLY_ALG_MOD
+USE CUBLAS_MOD       ,ONLY : CUDA_DGEMM_BATCHED
 USE CUDA_GEMM_BATCHED_MOD!!, ONLY: CUDA_TCGEMM_BATCHED, CUDA_GEMM_BATCHED
-USE CUBLAS_MOD, ONLY : CUDA_DGEMM_BATCHED
 USE, INTRINSIC :: ISO_C_BINDING
 USE IEEE_ARITHMETIC
 
@@ -141,7 +141,6 @@ DO KMLOC=1,D_NUMP
                ISKIP = 1
             ENDIF
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               !DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*R_NDGNH)*IF_FS_DIR)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
                DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBA)*DTDZBA)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
             END IF
          END IF
@@ -190,7 +189,7 @@ ENDDO
 
 ! compute m=0 in double precision:
 IF(KMLOC0 > 0) THEN
-   print*,'computing m=0 in double precision'
+   PRINT*,'computing m=0 in double precision'
    ISKIP = 2
 
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
@@ -238,7 +237,7 @@ ELSE
 
 ! symmetric
 
-!$acc parallel loop collapse(3) private(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISL,ISKIP) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
    DO J=1,R_NDGNH   
       DO JK=1,KFC
@@ -253,7 +252,6 @@ DO KMLOC=1,D_NUMP
                ISKIP = 1
             ENDIF
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-!               DZBST((JK-1)/ISKIP+1,J,KMLOC)=PSIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
                DZBST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZBS)*DTDZBS)=PAIA(JK,ISL+J-1,KMLOC)*F%RW(ISL+J-1)
             END IF
          END IF
@@ -318,20 +316,20 @@ IF(KMLOC0 > 0) THEN
       !C=A*B =>
       ! C^T=B^T*A^T
 
-      !$ACC host_data use_device(ZAS0,DZBST0,DZCST0)
+      !$ACC HOST_DATA USE_DEVICE(ZAS0,DZBST0,DZCST0)
       call CUDA_DGEMM_BATCHED('N','N',&
  &                            DTDZBS,TDZAS,DLDZBS,&
  &                            1.0_JPRD,DZBST0,DTDZBS,DLDZBS,&
  &                            ZAS0,LDZAS,TDZAS,&
  &                            0._JPRD,DZCST0,DTDZCS,DLDZCS,1)
-      !$ACC end host_data
+      !$ACC END HOST_DATA
 
-   !$ACC parallel loop collapse(2) private(ILA,IA,ILS,IS) DEFAULT(NONE)
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(ILA,IA,ILS,IS) DEFAULT(NONE)
    DO J=1,(R_NTMAX+3)/2
       DO JK=1,KFC
-         if (MOD((JK-1),ISKIP) .eq. 0) then
+         IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
             ILS = (R_NTMAX+3)/2
-            if (J .le. ILS) then
+            IF (J .LE. ILS) THEN
                IS  = 1+MOD(R_NTMAX+1,2)
                POA1(JK,IS+(J-1)*2,KMLOC0) = DZCST0((JK-1)/ISKIP+1+(J-1)*DTDZCS)
             end if

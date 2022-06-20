@@ -65,7 +65,7 @@ MODULE PRFI2_MOD
     !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
     !     ------------------------------------------------------------------
     
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+    USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
     
     !USE TPM_TRANS
     
@@ -82,19 +82,19 @@ USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
     
     
     REAL(KIND=JPRBT) , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
-    
-    
+
+
     !     LOCAL INTEGER SCALARS
-    
-    
+
+
     !     ------------------------------------------------------------------
-    
+
     !*       2.    EXTRACT SYM./ANTISYM. FIELDS FROM TIME T+1.
     !              -------------------------------------------
-    
+
 !    CALL PRFI2B(KF_FS,PAIA,PSIA)
-    
+
     !     ------------------------------------------------------------------
-    
+
     END SUBROUTINE PRFI2
-    END MODULE PRFI2_MOD
+END MODULE PRFI2_MOD

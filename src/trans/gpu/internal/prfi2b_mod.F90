@@ -57,34 +57,34 @@ MODULE PRFI2B_MOD
   !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
   !     ------------------------------------------------------------------
   
-  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
   
   USE TPM_DIM         ,ONLY : R, R_NDGNH, R_NDGL
   USE TPM_TRANS       ,ONLY : FOUBUF
   USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
   USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,D_NSTAGT1B,D_NPROCL,D_NPNTGTB1,MYPROC
   !
-  
+ 
   IMPLICIT NONE
-  
+ 
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM),INTENT(IN)  :: KMODE
   INTEGER(KIND=JPIM)  :: KM,KMLOC
   REAL(KIND=JPRBT)  , INTENT(OUT) :: PAIA(:,:,:)
 !!  REAL(KIND=JPRBT)  , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
-  
-  
+ 
+ 
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: IGLS,  ISL, JF, JGL, iunit
-  
+ 
   INTEGER(KIND=JPIM) :: OFFSET1, OFFSET2
-  
-  
+ 
+ 
   !     ------------------------------------------------------------------
-  
+ 
   !*       1.    EXTRACT SYM./ANTISYM. FIELDS FROM FOURIER ARRAY.
   !              ------------------------------------------------
- 
+
 
 !$ACC DATA PRESENT(PAIA,FOUBUF, D_NPNTGTB1,D_NSTAGT1B,D_MYMS,R_NDGL,R_NDGNH,G_NDGLU,D_NPROCL)
 
@@ -110,8 +110,8 @@ DO KMLOC=1,D_NUMP
 END DO
 
 !$ACC END DATA
-  
+ 
   !     ------------------------------------------------------------------
-  
+ 
   END SUBROUTINE PRFI2B
-  END MODULE PRFI2B_MOD  
+END MODULE PRFI2B_MOD  

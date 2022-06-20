@@ -44,11 +44,11 @@ SUBROUTINE FTINV(PREEL,KFIELDS)
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G
-use tpm_gen, only: nout
+USE TPM_GEN         ,ONLY : NOUT
 USE TPM_FFT         ,ONLY : T
 #ifdef WITH_FFTW
 USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
@@ -101,7 +101,7 @@ DO KGL=IBEG,IEND,IINC
   IST1=1
   IF (G%NLOEN(IGLG)==1) IST1=0
 
-  !$ACC loop collapse(2)
+  !$ACC LOOP COLLAPSE(2)
   DO JJ=IST1,ILEN
      DO JF=1,KFIELDS
         PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
@@ -109,13 +109,11 @@ DO KGL=IBEG,IEND,IINC
   ENDDO
 
 END DO
-!$ACC end data
+!$ACC END DATA
 
-allocate(preel2(size(preel,1),size(preel,2)))
-!$acc data create(preel2) present(preel)
+ALLOCATE(PREEL2(SIZE(PREEL,1),SIZE(PREEL,2)))
+!$ACC DATA CREATE(PREEL2) PRESENT(PREEL)
 
-!istat = cuda_GetDevice(idev)
-!istat = cuda_Synchronize()      
 !!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(istat,KGL,IOFF,IGLG,IPLAN_C2R)
 DO KGL=IBEG,IEND,IINC
   IOFF=D%NSTAGTF(KGL)+1
@@ -124,20 +122,20 @@ DO KGL=IBEG,IEND,IINC
 !call cudaProfilerStop()
      !istat=cuda_SetDevice(idev)
      CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELDS)
-     !$ACC host_data use_device(PREEL,PREEL2)
+     !$ACC HOST_DATA USE_DEVICE(PREEL,PREEL2)
      CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff),PREEL2(1, ioff))
-     !$ACC end host_data
+     !$ACC END HOST_DATA
 !call cudaProfilerStart()
   !ENDIF
 END DO
 !!$OMP END PARALLEL DO
-istat = cuda_Synchronize()      
+ISTAT = CUDA_SYNCHRONIZE()      
 
 
-!$acc kernels
-preel(:,:) = preel2(:,:)
-!$acc end kernels
-!$acc end data
+!$ACC KERNELS
+PREEL(:,:) = PREEL2(:,:)
+!$ACC END KERNELS
+!$ACC END DATA
 !     ------------------------------------------------------------------
 
 END SUBROUTINE FTINV

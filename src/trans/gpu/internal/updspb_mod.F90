@@ -55,11 +55,11 @@ MODULE UPDSPB_MOD
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   
-  USE TPM_DIM         ,ONLY : R,R_NSMAX,R_NTMAX
+  USE TPM_DIM       ,ONLY : R,R_NSMAX,R_NTMAX
   !USE TPM_FIELDS
-  USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
+  USE TPM_DISTR     ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
   !
   
   IMPLICIT NONE
@@ -100,41 +100,41 @@ USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
   DO KMLOC=1,D%NUMP     
        DO JN=R%NTMAX+2-R%NSMAX,R%NTMAX+2
           DO JFLD=1,KFIELD
-             
+
              KM = D%MYMS(KMLOC)
              IASM0 = D%NASM0(KM)
-             
+
              IF(KM == 0) THEN
-                
-                if (JN .le. R%NTMAX+2-KM) then              
-                   
+
+                IF (JN .LE. R%NTMAX+2-KM) THEN 
+
                    INM = IASM0+(R%NTMAX+2-JN)*2
                    IR = 2*JFLD-1
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
                    PSPEC(JFLD,INM+1) = 0.0_JPRBT
-                   
-                end if
+ 
+                END IF
              ELSE
-                
-                
-                if (JN .le. R%NTMAX+2-KM) then              
+ 
+ 
+                IF (JN .LE. R%NTMAX+2-KM) THEN
                    INM = IASM0+((R%NTMAX+2-JN)-KM)*2
-                   
+ 
                    IR = 2*JFLD-1
                    II = IR+1
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
                    PSPEC(JFLD,INM+1) = POA(II,JN,KMLOC)
-                   
-                end if
-             end if
+ 
+                END IF
+             END IF
              
           ENDDO
        ENDDO
     ENDDO
 !$ACC END PARALLEL
 !$ACC END DATA
-    
+ 
   !     ------------------------------------------------------------------
-  
+ 
   END SUBROUTINE UPDSPB
-  END MODULE UPDSPB_MOD
+END MODULE UPDSPB_MOD

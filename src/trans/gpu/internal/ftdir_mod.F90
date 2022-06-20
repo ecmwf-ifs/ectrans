@@ -46,7 +46,7 @@ SUBROUTINE FTDIR(KFIELDS)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM, JPIB, JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM, JPIB, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC,D_NSTAGTF,D_NPTRLS
 USE TPM_TRANS       ,ONLY : ZGTF
@@ -76,7 +76,7 @@ LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts on
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISCAL
 INTEGER(KIND=JPIM) :: OFFSET_VAR, IUNIT, ISIZE, II, IMAX
 integer :: istat, idev
-real(kind=jprbt), allocatable :: zgtf2(:,:)
+REAL(KIND=JPRBT), ALLOCATABLE :: ZGTF2(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -111,41 +111,41 @@ DO KGL=IBEG,IEND,IINC
   !ICLEN=(IRLEN/2+1)*2
 
   CALL CREATE_PLAN_FFT(IPLAN_R2C,-1,G%NLOEN(IGLG),KFIELDS)
-  !$ACC host_data use_device(ZGTF,ZGTF2)
+  !$ACC HOST_DATA USE_DEVICE(ZGTF,ZGTF2)
   CALL EXECUTE_PLAN_FFTC(IPLAN_R2C,-1,ZGTF(1,IOFF),ZGTF2(1,IOFF))
-  !$ACC end host_data
+  !$ACC END HOST_DATA
 END DO
 !!$OMP END PARALLEL DO
 
-istat = cuda_Synchronize()
+ISTAT = CUDA_SYNCHRONIZE()
 
-!$acc kernels DEFAULT(NONE)
-zgtf(:,:) = zgtf2(:,:)
-!$acc end kernels
-!$acc end data
+!$ACC KERNELS DEFAULT(NONE)
+ZGTF(:,:) = ZGTF2(:,:)
+!$ACC END KERNELS
+!$ACC END DATA
 
-!$ACC parallel loop collapse(3) private(JMAX,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(JMAX,KGL,IOFF,SCAL,IST) DEFAULT(NONE)
 DO IGLG=IBEG+OFFSET_VAR-1,IEND+OFFSET_VAR-1,IINC
    DO JJ=1, IMAX
       DO JF=1,KFIELDS
          JMAX = G_NLOEN(IGLG)
          IST  = 2*(G_NMEN(IGLG)+1)
-         if (JJ .le. JMAX) then
+         IF (JJ .LE. JMAX) THEN
            KGL=IGLG-OFFSET_VAR+1
            IOFF=D_NSTAGTF(KGL)+1
            SCAL = 1._JPRBT/REAL(G_NLOEN(IGLG),JPRBT)
            ZGTF(JF,IOFF+JJ-1)= SCAL * ZGTF(JF, IOFF+JJ-1)
-         end if
+         END IF
 
          ! case JJ>0
-         IF( JJ .le. (JMAX+R_NNOEXTZL+2-IST)) ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
+         IF( JJ .LE. (JMAX+R_NNOEXTZL+2-IST)) ZGTF(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
          ! case JJ=0
          IF (G_NLOEN(IGLG)==1) ZGTF(JF,IST+IOFF-1) = 0.0_JPRBT
       ENDDO
    ENDDO
 ENDDO
 
-!$ACC end data
+!$ACC END DATA
 
 !     ------------------------------------------------------------------
 

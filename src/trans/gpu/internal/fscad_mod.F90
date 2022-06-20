@@ -11,7 +11,7 @@
 MODULE FSCAD_MOD
 CONTAINS
 SUBROUTINE FSCAD(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
- & PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
+ &               PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
 
 !**** *FSCAD - Division by a*cos(theta), east-west derivatives - adjoint
 
@@ -46,7 +46,7 @@ SUBROUTINE FSCAD(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
 
 USE TPM_TRANS       ,ONLY : LUVDER
 USE TPM_DISTR       ,ONLY : D, MYSETW

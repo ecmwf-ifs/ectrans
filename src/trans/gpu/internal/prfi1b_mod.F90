@@ -12,13 +12,12 @@ MODULE PRFI1B_MOD
   CONTAINS
   SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
-  use tpm_gen, only: nout
-  USE TPM_DIM         ,ONLY : R,R_NSMAX
-  USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
-  use ieee_arithmetic
-  !use openacc
+  USE TPM_GEN   ,ONLY : NOUT
+  USE TPM_DIM   ,ONLY : R,R_NSMAX
+  USE TPM_DISTR ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
+  USE IEEE_ARITHMETIC
   
   !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
   
@@ -88,12 +87,12 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
   !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR)
 
-  
+ 
   IF(PRESENT(KFLDPTR)) THEN
-   
-   
+ 
+ 
    !loop over wavenumber
-   
+ 
    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
@@ -111,7 +110,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
             END IF
          ENDDO
       ENDDO
-   
+ 
       ! end loop over wavenumber
    END DO
 
@@ -149,7 +148,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
             end if
          ENDDO
       ENDDO
-   
+ 
       ! end loop over wavenumber
    END DO
 
@@ -164,13 +163,13 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
       ENDDO 
       ! end loop over wavenumber
    END DO
-   
+ 
   END IF   
 
    !$ACC END DATA
    !$ACC END DATA
 
   !     ------------------------------------------------------------------
-  
+ 
   END SUBROUTINE PRFI1B
-  END MODULE PRFI1B_MOD
+END MODULE PRFI1B_MOD

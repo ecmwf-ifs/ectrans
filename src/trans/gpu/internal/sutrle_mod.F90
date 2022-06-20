@@ -52,9 +52,9 @@ SUBROUTINE SUTRLE(PNM,KGL,KLOOP)
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPRD, JPIM
-USE MPL_MODULE  ,ONLY : MPL_ALLREDUCE, MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
-     &                  JP_NON_BLOCKING_STANDARD
+USE PARKIND1        ,ONLY : JPRD, JPIM
+USE MPL_MODULE      ,ONLY : MPL_ALLREDUCE, MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
+ &                          JP_NON_BLOCKING_STANDARD
 
 USE TPM_GEN         ,ONLY : NOUT
 USE TPM_DIM         ,ONLY : R

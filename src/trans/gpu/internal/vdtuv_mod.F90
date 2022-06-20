@@ -12,12 +12,12 @@ MODULE VDTUV_MOD
 CONTAINS
 SUBROUTINE VDTUV(KFIELD,PEPSNM,PVOR,PDIV,PU,PV)
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F
 USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS
-use tpm_gen, only: nout
+USE TPM_GEN         ,ONLY : NOUT
 
 
 !**** *VDTUV* - Compute U,V in  spectral space
@@ -145,18 +145,18 @@ ELSE
         IR = 2*J-1
         II = IR+1
         !IF (ZKM>0 .AND. JI<=ISMAX+3-zKM) THEN
-          PU(ir,JI,kmloc) = -ZKM*ZLAPIN(JI)*PDIV(ii,JI,kmloc)+&
-          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(ir,JI+1,kmloc)-&
-          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(ir,JI-1,kmloc)
-          PU(ii,JI,kmloc) = +ZKM*ZLAPIN(JI)*PDIV(ir,JI,kmloc)+&
-          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(ii,JI+1,kmloc)-&
-          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(ii,JI-1,kmloc)
-          PV(ir,JI,kmloc) = -ZKM*ZLAPIN(JI)*PVOR(ii,JI,kmloc)-&
-          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(ir,JI+1,kmloc)+&
-          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(ir,JI-1,kmloc)
-          PV(ii,JI,kmloc) = +ZKM*ZLAPIN(JI)*PVOR(ir,JI,kmloc)-&
-          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(ii,JI+1,kmloc)+&
-          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(ii,JI-1,kmloc)
+          PU(IR,JI,KMLOC) = -ZKM*ZLAPIN(JI)*PDIV(II,JI,KMLOC)+&
+          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(IR,JI+1,KMLOC)-&
+          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(IR,JI-1,KMLOC)
+          PU(II,JI,KMLOC) = +ZKM*ZLAPIN(JI)*PDIV(IR,JI,KMLOC)+&
+          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(II,JI+1,KMLOC)-&
+          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PVOR(II,JI-1,KMLOC)
+          PV(IR,JI,KMLOC) = -ZKM*ZLAPIN(JI)*PVOR(II,JI,KMLOC)-&
+          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(IR,JI+1,KMLOC)+&
+          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(IR,JI-1,KMLOC)
+          PV(II,JI,KMLOC) = +ZKM*ZLAPIN(JI)*PVOR(IR,JI,KMLOC)-&
+          &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(II,JI+1,KMLOC)+&
+          &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(II,JI-1,KMLOC)
         !ENDIF
       ENDDO
     ENDDO

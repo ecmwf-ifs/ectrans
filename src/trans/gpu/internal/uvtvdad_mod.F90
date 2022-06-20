@@ -57,7 +57,7 @@ SUBROUTINE UVTVDAD(KM,KFIELD,PEPSNM,PU,PV,PVOR,PDIV)
 !        D. Giard : NTMAX instead of NSMAX
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F

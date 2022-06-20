@@ -12,28 +12,28 @@ MODULE SUFFT_MOD
   CONTAINS
   SUBROUTINE SUFFT
   
-  USE PARKIND1  ,ONLY : JPIM
+  USE PARKIND1      ,ONLY : JPIM
   
-  USE TPM_DIM         ,ONLY : R
-  USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
-  USE TPM_DISTR       ,ONLY : D, MYSETW
-  USE TPM_GEOMETRY    ,ONLY : G
-  USE TPM_FFT         ,ONLY : T
-  USE TPM_FFTC        ,ONLY : TC, INIT_PLANS_FFT
+  USE TPM_DIM       ,ONLY : R
+  USE TPM_GEN       ,ONLY : NOUT, NPRINTLEV
+  USE TPM_DISTR     ,ONLY : D, MYSETW
+  USE TPM_GEOMETRY  ,ONLY : G
+  USE TPM_FFT       ,ONLY : T
+  USE TPM_FFTC      ,ONLY : TC, INIT_PLANS_FFT
 #ifdef WITH_FFTW
-  USE TPM_FFTW        ,ONLY : TW, INIT_PLANS_FFTW
+  USE TPM_FFTW      ,ONLY : TW, INIT_PLANS_FFTW
 #endif
   !
-  
+ 
   IMPLICIT NONE
-  
+ 
   INTEGER(KIND=JPIM) :: JGL,IGLG
   LOGICAL :: LLP1,LLP2
-  
+ 
   !     ------------------------------------------------------------------
-  
+ 
   IF(.NOT.D%LGRIDONLY) THEN
-  
+ 
     LLP1 = NPRINTLEV>0
     LLP2 = NPRINTLEV>1
     IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SUFFT ==='
@@ -46,14 +46,14 @@ MODULE SUFFT_MOD
       !NULLIFY(TW%N_PLANS)
     ENDIF
 #endif
-  
+ 
     CALL INIT_PLANS_FFT(R%NDLON)
-  
+ 
   ENDIF
-  
+ 
   !     ------------------------------------------------------------------
-  
+ 
   9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
-  
+ 
   END SUBROUTINE SUFFT
-  END MODULE SUFFT_MOD  
+END MODULE SUFFT_MOD  

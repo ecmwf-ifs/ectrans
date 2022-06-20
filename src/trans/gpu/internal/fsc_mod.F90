@@ -11,7 +11,7 @@
 MODULE FSC_MOD
 CONTAINS
 SUBROUTINE FSC(KF_UV,KF_SCALARS,KF_SCDERS,&
- & KST_UV,KST_SC,KST_NSDERS,KST_EWDERS,KST_UVDERS)
+ &             KST_UV,KST_SC,KST_NSDERS,KST_EWDERS,KST_UVDERS)
 
 !**** *FSC - Division by a*cos(theta), east-west derivatives
 
@@ -46,14 +46,14 @@ SUBROUTINE FSC(KF_UV,KF_SCALARS,KF_SCDERS,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
 
 USE TPM_TRANS       ,ONLY : LUVDER, LATLON, ZGTF
 USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
 USE TPM_FIELDS      ,ONLY : F
 USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_FLT                ,ONLY: S
-use tpm_gen, only: nout
+USE TPM_FLT         ,ONLY : S
+USE TPM_GEN         ,ONLY : NOUT
 !
 
 IMPLICIT NONE
@@ -91,7 +91,6 @@ ELSE
   IINC=-1
 ENDIF
 
-!write(301,*) ' nums ', KST_UV, KST_SC, KF_UV, KST_nsders, KST_ewders, KF_SCDERS, KST_uvders, D%NDGL_FS
 IF( KF_UV > 0 ) THEN
   PUV     => ZGTF(2*KST_UV-1:2*(KST_UV+2*KF_UV-1),:)
 ENDIF

@@ -54,19 +54,18 @@ SUBROUTINE LEINV(KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
   
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX
 USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
 USE TPM_FIELDS      ,ONLY : F, ZIA, &
-     & ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
-     & IZBS,ILDZBA,ILDZBS,ITDZBA,ITDZBS,&
-     & IZCS,IZCST,ILDZCA,ILDZCS,ITDZCA,ITDZCS,&
-     & TDZAS, IF_FS_INV, ZAMAX, ZSMAX 
+ &                          ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
+ &                          IZBS,ILDZBA,ILDZBS,ITDZBA,ITDZBS,&
+ &                          IZCS,IZCST,ILDZCA,ILDZCS,ITDZCA,ITDZCS,&
+ &                          TDZAS, IF_FS_INV, ZAMAX, ZSMAX 
 USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS
-USE TPM_GEN, ONLY: NOUT
+USE TPM_GEN         ,ONLY : NOUT
 USE TPM_FLT
-USE BUTTERFLY_ALG_MOD
 USE CUDA_GEMM_BATCHED_MOD
 USE, INTRINSIC :: ISO_C_BINDING
 USE IEEE_ARITHMETIC
@@ -149,7 +148,6 @@ DO KMLOC=1,D_NUMP
          ILA = (R_NSMAX-KM+2)/2
          IF (J .LE. ILA) THEN
             IA  = 1+MOD(R_NSMAX-KM+2,2)
-!!            IZBA((JK-1)/ISKIP+1,J,KMLOC)=PIA(JK,IA+1+(J-1)*2,KMLOC)*RRPELTMINV/ZAMAX((JK-1)/ISKIP+1,KMLOC)
             IZBS((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*TDZAA)*IF_FS_INV)=PIA(JK,IA+1+(J-1)*2,KMLOC)
          ENDIF
       ENDIF
@@ -275,10 +273,9 @@ DO KMLOC=1,D_NUMP
             ELSE
                ISKIP = 1
             END IF
-            
+ 
             ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
             IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               !PSOA1(JK,ISL+JI-1,KMLOC) = IZCST((JK-1)/ISKIP+1+(JI-1+(KMLOC-1)*R_NDGNH)*IF_FS_INV)
                PSOA1(JK,ISL+JI-1,KMLOC) = ZZCSTS((JK-1)/ISKIP+1,JI,KMLOC)
             END IF
          END IF

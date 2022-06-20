@@ -71,10 +71,10 @@ MODULE TRGTOL_MOD
   
   
   
-  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
-  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+  USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
-  USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD, MPL_BARRIER
+  USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD, MPL_BARRIER
   
   USE TPM_GEN         ,ONLY : NOUT, LSYNC_TRANS
   USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRNS, MTAGGL,  &
@@ -84,8 +84,8 @@ MODULE TRGTOL_MOD
   USE INIGPTR_MOD     ,ONLY : INIGPTR
   USE PE2SET_MOD      ,ONLY : PE2SET
   !USE MYSENDSET_MOD
-  USE MPL_DATA_MODULE, only: MPL_COMM_OML
-  USE OML_MOD, only: OML_MY_THREAD
+  USE MPL_DATA_MODULE ,ONLY : MPL_COMM_OML
+  USE OML_MOD         ,ONLY : OML_MY_THREAD
   !USE MYRECVSET_MOD
   USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
   !
@@ -760,10 +760,10 @@ MODULE TRGTOL_MOD
   
   
   
-  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
-  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+  USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
-  USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD
+  USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD
   
   USE TPM_GEN         ,ONLY : NOUT
   USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRNS, MTAGGL,  &
@@ -1151,8 +1151,6 @@ MODULE TRGTOL_MOD
               DO JK=IFIRST,ILAST
                 IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
                 PGLAT(JFLD,KINDEX(IPOS)) = PGPUV(JK,IUVLEVS(IFLD),IUVPARS(IFLD),JBLK)
-                !if(jfld<=5 .and. kindex(ipos)<5) write(nout,*)'trgtol: ipos=',ipos,' idx=',kindex(ipos),' jk=',jk,' lev=',iuvlevs(ifld),' pars=',iuvpars(ifld),' pglat=',PGLAT(JFLD,KINDEX(IPOS))
-                !if( jfld.eq.1 ) write(nout,*)'trgtoluv: ',kindex(ipos),' lev=',iuvlevs(ifld),' pars=',iuvpars(ifld),' pglat=',PGLAT(JFLD,KINDEX(IPOS))
               ENDDO
             ELSEIF(LLGP2(IFLD)) THEN
               DO JK=IFIRST,ILAST
@@ -1163,7 +1161,6 @@ MODULE TRGTOL_MOD
               DO JK=IFIRST,ILAST
                 IPOS = INDOFF(MYPROC)+IGPTROFF(JBLK)+JK-IFIRST+1
                 PGLAT(JFLD,KINDEX(IPOS)) = PGP3A(JK,IGP3ALEVS(IFLD),IGP3APARS(IFLD),JBLK)
-                !if( jk.eq.ifirst ) write(iunit,*)'trgtol: ',JK,JFLD,IFLD,kindex(ipos),' lev=',IGP3ALEVS(ifld),' pars=',IGP3APARS(ifld),' pglat=',PGLAT(JFLD,KINDEX(IPOS))
               ENDDO
             ELSEIF(LLGP3B(IFLD)) THEN
               DO JK=IFIRST,ILAST
@@ -1354,8 +1351,8 @@ MODULE TRGTOL_MOD
   ! this appears to be important (otherwise, old data picked in PGLAT)
   ! in particular, one would have thought that above ACC copy and update on the
   ! device is the same as OMP loop + update device command below, but it seems not, and winds still in field index 1 from prev inv_trans !!!
-  !$ACC update device(PGLAT)
-  !$ACC wait
+  !$ACC UPDATE DEVICE(PGLAT)
+  !$ACC WAIT
   
   !#ifdef COMVERBOSE
   !  call MPI_BARRIER(MPI_COMM_WORLD,IERROR)
@@ -1364,11 +1361,11 @@ MODULE TRGTOL_MOD
   !#endif
 
   CALL GSTATS(1603,1)
-  
+ 
   IF (IBUFLENS > 0) DEALLOCATE(ZCOMBUFS)
   IF (IBUFLENR > 0) DEALLOCATE(ZCOMBUFR)
 
   IF (LHOOK) CALL DR_HOOK('TRGTOL',1,ZHOOK_HANDLE)
-  
+ 
   END SUBROUTINE TRGTOL
   END MODULE TRGTOL_MOD

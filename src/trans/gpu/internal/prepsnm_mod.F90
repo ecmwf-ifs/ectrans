@@ -49,53 +49,53 @@ MODULE PREPSNM_MOD
   !        Original : 00-02-01 From LTINV in IFS CY22R1
   
   !     ------------------------------------------------------------------
-  
-  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
-  
+ 
+  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+ 
   USE TPM_DIM         ,ONLY : R
   USE TPM_FIELDS      ,ONLY : F, ZEPSNM
   USE TPM_DISTR       ,ONLY : D
-  use tpm_gen, only: nout
+  USE TPM_GEN         ,ONLY : NOUT
   !
-  
+ 
   IMPLICIT NONE
   
   INTEGER(KIND=JPIM)  :: KM,KMLOC
   !!REAL(KIND=JPRB),    INTENT(INOUT) :: PEPSNM(:,:)
-  
+ 
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: JN
   INTEGER(KIND=JPIM) :: R_NTMAX
-  
-  
+ 
+ 
   !     ------------------------------------------------------------------
-  
+ 
   !*       1.       COPY REPSNM.
   !                 ------------
-  
-  
-  
-  
+ 
+ 
+ 
+ 
   !!!$ACC parallel loop
   DO KMLOC=1,D%NUMP
      KM = D%MYMS(KMLOC)
-     
+ 
      IF (KM > 0) THEN
         !$ACC loop
         DO JN=0,KM-1
            ZEPSNM(KMLOC,JN) = 0.0_JPRBT
         ENDDO
      ENDIF
-  
+ 
      DO JN=KM,R%NTMAX+2
         ZEPSNM(KMLOC,JN) = F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN)
      ENDDO
      ! end loop over wavenumber
   END DO
   !!!!$ACC end data
-  
+ 
   !     ------------------------------------------------------------------
-  
+ 
   END SUBROUTINE PREPSNM
-  
-  END MODULE PREPSNM_MOD  
+ 
+ END MODULE PREPSNM_MOD  

@@ -14,16 +14,16 @@ MODULE LTINV_MOD
    & PSPVOR,PSPDIV,PSPSCALAR,&
    & PSPSC3A,PSPSC3B,PSPSC2 , &
    & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
-  
-  USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,   JPRBT
-  USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-  
+ 
+  USE PARKIND1        ,ONLY : JPIM     ,JPRB
+  USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+ 
   USE TPM_DIM         ,ONLY : R
   USE TPM_TRANS       ,ONLY : LDIVGP, LVORGP, NF_SC2, NF_SC3A, NF_SC3B, foubuf_in
   USE TPM_FLT
   USE TPM_GEOMETRY
   USE TPM_DISTR       ,ONLY : D
-  use tpm_gen, only: nout
+  USE TPM_GEN         ,ONLY : NOUT
   !USE PRLE1_MOD
   USE PREPSNM_MOD     ,ONLY : PREPSNM
   USE PRFI1B_MOD      ,ONLY : PRFI1B
@@ -33,7 +33,7 @@ MODULE LTINV_MOD
   USE ASRE1B_MOD      ,ONLY : ASRE1B
   USE FSPGL_INT_MOD   ,ONLY : FSPGL_INT
   USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-  use ieee_arithmetic
+  USE IEEE_ARITHMETIC
   !USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1,ISTAN,ISTAS,ZEPSNM
   USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1,ZEPSNM
   
@@ -86,32 +86,32 @@ MODULE LTINV_MOD
   !     --------------
   !        Original : 00-02-01 From LTINV in IFS CY22R1
   !     ------------------------------------------------------------------
-  
+ 
   IMPLICIT NONE
-  
-  
+ 
+ 
   INTERFACE
     SUBROUTINE cudaProfilerStart() BIND(C,name='cudaProfilerStart')
       USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
       IMPLICIT NONE
     END SUBROUTINE cudaProfilerStart
   END INTERFACE
-  
+ 
   INTERFACE
     SUBROUTINE cudaProfilerStop() BIND(C,name='cudaProfilerStop')
       USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
       IMPLICIT NONE
     END SUBROUTINE cudaProfilerStop
   END INTERFACE
-  
-  
+ 
+ 
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_OUT_LT
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCALARS
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCDERS
   INTEGER(KIND=JPIM), INTENT(IN) :: KLEI2
   INTEGER(KIND=JPIM), INTENT(IN) :: KDIM1
-  
+ 
   REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)  :: PSPVOR(:,:)
   REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)  :: PSPDIV(:,:)
   REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)  :: PSPSCALAR(:,:)
@@ -120,45 +120,45 @@ MODULE LTINV_MOD
   REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)  :: PSPSC3B(:,:,:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRUV(:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
-  
-  
+ 
+ 
   EXTERNAL  FSPGL_PROC
   OPTIONAL  FSPGL_PROC
-  
+ 
   !REAL(KIND=JPRBT) :: ZEPSNM(d%nump,0:R%NTMAX+2)
 
   INTEGER(KIND=JPIM) :: IFC, ISTA, IIFC, IDGLU
   INTEGER(KIND=JPIM) :: IVORL,IVORU,IDIVL,IDIVU,IUL,IUU,IVL,IVU,ISL,ISU,IDL,IDU
   INTEGER(KIND=JPIM) :: IFIRST, ILAST, IDIM1,IDIM2,IDIM3,J3
-  
+ 
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   !CHARACTER(LEN=10) :: CLHOOK
-  
-  
+ 
+ 
   INTEGER(KIND=JPIM) :: KM
   INTEGER(KIND=JPIM) :: KMLOC
-  
-  
+ 
+ 
   !call cudaProfilerStart
-  
-  
+
+
   !     ------------------------------------------------------------------
-  
+
   !*       1.       PERFORM LEGENDRE TRANFORM.
   !                 --------------------------
-  
+
   !WRITE(CLHOOK,FMT='(A,I4.4)') 'LTINV_',KM
   IF (LHOOK) CALL DR_HOOK('LTINV_MOD',0,ZHOOK_HANDLE)
-  
+
   !     ------------------------------------------------------------------
-  
-  
+
+
   !*       3.    SPECTRAL COMPUTATIONS FOR U,V AND DERIVATIVES.
   !              ----------------------------------------------
-  
+ 
   IFIRST = 1
   ILAST  = 0
-  
+ 
   !*       1.    PREPARE ZEPSNM.
   !              ---------------
 
@@ -178,7 +178,7 @@ MODULE LTINV_MOD
     IUU   = 6*KF_UV
     IVL   = 6*KF_UV+1
     IVU   = 8*KF_UV
-  
+ 
     IDIM2=UBOUND(PSPVOR,2)
     CALL GSTATS(431,0)
     !$ACC DATA COPYIN(PSPVOR,PSPDIV)
@@ -186,20 +186,20 @@ MODULE LTINV_MOD
     CALL PRFI1B(ZIA(IVORL:IVORU,:,:),PSPVOR,KF_UV,IDIM2,KFLDPTRUV)
     CALL PRFI1B(ZIA(IDIVL:IDIVU,:,:),PSPDIV,KF_UV,IDIM2,KFLDPTRUV)
     !$ACC END DATA
-  
+ 
   !     ------------------------------------------------------------------
-  
+ 
     CALL VDTUV(KF_UV,ZEPSNM,ZIA(IVORL:IVORU,:,:),ZIA(IDIVL:IDIVU,:,:),&
              & ZIA(IUL:IUU,:,:),ZIA(IVL:IVU,:,:))
     ILAST = ILAST+8*KF_UV
-  
+ 
   ENDIF
-  
+ 
   IF(KF_SCALARS > 0)THEN
     IF(PRESENT(PSPSCALAR)) THEN
       IFIRST = ILAST+1
       ILAST  = IFIRST - 1 + 2*KF_SCALARS
-  
+ 
       IDIM2=UBOUND(PSPSCALAR,2)
       CALL GSTATS(431,0)
       !$ACC DATA COPYIN(PSPSCALAR)
@@ -241,7 +241,7 @@ MODULE LTINV_MOD
         DO J3=1,IDIM3
           IFIRST = ILAST+1
           ILAST  = IFIRST-1+2*IDIM1
-  
+ 
           CALL PRFI1B(ZIA(IFIRST:ILAST,:,:),PSPSC3B(:,:,J3),IDIM1,IDIM2)
         ENDDO
         !$ACC END DATA
@@ -252,7 +252,7 @@ MODULE LTINV_MOD
       CALL ABORT_TRANS('LTINV_MOD:ILAST /= 8*KF_UV+2*KF_SCALARS')
     ENDIF
   ENDIF
-  
+ 
   IF (KF_SCDERS > 0) THEN
   !   stop 'Error: code path not (yet) supported in GPU version'
      ISL = 2*(4*KF_UV)+1
@@ -261,15 +261,15 @@ MODULE LTINV_MOD
      IDU = IDL+2*KF_SCDERS-1
      CALL SPNSDE(KF_SCALARS,ZEPSNM,ZIA(ISL:ISU,:,:),ZIA(IDL:IDU,:,:))
  ENDIF
-  
+ 
   !     ------------------------------------------------------------------
-  
-  
+ 
+ 
   !*       4.    INVERSE LEGENDRE TRANSFORM.
   !              ---------------------------
 
   ! FROM ZIA TO ZAOA1 and ZSOA1
-  
+ 
   ISTA = 1
   IFC  = 2*KF_OUT_LT
   IF(KF_UV > 0 .AND. .NOT. LVORGP) THEN
@@ -285,19 +285,19 @@ MODULE LTINV_MOD
   !call cudaProfilerStop
 
   !     ------------------------------------------------------------------
-  
+ 
   !*       5.    RECOMBINATION SYMMETRIC/ANTISYMMETRIC PART.
   !              --------------------------------------------
 
   !FROM ZAOA1/ZSOA to FOUBUF_IN
-   
+ 
   !CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
   CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1)
   !     ------------------------------------------------------------------
-  
+ 
   !     6. OPTIONAL COMPUTATIONS IN FOURIER SPACE
-  
-  
+ 
+ 
   IF(PRESENT(FSPGL_PROC)) THEN
    stop 'Error: SPGL_PROC is not (yet) optimized in GPU version'
     CALL FSPGL_INT(KF_UV,KF_SCALARS,KF_SCDERS,KF_OUT_LT,FSPGL_PROC,&
@@ -307,9 +307,8 @@ MODULE LTINV_MOD
   ENDIF
   IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
   !     ------------------------------------------------------------------
-  
+ 
   !call cudaProfilerStop
-  
+ 
   END SUBROUTINE LTINV
-  END MODULE LTINV_MOD
-  
+END MODULE LTINV_MOD

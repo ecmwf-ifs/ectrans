@@ -38,23 +38,23 @@ MODULE LTDIR_CTL_MOD
   
   !     ------------------------------------------------------------------
   
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE PARKIND1        ,ONLY : JPIM     ,JPRB
   
-  USE TPM_GEN, only: nout
+  USE TPM_GEN         ,ONLY : NOUT
   USE TPM_DIM         ,ONLY : R
   USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
   USE TPM_DISTR       ,ONLY : D
   USE TPM_GEOMETRY    ,ONLY : G
   USE TPM_FIELDS      ,ONLY : F
-  
-  
+ 
+ 
   USE LTDIR_MOD       ,ONLY : LTDIR
   USE TRLTOM_MOD      ,ONLY : TRLTOM, TRLTOM_CUDAAWARE
- 
+
   USE TPM_FIELDS      ,ONLY : ZSIA,ZAIA,ZOA1,ZEPSNM
-  
+ 
   IMPLICIT NONE
-  
+ 
   INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_UV,KF_SCALARS
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
@@ -64,9 +64,9 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(OUT) :: PSPSC2(:,:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRUV(:)
   INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRSC(:)
-  
+ 
   INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
-  
+ 
   !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
 
   ! Transposition from Fourier space distribution to spectral space distribution
@@ -82,9 +82,9 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   !$ACC UPDATE DEVICE(FOUBUF)
 #endif
   CALL GSTATS(153,1)
-  
+ 
   ! Direct Legendre transform
-  
+ 
   CALL GSTATS(103,0)
   ILED2 = 2*KF_FS
   CALL GSTATS(1645,0)
@@ -94,14 +94,14 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
           & PSPVOR,PSPDIV,PSPSCALAR,&
           & PSPSC3A,PSPSC3B,PSPSC2 , &
           & KFLDPTRUV,KFLDPTRSC)
-  
+ 
   ENDIF
    !$ACC END DATA
   CALL GSTATS(1645,1)
-  
+ 
   CALL GSTATS(103,1)
-  
+ 
   !     -----------------------------------------------------------------
-  
+
   END SUBROUTINE LTDIR_CTL
   END MODULE LTDIR_CTL_MOD

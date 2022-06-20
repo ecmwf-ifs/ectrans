@@ -16,16 +16,15 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ### Find (optional) dependencies 
 
-# olivier : to add ST driver 
+# olivier : to add ST driver
 ecbuild_find_package( NAME eccodes REQUIRED)
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
 ecbuild_find_package( NAME MPI QUIET )
-ecbuild_add_option( FEATURE MPI 
+ecbuild_add_option( FEATURE MPI
                     DESCRIPTION "Support for MPI distributed memory parallelism"
-                    CONDITION MPI_Fortran_FOUND )
-##                    CONDITION fiat_HAVE_MPI AND MPI_Fortran_FOUND )
+                    CONDITION fiat_HAVE_MPI )
 
 ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
@@ -65,23 +64,24 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
-## olivier
-find_package(OpenACC REQUIRED)
-ecbuild_add_option( FEATURE ACC  
-                    REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" 
-                    DEFAULT OFF )
-enable_language( CUDA )
-##find_package(CUDAToolkit REQUIRED)
 ecbuild_add_option( FEATURE GPU
                     DEFAULT ON
                     DESCRIPTION "Compile GPU version of ectrans" )
-##                    CONDITION HAVE_DOUBLE_PRECISION )
-set( OpenACC_Fortran_FLAGS "-acc" )
-set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -ta=tesla:lineinfo,deepcopy,fastmath" )
-set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -Mcuda" )
-# For debugging accelerator compilation
-# set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -Minfo=accel" )
 
+ecbuild_add_option( FEATURE REDUCED_MEMORY
+	            DEFAULT OFF
+		    CONDITION HAVE_GPU
+		    DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
+if( HAVE_GPU )
+    find_package(OpenACC REQUIRED)
+    ecbuild_add_option( FEATURE ACC
+                        REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran"
+                        DEFAULT OFF )
+    enable_language( CUDA )
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 70 80)
+    endif()
+endif()
 
 ectrans_find_lapack()
 

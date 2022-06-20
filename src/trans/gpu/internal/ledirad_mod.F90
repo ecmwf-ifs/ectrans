@@ -59,8 +59,8 @@ SUBROUTINE LEDIRAD(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
 !        Modified ! 16/10/12 J.Hague : DR_HOOK round calls to DGEMM:
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT     ,JPRD
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT     ,JPRD
+USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY    ,ONLY : G

@@ -58,7 +58,7 @@ SUBROUTINE UVTVD(KFIELD)
 !        D. Giard : NTMAX instead of NSMAX
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
 
 USE TPM_DIM         ,ONLY : R, R_NTMAX
 USE TPM_FIELDS      ,ONLY : F
@@ -129,7 +129,7 @@ ENDDO
 
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
 
-!$ACC parallel loop collapse(3) private(IR,II,IN,KM,ZKM) DEFAULT(NONE)
+!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM) DEFAULT(NONE)
 DO KMLOC=1,D_NUMP
   DO JN=0,R_NTMAX
     DO J=1,KFIELD
@@ -139,33 +139,33 @@ DO KMLOC=1,D_NUMP
       ZKM = REAL(KM,JPRBT)
       IN = R_NTMAX+2-JN
 
-      IF(KM /= 0 .and. JN.GE.KM) THEN
-      PVOR(IR,IN,kmloc) = -ZKM*PV(II,IN,kmloc)-&
-       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PU(IR,IN-1,kmloc)+&
-       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PU(IR,IN+1,kmloc)
-      PVOR(II,IN,kmloc) = +ZKM*PV(IR,IN,kmloc)-&
-       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PU(II,IN-1,kmloc)+&
-       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PU(II,IN+1,kmloc)
-      PDIV(IR,IN,kmloc) = -ZKM*PU(II,IN,kmloc)+&
-       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,kmloc)-&
-       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,kmloc)
-      PDIV(II,IN,kmloc) = +ZKM*PU(IR,IN,kmloc)+&
-       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PV(II,IN-1,kmloc)-&
-       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PV(II,IN+1,kmloc)
+      IF(KM /= 0 .AND. JN.GE.KM) THEN
+      PVOR(IR,IN,KMLOC) = -ZKM*PV(II,IN,KMLOC)-&
+       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PU(IR,IN-1,KMLOC)+&
+       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PU(IR,IN+1,KMLOC)
+      PVOR(II,IN,KMLOC) = +ZKM*PV(IR,IN,KMLOC)-&
+       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PU(II,IN-1,KMLOC)+&
+       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PU(II,IN+1,KMLOC)
+      PDIV(IR,IN,KMLOC) = -ZKM*PU(II,IN,KMLOC)+&
+       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,KMLOC)-&
+       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,KMLOC)
+      PDIV(II,IN,KMLOC) = +ZKM*PU(IR,IN,KMLOC)+&
+       &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PV(II,IN-1,KMLOC)-&
+       &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PV(II,IN+1,KMLOC)
       ELSE
         IF(KM == 0) THEN
-         PVOR(IR,IN,kmloc) = -&
-         &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PU(IR,IN-1,kmloc)+&
-         &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PU(IR,IN+1,kmloc)
-         PDIV(IR,IN,kmloc) = &
-         &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,kmloc)-&
-         &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,kmloc)
+         PVOR(IR,IN,KMLOC) = -&
+         &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PU(IR,IN-1,KMLOC)+&
+         &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PU(IR,IN+1,KMLOC)
+         PDIV(IR,IN,KMLOC) = &
+         &ZN(JN)*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,KMLOC)-&
+         &ZN(JN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,KMLOC)
         ENDIF
       ENDIF
    ENDDO
   ENDDO
 ENDDO
-!$acc end data
+!$ACC END DATA
 !     ------------------------------------------------------------------
 
 END SUBROUTINE UVTVD

@@ -45,7 +45,7 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G

@@ -33,7 +33,7 @@ SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : LALLOPERM
 !USE TPM_DIM

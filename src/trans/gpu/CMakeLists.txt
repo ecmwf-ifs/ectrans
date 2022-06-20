@@ -6,6 +6,17 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+## Apply workarounds for some known compilers
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
+
+  # Fix for IFS "CONGRAD: SPTSV/DPTSV returned non-zero info with crayftn 8.7.7 (cdt/18.12)
+  ectrans_add_compile_options(
+      SOURCES external/setup_trans.F90
+      FLAGS   "-fast -O3 -acc -gpu=pinned,deepcopy,fastmath,nordc")
+
+endif()
+
 ## Assemble sources
 
 ecbuild_list_add_pattern( LIST trans_src
@@ -45,7 +56,8 @@ set( FFTW_sp FFTW::fftw3f )
 
 set( IFS_ACC_Fortran_LIBRARIES OpenACC::OpenACC_Fortran PARENT_SCOPE)
 set( Debug_Compile_Flags -g -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays -traceback )
-set( Release_Compile_Flags -gopt -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
+set( Release_Compile_Flags -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
+set( RelDeb_Compile_Flags -gopt -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
@@ -143,12 +155,18 @@ foreach( prec sp dp )
     target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenACC::OpenACC_Fortran )
     target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE OpenACC::OpenACC_Fortran )
 
-    target_compile_options( trans_gpu_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${Debug_Compile_Flags}> 
-	    $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>> )
-    target_compile_options( trans_gpu_static_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${Debug_Compile_Flags}> 
-	    $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>> )
-    target_compile_options( trans_gpu_static_CA_${prec} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Debug>:${Debug_Compile_Flags}>> 
-	    $<$<COMPILE_LANGUAGE:Fortran>:$<$<CONFIG:Release>:${Release_Compile_Flags}>> )
+    target_compile_options( trans_gpu_${prec} PRIVATE
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
+    target_compile_options( trans_gpu_static_${prec} PRIVATE
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
+    target_compile_options( trans_gpu_static_CA_${prec} PRIVATE
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
+	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
 
 
     if( prec STREQUAL sp )

@@ -14,8 +14,8 @@ SUBROUTINE PRFI1BAD(KM,PIA,PSPEC,KFIELDS,KFLDPTR)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-USE TPM_DIM         ,ONLY : R
-USE TPM_DISTR       ,ONLY : D
+USE TPM_DIM   ,ONLY : R
+USE TPM_DISTR ,ONLY : D
 
 
 !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform

@@ -47,9 +47,9 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
-     &                  JP_NON_BLOCKING_STANDARD
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
+     &                      JP_NON_BLOCKING_STANDARD
 
 !USE TPM_GEN
 !USE TPM_DIM
@@ -183,7 +183,7 @@ ELSE
     ENDIF
   ENDDO
 
-  !Recieve
+  !Receive
   DO JFLD=1,KFDISTG
     IBSET = KVSET(JFLD)
     IF( IBSET == MYSETV )THEN

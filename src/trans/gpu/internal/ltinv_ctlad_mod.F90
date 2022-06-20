@@ -11,9 +11,9 @@
 MODULE LTINV_CTLAD_MOD
 CONTAINS
 SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
- & PSPVOR,PSPDIV,PSPSCALAR,&
- & PSPSC3A,PSPSC3B,PSPSC2,&
- & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
+ &                     PSPVOR,PSPDIV,PSPSCALAR,&
+ &                     PSPSC3A,PSPSC3B,PSPSC2,&
+ &                     KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
 
 !**** *LTINV_CTLAD* - Control routine for inverse Legandre transform - adj.
 
@@ -52,7 +52,7 @@ SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
 !        Original : 00-06-03
 
 !     ------------------------------------------------------------------
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : LALLOPERM
 !USE TPM_DIM
