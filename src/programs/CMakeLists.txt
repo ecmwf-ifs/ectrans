@@ -6,7 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-if( HAVE_TOOLS AND TARGET eccodes_f90 )
+if( HAVE_TOOLS )
 
   if( HAVE_DOUBLE_PRECISION )
     set( trans trans_dp )
@@ -22,13 +22,25 @@ if( HAVE_TOOLS AND TARGET eccodes_f90 )
 
     ecbuild_add_executable(TARGET ${_program}
       SOURCES ${_program}.F90
-      LIBS ${trans} eccodes_f90
+      LIBS ${trans}
       LINKER_LANGUAGE Fortran
       DEFINITIONS ECTRANS_TOOLS_RTABLE_PATH="${ECTRANS_TOOLS_RTABLE_PATH}" )
 
   endforeach()
 
 endif()
+
+foreach( prec sp dp )
+  if( HAVE_${prec} )
+    ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
+                           SOURCES ectrans-benchmark.F90
+                           LIBS
+                             fiat
+                             parkind_${prec}
+                             trans_${prec}
+                          )
+  endif()
+endforeach()
 
 # ectrans information tool
 
