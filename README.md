@@ -31,7 +31,6 @@ Requirements
 - ecBuild (see https://github.com/ecmwf/ecbuild)
 - CMake (see https://cmake.org)
 - CUDA toolkit (compiler, and CUBLAS and CUFFT libraries)
-- ecCodes (see https://github.com/ecmwf/eccodes ) if building the drivers
 
 Building ecTrans
 ----------------
