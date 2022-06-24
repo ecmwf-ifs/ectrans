@@ -17,6 +17,16 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"
   ecbuild_add_fortran_flags("-fallow-argument-mismatch")
 endif()
 
+if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
+  ecbuild_add_fortran_flags("-Mlarge_arrays")
+
+  # should really be part of configuration, or ecbuild default?
+  ecbuild_add_fortran_flags("-traceback"      BUILD DEBUG )
+  ecbuild_add_fortran_flags("-fast"           BUILD RELEASE )
+  ecbuild_add_fortran_flags("-gopt -fast"     BUILD RELWITHDEBINFO )
+endif()
+
+
 
 macro( ectrans_add_compile_options )
   set( options  )

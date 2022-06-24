@@ -13,7 +13,8 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
   # Compile setup_trans with pinned memory to improve data movement performance. 
   ectrans_add_compile_options(
       SOURCES external/setup_trans.F90
-      FLAGS   "-fast -O3 -acc -gpu=pinned,deepcopy,fastmath,nordc")
+      FLAGS   "-gpu=pinned,deepcopy,fastmath,nordc")
+  # TODO: check if it is sufficient to only set "-gpu=pinned" which appends rather than overwrites
 
 endif()
 
@@ -40,10 +41,6 @@ if( HAVE_GPU_REDUCED_MEMORY )
 endif()
 
 ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
-
-set( Debug_Compile_Flags            -g -Mlarge_arrays -traceback )
-set( Release_Compile_Flags       -fast -Mlarge_arrays )
-set( RelDeb_Compile_Flags  -gopt -fast -Mlarge_arrays )
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
@@ -78,11 +75,6 @@ foreach( prec sp dp )
     if( HAVE_OMP )
       target_link_libraries( trans_gpu_object_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
-
-    target_compile_options( trans_gpu_object_${prec} PRIVATE
-      "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
-      "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
-      "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
 
     if( prec STREQUAL sp )
       target_compile_definitions( trans_gpu_object_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )

@@ -42,21 +42,13 @@ foreach( prec sp dp )
                           )
 
     if( HAVE_GPU )
-      set( Debug_Compile_Flags   -g -O0 -fpic -traceback )
-      set( Release_Compile_Flags -fast -fpic )
-      set( RelDeb_Compile_Flags -gopt -fast -Mlarge_arrays )
       ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}
                              SOURCES ectrans-benchmark.F90
                              LIBS
                                fiat
                                parkind_${prec}
                                trans_gpu_${prec}
-                               OpenACC::OpenACC_Fortran
                             )
-      target_compile_options( ectrans-benchmark-gpu-${prec} PUBLIC
-        "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Debug>>:${Debug_Compile_Flags}>"
-        "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Release>>:${Release_Compile_Flags}>"
-        "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
     endif()
   endif()
 endforeach()
