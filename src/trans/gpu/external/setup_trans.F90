@@ -118,9 +118,6 @@ USE TPM_FIELDS            ,ONLY : FIELDS_RESOL, F,F_RW, ZIA,ZEPSNM,ZSOA1,ZAOA1,I
 &                                 ZAS0,DZCST0,KMLOC0
 ! IZBA,IZCAT
 USE TPM_FFT               ,ONLY : T, FFT_RESOL
-#ifdef WITH_FFTW
-USE TPM_FFTW              ,ONLY : TW, FFTW_RESOL
-#endif
 USE TPM_FFTC              ,ONLY : TC, FFTC_RESOL
 USE TPM_FLT
 #ifndef REDUCED_MEM
@@ -209,9 +206,6 @@ IF(.NOT. ALLOCATED(DIM_RESOL)) THEN
   ALLOCATE(GEOM_RESOL(NMAX_RESOL))
   ALLOCATE(DISTR_RESOL(NMAX_RESOL))
   ALLOCATE(FFT_RESOL(NMAX_RESOL))
-#ifdef WITH_FFTW
-  ALLOCATE(FFTW_RESOL(NMAX_RESOL))
-#endif
   ALLOCATE(FFTC_RESOL(NMAX_RESOL))
   ALLOCATE(FLT_RESOL(NMAX_RESOL))
   ALLOCATE(CTL_RESOL(NMAX_RESOL))
@@ -253,9 +247,6 @@ D%LCPNMONLY=.FALSE.
 S%LUSE_BELUSOV=.TRUE. ! use Belusov algorithm to compute RPNM array instead of per m
 S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
-#ifdef WITH_FFTW
-TW%LFFTW=.FALSE. ! Use FFTW interface for FFTs
-#endif
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
 S%LSHIFTLL = .FALSE. ! shift output lat-lon by 0.5dx, 0.5dy
@@ -360,15 +351,6 @@ IF(PRESENT(LDPNMONLY)) THEN
   D%LCPNMONLY=LDPNMONLY
 ENDIF
 
-
-#ifdef WITH_FFTW
-IF(PRESENT(LDUSEFFTW)) THEN
-  TW%LFFTW=LDUSEFFTW
-ENDIF
-IF( LLSPSETUPONLY .OR. D%LGRIDONLY ) THEN
-  TW%LFFTW = .FALSE.
-ENDIF
-#endif
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
@@ -476,7 +458,6 @@ MYGPU = MOD(MYPROC-1,INUMDEVS)
 CALL ACC_SET_DEVICE_NUM(MYGPU, IDEVTYPE)
 MYGPU = ACC_GET_DEVICE_NUM(IDEVTYPE)
 ISTAT  = CUDA_GETDEVICE(IDEV)
-WRITE(IUNIT,*) '===now going to allocate GPU arrays on processor: ', MYPROC, ' device = ', MYGPU, ' ',IDEV, ' of ', INUMDEVS
 #endif
 
 !dimensions of matrices for Legendre Transforms for RAPS ?
