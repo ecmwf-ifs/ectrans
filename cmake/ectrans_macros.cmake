@@ -6,6 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+if( CMAKE_VERSION VERSION_LESS 3.22.0 )
+    # FindCUDAToolkit from cmake < 3.22 does not support recent NVHPC directory structures
+    set( CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/FindCUDAToolkit-cmake-3.24 ${CMAKE_MODULE_PATH} )
+endif()
+
 ### Workaround to extract GIT_SHA1 from parent directory
 if( NOT ${PROJECT_NAME}_GIT_SHA1 )
     get_filename_component( PARENT_DIR ${PROJECT_SOURCE_DIR} DIRECTORY )
@@ -21,4 +26,5 @@ endif()
 include( ectrans_target_fortran_module_directory )
 include( ectrans_find_lapack )
 include( ectrans_add_library )
+include( CheckLanguage )
 

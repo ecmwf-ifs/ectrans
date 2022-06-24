@@ -28,21 +28,18 @@ ecbuild_list_add_pattern( LIST trans_src
                           QUIET
                         )
 
-
-## for reduced memory option, remove duplicate source files
-if( HAVE_REDUCED_MEMORY )
+## for reduced memory option, replace source files
+if( HAVE_GPU_REDUCED_MEMORY )
   ecbuild_list_add_pattern( LIST reducedmem_files
                             GLOB internal_reducedmem/* QUIET )
-  ecbuild_list_add_pattern( LIST trans_src
-	                    GLOB internal_reducedmem/* QUIET )
   foreach( src_file ${reducedmem_files} )
     get_filename_component( base_name ${src_file} NAME )
     list(REMOVE_ITEM trans_src "internal/${base_name}" )
+    list(APPEND      trans_src ${src_file} )
   endforeach()
 endif()
 
-ecbuild_list_exclude_pattern( LIST trans_src REGEX dilatation_mod.F90 )
-ecbuild_list_exclude_pattern( LIST trans_src_reducedmem REGEX dilatation_mod.F90 )
+ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
 
 set( Debug_Compile_Flags            -g -Mlarge_arrays -traceback )
 set( Release_Compile_Flags       -fast -Mlarge_arrays )
@@ -57,19 +54,20 @@ foreach( prec sp dp )
       TARGET           trans_gpu_object_${prec}
       TYPE             OBJECT
       SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
-      PRIVATE_INCLUDES ${MPI_Fortran_INCLUDE_PATH}
       PUBLIC_LIBS      parkind_${prec}
                        fiat
-      PRIVATE_LIBS     ${LAPACK_LIBRARIES} OpenACC::OpenACC_Fortran
+      PRIVATE_LIBS     OpenACC::OpenACC_Fortran
+                       CUDA::cufft
+                       CUDA::cublas
+                       MPI::MPI_Fortran
+                       MPI::MPI_C
+                       nvhpcwrapnvtx
+                       ${LAPACK_LIBRARIES}
     )
     ectrans_target_fortran_module_directory(
       TARGET            trans_gpu_object_${prec}
@@ -89,15 +87,14 @@ foreach( prec sp dp )
     if( prec STREQUAL sp )
       target_compile_definitions( trans_gpu_object_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
     endif()
-    if( HAVE_REDUCED_MEMORY )
+
+    if( HAVE_GPU_REDUCED_MEMORY )
       target_compile_definitions( trans_gpu_object_${prec} PRIVATE REDUCED_MEM )
     endif()
 
-    set( HAVE_CUDA_AWARE_MPI 1 )
-    if( HAVE_CUDA_AWARE_MPI )
+    if( HAVE_GPU_AWARE_MPI )
       target_compile_definitions( trans_gpu_object_${prec} PRIVATE USE_CUDA_AWARE_MPI_FT )
     endif()
-
 
     ectrans_add_library(
       TARGET           trans_gpu_shared_${prec}
@@ -116,12 +113,3 @@ foreach( prec sp dp )
   endif()
 endforeach()
 
-## precision-independent GPU library with CUDA kernels
-ecbuild_add_library( TARGET gpu_cuda
-  TYPE STATIC
-  SOURCES
-            algor/module/cublasSgemmBatched.cu
-            algor/module/cublasDgemmBatched.cu
-            algor/module/IPC_Alltoall.cu
-  PRIVATE_LIBS MPI::MPI_C
-)

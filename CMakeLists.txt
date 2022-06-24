@@ -65,20 +65,48 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   set( OpenACC_Fortran_FLAGS "-acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
 endif()
 
-ecbuild_find_package(OpenACC QUIET)
-ecbuild_find_package(MPI QUIET)
+if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE GPU is OFF by default (see below)
+  check_language(CUDA)
+  find_package(CUDAToolkit)
+  find_package(OpenACC COMPONENTS Fortran)
+  find_package(MPI COMPONENTS Fortran C)
+
+  if( NOT CMAKE_CUDA_COMPILER)
+    ecbuild_info("No CUDA compiler found")
+  endif()
+  if( NOT TARGET CUDA::cublas )
+    ecbuild_info("No target CUDA::cublas")
+  endif()
+  if( NOT TARGET CUDA::cufft )
+    ecbuild_info("No target CUDA::cufft")
+  endif()
+  if( NOT TARGET OpenACC::OpenACC_Fortran )
+    ecbuild_info("No target OpenACC:OpenACC_Fortran")
+  endif()
+  if( NOT TARGET MPI::MPI_Fortran )
+    ecbuild_info("No target MPI::MPI_Fortran")
+  endif()
+  if( NOT TARGET MPI::MPI_C )
+    ecbuild_info("No target MPI::MPI_C")
+  endif()
+endif()
+
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC and MPI and CUDA. For now only NVHPC supported.)"
-                    CONDITION TARGET OpenACC::OpenACC_Fortran AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran)
+                    CONDITION CMAKE_CUDA_COMPILER
+                         AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
+                         AND TARGET OpenACC::OpenACC_Fortran
+                         AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
+                         AND TARGET CUDA::cublas AND TARGET CUDA::cufft)
 
-ecbuild_add_option( FEATURE CUDA_AWARE_MPI
+ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable CUDA-aware MPI")
 
-ecbuild_add_option( FEATURE REDUCED_MEMORY
-	            DEFAULT OFF
+ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
+                    DEFAULT OFF
                     CONDITION HAVE_GPU
                     DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
 

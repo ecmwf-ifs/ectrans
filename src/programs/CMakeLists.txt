@@ -40,33 +40,27 @@ foreach( prec sp dp )
                              parkind_${prec}
                              trans_${prec}
                           )
-  endif()
-endforeach()
 
-if( HAVE_GPU )
-  set( Debug_Compile_Flags   -g -O0 -cudalib=cufft,cublas -fpic -traceback )
-  set( Release_Compile_Flags -fast -cudalib=cufft,cublas -fpic )
-  set( RelDeb_Compile_Flags -gopt -fast -Mlarge_arrays )
-  foreach( prec sp dp )
-    if( HAVE_${prec} )
+    if( HAVE_GPU )
+      set( Debug_Compile_Flags   -g -O0 -fpic -traceback )
+      set( Release_Compile_Flags -fast -fpic )
+      set( RelDeb_Compile_Flags -gopt -fast -Mlarge_arrays )
       ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}
                              SOURCES ectrans-benchmark.F90
                              LIBS
-                                  fiat
-                                  parkind_${prec}
-                                  trans_gpu_${prec}
-                                  gpu_cuda
-                                  OpenACC::OpenACC_Fortran
-                                  nvhpcwrapnvtx
-                          )
+                               fiat
+                               parkind_${prec}
+                               trans_gpu_${prec}
+                               OpenACC::OpenACC_Fortran
+                            )
       target_compile_options( ectrans-benchmark-gpu-${prec} PUBLIC
         "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Debug>>:${Debug_Compile_Flags}>"
         "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Release>>:${Release_Compile_Flags}>"
         "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
-      set_target_properties(ectrans-benchmark-gpu-${prec} PROPERTIES LINK_FLAGS "-acc -cudalib=cufft,cublas -fpic")
     endif()
-  endforeach()
-endif()
+  endif()
+endforeach()
+
 
 # ectrans information tool
 
