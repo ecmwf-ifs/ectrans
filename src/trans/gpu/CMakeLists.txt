@@ -10,7 +10,7 @@
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
 
-  # Fix for IFS "CONGRAD: SPTSV/DPTSV returned non-zero info with crayftn 8.7.7 (cdt/18.12)
+  # Compile setup_trans with pinned memory to improve data movement performance. 
   ectrans_add_compile_options(
       SOURCES external/setup_trans.F90
       FLAGS   "-fast -O3 -acc -gpu=pinned,deepcopy,fastmath,nordc")
@@ -43,18 +43,7 @@ endif()
 
 ecbuild_list_exclude_pattern( LIST trans_src REGEX dilatation_mod.F90 )
 ecbuild_list_exclude_pattern( LIST trans_src_reducedmem REGEX dilatation_mod.F90 )
-if( NOT HAVE_FFTW )
-  ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
-  ecbuild_list_exclude_pattern( LIST trans_src_reducedmem REGEX tpm_fftw.F90 )
-endif()
 
-
-set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
-set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
-set( FFTW_dp FFTW::fftw3  )
-set( FFTW_sp FFTW::fftw3f )
-
-set( IFS_ACC_Fortran_LIBRARIES OpenACC::OpenACC_Fortran PARENT_SCOPE)
 set( Debug_Compile_Flags -g -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays -traceback )
 set( Release_Compile_Flags -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
 set( RelDeb_Compile_Flags -gopt -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
@@ -135,16 +124,6 @@ foreach( prec sp dp )
       INSTALL_DIRECTORY module/trans_gpu_static_CA_${prec}
     )
 
-    if( HAVE_FFTW )
-      target_link_libraries( trans_gpu_${prec} PRIVATE ${FFTW_LIBRARIES} )
-      target_link_libraries( trans_gpu_static_${prec} PRIVATE ${FFTW_LIBRARIES} )
-      target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE ${FFTW_LIBRARIES} )
-      target_include_directories( trans_gpu_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-      target_include_directories( trans_gpu_static_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-      target_include_directories( trans_gpu_static_CA_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-      target_compile_definitions( trans_gpu_${prec} PRIVATE WITH_FFTW )
-    endif()
-
     if( HAVE_OMP )
       target_link_libraries( trans_gpu_${prec} PRIVATE OpenMP::OpenMP_Fortran )
       target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenMP::OpenMP_Fortran )
@@ -186,12 +165,11 @@ foreach( prec sp dp )
 endforeach()
 
 ## precision-independent GPU library with CUDA kernels
-ecbuild_add_library( TARGET gpu
+ecbuild_add_library( TARGET gpu_cuda
   TYPE STATIC
   SOURCES
             algor/module/cublasSgemmBatched.cu
             algor/module/cublasDgemmBatched.cu
-##            algor/module/cublasSTCgemmBatched.cu
             algor/module/IPC_Alltoall.cu
             PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
 )

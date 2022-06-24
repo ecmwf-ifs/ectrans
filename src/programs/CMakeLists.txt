@@ -31,9 +31,6 @@ if( HAVE_TOOLS )
 endif()
 
 
-set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
-set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
-
 foreach( prec sp dp )
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
@@ -58,17 +55,17 @@ if( HAVE_GPU )
                                   fiat
                                   parkind_${prec}
                                   trans_gpu_static_${prec}
-                                  gpu
+                                  gpu_cuda
                                   OpenACC::OpenACC_Fortran
                                   nvhpcwrapnvtx
                           )
-	ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-CA-${prec}
+      ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-CA-${prec}
                              SOURCES ectrans-benchmark.F90
                              LIBS
                                   fiat
                                   parkind_${prec}
                                   trans_gpu_static_CA_${prec}
-                                  gpu
+                                  gpu_cuda
                                   OpenACC::OpenACC_Fortran
                                   ${LAPACK_LIBRARIES}
                                   nvhpcwrapnvtx

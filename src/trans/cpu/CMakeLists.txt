@@ -34,9 +34,6 @@ if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
 
-set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
-set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
-
 foreach( prec sp dp )
   if( HAVE_${prec} )
 

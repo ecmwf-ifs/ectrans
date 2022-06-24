@@ -61,19 +61,17 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
+find_package(OpenACC REQUIRED)
 ecbuild_add_option( FEATURE GPU
-                    DEFAULT ON
-                    DESCRIPTION "Compile GPU version of ectrans" )
+                    DEFAULT OFF
+                    DESCRIPTION "Compile GPU version of ectrans"
+                    CONDITION TARGET OpenACC::OpenACC_Fortran )
 
 ecbuild_add_option( FEATURE REDUCED_MEMORY
 	            DEFAULT OFF
 		    CONDITION HAVE_GPU
 		    DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
 if( HAVE_GPU )
-    find_package(OpenACC REQUIRED)
-    ecbuild_add_option( FEATURE ACC
-                        REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran"
-                        DEFAULT OFF )
     enable_language( CUDA )
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 70 80)
