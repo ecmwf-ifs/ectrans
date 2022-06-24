@@ -18,7 +18,6 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
-ecbuild_find_package( NAME MPI QUIET )
 ecbuild_add_option( FEATURE MPI
                     DESCRIPTION "Support for MPI distributed memory parallelism"
                     CONDITION fiat_HAVE_MPI )
@@ -61,16 +60,28 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
-find_package( OpenACC )
+# Following is NVHPC compiler specific and should really be coming from external input
+if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
+  set( OpenACC_Fortran_FLAGS "-acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
+endif()
+
+ecbuild_find_package(OpenACC QUIET)
+ecbuild_find_package(MPI QUIET)
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
-                    DESCRIPTION "Compile GPU version of ectrans"
-                    CONDITION TARGET OpenACC::OpenACC_Fortran )
+                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC and MPI and CUDA. For now only NVHPC supported.)"
+                    CONDITION TARGET OpenACC::OpenACC_Fortran AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran)
+
+ecbuild_add_option( FEATURE CUDA_AWARE_MPI
+                    DEFAULT ON
+                    CONDITION HAVE_GPU
+                    DESCRIPTION "Enable CUDA-aware MPI")
 
 ecbuild_add_option( FEATURE REDUCED_MEMORY
 	            DEFAULT OFF
-		    CONDITION HAVE_GPU
-		    DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
+                    CONDITION HAVE_GPU
+                    DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
+
 if( HAVE_GPU )
     enable_language( CUDA )
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)

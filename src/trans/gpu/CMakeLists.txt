@@ -44,123 +44,75 @@ endif()
 ecbuild_list_exclude_pattern( LIST trans_src REGEX dilatation_mod.F90 )
 ecbuild_list_exclude_pattern( LIST trans_src_reducedmem REGEX dilatation_mod.F90 )
 
-set( Debug_Compile_Flags -g -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays -traceback )
-set( Release_Compile_Flags -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
-set( RelDeb_Compile_Flags -gopt -fast -acc -Minfo=acc -gpu=lineinfo,deepcopy,fastmath,nordc -Mlarge_arrays )
+set( Debug_Compile_Flags            -g -Mlarge_arrays -traceback )
+set( Release_Compile_Flags       -fast -Mlarge_arrays )
+set( RelDeb_Compile_Flags  -gopt -fast -Mlarge_arrays )
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
 
-    ecbuild_add_library(
-      TARGET           trans_gpu_${prec}
-      LINKER_LANGUAGE  Fortran
-      SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
-                       $<INSTALL_INTERFACE:include/ectrans>
-                       $<INSTALL_INTERFACE:include>
-      PRIVATE_INCLUDES  ${MPI_Fortran_INCLUDE_PATH}
-      PUBLIC_LIBS      parkind_${prec}
-                       fiat
-      PRIVATE_LIBS     ${LAPACK_LIBRARIES}
-    )
-    ecbuild_add_library(
-      TARGET           trans_gpu_static_${prec}
-      LINKER_LANGUAGE  Fortran
-      SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
-      TYPE             STATIC
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
-                       $<INSTALL_INTERFACE:include/ectrans>
-                       $<INSTALL_INTERFACE:include>
-      PRIVATE_INCLUDES  ${MPI_Fortran_INCLUDE_PATH}
-      PUBLIC_LIBS      parkind_${prec}
-                       fiat
-      PRIVATE_LIBS     ${LAPACK_LIBRARIES}
-    )
-    ecbuild_add_library(
-      TARGET           trans_gpu_static_CA_${prec}
-      LINKER_LANGUAGE  Fortran
-      SOURCES          ${trans_src}
-                       algor/external/fourier/destroy_plan_fftc.cu
-                       algor/external/fourier/create_plan_fftc.cu
-                       algor/external/fourier/storage_fftc.cu
-                       algor/external/fourier/execute_plan_fftc.cu
-      TYPE             STATIC
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
-                       $<INSTALL_INTERFACE:include/ectrans>
-                       $<INSTALL_INTERFACE:include>
-      PRIVATE_INCLUDES  ${MPI_Fortran_INCLUDE_PATH}
-      PUBLIC_LIBS      parkind_${prec}
-                       fiat
-      PRIVATE_LIBS     ${LAPACK_LIBRARIES}
-    )
+    # We build an object library first. And then use these objects to create a shared and static library.
 
+    ectrans_add_library(
+      TARGET           trans_gpu_object_${prec}
+      TYPE             OBJECT
+      SOURCES          ${trans_src}
+                       algor/external/fourier/destroy_plan_fftc.cu
+                       algor/external/fourier/create_plan_fftc.cu
+                       algor/external/fourier/storage_fftc.cu
+                       algor/external/fourier/execute_plan_fftc.cu
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
+                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+      PRIVATE_INCLUDES ${MPI_Fortran_INCLUDE_PATH}
+      PUBLIC_LIBS      parkind_${prec}
+                       fiat
+      PRIVATE_LIBS     ${LAPACK_LIBRARIES} OpenACC::OpenACC_Fortran
+    )
     ectrans_target_fortran_module_directory(
-      TARGET            trans_gpu_${prec}
+      TARGET            trans_gpu_object_${prec}
       MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_${prec}
       INSTALL_DIRECTORY module/trans_gpu_${prec}
     )
-    ectrans_target_fortran_module_directory(
-      TARGET            trans_gpu_static_${prec}
-      MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_static_${prec}
-      INSTALL_DIRECTORY module/trans_gpu_static_${prec}
-    )
-    ectrans_target_fortran_module_directory(
-      TARGET            trans_gpu_static_CA_${prec}
-      MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_static_CA_${prec}
-      INSTALL_DIRECTORY module/trans_gpu_static_CA_${prec}
-    )
 
     if( HAVE_OMP )
-      target_link_libraries( trans_gpu_${prec} PRIVATE OpenMP::OpenMP_Fortran )
-      target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenMP::OpenMP_Fortran )
-      target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      target_link_libraries( trans_gpu_object_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 
-    target_link_libraries( trans_gpu_${prec} PRIVATE OpenACC::OpenACC_Fortran )
-    target_link_libraries( trans_gpu_static_${prec} PRIVATE OpenACC::OpenACC_Fortran )
-    target_link_libraries( trans_gpu_static_CA_${prec} PRIVATE OpenACC::OpenACC_Fortran )
-
-    target_compile_options( trans_gpu_${prec} PRIVATE
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
-    target_compile_options( trans_gpu_static_${prec} PRIVATE
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
-    target_compile_options( trans_gpu_static_CA_${prec} PRIVATE
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
-	    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
-
+    target_compile_options( trans_gpu_object_${prec} PRIVATE
+      "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:DEBUG>>:${Debug_Compile_Flags}>"
+      "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RELEASE>>:${Release_Compile_Flags}>"
+      "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:RelWithDebInfo>>:${RelDeb_Compile_Flags}>" )
 
     if( prec STREQUAL sp )
-        target_compile_definitions( trans_gpu_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
-        target_compile_definitions( trans_gpu_static_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
-	target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC TRANS_SINGLE PARKINDTRANS_SINGLE )
+      target_compile_definitions( trans_gpu_object_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
     endif()
     if( HAVE_REDUCED_MEMORY )
-	target_compile_definitions( trans_gpu_${prec} PUBLIC REDUCED_MEM )
-	target_compile_definitions( trans_gpu_static_${prec} PUBLIC REDUCED_MEM )
-	target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC REDUCED_MEM )
+      target_compile_definitions( trans_gpu_object_${prec} PRIVATE REDUCED_MEM )
     endif()
 
-    target_compile_definitions( trans_gpu_static_CA_${prec} PUBLIC USE_CUDA_AWARE_MPI_FT )
+    set( HAVE_CUDA_AWARE_MPI 1 )
+    if( HAVE_CUDA_AWARE_MPI )
+      target_compile_definitions( trans_gpu_object_${prec} PRIVATE USE_CUDA_AWARE_MPI_FT )
+    endif()
 
+
+    ectrans_add_library(
+      TARGET           trans_gpu_shared_${prec}
+      OUTPUT_NAME      trans_gpu_${prec}
+      TYPE             SHARED
+      LINKER_LANGUAGE  Fortran
+      PUBLIC_LIBS      trans_gpu_object_${prec}
+    )
+
+    ectrans_add_library(
+      TARGET           trans_gpu_${prec}
+      TYPE             STATIC
+      LINKER_LANGUAGE  Fortran
+      PUBLIC_LIBS      trans_gpu_object_${prec}
+    )
   endif()
 endforeach()
 
@@ -171,5 +123,5 @@ ecbuild_add_library( TARGET gpu_cuda
             algor/module/cublasSgemmBatched.cu
             algor/module/cublasDgemmBatched.cu
             algor/module/IPC_Alltoall.cu
-            PRIVATE_INCLUDES  ${MPI_C_INCLUDE_PATH}
+  PRIVATE_LIBS MPI::MPI_C
 )

@@ -20,4 +20,5 @@ endif()
 
 include( ectrans_target_fortran_module_directory )
 include( ectrans_find_lapack )
+include( ectrans_add_library )
 
