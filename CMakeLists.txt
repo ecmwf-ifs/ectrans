@@ -6,7 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-cmake_minimum_required( VERSION 3.12 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
+# CMake 3.17 adds INTERFACE link options which get propagated to the link stage,
+#   even if the target is linked in privately
+# CMake 3.18 allows "LINK_LANG_AND_ID" generator expression.
+
 find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( ectrans LANGUAGES C Fortran )

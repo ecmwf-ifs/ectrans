@@ -48,7 +48,6 @@ foreach( prec sp dp )
                                fiat
                                parkind_${prec}
                                trans_gpu_${prec}
-                               OpenACC::OpenACC_Fortran
                             )
     endif()
   endif()
