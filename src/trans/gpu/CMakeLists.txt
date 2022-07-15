@@ -45,13 +45,11 @@ ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
-    foreach( gpumethod acc ompgpu)
+    foreach( gpumethod acc omp)
       if( HAVE_${gpumethod})
 
         # We build an object library first. And then use these objects to create a shared and static library.
 
-        set( OpenACC_Fortran_FLAGS ${gpumethod}_FLAGS )
-        
         ectrans_add_library(
           TARGET           trans_gpu_object_${prec}_${gpumethod}
           TYPE             OBJECT
@@ -87,6 +85,14 @@ foreach( prec sp dp )
 
         if( prec STREQUAL sp )
           target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
+        endif()
+
+        if( gpumethod STREQUAL acc )
+          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE ACCGPU )
+        endif()
+
+        if( gpumethod STREQUAL omp )
+          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE OMPGPU )
         endif()
 
         if( HAVE_GPU_REDUCED_MEMORY )

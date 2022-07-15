@@ -280,8 +280,12 @@ IF(NPROMATR > 0 .AND. IF_GPB > NPROMATR) THEN
 ELSE
   call nvtxStartRange("INVTRANS")
 
+#ifdef ACCGPU
   !$ACC DATA CREATE(FOUBUF)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:FOUBUF)
+#endif
   ! No splitting of fields, transform done in one go
   ! from PSPXXX to FOUBUF
   call nvtxStartRange("LTINV")
@@ -298,8 +302,12 @@ ELSE
    & KVSETUV=KVSETUV,KVSETSC=KVSETSC,&
    & KVSETSC3A=KVSETSC3A,KVSETSC3B=KVSETSC3B,KVSETSC2=KVSETSC2,&
    & PGP=PGP,PGPUV=PGPUV,PGP3A=PGP3A,PGP3B=PGP3B,PGP2=PGP2)
+#ifdef OMPGPU
   !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
   !$ACC END DATA
+#endif
    call nvtxEndRange
 
    call nvtxEndRange

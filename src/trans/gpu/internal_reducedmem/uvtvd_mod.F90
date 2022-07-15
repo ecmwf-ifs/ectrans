@@ -93,33 +93,45 @@ MODULE UVTVD_MOD
   IDIVS = 2*KFIELD+1
   IDIVE = 4*KFIELD
   
+#ifdef ACCGPU
   !$ACC DATA&
   !$ACC& CREATE(ZN) &
   !$ACC& COPY(D_MYMS,D_NUMP,R_NTMAX) &
   !$ACC& COPY(F,F%RN,F%NLTN) &
   !$ACC& PRESENT(ZEPSNM,ZOA1) &
   !$ACC& PRESENT(ZOA2)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA&
   !$OMP& MAP(ALLOC:ZN) &
   !$OMP& MAP(TO:D_MYMS,D_NUMP,R_NTMAX) &
   !$OMP& MAP(TO:F,F%RN,F%NLTN) &
   !$OMP& MAP(ALLOC:ZEPSNM,ZOA1) &
   !$OMP& MAP(ALLOC:ZOA2)
+#endif
   
   !     ------------------------------------------------------------------
   
   !*       1.    COMPUTE U V FROM VORTICITY AND DIVERGENCE.
   !              ------------------------------------------
   
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP
+#endif
   DO J=-1,R_NTMAX+3
     ZN(J) = F%RN(J)
   ENDDO
   !*       1.1      SET N=KM-1 COMPONENT TO 0 FOR U AND V
   
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,IN)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IN)
+#endif
   DO KMLOC=1,D_NUMP
     DO J=1,2*KFIELD
       KM = D_MYMS(KMLOC)
@@ -132,8 +144,12 @@ MODULE UVTVD_MOD
   
   !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
   
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM)
+#endif
   DO KMLOC=1,D_NUMP
     DO JN=0,R_NTMAX
       DO J=1,KFIELD
@@ -169,8 +185,12 @@ MODULE UVTVD_MOD
      ENDDO
     ENDDO
   ENDDO
+#ifdef OMPGPU
   !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
   !$ACC END DATA
+#endif
   !     ------------------------------------------------------------------
  
   END SUBROUTINE UVTVD

@@ -90,16 +90,20 @@ REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 REAL(KIND=JPRBT) :: ZLAPIN(-1:R%NSMAX+4)
 REAL(KIND=JPRBT) :: ZEPSNM(-1:R%NSMAX+4)
 
+#ifdef ACCGPU
 !$ACC DATA                                     &
 !$ACC      CREATE (ZEPSNM, ZN, ZLAPIN)         &
 !$ACC      COPYIN (D,D%MYMS,F,F%RLAPIN,F%RN)   &
 !$ACC      PRESENT(PEPSNM, PVOR, PDIV)         &
 !$ACC      PRESENT(PU, PV)
+#endif
+#ifdef OMPGPU
 !$OMP TARGET DATA                              &
 !$OMP&      MAP (ALLOC:ZEPSNM, ZN, ZLAPIN)     &
 !$OMP&      MAP (TO:D,D%MYMS,F,F%RLAPIN,F%RN)  &
 !$OMP&      MAP(ALLOC:PEPSNM, PVOR, PDIV)      &
 !$OMP&      MAP(ALLOC:PU, PV)
+#endif
 
 
 !     ------------------------------------------------------------------
@@ -110,9 +114,13 @@ REAL(KIND=JPRBT) :: ZEPSNM(-1:R%NSMAX+4)
 ISMAX = R%NSMAX
 DO KMLOC=1,D%NUMP
   ZKM = D%MYMS(KMLOC)
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IJ) &
   !$OMP&    SHARED(ZKM,ISMAX,F,ZN,ZLAPIN,ZEPSNM,PEPSNM,KMLOC)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IJ)
+#endif
   DO JN=ZKM-1,ISMAX+2
     IJ = ISMAX+3-JN
     ZN(IJ) = F%RN(JN)
@@ -123,18 +131,30 @@ DO KMLOC=1,D%NUMP
         ZEPSNM(IJ) = 0
     ENDIF
   ENDDO
+#ifdef OMPGPU
   !$OMP TARGET
+#endif
+#ifdef ACCGPU
   !$ACC KERNELS DEFAULT(NONE)
+#endif
   ZN(0) = F%RN(ISMAX+3)
+#ifdef ACCGPU
   !$ACC END KERNELS
+#endif
+#ifdef OMPGPU
   !$OMP END TARGET
+#endif
 
 !*       1.1      U AND V (KM=0) .
 
 IF(ZKM == 0) THEN
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IR) &
   !$OMP&   SHARED(KFIELD,ISMAX,KMLOC,PU,ZN,ZLAPIN,PVOR,PV,PDIV,ZEPSNM)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IR)
+#endif
   DO J=1,KFIELD
     IR = 2*J-1
     DO JI=2,ISMAX+3
@@ -149,9 +169,13 @@ IF(ZKM == 0) THEN
 ELSE
 !*       1.2      U AND V (KM!=0) .
 
+#ifdef OMPGPU
     !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IR,II) &
     !$OMP&   SHARED(KFIELD,ZKM,ISMAX,KMLOC,PU,ZN,ZLAPIN,PVOR,PV,PDIV,ZEPSNM)
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II)
+#endif
     DO J=1,KFIELD
       DO JI=2,ISMAX+3-ZKM
         !ZKM = D_MYMS(KMLOC)
@@ -176,8 +200,12 @@ ELSE
   ENDIF
 ENDDO
 
+#ifdef OMPGPU
 !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
 !$ACC END DATA
+#endif
 !     ------------------------------------------------------------------
 
 END SUBROUTINE VDTUV

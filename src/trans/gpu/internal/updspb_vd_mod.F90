@@ -91,17 +91,25 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
 
   !*       1.    UPDATE SPECTRAL FIELDS.
   !              -----------------------
+#ifdef ACCGPU
   !$ACC DATA &
   !$ACC& PRESENT(ZOA2) &
   !$ACC& COPY(PSPVOR,PSPDIV) &
   !$ACC& COPY(D,D_NUMP,D_MYMS,R,R_NSMAX,R_NTMAX,D,D_NASM0)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA &
   !$OMP& MAP(ALLOC:ZOA2) &
   !$OMP& MAP(FROM:PSPVOR,PSPDIV) &
   !$OMP& MAP(TO:D,D_NUMP,D_MYMS,R,R_NSMAX,R_NTMAX,D,D_NASM0)
+#endif
  
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,INM,IR,II,IASM0,IFLD)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,INM,IR,II,IASM0,IFLD)
+#endif
   DO KMLOC=1,D_NUMP     
        DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2
           DO JFLD=1,KFIELD
@@ -149,8 +157,12 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
        ENDDO
        !end loop over wavenumber
    END DO
+#ifdef OMPGPU
    !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
    !$ACC end data
+#endif
  
   !     ------------------------------------------------------------------
  

@@ -99,7 +99,7 @@ ecbuild_add_option( FEATURE GPU
                          AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
                          AND TARGET CUDA::cublas AND TARGET CUDA::cufft)
 
-ecbuild_add_option( FEATURE ACC
+ecbuild_add_option( FEATURE ACCGPU
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     CONDITION HAVE_GPU)
@@ -116,21 +116,21 @@ ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DESCRIPTION "Enable CUDA-aware MPI")
 
 ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
-                    DEFAULT ON
+                    DEFAULT OFF
                     CONDITION HAVE_GPU
                     DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
 
-set( HAVE_acc ${HAVE_ACC} )
-set( HAVE_ompgpu ${HAVE_OMPGPU} )
+set( HAVE_acc ${HAVE_ACCGPU} )
+set( HAVE_omp ${HAVE_OMPGPU} )
 
 # Following is NVHPC compiler specific and should really be coming from external input
 if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
-  if( HAVE_ACC )
-    set( acc_FLAGS "-acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
+  if( HAVE_ACCGPU )
+    set( OpenACC_Fortran_FLAGS "-acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
     # Pass cmake command-line option "-DCMAKE_Fortran_FLAGS=-Minfo=acc" for diagnostics info
   endif()
   if( HAVE_OMPGPU )
-    set( ompgpu_FLAGS "-mp=gpu -gpu=lineinfo,fastmath,nordc -Minfo=mp" )
+    set( OpenMP_Fortran_FLAGS "-mp=gpu -gpu=lineinfo,fastmath,nordc -Minfo=mp $OpenMP_Fortran_FLAGS" )
   endif()
 endif()
 

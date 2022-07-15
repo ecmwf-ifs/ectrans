@@ -95,11 +95,17 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   !              -----------------------
 
   !loop over wavenumber
+#ifdef ACCGPU
   !$ACC DATA PRESENT(PSPEC,POA,R,D)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:PSPEC,POA,R,D)
   !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
   !$OMP& SHARED(D,R,KFIELD,PSPEC,POA)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE)
+#endif
   DO KMLOC=1,D%NUMP     
        DO JN=R%NTMAX+2-R%NSMAX,R%NTMAX+2
           DO JFLD=1,KFIELD
@@ -134,9 +140,15 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
           ENDDO
        ENDDO
     ENDDO
+#ifdef ACCGPU
 !$ACC END PARALLEL
+#endif
+#ifdef OMPGPU
 !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
 !$ACC END DATA
+#endif
  
   !     ------------------------------------------------------------------
  

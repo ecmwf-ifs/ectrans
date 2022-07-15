@@ -182,13 +182,21 @@ MODULE LTINV_MOD
  
     IDIM2=UBOUND(PSPVOR,2)
     CALL GSTATS(431,0)
+#ifdef ACCGPU
     !$ACC DATA COPYIN(PSPVOR,PSPDIV)
+#endif
+#ifdef OMPGPU
     !$OMP TARGET DATA MAP(TO:PSPVOR,PSPDIV)
+#endif
     CALL GSTATS(431,1)
     CALL PRFI1B(ZIA(IVORL:IVORU,:,:),PSPVOR,KF_UV,IDIM2,KFLDPTRUV)
     CALL PRFI1B(ZIA(IDIVL:IDIVU,:,:),PSPDIV,KF_UV,IDIM2,KFLDPTRUV)
+#ifdef OMPGPU
     !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
     !$ACC END DATA
+#endif
  
   !     ------------------------------------------------------------------
  
@@ -205,24 +213,40 @@ MODULE LTINV_MOD
  
       IDIM2=UBOUND(PSPSCALAR,2)
       CALL GSTATS(431,0)
+#ifdef ACCGPU
       !$ACC DATA COPYIN(PSPSCALAR)
+#endif
+#ifdef OMPGPU
       !$OMP TARGET DATA MAP(TO:PSPSCALAR)
+#endif
       CALL GSTATS(431,1)
       CALL PRFI1B(ZIA(IFIRST:ILAST,:,:),PSPSCALAR(:,:),KF_SCALARS,IDIM2,KFLDPTRSC)
+#ifdef OMPGPU
       !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
       !$ACC END DATA
+#endif
     ELSE
       IF(PRESENT(PSPSC2) .AND. NF_SC2 > 0) THEN
         IFIRST = ILAST+1
         ILAST  = IFIRST-1+2*NF_SC2
         IDIM2=UBOUND(PSPSC2,2)
         CALL GSTATS(431,0)
+#ifdef ACCGPU
         !$ACC DATA COPYIN(PSPSC2)
+#endif
+#ifdef OMPGPU
         !$OMP TARGET DATA MAP(TO:PSPSC2)
+#endif
         CALL GSTATS(431,1)
         CALL PRFI1B(ZIA(IFIRST:ILAST,:,:),PSPSC2(:,:),NF_SC2,IDIM2)
+#ifdef OMPGPU
         !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
         !$ACC END DATA
+#endif
       ENDIF
       IF(PRESENT(PSPSC3A) .AND. NF_SC3A > 0) THEN
         IDIM1=NF_SC3A
@@ -231,22 +255,34 @@ MODULE LTINV_MOD
         ILAST  = IFIRST-1+2*IDIM1
         IDIM2=UBOUND(PSPSC3A,2)
         CALL GSTATS(431,0)
+#ifdef ACCGPU
         !$ACC DATA COPYIN(PSPSC3A)
+#endif
+#ifdef OMPGPU
         !$OMP TARGET DATA MAP(TO:PSPSC3A)
+#endif
         CALL GSTATS(431,1)
         DO J3=1,IDIM3
           CALL PRFI1B(ZIA(IFIRST:ILAST,:,:),PSPSC3A(:,:,J3),IDIM1,IDIM2)
         ENDDO
+#ifdef OMPGPU
         !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
         !$ACC END DATA
+#endif
       ENDIF
       IF(PRESENT(PSPSC3B) .AND. NF_SC3B > 0) THEN
         IDIM1=NF_SC3B
         IDIM3=UBOUND(PSPSC3B,3)
         IDIM2=UBOUND(PSPSC3B,2)
         CALL GSTATS(431,0)
+#ifdef ACCGPU
         !$ACC DATA COPYIN(PSPSC3B)
+#endif
+#ifdef OMPGPU
         !$OMP TARGET DATA MAP(TO:PSPSC3B)
+#endif
         CALL GSTATS(431,1)
         DO J3=1,IDIM3
           IFIRST = ILAST+1
@@ -254,8 +290,12 @@ MODULE LTINV_MOD
  
           CALL PRFI1B(ZIA(IFIRST:ILAST,:,:),PSPSC3B(:,:,J3),IDIM1,IDIM2)
         ENDDO
+#ifdef OMPGPU
         !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
         !$ACC END DATA
+#endif
       ENDIF
     ENDIF
     IF(ILAST /= 8*KF_UV+2*KF_SCALARS) THEN

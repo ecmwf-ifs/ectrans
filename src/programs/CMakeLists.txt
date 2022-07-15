@@ -42,9 +42,8 @@ foreach( prec sp dp )
                           )
 
     if( HAVE_GPU )
-      foreach( gpumethod acc ompgpu )
+      foreach( gpumethod acc omp )
         if( HAVE_${gpumethod} )
-          set( OpenACC_Fortran_FLAGS ${gpumethod}_FLAGS )
           ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
                                 SOURCES ectrans-benchmark.F90
                                 LIBS

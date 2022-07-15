@@ -163,14 +163,18 @@ MODULE LTINV_MOD
   !*       1.    PREPARE ZEPSNM.
   !              ---------------
 
+#ifdef ACCGPU
   !$ACC DATA &
    !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTRUV)  &
    !$ACC      COPYOUT(ZIA) &
    !$ACC      COPYIN (PSPVOR,PSPDIV,PSPSCALAR,PSPSC2,PSPSC3A,PSPSC3B)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA &
    !$OMP&     MAP (TO:D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTRUV)  &
    !$OMP&     MAP (FROM:ZIA) &
    !$OMP&     MAP (TO:PSPVOR,PSPDIV,PSPSCALAR,PSPSC2,PSPSC3A,PSPSC3B)
+#endif
    
   istat = cuda_Synchronize()
   IF (KF_UV > 0) THEN
@@ -249,8 +253,12 @@ MODULE LTINV_MOD
      CALL SPNSDE(KF_SCALARS,ZEPSNM,ZIA(ISL:ISU,:,:),ZIA(IDL:IDU,:,:))
  ENDIF
   
+#ifdef OMPGPU
     !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
     !$ACC END DATA
+#endif
   !     ------------------------------------------------------------------
   
   
@@ -278,8 +286,12 @@ MODULE LTINV_MOD
   !              --------------------------------------------
  
   ISTAT = CUDA_SYNCHRONIZE()
+#ifdef ACCGPU
   !$ACC UPDATE HOST(ZAOA1,ZSOA1)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET UPDATE FROM(ZAOA1,ZSOA1)
+#endif
   CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1)
   !CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
   !     ------------------------------------------------------------------

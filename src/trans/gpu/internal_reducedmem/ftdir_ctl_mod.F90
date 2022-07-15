@@ -202,8 +202,12 @@ IF(KF_FS>0) THEN
     ICHUNK=ISIZE
     CALL FTDIR(ICHUNK)
   !ENDDO
+#ifdef ACCGPU
   !$ACC UPDATE HOST(ZGTFTMP)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET UPDATE FROM(ZGTFTMP)
+#endif
 ENDIF
 
 ! Save Fourier data transfer from ZGTFTMP to FOUBUF_IN

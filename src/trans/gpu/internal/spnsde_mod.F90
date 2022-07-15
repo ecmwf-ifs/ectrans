@@ -87,14 +87,18 @@ INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN,JI,ISMAX, IR, II
 REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
 REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 
+#ifdef ACCGPU
 !$ACC DATA                             &
 !$ACC      CREATE (ZN,ZZEPSNM)         &
 !$ACC      PRESENT (F,F%RN)   &
 !$ACC      PRESENT (PEPSNM, PF, PNSD)
+#endif
+#ifdef OMPGPU
 !$OMP TARGET DATA                             &
 !$OMP&      MAP(ALLOC:ZN,ZZEPSNM)         &
 !$OMP&      MAP(ALLOC:F,F%RN)   &
 !$OMP&      MAP(ALLOC:PEPSNM, PF, PNSD)
+#endif
 
 !     ------------------------------------------------------------------
 
@@ -108,9 +112,13 @@ ISMAX = R%NSMAX
 !loop over wavenumber
 DO KMLOC=1,D%NUMP
   KM = D%MYMS(KMLOC)
-  !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(IJ) &
+#ifdef OMPGPU
+  !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IJ) &
   !$OMP&   SHARED(KM,ISMAX,F,ZN,ZZEPSNM,PEPSNM,KMLOC)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IJ)
+#endif
   DO JN=KM-1,ISMAX+2
    IJ = ISMAX+3-JN
    ZN(IJ) = F%RN(JN)
@@ -120,16 +128,28 @@ DO KMLOC=1,D%NUMP
        ZZEPSNM(IJ) = 0
    ENDIF
   ENDDO
+#ifdef OMPGPU
   !$OMP TARGET
+#endif
+#ifdef ACCGPU
   !$ACC KERNELS DEFAULT(NONE)
+#endif
   ZN(0) = F%RN(ISMAX+3)
+#ifdef ACCGPU
   !$ACC END KERNELS
+#endif
+#ifdef OMPGPU
   !$OMP END TARGET
+#endif
 
   IF(KM == 0) THEN
+#ifdef OMPGPU
       !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IR) &
       !$OMP&    SHARED(KF_SCALARS,ISMAX,PNSD,KMLOC,ZN,ZZEPSNM,PF)
+#endif
+#ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IR)
+#endif
       DO J=1,KF_SCALARS
         IR = 2*J-1
         DO JI=2,ISMAX+3
@@ -139,9 +159,13 @@ DO KMLOC=1,D%NUMP
       ENDDO
   ELSE  
 
+#ifdef OMPGPU
     !$OMP TARGET PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II) &
     !$OMP&    SHARED(KF_SCALARS,ISMAX,KM,PNSD,KMLOC,ZN,ZZEPSNM,PF)
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II)
+#endif
     DO J=1,KF_SCALARS
       DO JI=2,ISMAX+3-KM
         IR = 2*J-1
@@ -157,8 +181,12 @@ DO KMLOC=1,D%NUMP
 !end loop over wavenumber
 END DO
 
+#ifdef OMPGPU
 !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
 !$ACC END DATA
+#endif
 
 !     ------------------------------------------------------------------
 

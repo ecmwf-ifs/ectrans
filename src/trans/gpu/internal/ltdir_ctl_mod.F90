@@ -67,8 +67,12 @@ MODULE LTDIR_CTL_MOD
  
   INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
  
+#ifdef ACCGPU
   !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:FOUBUF_IN,FOUBUF)
+#endif
 
   ! Transposition from Fourier space distribution to spectral space distribution
   ! requires currently both on the host !!!
@@ -80,8 +84,12 @@ MODULE LTDIR_CTL_MOD
   CALL TRLTOM_CUDAAWARE(FOUBUF_IN,FOUBUF,2*KF_FS)
 #else
   CALL TRLTOM(FOUBUF_IN,FOUBUF,2*KF_FS)
+#ifdef ACCGPU
   !$ACC UPDATE DEVICE(FOUBUF)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET UPDATE TO(FOUBUF)
+#endif
 #endif
   CALL GSTATS(153,1)
  
@@ -98,8 +106,12 @@ MODULE LTDIR_CTL_MOD
           & KFLDPTRUV,KFLDPTRSC)
  
   ENDIF
+#ifdef OMPGPU
    !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
    !$ACC END DATA
+#endif
   CALL GSTATS(1645,1)
  
   CALL GSTATS(103,1)

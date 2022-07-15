@@ -80,14 +80,22 @@ MODULE PRFI1B_MOD
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
 
+#ifdef ACCGPU
   !$ACC DATA &
   !$ACC      PRESENT(D_NUMP,R_NSMAX,D_MYMS,D_NASM0) &
   !$ACC      PRESENT(PIA) &
   !$ACC      PRESENT(PSPEC)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:D_NUMP,R_NSMAX,D_MYMS,D_NASM0,PIA,PSPEC)
+#endif
 
+#ifdef ACCGPU
   !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR)
+#endif
+#ifdef OMPGPU
   !$OMP TARGET DATA IF(PRESENT(KFLDPTR)) MAP(ALLOC:KFLDPTR)
+#endif
 
  
   IF(PRESENT(KFLDPTR)) THEN
@@ -95,8 +103,12 @@ MODULE PRFI1B_MOD
  
    !loop over wavenumber
  
+#ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
+#endif
+#ifdef ACCGPU
    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
+#endif
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
@@ -117,8 +129,12 @@ MODULE PRFI1B_MOD
       ! end loop over wavenumber
    END DO
 
+#ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
+#endif
+#ifdef ACCGPU
    !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ILCM)
+#endif
    DO KMLOC=1,D_NUMP
       DO JFLD=1,2*KFIELDS
          KM = D_MYMS(KMLOC) 
@@ -134,8 +150,12 @@ MODULE PRFI1B_MOD
 
    !loop over wavenumber
 
+#ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
+#endif
+#ifdef ACCGPU
    !$ACC PARALLEL LOOP !!COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
+#endif
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
@@ -157,8 +177,12 @@ MODULE PRFI1B_MOD
       ! end loop over wavenumber
    END DO
 
+#ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
+#endif
+#ifdef ACCGPU
    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ILCM)
+#endif
    DO KMLOC=1,D_NUMP
       DO JFLD=1,2*KFIELDS
          KM = D_MYMS(KMLOC) 
@@ -172,10 +196,18 @@ MODULE PRFI1B_MOD
  
   END IF   
 
+#ifdef ACCGPU
    !$ACC END DATA
+#endif
+#ifdef OMPGPU
    !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
    !$ACC END DATA
+#endif
+#ifdef OMPGPU
    !$OMP END TARGET DATA
+#endif
 
   !     ------------------------------------------------------------------
  

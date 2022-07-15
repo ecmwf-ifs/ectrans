@@ -92,16 +92,20 @@ REAL(KIND=JPRBT) :: ZZN(-1:R%NTMAX+4)
 REAL(KIND=JPRBT) :: ZZLAPIN(-1:R%NSMAX+4)
 REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
 
+#ifdef ACCGPU
 !$ACC DATA                                     &
 !$ACC      CREATE (ZZEPSNM, ZZN, ZZLAPIN)      &
 !$ACC      COPYIN(PEPSNM, PVOR, PDIV)          &
 !$ACC      COPYIN (D,D%MYMS,F,F%RLAPIN,F%RN)   &
 !$ACC      COPYOUT(PU, PV)
+#endif
+#ifdef OMPGPU
 !$OMP TARGET DATA                                     &
 !$OMP&     MAP(ALLOC:ZZEPSNM, ZZN, ZZLAPIN)      &
 !$OMP&     MAP(TO:PEPSNM, PVOR, PDIV)          &
 !$OMP&     MAP(TO:D,D%MYMS,F,F%RLAPIN,F%RN)   &
 !$OMP&     MAP(FROM:PU, PV)
+#endif
 
 !     ------------------------------------------------------------------
 
@@ -111,8 +115,12 @@ REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
 ISMAX = R%NSMAX
 DO KMLOC=1,D%NUMP
   ZKM = D%MYMS(KMLOC)
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP
+#endif
   DO JN=ZKM-1,ISMAX+2
     IJ = ISMAX+3-JN
     ZZN(IJ) = F%RN(JN)
@@ -124,8 +132,12 @@ DO KMLOC=1,D%NUMP
 !*       1.1      U AND V (KM=0) .
 
 IF(ZKM == 0) THEN
+#ifdef OMPGPU
   !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(IR)
+#endif
+#ifdef ACCGPU
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR)
+#endif
   DO J=1,KFIELD
     DO JI=2,ISMAX+3
       IR = 2*J-1
@@ -140,8 +152,12 @@ IF(ZKM == 0) THEN
 ELSE
 !*       1.2      U AND V (KM!=0) .
 
+#ifdef OMPGPU
     !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(IR,II)
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR,II)
+#endif
     DO J=1,KFIELD
       DO JI=2,ISMAX+3-ZKM
         !ZKM = D_MYMS(KMLOC)
@@ -166,8 +182,12 @@ ELSE
   ENDIF
 ENDDO
 
+#ifdef OMPGPU
 !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
 !$ACC END DATA
+#endif
 !     ------------------------------------------------------------------
 
 END SUBROUTINE VDTUV
