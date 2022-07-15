@@ -34,21 +34,26 @@ endif()
 foreach( prec sp dp )
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                           SOURCES ectrans-benchmark.F90
-                           LIBS
-                             fiat
-                             parkind_${prec}
-                             trans_${prec}
+                          SOURCES ectrans-benchmark.F90
+                          LIBS
+                            fiat
+                            parkind_${prec}
+                            trans_${prec}
                           )
 
     if( HAVE_GPU )
-      ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}
-                             SOURCES ectrans-benchmark.F90
-                             LIBS
-                               fiat
-                               parkind_${prec}
-                               trans_gpu_${prec}
-                            )
+      foreach( gpumethod acc ompgpu )
+        if( HAVE_${gpumethod} )
+          set( OpenACC_Fortran_FLAGS ${gpumethod}_FLAGS )
+          ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
+                                SOURCES ectrans-benchmark.F90
+                                LIBS
+                                  fiat
+                                  parkind_${prec}
+                                  trans_gpu_${prec}_${gpumethod}
+                                )
+        endif()
+      endforeach()
     endif()
   endif()
 endforeach()

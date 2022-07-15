@@ -91,6 +91,10 @@ REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 !$ACC      CREATE (ZN,ZZEPSNM)         &
 !$ACC      PRESENT (F,F%RN)   &
 !$ACC      PRESENT (PEPSNM, PF, PNSD)
+!$OMP TARGET DATA                             &
+!$OMP&      MAP(ALLOC:ZN,ZZEPSNM)         &
+!$OMP&      MAP(ALLOC:F,F%RN)   &
+!$OMP&      MAP(ALLOC:PEPSNM, PF, PNSD)
 
 !     ------------------------------------------------------------------
 
@@ -104,6 +108,8 @@ ISMAX = R%NSMAX
 !loop over wavenumber
 DO KMLOC=1,D%NUMP
   KM = D%MYMS(KMLOC)
+  !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(IJ) &
+  !$OMP&   SHARED(KM,ISMAX,F,ZN,ZZEPSNM,PEPSNM,KMLOC)
   !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IJ)
   DO JN=KM-1,ISMAX+2
    IJ = ISMAX+3-JN
@@ -114,11 +120,15 @@ DO KMLOC=1,D%NUMP
        ZZEPSNM(IJ) = 0
    ENDIF
   ENDDO
+  !$OMP TARGET
   !$ACC KERNELS DEFAULT(NONE)
   ZN(0) = F%RN(ISMAX+3)
   !$ACC END KERNELS
+  !$OMP END TARGET
 
   IF(KM == 0) THEN
+      !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IR) &
+      !$OMP&    SHARED(KF_SCALARS,ISMAX,PNSD,KMLOC,ZN,ZZEPSNM,PF)
       !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IR)
       DO J=1,KF_SCALARS
         IR = 2*J-1
@@ -129,6 +139,8 @@ DO KMLOC=1,D%NUMP
       ENDDO
   ELSE  
 
+    !$OMP TARGET PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II) &
+    !$OMP&    SHARED(KF_SCALARS,ISMAX,KM,PNSD,KMLOC,ZN,ZZEPSNM,PF)
     !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II)
     DO J=1,KF_SCALARS
       DO JI=2,ISMAX+3-KM
@@ -145,6 +157,7 @@ DO KMLOC=1,D%NUMP
 !end loop over wavenumber
 END DO
 
+!$OMP END TARGET DATA
 !$ACC END DATA
 
 !     ------------------------------------------------------------------

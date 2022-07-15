@@ -76,6 +76,7 @@ MODULE PREPSNM_MOD
  
  
  
+  !!!$OMP TARGET PARALLEL DO
   !!!$ACC parallel loop
   DO KMLOC=1,D%NUMP
      KM = D%MYMS(KMLOC)
@@ -92,6 +93,7 @@ MODULE PREPSNM_MOD
      ENDDO
      ! end loop over wavenumber
   END DO
+  !!!!$OMP END TARGET DATA
   !!!!$ACC end data
  
   !     ------------------------------------------------------------------

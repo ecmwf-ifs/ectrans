@@ -99,18 +99,26 @@ MODULE UVTVD_MOD
   !$ACC& COPY(F,F%RN,F%NLTN) &
   !$ACC& PRESENT(ZEPSNM,ZOA1) &
   !$ACC& PRESENT(ZOA2)
+  !$OMP TARGET DATA&
+  !$OMP& MAP(ALLOC:ZN) &
+  !$OMP& MAP(TO:D_MYMS,D_NUMP,R_NTMAX) &
+  !$OMP& MAP(TO:F,F%RN,F%NLTN) &
+  !$OMP& MAP(ALLOC:ZEPSNM,ZOA1) &
+  !$OMP& MAP(ALLOC:ZOA2)
   
   !     ------------------------------------------------------------------
   
   !*       1.    COMPUTE U V FROM VORTICITY AND DIVERGENCE.
   !              ------------------------------------------
   
+  !$OMP TARGET PARALLEL DO
   !$ACC PARALLEL LOOP
   DO J=-1,R_NTMAX+3
     ZN(J) = F%RN(J)
   ENDDO
   !*       1.1      SET N=KM-1 COMPONENT TO 0 FOR U AND V
   
+  !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,IN)
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IN)
   DO KMLOC=1,D_NUMP
     DO J=1,2*KFIELD
@@ -124,6 +132,7 @@ MODULE UVTVD_MOD
   
   !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
   
+  !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM)
   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM)
   DO KMLOC=1,D_NUMP
     DO JN=0,R_NTMAX
@@ -160,6 +169,7 @@ MODULE UVTVD_MOD
      ENDDO
     ENDDO
   ENDDO
+  !$OMP END TARGET DATA
   !$ACC END DATA
   !     ------------------------------------------------------------------
  

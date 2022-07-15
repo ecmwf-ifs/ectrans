@@ -68,6 +68,7 @@ MODULE LTDIR_CTL_MOD
   INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILED2
  
   !$ACC DATA PRESENT(FOUBUF_IN) CREATE(FOUBUF)
+  !$OMP TARGET DATA MAP(ALLOC:FOUBUF_IN,FOUBUF)
 
   ! Transposition from Fourier space distribution to spectral space distribution
   ! requires currently both on the host !!!
@@ -80,6 +81,7 @@ MODULE LTDIR_CTL_MOD
 #else
   CALL TRLTOM(FOUBUF_IN,FOUBUF,2*KF_FS)
   !$ACC UPDATE DEVICE(FOUBUF)
+  !$OMP TARGET UPDATE TO(FOUBUF)
 #endif
   CALL GSTATS(153,1)
  
@@ -96,6 +98,7 @@ MODULE LTDIR_CTL_MOD
           & KFLDPTRUV,KFLDPTRSC)
  
   ENDIF
+   !$OMP END TARGET DATA
    !$ACC END DATA
   CALL GSTATS(1645,1)
  

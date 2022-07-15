@@ -97,6 +97,11 @@ REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
 !$ACC      COPYIN(PEPSNM, PVOR, PDIV)          &
 !$ACC      COPYIN (D,D%MYMS,F,F%RLAPIN,F%RN)   &
 !$ACC      COPYOUT(PU, PV)
+!$OMP TARGET DATA                                     &
+!$OMP&     MAP(ALLOC:ZZEPSNM, ZZN, ZZLAPIN)      &
+!$OMP&     MAP(TO:PEPSNM, PVOR, PDIV)          &
+!$OMP&     MAP(TO:D,D%MYMS,F,F%RLAPIN,F%RN)   &
+!$OMP&     MAP(FROM:PU, PV)
 
 !     ------------------------------------------------------------------
 
@@ -106,6 +111,7 @@ REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
 ISMAX = R%NSMAX
 DO KMLOC=1,D%NUMP
   ZKM = D%MYMS(KMLOC)
+  !$OMP TARGET PARALLEL DO
   !$ACC PARALLEL LOOP
   DO JN=ZKM-1,ISMAX+2
     IJ = ISMAX+3-JN
@@ -118,6 +124,7 @@ DO KMLOC=1,D%NUMP
 !*       1.1      U AND V (KM=0) .
 
 IF(ZKM == 0) THEN
+  !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(IR)
   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR)
   DO J=1,KFIELD
     DO JI=2,ISMAX+3
@@ -133,6 +140,7 @@ IF(ZKM == 0) THEN
 ELSE
 !*       1.2      U AND V (KM!=0) .
 
+    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(IR,II)
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR,II)
     DO J=1,KFIELD
       DO JI=2,ISMAX+3-ZKM
@@ -158,6 +166,7 @@ ELSE
   ENDIF
 ENDDO
 
+!$OMP END TARGET DATA
 !$ACC END DATA
 !     ------------------------------------------------------------------
 

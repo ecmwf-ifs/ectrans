@@ -64,12 +64,6 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
-# Following is NVHPC compiler specific and should really be coming from external input
-if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
-  set( OpenACC_Fortran_FLAGS "-acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
-  # Pass cmake command-line option "-DCMAKE_Fortran_FLAGS=-Minfo=acc" for diagnostics info
-endif()
-
 if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE GPU is OFF by default (see below)
   check_language(CUDA)
   find_package(CUDAToolkit)
@@ -98,22 +92,47 @@ endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
-                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC and MPI and CUDA. For now only NVHPC supported.)"
+                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI and CUDA. For now only NVHPC supported.)"
                     CONDITION CMAKE_CUDA_COMPILER
                          AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
                          AND TARGET OpenACC::OpenACC_Fortran
                          AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
                          AND TARGET CUDA::cublas AND TARGET CUDA::cufft)
 
+ecbuild_add_option( FEATURE ACC
+                    DEFAULT ON
+                    DESCRIPTION "Support for using GPUs with OpenACC"
+                    CONDITION HAVE_GPU)
+     
+ecbuild_add_option( FEATURE OMPGPU
+                    DEFAULT ON
+                    DESCRIPTION "Support for using GPUs with OpenMP offloading"
+                    CONDITION HAVE_GPU
+                    REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
+     
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable CUDA-aware MPI")
 
 ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
-                    DEFAULT OFF
+                    DEFAULT ON
                     CONDITION HAVE_GPU
                     DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
+
+set( HAVE_acc ${HAVE_ACC} )
+set( HAVE_ompgpu ${HAVE_OMPGPU} )
+
+# Following is NVHPC compiler specific and should really be coming from external input
+if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
+  if( HAVE_ACC )
+    set( acc_FLAGS "-acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
+    # Pass cmake command-line option "-DCMAKE_Fortran_FLAGS=-Minfo=acc" for diagnostics info
+  endif()
+  if( HAVE_OMPGPU )
+    set( ompgpu_FLAGS "-mp=gpu -gpu=lineinfo,fastmath,nordc -Minfo=mp" )
+  endif()
+endif()
 
 if( HAVE_GPU )
     enable_language( CUDA )

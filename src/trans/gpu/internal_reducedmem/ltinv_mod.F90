@@ -167,6 +167,10 @@ MODULE LTINV_MOD
    !$ACC      COPYIN (D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTRUV)  &
    !$ACC      COPYOUT(ZIA) &
    !$ACC      COPYIN (PSPVOR,PSPDIV,PSPSCALAR,PSPSC2,PSPSC3A,PSPSC3B)
+  !$OMP TARGET DATA &
+   !$OMP&     MAP (TO:D_NUMP,R_NSMAX,D,D_MYMS,D_NASM0,R,KFLDPTRUV)  &
+   !$OMP&     MAP (FROM:ZIA) &
+   !$OMP&     MAP (TO:PSPVOR,PSPDIV,PSPSCALAR,PSPSC2,PSPSC3A,PSPSC3B)
    
   istat = cuda_Synchronize()
   IF (KF_UV > 0) THEN
@@ -245,6 +249,7 @@ MODULE LTINV_MOD
      CALL SPNSDE(KF_SCALARS,ZEPSNM,ZIA(ISL:ISU,:,:),ZIA(IDL:IDU,:,:))
  ENDIF
   
+    !$OMP END TARGET DATA
     !$ACC END DATA
   !     ------------------------------------------------------------------
   
@@ -274,6 +279,7 @@ MODULE LTINV_MOD
  
   ISTAT = CUDA_SYNCHRONIZE()
   !$ACC UPDATE HOST(ZAOA1,ZSOA1)
+  !$OMP TARGET UPDATE FROM(ZAOA1,ZSOA1)
   CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1)
   !CALL ASRE1B(KF_OUT_LT,ZAOA1,ZSOA1,ISTAN,ISTAS)
   !     ------------------------------------------------------------------

@@ -92,6 +92,7 @@ REAL(KIND=JPRBT)   :: ZN(-1:R%NTMAX+4)
 !$ACC      COPYIN (D,D%MYMS,F,F%RN)   &
 !$ACC      PRESENT (ZEPSNM, PF)         &
 !$ACC      COPYOUT (PNSD)
+!$OMP TARGET DATA MAP(ALLOC:ZN, ZZEPSNM, ZEPSNM, PF) MAP(TO:D,D%MYMS,F,F%RN)
 
 !     ------------------------------------------------------------------
 
@@ -105,6 +106,7 @@ ISMAX = R%NSMAX
 !loop over wavenumber
 DO KMLOC=1,D%NUMP
   KM = D%MYMS(KMLOC)
+  !$OMP TARGET PARALLEL DO PRIVATE(IJ)
   !$ACC PARALLEL LOOP PRIVATE(IJ)
   DO JN=KM-1,ISMAX+2
    IJ = ISMAX+3-JN
@@ -114,6 +116,7 @@ DO KMLOC=1,D%NUMP
   ZN(0) = F%RN(ISMAX+3)
 
   IF(KM == 0) THEN
+      !$OMP TARGET PARALLEL DO PRIVATE(IR)
       !$ACC PARALLEL LOOP PRIVATE(IR)
       DO J=1,KF_SCALARS
         IR = 2*J-1
@@ -124,6 +127,7 @@ DO KMLOC=1,D%NUMP
       ENDDO
   ELSE  
 
+    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(IR,II)
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IR,II)
     DO J=1,KF_SCALARS
       DO JI=2,ISMAX+3-KM
@@ -140,6 +144,7 @@ DO KMLOC=1,D%NUMP
 !end loop over wavenumber
 END DO
 
+!$OMP END TARGET DATA
 !$ACC END DATA
 
 !     ------------------------------------------------------------------
