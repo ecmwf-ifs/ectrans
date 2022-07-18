@@ -392,7 +392,7 @@ call setup_trans0(kout=nout,kerr=nerr,kprintlev=merge(2, 0, verbose),kmax_resol=
 &                 prad=zra,ldalloperm=.true.,ldmpoff=.not.luse_mpi)
 
 call setup_trans(ksmax=nsmax,kdgl=ndgl,kloen=nloen,ldsplit=.true.,&
-&                 ldusefftw=.false., lduserpnm=luserpnm,ldkeeprpnm=lkeeprpnm, &
+&                 ldusefftw=lfftw, lduserpnm=luserpnm,ldkeeprpnm=lkeeprpnm, &
 &                 lduseflt=luseflt)
 !
 call trans_inq(kspec2=nspec2,kspec2g=nspec2g,kgptot=ngptot,kgptotg=ngptotg)
