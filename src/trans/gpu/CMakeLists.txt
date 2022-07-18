@@ -61,17 +61,16 @@ foreach( prec sp dp )
                           $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS      parkind_${prec}
                           fiat
-          PRIVATE_LIBS     OpenACC::OpenACC_Fortran
-                          CUDA::cufft
+          PRIVATE_LIBS    CUDA::cufft
                           CUDA::cublas
                           MPI::MPI_Fortran
                           MPI::MPI_C
                           nvhpcwrapnvtx
                           ${LAPACK_LIBRARIES}
         )
-        # Propagate "-acc" as link flag for NVHPC Fortran linker
-        #target_link_options( trans_gpu_object_${prec} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:-acc>" )
-        #target_link_options( trans_gpu_object_${prec} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:-mp=gpu>" )
+
+        target_link_options   ( trans_gpu_object_${prec}_${gpumethod} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>" )
+        target_compile_options( trans_gpu_object_${prec}_${gpumethod} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
 
         ectrans_target_fortran_module_directory(
           TARGET            trans_gpu_object_${prec}_${gpumethod}
@@ -89,6 +88,7 @@ foreach( prec sp dp )
 
         if( gpumethod STREQUAL acc )
           target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE ACCGPU )
+          target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenACC::OpenACC_Fortran )
         endif()
 
         if( gpumethod STREQUAL omp )

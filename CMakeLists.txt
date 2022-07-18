@@ -95,19 +95,20 @@ ecbuild_add_option( FEATURE GPU
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI and CUDA. For now only NVHPC supported.)"
                     CONDITION CMAKE_CUDA_COMPILER
                          AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
-                         AND TARGET OpenACC::OpenACC_Fortran
                          AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
                          AND TARGET CUDA::cublas AND TARGET CUDA::cufft)
 
 ecbuild_add_option( FEATURE ACCGPU
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenACC"
-                    CONDITION HAVE_GPU)
+                    CONDITION HAVE_GPU
+                         AND TARGET OpenACC::OpenACC_Fortran)
      
 ecbuild_add_option( FEATURE OMPGPU
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenMP offloading"
                     CONDITION HAVE_GPU
+                         AND TARGET OpenMP::OpenMP_Fortran
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
      
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
@@ -126,11 +127,13 @@ set( HAVE_omp ${HAVE_OMPGPU} )
 # Following is NVHPC compiler specific and should really be coming from external input
 if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   if( HAVE_ACCGPU )
-    set( OpenACC_Fortran_FLAGS "-acc -gpu=lineinfo,deepcopy,fastmath,nordc" )
+    set( acc_flags -acc -gpu=lineinfo,deepcopy,fastmath,nordc )
+    set( acc_link_flags -acc )
     # Pass cmake command-line option "-DCMAKE_Fortran_FLAGS=-Minfo=acc" for diagnostics info
   endif()
   if( HAVE_OMPGPU )
-    set( OpenMP_Fortran_FLAGS "-mp=gpu -gpu=lineinfo,fastmath,nordc -Minfo=mp $OpenMP_Fortran_FLAGS" )
+    set( omp_flags -mp=gpu -gpu=lineinfo,fastmath,nordc -Minfo=mp )
+    set( omp_link_flags -mp=gpu )
   endif()
 endif()
 
