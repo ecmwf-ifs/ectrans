@@ -30,6 +30,7 @@ if( HAVE_TOOLS )
 
 endif()
 
+
 foreach( prec sp dp )
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
@@ -39,8 +40,19 @@ foreach( prec sp dp )
                              parkind_${prec}
                              trans_${prec}
                           )
+
+    if( HAVE_GPU )
+      ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}
+                             SOURCES ectrans-benchmark.F90
+                             LIBS
+                               fiat
+                               parkind_${prec}
+                               trans_gpu_${prec}
+                            )
+    endif()
   endif()
 endforeach()
+
 
 # ectrans information tool
 
@@ -64,4 +76,3 @@ install( FILES
   PERMISSIONS
   OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
-
