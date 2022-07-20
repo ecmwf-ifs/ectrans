@@ -68,20 +68,13 @@ integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
 
 integer(kind=jpim) :: nflevg
 integer(kind=jpim) :: ndgl ! Number of latitudes
-integer(kind=jpim) :: noutdum
 integer(kind=jpim) :: nspec2
 integer(kind=jpim) :: ngptot
 integer(kind=jpim) :: ngptotg
 integer(kind=jpim) :: ifld
-integer(kind=jpim) :: iflds
-integer(kind=jpim) :: icode
-integer(kind=jpim) :: ioutsf
 integer(kind=jpim) :: jroc
 integer(kind=jpim) :: jb
-integer(kind=jpim) :: ierr
 integer(kind=jpim) :: nspec2g
-integer(kind=jpim) :: iret
-integer(kind=jpim) :: ntype
 integer(kind=jpim) :: i
 integer(kind=jpim) :: ja
 integer(kind=jpim) :: ib
@@ -98,7 +91,6 @@ real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
 
 real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
 real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
-real(kind=jprb), allocatable :: znorm(:), znorm1(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
@@ -109,10 +101,6 @@ real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
 
 ! Spectral space data structures
-real(kind=jprb), allocatable :: zspvorg(:,:)
-real(kind=jprb), allocatable :: zspdivg(:,:)
-real(kind=jprb), allocatable :: zspspg(:,:)
-real(kind=jprb), allocatable :: zsptg(:,:,:)
 real(kind=jprb), allocatable, target :: sp3d(:,:,:)
 real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
@@ -374,8 +362,6 @@ nflevl = numll(mysetv)
 
 ivsetsc(1) = iprused
 ifld = 0
-iflds = 0
-icode = 0
 
 !===================================================================================================
 ! Call ecTrans setup routines
