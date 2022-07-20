@@ -135,7 +135,7 @@ integer(kind=jpim) :: nprnt_stats = 1
 
 logical :: lmpoff = .false. ! Message passing switch
 
-! Verbosity level (0, 1 or 2)
+! Verbosity level (0 or 1)
 integer :: verbosity = 0
 
 real(kind=jprb) :: zra = 6371229._jprb
@@ -367,9 +367,9 @@ ifld = 0
 ! Call ecTrans setup routines
 !===================================================================================================
 
-if (verbosity == 2) write(nout,'(a)')'======= Setup ectrans ======='
+if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 2),                &
+call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
   &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
@@ -392,7 +392,7 @@ ngpblks = (ngptot - 1)/nproma+1
 !===================================================================================================
 
 ! Print configuration details
-if (verbosity == 2) then
+if (verbosity >= 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
@@ -513,7 +513,7 @@ allocate(znormdiv1(nflevg))
 allocate(znormt(nflevg))
 allocate(znormt1(nflevg))
 
-if (verbosity == 2) then
+if (verbosity >= 1) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
@@ -539,7 +539,7 @@ endif
 
 ztinit = (timef() - ztinit)/1000.0_jprd
 
-if (verbosity == 2) then
+if (verbosity >= 1) then
   write(nout,'(" ")')
   write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
                                 & " tasks, took",ztinit," sec"
@@ -562,10 +562,8 @@ ztstepavg2 = 0._jprd
 ztstepmax2 = 0._jprd
 ztstepmin2 = 9999999999999999._jprd
 
-if (verbosity >= 1) then
-  write(nout,'(a)') '======= Start of spectral transforms  ======='
-  write(nout,'(" ")')
-endif
+write(nout,'(a)') '======= Start of spectral transforms  ======='
+write(nout,'(" ")')
 
 if (lstats) then
   call gstats(0, 0)
@@ -686,7 +684,7 @@ do jstep = 1, iters
   ! Print norms
   !=================================================================================================
 
-  if (verbosity == 2) then
+  if (verbosity >= 1) then
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
@@ -716,21 +714,19 @@ do jstep = 1, iters
     write(nout,'("time step ",i6," took", f8.4," | sp max err="e10.3,&
                 & " | div max err="e10.3," | vor max err="e10.3," | t max err="e10.3)') &
                 &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4)
-  else if (verbosity >= 1) then
+  else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
 enddo
 
 ztloop = (timef() - ztloop)/1000.0_jprd
 
+write(nout,'(" ")')
+write(nout,'(a)') '======= End of spectral transforms  ======='
+write(nout,'(" ")')
+
+
 if (verbosity >= 1) then
-  write(nout,'(" ")')
-  write(nout,'(a)') '======= End of spectral transforms  ======='
-  write(nout,'(" ")')
-end if
-
-
-if (verbosity == 2) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
@@ -808,41 +804,39 @@ ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
 
+write(nout,'(" ")')
+write(nout,'(a)') '======= Start of time step stats ======='
+write(nout,'(" ")')
+write(nout,'("Inverse transforms")')
+write(nout,'("------------------")')
+write(nout,'("avg  (s): ",f8.4)') ztstepavg1
 if (verbosity >= 1) then
-  write(nout,'(" ")')
-  write(nout,'(a)') '======= Start of time step stats ======='
-  write(nout,'(" ")')
-  write(nout,'("Inverse transforms")')
-  write(nout,'("------------------")')
-  write(nout,'("avg  (s): ",f8.4)') ztstepavg1
-  if (verbosity == 2) then
-    write(nout,'("min  (s): ",f8.4)') ztstepmin1
-    write(nout,'("max  (s): ",f8.4)') ztstepmax1
-    write(nout,'("med  (s): ",f8.4)') ztstepmed1
-  endif
-  write(nout,'(" ")')
-  write(nout,'("Direct transforms")')
-  write(nout,'("-----------------")')
-  write(nout,'("avg  (s): ",f8.4)') ztstepavg2
-  if (verbosity == 2) then
-    write(nout,'("min  (s): ",f8.4)') ztstepmin2
-    write(nout,'("max  (s): ",f8.4)') ztstepmax2
-    write(nout,'("med  (s): ",f8.4)') ztstepmed2
-  endif
-  write(nout,'(" ")')
-  write(nout,'("Inverse-direct transforms")')
-  write(nout,'("-------------------------")')
-  write(nout,'("avg  (s): ",f8.4)') ztstepavg
-  if (verbosity == 2) then
-    write(nout,'("min  (s): ",f8.4)') ztstepmin
-    write(nout,'("max  (s): ",f8.4)') ztstepmax
-    write(nout,'("med  (s): ",f8.4)') ztstepmed
-    write(nout,'("loop (s): ",f8.4)') ztloop
-  endif
-  write(nout,'(" ")')
-  write(nout,'(a)') '======= End of time step stats ======='
-  write(nout,'(" ")')
+  write(nout,'("min  (s): ",f8.4)') ztstepmin1
+  write(nout,'("max  (s): ",f8.4)') ztstepmax1
+  write(nout,'("med  (s): ",f8.4)') ztstepmed1
 endif
+write(nout,'(" ")')
+write(nout,'("Direct transforms")')
+write(nout,'("-----------------")')
+write(nout,'("avg  (s): ",f8.4)') ztstepavg2
+if (verbosity >= 1) then
+  write(nout,'("min  (s): ",f8.4)') ztstepmin2
+  write(nout,'("max  (s): ",f8.4)') ztstepmax2
+  write(nout,'("med  (s): ",f8.4)') ztstepmed2
+endif
+write(nout,'(" ")')
+write(nout,'("Inverse-direct transforms")')
+write(nout,'("-------------------------")')
+write(nout,'("avg  (s): ",f8.4)') ztstepavg
+if (verbosity >= 1) then
+  write(nout,'("min  (s): ",f8.4)') ztstepmin
+  write(nout,'("max  (s): ",f8.4)') ztstepmax
+  write(nout,'("med  (s): ",f8.4)') ztstepmed
+  write(nout,'("loop (s): ",f8.4)') ztloop
+endif
+write(nout,'(" ")')
+write(nout,'(a)') '======= End of time step stats ======='
+write(nout,'(" ")')
 
 if (lstack) then
   ! Gather stack usage statistics
@@ -870,7 +864,7 @@ endif
 if (lstats) then
   call gstats(0,1)
 
-  if (verbosity == 2) then
+  if (verbosity >= 1) then
     call gstats_print(nout, zaveave, jpmaxstat)
     write(nout,'(" ")')
   endif
@@ -1011,9 +1005,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       ! Parse verbosity argument
       case('-v')
         verbosity = 1
-      ! Parse verbosity argument
-      case('-vv')
-        verbosity = 2
       ! Parse number of iterations argument
       case('-n','--niter')
         iarg = iarg + 1
