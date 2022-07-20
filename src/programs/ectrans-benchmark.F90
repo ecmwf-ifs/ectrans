@@ -574,8 +574,9 @@ if (lstats) then
     & lstats_omp, lstats_comms, lstats_mem, nstats_mem, lstats_alloc,                  &
     & ltrace_stats, ntrace_stats, nprnt_stats, lxml_stats)
   call gstats_psut
-  ! TODO: what is this?
-  !call gstats_label_ifs
+
+  ! Assign labels to GSTATS regions
+  call gstats_labels
 endif
 
 ztloop = timef()
@@ -1277,6 +1278,25 @@ function detect_mpirun() result(lmpi_required)
     endif
   enddo
 end function
+
+!===================================================================================================
+
+! Assign GSTATS labels to the main regions of ecTrans
+subroutine gstats_labels
+
+  call gstats_label(0,   '   ', 'transform_test - Main transform loop')
+  call gstats_label(102, '   ', 'LTINV_CTL      - Inv. Legendre transform')
+  call gstats_label(103, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
+  call gstats_label(106, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
+  call gstats_label(107, '   ', 'FTINV_CTL      - Inv. Fourier transform')
+  call gstats_label(140, '   ', 'SULEG          - Comp. of Leg. poly.')
+  call gstats_label(152, '   ', 'LTINV_CTL      - M to L transposition')
+  call gstats_label(153, '   ', 'LTDIR_CTL      - L to M transposition')
+  call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
+  call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
+  call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
+
+end subroutine gstats_labels
 
 end program transform_test
 
