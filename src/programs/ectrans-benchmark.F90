@@ -135,8 +135,8 @@ integer(kind=jpim) :: nprnt_stats = 1
 
 logical :: lmpoff = .false. ! Message passing switch
 
-! Whether to print verbose output or not
-logical :: verbose = .false.
+! Verbosity level (0, 1 or 2)
+integer :: verbosity = 0
 
 real(kind=jprb) :: zra = 6371229._jprb
 
@@ -216,7 +216,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbose, ldump_values)
+  & luseflt, nproma, verbosity, ldump_values)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nfld
@@ -367,14 +367,12 @@ ifld = 0
 ! Call ecTrans setup routines
 !===================================================================================================
 
-if (verbose) then
-  write(nout,'(a)')'======= Setup ectrans ======='
-endif
+if (verbosity == 2) write(nout,'(a)')'======= Setup ectrans ======='
 
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbose), kmax_resol=nmax_resol,   &
-  &                 kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw,          &
-  &                 kcombflen=ncombflen, ldsync_trans=lsync_trans,                               &
-  &                 ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 2),                &
+  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
+  &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
+  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
 
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
   &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
@@ -394,7 +392,7 @@ ngpblks = (ngptot - 1)/nproma+1
 !===================================================================================================
 
 ! Print configuration details
-if (myproc == 1) then
+if (verbosity == 2) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
@@ -515,26 +513,24 @@ allocate(znormdiv1(nflevg))
 allocate(znormt(nflevg))
 allocate(znormt1(nflevg))
 
-if (verbose) then
+if (verbosity == 2) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
-  if (myproc == 1) then
-    do ifld = 1, 1
-      write(nout,'("sp  znorm(",i4,")=",f20.15)') ifld, znormsp1(ifld)
-    enddo
-    do ifld = 1, nflevg
-      write(nout,'("div znorm(",i4,")=",f20.15)') ifld, znormdiv1(ifld)
-    enddo
-    do ifld = 1, nflevg
-      write(nout,'("vor znorm(",i4,")=",f20.15)') ifld, znormvor1(ifld)
-    enddo
-    do ifld = 1, nflevg
-      write(nout,'("t   znorm(",i4,")=",f20.15)') ifld, znormt1(ifld)
-    enddo
-  endif
+  do ifld = 1, 1
+    write(nout,'("sp  znorm(",i4,")=",f20.15)') ifld, znormsp1(ifld)
+  enddo
+  do ifld = 1, nflevg
+    write(nout,'("div znorm(",i4,")=",f20.15)') ifld, znormdiv1(ifld)
+  enddo
+  do ifld = 1, nflevg
+    write(nout,'("vor znorm(",i4,")=",f20.15)') ifld, znormvor1(ifld)
+  enddo
+  do ifld = 1, nflevg
+    write(nout,'("t   znorm(",i4,")=",f20.15)') ifld, znormt1(ifld)
+  enddo
 endif
 
 !===================================================================================================
@@ -542,12 +538,13 @@ endif
 !===================================================================================================
 
 ztinit = (timef() - ztinit)/1000.0_jprd
-if (verbose .and. myproc == 1) then
+
+if (verbosity == 2) then
   write(nout,'(" ")')
   write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
                                 & " tasks, took",ztinit," sec"
   write(nout,'(" ")')
-end if
+endif
 
 if (iters <= 0) call abor1('transform_test:iters <= 0')
 
@@ -565,10 +562,10 @@ ztstepavg2 = 0._jprd
 ztstepmax2 = 0._jprd
 ztstepmin2 = 9999999999999999._jprd
 
-if (verbose .and. myproc == 1) then
+if (verbosity >= 1) then
   write(nout,'(a)') '======= Start of spectral transforms  ======='
   write(nout,'(" ")')
-end if
+endif
 
 if (lstats) then
   call gstats(0, 0)
@@ -688,96 +685,89 @@ do jstep = 1, iters
   ! Print norms
   !=================================================================================================
 
-  if( verbose )then
+  if (verbosity == 2) then
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
 
-    if (myproc == 1) then
-      ! Surface pressure
-      zmaxerr(:) = -999.0
-      do ifld = 1, 1
-        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
-        zmaxerr(1) = max(zmaxerr(1), zerr(1))
-      enddo
-      ! Divergence
-      do ifld = 1, nflevg
-        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
-        zmaxerr(2) = max(zmaxerr(2), zerr(2))
-      enddo
-      ! Vorticity
-      do ifld = 1, nflevg
-        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
-        zmaxerr(3) = max(zmaxerr(3),zerr(3))
-      enddo
-      ! Temperature
-      do ifld = 1, nflevg
-        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
-        zmaxerr(4) = max(zmaxerr(4), zerr(4))
-      enddo
-      write(nout,'("time step ",i6," took", f8.4," | sp max err="e10.3,&
-                 & " | div max err="e10.3," | vor max err="e10.3," | t max err="e10.3)') &
-                 &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4)
-    endif
-  else
-    if (verbose .and. myproc == 1) then
-      write(nout,'("time step ",i6," took", f8.4)') jstep, ztstep(jstep)
-    end if
+    ! Surface pressure
+    zmaxerr(:) = -999.0
+    do ifld = 1, 1
+      zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
+      zmaxerr(1) = max(zmaxerr(1), zerr(1))
+    enddo
+    ! Divergence
+    do ifld = 1, nflevg
+      zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
+      zmaxerr(2) = max(zmaxerr(2), zerr(2))
+    enddo
+    ! Vorticity
+    do ifld = 1, nflevg
+      zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
+      zmaxerr(3) = max(zmaxerr(3),zerr(3))
+    enddo
+    ! Temperature
+    do ifld = 1, nflevg
+      zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
+      zmaxerr(4) = max(zmaxerr(4), zerr(4))
+    enddo
+    write(nout,'("time step ",i6," took", f8.4," | sp max err="e10.3,&
+                & " | div max err="e10.3," | vor max err="e10.3," | t max err="e10.3)') &
+                &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4)
+  else if (verbosity >= 1) then
+    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
 enddo
 
 ztloop = (timef() - ztloop)/1000.0_jprd
 
-if (verbose .and. myproc == 1) then
+if (verbosity >= 1) then
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of spectral transforms  ======='
   write(nout,'(" ")')
 end if
 
 
-if( verbose ) then
+if (verbosity == 2) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
-  if (myproc == 1) then
-    ! surface pressure
-    zmaxerr(:) = -999.0
-    do ifld = 1, 1
-      zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0d0)
-      zmaxerr(1) = max(zmaxerr(1), zerr(1))
-      write(nout,'("sp znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormsp(ifld), zerr(1)
-    enddo
-    ! divergence
-    do ifld = 1, nflevg
-      zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0d0)
-      zmaxerr(2) = max(zmaxerr(2),zerr(2))
-      write(nout,'("div znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormdiv(ifld), zerr(2)
-    enddo
-    ! vorticity
-    do ifld = 1, nflevg
-      zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0d0)
-      zmaxerr(3) = max(zmaxerr(3), zerr(3))
-      write(nout,'("vor znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormvor(ifld), zerr(3)
-    enddo
-    ! temperature
-    do ifld = 1, nflevg
-      zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0d0)
-      zmaxerr(4) = max(zmaxerr(4), zerr(4))
-      write(nout,'("t znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormt(ifld), zerr(4)
-    enddo
-    ! maximum error across all fields
-    zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
+  ! surface pressure
+  zmaxerr(:) = -999.0
+  do ifld = 1, 1
+    zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0d0)
+    zmaxerr(1) = max(zmaxerr(1), zerr(1))
+    write(nout,'("sp znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormsp(ifld), zerr(1)
+  enddo
+  ! divergence
+  do ifld = 1, nflevg
+    zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0d0)
+    zmaxerr(2) = max(zmaxerr(2),zerr(2))
+    write(nout,'("div znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormdiv(ifld), zerr(2)
+  enddo
+  ! vorticity
+  do ifld = 1, nflevg
+    zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0d0)
+    zmaxerr(3) = max(zmaxerr(3), zerr(3))
+    write(nout,'("vor znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormvor(ifld), zerr(3)
+  enddo
+  ! temperature
+  do ifld = 1, nflevg
+    zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0d0)
+    zmaxerr(4) = max(zmaxerr(4), zerr(4))
+    write(nout,'("t znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormt(ifld), zerr(4)
+  enddo
+  ! maximum error across all fields
+  zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
 
-    write(nout,'("surface pressure max error=",e10.3)')zmaxerr(1)
-    write(nout,'("divergence       max error=",e10.3)')zmaxerr(2)
-    write(nout,'("vorticity        max error=",e10.3)')zmaxerr(3)
-    write(nout,'("temperature      max error=",e10.3)')zmaxerr(4)
-    write(nout,'("global           max error=",e10.3)')zmaxerrg
-
-  endif
+  write(nout,'("surface pressure max error=",e10.3)') zmaxerr(1)
+  write(nout,'("divergence       max error=",e10.3)') zmaxerr(2)
+  write(nout,'("vorticity        max error=",e10.3)') zmaxerr(3)
+  write(nout,'("temperature      max error=",e10.3)') zmaxerr(4)
+  write(nout,'("global           max error=",e10.3)') zmaxerrg
 endif
 
 if (luse_mpi) then
@@ -817,31 +807,37 @@ ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
 
-if (verbose .and. myproc == 1) then
+if (verbosity >= 1) then
   write(nout,'(" ")')
   write(nout,'(a)') '======= Start of time step stats ======='
   write(nout,'(" ")')
   write(nout,'("Inverse transforms")')
   write(nout,'("------------------")')
   write(nout,'("avg  (s): ",f8.4)') ztstepavg1
-  write(nout,'("min  (s): ",f8.4)') ztstepmin1
-  write(nout,'("max  (s): ",f8.4)') ztstepmax1
-  write(nout,'("med  (s): ",f8.4)') ztstepmed1
+  if (verbosity == 2) then
+    write(nout,'("min  (s): ",f8.4)') ztstepmin1
+    write(nout,'("max  (s): ",f8.4)') ztstepmax1
+    write(nout,'("med  (s): ",f8.4)') ztstepmed1
+  endif
   write(nout,'(" ")')
   write(nout,'("Direct transforms")')
   write(nout,'("-----------------")')
   write(nout,'("avg  (s): ",f8.4)') ztstepavg2
-  write(nout,'("min  (s): ",f8.4)') ztstepmin2
-  write(nout,'("max  (s): ",f8.4)') ztstepmax2
-  write(nout,'("med  (s): ",f8.4)') ztstepmed2
+  if (verbosity == 2) then
+    write(nout,'("min  (s): ",f8.4)') ztstepmin2
+    write(nout,'("max  (s): ",f8.4)') ztstepmax2
+    write(nout,'("med  (s): ",f8.4)') ztstepmed2
+  endif
   write(nout,'(" ")')
   write(nout,'("Inverse-direct transforms")')
   write(nout,'("-------------------------")')
   write(nout,'("avg  (s): ",f8.4)') ztstepavg
-  write(nout,'("min  (s): ",f8.4)') ztstepmin
-  write(nout,'("max  (s): ",f8.4)') ztstepmax
-  write(nout,'("med  (s): ",f8.4)') ztstepmed
-  write(nout,'("loop (s): ",f8.4)') ztloop
+  if (verbosity == 2) then
+    write(nout,'("min  (s): ",f8.4)') ztstepmin
+    write(nout,'("max  (s): ",f8.4)') ztstepmax
+    write(nout,'("med  (s): ",f8.4)') ztstepmed
+    write(nout,'("loop (s): ",f8.4)') ztloop
+  endif
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of time step stats ======='
   write(nout,'(" ")')
@@ -872,8 +868,11 @@ endif
 
 if (lstats) then
   call gstats(0,1)
-  call gstats_print(nout, zaveave, jpmaxstat)
-  write(nout,'(" ")')
+
+  if (verbosity == 2) then
+    call gstats_print(nout, zaveave, jpmaxstat)
+    write(nout,'(" ")')
+  endif
 endif
 
 !===================================================================================================
@@ -973,24 +972,23 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   lflt, nproma, verbose, ldump_values)
+  &                                   lflt, nproma, verbosity, ldump_values)
 
-  integer, intent(inout) :: nsmax   ! Spectral truncation
+  integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
-  integer, intent(inout) :: iters   ! Number of iterations for transform test
-  integer, intent(inout) :: nfld    ! Number of scalar fields
-  integer, intent(inout) :: nlev    ! Number of vertical levels
-  logical, intent(inout) :: lvordiv ! Also transform vorticity/divergence
-  logical, intent(inout) :: lscders ! Compute scalar derivatives
-  logical, intent(inout) :: luvders ! Compute uv East-West derivatives
-  logical, intent(inout) :: lflt    ! use fast Legendre transforms
-  integer, intent(inout) :: nproma  ! NPROMA
-  logical, intent(inout) :: verbose ! Print verbose output or not
-  logical, intent(inout) :: ldump_values
+  integer, intent(inout) :: iters           ! Number of iterations for transform test
+  integer, intent(inout) :: nfld            ! Number of scalar fields
+  integer, intent(inout) :: nlev            ! Number of vertical levels
+  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
+  logical, intent(inout) :: lscders         ! Compute scalar derivatives
+  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
+  logical, intent(inout) :: lflt            ! Use fast Legendre transforms
+  integer, intent(inout) :: nproma          ! NPROMA
+  integer, intent(inout) :: verbosity       ! Level of verbosity
+  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
-  integer            :: verbosity = 0 ! Level of verbosity (0, 1 or 2)
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
   cgrid = ''
@@ -1012,6 +1010,9 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       ! Parse verbosity argument
       case('-v')
         verbosity = 1
+      ! Parse verbosity argument
+      case('-vv')
+        verbosity = 2
       ! Parse number of iterations argument
       case('-n','--niter')
         iarg = iarg + 1
@@ -1043,9 +1044,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
     end select
     iarg = iarg + 1
   end do
-
-  ! TODO: implement different levels of verbosity
-  verbose = verbosity == 1
 
   if (.not. lvordiv) then
     luvders = .false.
