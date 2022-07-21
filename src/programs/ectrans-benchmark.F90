@@ -128,6 +128,7 @@ logical :: lfftw = .true. ! Use FFTW for Fourier transforms
 logical :: lvordiv = .true.
 logical :: lscders = .true.
 logical :: luvders = .true.
+logical :: lprint_norms = .false. ! Calculate and print spectral norms
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
@@ -216,7 +217,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nfld
@@ -513,7 +514,7 @@ allocate(znormdiv1(nflevg))
 allocate(znormt(nflevg))
 allocate(znormt1(nflevg))
 
-if (verbosity >= 1) then
+if (lprint_norms) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
@@ -684,7 +685,7 @@ do jstep = 1, iters
   ! Print norms
   !=================================================================================================
 
-  if (verbosity >= 1) then
+  if (lprint_norms) then
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
@@ -726,7 +727,7 @@ write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
 
-if (verbosity >= 1) then
+if (lprint_norms) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
@@ -957,7 +958,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   lflt, nproma, verbosity, ldump_values)
+  &                                   lflt, nproma, verbosity, ldump_values, lprint_norms)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -971,6 +972,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
+  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1020,6 +1022,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--flt'); lflt = .True.
       case('--nproma'); nproma = get_int_value(iarg)
       case('--dump-values'); ldump_values = .true.
+      case('--norms'); lprint_norms = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1133,6 +1136,10 @@ subroutine print_help(unit)
     & when also --vordiv is given"
   write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
   write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
+  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed &
+    & fields"
+  write(nout, "(a)") "                        The computation of spectral norms will skew overall &
+    & timings"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
