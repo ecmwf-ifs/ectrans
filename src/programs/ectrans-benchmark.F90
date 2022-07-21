@@ -804,36 +804,29 @@ ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
 
-write(nout,'(" ")')
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
 write(nout,'("Inverse transforms")')
 write(nout,'("------------------")')
 write(nout,'("avg  (s): ",f8.4)') ztstepavg1
-if (verbosity >= 1) then
-  write(nout,'("min  (s): ",f8.4)') ztstepmin1
-  write(nout,'("max  (s): ",f8.4)') ztstepmax1
-  write(nout,'("med  (s): ",f8.4)') ztstepmed1
-endif
+write(nout,'("min  (s): ",f8.4)') ztstepmin1
+write(nout,'("max  (s): ",f8.4)') ztstepmax1
+write(nout,'("med  (s): ",f8.4)') ztstepmed1
 write(nout,'(" ")')
 write(nout,'("Direct transforms")')
 write(nout,'("-----------------")')
 write(nout,'("avg  (s): ",f8.4)') ztstepavg2
-if (verbosity >= 1) then
-  write(nout,'("min  (s): ",f8.4)') ztstepmin2
-  write(nout,'("max  (s): ",f8.4)') ztstepmax2
-  write(nout,'("med  (s): ",f8.4)') ztstepmed2
-endif
+write(nout,'("min  (s): ",f8.4)') ztstepmin2
+write(nout,'("max  (s): ",f8.4)') ztstepmax2
+write(nout,'("med  (s): ",f8.4)') ztstepmed2
 write(nout,'(" ")')
 write(nout,'("Inverse-direct transforms")')
 write(nout,'("-------------------------")')
 write(nout,'("avg  (s): ",f8.4)') ztstepavg
-if (verbosity >= 1) then
-  write(nout,'("min  (s): ",f8.4)') ztstepmin
-  write(nout,'("max  (s): ",f8.4)') ztstepmax
-  write(nout,'("med  (s): ",f8.4)') ztstepmed
-  write(nout,'("loop (s): ",f8.4)') ztloop
-endif
+write(nout,'("min  (s): ",f8.4)') ztstepmin
+write(nout,'("max  (s): ",f8.4)') ztstepmax
+write(nout,'("med  (s): ",f8.4)') ztstepmed
+write(nout,'("loop (s): ",f8.4)') ztloop
 write(nout,'(" ")')
 write(nout,'(a)') '======= End of time step stats ======='
 write(nout,'(" ")')
@@ -864,10 +857,7 @@ endif
 if (lstats) then
   call gstats(0,1)
 
-  if (verbosity >= 1) then
-    call gstats_print(nout, zaveave, jpmaxstat)
-    write(nout,'(" ")')
-  endif
+  call gstats_print(nout, zaveave, jpmaxstat)
 endif
 
 !===================================================================================================
