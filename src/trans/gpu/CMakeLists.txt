@@ -14,7 +14,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
   ectrans_add_compile_options(
       SOURCES external/setup_trans.F90
       #FLAGS   "-gpu=pinned,deepcopy,fastmath,nordc")
-      FLAGS   "-gpu=pinned,fastmath,nordc")
+      FLAGS   "-gpu=pinned,fastmath")
   # TODO: check if it is sufficient to only set "-gpu=pinned" which appends rather than overwrites
 
 endif()

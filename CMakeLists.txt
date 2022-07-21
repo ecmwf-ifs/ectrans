@@ -132,7 +132,7 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
     # Pass cmake command-line option "-DCMAKE_Fortran_FLAGS=-Minfo=acc" for diagnostics info
   endif()
   if( HAVE_OMPGPU )
-    set( omp_flags -mp=gpu -gpu=lineinfo,fastmath,nordc -Minfo=mp )
+    set( omp_flags -mp=gpu -gpu=lineinfo,fastmath -Minfo=mp )
     set( omp_link_flags -mp=gpu )
   endif()
 endif()

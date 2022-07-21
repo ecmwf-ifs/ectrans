@@ -94,12 +94,13 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   !*       1.    UPDATE SPECTRAL FIELDS.
   !              -----------------------
 
-  !loop over wavenumber
+      !loop over wavenumber
 #ifdef ACCGPU
   !$ACC DATA PRESENT(PSPEC,POA,R,D)
 #endif
 #ifdef OMPGPU
-  !$OMP TARGET DATA MAP(ALLOC:PSPEC,POA,R,D)
+  !$OMP TARGET DATA MAP(ALLOC:PSPEC,POA) &
+  !$OMP&    MAP(TO:R,D,D%NUMP,R%NTMAX,R%NSMAX,D%MYMS,D%NASM0)
   !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
   !$OMP& SHARED(D,R,KFIELD,PSPEC,POA)
 #endif
