@@ -96,15 +96,6 @@ IF( IFLD > 0 ) THEN
 !$OMP& MAP(TOFROM:PAIA)
 #endif
 
-!loop over wavenumber
-#ifdef OMPGPU
-!$OMP TARGET UPDATE FROM(PAIA)
-#endif
-#ifdef ACCGPU
-!$ACC UPDATE HOST(PAIA)
-#endif
-print*,'DEBUGGING: ldfou2_mod: before: sum(PAIA)=',sum(PAIA)
-
 #ifdef OMPGPU
 !$OMP TARGET PARALLEL DO COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS) &
 !$OMP&      SHARED(D_NUMP,R_NDGNH,KF_UV,D_MYMS,R_NDGNH,G_NDGLU,R_NDGL,PAIA,F)
@@ -132,14 +123,6 @@ ENDDO
 #ifdef ACCGPU
 !$ACC END DATA
 #endif
-
-#ifdef OMPGPU
-!$OMP TARGET UPDATE FROM(PAIA)
-#endif
-#ifdef ACCGPU
-!$ACC UPDATE HOST(PAIA)
-#endif
-print*,'DEBUGGING: ldfou2_mod: after: sum(PAIA)=',sum(PAIA)
 
 ENDIF
 
