@@ -1101,7 +1101,7 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
 
   write(nout, "(a)") "DESCRIPTION"
-  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth &
+  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
     &between spectral "
   if (jprb == jprd) then
     write(nout, "(a)") "        space and grid-point space (double-precision version)"
@@ -1121,24 +1121,24 @@ subroutine print_help(unit)
   write(nout, "(a)") "OPTIONS"
   write(nout, "(a)") "    -h, --help          Print this message"
   write(nout, "(a)") "    -v                  Run with verbose output"
-  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation &
+  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation&
     & (default = 79)"
   write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
-  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1 &
+  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1&
     & (cubic relation)"
-  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform &
+  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
     & iterations (default = 10)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
   write(nout, "(a)") "    --scders            Compute scalar derivatives (default off)"
-  write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only &
+  write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
     & when also --vordiv is given"
   write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
   write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
-  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed &
+  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed&
     & fields"
-  write(nout, "(a)") "                        The computation of spectral norms will skew overall &
+  write(nout, "(a)") "                        The computation of spectral norms will skew overall&
     & timings"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
