@@ -179,6 +179,11 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCM(:)  ! Process that does the calc. fo
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
 
 
+! The offsets in the input and output arrays to the gemms.
+! (1) are the offsets in the "inputs" of dirtrans ("outputs" invtrans)
+! (2) are the offsets in the "outputs" of invtrans ("inputs" dirtrans)
+INTEGER(KIND=JPIM), ALLOCATABLE :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
+
 TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
 TYPE(DISTR_TYPE),POINTER     :: D
 
