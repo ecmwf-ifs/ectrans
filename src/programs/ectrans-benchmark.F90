@@ -236,7 +236,7 @@ call dr_hook_init()
 
 !===================================================================================================
 
-!if( lstats ) call gstats(0,0)
+if( lstats ) call gstats(0,0)
 ztinit = timef()
 
 
@@ -361,20 +361,39 @@ ivsetsc(1) = iprused
 ifld = 0
 
 !===================================================================================================
+! Setup gstats
+!===================================================================================================
+
+if (lstats) then
+  call gstats_setup(nproc, myproc, nprcids,                                            &
+    & lstats, lstatscpu, lsyncstats, ldetailed_stats, lbarrier_stats, lbarrier_stats2, &
+    & lstats_omp, lstats_comms, lstats_mem, nstats_mem, lstats_alloc,                  &
+    & ltrace_stats, ntrace_stats, nprnt_stats, lxml_stats)
+  call gstats_psut
+
+  ! Assign labels to GSTATS regions
+  call gstats_labels
+endif
+
+!===================================================================================================
 ! Call ecTrans setup routines
 !===================================================================================================
 
 if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
+call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
   &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+call gstats(1, 1)
 
+call gstats(2, 0)
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
   &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
   &                 lduseflt=luseflt)
-!
+call gstats(2, 1)
+
 call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
 
 if (nproma == 0) then ! no blocking (default when not specified)
@@ -564,18 +583,6 @@ ztstepmin2 = 9999999999999999._jprd
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
 
-if (lstats) then
-  call gstats(0, 0)
-  call gstats_setup(nproc, myproc, nprcids,                                            &
-    & lstats, lstatscpu, lsyncstats, ldetailed_stats, lbarrier_stats, lbarrier_stats2, &
-    & lstats_omp, lstats_comms, lstats_mem, nstats_mem, lstats_alloc,                  &
-    & ltrace_stats, ntrace_stats, nprnt_stats, lxml_stats)
-  call gstats_psut
-
-  ! Assign labels to GSTATS regions
-  call gstats_labels
-endif
-
 ztloop = timef()
 
 !===================================================================================================
@@ -583,6 +590,7 @@ ztloop = timef()
 !===================================================================================================
 
 do jstep = 1, iters
+  call gstats(3,0)
   ztstep(jstep) = timef()
 
   !=================================================================================================
@@ -590,7 +598,7 @@ do jstep = 1, iters
   !=================================================================================================
 
   ztstep1(jstep) = timef()
-
+  call gstats(4,0)
   if (lvordiv) then
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
@@ -617,6 +625,7 @@ do jstep = 1, iters
        & pgp2=zgp2,                         &
        & pgp3a=zgp3a)
   endif
+  call gstats(4,1)
 
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
@@ -638,6 +647,7 @@ do jstep = 1, iters
 
   ztstep2(jstep) = timef()
 
+  call gstats(5,0)
   if (lvordiv) then
     call dir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgmvs(:,1:1,:),                &
@@ -659,6 +669,7 @@ do jstep = 1, iters
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
+  call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
 
   !=================================================================================================
@@ -684,6 +695,7 @@ do jstep = 1, iters
   !=================================================================================================
 
   if (lprint_norms) then
+    call gstats(6,0)
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
@@ -713,9 +725,11 @@ do jstep = 1, iters
     write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
                 & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
                 &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+    call gstats(6,1)
   else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
+  call gstats(3,1)
 enddo
 
 ztloop = (timef() - ztloop)/1000.0_jprd
@@ -863,7 +877,6 @@ endif
 
 if (lstats) then
   call gstats(0,1)
-
   call gstats_print(nout, zaveave, jpmaxstat)
 endif
 
@@ -1279,7 +1292,13 @@ end function
 ! Assign GSTATS labels to the main regions of ecTrans
 subroutine gstats_labels
 
-  call gstats_label(0,   '   ', 'transform_test - Main transform loop')
+  call gstats_label(0,   '   ', 'PROGRAM        - Total')
+  call gstats_label(1,   '   ', 'SETUP_TRANS0   - Setup ecTrans')
+  call gstats_label(2,   '   ', 'SETUP_TRANS    - Setup ecTrans handle')
+  call gstats_label(3,   '   ', 'TIME STEP      - Time step')
+  call gstats_label(4,   '   ', 'INV_TRANS      - Inverse transform')
+  call gstats_label(5,   '   ', 'DIR_TRANS      - Direct transform')
+  call gstats_label(6,   '   ', 'NORMS          - Norm comp. (optional)')
   call gstats_label(102, '   ', 'LTINV_CTL      - Inv. Legendre transform')
   call gstats_label(103, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
   call gstats_label(106, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
