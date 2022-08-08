@@ -218,7 +218,7 @@ call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscder
   & luseflt, nproma, verbosity, ldump_values, lprint_norms)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
-nflevg = nfld
+nflevg = nlev
 
 !===================================================================================================
 
