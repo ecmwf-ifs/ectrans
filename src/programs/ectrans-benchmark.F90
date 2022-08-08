@@ -175,8 +175,6 @@ integer(kind=jpim) :: iprtrv
 integer(kind=jpim) :: iprtrw
 integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 
-logical :: llinfo
-
 integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
 integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
 
@@ -225,7 +223,7 @@ nflevg = nfld
 !===================================================================================================
 
 if (luse_mpi) then
-  call mpl_init()
+  call mpl_init(ldinfo=(verbosity>=1))
   nproc  = mpl_nproc()
   myproc = mpl_myrank()
 else
@@ -337,9 +335,7 @@ else
 endif
 
 if (.not. lmpoff) then
-  llinfo = .false.
-  if (myproc == 1) llinfo = .true.
-  call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=llinfo)
+  call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(verbosity>=1))
 endif
 
 ! Determine number of local levels for fourier and legendre calculations
@@ -393,7 +389,7 @@ ngpblks = (ngptot - 1)/nproma+1
 !===================================================================================================
 
 ! Print configuration details
-if (verbosity >= 1) then
+if (verbosity >= 0) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
@@ -520,18 +516,20 @@ if (lprint_norms) then
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
-  do ifld = 1, 1
-    write(nout,'("sp  znorm(",i4,")=",f20.15)') ifld, znormsp1(ifld)
-  enddo
-  do ifld = 1, nflevg
-    write(nout,'("div znorm(",i4,")=",f20.15)') ifld, znormdiv1(ifld)
-  enddo
-  do ifld = 1, nflevg
-    write(nout,'("vor znorm(",i4,")=",f20.15)') ifld, znormvor1(ifld)
-  enddo
-  do ifld = 1, nflevg
-    write(nout,'("t   znorm(",i4,")=",f20.15)') ifld, znormt1(ifld)
-  enddo
+  if (verbosity >= 1) then
+    do ifld = 1, nflevg
+      write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
+    enddo
+    do ifld = 1, nflevg
+      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
+    enddo
+    do ifld = 1, nflevg
+      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
+    enddo
+    do ifld = 1, 1
+      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
+    enddo
+  endif
 endif
 
 !===================================================================================================
@@ -540,7 +538,7 @@ endif
 
 ztinit = (timef() - ztinit)/1000.0_jprd
 
-if (verbosity >= 1) then
+if (verbosity >= 0) then
   write(nout,'(" ")')
   write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
                                 & " tasks, took",ztinit," sec"
@@ -712,9 +710,9 @@ do jstep = 1, iters
       zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
       zmaxerr(4) = max(zmaxerr(4), zerr(4))
     enddo
-    write(nout,'("time step ",i6," took", f8.4," | sp max err="e10.3,&
-                & " | div max err="e10.3," | vor max err="e10.3," | t max err="e10.3)') &
-                &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4)
+    write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+                &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
   else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
   endif
@@ -733,39 +731,47 @@ if (lprint_norms) then
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
-  ! surface pressure
   zmaxerr(:) = -999.0
-  do ifld = 1, 1
-    zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0d0)
-    zmaxerr(1) = max(zmaxerr(1), zerr(1))
-    write(nout,'("sp znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormsp(ifld), zerr(1)
-  enddo
-  ! divergence
-  do ifld = 1, nflevg
-    zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0d0)
-    zmaxerr(2) = max(zmaxerr(2),zerr(2))
-    write(nout,'("div znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormdiv(ifld), zerr(2)
-  enddo
-  ! vorticity
   do ifld = 1, nflevg
     zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0d0)
     zmaxerr(3) = max(zmaxerr(3), zerr(3))
-    write(nout,'("vor znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormvor(ifld), zerr(3)
+    if (verbosity >= 1) then
+      write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor1(ifld), zerr(3)
+    endif
   enddo
-  ! temperature
+  do ifld = 1, nflevg
+    zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0d0)
+    zmaxerr(2) = max(zmaxerr(2),zerr(2))
+    if (verbosity >= 1) then
+      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv1(ifld), zerr(2)
+    endif
+  enddo
   do ifld = 1, nflevg
     zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0d0)
     zmaxerr(4) = max(zmaxerr(4), zerr(4))
-    write(nout,'("t znorm(",i4,")=",f20.15," err=",e10.3)') ifld, znormt(ifld), zerr(4)
+    if (verbosity >= 1) then
+      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt1(ifld), zerr(4)
+    endif
   enddo
+  do ifld = 1, 1
+    zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0d0)
+    zmaxerr(1) = max(zmaxerr(1), zerr(1))
+    if (verbosity >= 1) then
+      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp1(ifld), zerr(1)
+    endif
+  enddo
+
   ! maximum error across all fields
   zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
 
-  write(nout,'("surface pressure max error=",e10.3)') zmaxerr(1)
-  write(nout,'("divergence       max error=",e10.3)') zmaxerr(2)
-  write(nout,'("vorticity        max error=",e10.3)') zmaxerr(3)
-  write(nout,'("temperature      max error=",e10.3)') zmaxerr(4)
-  write(nout,'("global           max error=",e10.3)') zmaxerrg
+  if (verbosity >= 1) write(nout,*)
+  write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
+  write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
+  write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
+  write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
+  write(nout,*)
+  write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
+  write(nout,*)
 endif
 
 if (luse_mpi) then
@@ -879,6 +885,7 @@ deallocate(zgmvs)
 
 if (luse_mpi) then
   call mpl_barrier()
+  write(nout,*)
   call mpl_end()
 endif
 
