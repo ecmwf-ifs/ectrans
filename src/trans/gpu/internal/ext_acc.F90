@@ -295,11 +295,9 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      print *, "creating ", common_ptrs(i)%sz
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
       call acc_create_async(pp, common_ptrs(i)%sz, async=stream_act)
     enddo
-    print *, "done"
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
     use openacc
