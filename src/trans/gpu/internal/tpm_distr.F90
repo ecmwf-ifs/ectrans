@@ -166,19 +166,19 @@ END TYPE DISTR_TYPE
 
 !flat versions of the above
 INTEGER(KIND=JPIM) :: D_NUMP      ! No. of spectral waves handled by this processor
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MYMS(:)    ! Wave numbers handled by this PE
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT0B(:) ! Start adresses for segments within buffer
+INTEGER(KIND=JPIM) ,POINTER :: D_MYMS(:)    ! Wave numbers handled by this PE
+INTEGER(KIND=JPIM) ,POINTER :: D_NSTAGT0B(:) ! Start adresses for segments within buffer
                                   ! (according to processors to whom data 
                                   ! is going to be sent) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT1B(:) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCL(:) ! Process responsible for each lat. (F.S)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB1(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,ALLOCATABLE  :: D_NSTAGTF(:) ! Offset for specific latitude in 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MSTABF(:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB0(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCM(:)  ! Process that does the calc. for certain 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
+INTEGER(KIND=JPIM) ,POINTER :: D_NSTAGT1B(:) 
+INTEGER(KIND=JPIM) ,POINTER :: D_NPROCL(:) ! Process responsible for each lat. (F.S)
+INTEGER(KIND=JPIM) ,POINTER :: D_NPNTGTB1(:,:)
+INTEGER(KIND=JPIM) ,POINTER :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
+INTEGER(KIND=JPIM) ,POINTER  :: D_NSTAGTF(:) ! Offset for specific latitude in 
+INTEGER(KIND=JPIM) ,POINTER :: D_MSTABF(:)
+INTEGER(KIND=JPIM) ,POINTER :: D_NPNTGTB0(:,:)
+INTEGER(KIND=JPIM) ,POINTER :: D_NPROCM(:)  ! Process that does the calc. for certain 
+INTEGER(KIND=JPIM) ,POINTER :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
 
 
 ! The offsets in the input and output arrays to the gemms.

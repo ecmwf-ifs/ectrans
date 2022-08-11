@@ -33,7 +33,7 @@ REAL(KIND=JPRBT) ,ALLOCATABLE :: RACTHE2(:) ! 1./SQRT(R1MU2), 1/(cos(theta)) dua
 END TYPE FIELDS_TYPE
 
 !flat copies of the above
-REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RW(:)     ! Weights of the Gaussian quadrature
+REAL(KIND=JPRBT) ,POINTER :: F_RW(:)     ! Weights of the Gaussian quadrature
 
 TYPE(FIELDS_TYPE),ALLOCATABLE,TARGET :: FIELDS_RESOL(:)
 TYPE(FIELDS_TYPE),POINTER     :: F
