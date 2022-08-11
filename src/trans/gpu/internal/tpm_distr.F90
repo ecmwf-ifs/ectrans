@@ -160,6 +160,8 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each
 REAL(KIND=JPRBT) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
+INTEGER(KIND=JPIM), ALLOCATABLE :: OFFSETS_GEMM1(:), OFFSETS_GEMM2(:)
+
 END TYPE DISTR_TYPE
 
 !flat versions of the above
@@ -182,7 +184,7 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
 ! The offsets in the input and output arrays to the gemms.
 ! (1) are the offsets in the "inputs" of dirtrans ("outputs" invtrans)
 ! (2) are the offsets in the "outputs" of invtrans ("inputs" dirtrans)
-INTEGER(KIND=JPIM), ALLOCATABLE :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
+INTEGER(KIND=JPIM), POINTER :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
 
 TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
 TYPE(DISTR_TYPE),POINTER     :: D
