@@ -129,6 +129,7 @@ logical :: lvordiv = .true.
 logical :: lscders = .true.
 logical :: luvders = .true.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
+logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
@@ -208,6 +209,7 @@ character(len=16) :: cgrid
 #include "specnorm.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
+#include "ec_meminfo.intfb.h"
 
 !===================================================================================================
 
@@ -215,7 +217,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -899,7 +901,9 @@ deallocate(zgmvs)
 if (luse_mpi) then
   call mpl_barrier()
   write(nout,*)
-  call mpl_end()
+  if (lmeminfo) call ec_meminfo(nout, "transform_test", mpi_comm_world, kbarr=1, kiotask=-1, &
+    & kcall=1)
+  call mpl_end(ldmeminfo=.false.)
 endif
 
 !===================================================================================================
@@ -978,7 +982,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   lflt, nproma, verbosity, ldump_values, lprint_norms)
+  &                                   lflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -993,6 +997,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
   logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
+  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
+                                            ! end
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1043,6 +1049,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--nproma'); nproma = get_int_value(iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
+      case('--meminfo'); lmeminfo = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1160,6 +1167,8 @@ subroutine print_help(unit)
     & fields"
   write(nout, "(a)") "                        The computation of spectral norms will skew overall&
     & timings"
+  write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
+    & subroutine on memory usage, thread-binding etc."
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
