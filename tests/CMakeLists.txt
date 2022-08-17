@@ -46,22 +46,27 @@ if( TEST ectrans_test_adjoint AND HAVE_OMP )
   target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
 endif()
 
+set( ntasks 0 )
+set( nthreads 1 )
+if( HAVE_MPI )
+  list( APPEND ntasks 1 2 )
+endif()
+if( HAVE_OMP )
+  list( APPEND nthreads 4 8 )
+endif()
+
 foreach( prec dp sp )
-  foreach( mpi 0 1 2 )
-    set( nthreads 1 )
-    if( HAVE_OMP )
-      list( APPEND nthreads 4 8 )
-    endif()
+  foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
         set( t 47 )
         set( grid O48 )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 -v --meminfo
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo
             MPI ${mpi}
             OMP ${omp}
         )
@@ -88,7 +93,7 @@ foreach( prec dp sp )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt
             COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt
             MPI ${mpi}
-            OMP 1
+            OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16
             COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16
