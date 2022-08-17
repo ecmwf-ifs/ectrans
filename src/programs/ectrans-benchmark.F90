@@ -231,6 +231,7 @@ if (luse_mpi) then
 else
   nproc = 1
   myproc = 1
+  mpl_comm = -1
 endif
 nthread = oml_max_threads()
 
@@ -266,7 +267,9 @@ do jj = 1, nproc
   nprcids(jj) = jj
 enddo
 
-if (nproc <= 1) lmpoff = .true.
+if (nproc <= 1) then
+  lmpoff = .true.
+endif
 
 ! Compute nprgpns and nprgpew
 ! This version selects most square-like distribution
@@ -876,34 +879,39 @@ endif
 
 
 !===================================================================================================
+! Cleanup
+
+deallocate(zgmv)
+deallocate(zgmvs)
+
+!===================================================================================================
 
 if (lstats) then
   call gstats(0,1)
   call gstats_print(nout, zaveave, jpmaxstat)
 endif
 
-!===================================================================================================
-
-! Close file
-if (nproc > 1) then
-  if (myproc /= 1) then
-    close(unit=nout)
-  endif
+if (lmeminfo) then
+  write(nout,*)
+  call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
+      & kcall=1)
 endif
-
-deallocate(zgmv)
-deallocate(zgmvs)
 
 !===================================================================================================
 ! Finalize MPI
 !===================================================================================================
 
 if (luse_mpi) then
-  call mpl_barrier()
-  write(nout,*)
-  if (lmeminfo) call ec_meminfo(nout, "transform_test", mpi_comm_world, kbarr=1, kiotask=-1, &
-    & kcall=1)
   call mpl_end(ldmeminfo=.false.)
+endif
+
+!===================================================================================================
+! Close file
+
+if (nproc > 1) then
+  if (myproc /= 1) then
+    close(unit=nout)
+  endif
 endif
 
 !===================================================================================================
