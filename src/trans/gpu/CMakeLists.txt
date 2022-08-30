@@ -61,8 +61,8 @@ foreach( prec sp dp )
                           $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS      parkind_${prec}
                           fiat
-          PRIVATE_LIBS    CUDA::cufft
-                          CUDA::cublas
+          PRIVATE_LIBS    HIP::hipfft
+                          HIP::hipblas
                           MPI::MPI_Fortran
                           MPI::MPI_C
                           nvhpcwrapnvtx

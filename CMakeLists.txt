@@ -65,19 +65,27 @@ ecbuild_add_option( FEATURE TRANSI
                     CONDITION HAVE_DOUBLE_PRECISION )
 
 if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE GPU is OFF by default (see below)
-  check_language(CUDA)
-  find_package(CUDAToolkit)
+  check_language(HIP)
+  if(NOT DEFINED HIP_PATH)
+    if(NOT DEFINED ENV{HIP_PATH})
+        set(HIP_PATH "/opt/rocm/hip" CACHE PATH "Path to which HIP has been installed")
+    else()
+        set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to which HIP has been installed")
+    endif()
+  endif()
+  set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
+  find_package(HIP)
   find_package(OpenACC COMPONENTS Fortran)
   find_package(MPI COMPONENTS Fortran C)
 
-  if( NOT CMAKE_CUDA_COMPILER)
-    ecbuild_info("No CUDA compiler found")
+  if( NOT CMAKE_HIP_COMPILER)
+    ecbuild_info("No HIP compiler found")
   endif()
-  if( NOT TARGET CUDA::cublas )
-    ecbuild_info("No target CUDA::cublas")
+  if( NOT TARGET HIP::hipblas )
+    ecbuild_info("No target HIP::hipblas")
   endif()
-  if( NOT TARGET CUDA::cufft )
-    ecbuild_info("No target CUDA::cufft")
+  if( NOT TARGET HIP::hipfft )
+    ecbuild_info("No target HIP::hipfft")
   endif()
   if( NOT TARGET OpenACC::OpenACC_Fortran )
     ecbuild_info("No target OpenACC:OpenACC_Fortran")
@@ -93,10 +101,9 @@ endif()
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI and CUDA. For now only NVHPC supported.)"
-                    CONDITION CMAKE_CUDA_COMPILER
-                         AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
+                    CONDITION CMAKE_HIP_COMPILER
                          AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
-                         AND TARGET CUDA::cublas AND TARGET CUDA::cufft)
+                         AND TARGET HIP::hipblas AND TARGET HIP::hipfft)
 
 ecbuild_add_option( FEATURE ACCGPU
                     DEFAULT ON
@@ -138,7 +145,7 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
 endif()
 
 if( HAVE_GPU )
-    enable_language( CUDA )
+    enable_language( HIP )
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 70 80)
     endif()
