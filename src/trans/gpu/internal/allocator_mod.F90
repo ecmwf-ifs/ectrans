@@ -159,7 +159,7 @@ CONTAINS
     ELSE
         SET_STREAM_EFF = ACC_ASYNC_SYNC
     ENDIF
-    IF (SET_VALUE_EFF) THEN
+    IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
       ! setting all bits to 1 (meaning NaN in floating point)
       !$ACC KERNELS PRESENT(SRC) ASYNC(SET_STREAM_EFF)
@@ -194,7 +194,7 @@ CONTAINS
     ELSE
         SET_STREAM_EFF = ACC_ASYNC_SYNC
     ENDIF
-    IF (SET_VALUE_EFF) THEN
+    IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
       ! setting all bits to 1 (meaning NaN in floating point)
       !$ACC KERNELS PRESENT(SRC) ASYNC(SET_STREAM_EFF)
