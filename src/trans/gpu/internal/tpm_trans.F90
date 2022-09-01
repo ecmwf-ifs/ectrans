@@ -56,14 +56,6 @@ INTEGER(KIND=JPIM) :: NGPBLKS ! Number of NPROMA blocks
 
 LOGICAL :: LGPNORM = .FALSE.  ! indicates whether transform is being done for gpnorm
 
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: ZGTF(:,:)
-
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZAVE(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGL(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGL(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGPN(:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
-
 ! This is used in fourier space and in spectral space. It's reused among
 ! the transforms because we cannot reallocate - the captured CUDA graphs
 ! should not be modified. Hence, we keep it if it is large enough, otherwise
