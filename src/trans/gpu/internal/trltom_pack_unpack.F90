@@ -1,5 +1,6 @@
 #define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2000- Meteo-France.
 ! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
