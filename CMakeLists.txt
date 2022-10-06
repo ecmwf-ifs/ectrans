@@ -18,7 +18,7 @@ include( ectrans_macros )
 
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
-### Find (optional) dependencies 
+### Find (optional) dependencies
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
@@ -54,38 +54,43 @@ if( NOT HAVE_MKL )
     option( FFTW_ENABLE_MKL OFF )
 endif()
 
-ecbuild_add_option( FEATURE FFTW
-                    DEFAULT ON
-                    DESCRIPTION "Support for fftw"
-                    REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
-
-ecbuild_add_option( FEATURE TRANSI
-                    DEFAULT ON
-                    DESCRIPTION "Compile TransI C-interface to trans"
-                    CONDITION HAVE_DOUBLE_PRECISION )
-
 if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE GPU is OFF by default (see below)
-  check_language(HIP)
-  if(NOT DEFINED HIP_PATH)
-    if(NOT DEFINED ENV{HIP_PATH})
-        set(HIP_PATH "/opt/rocm/hip" CACHE PATH "Path to which HIP has been installed")
-    else()
-        set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to which HIP has been installed")
-    endif()
-  endif()
-  set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
-  find_package(HIP)
+        #include(CheckLanguage)
+        #check_language(HIP)
+        #if(CMAKE_HIP_COMPILER)
+        #      enable_language(HIP)
+        #else()
+        #               ecbuild_critical("No HIP compiler found")
+        #endif()
+        #if(NOT DEFINED HIP_PATH)
+        #if(NOT DEFINED ENV{HIP_PATH})
+        #set(HIP_PATH "/opt/rocm/hip" CACHE PATH "Path to which HIP has been installed")
+        #else()
+        #set(HIP_PATH $ENV{HIP_PATH} CACHE PATH "Path to which HIP has been installed")
+        #endif()
+        #endif()
+        #list(APPEND CMAKE_PREFIX_PATH ${HIP_PATH} /opt/rocm)
+        #set(CMAKE_MODULE_PATH "${HIP_PATH}/cmake" ${CMAKE_MODULE_PATH})
+        set(CMAKE_MODULE_PATH $ENV{HIP_ROOT}/cmake ${CMAKE_MODULE_PATH})
+        ecbuild_warn_var(CMAKE_MODULE_PATH)
+        find_package(HIP)
+        #if( HIP_FOUND )
+        #  find_package(hipfft)
+        #  find_package(hipblas)
+        #endif()
   find_package(OpenACC COMPONENTS Fortran)
   find_package(MPI COMPONENTS Fortran C)
 
   if( NOT CMAKE_HIP_COMPILER)
     ecbuild_info("No HIP compiler found")
   endif()
+  if(FALSE)
   if( NOT TARGET HIP::hipblas )
     ecbuild_info("No target HIP::hipblas")
   endif()
   if( NOT TARGET HIP::hipfft )
     ecbuild_info("No target HIP::hipfft")
+  endif()
   endif()
   if( NOT TARGET OpenACC::OpenACC_Fortran )
     ecbuild_info("No target OpenACC:OpenACC_Fortran")
@@ -98,26 +103,38 @@ if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE
   endif()
 endif()
 
+ecbuild_add_option( FEATURE FFTW
+                    DEFAULT ON
+                    DESCRIPTION "Support for fftw"
+                    REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
+
+ecbuild_add_option( FEATURE TRANSI
+                    DEFAULT ON
+                    DESCRIPTION "Compile TransI C-interface to trans"
+                    CONDITION HAVE_DOUBLE_PRECISION )
+
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI and CUDA. For now only NVHPC supported.)"
-                    CONDITION CMAKE_HIP_COMPILER
+                    CONDITION
+                    HIP_FOUND
                          AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
-                         AND TARGET HIP::hipblas AND TARGET HIP::hipfft)
+                         #     AND TARGET HIP::hipblas AND TARGET HIP::hipfft
+                   )
 
 ecbuild_add_option( FEATURE ACCGPU
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     CONDITION HAVE_GPU
                          AND TARGET OpenACC::OpenACC_Fortran)
-     
+
 ecbuild_add_option( FEATURE OMPGPU
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenMP offloading"
                     CONDITION HAVE_GPU
                          AND TARGET OpenMP::OpenMP_Fortran
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
-     
+
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
                     CONDITION HAVE_GPU
@@ -145,7 +162,7 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
 endif()
 
 if( HAVE_GPU )
-    enable_language( HIP )
+    #enable_language( HIP )
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
         set(CMAKE_CUDA_ARCHITECTURES 70 80)
     endif()
@@ -168,4 +185,3 @@ endif()
 ecbuild_install_project( NAME ${PROJECT_NAME} )
 
 ecbuild_print_summary()
-

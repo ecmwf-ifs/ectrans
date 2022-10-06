@@ -805,7 +805,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           CALL GSTATS(852,1)
         ELSE
           IRECVLENMAX=2
-          ZDUM(:)=0.0_JPRB
+          ZDUM(:)=0.0_JPRBT
           CALL GSTATS(852,0)
           DO JSETV=1,NPRTRV
             CALL SET2PE(ISEND,0,0,MYSETW,JSETV)

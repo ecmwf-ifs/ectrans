@@ -42,7 +42,7 @@ foreach( prec sp dp )
                           )
 
     if( HAVE_GPU )
-      foreach( gpumethod acc omp )
+      foreach( gpumethod omp )
         if( HAVE_${gpumethod} )
           if( gpumethod STREQUAL acc )
             ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}

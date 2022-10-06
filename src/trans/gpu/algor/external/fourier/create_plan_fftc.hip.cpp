@@ -1,4 +1,5 @@
 #define cufftSafeCall(err) __cufftSafeCall(err, __FILE__, __LINE__)
+#include <hip/hip_runtime.h>
 #include "hipfft.h"
 #include "stdio.h"
     static const char *_cudaGetErrorEnum(hipfftResult error)

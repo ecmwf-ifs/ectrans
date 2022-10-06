@@ -146,8 +146,8 @@ INTERFACE
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
         INTEGER(C_INT),      VALUE            :: M, N, K, LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
         REAL(C_FLOAT),       VALUE            :: ALPHA, BETA
-        REAL(2),             DIMENSION(LDA,*) :: A
-        REAL(2),             DIMENSION(LDB,*) :: B
+        REAL(C_FLOAT),       DIMENSION(LDA,*) :: A
+        REAL(C_FLOAT),       DIMENSION(LDB,*) :: B
         REAL(C_FLOAT),       DIMENSION(LDC,*) :: C
     END SUBROUTINE CUDA_STCGEMM_BATCHED
 END INTERFACE

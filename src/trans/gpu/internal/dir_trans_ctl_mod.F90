@@ -83,7 +83,7 @@ USE FIELD_SPLIT_MOD ,ONLY : FIELD_SPLIT
 USE LTDIR_CTL_MOD   ,ONLY : LTDIR_CTL
 USE FTDIR_CTL_MOD   ,ONLY : FTDIR_CTL
 USE TPM_TRANS       ,ONLY : ZGTF
-USE NVTX
+!USE NVTX
 !
 
 IMPLICIT NONE
@@ -205,7 +205,7 @@ IF(NPROMATR > 0 .AND. IF_GPB > NPROMATR) THEN
 ELSE
 
   ! No splitting of fields, transform done in one go
-  call nvtxStartRange("DIRTRANS_nodata")
+  !call nvtxStartRange("DIRTRANS_nodata")
 
 #ifdef ACCGPU
   !$ACC DATA CREATE(FOUBUF_IN)
@@ -213,14 +213,14 @@ ELSE
 #ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:FOUBUF_IN)
 #endif
-  call nvtxStartRange("FTDIR")
+  !call nvtxStartRange("FTDIR")
   CALL FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,&
    & KVSETUV=KVSETUV,KVSETSC=KVSETSC,&
    & KVSETSC3A=KVSETSC3A,KVSETSC3B=KVSETSC3B,KVSETSC2=KVSETSC2,&
    & PGP=PGP,PGPUV=PGPUV,PGP3A=PGP3A,PGP3B=PGP3B,PGP2=PGP2)
-  call nvtxEndRange
+  !call nvtxEndRange
 
-  call nvtxStartRange("LTDIR")
+  !call nvtxStartRange("LTDIR")
 #ifdef ACCGPU
   !$ACC DATA COPYOUT(PSPVOR,PSPDIV) IF(KF_UV > 0)
 #endif
@@ -254,7 +254,7 @@ ELSE
    CALL LTDIR_CTL(KF_FS,KF_UV,KF_SCALARS, &
     & PSPVOR=PSPVOR,PSPDIV=PSPDIV,PSPSCALAR=PSPSCALAR,&
     & PSPSC3A=PSPSC3A,PSPSC3B=PSPSC3B,PSPSC2=PSPSC2)
-   call nvtxEndRange
+   !call nvtxEndRange
   CALL GSTATS(430,0)
 #ifdef ACCGPU
   !$ACC END DATA
@@ -293,7 +293,7 @@ ELSE
   !$OMP END TARGET DATA
 #endif
   CALL GSTATS(430,1)
-  call nvtxEndRange
+  !call nvtxEndRange
 
 ENDIF
 
