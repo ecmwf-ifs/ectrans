@@ -56,14 +56,13 @@ ecbuild_list_add_pattern( LIST trans_hip_src
                 set_source_files_properties( ${trans_hip_src} PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
 foreach( prec sp dp )
   if( HAVE_${prec} )
-     hip_add_library (trans_gpu_hip_${prec} ${trans_hip_src})
+     add_library (trans_gpu_hip_${prec} ${trans_hip_src})
      target_include_directories(trans_gpu_hip_${prec} PRIVATE
                           ${hip_ROOT}/include
                           ${hipfft_ROOT}/include
                           ${hipblas_ROOT}/include )
-                  #               target_link_libraries(trans_gpu_hip_${prec} PUBLIC
-                  #               ${hipfft_ROOT}/lib/
-                  #       ${hipblas_ROOT}/include )
+     target_link_libraries(trans_gpu_hip_${prec} PUBLIC
+	                   MPI::MPI_CXX )
     foreach( gpumethod acc omp)
       if( HAVE_${gpumethod})
 
@@ -86,7 +85,6 @@ foreach( prec sp dp )
                           #HIP::hipfft
                           #HIP::hipblas
                           MPI::MPI_Fortran
-                          MPI::MPI_C
                           nvhpcwrapnvtx
                           ${LAPACK_LIBRARIES}
         )

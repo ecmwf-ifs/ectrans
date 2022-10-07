@@ -79,7 +79,7 @@ if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE
         #  find_package(hipblas)
         #endif()
   find_package(OpenACC COMPONENTS Fortran)
-  find_package(MPI COMPONENTS Fortran C)
+  find_package(MPI COMPONENTS Fortran CXX)
 
   if( NOT CMAKE_HIP_COMPILER)
     ecbuild_info("No HIP compiler found")
@@ -98,8 +98,8 @@ if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE
   if( NOT TARGET MPI::MPI_Fortran )
     ecbuild_info("No target MPI::MPI_Fortran")
   endif()
-  if( NOT TARGET MPI::MPI_C )
-    ecbuild_info("No target MPI::MPI_C")
+  if( NOT TARGET MPI::MPI_CXX )
+    ecbuild_info("No target MPI::MPI_CXX")
   endif()
 endif()
 
@@ -118,7 +118,7 @@ ecbuild_add_option( FEATURE GPU
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI and CUDA. For now only NVHPC supported.)"
                     CONDITION
                     HIP_FOUND
-                         AND HAVE_MPI AND TARGET MPI::MPI_C AND TARGET MPI::MPI_Fortran
+                         AND HAVE_MPI AND TARGET MPI::MPI_CXX AND TARGET MPI::MPI_Fortran
                          #     AND TARGET HIP::hipblas AND TARGET HIP::hipfft
                    )
 
