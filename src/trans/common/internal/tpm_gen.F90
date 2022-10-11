@@ -42,7 +42,7 @@ INTEGER(KIND=JPIM) :: NTRANS_SYNC_LEVEL
 ! NSTACK_MEMORY_TR : optional memory strategy in gridpoint transpositions
 ! = 0 : prefer heap (slower but less memory consuming)
 ! > 0 : prefer stack (faster but more memory consuming)
-INTEGER(KIND=JPIM) :: NSTACK_MEMORY_TR
+INTEGER(KIND=JPIM) :: NSTACK_MEMORY_TR = 0
 
 LOGICAL, ALLOCATABLE :: LENABLED(:)   ! true: the resolution is enabled (it has been
                                       ! initialised and has not been released afterward) 
