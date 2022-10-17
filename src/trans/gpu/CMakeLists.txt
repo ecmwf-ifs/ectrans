@@ -10,7 +10,7 @@
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
 
-  # Compile setup_trans with pinned memory to improve data movement performance.
+  # Compile setup_trans with pinned memory to improve data movement performance. 
   ectrans_add_compile_options(
       SOURCES external/setup_trans.F90
       #FLAGS   "-gpu=pinned,deepcopy,fastmath,nordc")
@@ -42,31 +42,11 @@ if( HAVE_GPU_REDUCED_MEMORY )
 endif()
 
 ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
-ecbuild_list_exclude_pattern( LIST trans_src            REGEX hip.cpp )
 
-ecbuild_list_add_pattern( LIST trans_hip_src
-                          GLOB
-                                sharedmem/*.hip.cpp
-                                algor/*.hip.cpp
-                                internal/*.hip.cpp
-                                external/*.hip.cpp
-                          QUIET
-                        )
-                ecbuild_warn_var(trans_hip_src)
-                set_source_files_properties( ${trans_hip_src} PROPERTIES HIP_SOURCE_PROPERTY_FORMAT 1)
 foreach( prec sp dp )
   if( HAVE_${prec} )
-     add_library (trans_gpu_hip_${prec} ${trans_hip_src})
-     target_include_directories(trans_gpu_hip_${prec} PRIVATE
-                          ${hip_ROOT}/include
-                          ${hipfft_ROOT}/include
-                          ${hipblas_ROOT}/include )
-     target_link_libraries(trans_gpu_hip_${prec} PUBLIC
-	                   MPI::MPI_CXX )
-    foreach( gpumethod acc omp)
+    foreach( gpumethod acc)
       if( HAVE_${gpumethod})
-
-
 
         # We build an object library first. And then use these objects to create a shared and static library.
 
@@ -80,12 +60,13 @@ foreach( prec sp dp )
                           $<INSTALL_INTERFACE:include/ectrans>
                           $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS      parkind_${prec}
-                          fiat trans_gpu_hp_${prec}
-          PRIVATE_LIBS
-                          #HIP::hipfft
+                          fiat
+          PRIVATE_LIBS    #HIP::hipfft
                           #HIP::hipblas
                           MPI::MPI_Fortran
-                          nvhpcwrapnvtx
+                          #MPI::MPI_C
+			  MPI::MPI_CXX
+                          #nvhpcwrapnvtx
                           ${LAPACK_LIBRARIES}
         )
 
