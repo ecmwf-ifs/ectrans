@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -159,27 +160,31 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each
 REAL(KIND=JPRBT) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
-INTEGER(KIND=JPIM) :: IADJUST_D
-INTEGER(KIND=JPIM) :: IADJUST_I
+INTEGER(KIND=JPIM), ALLOCATABLE :: OFFSETS_GEMM1(:), OFFSETS_GEMM2(:)
 
 END TYPE DISTR_TYPE
 
 !flat versions of the above
 INTEGER(KIND=JPIM) :: D_NUMP      ! No. of spectral waves handled by this processor
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MYMS(:)    ! Wave numbers handled by this PE
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT0B(:) ! Start adresses for segments within buffer
+INTEGER(KIND=JPIM) ,POINTER :: D_MYMS(:)    ! Wave numbers handled by this PE
+INTEGER(KIND=JPIM) ,POINTER :: D_NSTAGT0B(:) ! Start adresses for segments within buffer
                                   ! (according to processors to whom data 
                                   ! is going to be sent) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT1B(:) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCL(:) ! Process responsible for each lat. (F.S)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB1(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,ALLOCATABLE  :: D_NSTAGTF(:) ! Offset for specific latitude in 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MSTABF(:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB0(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCM(:)  ! Process that does the calc. for certain 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
+INTEGER(KIND=JPIM) ,POINTER :: D_NSTAGT1B(:) 
+INTEGER(KIND=JPIM) ,POINTER :: D_NPROCL(:) ! Process responsible for each lat. (F.S)
+INTEGER(KIND=JPIM) ,POINTER :: D_NPNTGTB1(:,:)
+INTEGER(KIND=JPIM) ,POINTER :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
+INTEGER(KIND=JPIM) ,POINTER  :: D_NSTAGTF(:) ! Offset for specific latitude in 
+INTEGER(KIND=JPIM) ,POINTER :: D_MSTABF(:)
+INTEGER(KIND=JPIM) ,POINTER :: D_NPNTGTB0(:,:)
+INTEGER(KIND=JPIM) ,POINTER :: D_NPROCM(:)  ! Process that does the calc. for certain 
+INTEGER(KIND=JPIM) ,POINTER :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
 
+
+! The offsets in the input and output arrays to the gemms.
+! (1) are the offsets in the "inputs" of dirtrans ("outputs" invtrans)
+! (2) are the offsets in the "outputs" of invtrans ("inputs" dirtrans)
+INTEGER(KIND=JPIM), POINTER :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
 
 TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
 TYPE(DISTR_TYPE),POINTER     :: D

@@ -1,4 +1,6 @@
+#define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -38,8 +40,7 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM) :: JM
 INTEGER(KIND=JPIM) :: JGL,IGL,IPLAT,ISENDSET,IRECVSET,JML,IPOS,IM
-INTEGER(KIND=JPIM) :: I1,I2,I3,IAUX0,IAUX1,JA1
-INTEGER(KIND=JPIM) :: IGPTOT,IMEDIAP,IRESTM,JA,JB,IOFF
+INTEGER(KIND=JPIM) :: IGPTOT,IMEDIAP,IRESTM,JA,JB,IOFF,OFFSET1,OFFSET2,KMLOC,KM
 INTEGER(KIND=JPIM),ALLOCATABLE :: IGPTOTL(:,:)
 
 REAL(KIND=JPRBT),ALLOCATABLE :: ZDUM(:)
@@ -110,6 +111,19 @@ IF(.NOT.D%LGRIDONLY) THEN
   ALLOCATE(D%NPNTGTB1(D%NUMP,R%NDGL))
   IF(LLP2)WRITE(NOUT,9) 'D%NPNTGTB1 ',SIZE(D%NPNTGTB1 ),SHAPE(D%NPNTGTB1 )
 
+  ! Global offsets of processors
+  D%NSTAGT0B(1) = 0
+  D%NSTAGT1B(1) = 0
+  DO JA=2,NPRTRNS
+    D%NSTAGT0B(JA) = D%NSTAGT0B(JA-1)+D%NLTSGTB(JA-1)
+    D%NSTAGT1B(JA) = D%NSTAGT1B(JA-1)+D%NLTSFTB(JA-1)
+  ENDDO
+
+  ! Global size of foubuf
+  D%NLENGT0B = D%NSTAGT0B(NPRTRNS)+D%NLTSGTB(NPRTRNS)
+  D%NLENGT1B = D%NSTAGT1B(NPRTRNS)+D%NLTSFTB(NPRTRNS)
+
+  ! Global offsets of grid points
   DO JA=1,NPRTRW
     IPOS = 0
     DO JGL=1,D%NULTPP(MYSETW)
@@ -117,7 +131,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       DO JML=D%NPTRMS(JA),D%NPTRMS(JA)+D%NUMPP(JA)-1
         IM = D%NALLMS(JML)
         IF (IM  <=  G%NMEN(IGL)) THEN
-          D%NPNTGTB0(IM,JGL) = IPOS
+          D%NPNTGTB0(IM,JGL) = D%NSTAGT0B(D%NPROCM(IM)) + IPOS
           IPOS = IPOS+1
         ELSE
           D%NPNTGTB0(IM,JGL) = -99
@@ -133,7 +147,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       DO JM=1,D%NUMP
         IM = D%MYMS(JM)
         IF (IM  <=  G%NMEN(IGL)) THEN
-          D%NPNTGTB1(JM,IGL) = IPOS
+          D%NPNTGTB1(JM,IGL) = D%NSTAGT1B(D%NPROCL(IGL)) + IPOS
           IPOS = IPOS+1
         ELSE
           D%NPNTGTB1(JM,IGL) = -99
@@ -141,27 +155,9 @@ IF(.NOT.D%LGRIDONLY) THEN
       ENDDO
     ENDDO
   ENDDO
-
-  IAUX0 = 0
-  IAUX1 = 0
-  DO JA=1,NPRTRNS-1
-    I1 = MYSENDSET(NPRTRNS,MYSETW,JA)
-    I2 = MYRECVSET(NPRTRNS,MYSETW,JA)
-    I3 = -1
-    DO JA1=1,NPRTRNS-1
-      IF(MYSENDSET(NPRTRNS,MYSETW,JA1) == I2) I3 =MYRECVSET(NPRTRNS,MYSETW,JA1)
-    ENDDO
-    IAUX0 = MAX(D%NLTSFTB(I1),D%NLTSGTB(I2),IAUX0)
-    IAUX1 = MAX(D%NLTSGTB(I2),D%NLTSFTB(I3),IAUX1)
-  ENDDO
-  IAUX0 = MAX(D%NLTSGTB(MYSETW),IAUX0)
-  IAUX1 = MAX(D%NLTSGTB(MYSETW),IAUX1)
-  DO JA=1,NPRTRNS+1
-    D%NSTAGT0B(JA) = (JA-1)*IAUX0
-    D%NSTAGT1B(JA) = (JA-1)*IAUX1
-  ENDDO
-  D%NLENGT0B = IAUX0*NPRTRNS
-  D%NLENGT1B = IAUX1*NPRTRNS
+  ! D%NSTAGT0B / D%NSTAGT1B: offset of peer rank in send/recv buffer
+  ! D%NLTSGTB  / D%NLTSFTB : size of peer rank in send/recv buffer
+  ! D%NPNTGTB0 / D%NPNTGTB1: translation inp to global send buffer / recv to out buffer
 ENDIF
   
 ! GRIDPOINT SPACE
@@ -253,19 +249,45 @@ IF(LLP2)WRITE(NOUT,9) 'D%NGPTOTL     ',SIZE(D%NGPTOTL ),SHAPE(D%NGPTOTL  )
 D%NGPTOTL(:,:) = IGPTOTL(:,:)
 
 IF(.NOT.D%LGRIDONLY) THEN
-  ALLOCATE(D%NSTAGTF(D%NDGL_FS))
+  ALLOCATE(D%NSTAGTF(D%NDGL_FS+1))
   IF(LLP2)WRITE(NOUT,9) 'D%NSTAGTF     ',SIZE(D%NSTAGTF ),SHAPE(D%NSTAGTF  )
   IOFF = 0
   DO JGL=1,D%NDGL_FS
     D%NSTAGTF(JGL) = IOFF
     IGL = D%NPTRLS(MYSETW) + JGL - 1
-    IOFF = IOFF + G%NLOEN(IGL)+3
+    ! Each latitude should be able to store NLON real values, or floor(NLON/2)+1
+    ! complex values. Note that IOFF should always be even, because we need to
+    ! store complex values (i.e. 2 floats), but this is the case anyway.
+    ! WARNING: Extra padding changes results, potentially, though it does not
+    ! cause wrong results.
+    IOFF = IOFF + (G%NLOEN(IGL)/2+1)*2
   ENDDO
+  D%NSTAGTF(D%NDGL_FS+1) = IOFF
   D%NLENGTF = IOFF
 ENDIF
 
 IF(ALLOCATED(ZDUM)) DEALLOCATE(ZDUM)
 DEALLOCATE(IGPTOTL)
+
+ALLOCATE(D%OFFSETS_GEMM1(D%NUMP+1))
+ALLOCATE(D%OFFSETS_GEMM2(D%NUMP+1))
+
+OFFSET1 = 0
+OFFSET2 = 0
+DO KMLOC=1,D%NUMP
+  KM = D%MYMS(KMLOC)
+  D%OFFSETS_GEMM1(KMLOC) = OFFSET1
+  D%OFFSETS_GEMM2(KMLOC) = OFFSET2
+
+  !KM=0 is transformed in double precision, no need to store here
+  IF (KM /= 0) THEN
+    OFFSET1 = OFFSET1 + ALIGN(G%NDGLU(KM),8)
+    ! N_OFFSET takes the max of the two GEMMs
+    OFFSET2 = OFFSET2 + ALIGN((R%NSMAX-KM+3)/2,8)
+  ENDIF
+ENDDO
+D%OFFSETS_GEMM1(D%NUMP+1) = OFFSET1
+D%OFFSETS_GEMM2(D%NUMP+1) = OFFSET2
 
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)

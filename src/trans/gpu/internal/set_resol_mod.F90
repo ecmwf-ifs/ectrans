@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -22,7 +23,6 @@ USE TPM_FFT         ,ONLY : T, FFT_RESOL
 #ifdef WITH_FFTW
 USE TPM_FFTW        ,ONLY : TW, FFTW_RESOL
 #endif
-USE TPM_FFTC        ,ONLY : TC, FFTC_RESOL
 USE TPM_FLT
 USE TPM_CTL        ,ONLY : C, CTL_RESOL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
@@ -68,7 +68,6 @@ IF(IRESOL /= NCUR_RESOL) THEN
 #ifdef WITH_FFTW
   TW => FFTW_RESOL(NCUR_RESOL)
 #endif
-  TC => FFTC_RESOL(NCUR_RESOL)
   S => FLT_RESOL(NCUR_RESOL)
   C => CTL_RESOL(NCUR_RESOL)
 ENDIF

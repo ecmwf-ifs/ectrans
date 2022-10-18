@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,136 +9,104 @@
 !
 
 MODULE FTINV_MOD
+  USE ALLOCATOR_MOD
+  IMPLICIT NONE
+
+  PRIVATE
+  PUBLIC :: FTINV, FTINV_HANDLE, PREPARE_FTINV
+
+  TYPE FTINV_HANDLE
+  END TYPE
 CONTAINS
-SUBROUTINE FTINV(PREEL,KFIELDS)
+  FUNCTION PREPARE_FTINV(ALLOCATOR) RESULT(HFTINV)
+    USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
+    USE TPM_DISTR, ONLY: D
 
-!**** *FTINV - Inverse Fourier transform
+    IMPLICIT NONE
 
-!     Purpose. Routine for Fourier to Grid-point transform
-!     --------
+    TYPE(BUFFERED_ALLOCATOR), INTENT(INOUT) :: ALLOCATOR
+    TYPE(FTINV_HANDLE) :: HFTINV
+  END FUNCTION
 
-!**   Interface.
-!     ----------
-!        CALL FTINV(..)
+  SUBROUTINE FTINV(ALLOCATOR,HFTINV,PREEL_COMPLEX,PREEL_REAL,KFIELD)
+    !**** *FTINV - Inverse Fourier transform
 
-!        Explicit arguments :  PREEL   - Fourier/grid-point array
-!        --------------------  KFIELDS - number of fields
+    !     Purpose. Routine for Fourier to Grid-point transform
+    !     --------
 
-!     Method.
-!     -------
+    !**   Interface.
+    !     ----------
+    !        CALL FTINV(..)
 
-!     Externals.  FFT992 - FFT routine
-!     ----------
-!
+    !        Explicit arguments :  PREEL   - Fourier/grid-point array
+    !        --------------------  KFIELD   - number of fields
 
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
+    !     Method.
+    !     -------
 
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-!        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
-!        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
-!        G. Mozdzynski (Oct 2014): support for FFTW transforms
-!        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
-!     ------------------------------------------------------------------
+    !     Externals.  FFT992 - FFT routine
+    !     ----------
+    !
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT
+    !     Author.
+    !     -------
+    !        Mats Hamrud *ECMWF*
 
-USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
-USE TPM_GEOMETRY    ,ONLY : G
-use tpm_gen, only: nout
-USE TPM_FFT         ,ONLY : T
-#ifdef WITH_FFTW
-USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
-#endif
-USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT, destroy_plan_fft
-USE TPM_DIM         ,ONLY : R
-USE CUDA_DEVICE_MOD
+    !     Modifications.
+    !     --------------
+    !        Original : 00-03-03
+    !        G. Radnoti 01-04-24 2D model (NLOEN=1)
+    !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
+    !        G. Mozdzynski (Oct 2014): support for FFTW transforms
+    !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
+    !     ------------------------------------------------------------------
 
-IMPLICIT NONE
+    USE TPM_GEN         ,ONLY : LSYNC_TRANS
+    USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
-INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
-INTEGER(KIND=JPIM) :: KGL
-REAL(KIND=JPRBT), INTENT(INOUT)  :: PREEL(:,:)
+    USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC
+    USE TPM_GEOMETRY    ,ONLY : G
+    USE TPM_FFTC        ,ONLY : EXECUTE_INV_FFT
+    USE MPL_MODULE      ,ONLY : MPL_BARRIER
+    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
-INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
-INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
-LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
-INTEGER(KIND=JPIM) :: IPLAN_C2R
-INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE
-integer :: istat,idev
+    IMPLICIT NONE
 
-REAL(KIND=JPRBT), allocatable  :: PREEL2(:,:)
+    INTEGER(KIND=JPIM),INTENT(IN) :: KFIELD
+    REAL(KIND=JPRBT), INTENT(INOUT), POINTER :: PREEL_REAL(:)
+    REAL(KIND=JPRBT), INTENT(OUT), POINTER :: PREEL_COMPLEX(:)
+    TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
+    TYPE(FTINV_HANDLE), INTENT(IN) :: HFTINV
 
-!     ------------------------------------------------------------------
+    INTEGER(KIND=JPIM) :: KGL,IRET
 
+    !     ------------------------------------------------------------------
 
+    PREEL_REAL => PREEL_COMPLEX
 
-IF(MYPROC > NPROC/2)THEN
-  IBEG=1
-  IEND=D%NDGL_FS
-  IINC=1
-ELSE
-  IBEG=D%NDGL_FS
-  IEND=1
-  IINC=-1
-ENDIF
+    !$ACC DATA PRESENT(PREEL_REAL,PREEL_COMPLEX)
 
-ISIZE=size(PREEL,1)
+    IF (LSYNC_TRANS) THEN
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+    CALL GSTATS(423,0)
+    CALL EXECUTE_INV_FFT(PREEL_COMPLEX(:),PREEL_REAL(:),KFIELD, &
+        & LOENS=G%NLOEN(D%NPTRLS(MYSETW):D%NPTRLS(MYSETW)+D%NDGL_FS-1), &
+        & OFFSETS=D%NSTAGTF(1:D%NDGL_FS))
 
-!$ACC DATA &
-!$ACC& PRESENT(PREEL)
+    IF (LSYNC_TRANS) THEN
+      CALL GSTATS(443,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(443,1)
+    ENDIF
+    CALL GSTATS(423,1)
 
-!$ACC PARALLEL LOOP DEFAULT(NONE)
-DO KGL=IBEG,IEND,IINC
+    !$ACC END DATA
 
-  IOFF  = D%NSTAGTF(KGL)+1
-  IGLG  = D%NPTRLS(MYSETW)+KGL-1
-  IST   = 2*(G%NMEN(IGLG)+1)
-  ILEN  = G%NLOEN(IGLG)+R%NNOEXTZL+2-IST
-  IST1=1
-  IF (G%NLOEN(IGLG)==1) IST1=0
+    NULLIFY(PREEL_COMPLEX)
 
-  !$ACC loop collapse(2)
-  DO JJ=IST1,ILEN
-     DO JF=1,KFIELDS
-        PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
-     ENDDO
-  ENDDO
-
-END DO
-!$ACC end data
-
-allocate(preel2(size(preel,1),size(preel,2)))
-!$acc data create(preel2) present(preel)
-
-!istat = cuda_GetDevice(idev)
-!istat = cuda_Synchronize()      
-!!$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(istat,KGL,IOFF,IGLG,IPLAN_C2R)
-DO KGL=IBEG,IEND,IINC
-  IOFF=D%NSTAGTF(KGL)+1
-  IGLG  = D%NPTRLS(MYSETW)+KGL-1
-  !IF (G%NLOEN(IGLG)>1) THEN
-!call cudaProfilerStop()
-     !istat=cuda_SetDevice(idev)
-     CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELDS)
-     !$ACC host_data use_device(PREEL,PREEL2)
-     CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff),PREEL2(1, ioff))
-     !$ACC end host_data
-!call cudaProfilerStart()
-  !ENDIF
-END DO
-!!$OMP END PARALLEL DO
-istat = cuda_Synchronize()      
-
-
-!$acc kernels
-preel(:,:) = preel2(:,:)
-!$acc end kernels
-!$acc end data
-!     ------------------------------------------------------------------
-
-END SUBROUTINE FTINV
+    !     ------------------------------------------------------------------
+  END SUBROUTINE FTINV
 END MODULE FTINV_MOD

@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,6 +14,7 @@ MODULE TPM_TRANS
 
 !
 USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
+USE ISO_C_BINDING, ONLY: C_INT8_T
 
 IMPLICIT NONE
 
@@ -54,12 +56,12 @@ INTEGER(KIND=JPIM) :: NGPBLKS ! Number of NPROMA blocks
 
 LOGICAL :: LGPNORM = .FALSE.  ! indicates whether transform is being done for gpnorm
 
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: ZGTF(:,:)
-
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZAVE(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGL(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGL(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGPN(:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
+! This is used in fourier space and in spectral space. It's reused among
+! the transforms because we cannot reallocate - the captured CUDA graphs
+! should not be modified. Hence, we keep it if it is large enough, otherwise
+! we adapt the size. After 2 iterations this should lead to constant runtimes
+! (the first iteration is used to get the max buffer size, the second iteration
+! is going to recreate the graphs if needed)
+INTEGER(KIND=C_INT8_T),POINTER :: REUSE_PTR(:)
 
 END MODULE TPM_TRANS

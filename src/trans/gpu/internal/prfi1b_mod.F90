@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -72,7 +73,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
-  INTEGER(KIND=JPIM) :: II, INM, IR, J, JFLD, ILCM, IOFF,IFLD
+  INTEGER(KIND=JPIM) :: II, INM, IR, JN, JFLD, ILCM, IASM0,IFLD
   
   
   !     ------------------------------------------------------------------
@@ -80,33 +81,31 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
 
-  !$ACC DATA &
-  !$ACC      PRESENT(D_NUMP,R_NSMAX,D_MYMS,D_NASM0) &
-  !$ACC      PRESENT(PIA) &
-  !$ACC      PRESENT(PSPEC)
+  !$ACC DATA PRESENT(D_MYMS,D_NASM0,PIA,PSPEC)
 
   !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR)
 
   
   IF(PRESENT(KFLDPTR)) THEN
-   
+   PRINT *, "Not implemented"
+   STOP 4
    
    !loop over wavenumber
    
-   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
+   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IASM0,IR,II,INM)
    DO KMLOC=1,D_NUMP
-      DO J=1,R_NSMAX+1
+      DO JN=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
             KM = D_MYMS(KMLOC)
             ILCM = R_NSMAX+1-KM
             IFLD = KFLDPTR(JFLD)
-            IF (J .LE. ILCM) THEN
-               IOFF = D_NASM0(KM)
-               INM = IOFF+(ILCM-J)*2
+            IF (JN .LE. ILCM) THEN
+               IASM0 = D_NASM0(KM)
+               INM = IASM0+(ILCM-JN)*2
                IR = 2*(JFLD-1)+1
                II = IR+1
-               PIA(IR,J+2,KMLOC) = PSPEC(iFLD,INM  )
-               PIA(II,J+2,KMLOC) = PSPEC(iFLD,INM+1)
+               PIA(IR,JN+2,KMLOC) = PSPEC(iFLD,INM  )
+               PIA(II,JN+2,KMLOC) = PSPEC(iFLD,INM+1)
             END IF
          ENDDO
       ENDDO
@@ -126,45 +125,33 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
       ! end loop over wavenumber
    END DO
 
-  ELSE
+ELSE
 
-   !loop over wavenumber
+  !loop over wavenumber
 
-   !$ACC PARALLEL LOOP !!COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
-   DO KMLOC=1,D_NUMP
-      DO J=1,R_NSMAX+1
-         DO JFLD=1,KFIELDS
-            KM = D_MYMS(KMLOC)
-            ILCM = R_NSMAX+1-KM
-            if (J .le. ILCM) then
-               IOFF = D_NASM0(KM)
-               INM = IOFF+(ILCM-J)*2
-               IR = 2*(JFLD-1)+1
-               II = IR+1
-               IF( INM .LT. KDIM ) THEN
-               PIA(IR,J+2,KMLOC) = PSPEC(JFLD,INM  )
-               PIA(II,J+2,KMLOC) = PSPEC(JFLD,INM+1)
-               ENDIF
-            end if
-         ENDDO
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE)
+  DO KMLOC=1,D_NUMP
+    DO JN=0,R_NSMAX+3
+      DO JFLD=1,KFIELDS
+        KM = D_MYMS(KMLOC)
+
+        IF (JN <= 1) THEN
+          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+        ELSEIF (JN <= R_NSMAX+2-KM) THEN
+          IASM0 = D_NASM0(KM)
+          INM = IASM0+((R_NSMAX+2-JN)-KM)*2
+          PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
+          PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
+        ELSEIF (JN <= R_NSMAX+3-KM) THEN
+          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+        ENDIF
       ENDDO
-   
-      ! end loop over wavenumber
-   END DO
+    ENDDO
+  ENDDO
 
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ILCM)
-   DO KMLOC=1,D_NUMP
-      DO JFLD=1,2*KFIELDS
-         KM = D_MYMS(KMLOC) 
-         ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRB
-         PIA(JFLD,2,KMLOC) = 0.0_JPRB
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
-      ENDDO 
-      ! end loop over wavenumber
-   END DO
-   
-  END IF   
+END IF
 
    !$ACC END DATA
    !$ACC END DATA

@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -115,13 +116,15 @@ USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, LATLON, &
      &                      NF_SC2, NF_SC3A, NF_SC3B,        &
      &                      NGPBLKS, NPROMA
 USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
-USE TPM_FIELDS      ,ONLY : IF_FS_DIR,IF_FS_DIR0,NFLEV,NFLEV0,DTDZBA,DTDZBS,DTDZCA,DTDZCS
 USE TPM_FLT, ONLY: S
 USE TPM_GEOMETRY ,ONLY : G
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 USE DIR_TRANS_CTL_MOD ,ONLY : DIR_TRANS_CTL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
+USE MPL_MODULE      ,ONLY : MPL_BARRIER
+USE TPM_GEN         ,ONLY : LSYNC_TRANS
+USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
 !endif INTERFACE
 
@@ -161,7 +164,10 @@ INTEGER(KIND=JPIM) :: JMLOC, IF_PP
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS',0,ZHOOK_HANDLE)
-CALL GSTATS(440,0)
+IF (LSYNC_TRANS) THEN
+  CALL MPL_BARRIER(CDSTRING='')
+ENDIF
+CALL GSTATS(410,0)
 CALL GSTATS(1808,0)
 ! Set current resolution
 CALL SET_RESOL(KRESOL)
@@ -303,30 +309,7 @@ ENDIF
 NGPBLKS = (D%NGPTOT-1)/NPROMA+1
 
 IF_FS = 2*IF_UV + IF_SCALARS
-!D%IADJUST_D=0
-!IF(MOD(IF_FS,2)==1) THEN
-!  IF_FS = IF_FS + 1
-!  D%IADJUST_D=1
-!ENDIF
-
 IF_GP = 2*IF_UV_G+IF_SCALARS_G
-
-! add additional post-processing requirements
-! (copied from setup_trans.F90. Or does this need to be different here than in setup_trans.F90?)
-!IF_PP = 2*NFLEV
-!IF_PP = 0
-
-! How do I get the current number of levels? For now I use: (Andreas)
-!NFLEV = NFLEV0
-
-! set currently used array sizes for the GPU arrays: 
-IF_FS_DIR=2*IF_FS+2!2*(2*IF_UV+NFLEV+2+IF_PP)
-print*,"dir_trans: IF_FS_DIR=",IF_FS_DIR," IF_FS_DIR0=",IF_FS_DIR0
-
-DTDZBA=IF_FS_DIR
-DTDZBS=IF_FS_DIR
-DTDZCA=IF_FS_DIR
-DTDZCS=IF_FS_DIR
 
 ! Consistency checks
 
@@ -527,7 +510,12 @@ CALL DIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
 
  IF (LHOOK) CALL DR_HOOK('DIR_TRANS',1,ZHOOK_HANDLE)
-CALL GSTATS(440,1)
+IF (LSYNC_TRANS) THEN
+  CALL GSTATS(430,0)
+  CALL MPL_BARRIER(CDSTRING='')
+  CALL GSTATS(430,1)
+ENDIF
+CALL GSTATS(410,1)
 
 !     ------------------------------------------------------------------
 !endif INTERFACE

@@ -1,4 +1,6 @@
+#define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,293 +10,307 @@
 !
 
 MODULE LEINV_MOD
+  USE PARKIND_ECTRANS  ,ONLY : JPIM
+  IMPLICIT NONE
+
+  PRIVATE
+  PUBLIC :: LEINV_STRIDES, LEINV
+
+  INTEGER(KIND=JPIM) :: A = 8 !Alignment
+
 CONTAINS
-SUBROUTINE LEINV(KFC,KF_OUT_LT,PIA,PAOA1,PSOA1)
+  SUBROUTINE LEINV_STRIDES(KF_LEG,IOUT_STRIDES0,IOUT_SIZE,IIN_STRIDES0,IIN_SIZE,&
+                           IOUT0_STRIDES0,IOUT0_SIZE,IIN0_STRIDES0,IIN0_SIZE)
+    USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT, JPRD
+    USE TPM_DIM         ,ONLY : R
+    USE TPM_DISTR, ONLY: D,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2
 
-!**** *LEINV* - Inverse Legendre transform.
+    IMPLICIT NONE
 
-!     Purpose.
-!     --------
-!        Inverse Legendre tranform of all variables(kernel).
+    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
 
-!**   Interface.
-!     ----------
-!        CALL LEINV(...)
-
-!        Explicit arguments :  KM - zonal wavenumber (input-c)
-!        --------------------  KFC - number of fields to tranform (input-c)
-!                              PIA - spectral fields
-!                              for zonal wavenumber KM (input)
-!                              PAOA1 - antisymmetric part of Fourier
-!                              fields for zonal wavenumber KM (output)
-!                              PSOA1 - symmetric part of Fourier
-!                              fields for zonal wavenumber KM (output)
-
-!        Implicit arguments :  None.
-!        --------------------
-
-!     Method.    use butterfly or dgemm
-!     -------
-
-!     Externals.
-!     ----------
-
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
-
-!     Author.
-!     -------
-!      Nils Wedi + Mats Hamrud + George Modzynski
-!
-!     Modifications.
-!     --------------
-!        J.Hague : Oct 2012 DR_HOOK round calls to DGEMM:
-!      F. Vana  05-Mar-2015  Support for single precision
-!     ------------------------------------------------------------------
-  
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,  JPRBT
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX
-USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
-USE TPM_FIELDS      ,ONLY : F, ZIA, &
-     & ZAA,ZAS,LDZAA,LDZAS,TDZAA,TDZAS,&
-     & IZBS,ILDZBA,ILDZBS,ITDZBA,ITDZBS,&
-     & IZCS,IZCST,ILDZCA,ILDZCS,ITDZCA,ITDZCS,&
-     & TDZAS, IF_FS_INV, ZAMAX, ZSMAX 
-USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS
-USE TPM_GEN, ONLY: NOUT
-USE TPM_FLT
-USE BUTTERFLY_ALG_MOD
-USE CUDA_GEMM_BATCHED_MOD
-USE, INTRINSIC :: ISO_C_BINDING
-USE IEEE_ARITHMETIC
-
-IMPLICIT NONE
+    INTEGER(KIND=JPIM), OPTIONAL :: IOUT_STRIDES0, IOUT_SIZE
+    INTEGER(KIND=JPIM), OPTIONAL :: IIN_STRIDES0, IIN_SIZE
+    INTEGER(KIND=JPIM), OPTIONAL :: IOUT0_STRIDES0, IOUT0_SIZE
+    INTEGER(KIND=JPIM), OPTIONAL :: IIN0_STRIDES0, IIN0_SIZE
 
 
-!     DUMMY ARGUMENTS
-INTEGER(KIND=JPIM)  :: KM
-INTEGER(KIND=JPIM)  :: KMLOC
-INTEGER(KIND=JPIM), INTENT(IN)  :: KFC
-INTEGER(KIND=JPIM)  :: KIFC
-INTEGER(KIND=JPIM)  :: KDGLU
-INTEGER(KIND=JPIM), INTENT(IN)  :: KF_OUT_LT
-REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: PSOA1(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: PAOA1(:,:,:)
+    IF (PRESENT(IOUT_STRIDES0)) &
+      IOUT0_STRIDES0 = ALIGN(KF_LEG,A)
+    IF (PRESENT(IOUT0_SIZE)) &
+      IOUT0_SIZE = IOUT0_STRIDES0 * ALIGN(R%NDGNH,A)
+    IF (PRESENT(IIN_STRIDES0)) &
+      IIN_STRIDES0 = ALIGN(2*KF_LEG,A)
+    IF (PRESENT(IIN_SIZE)) &
+      IIN_SIZE = IIN_STRIDES0*D_OFFSETS_GEMM2(D%NUMP+1)
+    IF (PRESENT(IOUT0_STRIDES0)) &
+      IOUT_STRIDES0 = ALIGN(2*KF_LEG,A)
+    IF (PRESENT(IOUT_SIZE)) &
+      IOUT_SIZE = IOUT_STRIDES0*D_OFFSETS_GEMM1(D%NUMP+1)
+    IF (PRESENT(IIN0_STRIDES0)) &
+      IIN0_STRIDES0 = ALIGN(KF_LEG,A)
+    IF (PRESENT(IIN0_SIZE)) &
+      IIN0_SIZE = IIN0_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
+  END SUBROUTINE
 
-!     LOCAL
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI, IRET
-INTEGER(KIND=JPIM) :: ITHRESHOLD
-REAL(KIND=JPRBT), ALLOCATABLE :: ZZBS(:,:,:), ZZCSTS(:,:,:)
-REAL(KIND=JPRBT), ALLOCATABLE :: ZZBA(:,:,:), ZZCSTA(:,:,:)
+  SUBROUTINE LEINV(PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,KF_LEG)
+    !**** *LEINV* - Inverse Legendre transform.
 
-INTEGER(KIND=JPIM) :: ISTAT
+    !     Purpose.
+    !     --------
+    !        Inverse Legendre tranform of all variables(kernel).
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+    !**   Interface.
+    !     ----------
+    !        CALL LEINV(...)
 
-  
-!*       1.1      PREPARATIONS.
-IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
-!     ------------------------------------------------------------------
+    !        Explicit arguments :  KM - zonal wavenumber (input-c)
+    !        --------------------  KFC - number of fields to tranform (input-c)
+    !                              PIA - spectral fields
+    !                              for zonal wavenumber KM (input)
 
-!*       1.       PERFORM LEGENDRE TRANFORM.
-!                 --------------------------
+    !        Implicit arguments :  None.
+    !        --------------------
 
-!*       1.1      PREPARATIONS.
+    !     Method.
+    !     -------
 
-ALLOCATE(ZZBA(ITDZBA,ILDZBA,D_NUMP))
-ALLOCATE(ZZCSTA(ITDZCA,ILDZCA,D_NUMP))
-ALLOCATE(ZZBS(ITDZBS,ILDZBS,D_NUMP))
-ALLOCATE(ZZCSTS(ITDZCS,ILDZCS,D_NUMP))
-!$ACC DATA CREATE(ZZBA,ZZCSTA,ZZBS,ZZCSTS)
+    !     Externals.
+    !     ----------
 
-!$ACC DATA COPYIN (S,S%ITHRESHOLD,S%LUSEFLT) &
-!$ACC&      COPYIN (D,D_MYMS,R,G,G_NDGLU,D_NUMP,R_NDGNH,R_NSMAX) &
-!$ACC&      PRESENT (ZAA,ZAS) &
-!$ACC&      PRESENT (ZZBA,ZZBS,ZZCSTA,ZZCSTS) &
-!$ACC&      PRESENT (PIA) &
-!$ACC&      PRESENT (PSOA1,PAOA1,IZBS)
+    !     Reference.
+    !     ----------
+    !        ECMWF Research Department documentation of the IFS
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM) DEFAULT(NONE)
-DO KMLOC=1,D_NUMP
-   DO JGL=1,R_NDGNH
-      DO J1=2,KFC,2
-         
-         KM = D_MYMS(KMLOC)
-         IF(KM == 0)THEN
-            PSOA1(J1,JGL,KMLOC) = 0.0_JPRBT
-            PAOA1(J1,JGL,KMLOC) = 0.0_JPRBT
-         END IF
+    !     Author.
+    !     -------
+    !      Nils Wedi + Mats Hamrud + George Modzynski
+    !
+    !     Modifications.
+    !     --------------
+    !        J.Hague : Oct 2012 DR_HOOK round calls to DGEMM:
+    !      F. Vana  05-Mar-2015  Support for single precision
+    !     ------------------------------------------------------------------
+
+    USE TPM_GEN         ,ONLY : LSYNC_TRANS
+    USE PARKIND_ECTRANS  ,ONLY : JPIM,JPRB,  JPRBT, JPRD
+    USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+    USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX, R_NDGL
+    USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
+    USE TPM_FIELDS      ,ONLY : ZAA,ZAS,ZAA0,ZAS0,KMLOC0
+    USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,MYPROC,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2
+    USE CUDA_GEMM_BATCHED_MOD
+    USE MPL_MODULE      ,ONLY : MPL_BARRIER
+    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
+
+    IMPLICIT NONE
+
+    REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
+    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
+    REAL(KIND=JPRBT), INTENT(OUT) :: ZINP(:), ZOUTS(:), ZOUTA(:)
+    REAL(KIND=JPRD), INTENT(OUT) :: ZINP0(:), ZOUTS0(:), ZOUTA0(:)
+
+    !     LOCAL
+    INTEGER(KIND=JPIM)  :: KS(D_NUMP), NS(D_NUMP), AOFFSETS(D_NUMP), BOFFSETS(D_NUMP), COFFSETS(D_NUMP)
+    INTEGER(KIND=JPIM)  :: KM, KMLOC, IA, IS, ISL, J1, JGL, JK, J
+    INTEGER(KIND=JPIM)  :: IOUT_STRIDES0, IOUT_SIZE
+    INTEGER(KIND=JPIM)  :: IIN_STRIDES0, IIN_SIZE
+    INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_SIZE
+    INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_SIZE
+
+    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+
+
+    !*       1.1      PREPARATIONS.
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
+
+    !     ------------------------------------------------------------------
+
+    !*       1.       PERFORM LEGENDRE TRANFORM.
+    !                 --------------------------
+
+    !*       1.1      PREPARATIONS.
+
+    CALL LEINV_STRIDES(KF_LEG,IOUT_STRIDES0,IOUT_SIZE,IIN_STRIDES0,IIN_SIZE,&
+                       IOUT0_STRIDES0,IOUT0_SIZE,IIN0_STRIDES0,IIN0_SIZE)
+
+
+    !$ACC DATA PRESENT(D,D_MYMS,G,G_NDGLU,R) &
+    !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
+    !$ACC&     PRESENT(ZAA,ZAS,PIA) &
+    !$ACC&     PRESENT(D_MYMS,G_NDGLU,D_OFFSETS_GEMM2)
+
+    IF (KMLOC0 > 0) THEN
+      print*,'computing m=0 in double precision'
+    ENDIF
+
+    ! READ 2:NSMAX+3
+
+    !IF KM=0 and NSMAX is 6:
+    !    IA=1
+    !    DO=1,6/2+1 ... 1..4
+    !       PIA_2=1+1+(J-1)*2 ...2+(0..3)*2 .... 2,4,6,8
+    !IF KM=0 and NSMAX is 7:
+    !    IA=2
+    !    DO=1,7/2+1 ... 1..4
+    !       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
+
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) DEFAULT(NONE) ASYNC(1)
+    DO KMLOC=1,D_NUMP
+      DO JK=1,2*KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IA  = 1+MOD(R_NSMAX-KM+2,2)
+        IF(KM /= 0)THEN
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX-KM+2)/2
+            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IA+1+(J-1)*2,KMLOC)
+          ENDDO
+        ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
+          ! every other field is sufficient because Im(KM=0) == 0
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX+2)/2
+            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
+          ENDDO
+        ENDIF
       ENDDO
-   ENDDO
-   !end loop over wavenumber
-END DO
-
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,ILS,IA) DEFAULT(NONE)
-DO KMLOC=1,D_NUMP
-  DO J=1,(R_NSMAX+2)/2
-    DO JK=1,KFC
-   
-      KM =  D_MYMS(KMLOC)
-      IF (KM == 0) THEN
-         ISKIP = 2
-      ELSE
-         ISKIP = 1
-      ENDIF
-      
-      IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-         ILA = (R_NSMAX-KM+2)/2
-         IF (J .LE. ILA) THEN
-            IA  = 1+MOD(R_NSMAX-KM+2,2)
-!!            IZBA((JK-1)/ISKIP+1,J,KMLOC)=PIA(JK,IA+1+(J-1)*2,KMLOC)*RRPELTMINV/ZAMAX((JK-1)/ISKIP+1,KMLOC)
-            IZBS((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*TDZAA)*IF_FS_INV)=PIA(JK,IA+1+(J-1)*2,KMLOC)
-         ENDIF
-      ENDIF
     ENDDO
-  ENDDO
-ENDDO
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILA,ILS,IA) DEFAULT(NONE)
-DO KMLOC=1,D_NUMP
-  DO J=1,(R_NSMAX+2)/2
-    DO JK=1,KFC
-      KM =  D_MYMS(KMLOC)
-      IF(KM == 0)THEN
-         ISKIP = 2
-      ELSE
-         ISKIP = 1
-      ENDIF
-      
-      IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-         ILA = (R_NSMAX-KM+2)/2
-         IF (J .LE. ILA) THEN
-            IA  = 1+MOD(R_NSMAX-KM+2,2)
-            ZZBA((JK-1)/ISKIP+1,J,KMLOC)=PIA(JK,IA+1+(J-1)*2,KMLOC)
-         ENDIF
-      ENDIF
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+    CALL GSTATS(424,0)
+
+    IF (KMLOC0 > 0) THEN
+      ! compute m=0 in double precision:
+      CALL CUDA_GEMM_BATCHED( &
+        & CUBLAS_OP_N, CUBLAS_OP_T, &
+        & KF_LEG, G%NDGLU(0), (R%NSMAX+2)/2, &
+        & 1.0_JPRD, &
+        & ZINP0, IIN0_STRIDES0, 0, &
+        & ZAA0, SIZE(ZAA0,1), 0, &
+        & 0.0_JPRD, &
+        & ZOUTA0, IOUT0_STRIDES0, 0, &
+        & 1, STREAM=1_C_LONG)
+    ENDIF
+
+    DO KMLOC=1,D_NUMP
+      KM = D_MYMS(KMLOC)
+      KS(KMLOC) = (R%NSMAX-KM+2)/2
+      NS(KMLOC) = G%NDGLU(KM)
+      AOFFSETS(KMLOC) = IIN_STRIDES0*D_OFFSETS_GEMM2(KMLOC)
+      BOFFSETS(KMLOC) = SIZE(ZAA,1)*SIZE(ZAA,2)*(KMLOC-1)
+      COFFSETS(KMLOC) = IOUT_STRIDES0*D_OFFSETS_GEMM1(KMLOC)
     ENDDO
-  ENDDO
-ENDDO
+    IF(KMLOC0 > 0) THEN
+      NS(KMLOC0) = 0
+      KS(KMLOC0) = 0
+    ENDIF
+    CALL CUDA_GEMM_BATCHED( &
+        & 11, & ! unique identifier
+        & CUBLAS_OP_N, CUBLAS_OP_T, &
+        & 2*KF_LEG, NS(:), KS(:), &
+        & 1.0_JPRBT, &
+        & ZINP, IIN_STRIDES0, AOFFSETS, &
+        & ZAA, SIZE(ZAA,1), BOFFSETS, &
+        & 0.0_JPRBT, &
+        & ZOUTA, IOUT_STRIDES0, COFFSETS, &
+        & D_NUMP, STREAM=1_C_LONG)
 
-ITHRESHOLD=S%ITHRESHOLD
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(444,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(444,1)
+    ENDIF
+    CALL GSTATS(424,1)
 
-! operate on full arrays, where non-relavent entries have been set to zero
-! call CUDA_DGEMM_BATCHED('N','N',LDZAA,TDZBA,TDZAA,1.0_JPRB,ZAA,LDZAA,TDZAA,ZBA,LDZBA,TDZBA,0._JPRB,ZCA,LDZCA,TDZCA,D_NUMP)
-! Get C in transpose format to get better memory access patterns later
-!C=A*B =>
-! C^T=B^T*A^T
+    ! 2. +++++++++++++ symmetric
+    !IF KM=0 and NSMAX is 6:
+    !    IS=2
+    !    DO=1,4
+    !       PIA_2=2+1+(0..3)*2 ... 3+(0..3)*2 ... 3,5,7,9
+    !IF KM=0 and NSMAX is 7:
+    !    IS=1
+    !    DO=1,5
+    !       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
 
-
-! OVERLOADED FOR SINGLE AND DOUBLE PRECISION
-!$ACC HOST_DATA USE_DEVICE(ZAA,ZZBA,ZZCSTA)
-CALL CUDA_GEMM_BATCHED( &
-  & 'N', 'T', &
-  & ITDZCA, ILDZCA, ILDZBA, &
-  & 1.0_JPRBT, &
-  & ZZBA, ITDZBA, ILDZBA,&
-  & ZAA, LDZAA, TDZAA, &
-  & 0._JPRBT, &
-  & ZZCSTA, ITDZCA, ILDZCA, &
-  & D_NUMP)
-!$ACC END HOST_DATA
-
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISKIP,ISL) DEFAULT(NONE)
-DO KMLOC=1,D_NUMP
-   DO JI=1,R_NDGNH
-      DO JK=1,KFC
-         KM = D_MYMS(KMLOC)
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (JI .LE. KDGLU) then
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            END IF
-            
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               PAOA1(JK,ISL+JI-1,KMLOC) = ZZCSTA((JK-1)/ISKIP+1,JI,KMLOC)
-            END IF
-         END IF
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) DEFAULT(NONE) ASYNC(1)
+    DO KMLOC=1,D_NUMP
+      DO JK=1,2*KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IS  = 1+MOD(R_NSMAX-KM+1,2)
+        IF(KM /= 0) THEN
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX-KM+3)/2
+            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IS+1+(J-1)*2,KMLOC)
+          ENDDO
+        ELSEIF (MOD((JK-1),2) == 0) THEN
+          !$ACC LOOP SEQ
+          DO J=1,(R_NSMAX+3)/2
+            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
+          ENDDO
+        ENDIF
       ENDDO
-   ENDDO
-END DO
-
-! 2. +++++++++++++ symmetric
-
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISKIP,ILS,IS) DEFAULT(NONE)
-DO KMLOC=1,D_NUMP
-  DO J=1,(R_NSMAX+3)/2
-    DO JK=1,KFC
-      KM =  D_MYMS(KMLOC)
-      IF(KM == 0)THEN
-         ISKIP = 2
-      ELSE
-         ISKIP = 1
-      ENDIF
-      
-      IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-         ILS = (R_NSMAX-KM+3)/2
-         IF (J .LE. ILS) THEN
-            IS  = 1+MOD(R_NSMAX-KM+1,2)
-           ZZBS((JK-1)/ISKIP+1,J,KMLOC)=PIA(JK,IS+1+(J-1)*2,KMLOC)
-         END IF
-      END IF
     ENDDO
-  ENDDO
-ENDDO
 
-!C=A*B =>
-! C^T=B^T*A^T
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+    CALL GSTATS(424,0)
 
-!$ACC HOST_DATA USE_DEVICE(ZAS,ZZBS,ZZCSTS)
-CALL CUDA_GEMM_BATCHED( &
-  & 'N', 'T', &
-  & ITDZCS, ILDZCS, ILDZBS, &
-  & 1.0_JPRBT, &
-  & ZZBS, ITDZBS, ILDZBS, &
-  & ZAS, LDZAS, TDZAS, &
-  & 0._JPRBT, &
-  & ZZCSTS, ITDZCS, ILDZCS, &
-  & D_NUMP)
-!$ACC END HOST_DATA
+    IF (KMLOC0 > 0) THEN
+      CALL CUDA_GEMM_BATCHED( &
+        & CUBLAS_OP_N, CUBLAS_OP_T, &
+        & KF_LEG, G%NDGLU(0), (R%NSMAX+3)/2, &
+        & 1.0_JPRD, &
+        & ZINP0, IIN0_STRIDES0, 0, &
+        & ZAS0, SIZE(ZAS0,1), 0, &
+        & 0.0_JPRD, &
+        & ZOUTS0, IOUT0_STRIDES0, 0, &
+        & 1, STREAM=1_C_LONG)
+    ENDIF
 
+    DO KMLOC=1,D_NUMP
+      KM = D_MYMS(KMLOC)
+      KS(KMLOC) = (R%NSMAX-KM+3)/2
+      NS(KMLOC) = G%NDGLU(KM)
+      AOFFSETS(KMLOC) = IIN_STRIDES0*D_OFFSETS_GEMM2(KMLOC)
+      BOFFSETS(KMLOC) = SIZE(ZAS,1)*SIZE(ZAS,2)*(KMLOC-1)
+      COFFSETS(KMLOC) = IOUT_STRIDES0*D_OFFSETS_GEMM1(KMLOC)
+    ENDDO
+    IF(KMLOC0 > 0) THEN
+      NS(KMLOC0) = 0
+      KS(KMLOC0) = 0
+    ENDIF
+    CALL CUDA_GEMM_BATCHED( &
+      & 12, & ! unique identifier
+      & CUBLAS_OP_N, CUBLAS_OP_T, &
+      & 2*KF_LEG, NS(:), KS(:), &
+      & 1.0_JPRBT, &
+      & ZINP, IIN_STRIDES0, AOFFSETS, &
+      & ZAS, SIZE(ZAS,1), BOFFSETS, &
+      & 0.0_JPRBT, &
+      & ZOUTS, IOUT_STRIDES0, COFFSETS, &
+      & D_NUMP, STREAM=1_C_LONG)
+    IF (LSYNC_TRANS) THEN
+      !$ACC WAIT(1)
+      CALL GSTATS(444,0)
+      CALL MPL_BARRIER(CDSTRING='')
+      CALL GSTATS(444,1)
+    ENDIF
+    CALL GSTATS(424,1)
 
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,KDGLU,ISKIP,ISL) DEFAULT(NONE)
-DO KMLOC=1,D_NUMP
-   DO JI=1,R_NDGNH
-      DO JK=1,KFC
-         KM = D_MYMS(KMLOC)
-         KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
-         IF (JI .LE. KDGLU) then
-            IF(KM == 0)THEN
-               ISKIP = 2
-            ELSE
-               ISKIP = 1
-            END IF
-            
-            ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
-               !PSOA1(JK,ISL+JI-1,KMLOC) = IZCST((JK-1)/ISKIP+1+(JI-1+(KMLOC-1)*R_NDGNH)*IF_FS_INV)
-               PSOA1(JK,ISL+JI-1,KMLOC) = ZZCSTS((JK-1)/ISKIP+1,JI,KMLOC)
-            END IF
-         END IF
-      ENDDO
-   ENDDO
-END DO
+    !$ACC WAIT(1)
 
-!$ACC END DATA
+    !$ACC END DATA
 
-!$ACC END DATA
-DEALLOCATE(ZZBS)
-DEALLOCATE(ZZBA)
-DEALLOCATE(ZZCSTS)
-DEALLOCATE(ZZCSTA)
-
-IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
-!     ------------------------------------------------------------------
-
-END SUBROUTINE LEINV
+    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
+    !     ------------------------------------------------------------------
+  END SUBROUTINE LEINV
 END MODULE LEINV_MOD

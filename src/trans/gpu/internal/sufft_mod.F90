@@ -1,4 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -18,7 +19,6 @@ MODULE SUFFT_MOD
   USE TPM_DISTR       ,ONLY : D, MYSETW
   USE TPM_GEOMETRY    ,ONLY : G
   USE TPM_FFT         ,ONLY : T
-  USE TPM_FFTC        ,ONLY : TC, INIT_PLANS_FFT
 #ifdef WITH_FFTW
   USE TPM_FFTW        ,ONLY : TW, INIT_PLANS_FFTW
 #endif
@@ -45,8 +45,6 @@ MODULE SUFFT_MOD
       !NULLIFY(TW%N_PLANS)
     ENDIF
 #endif
-  
-    CALL INIT_PLANS_FFT(R%NDLON)
   
   ENDIF
   
