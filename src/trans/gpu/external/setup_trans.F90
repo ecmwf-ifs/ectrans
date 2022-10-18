@@ -251,9 +251,6 @@ D%LCPNMONLY=.FALSE.
 S%LUSE_BELUSOV=.TRUE. ! use Belusov algorithm to compute RPNM array instead of per m
 S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
-#ifdef WITH_FFTW
-TW%LFFTW=.FALSE. ! Use FFTW interface for FFTs
-#endif
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
 S%LSHIFTLL = .FALSE. ! shift output lat-lon by 0.5dx, 0.5dy
@@ -358,15 +355,6 @@ IF(PRESENT(LDPNMONLY)) THEN
   D%LCPNMONLY=LDPNMONLY
 ENDIF
 
-
-#ifdef WITH_FFTW
-IF(PRESENT(LDUSEFFTW)) THEN
-  TW%LFFTW=LDUSEFFTW
-ENDIF
-IF( LLSPSETUPONLY .OR. D%LGRIDONLY ) THEN
-  TW%LFFTW = .FALSE.
-ENDIF
-#endif
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
