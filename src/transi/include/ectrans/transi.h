@@ -39,12 +39,13 @@
  * be called multiple times to transform any number of fields separately.
  *
  * The function to do a transform from gridpoints to spectral is called trans_dirtrans().
+ * The function to do the adjoint of the gridpoints to spectral transform is called trans_dirtrans_adj().
  * The function to do a transform from spectral to gridpoints is called trans_invtrans().
  * The function to do the adjoint of the spectral to gridpoints transform is called trans_invtrans_adj().
  * It also transforms the data from gridpoints to spectral.
  *
- * In case of distrubuted parallelism (MPI), the functions trans_dirtrans(), trans_invtrans(),
- * and trans_invtrans_adj() work on distributed fields.
+ * In case of distrubuted parallelism (MPI), the functions trans_dirtrans(), trans_dirtrans_adj(),
+ *  trans_invtrans() and trans_invtrans_adj() work on distributed fields.
  * In order to convert to and from a global view of the field
  * (e.g. for reading / writing), one can use the functions trans_distspec(), trans_gathspec(),
  * trans_distgrid(), trans_gathgrid().
@@ -93,6 +94,7 @@ extern "C" {
 
 struct Trans_t;
 struct DirTrans_t;
+struct DirTransAdj_t;
 struct InvTrans_t;
 struct InvTransAdj_t;
 struct DistGrid_t;
@@ -267,6 +269,68 @@ int trans_inquire(struct Trans_t* trans, const char* varlist);
   @note trans_dirtrans works on distributed arrays
  */
 int trans_dirtrans(struct DirTrans_t* dirtrans);
+
+
+/*!
+  @brief Adjoint of Direct spectral transform (from grid-point to spectral)
+
+  A DirTransAdj_t struct, initialised with new_dirtrans_adj(),
+  groups all arguments
+
+  @param dirtrans  DirTransAdj_t struct, containing all arguments.
+
+  <b>Usage:</b>
+  - Transform of scalar fields
+  @code{.c}
+  struct Trans_t trans;
+  trans_new(&trans);
+  ... // Missing setup of trans
+  double* rgp       = malloc( sizeof(double) * nscalar*trans.ngptot );
+  double* rspscalar = malloc( sizeof(double) * nscalar*trans.nspec2 );
+  struct DirTransAdj_t dirtrans_adj = new_dirtrans_adj(&trans);
+    dirtrans_adj.nscalar   = nscalar;   // input
+    dirtrans_adj.rgp       = rgp;       // input
+    dirtrans_adj.rspscalar = rspscalar; // output
+  trans_dirtrans_adj(&dirtrans_adj);
+  @endcode
+  - Transform of U and V fields to vorticity and divergence
+  @code
+  struct Trans_t trans;
+  trans_new(&trans);
+  ... // Missing setup of trans
+  double* rgp    = malloc( sizeof(double) * 2*nvordiv*trans.ngptot );
+  double* rspvor = malloc( sizeof(double) * nvordiv*trans.nspec2 );
+  double* rspdiv = malloc( sizeof(double) * nvordiv*trans.nspec2 );
+  struct DirTransAdj_t dirtrans_adj = new_dirtrans_adj(&trans);
+    dirtrans_adj.nvordiv   = nvordiv;  // input
+    dirtrans_adj.rgp       = rgp;      // input    --    order: U, V
+    dirtrans_adj.rspvor    = rspvor;   // output
+    dirtrans_adj.rspdiv    = rspdiv;   // output
+  trans_dirtrans_adj(&dirtrans);
+  @endcode
+  - Transform of U and V fields to vorticity and divergence, as well as scalar fields
+  @code
+  struct Trans_t trans;
+  trans_new(&trans);
+  ... // Missing setup of trans
+  double* rgp       = malloc( sizeof(double) * (2*nvordiv+nscalar)*trans.ngptot );
+  double* rspscalar = malloc( sizeof(double) * nscalar*trans.nspec2 );
+  double* rspvor    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
+  double* rspdiv    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
+  struct DirTransAdj_t dirtrans_adj = new_dirtrans_adj(&trans);
+    dirtrans_adj.nvordiv = nvordiv;   // input
+    dirtrans_adj.nscalar = nscalar;   // input
+    dirtrans_adj.rgp = rgp;       // input   --   order: U, V, scalars
+    dirtrans_adj.rspscalar = rspscalar; // output
+    dirtrans_adj.rspvor    = rspvor;    // output
+    dirtrans_adj.rspdiv    = rspdiv;    // output
+  trans_dirtrans_adj(&dirtrans_adj);
+  @endcode
+
+  @note trans_dirtrans works on distributed arrays
+ */
+int trans_dirtrans_adj(struct DirTransAdj_t* dirtrans_adj);
+
 
 /*!
   @brief Inverse spectral transform (from spectral grid-point)
@@ -820,6 +884,43 @@ struct DirTrans_t
    @return DirTrans_t struct to be used as argument for trans_dirtrans()
  */
 struct DirTrans_t new_dirtrans(struct Trans_t* trans);
+
+
+/*!
+   @brief Arguments structure for trans_dirtrans_adj()
+
+   Use new_dirtrans_adj() to initialise defaults for the struct (constructor)
+ */
+struct DirTransAdj_t
+{
+  const double* rgp;     //!< @brief  [input] gridpoint fields
+                         //!<         @details Dimensioning:  rgp[#ngpblks][2*#nvordiv+#nscalar][#nproma]\n\n
+                         //!<         The ordering of the output fields is as follows (all
+                         //!<         parts are optional depending on the input switches):
+                         //!<         - u       : if #nvordiv > 0
+                         //!<         - v       : if #nvordiv > 0
+                         //!<         - scalars : if #nscalar > 0
+  double* rspscalar;     //!< @brief  [output] spectral scalar valued fields
+                         //!<         @details Dimensioning: rspscalar[@link Trans_t::nspec2 nspec2 @endlink][#nscalar]
+  double* rspvor;        //!< @brief  [output] spectral vorticity
+                         //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
+  double* rspdiv;        //!< @brief  [output] spectral divergence
+                         //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
+  int nproma;            //!< @brief  [input,default=@link Trans_t::ngptot ngptot@endlink] Blocking factor for distributed gridpoint array
+  int nscalar;           //!< @brief  [input,default=0] Number of scalar fields present in RGP
+  int nvordiv;           //!< @brief  [input,default=0] Number of vorticity/divergence fields in RGP
+  int ngpblks;           //!< @brief  [input,default=1] Blocking factor for distributed gridpoint array
+  int lglobal;           //!< @brief  [input,default=0] rgp is a global input field --> nproma==1,ngpblks==ngptotg
+  struct Trans_t* trans; //!< @brief Internal storage of trans object
+  int count;             //!< @brief Internal storage for calls to trans_dirtrans()
+};
+/*!
+   @brief Constructor for DirTransAdj_t, resetting default values
+   @param  trans [in] Trans_t used to set defaults
+   @return DirTransAdj_t struct to be used as argument for trans_dirtrans_adj()
+ */
+struct DirTransAdj_t new_dirtrans_adj(struct Trans_t* trans);
+
 
 /*!
    @brief Arguments structure for trans_invtrans()
