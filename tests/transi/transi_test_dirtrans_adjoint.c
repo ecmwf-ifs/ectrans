@@ -1,5 +1,5 @@
 /*
- * (C) Crown Copyright 2022 Met Office UK
+ * (C) Crown Copyright 2022 Met Office (UK)
  *
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -14,10 +14,10 @@
 
 // ----------------------------------------------------------------------------
 
-void test_invtrans_adjoint(int nlon, int nlat, int nsmax)
+void test_dirtrans_adjoint(int nlon, int nlat, int nsmax)
 {
 double adjoint_tol = 1.e-6;
-printf("test_invtrans_adjoint( nlon=%d, nlat=%d, nsmax=%d )\n",nlon,nlat,nsmax);
+printf("test_dirtrans_adjoint( nlon=%d, nlat=%d, nsmax=%d )\n",nlon,nlat,nsmax);
 
 int nout = 2;
 
@@ -85,15 +85,15 @@ double* rspscalar = calloc( nscalar*trans.nspec2, sizeof(double));
 double* rspvor    = calloc( nvordiv*trans.nspec2, sizeof(double));
 double* rspdiv    = calloc( nvordiv*trans.nspec2, sizeof(double));
 
-printf("trans_invtrans_adj()\n");
-struct InvTransAdj_t invtrans_adj = new_invtrans_adj(&trans);
-  invtrans_adj.nscalar   = nscalar;
-  invtrans_adj.nvordiv   = nvordiv;
-  invtrans_adj.rgp       = rgp;
-  invtrans_adj.rspscalar = rspscalar;
-  invtrans_adj.rspvor    = rspvor;
-  invtrans_adj.rspdiv    = rspdiv;
-TRANS_CHECK( trans_invtrans_adj(&invtrans_adj) );
+printf("trans_dirtrans()\n");
+struct DirTrans_t dirtrans = new_dirtrans(&trans);
+  dirtrans.nscalar   = nscalar;
+  dirtrans.nvordiv   = nvordiv;
+  dirtrans.rgp       = rgp;
+  dirtrans.rspscalar = rspscalar;
+  dirtrans.rspvor    = rspvor;
+  dirtrans.rspdiv    = rspdiv;
+TRANS_CHECK( trans_dirtrans(&dirtrans) );
 
 // Gather spectral field (for fun)
 int* nto = malloc( sizeof(int) * nscalar );
@@ -145,16 +145,16 @@ struct DistSpec_t distspec = new_distspec(&trans);
 TRANS_CHECK( trans_distspec(&distspec) );
 
 
-printf("trans_invtrans()\n");
-// Inverse Transform
-struct InvTrans_t invtrans = new_invtrans(&trans);
-  invtrans.nscalar   = nscalar;
-  invtrans.nvordiv   = nvordiv;
-  invtrans.rspscalar = rspscalar;
-  invtrans.rspvor    = rspvor;
-  invtrans.rspdiv    = rspdiv;
-  invtrans.rgp       = rgp;
-TRANS_CHECK( trans_invtrans(&invtrans) );
+printf("trans_dirtrans_adj()\n");
+// Adjoint of Direct Transform
+struct DirTransAdj_t dirtrans_adj = new_dirtrans_adj(&trans);
+  dirtrans_adj.nscalar   = nscalar;
+  dirtrans_adj.nvordiv   = nvordiv;
+  dirtrans_adj.rspscalar = rspscalar;
+  dirtrans_adj.rspvor    = rspvor;
+  dirtrans_adj.rspdiv    = rspdiv;
+  dirtrans_adj.rgp       = rgp;
+TRANS_CHECK( trans_dirtrans_adj(&dirtrans_adj) );
 
 printf("trans_gathgrid()\n");
 // Gather gridpoint fields
@@ -214,7 +214,7 @@ int main ( int arc, char **argv )
 // nsmax = nlat - 1
 
   printf("-----------------------------\n");
-  test_invtrans_adjoint(8,4,3);
+  test_dirtrans_adjoint(8,4,3);
 
   TRANS_CHECK( trans_finalize() );
 

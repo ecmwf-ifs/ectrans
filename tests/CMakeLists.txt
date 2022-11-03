@@ -163,6 +163,11 @@ if( HAVE_TRANSI )
     LIBS      ectrans_test
     ENVIRONMENT TRANS_USE_MPI=0 )
 
+  ecbuild_add_test( TARGET ectrans_test_transi_dirtrans_adjoint
+    SOURCES   transi/transi_test_dirtrans_adjoint.c
+    LIBS      ectrans_test
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
   ecbuild_add_test( TARGET ectrans_test_transi_invtrans_adjoint
     SOURCES   transi/transi_test_invtrans_adjoint.c
     LIBS      ectrans_test

@@ -149,6 +149,23 @@ struct DirTrans_t new_dirtrans(struct Trans_t* trans)
   return dirtrans;
 }
 
+struct DirTransAdj_t new_dirtrans_adj(struct Trans_t* trans)
+{
+  struct DirTransAdj_t dirtrans_adj;
+  dirtrans_adj.count = 0;
+  dirtrans_adj.rgp = NULL;
+  dirtrans_adj.rspscalar = NULL;
+  dirtrans_adj.rspvor = NULL;
+  dirtrans_adj.rspdiv = NULL;
+  dirtrans_adj.ngpblks = 1;
+  dirtrans_adj.nproma = trans->ngptot;
+  dirtrans_adj.nscalar = 0;
+  dirtrans_adj.nvordiv = 0;
+  dirtrans_adj.lglobal = 0;
+  dirtrans_adj.trans = trans;
+  return dirtrans_adj;
+}
+
 struct InvTrans_t new_invtrans(struct Trans_t* trans)
 {
   struct InvTrans_t invtrans;
