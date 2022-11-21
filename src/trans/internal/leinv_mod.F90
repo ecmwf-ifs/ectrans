@@ -78,7 +78,7 @@ REAL(KIND=JPRB),    INTENT(OUT) :: PSOA1(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: PAOA1(:,:)
 
 !     LOCAL 
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI, IEND
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IFLD, JGL,JK, J,JI, IEND
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZBA((R%NSMAX-KM+2)/2,KIFC), ZBS((R%NSMAX-KM+3)/2,KIFC), ZC(KDGLU,KIFC)
 LOGICAL :: LL_HALT_INVALID
@@ -128,11 +128,11 @@ IF( KDGLU > 0 ) THEN
 
   ! 1. +++++++++++++ anti-symmetric
 
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO J=1,ILA
-      ZBA(J,IF)=PIA(IA+1+(J-1)*2,JK)
+      ZBA(J,IFLD)=PIA(IA+1+(J-1)*2,JK)
     ENDDO
   ENDDO
   
@@ -162,21 +162,21 @@ IF( KDGLU > 0 ) THEN
   ENDIF
 
   ! we need the transpose of C
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO JI=1,KDGLU
-      PAOA1(JK,ISL+JI-1) = ZC(JI,IF)
+      PAOA1(JK,ISL+JI-1) = ZC(JI,IFLD)
     ENDDO
   ENDDO
 
   ! 2. +++++++++++++ symmetric
 
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO J=1,ILS
-      ZBS(J,IF)=PIA(IS+1+(J-1)*2,JK)
+      ZBS(J,IFLD)=PIA(IS+1+(J-1)*2,JK)
     ENDDO
   ENDDO
   
@@ -206,11 +206,11 @@ IF( KDGLU > 0 ) THEN
   ENDIF
 
   ! we need the transpose of C 
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO JI=1,KDGLU
-      PSOA1(JK,ISL+JI-1) = ZC(JI,IF)
+      PSOA1(JK,ISL+JI-1) = ZC(JI,IFLD)
     ENDDO
   ENDDO
   
