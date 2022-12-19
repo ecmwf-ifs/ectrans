@@ -125,9 +125,9 @@ logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
 logical :: lfftw = .true. ! Use FFTW for Fourier transforms
-logical :: lvordiv = .true.
-logical :: lscders = .true.
-logical :: luvders = .true.
+logical :: lvordiv = .false.
+logical :: lscders = .false.
+logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
 
@@ -197,7 +197,7 @@ logical :: ldump_values = .false.
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
 
-character(len=16) :: cgrid
+character(len=16) :: cgrid = ''
 
 !===================================================================================================
 
@@ -990,7 +990,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   lflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
+  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1000,7 +1000,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
-  logical, intent(inout) :: lflt            ! Use fast Legendre transforms
+  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
@@ -1012,11 +1012,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   integer            :: iarg = 1      ! Argument index
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
-  cgrid = ''
-  lvordiv = .false.
-  lscders = .false.
-  luvders = .false.
-  lflt = .false.
 
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
@@ -1053,7 +1048,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--vordiv'); lvordiv = .True.
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
-      case('--flt'); lflt = .True.
+      case('--flt'); luseflt = .True.
       case('--nproma'); nproma = get_int_value(iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
