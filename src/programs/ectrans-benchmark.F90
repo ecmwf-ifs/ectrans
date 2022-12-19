@@ -150,8 +150,8 @@ integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
 integer(kind=jpim) :: nprgpns ! Grid-point decomp
 integer(kind=jpim) :: nprgpew ! Grid-point decomp
-integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
-integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
+integer(kind=jpim) :: nprtrv ! Spectral decomp
+integer(kind=jpim) :: nprtrw ! Spectral decomp
 integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
 integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
@@ -217,7 +217,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -288,7 +288,7 @@ enddo
 ! From sumpini, although this should be specified in namelist
 if (nspecresmin == 0) nspecresmin = nproc
 
-! Compute nprtrv and nprtrw if not provided in namelist
+! Compute nprtrv and nprtrw if not provided on the command line
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
@@ -990,7 +990,8 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
+  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
+  &                                   lmeminfo, nprtrv, nprtrw)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1007,6 +1008,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
   logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
                                             ! end
+  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
+  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1053,6 +1056,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
+      case('--nprtrv'); nprtrv = get_int_value(iarg)
+      case('--nprtrw'); nprtrw = get_int_value(iarg)
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1172,6 +1177,8 @@ subroutine print_help(unit)
     & timings"
   write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
     & subroutine on memory usage, thread-binding etc."
+  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
+  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
