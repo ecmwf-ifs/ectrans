@@ -125,9 +125,9 @@ logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
 logical :: lfftw = .true. ! Use FFTW for Fourier transforms
-logical :: lvordiv = .true.
-logical :: lscders = .true.
-logical :: luvders = .true.
+logical :: lvordiv = .false.
+logical :: lscders = .false.
+logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
 
@@ -197,7 +197,7 @@ logical :: ldump_values = .false.
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
 
-character(len=16) :: cgrid
+character(len=16) :: cgrid = ''
 
 !===================================================================================================
 
@@ -217,7 +217,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -288,7 +288,7 @@ enddo
 ! From sumpini, although this should be specified in namelist
 if (nspecresmin == 0) nspecresmin = nproc
 
-! Compute nprtrv and nprtrw if not provided in namelist
+! Compute nprtrv and nprtrw if not provided on the command line
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
@@ -990,7 +990,8 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   lflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo)
+  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
+  &                                   lmeminfo, nprtrv, nprtrw)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1000,23 +1001,20 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
-  logical, intent(inout) :: lflt            ! Use fast Legendre transforms
+  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
   logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
   logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
                                             ! end
+  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
+  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
-  cgrid = ''
-  lvordiv = .false.
-  lscders = .false.
-  luvders = .false.
-  lflt = .false.
 
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
@@ -1053,11 +1051,13 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--vordiv'); lvordiv = .True.
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
-      case('--flt'); lflt = .True.
+      case('--flt'); luseflt = .True.
       case('--nproma'); nproma = get_int_value(iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
+      case('--nprtrv'); nprtrv = get_int_value(iarg)
+      case('--nprtrw'); nprtrw = get_int_value(iarg)
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1177,6 +1177,8 @@ subroutine print_help(unit)
     & timings"
   write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
     & subroutine on memory usage, thread-binding etc."
+  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
+  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
