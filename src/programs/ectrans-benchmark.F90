@@ -62,7 +62,7 @@ integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
 
 ! Default parameters
 integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
-integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
+integer(kind=jpim) :: iters   = 1  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
 
