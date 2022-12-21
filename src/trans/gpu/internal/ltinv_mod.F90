@@ -137,8 +137,8 @@ MODULE LTINV_MOD
  
   INTEGER(KIND=JPIM) :: KM
   INTEGER(KIND=JPIM) :: KMLOC
- 
- 
+
+
   !call cudaProfilerStart
 
 
@@ -197,7 +197,7 @@ MODULE LTINV_MOD
 #ifdef ACCGPU
     !$ACC END DATA
 #endif
- 
+
   !     ------------------------------------------------------------------
  
     CALL VDTUV(KF_UV,ZEPSNM,ZIA(IVORL:IVORU,:,:),ZIA(IDIVL:IDIVU,:,:),&
@@ -333,6 +333,7 @@ MODULE LTINV_MOD
   IF( KF_OUT_LT > 0 ) THEN
   !call cudaProfilerStart
   CALL LEINV(IFC,KF_OUT_LT,ZIA(ISTA:ISTA+IFC-1,:,:),ZAOA1,ZSOA1)
+
   !call cudaProfilerStop
 
   !     ------------------------------------------------------------------

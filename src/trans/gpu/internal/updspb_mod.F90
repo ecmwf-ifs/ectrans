@@ -10,7 +10,7 @@
 
 MODULE UPDSPB_MOD
   CONTAINS
-  SUBROUTINE UPDSPB(KFIELD,POA,PSPEC,KFLDPTR)
+  SUBROUTINE UPDSPB(KFIELD,POA,IST,PSPEC,KFLDPTR)
   
   
   !**** *UPDSPB* - Update spectral arrays after direct Legendre transform
@@ -64,7 +64,7 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   
   IMPLICIT NONE
   
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
+  INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD, IST
   INTEGER(KIND=JPIM)  :: KM,KMLOC
   REAL(KIND=JPRBT)   ,INTENT(IN)  :: POA(:,:,:)
   REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
@@ -96,31 +96,31 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
       !loop over wavenumber
 #ifdef ACCGPU
-  !$ACC DATA PRESENT(PSPEC,POA,R,D)
+  !$ACC DATA PRESENT(PSPEC,POA) COPYIN(IST,KFIELD)
 #endif
 #ifdef OMPGPU
   !$OMP TARGET DATA MAP(ALLOC:PSPEC,POA) &
-  !$OMP&    MAP(TO:R,D,D%NUMP,R%NTMAX,R%NSMAX,D%MYMS,D%NASM0)
+  !$OMP&    MAP(TO:R,D,D_NUMP,R_NTMAX,R_NSMAX,D_MYMS,D_NASM0)
   !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
   !$OMP& SHARED(D,R,KFIELD,PSPEC,POA)
 #endif
 #ifdef ACCGPU
   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
-  !$ACC& PRESENT(D,R,KFIELD,PSPEC,POA)
+  !$ACC& PRESENT(D_NUMP,D_MYMS,D_NASM0,R_NSMAX,R_NTMAX,KFIELD,PSPEC,POA)
 #endif
-  DO KMLOC=1,D%NUMP     
-       DO JN=R%NTMAX+2-R%NSMAX,R%NTMAX+2
+  DO KMLOC=1,D_NUMP     
+       DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2
           DO JFLD=1,KFIELD
 
-             KM = D%MYMS(KMLOC)
-             IASM0 = D%NASM0(KM)
+             KM = D_MYMS(KMLOC)
+             IASM0 = D_NASM0(KM)
 
              IF(KM == 0) THEN
 
-                IF (JN .LE. R%NTMAX+2-KM) THEN 
+                IF (JN .LE. R_NTMAX+2-KM) THEN 
 
-                   INM = IASM0+(R%NTMAX+2-JN)*2
-                   IR = 2*JFLD-1
+                   INM = IASM0+(R_NTMAX+2-JN)*2
+                   IR = IST+2*JFLD-2
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
                    PSPEC(JFLD,INM+1) = 0.0_JPRBT
  
@@ -128,10 +128,10 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
              ELSE
  
  
-                IF (JN .LE. R%NTMAX+2-KM) THEN
-                   INM = IASM0+((R%NTMAX+2-JN)-KM)*2
+                IF (JN .LE. R_NTMAX+2-KM) THEN
+                   INM = IASM0+((R_NTMAX+2-JN)-KM)*2
  
-                   IR = 2*JFLD-1
+                   IR = IST+2*JFLD-2
                    II = IR+1
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
                    PSPEC(JFLD,INM+1) = POA(II,JN,KMLOC)

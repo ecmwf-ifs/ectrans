@@ -25,7 +25,7 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
 {
 
 
-  // printf("CUBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
+  // printf("HIPBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
     hipblasStatus_t stat;
 
  
@@ -47,7 +47,7 @@ extern "C" void cublasDgemmBatched_wrapper (char transa, char transb, int m, int
   if (!alreadyAllocated_dgemm_handle){
      stat = hipblasCreate(&handle_dgemm);
      if (stat != HIPBLAS_STATUS_SUCCESS) {
-        printf ("CUBLAS initialization failed\n");
+        printf ("HIPBLAS initialization failed\n");
         //return EXIT_FAILURE;
     }
   }
@@ -97,7 +97,7 @@ extern "C" void cublasDgemmStridedBatched_wrapper (char transa, char transb, int
 {
 
 
-  // printf("CUBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
+  // printf("HIPBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
 
  
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;

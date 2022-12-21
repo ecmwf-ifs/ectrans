@@ -32,7 +32,7 @@ ecbuild_add_option( FEATURE OMP
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
 ecbuild_add_option( FEATURE DOUBLE_PRECISION
-                    DEFAULT ON
+                    DEFAULT OFF
                     DESCRIPTION "Support for Double Precision" )
 
 ecbuild_add_option( FEATURE SINGLE_PRECISION
@@ -75,8 +75,8 @@ if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE
         ecbuild_warn_var(CMAKE_MODULE_PATH)
         find_package(HIP)
         #if( HIP_FOUND )
-        #  find_package(hipfft)
-        #  find_package(hipblas)
+        find_package(hipfft)
+        find_package(hipblas)
         #endif()
   find_package(OpenACC COMPONENTS Fortran)
   find_package(MPI COMPONENTS Fortran CXX)
@@ -168,7 +168,7 @@ if( HAVE_GPU )
     endif()
 endif()
 
-ectrans_find_lapack()
+#ectrans_find_lapack()
 
 ### Add sources and tests
 include( ectrans_compile_options )

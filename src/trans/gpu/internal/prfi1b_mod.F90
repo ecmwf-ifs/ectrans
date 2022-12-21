@@ -74,7 +74,6 @@ MODULE PRFI1B_MOD
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: II, INM, IR, J, JFLD, ILCM, IOFF,IFLD
   
-  
   !     ------------------------------------------------------------------
   
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
@@ -83,7 +82,7 @@ MODULE PRFI1B_MOD
 #ifdef ACCGPU
   !$ACC DATA &
   !$ACC      PRESENT(D_NUMP,R_NSMAX,D_MYMS,D_NASM0) &
-  !$ACC      PRESENT(PIA) &
+  !$ACC      COPYIN(PIA) &
   !$ACC      PRESENT(PSPEC)
 #endif
 #ifdef OMPGPU
@@ -102,7 +101,7 @@ MODULE PRFI1B_MOD
  
  
    !loop over wavenumber
- 
+print*,"before first acc loop" 
 #ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
 #endif
@@ -128,7 +127,7 @@ MODULE PRFI1B_MOD
  
       ! end loop over wavenumber
    END DO
-
+stop "after first acc loop in prfi1b_mod"
 #ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
 #endif

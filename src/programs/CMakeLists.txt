@@ -31,7 +31,7 @@ if( HAVE_TOOLS )
 endif()
 
 
-foreach( prec sp dp )
+foreach( prec sp )
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
                           SOURCES ectrans-benchmark.F90
@@ -42,11 +42,12 @@ foreach( prec sp dp )
                           )
 
     if( HAVE_GPU )
-      foreach( gpumethod omp )
+      foreach( gpumethod acc )
         if( HAVE_${gpumethod} )
           if( gpumethod STREQUAL acc )
             ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
                                   SOURCES ectrans-benchmark.F90
+				  LINKER_LANGUAGE Fortran
                                   LIBS
                                     fiat
                                     parkind_${prec}
@@ -59,6 +60,7 @@ foreach( prec sp dp )
           if( gpumethod STREQUAL omp )
             ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
                                   SOURCES ectrans-benchmark.F90
+				  LINKER_LANGUAGE Fortran
                                   LIBS
                                     fiat
                                     parkind_${prec}

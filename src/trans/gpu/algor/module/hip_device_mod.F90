@@ -1,0 +1,56 @@
+module hip_device_mod
+
+interface hip_sync
+
+integer function hip_synchronize() bind(C,name='hipDeviceSynchronize')
+use iso_c_binding
+end function hip_synchronize
+
+end interface hip_sync
+
+interface hipstreamsync
+   
+integer function hip_stream_synchronize(stream) bind(C,name='hipStreamSynchronize')
+use iso_c_binding
+type(c_ptr) :: stream
+end function hip_stream_synchronize
+
+end interface hipstreamsync
+
+interface hipstreamdestroy
+   
+integer function hip_stream_destroy(stream) bind(C,name='hipStreamDestroy')
+use iso_c_binding
+type(c_ptr) :: stream
+end function hip_stream_destroy
+
+end interface hipstreamdestroy
+
+interface hipsetdevice
+
+integer function hip_SetDevice(devnum) bind(C,name='hipSetDevice')
+use iso_c_binding
+integer(c_int),value :: devnum
+end function hip_SetDevice
+
+end interface hipsetdevice
+
+interface hipgetdevice
+   
+integer function hip_GetDevice(devnum) bind(C,name='hipGetDevice')
+use iso_c_binding
+integer(c_int) :: devnum
+end function hip_GetDevice
+
+end interface hipgetdevice
+
+interface hipgetdevicecount
+   
+integer function hip_GetDeviceCount(devnum) bind(C,name='hipGetDeviceCount')
+use iso_c_binding
+integer(c_int) :: devnum
+end function hip_GetDeviceCount
+
+end interface hipgetdevicecount
+
+end module hip_device_mod

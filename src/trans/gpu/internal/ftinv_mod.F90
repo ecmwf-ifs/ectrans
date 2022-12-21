@@ -46,28 +46,29 @@ SUBROUTINE FTINV(PREEL,KFIELDS)
 
 USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
-USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
-USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC, D_NSTAGTF, D_NPTRLS
+USE TPM_GEOMETRY    ,ONLY : G, G_NMEN, G_NLOEN
 USE TPM_GEN         ,ONLY : NOUT
 USE TPM_FFT         ,ONLY : T
-USE TPM_FFTC        ,ONLY : CREATE_PLAN_FFT, destroy_plan_fft
-USE TPM_DIM         ,ONLY : R
+USE TPM_FFTH        ,ONLY : CREATE_PLAN_FFT, destroy_plan_fft, EXECUTE_PLAN_FFT
+USE TPM_DIM         ,ONLY : R, R_NNOEXTZL
 USE HIP_DEVICE_MOD
+USE ISO_C_BINDING
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
 INTEGER(KIND=JPIM) :: KGL
-REAL(KIND=JPRBT), INTENT(INOUT)  :: PREEL(:,:)
+REAL(KIND=JPRBT), INTENT(INOUT), TARGET  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
-INTEGER(KIND=JPIM) :: IPLAN_C2R
+TYPE(C_PTR) :: IPLAN_C2R
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE
 integer :: istat,idev
 
-REAL(KIND=JPRBT), allocatable  :: PREEL2(:,:)
+REAL(KIND=JPRBT), allocatable, target  :: PREEL2(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -93,9 +94,12 @@ ISIZE=size(PREEL,1)
 !$OMP TARGET DATA MAP(ALLOC:PREEL)
 #endif
 
+!stop "DEBUGGING: beginning of ftinv_mod"
+
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IOFF,IGLG,IST,ILEN,IST1) &
-!$ACC&     PRESENT(IBEG,IEND,IINC,D,MYSETW,G,R,KFIELDS,PREEL)
+!$ACC&     COPYIN(IBEG,IEND,IINC,KFIELDS,MYSETW) &
+!$ACC&     PRESENT(D,D%NSTAGTF,D%NPTRLS,G,G%NMEN,G%NLOEN,R,R%NNOEXTZL,PREEL)
 #endif
 #ifdef OMPGPU
 !$OMP TARGET PARALLEL DO DEFAULT(NONE) PRIVATE(IOFF,IGLG,IST,ILEN,IST1) &
@@ -114,7 +118,7 @@ DO KGL=IBEG,IEND,IINC
   !$ACC LOOP COLLAPSE(2)
 #endif
   !!$OMP TARGET PARALLEL DO COLLAPSE(2)
-  !This OMP TARGET statement doesn't compile
+  !This OMP TARGET statement doesn't compile with nvhpc
   DO JJ=IST1,ILEN
      DO JF=1,KFIELDS
         PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
@@ -145,18 +149,31 @@ DO KGL=IBEG,IEND,IINC
 !call cudaProfilerStop()
      !istat=cuda_SetDevice(idev)
      CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELDS)
+     !!!!DEBUGGING:
+     !!!!$ACC PARALLEL LOOP
+     !!!DO JJ=1,10
+     !!!   PREEL(JJ,ioff) = JJ
+     !!!END DO
+     !!!!$ACC UPDATE HOST(PREEL)
+     !!!print*,"DEBUGGING: ftinv_mod: data before FFT: ",PREEL(1:10,ioff)
 #ifdef ACCGPU
-     !$ACC HOST_DATA USE_DEVICE(PREEL,PREEL2)
+     ! moved this HOST_DATA USE_DEVICE into tpm_ffth.F90 to make it work on AMD GPUs (Andreas)
+     !!$ACC HOST_DATA USE_DEVICE(PREEL,PREEL2)
 #endif
 #ifdef OMPGPU
-     !$OMP TARGET DATA USE_DEVICE_PTR(PREEL,PREEL2)
+     !!$OMP TARGET DATA USE_DEVICE_PTR(PREEL,PREEL2)
 #endif
-     CALL EXECUTE_PLAN_FFTC(IPLAN_C2R,1,PREEL(1, ioff),PREEL2(1, ioff))
+     !stop "DEBUGGING: before first execute_plan"
+     CALL EXECUTE_PLAN_FFT(1,G%NLOEN(IGLG),PREEL(1, ioff),PREEL2(1, ioff),IPLAN_C2R)
+     !!!CALL EXECUTE_PLAN_FFT(1,10,PREEL(1, ioff),PREEL2(1, ioff),IPLAN_C2R)
 #ifdef OMPGPU
-     !$OMP END TARGET DATA
+     !!$OMP END TARGET DATA
 #endif
+!!!!$ACC UPDATE HOST(PREEL2)
+!!!print*,"DEBUGGING: ftinv_mod: data after FFT: ",PREEL2(1:10,ioff)
+!!!!stop "after first execute_plan"
 #ifdef ACCGPU
-     !$ACC END HOST_DATA
+     !!$ACC END HOST_DATA
 #endif
 !call cudaProfilerStart()
   !ENDIF
@@ -183,6 +200,6 @@ PREEL(:,:) = PREEL2(:,:)
 !$ACC END DATA
 #endif
 !     ------------------------------------------------------------------
-
+!stop "end of ftinv_mod"
 END SUBROUTINE FTINV
 END MODULE FTINV_MOD
