@@ -106,6 +106,7 @@ real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
 real(kind=jprb), allocatable :: zspsc2(:,:)
+real(kind=jprb), allocatable :: zsp_check(:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -130,6 +131,7 @@ logical :: lscders = .false.
 logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
+logical :: lcheck = .false.
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
@@ -199,6 +201,8 @@ logical :: luse_mpi = .true.
 
 character(len=16) :: cgrid = ''
 
+real(kind=jprb) :: zmax_diff
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -217,7 +221,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, lcheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -461,6 +465,12 @@ call initialize_spectral_arrays(nsmax, zspsc2, sp3d)
 zspvor  => sp3d(:,:,1)
 zspdiv  => sp3d(:,:,2)
 zspsc3a => sp3d(:,:,3:3+(nfld-1))
+
+! Initialize array for performing correctness check
+if (lcheck) then
+  allocate(zsp_check(nspec2))
+  call initialize_2d_spectral_field(nsmax, zsp_check)
+end if
 
 !===================================================================================================
 ! Allocate gridpoint arrays
@@ -737,6 +747,23 @@ do jstep = 1, iters
   call gstats(3,1)
 enddo
 
+! Perform correctness check
+if (lcheck) then
+  ! If any of the resulting scalar field elements are different from the initial values by more than
+  ! the machine epsilon, fail the test
+  ! TODO: check the other transformed fields as well
+  zmax_diff = maxval(abs(zsp_check - zspsc2(1,:)))
+  if (luse_mpi) then
+    call mpl_allreduce(zmax_diff, 'max', ldreprod=.false.)
+  endif
+
+  if (zmax_diff > epsilon(1.0_jprb)) then
+    write(nout, '(a)') 'Correctness test failed'
+    write(nout, '(a,1e7.2)') 'Maximum difference = ', zmax_diff
+    error stop
+  endif
+endif
+
 ztloop = (timef() - ztloop)/1000.0_jprd
 
 write(nout,'(" ")')
@@ -991,7 +1018,7 @@ end subroutine
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw)
+  &                                   lmeminfo, nprtrv, nprtrw, lcheck)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1010,6 +1037,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
                                             ! end
   integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
   integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
+  logical, intent(inout) :: lcheck          ! Check the correctness of the transform
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1058,6 +1086,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--meminfo'); lmeminfo = .true.
       case('--nprtrv'); nprtrv = get_int_value(iarg)
       case('--nprtrw'); nprtrw = get_int_value(iarg)
+      case('-c','--check'); lcheck = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1179,6 +1208,8 @@ subroutine print_help(unit)
     & subroutine on memory usage, thread-binding etc."
   write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
   write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
+  write(nout, "(a)") "    -c, --check         Perform a correctness check on the final fields,&
+    & comparing with the initial fields"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
