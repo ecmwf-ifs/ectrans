@@ -1203,7 +1203,7 @@ subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
   nfield = size(sp3d, 3)
 
   ! First initialize surface pressure
-  call initialize_2d_spectral_field(nsmax, zspsc2(1,:))
+  call initialize_2d_spectral_field(nsmax, zsp(1,:))
 
   ! Then initialize all of the 3D fields
   do i = 1, nflevl
