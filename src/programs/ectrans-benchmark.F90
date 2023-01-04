@@ -106,7 +106,6 @@ real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
 real(kind=jprb), allocatable :: zspsc2(:,:)
-real(kind=jprb), allocatable :: zsp_check(:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -201,8 +200,6 @@ logical :: luse_mpi = .true.
 
 character(len=16) :: cgrid = ''
 
-real(kind=jprb) :: zmax_diff
-
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -245,7 +242,6 @@ call dr_hook_init()
 
 if( lstats ) call gstats(0,0)
 ztinit = timef()
-
 
 ! only output to stdout on pe 1
 if (nproc > 1) then
@@ -466,12 +462,6 @@ zspvor  => sp3d(:,:,1)
 zspdiv  => sp3d(:,:,2)
 zspsc3a => sp3d(:,:,3:3+(nfld-1))
 
-! Initialize array for performing correctness check
-if (lcheck) then
-  allocate(zsp_check(nspec2))
-  call initialize_2d_spectral_field(nsmax, zsp_check)
-end if
-
 !===================================================================================================
 ! Allocate gridpoint arrays
 !===================================================================================================
@@ -530,21 +520,20 @@ zgpuv => zgmv(:,:,1:jend_vder_EW,:)
 zgp3a => zgmv(:,:,jbegin_sc:jend_scder_EW,:)
 zgp2  => zgmvs(:,:,:)
 
-
 !===================================================================================================
 ! Allocate norm arrays
 !===================================================================================================
 
-allocate(znormsp(1))
-allocate(znormsp1(1))
-allocate(znormvor(nflevg))
-allocate(znormvor1(nflevg))
-allocate(znormdiv(nflevg))
-allocate(znormdiv1(nflevg))
-allocate(znormt(nflevg))
-allocate(znormt1(nflevg))
+if (lprint_norms .or. lcheck) then
+  allocate(znormsp(1))
+  allocate(znormsp1(1))
+  allocate(znormvor(nflevg))
+  allocate(znormvor1(nflevg))
+  allocate(znormdiv(nflevg))
+  allocate(znormdiv1(nflevg))
+  allocate(znormt(nflevg))
+  allocate(znormt1(nflevg))
 
-if (lprint_norms) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
@@ -747,22 +736,7 @@ do jstep = 1, iters
   call gstats(3,1)
 enddo
 
-! Perform correctness check
-if (lcheck) then
-  ! If any of the resulting scalar field elements are different from the initial values by more than
-  ! the machine epsilon, fail the test
-  ! TODO: check the other transformed fields as well
-  zmax_diff = maxval(abs(zsp_check - zspsc2(1,:)))
-  if (luse_mpi) then
-    call mpl_allreduce(zmax_diff, 'max', ldreprod=.false.)
-  endif
-
-  if (zmax_diff > epsilon(1.0_jprb)) then
-    write(nout, '(a)') 'Correctness test failed'
-    write(nout, '(a,1e7.2)') 'Maximum difference = ', zmax_diff
-    error stop
-  endif
-endif
+!===================================================================================================
 
 ztloop = (timef() - ztloop)/1000.0_jprd
 
@@ -770,8 +744,7 @@ write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
-
-if (lprint_norms) then
+if (lprint_norms .or. lcheck) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
@@ -818,6 +791,16 @@ if (lprint_norms) then
   write(nout,*)
   write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
   write(nout,*)
+
+  if (lcheck .and. myproc == 1) then
+    ! If the maximum spectral norm error across all fields is greater than 100 times the machine
+    ! epsilon, fail the test
+    if (zmaxerrg > 100.0_jprb * epsilon(1.0_jprb)) then
+      write(nout, '(a)') 'Correctness test failed'
+      write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+      error stop
+    endif
+  endif
 endif
 
 if (luse_mpi) then
