@@ -890,6 +890,7 @@ endif
 
 !===================================================================================================
 ! Cleanup
+!===================================================================================================
 
 deallocate(zgmv)
 deallocate(zgmvs)
@@ -917,6 +918,7 @@ endif
 
 !===================================================================================================
 ! Close file
+!===================================================================================================
 
 if (nproc > 1) then
   if (myproc /= 1) then
@@ -1149,7 +1151,7 @@ subroutine print_help(unit)
 
   write(nout, "(a)") "DESCRIPTION"
   write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
-    &between spectral "
+    & between spectral "
   if (jprb == jprd) then
     write(nout, "(a)") "        space and grid-point space (double-precision version)"
   else
