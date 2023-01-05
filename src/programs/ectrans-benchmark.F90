@@ -967,26 +967,37 @@ end subroutine
 
 !===================================================================================================
 
-function get_int_value(iarg) result(value)
+function get_int_value(cname, iarg) result(value)
 
   integer :: value
+  character(len=*), intent(in) :: cname
   integer, intent(inout) :: iarg
   character(len=128) :: carg
   integer :: stat
-  iarg = iarg + 1
-  call get_command_argument(iarg, carg)
+
+  carg = get_str_value(cname, iarg)
   call str2int(carg, value, stat)
+
+  if (stat /= 0) then
+    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
+  end if
 
 end function
 
 !===================================================================================================
 
-function get_str_value(iarg) result(value)
+function get_str_value(cname, iarg) result(value)
 
   character(len=128) :: value
+  character(len=*), intent(in) :: cname
   integer, intent(inout) :: iarg
+
   iarg = iarg + 1
   call get_command_argument(iarg, value)
+
+  if (value == "") then
+    call parsing_failed("Invalid argument for " // trim(cname) // ": no value provided")
+  end if
 
 end function
 
@@ -1041,7 +1052,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
 
     select case(carg)
       ! Parse help argument
-      case('-h','--help')
+      case('-h', '--help')
         if (luse_mpi) call mpl_init(ldinfo=.false.)
         if (ec_mpirank()==0) call print_help()
         if (luse_mpi) call mpl_end(ldmeminfo=.false.)
@@ -1050,35 +1061,31 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('-v')
         verbosity = 1
       ! Parse number of iterations argument
-      case('-n','--niter')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        call str2int(carg, iters, stat)
-        if (stat /= 0 .or. iters < 1) then
-          call parsing_failed("Invalid argument for -n: " // trim(carg))
+      case('-n', '--niter')
+        iters = get_int_value('-n', iarg)
+        if (iters < 1) then
+          call parsing_failed("Invalid argument for -n: must be > 0")
         end if
       ! Parse spectral truncation argument
-      case('-t','--truncation')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        call str2int(carg, nsmax, stat)
-        if (stat /= 0 .or. nsmax < 1) then
-          call parsing_failed("Invalid argument for -t: " // carg)
+      case('-t', '--truncation')
+        nsmax = get_int_value('-t', iarg)
+        if (nsmax < 1) then
+          call parsing_failed("Invalid argument for -t: must be > 0")
         end if
-      case('-g', '--grid'); cgrid = get_str_value(iarg)
-      case('-f','--nfld'); nfld = get_int_value(iarg)
-      case('-l','--nlev'); nlev = get_int_value(iarg)
+      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
+      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
+      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
       case('--vordiv'); lvordiv = .True.
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
       case('--flt'); luseflt = .True.
-      case('--nproma'); nproma = get_int_value(iarg)
+      case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
-      case('--nprtrv'); nprtrv = get_int_value(iarg)
-      case('--nprtrw'); nprtrw = get_int_value(iarg)
-      case('-c', '--check'); ncheck = get_int_value(iarg)
+      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
+      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
+      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
