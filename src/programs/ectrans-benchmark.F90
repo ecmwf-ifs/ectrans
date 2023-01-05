@@ -130,11 +130,14 @@ logical :: lscders = .false.
 logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
-logical :: lcheck = .false.
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
+
+! The multiplier of the machine epsilon used as a tolerance for correctness checking
+! ncheck = 0 (the default) means that correctness checking is disabled
+integer(kind=jpim) :: ncheck = 0
 
 logical :: lmpoff = .false. ! Message passing switch
 
@@ -218,7 +221,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, lcheck)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -524,7 +527,7 @@ zgp2  => zgmvs(:,:,:)
 ! Allocate norm arrays
 !===================================================================================================
 
-if (lprint_norms .or. lcheck) then
+if (lprint_norms .or. ncheck > 0) then
   allocate(znormsp(1))
   allocate(znormsp1(1))
   allocate(znormvor(nflevg))
@@ -744,7 +747,7 @@ write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
-if (lprint_norms .or. lcheck) then
+if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
@@ -792,12 +795,15 @@ if (lprint_norms .or. lcheck) then
   write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
   write(nout,*)
 
-  if (lcheck .and. myproc == 1) then
+  if (ncheck > 0 .and. myproc == 1) then
     ! If the maximum spectral norm error across all fields is greater than 100 times the machine
     ! epsilon, fail the test
-    if (zmaxerrg > 100.0_jprb * epsilon(1.0_jprb)) then
+    if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+      write(nout, '(a)') '*******************************'
       write(nout, '(a)') 'Correctness test failed'
       write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+      write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+      write(nout, '(a)') '*******************************'
       error stop
     endif
   endif
@@ -1003,7 +1009,7 @@ end subroutine
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, lcheck)
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1022,7 +1028,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
                                             ! end
   integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
   integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
-  logical, intent(inout) :: lcheck          ! Check the correctness of the transform
+  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
+                                            ! tolerance for correctness checking
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1071,7 +1078,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--meminfo'); lmeminfo = .true.
       case('--nprtrv'); nprtrv = get_int_value(iarg)
       case('--nprtrw'); nprtrw = get_int_value(iarg)
-      case('-c','--check'); lcheck = .true.
+      case('-c', '--check'); ncheck = get_int_value(iarg)
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1193,8 +1200,8 @@ subroutine print_help(unit)
     & subroutine on memory usage, thread-binding etc."
   write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
   write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
-  write(nout, "(a)") "    -c, --check         Perform a correctness check on the final fields,&
-    & comparing with the initial fields"
+  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
+   & tolerance for correctness checking"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
