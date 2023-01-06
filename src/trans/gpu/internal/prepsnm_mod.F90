@@ -82,9 +82,9 @@ MODULE PREPSNM_MOD
      KM = D%MYMS(KMLOC)
  
      IF (KM > 0) THEN
-#ifdef ACCGPU
-        !$ACC loop
-#endif
+!#ifdef ACCGPU
+!        !$ACC loop
+!#endif
         DO JN=0,KM-1
            ZEPSNM(KMLOC,JN) = 0.0_JPRBT
         ENDDO

@@ -127,19 +127,23 @@ INTEGER(KIND=JPIM) :: JFLD,ISTSC_G,IENSC_G,ISTSC,IENSC,IENUV,IF_GPB
 
 ! Perform transform
 
-#ifdef OMPGPU
-!$OMP TARGET
-#endif
-#ifdef ACCGPU
-!$ACC KERNELS
-#endif
-ZGTF(:,:) = 0._JPRBT
-#ifdef ACCGPU
-!$ACC END KERNELS
-#endif
-#ifdef OMPGPU
-!$OMP END TARGET
-#endif
+! just removed this, why needed ? Nils
+!#ifdef OMPGPU
+!!$OMP TARGET
+!#endif
+!#ifdef ACCGPU
+!!$ACC KERNELS
+!#endif
+
+!!ZGTF(:,:) = 0._JPRBT
+!!$ACC UPDATE DEVICE(ZGTF)
+
+!#ifdef ACCGPU
+!!$ACC END KERNELS
+!#endif
+!#ifdef OMPGPU
+!!$OMP END TARGET
+!#endif
 
 IF_GPB = 2*KF_UV_G+KF_SCALARS_G
 IF(NPROMATR > 0 .AND. IF_GPB > NPROMATR) THEN

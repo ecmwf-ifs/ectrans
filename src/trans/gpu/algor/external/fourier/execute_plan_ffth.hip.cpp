@@ -104,10 +104,11 @@ __global__ void debugFloat(int varId, int N, HIP_DATA_TYPE_REAL *x) {
         if (varId == 1) printf("GPU: output[%d]=%2.4f\n",i+1,a);
     }}
 
-/*extern "C" {
+extern "C" {
 
-void execute_plan_ffth_c_(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
-*/void hipfunction(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
+void 
+execute_plan_ffth_c_(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
+//void hipfunction(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
 {
 HIP_DATA_TYPE_COMPLEX *data_in = reinterpret_cast<HIP_DATA_TYPE_COMPLEX*>(data_in_host);
 HIP_DATA_TYPE_COMPLEX *data_out = reinterpret_cast<HIP_DATA_TYPE_COMPLEX*>(data_out_host);
@@ -156,4 +157,4 @@ hipDeviceSynchronize();
 
 
 }
-//}
+}

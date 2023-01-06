@@ -34,7 +34,7 @@ if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
 
-foreach( prec sp dp )
+foreach( prec sp )
   if( HAVE_${prec} )
 
     ecbuild_add_library(

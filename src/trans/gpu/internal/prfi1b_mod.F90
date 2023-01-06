@@ -10,13 +10,14 @@
 
 MODULE PRFI1B_MOD
   CONTAINS
-  SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
+          SUBROUTINE PRFI1B(KFIRST,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
   USE PARKIND1  ,ONLY : JPIM     ,JPRB
   
   USE TPM_GEN   ,ONLY : NOUT
   USE TPM_DIM   ,ONLY : R,R_NSMAX
   USE TPM_DISTR ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
+  USE TPM_FIELDS      ,ONLY : ZIA
   USE IEEE_ARITHMETIC
   
   !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
@@ -64,10 +65,11 @@ MODULE PRFI1B_MOD
   
   IMPLICIT NONE
   
+  INTEGER(KIND=JPIM),INTENT(IN)   :: KFIRST
   INTEGER(KIND=JPIM),INTENT(IN)   :: KFIELDS
   INTEGER(KIND=JPIM) :: KM,KMLOC
   REAL(KIND=JPRB)   ,INTENT(IN)   :: PSPEC(:,:)
-  REAL(KIND=JPRB)   ,INTENT(INOUT)  :: PIA(:,:,:)
+  !REAL(KIND=JPRB)   ,INTENT(INOUT)  :: PIA(:,:,:)
   INTEGER(KIND=JPIM),INTENT(IN) :: KDIM
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
@@ -82,11 +84,11 @@ MODULE PRFI1B_MOD
 #ifdef ACCGPU
   !$ACC DATA &
   !$ACC      PRESENT(D_NUMP,R_NSMAX,D_MYMS,D_NASM0) &
-  !$ACC      COPYIN(PIA) &
-  !$ACC      PRESENT(PSPEC)
+  !$ACC      COPYIN(PSPEC) &
+  !$ACC      PRESENT(ZIA)
 #endif
 #ifdef OMPGPU
-  !$OMP TARGET DATA MAP(ALLOC:D_NUMP,R_NSMAX,D_MYMS,D_NASM0,PIA,PSPEC)
+  !$OMP TARGET DATA MAP(ALLOC:D_NUMP,R_NSMAX,D_MYMS,D_NASM0,PSPEC)
 #endif
 
 #ifdef ACCGPU
@@ -101,12 +103,13 @@ MODULE PRFI1B_MOD
  
  
    !loop over wavenumber
-print*,"before first acc loop" 
 #ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
+   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM) DEFAULT(NONE) &
+   !$ACC& COPYIN(KFIELDS,KFIRST) &
+   !$ACC& PRESENT(D_NUMP,D_MYMS,D_NASM0,R_NSMAX,KFLDPTR,ZIA)
 #endif
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
@@ -117,30 +120,31 @@ print*,"before first acc loop"
             IF (J .LE. ILCM) THEN
                IOFF = D_NASM0(KM)
                INM = IOFF+(ILCM-J)*2
-               IR = 2*(JFLD-1)+1
+               IR = KFIRST+2*(JFLD-1)
                II = IR+1
-               PIA(IR,J+2,KMLOC) = PSPEC(iFLD,INM  )
-               PIA(II,J+2,KMLOC) = PSPEC(iFLD,INM+1)
+               ZIA(IR,J+2,KMLOC) = PSPEC(IFLD,INM  )
+               ZIA(II,J+2,KMLOC) = PSPEC(IFLD,INM+1)
             END IF
          ENDDO
       ENDDO
  
       ! end loop over wavenumber
    END DO
-stop "after first acc loop in prfi1b_mod"
 #ifdef OMPGPU
    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ILCM)
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ILCM) &
+   !$ACC& COPYIN(KFIRST,KFIELDS) &
+   !$ACC& PRESENT(D_NUMP,D_MYMS,R_NSMAX,ZIA)
 #endif
    DO KMLOC=1,D_NUMP
-      DO JFLD=1,2*KFIELDS
+      DO JFLD=KFIRST,2*KFIELDS+KFIRST-1
          KM = D_MYMS(KMLOC) 
          ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRB
-         PIA(JFLD,2,KMLOC) = 0.0_JPRB
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,1,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,2,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
       ENDDO 
       ! end loop over wavenumber
    END DO
@@ -153,7 +157,9 @@ stop "after first acc loop in prfi1b_mod"
    !$OMP TARGET PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP !!COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
+   !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KMLOC,J,JFLD,KM,ILCM,IOFF,INM,IR,II) DEFAULT(NONE) &
+   !$ACC& COPYIN(KFIRST,KFIELDS,KDIM) &
+   !$ACC& PRESENT(ZIA,PSPEC,D_NUMP,D_MYMS,D_NASM0,R_NSMAX)
 #endif
    DO KMLOC=1,D_NUMP
       DO J=1,R_NSMAX+1
@@ -163,11 +169,11 @@ stop "after first acc loop in prfi1b_mod"
             if (J .le. ILCM) then
                IOFF = D_NASM0(KM)
                INM = IOFF+(ILCM-J)*2
-               IR = 2*(JFLD-1)+1
+               IR = KFIRST+2*(JFLD-1)
                II = IR+1
                IF( INM .LT. KDIM ) THEN
-               PIA(IR,J+2,KMLOC) = PSPEC(JFLD,INM  )
-               PIA(II,J+2,KMLOC) = PSPEC(JFLD,INM+1)
+               ZIA(IR,J+2,KMLOC) = PSPEC(JFLD,INM  )
+               ZIA(II,J+2,KMLOC) = PSPEC(JFLD,INM+1)
                ENDIF
             end if
          ENDDO
@@ -180,15 +186,17 @@ stop "after first acc loop in prfi1b_mod"
    !$OMP TARGET PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,ILCM)
+   !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,KMLOC,JFLD,ILCM) DEFAULT(NONE) &
+   !$ACC& COPYIN(KFIELDS,KFIRST) &
+   !$ACC& PRESENT(ZIA,D_NUMP,D_MYMS,R_NSMAX)
 #endif
    DO KMLOC=1,D_NUMP
-      DO JFLD=1,2*KFIELDS
+     DO JFLD=KFIRST,2*KFIELDS+KFIRST-1
          KM = D_MYMS(KMLOC) 
          ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRB
-         PIA(JFLD,2,KMLOC) = 0.0_JPRB
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,1,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,2,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
       ENDDO 
       ! end loop over wavenumber
    END DO
@@ -196,7 +204,8 @@ stop "after first acc loop in prfi1b_mod"
   END IF   
 
 #ifdef ACCGPU
-   !$ACC END DATA
+!!$ACC UPDATE HOST(ZIA)
+!$ACC END DATA
 #endif
 #ifdef OMPGPU
    !$OMP END TARGET DATA
@@ -207,6 +216,7 @@ stop "after first acc loop in prfi1b_mod"
 #ifdef OMPGPU
    !$OMP END TARGET DATA
 #endif
+
 
   !     ------------------------------------------------------------------
  

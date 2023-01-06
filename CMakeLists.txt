@@ -32,11 +32,11 @@ ecbuild_add_option( FEATURE OMP
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
 ecbuild_add_option( FEATURE DOUBLE_PRECISION
-                    DEFAULT OFF
+	DEFAULT OFF
                     DESCRIPTION "Support for Double Precision" )
 
 ecbuild_add_option( FEATURE SINGLE_PRECISION
-                    DEFAULT ON
+	DEFAULT ON
                     DESCRIPTION "Support for Single Precision" )
 
 if( HAVE_SINGLE_PRECISION )
@@ -47,7 +47,7 @@ set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
 ecbuild_add_option( FEATURE MKL
                     DESCRIPTION "Use MKL for BLAS and/or FFTW"
-                    DEFAULT ON
+		    DEFAULT OFF
                     REQUIRED_PACKAGES "MKL QUIET" )
 
 if( NOT HAVE_MKL )
@@ -77,6 +77,8 @@ if( ENABLE_GPU OR ECTRANS_ENABLE_GPU ) # must be explicitly turned ON as FEATURE
         #if( HIP_FOUND )
         find_package(hipfft)
         find_package(hipblas)
+        find_package(rocblas)
+        find_package(rocfft)
         #endif()
   find_package(OpenACC COMPONENTS Fortran)
   find_package(MPI COMPONENTS Fortran CXX)
