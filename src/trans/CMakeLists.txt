@@ -19,6 +19,16 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "Cray")
   endif()
 endif()
 
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+  if( CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 18 AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 19 )
+
+    # See https://github.com/ecmwf-ifs/ectrans/issues/17
+    ectrans_add_compile_options(
+        SOURCES algor/butterfly_alg_mod.F90
+        FLAGS   "-check nopointers")
+  endif()
+endif()
+
 ## Assemble sources
 
 ecbuild_list_add_pattern( LIST trans_src
