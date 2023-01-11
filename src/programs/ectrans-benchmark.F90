@@ -135,6 +135,10 @@ integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
 
+! The multiplier of the machine epsilon used as a tolerance for correctness checking
+! ncheck = 0 (the default) means that correctness checking is disabled
+integer(kind=jpim) :: ncheck = 0
+
 logical :: lmpoff = .false. ! Message passing switch
 
 ! Verbosity level (0 or 1)
@@ -217,7 +221,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw)
+  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -241,7 +245,6 @@ call dr_hook_init()
 
 if( lstats ) call gstats(0,0)
 ztinit = timef()
-
 
 ! only output to stdout on pe 1
 if (nproc > 1) then
@@ -520,21 +523,20 @@ zgpuv => zgmv(:,:,1:jend_vder_EW,:)
 zgp3a => zgmv(:,:,jbegin_sc:jend_scder_EW,:)
 zgp2  => zgmvs(:,:,:)
 
-
 !===================================================================================================
 ! Allocate norm arrays
 !===================================================================================================
 
-allocate(znormsp(1))
-allocate(znormsp1(1))
-allocate(znormvor(nflevg))
-allocate(znormvor1(nflevg))
-allocate(znormdiv(nflevg))
-allocate(znormdiv1(nflevg))
-allocate(znormt(nflevg))
-allocate(znormt1(nflevg))
+if (lprint_norms .or. ncheck > 0) then
+  allocate(znormsp(1))
+  allocate(znormsp1(1))
+  allocate(znormvor(nflevg))
+  allocate(znormvor1(nflevg))
+  allocate(znormdiv(nflevg))
+  allocate(znormdiv1(nflevg))
+  allocate(znormt(nflevg))
+  allocate(znormt1(nflevg))
 
-if (lprint_norms) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
@@ -737,14 +739,15 @@ do jstep = 1, iters
   call gstats(3,1)
 enddo
 
+!===================================================================================================
+
 ztloop = (timef() - ztloop)/1000.0_jprd
 
 write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
-
-if (lprint_norms) then
+if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
@@ -791,6 +794,19 @@ if (lprint_norms) then
   write(nout,*)
   write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
   write(nout,*)
+
+  if (ncheck > 0 .and. myproc == 1) then
+    ! If the maximum spectral norm error across all fields is greater than 100 times the machine
+    ! epsilon, fail the test
+    if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+      write(nout, '(a)') '*******************************'
+      write(nout, '(a)') 'Correctness test failed'
+      write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+      write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+      write(nout, '(a)') '*******************************'
+      error stop
+    endif
+  endif
 endif
 
 if (luse_mpi) then
@@ -880,6 +896,7 @@ endif
 
 !===================================================================================================
 ! Cleanup
+!===================================================================================================
 
 deallocate(zgmv)
 deallocate(zgmvs)
@@ -907,6 +924,7 @@ endif
 
 !===================================================================================================
 ! Close file
+!===================================================================================================
 
 if (nproc > 1) then
   if (myproc /= 1) then
@@ -949,26 +967,37 @@ end subroutine
 
 !===================================================================================================
 
-function get_int_value(iarg) result(value)
+function get_int_value(cname, iarg) result(value)
 
   integer :: value
+  character(len=*), intent(in) :: cname
   integer, intent(inout) :: iarg
   character(len=128) :: carg
   integer :: stat
-  iarg = iarg + 1
-  call get_command_argument(iarg, carg)
+
+  carg = get_str_value(cname, iarg)
   call str2int(carg, value, stat)
+
+  if (stat /= 0) then
+    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
+  end if
 
 end function
 
 !===================================================================================================
 
-function get_str_value(iarg) result(value)
+function get_str_value(cname, iarg) result(value)
 
   character(len=128) :: value
+  character(len=*), intent(in) :: cname
   integer, intent(inout) :: iarg
+
   iarg = iarg + 1
   call get_command_argument(iarg, value)
+
+  if (value == "") then
+    call parsing_failed("Invalid argument for " // trim(cname) // ": no value provided")
+  end if
 
 end function
 
@@ -991,7 +1020,7 @@ end subroutine
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw)
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1010,6 +1039,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
                                             ! end
   integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
   integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
+  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
+                                            ! tolerance for correctness checking
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1021,7 +1052,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
 
     select case(carg)
       ! Parse help argument
-      case('-h','--help')
+      case('-h', '--help')
         if (luse_mpi) call mpl_init(ldinfo=.false.)
         if (ec_mpirank()==0) call print_help()
         if (luse_mpi) call mpl_end(ldmeminfo=.false.)
@@ -1030,34 +1061,31 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('-v')
         verbosity = 1
       ! Parse number of iterations argument
-      case('-n','--niter')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        call str2int(carg, iters, stat)
-        if (stat /= 0 .or. iters < 1) then
-          call parsing_failed("Invalid argument for -n: " // trim(carg))
+      case('-n', '--niter')
+        iters = get_int_value('-n', iarg)
+        if (iters < 1) then
+          call parsing_failed("Invalid argument for -n: must be > 0")
         end if
       ! Parse spectral truncation argument
-      case('-t','--truncation')
-        iarg = iarg + 1
-        call get_command_argument(iarg, carg)
-        call str2int(carg, nsmax, stat)
-        if (stat /= 0 .or. nsmax < 1) then
-          call parsing_failed("Invalid argument for -t: " // carg)
+      case('-t', '--truncation')
+        nsmax = get_int_value('-t', iarg)
+        if (nsmax < 1) then
+          call parsing_failed("Invalid argument for -t: must be > 0")
         end if
-      case('-g', '--grid'); cgrid = get_str_value(iarg)
-      case('-f','--nfld'); nfld = get_int_value(iarg)
-      case('-l','--nlev'); nlev = get_int_value(iarg)
+      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
+      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
+      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
       case('--vordiv'); lvordiv = .True.
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
       case('--flt'); luseflt = .True.
-      case('--nproma'); nproma = get_int_value(iarg)
+      case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
-      case('--nprtrv'); nprtrv = get_int_value(iarg)
-      case('--nprtrw'); nprtrw = get_int_value(iarg)
+      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
+      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
+      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1137,7 +1165,7 @@ subroutine print_help(unit)
 
   write(nout, "(a)") "DESCRIPTION"
   write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
-    &between spectral "
+    & between spectral "
   if (jprb == jprd) then
     write(nout, "(a)") "        space and grid-point space (double-precision version)"
   else
@@ -1179,6 +1207,8 @@ subroutine print_help(unit)
     & subroutine on memory usage, thread-binding etc."
   write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
   write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
+  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
+   & tolerance for correctness checking"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
@@ -1203,7 +1233,7 @@ subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
   nfield = size(sp3d, 3)
 
   ! First initialize surface pressure
-  call initialize_2d_spectral_field(nsmax, zspsc2(1,:))
+  call initialize_2d_spectral_field(nsmax, zsp(1,:))
 
   ! Then initialize all of the 3D fields
   do i = 1, nflevl
