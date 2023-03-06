@@ -84,7 +84,7 @@ REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK, I1, I2, I3, I4
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IFLD, J, JK, I1, I2, I3, I4
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCA_D(:,:), ZCS_D(:,:),ZRPNMA(:,:), ZRPNMS(:,:)
@@ -126,11 +126,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
  
 !*       1. ANTISYMMETRIC PART.
 
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO J=1,KDGLU
-      ZB(J,IF)=PAIA(JK,ISL+J-1)*PW(ISL+J-1)
+      ZB(J,IFLD)=PAIA(JK,ISL+J-1)*PW(ISL+J-1)
     ENDDO
   ENDDO
   
@@ -155,11 +155,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           ALLOCATE(ZRPNMA(I1,I2))
           ALLOCATE(ZB_D(KDGLU,KIFC))
           ALLOCATE(ZCA_D((R%NTMAX-KM+2)/2,KIFC))
-          IF=0
+          IFLD=0
           DO JK=1,KFC,ISKIP
-             IF=IF+1
+             IFLD=IFLD+1
              DO J=1,KDGLU
-                ZB_D(J,IF)=ZB(J,IF)
+                ZB_D(J,IFLD)=ZB(J,IFLD)
              ENDDO
           ENDDO
           DO I3=1,I1
@@ -169,11 +169,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           END DO
           CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
                &ZB_D,KDGLU,0._JPRD,ZCA_D,ILA)
-          IF=0
+          IFLD=0
           DO JK=1,KFC,ISKIP
-             IF=IF+1
+             IFLD=IFLD+1
              DO J=1,ILA
-                ZCA(J,IF) = ZCA_D(J,IF)
+                ZCA(J,IFLD) = ZCA_D(J,IFLD)
              ENDDO
           ENDDO
           DEALLOCATE(ZRPNMA)
@@ -189,22 +189,22 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',1,ZHOOK_HANDLE)
   ENDIF
 
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO J=1,ILA
-      POA1(IA+(J-1)*2,JK) = ZCA(J,IF)
+      POA1(IA+(J-1)*2,JK) = ZCA(J,IFLD)
     ENDDO
   ENDDO
   
 !*       1.3      SYMMETRIC PART.
 
   
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO J=1,KDGLU
-      ZB(J,IF)=PSIA(JK,ISL+J-1)*PW(ISL+J-1)
+      ZB(J,IFLD)=PSIA(JK,ISL+J-1)*PW(ISL+J-1)
     ENDDO
   ENDDO
   
@@ -229,11 +229,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           ALLOCATE(ZRPNMS(I1,I2))
           ALLOCATE(ZB_D(KDGLU,KIFC))
           ALLOCATE(ZCS_D((R%NTMAX-KM+3)/2,KIFC))          
-          IF=0
+          IFLD=0
           DO JK=1,KFC,ISKIP
-             IF=IF+1
+             IFLD=IFLD+1
              DO J=1,KDGLU
-                ZB_D(J,IF)=PSIA(JK,ISL+J-1)*PW(ISL+J-1)
+                ZB_D(J,IFLD)=PSIA(JK,ISL+J-1)*PW(ISL+J-1)
              ENDDO
           ENDDO
           DO I3=1,I1
@@ -243,11 +243,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           END DO
           CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
                &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
-          IF=0
+          IFLD=0
           DO JK=1,KFC,ISKIP
-             IF=IF+1
+             IFLD=IFLD+1
              DO J=1,ILS
-                ZCS(J,IF) = ZCS_D(J,IF)
+                ZCS(J,IFLD) = ZCS_D(J,IFLD)
              ENDDO
           ENDDO
           DEALLOCATE(ZRPNMS)
@@ -263,11 +263,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',1,ZHOOK_HANDLE)
   ENDIF
 
-  IF=0
+  IFLD=0
   DO JK=1,KFC,ISKIP
-    IF=IF+1
+    IFLD=IFLD+1
     DO J=1,ILS
-      POA1(IS+(J-1)*2,JK) = ZCS(J,IF)
+      POA1(IS+(J-1)*2,JK) = ZCS(J,IFLD)
     ENDDO
   ENDDO
   
