@@ -75,10 +75,10 @@ foreach( prec sp )
                           $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS      parkind_${prec}
                           fiat
-          PRIVATE_LIBS    hipfft
-                          hipblas
-			  rocblas
-			  rocfft
+          PRIVATE_LIBS    hip::hipfft
+                          roc::hipblas
+			                    roc::rocblas
+			                    roc::rocfft
                           MPI::MPI_Fortran
                           #MPI::MPI_C
 			  MPI::MPI_CXX
