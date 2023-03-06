@@ -45,7 +45,7 @@ ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90
 
 foreach( prec sp dp )
   if( HAVE_${prec} )
-    foreach( gpumethod acc)
+    foreach( gpumethod omp)
       if( HAVE_${gpumethod})
 
         # We build an object library first. And then use these objects to create a shared and static library.

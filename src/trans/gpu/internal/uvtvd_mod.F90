@@ -112,6 +112,7 @@ PDIV => ZOA2(IDIVS:IDIVE,:,:)
 !$ACC& PRESENT(ZEPSNM,PU,PV,PVOR,PDIV)
 #endif
 #ifdef OMPGPU
+!WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
 !$OMP TARGET DATA&
 !$OMP& MAP(ALLOC:ZN) &
 !$OMP& MAP(TO:D_MYMS,D_NUMP,R_NTMAX) &

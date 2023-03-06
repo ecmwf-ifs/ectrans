@@ -88,6 +88,7 @@ MODULE PRFI1B_MOD
   !$ACC      PRESENT(ZIA)
 #endif
 #ifdef OMPGPU
+  !WARNING: following ALLOC statement should be PRESENT,ALLOC but cause issues with AMD compiler!
   !$OMP TARGET DATA MAP(ALLOC:D_NUMP,R_NSMAX,D_MYMS,D_NASM0,PSPEC)
 #endif
 
@@ -95,6 +96,7 @@ MODULE PRFI1B_MOD
   !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR)
 #endif
 #ifdef OMPGPU
+  !WARNING: following ALLOC statements should be PRESENT,ALLOC but cause issues with AMD compiler!
   !$OMP TARGET DATA IF(PRESENT(KFLDPTR)) MAP(ALLOC:KFLDPTR)
 #endif
 
