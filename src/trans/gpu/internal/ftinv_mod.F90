@@ -67,6 +67,7 @@ LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts on
 TYPE(C_PTR) :: IPLAN_C2R
 INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE, IDIM2
 integer :: istat,idev, iunit
+INTEGER :: I, J
 
 REAL(KIND=JPRBT), allocatable  :: ZREEL2(:,:)
 
@@ -143,7 +144,11 @@ ZREEL2(:,:) = 0._JPRBT
 #ifdef OMPGPU
 !$OMP TARGET DATA MAP(ALLOC:ZREEL2,PREEL)
 !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO
-ZREEL2(:,:) = 0._JPRBT
+DO I = 1, ISIZE
+  DO J = 1, IDIM2
+    ZREEL2(I,J) = 0._JPRBT
+  END DO
+END DO
 !$OMP END TARGET TEAMS DISTRIBUTE PARALLEL DO
 #endif
 
