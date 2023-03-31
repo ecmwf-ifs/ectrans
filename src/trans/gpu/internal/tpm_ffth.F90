@@ -201,12 +201,20 @@ MODULE TPM_FFTH
       TYPE(C_PTR), VALUE :: X_IN_PTR, X_OUT_PTR
     END SUBROUTINE EXECUTE_PLAN_FFTH_C
   END INTERFACE
-  
-  !!$acc data copyin(X_IN) copyout(X_OUT)
-  !$acc host_data use_device(X_IN,X_OUT)
+
+#ifdef OMPGPU
+  !$OMP TARGET DATA USE_DEVICE_PTR(X_IN,X_OUT)
+#endif
+#ifdef ACCGPU
+  !$ACC HOST_DATA USE_DEVICE(X_IN,X_OUT)
+#endif
   CALL EXECUTE_PLAN_FFTH_C(KN,N,C_LOC(X_IN),C_LOC(X_OUT),PLAN_PTR)
-  !$acc end host_data
-  !!$acc end data
+#ifdef ACCGPU
+  !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+  !$OMP END TARGET DATA
+#endif
   
   END SUBROUTINE EXECUTE_PLAN_FFT
     
