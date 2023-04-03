@@ -6,6 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+# Preprocess module file containing version information
+configure_file( internal/ectrans_version_mod.F90.in internal/ectrans_version_mod.F90 )
+
 ## Apply workarounds for some known compilers
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Cray")
@@ -37,6 +40,7 @@ ecbuild_list_add_pattern( LIST trans_src
                                 algor/*
                                 internal/*
                                 external/*
+                                ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
 
