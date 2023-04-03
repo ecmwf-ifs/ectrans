@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 # Preprocess module file containing version information
-configure_file( internal/version_mod.F90.in internal/version_mod.F90 )
+configure_file( internal/ectrans_version_mod.F90.in internal/ectrans_version_mod.F90 )
 
 ## Apply workarounds for some known compilers
 
@@ -40,7 +40,7 @@ ecbuild_list_add_pattern( LIST trans_src
                                 algor/*
                                 internal/*
                                 external/*
-                                ${CMAKE_CURRENT_BINARY_DIR}/internal/version_mod.F90
+                                ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
 
