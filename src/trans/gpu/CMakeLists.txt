@@ -89,7 +89,7 @@ foreach( prec sp )
         )
 
         target_link_options   ( trans_gpu_object_${prec}_${gpumethod} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>" )
-        target_compile_options( trans_gpu_object_${prec}_${gpumethod} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
+        target_compile_options( trans_gpu_object_${prec}_${gpumethod} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
 
         ectrans_target_fortran_module_directory(
           TARGET            trans_gpu_object_${prec}_${gpumethod}
