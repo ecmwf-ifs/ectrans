@@ -59,7 +59,7 @@ ecbuild_list_add_pattern( LIST trans_hip_src
 
 foreach( prec sp )
   if( HAVE_${prec} )
-    foreach( gpumethod acc)
+    foreach( gpumethod acc omp)
       if( HAVE_${gpumethod})
 
         # We build an object library first. And then use these objects to create a shared and static library.
@@ -81,7 +81,7 @@ foreach( prec sp )
 			                    roc::rocfft
                           MPI::MPI_Fortran
                           mpifort
-                          omptarget
+                          #omptarget
                           #MPI::MPI_C
 			  MPI::MPI_CXX
                           #nvhpcwrapnvtx
