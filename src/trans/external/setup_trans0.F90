@@ -101,11 +101,6 @@ LOGICAL :: LLP1,LLP2
 
 !     ------------------------------------------------------------------
 
-WRITE(NOUT,'(A)') "ecTrans at version:"
-WRITE(NOUT,'(A)') ECTRANS_VERSION_STR()
-WRITE(NOUT,'(A)') "commit:"
-WRITE(NOUT,'(A)') ECTRANS_GIT_SHA1()
-
 IF(MSETUP0 /= 0) THEN
 !gr  CALL ABORT_TRANS('SETUP_TRANS0: SETUP_TRANS0 MAY ONLY BE CALLED ONCE')
 ENDIF
@@ -141,6 +136,12 @@ ENDIF
 IF(PRESENT(KPRINTLEV)) THEN
   NPRINTLEV = KPRINTLEV
 ENDIF
+
+! Print ecTrans version information
+WRITE(NOUT,'(A)')
+WRITE(NOUT,'(A)') "ecTrans at version: " // ECTRANS_VERSION_STR()
+WRITE(NOUT,'(A)') "commit: " // ECTRANS_GIT_SHA1()
+WRITE(NOUT,'(A)')
 
 LLP1 = NPRINTLEV>0
 LLP2 = NPRINTLEV>1
