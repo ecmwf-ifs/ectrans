@@ -131,6 +131,7 @@ logical :: lscders = .false.
 logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
+logical :: lgpnorms = .false. ! print gpnorms
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
@@ -223,7 +224,7 @@ character(len=16) :: cgrid = ''
 luse_mpi = detect_mpirun()
 
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
+call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lgpnorms, &
   & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
@@ -444,6 +445,7 @@ if (verbosity >= 0) then
   write(nout,'("lvordiv   ",l)') lvordiv
   write(nout,'("lscders   ",l)') lscders
   write(nout,'("luvders   ",l)') luvders
+  write(nout,'("lgpnorms  ",l)') lgpnorms
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -629,7 +631,7 @@ do jstep = 1, iters
        & kvsetsc=ivsetsc,                   &
        & pgp=zreel)
 
-    !write(nout,*) 'not doing statistics gpnorm_trans ...'
+    if( lgpnorms ) then
     ! reset prev value
     ivsetsc(1) = iprev
     write(nout,*) 'statistics gpnorm_trans ...'
@@ -647,6 +649,7 @@ do jstep = 1, iters
     deallocate(zave)
     deallocate(zmin)
     deallocate(zmax)
+    endif
     deallocate(zreel)
 
     write(nout,*) 'standard time-step ...'
@@ -669,6 +672,7 @@ do jstep = 1, iters
        & pgpuv=zgpuv,                       &
        & pgp3a=zgp3a)
 
+    if( lgpnorms ) then
     write(nout,*) 'statistics gpnorm_trans all levels ...'
     call flush(nout)
     allocate(zave(nflevg))
@@ -685,6 +689,7 @@ do jstep = 1, iters
     deallocate(zave)
     deallocate(zmin)
     deallocate(zmax)
+    endif
 
     ! test different paradigms with small trans first, single field + derivatives, emulating sporog trans in IFS
     write(nout,*) 'Test sporog like single transform ...'
@@ -704,7 +709,7 @@ do jstep = 1, iters
        & kvsetsc=ivsetsc,                   &
        & pgp=zreel)
 
-    !write(nout,*) 'not doing statistics gpnorm_trans ...'
+    if( lgpnorms ) then
     ! reset prev value
     ivsetsc(1) = iprev
     write(nout,*) 'statistics gpnorm_trans ...'
@@ -722,6 +727,7 @@ do jstep = 1, iters
     deallocate(zave)
     deallocate(zmin)
     deallocate(zmax)
+    endif
     deallocate(zreel)
 
   else
@@ -1124,7 +1130,7 @@ end subroutine
 
 !===================================================================================================
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
+subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lgpnorms, &
   &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
@@ -1136,6 +1142,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
+  logical, intent(inout) :: lgpnorms        ! calculate/print gpnorms
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
@@ -1184,6 +1191,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--vordiv'); lvordiv = .True.
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
+      case('--lgpnorms'); lgpnorms = .True.
       case('--flt'); luseflt = .True.
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
