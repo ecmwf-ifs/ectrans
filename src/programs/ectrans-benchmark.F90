@@ -179,7 +179,7 @@ integer(kind=jpim) :: ngpblks
 ! locals
 integer(kind=jpim) :: iprtrv
 integer(kind=jpim) :: iprtrw
-integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
+integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev, iprev
 
 integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
 integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
@@ -615,7 +615,8 @@ do jstep = 1, iters
     write(nout,*) 'Test sporog like single transform ...'
     call flush(nout)
     ! special case when single transform, reset later
-    ivset(1) = nprtrv
+    iprev = ivsetsc(1)
+    ivsetsc(1) = nprtrv
     ilf = 0
     if(nprtrv == mysetv) then
       ilf = 1
@@ -625,10 +626,12 @@ do jstep = 1, iters
     call inv_trans(kresol=1, kproma=nproma, &
        & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
        & ldscders=.true.,                   & ! scalar derivatives
-       & kvsetsc=ivset(1:1),                &
+       & kvsetsc=ivsetsc,                   &
        & pgp=zreel)
 
     !write(nout,*) 'not doing statistics gpnorm_trans ...'
+    ! reset prev value
+    ivsetsc(1) = iprev
     write(nout,*) 'statistics gpnorm_trans ...'
     call flush(nout)
     ifld=3
@@ -646,8 +649,6 @@ do jstep = 1, iters
     deallocate(zmax)
     deallocate(zreel)
 
-    ! reset first ivset
-    ivset(1) = 1
     write(nout,*) 'standard time-step ...'
     call flush(nout)
     zgpuv(:,:,:,:) = 0._JPRB
@@ -689,7 +690,8 @@ do jstep = 1, iters
     write(nout,*) 'Test sporog like single transform ...'
     call flush(nout)
     ! special case when single transform, reset later
-    ivset(1) = nprtrv
+    iprev = ivsetsc(1)
+    ivsetsc(1) = nprtrv
     ilf = 0
     if(nprtrv == mysetv) then
       ilf = 1
@@ -699,10 +701,12 @@ do jstep = 1, iters
     call inv_trans(kresol=1, kproma=nproma, &
        & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
        & ldscders=.true.,                   & ! scalar derivatives
-       & kvsetsc=ivset(1:1),                &
+       & kvsetsc=ivsetsc,                   &
        & pgp=zreel)
 
     !write(nout,*) 'not doing statistics gpnorm_trans ...'
+    ! reset prev value
+    ivsetsc(1) = iprev
     write(nout,*) 'statistics gpnorm_trans ...'
     call flush(nout)
     ifld=3
