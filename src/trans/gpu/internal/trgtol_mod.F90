@@ -1475,6 +1475,10 @@ MODULE TRGTOL_MOD
   ! this appears to be important (otherwise, old data picked in PGLAT)
   ! in particular, one would have thought that above ACC copy and update on the
   ! device is the same as OMP loop + update device command below, but it seems not, and winds still in field index 1 from prev inv_trans !!!
+
+!$OMP BARRIER
+! when run as gpnorm on cpu needs to avoid this update call
+IF(.NOT.LGPNORM) THEN
 #ifdef ACCGPU
   !$ACC UPDATE DEVICE(PGLAT)
 #endif
@@ -1484,7 +1488,7 @@ MODULE TRGTOL_MOD
 #ifdef ACCGPU
   !$ACC WAIT
 #endif
-  !$OMP BARRIER
+ENDIF
   
   !#ifdef COMVERBOSE
   !  call MPI_BARRIER(MPI_COMM_WORLD,IERROR)

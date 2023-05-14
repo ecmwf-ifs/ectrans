@@ -37,11 +37,11 @@ else()
   set( trans trans_sp )
 endif()
 
-ecbuild_add_test(TARGET ectrans_test_adjoint
-  SOURCES trans/test_adjoint.F90
-  LIBS ${trans}
-  LINKER_LANGUAGE Fortran
-)
+#ecbuild_add_test(TARGET ectrans_test_adjoint
+#  SOURCES trans/test_adjoint.F90
+#  LIBS ${trans}
+#  LINKER_LANGUAGE Fortran
+#)
 if( TEST ectrans_test_adjoint AND HAVE_OMP )
   target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
 endif()

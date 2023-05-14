@@ -16,7 +16,7 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_GEN         ,ONLY : NOUT
 USE TPM_DIM         ,ONLY : R
-USE TPM_FIELDS      ,ONLY : F
+USE TPM_FIELDS      ,ONLY : F_RN
 USE TPM_DISTR       ,ONLY : D
 USE TPM_FIELDS      ,ONLY : ZIA
 !USE TPM_TRANS
@@ -91,15 +91,15 @@ REAL(KIND=JPRBT) :: ZZEPSNM(-1:R%NSMAX+4)
 REAL(KIND=JPRBT) :: ZN(-1:R%NTMAX+4)
 
 #ifdef ACCGPU
-!$ACC DATA                             &
-!$ACC      CREATE (ZN,ZZEPSNM)         &
-!$ACC      COPYIN (F,F%RN, KIN, KOUT)  &
-!$ACC      PRESENT (PEPSNM, ZIA)
+!$ACC DATA                            &
+!$ACC&      CREATE (ZN,ZZEPSNM)       &
+!$ACC&      COPYIN (KIN, KOUT)  &
+!$ACC&      PRESENT (F_RN,PEPSNM, ZIA)
 #endif
 #ifdef OMPGPU
 !$OMP TARGET DATA                             &
 !$OMP&      MAP(PRESENT,ALLOC:ZN,ZZEPSNM)         &
-!$OMP&      MAP(PRESENT,ALLOC:F,F%RN)   &
+!$OMP&      MAP(PRESENT,ALLOC:F_RN)   &
 !$OMP&      MAP(PRESENT,ALLOC:PEPSNM, ZIA)
 #endif
 
@@ -123,13 +123,13 @@ DO KMLOC=1,D%NUMP
 #ifdef ACCGPU
   !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IJ) &
   !$ACC&   COPYIN(KM,ISMAX,KMLOC) &
-  !$ACC&   PRESENT(F,F%RN,ZN,ZZEPSNM,PEPSNM)
+  !$ACC&   PRESENT(F_RN,ZN,ZZEPSNM,PEPSNM)
 #endif
   DO JN=KM-1,ISMAX+2
    IJ = ISMAX+3-JN
-   ZN(IJ) = F%RN(JN)
+   ZN(IJ) = F_RN(JN)
    ! kernels does not work, move here, Nils
-   ZN(0) = F%RN(ISMAX+3)
+   ZN(0) = F_RN(ISMAX+3)
    IF( JN >= 0 ) THEN
        ZZEPSNM(IJ) = PEPSNM(KMLOC,JN)
    ELSE

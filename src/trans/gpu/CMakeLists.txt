@@ -43,8 +43,12 @@ endif()
 
 ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
 
-set_source_files_properties( internal/ftinv_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
-set_source_files_properties( internal/ftdir_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
+#if( NOT ${CMAKE_BUILD_TYPE_CAPS} STREQUAL DEBUG )
+  set_source_files_properties( internal/ftinv_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
+  ecbuild_info("warn: special compile flags ftinv_mod.F90")
+  set_source_files_properties( internal/ftdir_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
+  ecbuild_info("warn: special compile flags ftdir_mod.F90")
+#endif()
 
 ecbuild_list_add_pattern( LIST trans_hip_src
                           GLOB

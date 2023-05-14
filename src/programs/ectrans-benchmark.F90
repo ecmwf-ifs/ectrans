@@ -81,7 +81,7 @@ integer(kind=jpim) :: ib
 integer(kind=jpim) :: jprtrv
 
 integer(kind=jpim), allocatable :: nloen(:), nprcids(:)
-integer(kind=jpim) :: myproc, jj
+integer(kind=jpim) :: myproc, jj, jf, ilf
 integer :: jstep
 
 real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
@@ -106,6 +106,7 @@ real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
 real(kind=jprb), allocatable :: zspsc2(:,:)
+real(kind=jprb), allocatable :: zave(:),zmin(:),zmax(:),zreel(:,:,:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -211,6 +212,8 @@ character(len=16) :: cgrid = ''
 #include "dir_trans.h"
 #include "trans_inq.h"
 #include "specnorm.h"
+#include "gpnorm_trans.h"
+#include "gpnorm_trans_cpu.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
@@ -607,6 +610,48 @@ do jstep = 1, iters
   ztstep1(jstep) = timef()
   call gstats(4,0)
   if (lvordiv) then
+
+    ! test different paradigms with small trans first, single field + derivatives, emulating sporog trans in IFS
+    write(nout,*) 'Test sporog like single transform ...'
+    call flush(nout)
+    ! special case when single transform, reset later
+    ivset(1) = nprtrv
+    ilf = 0
+    if(nprtrv == mysetv) then
+      ilf = 1
+    endif
+    allocate(zreel(nproma,3,ngpblks))
+    zreel(:,:,:)=0._jprb
+    !call inv_trans(kresol=1, kproma=nproma, &
+    !   & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
+    !   & ldscders=.true.,                   & ! scalar derivatives
+    !   & kvsetsc=ivset(1:1),                &
+    !   & pgp=zreel)
+
+    !write(nout,*) 'not doing statistics gpnorm_trans ...'
+    write(nout,*) 'statistics gpnorm_trans ...'
+    call flush(nout)
+    ifld=3
+    allocate(zave(ifld))
+    allocate(zmin(ifld))
+    allocate(zmax(ifld))
+    call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
+    !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
+    do jf=1,ifld
+    write(nout,*) 'Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    call flush(nout)
+    enddo
+    deallocate(zave)
+    deallocate(zmin)
+    deallocate(zmax)
+    deallocate(zreel)
+
+    ! reset first ivset
+    ivset(1) = 1
+    write(nout,*) 'standard time-step ...'
+    call flush(nout)
+    zgpuv(:,:,:,:) = 0._JPRB
+! full time step
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspvor=zspvor,                     & ! spectral vorticity
@@ -622,6 +667,24 @@ do jstep = 1, iters
        & pgp2=zgp2,                         &
        & pgpuv=zgpuv,                       &
        & pgp3a=zgp3a)
+
+    write(nout,*) 'statistics gpnorm_trans all levels ...'
+    call flush(nout)
+    allocate(zave(nflevg))
+    allocate(zmin(nflevg))
+    allocate(zmax(nflevg))
+    ! vorticity only, all levels
+    ifld=1
+    call gpnorm_trans_cpu(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    !call gpnorm_trans(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    do jf=1,nflevg
+    write(nout,*) 'Statistics vorticity level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    call flush(nout)
+    enddo
+    deallocate(zave)
+    deallocate(zmin)
+    deallocate(zmax)
+
   else
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
@@ -669,12 +732,16 @@ do jstep = 1, iters
       & kvsetsc3a=ivset)
   else
     call dir_trans(kresol=1, kproma=nproma, &
-      & pgp2=zgmvs(:,1:1,:),                &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
-      & pspsc2=zspsc2,                      &
-      & pspsc3a=zspsc3a,                    &
-      & kvsetsc2=ivsetsc,                   &
-      & kvsetsc3a=ivset)
+       & pgp=zgp3a(:,1,1:nfld,:),              &
+       & pspscalar=zspsc3a(1:1,1:nfld,1), & ! spectral scalar
+       & kvsetsc=ivset)
+!    call dir_trans(kresol=1, kproma=nproma, &
+!      & pgp2=zgmvs(:,1:1,:),                &
+!      & pgp3a=zgp3a(:,:,1:nfld,:),          &
+!      & pspsc2=zspsc2,                      &
+!      & pspsc3a=zspsc3a,                    &
+!      & kvsetsc2=ivsetsc,                   &
+!      & kvsetsc3a=ivset)
   endif
   call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
