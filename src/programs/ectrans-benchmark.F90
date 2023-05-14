@@ -622,11 +622,11 @@ do jstep = 1, iters
     endif
     allocate(zreel(nproma,3,ngpblks))
     zreel(:,:,:)=0._jprb
-    !call inv_trans(kresol=1, kproma=nproma, &
-    !   & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
-    !   & ldscders=.true.,                   & ! scalar derivatives
-    !   & kvsetsc=ivset(1:1),                &
-    !   & pgp=zreel)
+    call inv_trans(kresol=1, kproma=nproma, &
+       & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
+       & ldscders=.true.,                   & ! scalar derivatives
+       & kvsetsc=ivset(1:1),                &
+       & pgp=zreel)
 
     !write(nout,*) 'not doing statistics gpnorm_trans ...'
     write(nout,*) 'statistics gpnorm_trans ...'
@@ -638,7 +638,7 @@ do jstep = 1, iters
     call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
     !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
     do jf=1,ifld
-    write(nout,*) 'Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    write(nout,*) '1st Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
     enddo
     deallocate(zave)
@@ -684,6 +684,41 @@ do jstep = 1, iters
     deallocate(zave)
     deallocate(zmin)
     deallocate(zmax)
+
+    ! test different paradigms with small trans first, single field + derivatives, emulating sporog trans in IFS
+    write(nout,*) 'Test sporog like single transform ...'
+    call flush(nout)
+    ! special case when single transform, reset later
+    ivset(1) = nprtrv
+    ilf = 0
+    if(nprtrv == mysetv) then
+      ilf = 1
+    endif
+    allocate(zreel(nproma,3,ngpblks))
+    zreel(:,:,:)=0._jprb
+    call inv_trans(kresol=1, kproma=nproma, &
+       & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
+       & ldscders=.true.,                   & ! scalar derivatives
+       & kvsetsc=ivset(1:1),                &
+       & pgp=zreel)
+
+    !write(nout,*) 'not doing statistics gpnorm_trans ...'
+    write(nout,*) 'statistics gpnorm_trans ...'
+    call flush(nout)
+    ifld=3
+    allocate(zave(ifld))
+    allocate(zmin(ifld))
+    allocate(zmax(ifld))
+    call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
+    !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
+    do jf=1,ifld
+    write(nout,*) '2nd Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    call flush(nout)
+    enddo
+    deallocate(zave)
+    deallocate(zmin)
+    deallocate(zmax)
+    deallocate(zreel)
 
   else
     call inv_trans(kresol=1, kproma=nproma, &

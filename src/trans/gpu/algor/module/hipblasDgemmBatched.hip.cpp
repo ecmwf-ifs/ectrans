@@ -54,9 +54,9 @@ extern "C" void hipblasDgemmBatched_wrapper (char transa, char transb, int m, in
   hip_alreadyAllocated_dgemm_handle=true;
 
   if (!hip_alreadyAllocated_dgemm){
-    hipError_t errcm1 = hipHostMalloc(&Aarray_hip,batchCount*sizeof(double*));
-    hipError_t errcm2 = hipHostMalloc(&Barray_hip,batchCount*sizeof(double*));
-    hipError_t errcm3 = hipHostMalloc(&Carray_hip,batchCount*sizeof(double*));
+    hipError_t errcm1 = hipHostMalloc(&Aarray_hip,batchCount*sizeof(double*),hipHostMallocNonCoherent);
+    hipError_t errcm2 = hipHostMalloc(&Barray_hip,batchCount*sizeof(double*),hipHostMallocNonCoherent);
+    hipError_t errcm3 = hipHostMalloc(&Carray_hip,batchCount*sizeof(double*),hipHostMallocNonCoherent);
         
     hipError_t errcm4 = hipMalloc(&d_Aarray_hip,batchCount*sizeof(double*));
     hipError_t errcm5 = hipMalloc(&d_Barray_hip,batchCount*sizeof(double*));

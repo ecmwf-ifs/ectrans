@@ -96,7 +96,7 @@ IDIM1=size(zgtf,1)
 IDIM2=size(zgtf,2)
 ALLOCATE(ZGTF2(IDIM1,IDIM2))
 #ifdef ACCGPU
-!$ACC ENTER DATA CREATE(ZGTF2)
+!$ACC DATA CREATE(ZGTF2)
 #endif
 #ifdef OMPGPU
 !$OMP TARGET DATA MAP(ALLOC:ZGTF2)
@@ -112,11 +112,6 @@ DO KGL=IBEG,IEND,IINC
 END DO
 
 ISTAT = HIP_SYNCHRONIZE()
-
-! need a faster way for this, in place transforms ? Nils
-#ifdef ACCGPU
-!$ACC DATA
-#endif
 
 #ifdef OMPGPU
 !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(IGLG,JJ) DEFAULT(NONE) &
@@ -168,10 +163,6 @@ ENDDO
 
 #ifdef OMPGPU
 !$OMP END TARGET DATA
-#endif
-
-#ifdef ACCGPU
-!$ACC EXIT DATA DELETE(ZGTF2)
 #endif
 DEALLOCATE(ZGTF2)
 !     ------------------------------------------------------------------

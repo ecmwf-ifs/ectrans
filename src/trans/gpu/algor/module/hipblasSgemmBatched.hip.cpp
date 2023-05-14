@@ -44,15 +44,15 @@ extern "C" void hipblasSgemmBatched_wrapper (char transa, char transb, int m, in
   }
 
   if (!hip_alreadyAllocated_sgemm){
-    hipHostMalloc(&Aarray_sgemm_hip,batchCount*sizeof(float*));
-    hipHostMalloc(&Barray_sgemm_hip,batchCount*sizeof(float*));
-    hipHostMalloc(&Carray_sgemm_hip,batchCount*sizeof(float*));
+    hipHostMalloc(&Aarray_sgemm_hip,batchCount*sizeof(float*),hipHostMallocNonCoherent);
+    hipHostMalloc(&Barray_sgemm_hip,batchCount*sizeof(float*),hipHostMallocNonCoherent);
+    hipHostMalloc(&Carray_sgemm_hip,batchCount*sizeof(float*),hipHostMallocNonCoherent);
+ 
+    hipMalloc(&d_Aarray_sgemm_hip,batchCount*sizeof(float*));
+    hipMalloc(&d_Barray_sgemm_hip,batchCount*sizeof(float*));
+    hipMalloc(&d_Carray_sgemm_hip,batchCount*sizeof(float*));
     hip_alreadyAllocated_sgemm=true;
   }
-
-  hipMalloc(&d_Aarray_sgemm_hip,batchCount*sizeof(float*));
-  hipMalloc(&d_Barray_sgemm_hip,batchCount*sizeof(float*));
-  hipMalloc(&d_Carray_sgemm_hip,batchCount*sizeof(float*));
 
   int i;
   for(i=0;i<batchCount;i++){
@@ -73,9 +73,9 @@ extern "C" void hipblasSgemmBatched_wrapper (char transa, char transb, int m, in
   //hipFree(Barray_sgemm_hip);
   //hipFree(Carray_sgemm_hip);
   
-  hipFree(d_Aarray_sgemm_hip);
-  hipFree(d_Barray_sgemm_hip);
-  hipFree(d_Carray_sgemm_hip);
+  //hipFree(d_Aarray_sgemm_hip);
+  //hipFree(d_Barray_sgemm_hip);
+  //hipFree(d_Carray_sgemm_hip);
   //hipblasDestroy(handle_hip_sgemm);
   
 }

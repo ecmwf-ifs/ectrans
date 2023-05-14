@@ -420,12 +420,13 @@ ITDZBA=IF_FS_INV
 ITDZBS=IF_FS_INV
 ITDZCA=IF_FS_INV
 ITDZCS=IF_FS_INV
-#ifdef ACCGPU
-!$ACC ENTER DATA COPYIN(ITDZBA, ITDZBS, ITDZCA, ITDZCS)
-#endif
-#ifdef OMPGPU
-!$OMP TARGET ENTER DATA MAP(TO:ITDZBA, ITDZBS, ITDZCA, ITDZCS)
-#endif
+! enter data statement creates the value for the rest of the run ... this is wrong, Nils
+!#ifdef ACCGPU
+!!$ACC ENTER DATA COPYIN(ITDZBA, ITDZBS, ITDZCA, ITDZCS)
+!#endif
+!#ifdef OMPGPU
+!!$OMP TARGET ENTER DATA MAP(TO:ITDZBA, ITDZBS, ITDZCA, ITDZCS)
+!#endif
 
 ! Consistency checks
 
