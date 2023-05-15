@@ -401,7 +401,8 @@ call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),  
 call gstats(1, 1)
 
 call gstats(2, 0)
-call setup_trans(kflev=nflevg, ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
+! IFS spectral fields are dimensioned NFLEVL, Nils !!
+call setup_trans(kflev=nflevl, ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
   &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
   &                 lduseflt=luseflt)
 call gstats(2, 1)

@@ -149,6 +149,7 @@ DO JJ=1, IDIM2
   ENDDO
 ENDDO
 !     ------------------------------------------------------------------
+!
 
 #ifdef OMPGPU
 !$OMP END TARGET DATA
