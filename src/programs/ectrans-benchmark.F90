@@ -687,6 +687,21 @@ do jstep = 1, iters
     write(nout,*) 'Statistics vorticity level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
     enddo
+    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    do jf=1,nflevg
+    write(nout,*) 'Statistics scalar level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    call flush(nout)
+    enddo
+    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld+nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    do jf=1,nflevg
+    write(nout,*) 'Statistics scalar x-der level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    call flush(nout)
+    enddo
+    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld+2*nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    do jf=1,nflevg
+    write(nout,*) 'Statistics scalar y-der level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
+    call flush(nout)
+    enddo
     deallocate(zave)
     deallocate(zmin)
     deallocate(zmax)

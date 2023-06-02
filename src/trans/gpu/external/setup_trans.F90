@@ -477,8 +477,13 @@ IF_PP = 0
 ! u/v + scalars 3d + scalars 2d
 IF_UV = NFLEV0
 ! SCALARS INCLUDING DERIVATIVES
-IF_SCALARS = NFLEV0 + 2*NFLEV0 + 1 + 2
-IF_OUT_LT = 4*IF_UV+3*NFLEV0+3
+!IF_SCALARS = NFLEV0 + 2*NFLEV0 + 1 + 2
+!IF_OUT_LT = 4*IF_UV+3*NFLEV0+3
+
+! only need ns-der, so should be, Nils
+IF_SCALARS = NFLEV0 + 1 + 1*NFLEV0 + 1
+IF_OUT_LT = 4*IF_UV+2*NFLEV0+2
+
 !IF_OUT_LT = 4*IF_UV+3*NFLEV0+3
 !8*KF_UV+2*KF_SCALARS
 !ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS
@@ -486,7 +491,7 @@ IF_FS_INV0=8*IF_UV+2*IF_SCALARS
 
 ! fields in Fourier space for inv trans the same
 !IF_FS=4*IF_UV+1*NFLEV0+2
-IF_FS=4*IF_UV+1*NFLEV0+2
+IF_FS=4*IF_UV+1*NFLEV0+1
 ! for derivatives u/v add
 !IF_FS=IFS_FS+2*(2*NFLEV0)
 ! for each 3d scalar derivative add
@@ -505,8 +510,8 @@ IF_FS_DIR0=2*(2*IF_UV+NFLEV0+2+IF_PP)
 !IF_FS = 2*IF_UV + IF_SCALARS
 ! plus add 2*scalar_derivatives + add vorg/divg + 2*IF_UV for u/v zonal derivatives
 
-WRITE(NOUT,*)'setup_trans: if_uv=',IF_UV,' if_out_lt=',IF_OUT_LT,' IF_FS_DIR0=',IF_FS_DIR0,'IF_FS_INV0= ',IF_FS_INV0, ' IF_PP= ',IF_PP
 IF(MOD(IF_FS,2)==1) IF_FS = IF_FS + 1
+WRITE(NOUT,*)'setup_trans: if_uv=',IF_UV,' if_out_lt=',IF_OUT_LT,' IF_FS_DIR0=',IF_FS_DIR0,'IF_FS_INV0= ',IF_FS_INV0, ' IF_PP= ',IF_PP,'IF_FS= ',IF_FS
 
 !leading and trailing dimensions of A for symmetric and antisymmetric cases
 ! (same for ltinv and ltdir)
@@ -865,8 +870,8 @@ ALLOCATE(G_NMEN(SIZE(G%NMEN)))
 ALLOCATE(G_NLOEN(SIZE(G%NLOEN)))
 
 ALLOCATE(F_RW(SIZE(F%RW)))
-ALLOCATE(F_RN(SIZE(F%RN)))
-ALLOCATE(F_RLAPIN(SIZE(F%RLAPIN)))
+ALLOCATE(F_RN(-1:SIZE(F%RN)-2))
+ALLOCATE(F_RLAPIN(-1:SIZE(F%RLAPIN)-2))
 ALLOCATE(F_RACTHE(SIZE(F%RACTHE)))
 
 
@@ -968,13 +973,13 @@ ENDIF
 DO I=1,SIZE(F%RW)
    F_RW(I)=F%RW(I)
 END DO
-DO I=1,SIZE(F%RLAPIN)
+DO I=-1,SIZE(F%RLAPIN)-2
   F_RLAPIN(I)=F%RLAPIN(I)
 END DO
-DO I=1,SIZE(F%RLAPIN)
+DO I=1,SIZE(F%RACTHE)
   F_RACTHE(I)=F%RACTHE(I)
 END DO
-DO I=1,SIZE(F%RN)
+DO I=-1,SIZE(F%RN)-2
   F_RN(I)=F%RN(I)
 END DO
 
