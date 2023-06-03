@@ -16,6 +16,9 @@ find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUR
 project( ectrans LANGUAGES C Fortran CXX )
 include( ectrans_macros )
 
+option(IFS_SHARED_LIBS "Build shared libraries (overrides BUILD_SHARED_LIBS)" ON)
+set(BUILD_SHARED_LIBS ${IFS_SHARED_LIBS})
+
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ### Find (optional) dependencies
@@ -165,6 +168,17 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   if( HAVE_OMPGPU )
     set( omp_flags -mp=gpu -gpu=lineinfo,fastmath -Minfo=mp )
     set( omp_link_flags -mp=gpu )
+  endif()
+endif()
+# cray AMD
+if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+  if( HAVE_ACCGPU )
+    set( OpenACC_Fortran_FLAGS "${OpenACC_Fortran_FLAGS} -hacc -h acc_model=auto_async_kernel:no_fast_addr:deep_copy")
+    set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -hacc -h acc_model=auto_async_kernel:no_fast_addr:deep_copy")
+  endif()
+  if( HAVE_OMPGPU )
+    set( omp_flags -fopenmp )
+    set( omp_link_flags -fopenmp )
   endif()
 endif()
 
