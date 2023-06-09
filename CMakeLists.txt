@@ -119,7 +119,7 @@ ecbuild_add_option( FEATURE TRANSI
                     CONDITION HAVE_DOUBLE_PRECISION )
 
 ecbuild_add_option( FEATURE CPU
-                    DEFAULT OFF
+                    DEFAULT ON
                     DESCRIPTION "Compile CPU version of ectrans"
                    )
                                        
@@ -189,7 +189,7 @@ if( HAVE_GPU )
     endif()
 endif()
 
-#ectrans_find_lapack()
+ectrans_find_lapack()
 
 ### Add sources and tests
 include( ectrans_compile_options )
