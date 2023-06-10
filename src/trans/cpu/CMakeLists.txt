@@ -6,6 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+# Preprocess module file containing version information
+configure_file( internal/ectrans_version_mod.F90.in internal/ectrans_version_mod.F90 )
+
 ## Apply workarounds for some known compilers
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Cray")
@@ -19,6 +22,16 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "Cray")
   endif()
 endif()
 
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+  if( CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 18 AND CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 19 )
+
+    # See https://github.com/ecmwf-ifs/ectrans/issues/17
+    ectrans_add_compile_options(
+        SOURCES algor/butterfly_alg_mod.F90
+        FLAGS   "-check nopointers")
+  endif()
+endif()
+
 ## Assemble sources
 
 ecbuild_list_add_pattern( LIST trans_src
@@ -27,6 +40,7 @@ ecbuild_list_add_pattern( LIST trans_src
                                 algor/*
                                 internal/*
                                 external/*
+                                ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
 
@@ -34,7 +48,7 @@ if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
 
-foreach( prec sp )
+foreach( prec dp sp )
   if( HAVE_${prec} )
 
     ecbuild_add_library(

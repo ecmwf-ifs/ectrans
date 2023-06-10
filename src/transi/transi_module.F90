@@ -61,6 +61,7 @@ private :: MPL_MYRANK
 
 public :: Trans_t
 public :: DirTrans_t
+public :: DirTransAdj_t
 public :: InvTrans_t
 public :: InvTransAdj_t
 public :: GathGrid_t
@@ -76,6 +77,7 @@ public :: trans_init
 public :: trans_setup
 public :: trans_inquire
 public :: trans_dirtrans
+public :: trans_dirtrans_adj
 public :: trans_invtrans
 public :: trans_invtrans_adj
 public :: trans_distgrid
@@ -96,6 +98,7 @@ private
 #include "trans_release.h"
 #include "setup_trans.h"
 #include "dir_trans.h"
+#include "dir_transad.h"
 #include "inv_trans.h"
 #include "inv_transad.h"
 #include "dist_grid.h"
@@ -274,6 +277,20 @@ type, bind(C) :: DirTrans_t
   type(c_ptr)    :: trans
   integer(c_int) :: count
 end type DirTrans_t
+
+type, bind(C) :: DirTransAdj_t
+  type(c_ptr)    :: rgp
+  type(c_ptr)    :: rspscalar
+  type(c_ptr)    :: rspvor
+  type(c_ptr)    :: rspdiv
+  integer(c_int) :: nproma
+  integer(c_int) :: nscalar
+  integer(c_int) :: nvordiv
+  integer(c_int) :: ngpblks
+  integer(c_int) :: lglobal
+  type(c_ptr)    :: trans
+  integer(c_int) :: count
+end type DirTransAdj_t
 
 type, bind(C) :: InvTrans_t
   type(c_ptr)    :: rspscalar
@@ -1550,6 +1567,106 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
 
   iret = TRANS_SUCCESS
 end function trans_dirtrans
+
+
+function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
+  use, intrinsic :: iso_c_binding
+  integer(c_int) :: iret
+  type(DirTransAdj_t), intent(inout) :: args
+  real(c_double), pointer :: RSPVOR(:,:)    !(FIELD,WAVE)
+  real(c_double), pointer :: RSPDIV(:,:)    !(FIELD,WAVE)
+  real(c_double), pointer :: RSPSCALAR(:,:) !(FIELD,WAVE)
+  real(c_double), pointer :: RGP(:,:,:)     !(NPROMA,IF_GP,NGPBLKS)
+  real(c_double), pointer :: RGPM(:,:,:)    !(NPROMA,FIELD,NGPBLKS)
+  type(Trans_t), pointer :: trans
+  logical :: llatlon
+
+  if( args%count > 0 ) then
+    call transi_error("trans_dirtrans_adj: ERROR: arguments are not new")
+    iret = TRANS_STALE_ARG
+    return
+  endif
+  args%count = 1
+
+  if( .not. c_associated(args%trans) ) then
+    call transi_error( "trans_dirtrans_adj: ERROR: trans was not allocated" )
+    iret = TRANS_MISSING_ARG
+    return
+  endif
+  call C_F_POINTER( args%trans, trans )
+
+  if( .not. c_associated(args%rgp) ) then
+    call transi_error( "trans_dirtrans_adj: ERROR: Array RGP was not allocated" )
+    iret = TRANS_MISSING_ARG
+    return
+  endif
+
+  if( args%nvordiv > 0 ) then
+    if( .not. c_associated(args%rspvor)    ) then
+      call transi_error( "trans_dirtrans_adj: Array RSPVOR was not allocated" )
+      iret = TRANS_MISSING_ARG
+      return
+    endif
+    if( .not. c_associated(args%rspdiv)    ) then
+      call transi_error( "trans_dirtrans_adj: Array RSPDIV was not allocated" )
+      iret = TRANS_MISSING_ARG
+      return
+    endif
+    call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
+    call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+  endif
+  if( args%nscalar > 0 ) then
+    if( .not. c_associated(args%rspscalar) ) then
+      call transi_error( "trans_dirtrans_adj: Array RSPSCALAR was not allocated" )
+      iret = TRANS_MISSING_ARG
+      return
+    endif
+    call C_F_POINTER(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
+  endif
+
+  llatlon = .false.
+  if( trans%llatlon /= 0 ) llatlon = .true.
+
+  if( args%lglobal == 1 ) then
+    call C_F_POINTER( args%rgp, RGP, (/trans%ngptotg,args%nscalar+2*args%nvordiv,1/) )
+    iret = prepare_global_invtrans(trans,RGP,RGPM)
+    if( iret /= TRANS_SUCCESS ) return
+  else
+    call C_F_POINTER( args%rgp, RGP, (/args%nproma,args%nscalar+2*args%nvordiv,args%ngpblks/) )
+    RGPM => RGP
+  endif
+
+  if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
+    call DIR_TRANSAD( KRESOL=trans%handle, &
+      &               KPROMA=args%nproma, &
+!      &               LDLATLON=llatlon, &
+      &               PGP=RGPM, &
+      &               PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+  elseif( args%nscalar > 0 ) then
+    call DIR_TRANSAD( KRESOL=trans%handle, &
+      &               KPROMA=args%nproma, &
+!      &               LDLATLON=llatlon, &
+      &               PGP=RGPM, &
+      &               PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+  elseif( args%nvordiv > 0 ) then
+    call DIR_TRANSAD( KRESOL=trans%handle, &
+      &               KPROMA=args%nproma, &
+!      &               LDLATLON=llatlon, &
+      &               PGP=RGPM, &
+      &               PSPVOR=RSPVOR,PSPDIV=RSPDIV ) ! unused args: KVSETUV,KVSETSC
+  endif
+
+  if( args%lglobal == 1 ) then
+    !TO DO MW - CHECK WHETHER CORRECT
+    iret = finish_global_invtrans(trans,RGP,RGPM)
+    if( iret /= TRANS_SUCCESS ) return
+  else
+    nullify(RGPM)
+  endif
+
+  iret = TRANS_SUCCESS
+end function trans_dirtrans_adj
+
 
 function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
   use, intrinsic :: iso_c_binding

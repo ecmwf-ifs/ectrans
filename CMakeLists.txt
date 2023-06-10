@@ -50,7 +50,7 @@ set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
 ecbuild_add_option( FEATURE MKL
                     DESCRIPTION "Use MKL for BLAS and/or FFTW"
-		    DEFAULT OFF
+                    DEFAULT OFF
                     REQUIRED_PACKAGES "MKL QUIET" )
 
 if( NOT HAVE_MKL )
@@ -113,16 +113,16 @@ ecbuild_add_option( FEATURE FFTW
                     DESCRIPTION "Support for fftw"
                     REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
 
-ecbuild_add_option( FEATURE TRANSI
-                    DEFAULT ON
-                    DESCRIPTION "Compile TransI C-interface to trans"
-                    CONDITION HAVE_DOUBLE_PRECISION )
-
 ecbuild_add_option( FEATURE CPU
                     DEFAULT ON
                     DESCRIPTION "Compile CPU version of ectrans"
                    )
-                                       
+
+ecbuild_add_option( FEATURE TRANSI
+                    DEFAULT ON
+                    DESCRIPTION "Compile TransI C-interface to trans"
+                    CONDITION HAVE_DOUBLE_PRECISION AND HAVE_CPU )
+
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI and CUDA. For now only NVHPC supported.)"
