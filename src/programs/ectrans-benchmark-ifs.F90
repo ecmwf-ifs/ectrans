@@ -214,7 +214,6 @@ character(len=16) :: cgrid = ''
 #include "trans_inq.h"
 #include "specnorm.h"
 #include "gpnorm_trans.h"
-#include "gpnorm_trans_cpu.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
@@ -641,8 +640,7 @@ do jstep = 1, iters
     allocate(zave(ifld))
     allocate(zmin(ifld))
     allocate(zmax(ifld))
-    call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
-    !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
+    call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
     do jf=1,ifld
     write(nout,*) '1st Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
@@ -681,23 +679,22 @@ do jstep = 1, iters
     allocate(zmax(nflevg))
     ! vorticity only, all levels
     ifld=1
-    call gpnorm_trans_cpu(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
-    !call gpnorm_trans(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    call gpnorm_trans(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
     do jf=1,nflevg
     write(nout,*) 'Statistics vorticity level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
     enddo
-    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    call gpnorm_trans(zgp3a(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
     do jf=1,nflevg
     write(nout,*) 'Statistics scalar level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
     enddo
-    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld+nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    call gpnorm_trans(zgp3a(:,1:nflevg,ifld+nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
     do jf=1,nflevg
     write(nout,*) 'Statistics scalar x-der level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
     enddo
-    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld+2*nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
+    call gpnorm_trans(zgp3a(:,1:nflevg,ifld+2*nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
     do jf=1,nflevg
     write(nout,*) 'Statistics scalar y-der level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
@@ -734,8 +731,7 @@ do jstep = 1, iters
     allocate(zave(ifld))
     allocate(zmin(ifld))
     allocate(zmax(ifld))
-    call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
-    !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
+    call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
     do jf=1,ifld
     write(nout,*) '2nd Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
     call flush(nout)
