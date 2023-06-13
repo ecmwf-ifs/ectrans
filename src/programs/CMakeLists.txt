@@ -30,61 +30,55 @@ if( HAVE_TOOLS )
 
 endif()
 
+foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 
-if ( HAVE_CPU )
-  foreach( prec dp sp )
-    if( HAVE_${prec} )
-      ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                          SOURCES ectrans-benchmark.F90
-                          LINKER_LANGUAGE Fortran
-                          LIBS
-                            fiat
-                            parkind_${prec}
-                            trans_${prec}
-                          )
-    endif()
-  endforeach()
-endif()
-    
-if( HAVE_GPU )
-  foreach( prec dp sp )
-    if( HAVE_${prec} )
-      foreach( gpumethod acc omp )
-        if( HAVE_${gpumethod} )
-          if( gpumethod STREQUAL acc )
-            ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
-                                  SOURCES ectrans-benchmark.F90
-				                          LINKER_LANGUAGE Fortran
-                                  LIBS
-                                    fiat
-                                    parkind_${prec}
-                                    trans_gpu_${prec}_${gpumethod}
-                                    OpenACC::OpenACC_Fortran
-                                  )
-            target_compile_definitions( ectrans-benchmark-gpu-${prec}-${gpumethod} PRIVATE ACCGPU )
+  if ( HAVE_CPU )
+    foreach( prec dp sp )
+      if( HAVE_${prec} )
+        ecbuild_add_executable( TARGET  ${program}-${prec}
+                                SOURCES ${program}.F90
+                                LINKER_LANGUAGE Fortran
+                                LIBS
+                                  fiat
+                                  parkind_${prec}
+                                  trans_${prec}
+        )
+      endif()
+    endforeach( prec)
+  endif()
+
+  if( HAVE_GPU )
+    foreach( prec dp sp )
+      if( HAVE_${prec} )
+        foreach( gpumethod acc omp )
+          if( HAVE_${gpumethod} )
+            ecbuild_add_executable( TARGET  ${program}-gpu-${prec}-${gpumethod}
+                                    SOURCES ${program}.F90
+                                    LINKER_LANGUAGE Fortran
+                                    LIBS
+                                      fiat
+                                      parkind_${prec}
+                                      trans_gpu_${prec}_${gpumethod}
+            )
+
+            if( gpumethod STREQUAL acc )
+              target_link_libraries( ${program}-gpu-${prec}-${gpumethod} OpenACC::OpenACC_Fortran )
+              target_compile_definitions( ${program}-gpu-${prec}-${gpumethod} PRIVATE ACCGPU )
+            endif()
+
+            if( gpumethod STREQUAL omp )
+              target_compile_definitions( ${program}-gpu-${prec}-${gpumethod} PRIVATE OMPGPU )
+            endif()
+
+            target_link_options   ( ${program}-gpu-${prec}-${gpumethod} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>" )
+            target_compile_options( ${program}-gpu-${prec}-${gpumethod} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
+
           endif()
-
-          if( gpumethod STREQUAL omp )
-            ecbuild_add_executable(TARGET  ectrans-benchmark-gpu-${prec}-${gpumethod}
-                                  SOURCES ectrans-benchmark.F90
-				                          LINKER_LANGUAGE Fortran
-                                  LIBS
-                                    fiat
-                                    parkind_${prec}
-                                    trans_gpu_${prec}_${gpumethod}
-                                  )
-            target_compile_definitions( ectrans-benchmark-gpu-${prec}-${gpumethod} PRIVATE OMPGPU )
-          endif()
-                    
-          target_link_options   ( ectrans-benchmark-gpu-${prec}-${gpumethod} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>" )
-          target_compile_options( ectrans-benchmark-gpu-${prec}-${gpumethod} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
-
-        endif()
-      endforeach()
-    endif()
-  endforeach()
-endif()
-
+        endforeach( gpumethod )
+      endif()
+    endforeach( prec )
+  endif()
+endforeach( program )
 
 # ectrans information tool
 
