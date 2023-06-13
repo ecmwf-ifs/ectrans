@@ -81,7 +81,7 @@ integer(kind=jpim) :: ib
 integer(kind=jpim) :: jprtrv
 
 integer(kind=jpim), allocatable :: nloen(:), nprcids(:)
-integer(kind=jpim) :: myproc, jj, jf, ilf
+integer(kind=jpim) :: myproc, jj
 integer :: jstep
 
 real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
@@ -106,7 +106,6 @@ real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
 real(kind=jprb), allocatable :: zspsc2(:,:)
-real(kind=jprb), allocatable :: zave(:),zmin(:),zmax(:),zreel(:,:,:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -131,7 +130,6 @@ logical :: lscders = .false.
 logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
-logical :: lgpnorms = .false. ! print gpnorms
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
@@ -180,7 +178,7 @@ integer(kind=jpim) :: ngpblks
 ! locals
 integer(kind=jpim) :: iprtrv
 integer(kind=jpim) :: iprtrw
-integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev, iprev
+integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 
 integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
 integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
@@ -213,8 +211,6 @@ character(len=16) :: cgrid = ''
 #include "dir_trans.h"
 #include "trans_inq.h"
 #include "specnorm.h"
-#include "gpnorm_trans.h"
-#include "gpnorm_trans_cpu.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
@@ -224,7 +220,7 @@ character(len=16) :: cgrid = ''
 luse_mpi = detect_mpirun()
 
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lgpnorms, &
+call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
   & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
@@ -446,7 +442,6 @@ if (verbosity >= 0) then
   write(nout,'("lvordiv   ",l)') lvordiv
   write(nout,'("lscders   ",l)') lscders
   write(nout,'("luvders   ",l)') luvders
-  write(nout,'("lgpnorms  ",l)') lgpnorms
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -613,50 +608,6 @@ do jstep = 1, iters
   ztstep1(jstep) = timef()
   call gstats(4,0)
   if (lvordiv) then
-
-    ! test different paradigms with small trans first, single field + derivatives, emulating sporog trans in IFS
-    write(nout,*) 'Test sporog like single transform ...'
-    call flush(nout)
-    ! special case when single transform, reset later
-    iprev = ivsetsc(1)
-    ivsetsc(1) = nprtrv
-    ilf = 0
-    if(nprtrv == mysetv) then
-      ilf = 1
-    endif
-    allocate(zreel(nproma,3,ngpblks))
-    zreel(:,:,:)=0._jprb
-    call inv_trans(kresol=1, kproma=nproma, &
-       & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
-       & ldscders=.true.,                   & ! scalar derivatives
-       & kvsetsc=ivsetsc,                   &
-       & pgp=zreel)
-
-    if( lgpnorms ) then
-    ! reset prev value
-    ivsetsc(1) = iprev
-    write(nout,*) 'statistics gpnorm_trans ...'
-    call flush(nout)
-    ifld=3
-    allocate(zave(ifld))
-    allocate(zmin(ifld))
-    allocate(zmax(ifld))
-    call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
-    !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
-    do jf=1,ifld
-    write(nout,*) '1st Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
-    call flush(nout)
-    enddo
-    deallocate(zave)
-    deallocate(zmin)
-    deallocate(zmax)
-    endif
-    deallocate(zreel)
-
-    write(nout,*) 'standard time-step ...'
-    call flush(nout)
-    zgpuv(:,:,:,:) = 0._JPRB
-! full time step
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspvor=zspvor,                     & ! spectral vorticity
@@ -672,80 +623,6 @@ do jstep = 1, iters
        & pgp2=zgp2,                         &
        & pgpuv=zgpuv,                       &
        & pgp3a=zgp3a)
-
-    if( lgpnorms ) then
-    write(nout,*) 'statistics gpnorm_trans all levels ...'
-    call flush(nout)
-    allocate(zave(nflevg))
-    allocate(zmin(nflevg))
-    allocate(zmax(nflevg))
-    ! vorticity only, all levels
-    ifld=1
-    call gpnorm_trans_cpu(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
-    !call gpnorm_trans(zgpuv(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
-    do jf=1,nflevg
-    write(nout,*) 'Statistics vorticity level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
-    call flush(nout)
-    enddo
-    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
-    do jf=1,nflevg
-    write(nout,*) 'Statistics scalar level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
-    call flush(nout)
-    enddo
-    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld+nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
-    do jf=1,nflevg
-    write(nout,*) 'Statistics scalar x-der level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
-    call flush(nout)
-    enddo
-    call gpnorm_trans_cpu(zgp3a(:,1:nflevg,ifld+2*nfld,:),nflevg,nproma,zave,zmin,zmax,.false.,1)
-    do jf=1,nflevg
-    write(nout,*) 'Statistics scalar y-der level= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
-    call flush(nout)
-    enddo
-    deallocate(zave)
-    deallocate(zmin)
-    deallocate(zmax)
-    endif
-
-    ! test different paradigms with small trans first, single field + derivatives, emulating sporog trans in IFS
-    write(nout,*) 'Test sporog like single transform ...'
-    call flush(nout)
-    ! special case when single transform, reset later
-    iprev = ivsetsc(1)
-    ivsetsc(1) = nprtrv
-    ilf = 0
-    if(nprtrv == mysetv) then
-      ilf = 1
-    endif
-    allocate(zreel(nproma,3,ngpblks))
-    zreel(:,:,:)=0._jprb
-    call inv_trans(kresol=1, kproma=nproma, &
-       & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
-       & ldscders=.true.,                   & ! scalar derivatives
-       & kvsetsc=ivsetsc,                   &
-       & pgp=zreel)
-
-    if( lgpnorms ) then
-    ! reset prev value
-    ivsetsc(1) = iprev
-    write(nout,*) 'statistics gpnorm_trans ...'
-    call flush(nout)
-    ifld=3
-    allocate(zave(ifld))
-    allocate(zmin(ifld))
-    allocate(zmax(ifld))
-    call gpnorm_trans_cpu(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
-    !call gpnorm_trans(zreel,ifld,nproma,zave,zmin,zmax,.false.,kresol=1)
-    do jf=1,ifld
-    write(nout,*) '2nd Statistics field= ',jf,' : ave,min,max ',zave(jf),zmin(jf),zmax(jf)
-    call flush(nout)
-    enddo
-    deallocate(zave)
-    deallocate(zmin)
-    deallocate(zmax)
-    endif
-    deallocate(zreel)
-
   else
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
@@ -793,16 +670,12 @@ do jstep = 1, iters
       & kvsetsc3a=ivset)
   else
     call dir_trans(kresol=1, kproma=nproma, &
-       & pgp=zgp3a(:,1,1:nfld,:),              &
-       & pspscalar=zspsc3a(1:1,1:nfld,1), & ! spectral scalar
-       & kvsetsc=ivset)
-!    call dir_trans(kresol=1, kproma=nproma, &
-!      & pgp2=zgmvs(:,1:1,:),                &
-!      & pgp3a=zgp3a(:,:,1:nfld,:),          &
-!      & pspsc2=zspsc2,                      &
-!      & pspsc3a=zspsc3a,                    &
-!      & kvsetsc2=ivsetsc,                   &
-!      & kvsetsc3a=ivset)
+      & pgp2=zgmvs(:,1:1,:),                &
+      & pgp3a=zgp3a(:,:,1:nfld,:),          &
+      & pspsc2=zspsc2,                      &
+      & pspsc3a=zspsc3a,                    &
+      & kvsetsc2=ivsetsc,                   &
+      & kvsetsc3a=ivset)
   endif
   call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
@@ -1146,7 +1019,7 @@ end subroutine
 
 !===================================================================================================
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lgpnorms, &
+subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
@@ -1158,7 +1031,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
-  logical, intent(inout) :: lgpnorms        ! calculate/print gpnorms
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
@@ -1207,7 +1079,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--vordiv'); lvordiv = .True.
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
-      case('--lgpnorms'); lgpnorms = .True.
       case('--flt'); luseflt = .True.
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
