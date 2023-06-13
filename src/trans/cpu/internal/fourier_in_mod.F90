@@ -66,14 +66,6 @@ DO JM=0,G%NMEN(IGLG)
     PREEL(JF,II) = FOUBUF(ISTA+2*JF  )
   ENDDO
 ENDDO
-DO JF=1,KFIELDS
- JM=0
- IR=2*JM+1+D%NSTAGTF(KGL)
- II=2*JM+2+D%NSTAGTF(KGL)
- write(301,*) 'debug fou_in IR: kfield=',JF,PREEL(JF,IR),PREEL(JF,IR+2),PREEL(JF,IR+4)
- write(301,*) 'debug fou_in II: kfield=',JF,PREEL(JF,II),PREEL(JF,II+2),PREEL(JF,II+4)
-ENDDO
-call flush(301)
 
 !     ------------------------------------------------------------------
 
