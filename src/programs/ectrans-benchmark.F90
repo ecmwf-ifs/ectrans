@@ -755,28 +755,28 @@ if (lprint_norms .or. ncheck > 0) then
 
   zmaxerr(:) = -999.0
   do ifld = 1, nflevg
-    zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0d0)
+    zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
     zmaxerr(3) = max(zmaxerr(3), zerr(3))
     if (verbosity >= 1) then
       write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor1(ifld), zerr(3)
     endif
   enddo
   do ifld = 1, nflevg
-    zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0d0)
+    zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
     zmaxerr(2) = max(zmaxerr(2),zerr(2))
     if (verbosity >= 1) then
       write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv1(ifld), zerr(2)
     endif
   enddo
   do ifld = 1, nflevg
-    zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0d0)
+    zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
     zmaxerr(4) = max(zmaxerr(4), zerr(4))
     if (verbosity >= 1) then
       write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt1(ifld), zerr(4)
     endif
   enddo
   do ifld = 1, 1
-    zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0d0)
+    zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
     zmaxerr(1) = max(zmaxerr(1), zerr(1))
     if (verbosity >= 1) then
       write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp1(ifld), zerr(1)

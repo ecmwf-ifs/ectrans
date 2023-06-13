@@ -48,18 +48,15 @@ if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
 
-set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
-set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
-
-foreach( prec sp dp )
+foreach( prec dp sp )
   if( HAVE_${prec} )
 
     ecbuild_add_library(
       TARGET           trans_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_src}
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
       PUBLIC_LIBS      fiat parkind_${prec}
@@ -77,12 +74,15 @@ foreach( prec sp dp )
                         "No guarantees on link order can be made for the final executable.")
           set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
       endif()
+      ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
       target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
       target_include_directories( trans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
       target_compile_definitions( trans_${prec} PRIVATE WITH_FFTW )
     endif()
+    ecbuild_debug("target_link_libraries( trans_${prec} ${LAPACK_LINK} ${LAPACK_${prec}} )")
     target_link_libraries( trans_${prec} ${LAPACK_LINK} ${LAPACK_${prec}} )
     if( HAVE_OMP )
+      ecbuild_debug("target_link_libraries( trans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
       target_link_libraries( trans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 
