@@ -72,15 +72,15 @@ foreach( prec sp )
           TARGET           trans_gpu_object_${prec}_${gpumethod}
           TYPE             OBJECT
           SOURCES          ${trans_src}
-          PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
-                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/ectrans>
-                          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
-                          $<INSTALL_INTERFACE:include/ectrans>
-                          $<INSTALL_INTERFACE:include>
+          PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
+                           $<INSTALL_INTERFACE:include/ectrans>
+                           $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS      parkind_${prec}
-                          fiat
-          PRIVATE_LIBS    hip::hipfft
-                          roc::hipblas
+                           fiat
+          PRIVATE_LIBS     hip::hipfft
+                           roc::hipblas
 			                    roc::rocblas
 			                    roc::rocfft
                           MPI::MPI_Fortran
