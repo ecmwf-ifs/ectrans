@@ -100,9 +100,9 @@ foreach( prec sp )
           INSTALL_DIRECTORY module/trans_gpu_${prec}_${gpumethod}
         )
 
-        if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" AND CMAKE_Fortran_COMPILER_VERSION MATCHES "15.*" )
-          target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE omptarget )
-        endif()
+#        if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" AND CMAKE_Fortran_COMPILER_VERSION MATCHES "15.*" )
+#          target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE omptarget )
+#        endif()
 
         if( HAVE_OMP )
           target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenMP::OpenMP_Fortran )
