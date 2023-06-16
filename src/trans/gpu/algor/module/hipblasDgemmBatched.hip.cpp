@@ -5,8 +5,14 @@
 //
 
 #include <stdio.h>
-#include "hipblas.h" 
-
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#endif
+#include "hipblas.h"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 bool hip_alreadyAllocated_dgemm=false;
 bool hip_alreadyAllocated_dgemm_handle=false;

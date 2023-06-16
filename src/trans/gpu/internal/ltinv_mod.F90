@@ -315,7 +315,9 @@ MODULE LTINV_MOD
      !CALL SPNSDE(KF_SCALARS,ZEPSNM,ZIA(ISL:ISU,:,:),ZIA(IDL:IDU,:,:))
      CALL SPNSDE(ISL,IDL,KF_SCALARS)
  ENDIF
+#ifdef ACCGPU
  !$ACC wait
+#endif
 
   !     ------------------------------------------------------------------
  

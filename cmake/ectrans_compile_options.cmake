@@ -26,7 +26,11 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   ecbuild_add_fortran_flags("-gopt -fast"     BUILD RELWITHDEBINFO )
 endif()
 
-
+if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+  ecbuild_add_fortran_flags("-hnomessage=878")  # A module named ... has already been directly or indirectly use associated into this scope
+  ecbuild_add_fortran_flags("-hnomessage=867")  # Module ... has no public objects declared in the module, therefore nothing can be use associated from the module.
+  ecbuild_add_fortran_flags("-M7256")           # An OpenMP parallel construct in a target region is limited to a single thread.
+endif()
 
 macro( ectrans_add_compile_options )
   set( options  )

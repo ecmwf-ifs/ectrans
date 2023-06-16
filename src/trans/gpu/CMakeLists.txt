@@ -88,10 +88,13 @@ foreach( prec sp )
                           #MPI::MPI_C
 			  MPI::MPI_CXX
                           #nvhpcwrapnvtx
-                          #${LAPACK_LIBRARIES}
+                          ${LAPACK_LIBRARIES} # we still have symbols in some files
         )
 
-        target_link_options   ( trans_gpu_object_${prec}_${gpumethod} INTERFACE "$<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>" )
+
+        ecbuild_debug("target_link_options(trans_gpu_object_${prec}_${gpumethod} INTERFACE $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>")
+        target_link_options   ( trans_gpu_object_${prec}_${gpumethod} INTERFACE $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}> )
+        ecbuild_debug("target_compile_options(trans_gpu_object_${prec}_${gpumethod} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)")
         target_compile_options( trans_gpu_object_${prec}_${gpumethod} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
 
         ectrans_target_fortran_module_directory(
@@ -99,10 +102,6 @@ foreach( prec sp )
           MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_${prec}_${gpumethod}
           INSTALL_DIRECTORY module/trans_gpu_${prec}_${gpumethod}
         )
-
-#        if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" AND CMAKE_Fortran_COMPILER_VERSION MATCHES "15.*" )
-#          target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE omptarget )
-#        endif()
 
         if( HAVE_OMP )
           target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenMP::OpenMP_Fortran )

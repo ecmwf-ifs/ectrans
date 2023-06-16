@@ -3,9 +3,15 @@
 //
 #include <iostream>
 #include <stdio.h>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#endif
 #include "hip/hip_runtime_api.h"
 #include "rocblas.h"
-//#include "hipblas.h" 
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 using namespace std;
 

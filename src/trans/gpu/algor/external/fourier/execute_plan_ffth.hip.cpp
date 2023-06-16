@@ -1,6 +1,14 @@
 #define hipfftSafeCall(err) __hipfftSafeCall(err, __FILE__, __LINE__)
-#include "hip/hip_runtime.h"
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#endif
+#include <hip/hip_runtime.h>
 #include "hipfft.h"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
 #include "stdio.h"
 #include "execute_plan_ffth.hip.h"
 

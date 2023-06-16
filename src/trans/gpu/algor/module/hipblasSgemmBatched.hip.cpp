@@ -5,8 +5,15 @@
 //
 
 #include <stdio.h>
-#include "hipblas.h" 
-
+#include <stdlib.h>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#endif
+#include "hipblas.h"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 bool hip_alreadyAllocated_sgemm=false;
 bool hip_alreadyAllocated_sgemm_handle=false;
@@ -85,7 +92,7 @@ extern "C" void hipblasSgemmStridedBatched_wrapper (char transa, char transb, in
 
 
   printf("HIPBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
-  exit;
+  exit(EXIT_FAILURE);
  
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
 

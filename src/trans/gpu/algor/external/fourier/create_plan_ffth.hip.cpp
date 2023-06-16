@@ -1,8 +1,17 @@
 #define hipfftSafeCall(err) __hipfftSafeCall(err, __FILE__, __LINE__)
 #include "stdio.h"
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#endif
 #include <hip/hip_runtime.h>
 #include "hipfft.h"
-    static const char *_hipGetErrorEnum(hipfftResult error)
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+
+static const char *_hipGetErrorEnum(hipfftResult error)
     {
     switch (error)
     {
