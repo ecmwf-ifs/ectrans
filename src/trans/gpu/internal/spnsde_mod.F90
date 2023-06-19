@@ -17,7 +17,6 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
 USE TPM_GEN         ,ONLY : NOUT
 USE TPM_DIM         ,ONLY : R, R_NTMAX
-USE TPM_FIELDS      ,ONLY : F_RN
 USE TPM_DISTR       ,ONLY : D, D_MYMS, D_NUMP
 USE TPM_FIELDS      ,ONLY : ZEPSNM
 !USE TPM_TRANS
@@ -89,13 +88,12 @@ INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
 
 #ifdef ACCGPU
 !$ACC DATA                                  &
-!$ACC&      PRESENT (F_RN, R_NTMAX, D_MYMS) &
-!$ACC&      PRESENT (D_NUMP,PEPSNM, PF, PNSD)
+!$ACC&      PRESENT (R_NTMAX, D_MYMS)       &
+!$ACC&      PRESENT (D_NUMP,PEPSNM, PF, PNSD) ASYNC(1)
 #endif
 #ifdef OMPGPU
-!$OMP TARGET DATA                             &
-!$OMP&      MAP(PRESENT,ALLOC:ZN)         &
-!$OMP&      MAP(PRESENT,ALLOC:F_RN)
+!$OMP TARGET DATA               &
+!$OMP&      MAP(PRESENT,ALLOC:ZN)
 #endif
 
 !     ------------------------------------------------------------------
@@ -113,7 +111,7 @@ INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
 #endif
 #ifdef ACCGPU
   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,IR,II,JI) &
-  !$ACC& FIRSTPRIVATE(KMLOC,KF_SCALARS)
+  !$ACC&         FIRSTPRIVATE(KMLOC,KF_SCALARS) ASYNC(1)
 #endif
 DO KMLOC=1,D_NUMP
   DO JN=0,R_NTMAX+1

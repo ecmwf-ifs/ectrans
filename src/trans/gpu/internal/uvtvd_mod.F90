@@ -23,10 +23,19 @@ SUBROUTINE UVTVD(KF_UV,PU,PV,PVOR,PDIV)
 
 !**   Interface.
 !     ----------
-!        CALL UVTVD(KF_UV)
+!        CALL UVTVD(KM,KF_UV,PEPSNM,PU,PV,PVOR,PDIV)
 
-!        Explicit arguments :  
+!        Explicit arguments :  KM - zonal wave-number
 !        --------------------  KF_UV - number of fields (levels)
+!                              PEPSNM - REPSNM for wavenumber KM
+!                              PU - u wind component for zonal
+!                                   wavenumber KM
+!                              PV - v wind component for zonal
+!                                   wavenumber KM
+!                              PVOR - vorticity for zonal
+!                                     wavenumber KM
+!                              PDIV - divergence for zonal
+!                                     wavenumber KM
 
 
 !     Method.  See ref.
@@ -78,14 +87,13 @@ REAL(KIND=JPRBT) :: ZKM,ZJN
 
 #ifdef ACCGPU
 !$ACC DATA &
-!$ACC& PRESENT(D_MYMS,D_NUMP,R_NTMAX,F_RN) &
-!$ACC& PRESENT(ZEPSNM,PU,PV,PVOR,PDIV)
+!$ACC& PRESENT(D_MYMS,D_NUMP,R_NTMAX) &
+!$ACC& PRESENT(ZEPSNM,PU,PV,PVOR,PDIV) ASYNC(1)
 #endif
 #ifdef OMPGPU
 !WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
 !$OMP TARGET DATA&
 !$OMP& MAP(TO:D_MYMS,D_NUMP,R_NTMAX) &
-!$OMP& MAP(TO:F_RN) &
 !$OMP& MAP(ALLOC:ZEPSNM,PU,PV,PVOR,PDIV)
 #endif
 
@@ -96,7 +104,7 @@ REAL(KIND=JPRBT) :: ZKM,ZJN
 #endif
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM) DEFAULT(NONE) &
-!$ACC& FIRSTPRIVATE(KF_UV)
+!$ACC&         FIRSTPRIVATE(KF_UV) ASYNC(1)
 #endif
 DO KMLOC=1,D_NUMP
   DO J=1,2*KF_UV
@@ -114,7 +122,7 @@ ENDDO
 #endif
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM,JN,ZJN) DEFAULT(NONE) &
-!$ACC& FIRSTPRIVATE(KF_UV)
+!$ACC&         FIRSTPRIVATE(KF_UV) ASYNC(1)
 #endif
 DO KMLOC=1,D_NUMP
   DO JN=0,R_NTMAX
