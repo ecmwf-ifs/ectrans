@@ -43,7 +43,7 @@ program transform_test
 use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use mpl_module
-use yomgstats, only: jpmaxstat
+use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
 
 implicit none
@@ -604,7 +604,10 @@ ztloop = timef()
 ! Do spectral transform loop
 !===================================================================================================
 
+gstats_lstats = .false.
+
 do jstep = 1, iters
+  if (jstep == 2) gstats_lstats = .true.
   call gstats(3,0)
   ztstep(jstep) = timef()
 
