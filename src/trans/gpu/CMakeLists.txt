@@ -50,16 +50,12 @@ ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90
   ecbuild_info("warn: special compile flags ftdir_mod.F90")
 #endif()
 
-ecbuild_list_add_pattern( LIST trans_hip_src
-                          GLOB
-                                sharedmem/*.hip.cpp
-                                algor/*.hip.cpp
-                                internal/*.hip.cpp
-                                external/*.hip.cpp
-                          QUIET
-                        )
-                ecbuild_warn_var(trans_hip_src)
-                set_source_files_properties( ${trans_hip_src} PROPERTIES COMPILE_FLAGS "--offload-arch=gfx90a -x hip" )
+ectrans_declare_hip_sources( SOURCES_GLOB 
+  sharedmem/*.hip.cpp
+  algor/*.hip.cpp
+  internal/*.hip.cpp
+  external/*.hip.cpp
+)
 
 foreach( prec sp )
   if( HAVE_${prec} )
@@ -79,16 +75,10 @@ foreach( prec sp )
                            $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS      parkind_${prec}
                            fiat
-          PRIVATE_LIBS     hip::hipfft
-                           roc::hipblas
-			                    roc::rocblas
-			                    roc::rocfft
-                          MPI::MPI_Fortran
-                          mpifort
-                          #MPI::MPI_C
-			  MPI::MPI_CXX
-                          #nvhpcwrapnvtx
-                          ${LAPACK_LIBRARIES} # we still have symbols in some files
+          PRIVATE_LIBS     ${ECTRANS_GPU_HIP_LIBRARIES}
+                           MPI::MPI_CXX
+                           MPI::MPI_Fortran
+                           ${LAPACK_LIBRARIES} # we still have symbols in some files
         )
 
 
@@ -118,6 +108,9 @@ foreach( prec sp )
 
         if( gpumethod STREQUAL omp )
           target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE OMPGPU )
+          if(NOT HAVE_OMP)
+            target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenMP::OpenMP_Fortran )
+          endif()
         endif()
 
         if( HAVE_GPU_REDUCED_MEMORY )

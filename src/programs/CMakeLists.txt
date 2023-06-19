@@ -48,7 +48,7 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
   endif()
 
   if( HAVE_GPU )
-    foreach( prec dp sp )
+    foreach( prec sp )
       if( HAVE_${prec} )
         foreach( gpumethod acc omp )
           if( HAVE_${gpumethod} )
