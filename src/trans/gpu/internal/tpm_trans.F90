@@ -15,6 +15,7 @@ MODULE TPM_TRANS
 
 !
 USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
+USE GROWING_ALLOCATOR_MOD, ONLY: GROWING_ALLOCATION_TYPE
 USE ISO_C_BINDING, ONLY: C_INT8_T
 
 IMPLICIT NONE
@@ -63,6 +64,6 @@ LOGICAL :: LGPNORM = .FALSE.  ! indicates whether transform is being done for gp
 ! we adapt the size. After 2 iterations this should lead to constant runtimes
 ! (the first iteration is used to get the max buffer size, the second iteration
 ! is going to recreate the graphs if needed)
-INTEGER(KIND=C_INT8_T),POINTER :: REUSE_PTR(:)
+TYPE(GROWING_ALLOCATION_TYPE) :: GROWING_ALLOCATION
 
 END MODULE TPM_TRANS

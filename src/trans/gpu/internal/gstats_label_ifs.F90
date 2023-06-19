@@ -59,6 +59,7 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('GSTATS_LABEL_IFS',0,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
+PRINT *, "GSTATS_LABEL_IFS"
 
 !   counters 0 to 50 :  IFS computations
 CALL GSTATS_LABEL(0 ,'   ','CNT0     - COMPLETE EXECUTION')

@@ -11,7 +11,7 @@
 !
 
 MODULE LTINV_MOD
-  USE ALLOCATOR_MOD
+  USE BUFFERED_ALLOCATOR_MOD
 
   IMPLICIT NONE
 
@@ -30,7 +30,7 @@ CONTAINS
     USE TPM_DIM, ONLY: R
     USE ISO_C_BINDING
     USE LEINV_MOD
-    USE ALLOCATOR_MOD
+    USE BUFFERED_ALLOCATOR_MOD
 
     IMPLICIT NONE
 
@@ -401,7 +401,7 @@ CONTAINS
 
     ! Legendre transforms. When converting PIA into ZOUT, we ignore the first entries of LEINV.
     ! This is because vorticity and divergence is not necessarily converted to GP space.
-    CALL LEINV(PIA(2*(IF_READIN-IF_LEG)+1:IF_READIN,:,:),ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,IF_LEG)
+    CALL LEINV(ALLOCATOR,PIA(2*(IF_READIN-IF_LEG)+1:IF_READIN,:,:),ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,IF_LEG)
 
     IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------
