@@ -422,7 +422,7 @@ ngpblks = (ngptot - 1)/nproma+1
 !===================================================================================================
 
 ! Print configuration details
-if (verbosity >= 0) then
+if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
@@ -548,7 +548,7 @@ if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
-  if (verbosity >= 1) then
+  if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
       write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
     enddo
@@ -570,7 +570,7 @@ endif
 
 ztinit = (timef() - ztinit)/1000.0_jprd
 
-if (verbosity >= 0) then
+if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
                                 & " tasks, took",ztinit," sec"
@@ -593,8 +593,10 @@ ztstepavg2 = 0._jprd
 ztstepmax2 = 0._jprd
 ztstepmin2 = 9999999999999999._jprd
 
-write(nout,'(a)') '======= Start of spectral transforms  ======='
-write(nout,'(" ")')
+if (verbosity >= 1 .and. myproc == 1) then
+  write(nout,'(a)') '======= Start of spectral transforms  ======='
+  write(nout,'(" ")')
+endif
 
 ztloop = timef()
 
