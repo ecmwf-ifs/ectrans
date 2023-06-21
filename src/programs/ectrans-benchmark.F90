@@ -606,8 +606,9 @@ ztloop = timef()
 
 gstats_lstats = .false.
 
-do jstep = 1, iters
-  if (jstep == 2) gstats_lstats = .true.
+do jstep = 1, iters+2
+  if (jstep == 3) gstats_lstats = .true.
+
   call gstats(3,0)
   ztstep(jstep) = timef()
 

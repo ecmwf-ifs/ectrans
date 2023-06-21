@@ -57,6 +57,7 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                       fiat
                                       parkind_${prec}
                                       trans_gpu_${prec}
+                                      OpenACC::OpenACC_Fortran
             )
        endif()
     endforeach( prec )
