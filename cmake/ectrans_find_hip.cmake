@@ -9,6 +9,8 @@
 macro( ectrans_find_hip )
   # This macro finds all HIP related libraries, if found, HAVE_HIP=1
 
+  cmake_minimum_required( VERSION 3.24 FATAL_ERROR )
+
   set( options "" )
   set( single_value_args REQUIRED )
   set( multi_value_args "" )
@@ -81,13 +83,6 @@ macro( ectrans_find_hip )
   endif()
 
   if( HAVE_HIP )
-    # Find HIP libraries
-    # find_package(hip REQUIRED CONFIG)
-    # if( NOT hip_FOUND )
-    #   ecbuild_info("hip libraries not found: HAVE_HIP=0")
-    #   set( HAVE_HIP 0 )
-    # endif()
-
     find_package(hipblas CONFIG ${HIP_REQUIRED})
     if( NOT hipblas_FOUND )
       ecbuild_info("hipblas libraries not found: HAVE_HIP=0")

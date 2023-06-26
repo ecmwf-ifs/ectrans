@@ -46,7 +46,7 @@ SUBROUTINE FTDIR(KFIELDS)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM, JPIB, JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC,D_NSTAGTF,D_NPTRLS
 USE TPM_TRANS       ,ONLY : ZGTF

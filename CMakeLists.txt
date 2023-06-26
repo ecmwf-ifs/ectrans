@@ -85,11 +85,7 @@ endif()
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI)"
-                    CONDITION HAVE_HIP
-                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran" )
-if( HAVE_DOUBLE_PRECISION AND HAVE_GPU )
-  ecbuild_warn("TODO: Fix DOUBLE PRECISION for GPU")
-endif()
+                    CONDITION HAVE_HIP )
 
 ecbuild_add_option( FEATURE ACCGPU
                     DEFAULT ON
@@ -106,7 +102,8 @@ ecbuild_add_option( FEATURE OMPGPU
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
 	            DEFAULT OFF
                     CONDITION HAVE_GPU
-                    DESCRIPTION "Enable CUDA-aware MPI")
+                    DESCRIPTION "Enable CUDA-aware MPI"
+                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran" )
 
 ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
                     DEFAULT OFF

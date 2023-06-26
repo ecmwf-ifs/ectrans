@@ -18,6 +18,8 @@ typedef hipfftReal HIP_DATA_TYPE_REAL;
 #else
 typedef hipfftDoubleComplex HIP_DATA_TYPE_COMPLEX;
 typedef hipfftDoubleReal HIP_DATA_TYPE_REAL;
+#define hipfftExecR2C hipfftExecD2Z
+#define hipfftExecC2R hipfftExecZ2D
 #endif
 
 

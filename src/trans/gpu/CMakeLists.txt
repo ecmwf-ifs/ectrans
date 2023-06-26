@@ -57,7 +57,7 @@ ectrans_declare_hip_sources( SOURCES_GLOB
   external/*.hip.cpp
 )
 
-foreach( prec sp )
+foreach( prec dp sp )
   if( HAVE_${prec} )
     foreach( gpumethod acc omp)
       if( HAVE_${gpumethod})
@@ -76,9 +76,8 @@ foreach( prec sp )
           PUBLIC_LIBS      parkind_${prec}
                            fiat
           PRIVATE_LIBS     ${ECTRANS_GPU_HIP_LIBRARIES}
-                           MPI::MPI_CXX
-                           MPI::MPI_Fortran
                            ${LAPACK_LIBRARIES} # we still have symbols in some files
+                           $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_CXX MPI::MPI_Fortran>
         )
 
 

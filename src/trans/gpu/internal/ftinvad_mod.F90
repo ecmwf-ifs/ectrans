@@ -45,7 +45,7 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM, JPIB, JPRBT
+USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_DIM         ,ONLY : R
