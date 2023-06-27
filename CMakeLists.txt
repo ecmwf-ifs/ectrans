@@ -87,32 +87,40 @@ ecbuild_add_option( FEATURE GPU
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI)"
                     CONDITION HAVE_HIP )
 
-ecbuild_add_option( FEATURE ACCGPU
+ecbuild_add_option( FEATURE ACC
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran"
                     CONDITION HAVE_GPU)
-
-ecbuild_add_option( FEATURE OMPGPU
-                    DEFAULT ON
-                    DESCRIPTION "Support for using GPUs with OpenMP offloading"
-                    CONDITION HAVE_GPU
-                    REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
+if( HAVE_GPU )
+  if( HAVE_ACC )
+    set( GPU_OFFLOAD "ACC" )
+  elseif( HAVE_OMP )
+    set( GPU_OFFLOAD "OMP" )
+  else()
+    ecbuild_error("Could not enable GPU as OMP or ACC were not enabled")
+  endif()
+endif()
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
 	            DEFAULT OFF
                     CONDITION HAVE_GPU
-                    DESCRIPTION "Enable CUDA-aware MPI"
-                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran" )
+                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
+                    DESCRIPTION "Enable CUDA-aware MPI" )
 
 ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
                     DEFAULT OFF
                     CONDITION HAVE_GPU
                     DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
 
-# GPU methods:
-set( HAVE_acc ${HAVE_ACCGPU} )
-set( HAVE_omp ${HAVE_OMPGPU} )
+if( BUILD_SHARED_LIBS )
+  set( GPU_STATIC_DEFAULT OFF )
+else()
+  set( GPU_STATIC_DEFAULT ON )
+endif()
+ecbuild_add_option( FEATURE GPU_STATIC
+                    DEFAULT ${GPU_STATIC_DEFAULT}
+                    DESCRIPTION "Compile GPU library as static library")
 
 ectrans_find_lapack()
 

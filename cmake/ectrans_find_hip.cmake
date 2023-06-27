@@ -41,11 +41,11 @@ macro( ectrans_find_hip )
 
   set(HAVE_HIP 1)
 
-  ecbuild_add_option( FEATURE HIP_LANGUAGE DEFAULT ON )
+  include(CheckLanguage)
+  check_language(HIP)
+  ecbuild_add_option( FEATURE HIP_LANGUAGE DEFAULT ON  CONDITION CMAKE_HIP_COMPILER )
   
   if( HAVE_HIP_LANGUAGE )
-    include(CheckLanguage)
-    check_language(HIP)
     if(NOT CMAKE_HIP_COMPILER)
       if( _PAR_REQUIRED )
         ecbuild_error("HIP compiler not found")

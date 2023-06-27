@@ -59,14 +59,14 @@ ectrans_declare_hip_sources( SOURCES_GLOB
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
-    foreach( gpumethod acc omp)
-      if( HAVE_${gpumethod})
-
-        # We build an object library first. And then use these objects to create a shared and static library.
+	set( GPU_LIBRARY_TYPE SHARED )
+	if( HAVE_GPU_STATIC )
+	    set( GPU_LIBRARY_TYPE STATIC )
+        endif()
 
         ectrans_add_library(
-          TARGET           trans_gpu_object_${prec}_${gpumethod}
-          TYPE             OBJECT
+          TARGET           trans_gpu_${prec}
+          TYPE             ${GPU_LIBRARY_TYPE}
           SOURCES          ${trans_src}
           PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
@@ -77,64 +77,24 @@ foreach( prec dp sp )
                            fiat
           PRIVATE_LIBS     ${ECTRANS_GPU_HIP_LIBRARIES}
                            ${LAPACK_LIBRARIES} # we still have symbols in some files
-                           $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_CXX MPI::MPI_Fortran>
+                           $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
+                           $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
+                           $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
+          PRIVATE_DEFINITIONS
+	                   ${GPU_OFFLOAD}GPU
+	                   $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
+			   $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
         )
-
-
-        ecbuild_debug("target_link_options(trans_gpu_object_${prec}_${gpumethod} INTERFACE $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}>")
-        target_link_options   ( trans_gpu_object_${prec}_${gpumethod} INTERFACE $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:${${gpumethod}_link_flags}> )
-        ecbuild_debug("target_compile_options(trans_gpu_object_${prec}_${gpumethod} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)")
-        target_compile_options( trans_gpu_object_${prec}_${gpumethod} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${${gpumethod}_flags}>)
 
         ectrans_target_fortran_module_directory(
-          TARGET            trans_gpu_object_${prec}_${gpumethod}
-          MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_${prec}_${gpumethod}
-          INSTALL_DIRECTORY module/trans_gpu_${prec}_${gpumethod}
+          TARGET            trans_gpu_${prec}
+          MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/trans_gpu_${prec}
+          INSTALL_DIRECTORY module/trans_gpu_${prec}
         )
-
-        if( HAVE_OMP )
-          target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenMP::OpenMP_Fortran )
-        endif()
 
         if( prec STREQUAL sp )
-          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
+          target_compile_definitions( trans_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
         endif()
 
-        if( gpumethod STREQUAL acc )
-          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE ACCGPU )
-          target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenACC::OpenACC_Fortran )
-        endif()
-
-        if( gpumethod STREQUAL omp )
-          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE OMPGPU )
-          if(NOT HAVE_OMP)
-            target_link_libraries( trans_gpu_object_${prec}_${gpumethod} PRIVATE OpenMP::OpenMP_Fortran )
-          endif()
-        endif()
-
-        if( HAVE_GPU_REDUCED_MEMORY )
-          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE REDUCED_MEM )
-        endif()
-
-        if( HAVE_GPU_AWARE_MPI )
-          target_compile_definitions( trans_gpu_object_${prec}_${gpumethod} PRIVATE USE_CUDA_AWARE_MPI_FT )
-        endif()
-
-        ectrans_add_library(
-          TARGET           trans_gpu_shared_${prec}_${gpumethod}
-          OUTPUT_NAME      trans_gpu_${prec}_${gpumethod}
-          TYPE             SHARED
-          LINKER_LANGUAGE  Fortran
-          PUBLIC_LIBS      trans_gpu_object_${prec}_${gpumethod}
-        )
-
-        ectrans_add_library(
-          TARGET           trans_gpu_${prec}_${gpumethod}
-          TYPE             STATIC
-          LINKER_LANGUAGE  Fortran
-          PUBLIC_LIBS      trans_gpu_object_${prec}_${gpumethod}
-        )
-      endif()
-    endforeach()
   endif()
 endforeach()
