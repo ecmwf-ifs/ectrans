@@ -11,6 +11,7 @@
 MODULE TRMTOL_MOD
 
 CONTAINS
+#ifdef USE_CUDA_AWARE_MPI_FT
 SUBROUTINE TRMTOL_CUDAAWARE(PFBUF_IN,PFBUF,KFIELD)
 
 !**** *trmtol * - transposition in Fourier space
@@ -209,6 +210,7 @@ IF (LHOOK) CALL DR_HOOK('TRMTOL_CUDAAWARE',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
 END SUBROUTINE TRMTOL_CUDAAWARE
+#endif
 
 SUBROUTINE TRMTOL(PFBUF_IN,PFBUF,KFIELD)
 
