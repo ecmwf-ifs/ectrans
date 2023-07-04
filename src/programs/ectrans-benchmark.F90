@@ -713,29 +713,33 @@ do jstep = 1, iters
     call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
 
     ! Surface pressure
-    zmaxerr(:) = -999.0
-    do ifld = 1, 1
-      zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
-      zmaxerr(1) = max(zmaxerr(1), zerr(1))
-    enddo
-    ! Divergence
-    do ifld = 1, nflevg
-      zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
-      zmaxerr(2) = max(zmaxerr(2), zerr(2))
-    enddo
-    ! Vorticity
-    do ifld = 1, nflevg
-      zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
-      zmaxerr(3) = max(zmaxerr(3),zerr(3))
-    enddo
-    ! Temperature
-    do ifld = 1, nflevg
-      zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
-      zmaxerr(4) = max(zmaxerr(4), zerr(4))
-    enddo
-    write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-                &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+    if (myproc == 1) then
+      zmaxerr(:) = -999.0
+      do ifld = 1, 1
+        write(nout,*) "znormsp", znormsp
+        call flush(nout)
+        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
+        zmaxerr(1) = max(zmaxerr(1), zerr(1))
+      enddo
+      ! Divergence
+      do ifld = 1, nflevg
+        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
+        zmaxerr(2) = max(zmaxerr(2), zerr(2))
+      enddo
+      ! Vorticity
+      do ifld = 1, nflevg
+        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
+        zmaxerr(3) = max(zmaxerr(3),zerr(3))
+      enddo
+      ! Temperature
+      do ifld = 1, nflevg
+        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
+        zmaxerr(4) = max(zmaxerr(4), zerr(4))
+      enddo
+      write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                  & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+                  &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+    endif
     call gstats(6,1)
   else
     write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
@@ -757,58 +761,60 @@ if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
-  zmaxerr(:) = -999.0
-  do ifld = 1, nflevg
-    zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
-    zmaxerr(3) = max(zmaxerr(3), zerr(3))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor1(ifld), zerr(3)
-    endif
-  enddo
-  do ifld = 1, nflevg
-    zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
-    zmaxerr(2) = max(zmaxerr(2),zerr(2))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv1(ifld), zerr(2)
-    endif
-  enddo
-  do ifld = 1, nflevg
-    zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
-    zmaxerr(4) = max(zmaxerr(4), zerr(4))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt1(ifld), zerr(4)
-    endif
-  enddo
-  do ifld = 1, 1
-    zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
-    zmaxerr(1) = max(zmaxerr(1), zerr(1))
-    if (verbosity >= 1) then
-      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp1(ifld), zerr(1)
-    endif
-  enddo
+  if (myproc == 1) then
+    zmaxerr(:) = -999.0
+    do ifld = 1, nflevg
+      zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
+      zmaxerr(3) = max(zmaxerr(3), zerr(3))
+      if (verbosity >= 1) then
+        write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor1(ifld), zerr(3)
+      endif
+    enddo
+    do ifld = 1, nflevg
+      zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
+      zmaxerr(2) = max(zmaxerr(2),zerr(2))
+      if (verbosity >= 1) then
+        write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv1(ifld), zerr(2)
+      endif
+    enddo
+    do ifld = 1, nflevg
+      zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
+      zmaxerr(4) = max(zmaxerr(4), zerr(4))
+      if (verbosity >= 1) then
+        write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt1(ifld), zerr(4)
+      endif
+    enddo
+    do ifld = 1, 1
+      zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
+      zmaxerr(1) = max(zmaxerr(1), zerr(1))
+      if (verbosity >= 1) then
+        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp1(ifld), zerr(1)
+      endif
+    enddo
 
-  ! maximum error across all fields
-  zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
+    ! maximum error across all fields
+    zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
 
-  if (verbosity >= 1) write(nout,*)
-  write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
-  write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
-  write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
-  write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
-  write(nout,*)
-  write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
-  write(nout,*)
+    if (verbosity >= 1) write(nout,*)
+    write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
+    write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
+    write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
+    write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
+    write(nout,*)
+    write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
+    write(nout,*)
 
-  if (ncheck > 0 .and. myproc == 1) then
-    ! If the maximum spectral norm error across all fields is greater than 100 times the machine
-    ! epsilon, fail the test
-    if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
-      write(nout, '(a)') '*******************************'
-      write(nout, '(a)') 'Correctness test failed'
-      write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-      write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
-      write(nout, '(a)') '*******************************'
-      error stop
+    if (ncheck > 0) then
+      ! If the maximum spectral norm error across all fields is greater than 100 times the machine
+      ! epsilon, fail the test
+      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+        write(nout, '(a)') '*******************************'
+        write(nout, '(a)') 'Correctness test failed'
+        write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+        write(nout, '(a)') '*******************************'
+        error stop
+      endif
     endif
   endif
 endif
