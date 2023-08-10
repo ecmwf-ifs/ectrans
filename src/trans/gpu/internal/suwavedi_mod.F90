@@ -39,6 +39,9 @@ SUBROUTINE SUWAVEDI(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
 !           KSPEC2MX - Maximum KSPEC2 across PEs (output)
 !           KPOSSP   - Global spectral fields partitioning (output)
 !           KMYMS    - This PEs spectral zonal wavenumbers (output)
+!           KPTRMS   - Pointer to the first wave number of a given a-set (output)
+!           KALLMS   - Wave numbers for all wave-set concatenated together
+!                      to give all wave numbers in wave-set order (output)
 
 !        Implicit arguments : NONE
 !        --------------------

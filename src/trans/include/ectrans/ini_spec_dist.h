@@ -10,7 +10,7 @@
 
 INTERFACE
 SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
-                    &KUMPP,KSPEC,KSPEC2,KSPEC2MX,KPOSSP,KMYMS)
+                    &KUMPP,KSPEC,KSPEC2,KSPEC2MX,KPOSSP,KMYMS,KPTRMS,KALLMS)
 
 
 !**** *INI_SPEC_DIST* - Initialize spectral wave distribution
@@ -38,6 +38,10 @@ SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
 !           KSPEC2MX - Maximum KSPEC2 across PEs (output)
 !           KPOSSP   - Global spectral fields partitioning (output)
 !           KMYMS    - This PEs spectral zonal wavenumbers (output)
+!           KPTRMS   - Pointer to the first wave number of a given a-set (output)
+!           KALLMS   - Wave numbers for all wave-set concatenated together
+!                      to give all wave numbers in wave-set order (output)
+
 !        Implicit arguments : NONE
 !        --------------------
 
@@ -66,7 +70,9 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KSPOLEGL
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KASM0(0:KSMAX)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KPROCM(0:KSMAX)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KUMPP(KPRTRW)
-INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KMYMS(KSMAX+1)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KPOSSP(KPRTRW+1)
+INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KMYMS(KSMAX+1)
+INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KPTRMS(KPRTRW)
+INTEGER(KIND=JPIM),OPTIONAL,INTENT(OUT) :: KALLMS(KSMAX+1)
 END SUBROUTINE INI_SPEC_DIST
 END INTERFACE
