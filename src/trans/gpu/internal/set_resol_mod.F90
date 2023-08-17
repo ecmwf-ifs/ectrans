@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -20,7 +20,7 @@ USE TPM_DISTR       ,ONLY : D, DISTR_RESOL
 USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL
 USE TPM_FIELDS      ,ONLY : F, FIELDS_RESOL
 USE TPM_FFT         ,ONLY : T, FFT_RESOL
-USE TPM_FFTH        ,ONLY : TC, FFTH_RESOL
+USE TPM_HICFFT      ,ONLY : HICT, HICFFT_RESOL
 USE TPM_FLT
 USE TPM_CTL         ,ONLY : C, CTL_RESOL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
@@ -63,7 +63,7 @@ IF(IRESOL /= NCUR_RESOL) THEN
   G => GEOM_RESOL(NCUR_RESOL)
   D => DISTR_RESOL(NCUR_RESOL)
   T => FFT_RESOL(NCUR_RESOL)
-  TC => FFTH_RESOL(NCUR_RESOL)
+  HICT => HICFFT_RESOL(NCUR_RESOL)
   S => FLT_RESOL(NCUR_RESOL)
   C => CTL_RESOL(NCUR_RESOL)
 ENDIF

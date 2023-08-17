@@ -10,7 +10,7 @@
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
 
-  # Compile setup_trans with pinned memory to improve data movement performance. 
+  # Compile setup_trans with pinned memory to improve data movement performance.
   ectrans_add_compile_options(
       SOURCES external/setup_trans.F90
       #FLAGS   "-gpu=pinned,deepcopy,fastmath,nordc")
@@ -50,12 +50,25 @@ ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90
   ecbuild_info("warn: special compile flags ftdir_mod.F90")
 #endif()
 
-ectrans_declare_hip_sources( SOURCES_GLOB 
-  sharedmem/*.hip.cpp
-  algor/*.hip.cpp
-  internal/*.hip.cpp
-  external/*.hip.cpp
-)
+# Filter source list according to available GPU runtime
+if( HAVE_HIP )
+  set( GPU_RUNTIME "HIP" )
+  ectrans_declare_hip_sources( SOURCES_GLOB
+    sharedmem/*.hip.cpp
+    algor/*.hip.cpp
+    internal/*.hip.cpp
+    external/*.hip.cpp
+  )
+  ecbuild_list_exclude_pattern( LIST trans_src  REGEX .cu )
+  ecbuild_list_exclude_pattern( LIST trans_src  REGEX cuda_device_mod.F90 )
+elseif( HAVE_CUDA )
+  set( GPU_RUNTIME "CUDA" )
+  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx )
+  ecbuild_list_exclude_pattern( LIST trans_src  REGEX .hip.cpp )
+  ecbuild_list_exclude_pattern( LIST trans_src  REGEX hip_device_mod.F90 )
+else()
+  ecbuild_info("warn: HIP and CUDA not found")
+endif()
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
@@ -65,25 +78,28 @@ foreach( prec dp sp )
         endif()
 
         ectrans_add_library(
-          TARGET           trans_gpu_${prec}
-          TYPE             ${GPU_LIBRARY_TYPE}
-          SOURCES          ${trans_src}
-          PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
-                           $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
-                           $<INSTALL_INTERFACE:include/ectrans>
-                           $<INSTALL_INTERFACE:include>
-          PUBLIC_LIBS      parkind_${prec}
-                           fiat
-          PRIVATE_LIBS     ${ECTRANS_GPU_HIP_LIBRARIES}
-                           ${LAPACK_LIBRARIES} # we still have symbols in some files
-                           $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
-                           $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                           $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
+          TARGET            trans_gpu_${prec}
+          TYPE              ${GPU_LIBRARY_TYPE}
+          SOURCES           ${trans_src}
+          LINKER_LANGUAGE   Fortran
+          PUBLIC_INCLUDES   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
+                            $<INSTALL_INTERFACE:include/ectrans>
+                            $<INSTALL_INTERFACE:include>
+          PUBLIC_LIBS       parkind_${prec}
+                            fiat
+          PRIVATE_LIBS      ${ECTRANS_GPU_HIP_LIBRARIES}
+                            ${LAPACK_LIBRARIES} # we still have symbols in some files
+                            $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
+                            $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
+                            # $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
+                            MPI::MPI_Fortran MPI::MPI_CXX  # TODO: remove hard dependency on MPI
           PRIVATE_DEFINITIONS
-	                   ${GPU_OFFLOAD}GPU
-	                   $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
-			   $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
+                            ${GPU_OFFLOAD}GPU
+                            ${GPU_RUNTIME}GPU
+                            $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
+                            $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
         )
 
         ectrans_target_fortran_module_directory(
@@ -94,6 +110,14 @@ foreach( prec dp sp )
 
         if( prec STREQUAL sp )
           target_compile_definitions( trans_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
+        endif()
+
+        if( HAVE_ACC AND CMAKE_Fortran_COMPILER_ID MATCHES NVHPC )
+          # Propagate flags as link options for downstream targets. Only required for NVHPC
+          target_link_options( trans_gpu_${prec} INTERFACE
+                $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenACC_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:C,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}> )
         endif()
 
   endif()

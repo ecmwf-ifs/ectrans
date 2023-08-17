@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -37,7 +37,7 @@ SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,POA1,KMODE)
 !     Method.
 !     -------   use butterfly or dgemm
 
-!     Externals.   
+!     Externals.
 !     ----------
 
 !     Reference.
@@ -68,7 +68,7 @@ USE TPM_DISTR
 USE TPM_GEN          ,ONLY : NOUT
 USE TPM_FLT
 USE BUTTERFLY_ALG_MOD
-USE HIPBLAS_MOD       ,ONLY : HIP_DGEMM_BATCHED, HIP_SGEMM_BATCHED
+USE HICBLAS_MOD      ,ONLY : HIP_DGEMM_BATCHED, HIP_SGEMM_BATCHED
 #ifdef TRANS_SINGLE
 #define HIP_GEMM_BATCHED HIP_SGEMM_BATCHED
 #else
@@ -152,12 +152,12 @@ IF ( KMODE == -1 ) THEN
 DO KMLOC=1,D_NUMP
    DO J=1,R_NDGNH
       DO JK=1,KFC
-         
-         KM = D_MYMS(KMLOC)   
+
+         KM = D_MYMS(KMLOC)
          KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
          IF (J .LE. KDGLU) THEN
             ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            
+
             IF(KM == 0)THEN
                ISKIP = 2
             ELSE
@@ -216,7 +216,7 @@ DO KMLOC=1,D_NUMP
          ELSE
             ISKIP = 1
          ENDIF
-         
+
          IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
             ILA = (R_NTMAX-KM+2)/2
             IA  = 1+MOD(R_NTMAX-KM+2,2)
@@ -320,13 +320,13 @@ ELSE
 !$ACC &    PRESENT(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,DZBST,PAIA,F_RW)
 #endif
 DO KMLOC=1,D_NUMP
-   DO J=1,R_NDGNH   
+   DO J=1,R_NDGNH
       DO JK=1,KFC
-         KM = D_MYMS(KMLOC)   
+         KM = D_MYMS(KMLOC)
          KDGLU = MIN(R_NDGNH,G_NDGLU(KM))
          IF (J .LE. KDGLU) THEN
             ISL = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-            
+
             IF(KM == 0)THEN
                ISKIP = 2
             ELSE
@@ -384,12 +384,12 @@ CALL HIP_GEMM_BATCHED( &
          ELSE
             ISKIP = 1
          ENDIF
-         
+
          IF (MOD((JK-1),ISKIP) .EQ. 0) THEN
             ILS = (R_NTMAX-KM+3)/2
             IF (J .LE. ILS) THEN
                IS  = 1+MOD(R_NTMAX-KM+1,2)
-               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)            
+               POA1(JK,IS+(J-1)*2,KMLOC) = DZCST((JK-1)/ISKIP+1+(J-1+(KMLOC-1)*DLDZCS)*DTDZCS)
             END IF
          END IF
       ENDDO
@@ -407,7 +407,7 @@ IF(KMLOC0 > 0) THEN
    !$ACC&     COPYIN(KFC,DTDZBS,KMLOC0,ISKIP) &
    !$ACC&     PRESENT(R_NDGNH,G_NDGLU,DZBST0,PAIA,F_RW)
 #endif
-   DO J=1,R_NDGNH   
+   DO J=1,R_NDGNH
       DO JK=1,KFC
          KDGLU = MIN(R_NDGNH,G_NDGLU(0))
          IF (J .LE. KDGLU) THEN

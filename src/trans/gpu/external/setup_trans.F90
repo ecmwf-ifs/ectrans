@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -119,7 +119,7 @@ USE TPM_FIELDS            ,ONLY : FIELDS_RESOL, F,F_RW, F_RN, F_RLAPIN, F_RACTHE
 &                                 ZAS0,DZCST0,KMLOC0
 ! IZBA,IZCAT
 USE TPM_FFT               ,ONLY : T, FFT_RESOL
-USE TPM_FFTH              ,ONLY : TC, FFTH_RESOL
+USE TPM_HICFFT            ,ONLY : HICT, HICFFT_RESOL
 USE TPM_FLT
 #ifndef REDUCED_MEM
 USE TPM_TRANS             ,ONLY : FOUBUF_IN, FOUBUF, ZGTF, ZAVE, ZMINGL, ZMAXGL, ZMINGPN, ZMAXGPN
@@ -216,7 +216,7 @@ IF(.NOT. ALLOCATED(DIM_RESOL)) THEN
   ALLOCATE(GEOM_RESOL(NMAX_RESOL))
   ALLOCATE(DISTR_RESOL(NMAX_RESOL))
   ALLOCATE(FFT_RESOL(NMAX_RESOL))
-  ALLOCATE(FFTH_RESOL(NMAX_RESOL))
+  ALLOCATE(HICFFT_RESOL(NMAX_RESOL))
   ALLOCATE(FLT_RESOL(NMAX_RESOL))
   ALLOCATE(CTL_RESOL(NMAX_RESOL))
   GEOM_RESOL(:)%LAM=.FALSE.
@@ -633,7 +633,7 @@ ZAA(:,:,:) = 0._JPRBT
 ZAS(:,:,:) = 0._JPRBT
 
 DO JMLOC=1,D%NUMP
-  KM = D%MYMS(JMLOC)   
+  KM = D%MYMS(JMLOC)
   KDGLU = MIN(R%NDGNH,G%NDGLU(KM))
 
   ILA = (R%NSMAX-KM+2)/2

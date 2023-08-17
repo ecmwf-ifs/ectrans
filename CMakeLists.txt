@@ -27,6 +27,7 @@ ecbuild_find_package( NAME fiat REQUIRED )
 
 ecbuild_add_option( FEATURE MPI
                     DESCRIPTION "Support for MPI distributed memory parallelism"
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran CXX"
                     CONDITION fiat_HAVE_MPI )
 
 ecbuild_add_option( FEATURE OMP
@@ -34,12 +35,28 @@ ecbuild_add_option( FEATURE OMP
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
+if( ${CMAKE_VERSION} VERSION_LESS "3.25" AND (NOT DEFINED ENABLE_ACC OR ENABLE_ACC ) )
+  # See https://gitlab.kitware.com/cmake/cmake/-/issues/23691, fixed in CMake 3.25
+  # (TL;DR: FindOpenACC sets OpenACC_<LANG>_FOUND correctly but does not set
+  #  OpenACC_FOUND unless all three C, CXX, and Fortran have been found - even if
+  #  only one language has been requested via COMPONENTS)
+  find_package( OpenACC COMPONENTS Fortran )
+  if( OpenACC_Fortran_FOUND )
+    set( OpenACC_FOUND ON )
+  endif()
+endif()
+
+ecbuild_add_option( FEATURE ACC
+                    DEFAULT ON
+                    DESCRIPTION "Support for using GPUs with OpenACC"
+                    REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
+
 ecbuild_add_option( FEATURE DOUBLE_PRECISION
-	DEFAULT ON
+                    DEFAULT ON
                     DESCRIPTION "Support for Double Precision" )
 
 ecbuild_add_option( FEATURE SINGLE_PRECISION
-	DEFAULT ON
+                    DEFAULT ON
                     DESCRIPTION "Support for Single Precision" )
 
 if( HAVE_SINGLE_PRECISION )
@@ -73,25 +90,40 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION AND HAVE_CPU )
 
-set( HIP_REQUESTED OFF )
+# Search for available GPU runtimes, searching for HIP first and, if not found,
+# attempt to find NVIDIA
 if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
-  set( HIP_REQUESTED ON )
-endif()
-
-if( HIP_REQUESTED )
   ectrans_find_hip() # sets "HAVE_HIP"
-endif()           
+
+  if (NOT HAVE_HIP)
+    check_language(CUDA)
+    if ( NOT CMAKE_CUDA_COMPILER )
+      set( HAVE_CUDA OFF )
+    else()
+      enable_language(CUDA)
+      set( HAVE_CUDA ON )
+      find_package( CUDAToolkit )
+      if( NOT TARGET CUDA::cublas )
+        ecbuild_info("No target CUDA::cublas")
+      endif()
+      if( NOT TARGET CUDA::cufft )
+        ecbuild_info("No target CUDA::cufft")
+      endif()
+      if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 70 80)
+      endif()
+      ecbuild_info( "cublas                  : [${CUDA_cublas_LIBRARY}]" )
+      ecbuild_info( "cufft                   : [${CUDA_cufft_LIBRARY}]" )
+      ecbuild_info( "cuda arch               : [${CMAKE_CUDA_ARCHITECTURES}]" )
+    endif()
+  endif()
+endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI)"
-                    CONDITION HAVE_HIP )
+                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) AND HAVE_MPI )
 
-ecbuild_add_option( FEATURE ACC
-                    DEFAULT ON
-                    DESCRIPTION "Support for using GPUs with OpenACC"
-                    REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran"
-                    CONDITION HAVE_GPU)
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
@@ -103,7 +135,7 @@ if( HAVE_GPU )
 endif()
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
-	            DEFAULT OFF
+                    DEFAULT OFF
                     CONDITION HAVE_GPU
                     REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
                     DESCRIPTION "Enable CUDA-aware MPI" )
