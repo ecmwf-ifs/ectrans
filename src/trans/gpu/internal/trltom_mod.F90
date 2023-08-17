@@ -1,6 +1,6 @@
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -12,9 +12,9 @@ MODULE TRLTOM_MOD
   CONTAINS
 #ifdef USE_CUDA_AWARE_MPI_FT
   SUBROUTINE TRLTOM_CUDAAWARE(PFBUF_IN,PFBUF,KFIELD)
-  
+
   !**** *TRLTOM * - transposition in Fourierspace
-  
+
   !     Purpose.
   !     --------
   !              Transpose Fourier coefficients from partitioning
@@ -22,34 +22,34 @@ MODULE TRLTOM_MOD
   !              This is done between inverse Legendre Transform
   !              and inverse FFT.
   !              This is the inverse routine of TRMTOL.
-  
+
   !**   Interface.
   !     ----------
   !        *CALL* *TRLTOM(...)*
-  
+
   !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
   !        --------------------          used for both input and output.
-  
+
   !                             KFIELD - Number of fields communicated
-  
+
   !        Implicit arguments :
   !        --------------------
-  
+
   !     Method.
   !     -------
   !        See documentation
-  
+
   !     Externals.
   !     ----------
-  
+
   !     Reference.
   !     ----------
   !        ECMWF Research Department documentation of the IFS
-  
+
   !     Author.
   !     -------
   !        MPP Group *ECMWF*
-  
+
   !     Modifications.
   !     --------------
   !        Original : 95-10-01
@@ -163,7 +163,7 @@ MODULE TRLTOM_MOD
 #endif
 #ifdef ACCGPU
         !$ACC KERNELS ASYNC(1) DEFAULT(NONE) &
-        !$ACC& PRESENT(PFBUF,PFBUF_IN,FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
+        !$ACC& PRESENT(PFBUF,PFBUF_IN)
 #endif
         PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
 #ifdef ACCGPU
@@ -226,9 +226,9 @@ MODULE TRLTOM_MOD
 #endif
 
   SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)
-  
+
   !**** *TRLTOM * - transposition in Fourierspace
-  
+
   !     Purpose.
   !     --------
   !              Transpose Fourier coefficients from partitioning
@@ -236,34 +236,34 @@ MODULE TRLTOM_MOD
   !              This is done between inverse Legendre Transform
   !              and inverse FFT.
   !              This is the inverse routine of TRMTOL.
-  
+
   !**   Interface.
   !     ----------
   !        *CALL* *TRLTOM(...)*
-  
+
   !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
   !        --------------------          used for both input and output.
-  
+
   !                             KFIELD - Number of fields communicated
-  
+
   !        Implicit arguments :
   !        --------------------
-  
+
   !     Method.
   !     -------
   !        See documentation
-  
+
   !     Externals.
   !     ----------
-  
+
   !     Reference.
   !     ----------
   !        ECMWF Research Department documentation of the IFS
-  
+
   !     Author.
   !     -------
   !        MPP Group *ECMWF*
-  
+
   !     Modifications.
   !     --------------
   !        Original : 95-10-01
@@ -276,30 +276,30 @@ MODULE TRLTOM_MOD
   !        G.Mozdzynski : 08-01-01 Cleanup
   !        Y.Seity   : 07-08-30 Add barrier synchonisation under LSYNC_TRANS
   !     ------------------------------------------------------------------
-  
+
   USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
   USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-  
+
   USE MPL_MODULE      ,ONLY : MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK, MPL_WAIT, JP_NON_BLOCKING_STANDARD
-  
+
   USE TPM_DISTR       ,ONLY : D, MTAGLM, MYSETW, NPRTRW, NPROC, MYPROC
   USE TPM_GEN         ,ONLY : LSYNC_TRANS
-  
+
 #ifdef ACCGPU
   USE MPI
 #endif
-  
+
   !USE SET2PE_MOD
   !USE MYSENDSET_MOD
   !USE MYRECVSET_MOD
   !USE ABORT_TRANS_MOD
   !
-  
+
   IMPLICIT NONE
-  
-  
+
+
   INTERFACE
-  
+
     FUNCTION ALLTOALLV_CUDAIPC(input,len,soff,output,roff,mtol_or_ltom) BIND(C,name='Alltoallv_CUDAIPC')
       USE, INTRINSIC :: ISO_C_BINDING
       IMPLICIT NONE
@@ -326,30 +326,30 @@ MODULE TRLTOM_MOD
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE_BAR2
- 
+
   REAL(KIND=JPRBT)    :: ZDUM(1)
   INTEGER(KIND=JPIM) :: IREQ
   INTEGER(KIND=JPIM) :: IERROR
   !     ------------------------------------------------------------------
- 
+
   REAL(KIND=JPRBT) :: T1, T2, TIMEF, tc
   INTEGER(KIND=JPIM) :: MTOL_OR_LTOM, NOFULLPEERACCESS
   INTEGER(KIND=JPIM) :: IRANK,iunit
 
   IF (LHOOK) CALL DR_HOOK('TRLTOM',0,ZHOOK_HANDLE)
- 
+
   ITAG = MTAGLM
- 
+
   DO J=1,NPRTRW
     ILENS(J) = D%NLTSGTB(J)*KFIELD
     IOFFS(J) = D%NSTAGT1B(D%MSTABF(J))*KFIELD
     ILENR(J) = D%NLTSFTB(J)*KFIELD
     IOFFR(J) = D%NSTAGT1B(J)*KFIELD
   ENDDO
- 
+
   IF(NPROC > 1) THEN
     CALL GSTATS(806,0)
- 
+
     CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN,KSENDCOUNTS=ILENS,&
      & PRECVBUF=PFBUF,KRECVCOUNTS=ILENR,KSENDDISPL=IOFFS,KRECVDISPL=IOFFR,&
      & KCOMM=MPL_ALL_MS_COMM,CDSTRING='TRLTOM:')
@@ -364,7 +364,7 @@ MODULE TRLTOM_MOD
     ENDDO
     CALL GSTATS(1607,1)
   ENDIF
- 
+
   IF (LHOOK) CALL DR_HOOK('TRLTOM',1,ZHOOK_HANDLE)
   !     ------------------------------------------------------------------
   END SUBROUTINE TRLTOM
