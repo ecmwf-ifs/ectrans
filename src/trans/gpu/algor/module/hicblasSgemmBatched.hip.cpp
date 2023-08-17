@@ -1,19 +1,22 @@
+// (C) Copyright 2000- ECMWF.
 //
-// Wrapper for hipblasSgemm function. 
+// This software is licensed under the terms of the Apache Licence Version 2.0
+// which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+// In applying this licence, ECMWF does not waive the privileges and immunities
+// granted to it by virtue of its status as an intergovernmental organisation
+// nor does it submit to any jurisdiction.
+
+
+//
+// Wrapper for hipblasSgemm function.
 //
 // Alan Gray, NVIDIA
 //
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-W#pragma-messages"
-#endif
-#include "hipblas.h"
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
+
+#include "hicblas.h"
 
 bool hip_alreadyAllocated_sgemm=false;
 bool hip_alreadyAllocated_sgemm_handle=false;
@@ -26,19 +29,17 @@ float **Aarray_sgemm_hip;
 float **Barray_sgemm_hip;
 float **Carray_sgemm_hip;
 
-hipblasHandle_t handle_hip_sgemm;	
+hipblasHandle_t handle_hip_sgemm;
 
 extern "C" void hipblasSgemmBatched_wrapper (char transa, char transb, int m, int n,int k, float alpha, const float *A, int lda, int tda, const float *B, int ldb, int tdb, float beta, float *C, int ldc, int tdc, int batchCount)
 {
 
-   printf("HIPBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
-   //exit;
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
 
-  if (transa=='T' || transa=='t')		
+  if (transa=='T' || transa=='t')
     op_t1=HIPBLAS_OP_T;
 
-  if (transb=='T' || transb=='t')		
+  if (transb=='T' || transb=='t')
     op_t2=HIPBLAS_OP_T;
 
   //float **Aarray_sgemm = (float**) malloc(batchCount*sizeof(float*));
@@ -54,7 +55,7 @@ extern "C" void hipblasSgemmBatched_wrapper (char transa, char transb, int m, in
     hipHostMalloc(&Aarray_sgemm_hip,batchCount*sizeof(float*),hipHostMallocNonCoherent);
     hipHostMalloc(&Barray_sgemm_hip,batchCount*sizeof(float*),hipHostMallocNonCoherent);
     hipHostMalloc(&Carray_sgemm_hip,batchCount*sizeof(float*),hipHostMallocNonCoherent);
- 
+
     hipMalloc(&d_Aarray_sgemm_hip,batchCount*sizeof(float*));
     hipMalloc(&d_Barray_sgemm_hip,batchCount*sizeof(float*));
     hipMalloc(&d_Carray_sgemm_hip,batchCount*sizeof(float*));
@@ -75,31 +76,28 @@ extern "C" void hipblasSgemmBatched_wrapper (char transa, char transb, int m, in
 
   //printf("after sgemm\n");
   hipDeviceSynchronize();
-  
+
   //hipFree(Aarray_sgemm_hip);
   //hipFree(Barray_sgemm_hip);
   //hipFree(Carray_sgemm_hip);
-  
+
   //hipFree(d_Aarray_sgemm_hip);
   //hipFree(d_Barray_sgemm_hip);
   //hipFree(d_Carray_sgemm_hip);
   //hipblasDestroy(handle_hip_sgemm);
-  
+
 }
 
 extern "C" void hipblasSgemmStridedBatched_wrapper (char transa, char transb, int m, int n,int k, float alpha, const float *A, int lda, long long tda, const float *B, int ldb, long long tdb, float beta, float *C, int ldc, long long tdc, int batchCount)
 {
 
 
-  printf("HIPBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
-  exit(EXIT_FAILURE);
- 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
 
-  if (transa=='T' || transa=='t')       
+  if (transa=='T' || transa=='t')
     op_t1=HIPBLAS_OP_T;
 
-  if (transb=='T' || transb=='t')       
+  if (transb=='T' || transb=='t')
     op_t2=HIPBLAS_OP_T;
 
   if (!hip_alreadyAllocated_sgemm_handle){
@@ -114,11 +112,11 @@ extern "C" void hipblasSgemmBatched_finalize ()
 {
 
   if (hip_alreadyAllocated_sgemm){
-  
+
     hipFree(Aarray_sgemm_hip);
     hipFree(Barray_sgemm_hip);
     hipFree(Carray_sgemm_hip);
-    
+
     hipFree(d_Aarray_sgemm_hip);
     hipFree(d_Barray_sgemm_hip);
     hipFree(d_Carray_sgemm_hip);
@@ -128,5 +126,5 @@ extern "C" void hipblasSgemmBatched_finalize ()
   if (hip_alreadyAllocated_sgemm_handle){
     hipblasDestroy(handle_hip_sgemm);
   }
-  
+
 }

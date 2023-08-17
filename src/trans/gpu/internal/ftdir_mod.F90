@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -52,9 +52,9 @@ USE TPM_DISTR       ,ONLY : D, MYSETW, MYPROC, NPROC,D_NSTAGTF,D_NPTRLS
 USE TPM_TRANS       ,ONLY : ZGTF
 USE TPM_GEOMETRY    ,ONLY : G,G_NMEN,G_NMEN_MAX,G_NLOEN,G_NLOEN_MAX
 USE TPM_FFT         ,ONLY : T
-USE TPM_FFTH        ,ONLY : CREATE_PLAN_FFT, EXECUTE_PLAN_FFT
+USE TPM_HICFFT      ,ONLY : CREATE_PLAN_FFT, EXECUTE_PLAN_FFT
 USE TPM_DIM         ,ONLY : R,R_NNOEXTZL
-USE HIP_DEVICE_MOD
+USE DEVICE_MOD
 USE ISO_C_BINDING
 !
 
@@ -111,7 +111,7 @@ DO KGL=IBEG,IEND,IINC
   CALL EXECUTE_PLAN_FFT(-1,G_NLOEN(IGLG),ZGTF(1,IOFF),ZGTF2(1,IOFF),IPLAN_R2C)
 END DO
 
-ISTAT = HIP_SYNCHRONIZE()
+ISTAT = DEVICE_SYNCHRONIZE()
 
 #ifdef OMPGPU
 !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(IGLG,JJ) DEFAULT(NONE) &

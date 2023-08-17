@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -22,7 +22,7 @@ SUBROUTINE FTINV(PREELIN,PREELOUT,KFIELDS)
 !        CALL FTINV(..)
 
 !        Explicit arguments :  PREELTMP  - in Fourier/grid-point array
-!                              PREEL     - out Fourier/grid-point array  
+!                              PREEL     - out Fourier/grid-point array
 !        --------------------  KFIELDS - number of fields
 
 !     Method.
@@ -51,7 +51,7 @@ USE TPM_DISTR       ,ONLY : D, MYSETW,  MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G
 USE TPM_GEN         ,ONLY : NOUT
 USE TPM_FFT         ,ONLY : T
-USE TPM_FFTH        ,ONLY : CREATE_PLAN_FFT, DESTROY_PLAN_FFT, EXECUTE_PLAN_FFT
+USE TPM_HICFFT      ,ONLY : CREATE_PLAN_FFT, DESTROY_PLAN_FFT, EXECUTE_PLAN_FFT
 USE TPM_DIM         ,ONLY : R
 USE CUDA_DEVICE_MOD
 
@@ -153,7 +153,7 @@ DO KGL=IBEG,IEND,IINC
   !ENDIF
 END DO
 !!$OMP END PARALLEL DO
-ISTAT = CUDA_SYNCHRONIZE()      
+ISTAT = CUDA_SYNCHRONIZE()
 
 !     ------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -109,7 +109,7 @@ ZACHTE(:)  = F%RACTHE(:)
 #ifdef ACCGPU
 !$ACC DATA &
 !$ACC& COPYIN(ZACHTE,IBEG,IEND,IINC,KF_SCALARS,KF_UV,KF_SCDERS,MYSETW) &
-!$ACC& PRESENT(ZGTF,D_NPTRLS,MYSETW,G_NMEN,D_NSTAGTF) &
+!$ACC& PRESENT(ZGTF,D_NPTRLS,G_NMEN,D_NSTAGTF) &
 !$ACC& PRESENT(PUV,PSCALAR,PNSDERS,PEWDERS,PUVDERS)
 #endif
 #ifdef OMPGPU
@@ -118,18 +118,18 @@ ZACHTE(:)  = F%RACTHE(:)
 #endif
 
 DO KGL=IBEG,IEND,IINC
-  
+
 IGLG    = D_NPTRLS(MYSETW)+KGL-1
 IMEN    = G_NMEN(IGLG)
 ISTAGTF = D_NSTAGTF(KGL)
 ZACHTE2  = ZACHTE(IGLG)
 
 !     ------------------------------------------------------------------
-  
+
 !*       1.    DIVIDE U V AND N-S DERIVATIVES BY A*COS(THETA)
 !              ----------------------------------------------
 
-  
+
 !*       1.1      U AND V.
 
 IF(KF_UV > 0) THEN

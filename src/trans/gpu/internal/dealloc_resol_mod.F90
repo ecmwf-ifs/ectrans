@@ -1,6 +1,6 @@
 ! (C) Copyright 2013- ECMWF.
 ! (C) Copyright 2013- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -51,7 +51,7 @@ USE TPM_FIELDS      ,ONLY : F
 USE TPM_FFT         ,ONLY : T
 USE TPM_FLT         ,ONLY : S
 USE TPM_CTL         ,ONLY : C
-USE TPM_FFTH        ,ONLY : DESTROY_ALL_PLANS_FFT
+USE TPM_HICFFT      ,ONLY : DESTROY_ALL_PLANS_FFT
 USE SEEFMM_MIX
 
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL

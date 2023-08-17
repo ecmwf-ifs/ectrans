@@ -1,6 +1,24 @@
-MODULE HIPBLAS_MOD
+! (C) Copyright 2000- ECMWF.
 !
-! Define the interfaces to the NVIDIA C code
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
+#ifdef HIPGPU
+#define hipblasSgemm 'hipblasSgemm'
+#define hipblasDgemm 'hipblasDgemm'
+#elif defined CUDAGPU
+#define hipblasSgemm 'cublasSgemm'
+#define hipblasDgemm 'cublasDgemm'
+#endif
+
+
+MODULE HICBLAS_MOD
+!
+! Define the interfaces to HIP/CUDA C code via a common wrapper interface
 !
 interface hip_gemm
 !
@@ -80,7 +98,7 @@ INTERFACE
     subroutine hip_dgemm_batched_finalize() bind(C,name='hipblasDgemmBatched_finalize')
     end subroutine hip_dgemm_batched_finalize
 
-END INTERFACE 
+END INTERFACE
 
 INTERFACE
 
@@ -152,7 +170,4 @@ INTERFACE
     END SUBROUTINE HIP_STCGEMM_BATCHED
 END INTERFACE
 
-
-
-
-END MODULE HIPBLAS_MOD
+END MODULE HICBLAS_MOD
