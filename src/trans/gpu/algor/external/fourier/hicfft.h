@@ -28,10 +28,10 @@
 
 inline void _printError(const char * component, const char * file, const int line, int err, const char * err_str) {
     fprintf(stderr, "%s error at 1\n", component);
-    fprintf(stderr, "%s error in file '%s'\n", file);
+    fprintf(stderr, "%s error in file '%s'\n", component, file);
     fprintf(stderr, "%s error at 2\n", component);
-    fprintf(stderr, "%s error line '%d'\n", line);
-    fprintf(stderr, "%s error at 3\n");
+    fprintf(stderr, "%s error line '%d'\n", component, line);
+    fprintf(stderr, "%s error at 3\n", component);
     fprintf(stderr, "%s error %d: %s\nterminating!\n", component, err, err_str);
     return;
 }

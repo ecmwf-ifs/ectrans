@@ -21,7 +21,7 @@
 #pragma clang diagnostic pop
 #endif
 
-inline static const char * _getErrorEnum(hipfftResult error)
+inline static const char * _fftGetErrorEnum(hipfftResult error)
 {
     switch (error)
     {
