@@ -59,12 +59,12 @@ if( HAVE_HIP )
     internal/*.hip.cpp
     external/*.hip.cpp
   )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX .cu )
+  ecbuild_list_exclude_pattern( LIST trans_src  REGEX \.cu$ )
   ecbuild_list_exclude_pattern( LIST trans_src  REGEX cuda_device_mod.F90 )
 elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX .hip.cpp )
+  ecbuild_list_exclude_pattern( LIST trans_src  REGEX \.hip\.cpp )
   ecbuild_list_exclude_pattern( LIST trans_src  REGEX hip_device_mod.F90 )
 else()
   ecbuild_info("warn: HIP and CUDA not found")
@@ -72,9 +72,9 @@ endif()
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
-	set( GPU_LIBRARY_TYPE SHARED )
-	if( HAVE_GPU_STATIC )
-	    set( GPU_LIBRARY_TYPE STATIC )
+        set( GPU_LIBRARY_TYPE SHARED )
+        if( HAVE_GPU_STATIC )
+            set( GPU_LIBRARY_TYPE STATIC )
         endif()
 
         ectrans_add_library(
@@ -93,8 +93,7 @@ foreach( prec dp sp )
                             ${LAPACK_LIBRARIES} # we still have symbols in some files
                             $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                             $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                            # $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
-                            MPI::MPI_Fortran MPI::MPI_CXX  # TODO: remove hard dependency on MPI
+                            $<${HAVE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
           PRIVATE_DEFINITIONS
                             ${GPU_OFFLOAD}GPU
                             ${GPU_RUNTIME}GPU
@@ -118,6 +117,14 @@ foreach( prec dp sp )
                 $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenACC_Fortran_FLAGS}>
                 $<$<LINK_LANG_AND_ID:C,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}>
                 $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}> )
+        endif()
+
+	if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
+          # Propagate flags as link options for downstream targets. Only required for Cray
+          target_link_options( trans_gpu_${prec} INTERFACE
+                $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:C,Cray>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:CXX,Cray>:SHELL:${OpenMP_Fortran_FLAGS}> )
         endif()
 
   endif()
