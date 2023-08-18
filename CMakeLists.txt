@@ -27,6 +27,7 @@ ecbuild_find_package( NAME fiat REQUIRED )
 
 ecbuild_add_option( FEATURE MPI
                     DESCRIPTION "Support for MPI distributed memory parallelism"
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran CXX"
                     CONDITION fiat_HAVE_MPI )
 
 ecbuild_add_option( FEATURE OMP
@@ -103,9 +104,8 @@ if( HAVE_GPU )
 endif()
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
-	            DEFAULT OFF
-                    CONDITION HAVE_GPU
-                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
+                    DEFAULT OFF
+                    CONDITION HAVE_GPU AND HAVE_MPI
                     DESCRIPTION "Enable CUDA-aware MPI" )
 
 ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
