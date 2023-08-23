@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -320,9 +320,9 @@ IF_GP = 2*IF_UV_G+IF_SCALARS_G
 ! How do I get the current number of levels? For now I use: (Andreas)
 !NFLEV = NFLEV0
 
-! set currently used array sizes for the GPU arrays: 
+! set currently used array sizes for the GPU arrays:
 IF_FS_DIR=2*IF_FS+2!2*(2*IF_UV+NFLEV+2+IF_PP)
-PRINT*,"dir_trans: IF_FS_DIR=",IF_FS_DIR," IF_FS_DIR0=",IF_FS_DIR0
+! PRINT*,"dir_trans: IF_FS_DIR=",IF_FS_DIR," IF_FS_DIR0=",IF_FS_DIR0
 
 DTDZBA=IF_FS_DIR
 DTDZBS=IF_FS_DIR
@@ -533,4 +533,3 @@ CALL GSTATS(440,1)
 !endif INTERFACE
 
 END SUBROUTINE DIR_TRANS
-

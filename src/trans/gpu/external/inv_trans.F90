@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -410,11 +410,11 @@ IF(IF_UV_G > 0 .AND. LUVDER) THEN
   IF_UV_PAR = IF_UV_PAR+2
 ENDIF
 
-! set currently used array sizes for the GPU arrays: 
+! set currently used array sizes for the GPU arrays:
 !IF_FS_INV= 8*IF_UV + 2*IF_SCALARS + 2*IF_SCDERS
 !Andreas: we were using the previous line in setup_trans but this doesn't consider derivatives. Better:
 IF_FS_INV=2*IF_OUT_LT
-PRINT*,"inv_trans: IF_FS_INV=",IF_FS_INV," IF_FS_INV0=",IF_FS_INV0
+! PRINT*,"inv_trans: IF_FS_INV=",IF_FS_INV," IF_FS_INV0=",IF_FS_INV0
 
 ITDZBA=IF_FS_INV
 ITDZBS=IF_FS_INV
@@ -649,7 +649,7 @@ CALL INV_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_OUT_LT,&
  & IF_UV,IF_SCALARS,IF_SCDERS,&
  & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,FSPGL_PROC,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
- 
+
  IF (LHOOK) CALL DR_HOOK('INV_TRANS',1,ZHOOK_HANDLE)
 CALL GSTATS(441,1)
 !     ------------------------------------------------------------------
@@ -657,4 +657,3 @@ CALL GSTATS(441,1)
 !endif INTERFACE
 
 END SUBROUTINE INV_TRANS
-
