@@ -649,7 +649,11 @@ MODULE TRLTOG_MOD
 
   !...Receive loop.........................................................
 #ifdef ACCGPU
-  !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
+#if defined(__NVCOMPILER) || defined(__PGI)
+  !$ACC HOST_DATA USE_DEVICE(ZCOMBUFR,ZCOMBUFS)
+#elif defined(_CRAYFTN)
+  !$ACC HOST_DATA USE_DEVICE(ZCOMBUFR)
+#endif
 #endif
 #ifdef OMPGPU
   !$OMP TARGET DATA USE_DEVICE_PTR(ZCOMBUFS,ZCOMBUFR)
