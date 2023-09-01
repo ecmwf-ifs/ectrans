@@ -1,0 +1,11 @@
+.vscode
+CMakeLists.txt.user*
+*.autosave
+*.sublime-workspace
+*.swp
+.nfs*
+build/*
+install/*
+env.sh
+*.DS_Store
+
