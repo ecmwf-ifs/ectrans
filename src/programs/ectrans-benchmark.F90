@@ -203,6 +203,8 @@ logical :: luse_mpi = .true.
 
 character(len=16) :: cgrid = ''
 
+integer :: ierr
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -805,14 +807,27 @@ if (lprint_norms .or. ncheck > 0) then
     write(nout,*)
 
     if (ncheck > 0) then
-      ! If the maximum spectral norm error across all fields is greater than 100 times the machine
-      ! epsilon, fail the test
-      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
-        write(nout, '(a)') '*******************************'
-        write(nout, '(a)') 'Correctness test failed'
-        write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
-        write(nout, '(a)') '*******************************'
+      ierr = 0
+      if (myproc == 1) then
+        ! If the maximum spectral norm error across all fields is greater than 100 times the machine
+        ! epsilon, fail the test
+        if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+          write(nout, '(a)') '*******************************'
+          write(nout, '(a)') 'Correctness test failed'
+          write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+          write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+          write(nout, '(a)') '*******************************'
+          ierr = 1
+        endif
+      endif
+
+      ! Root rank broadcasts the correctness checker result to the other ranks
+      if (luse_mpi) then
+        call mpl_broadcast(ierr, ktag=0)
+      endif
+
+      ! Halt if correctness checker failed
+      if (ierr == 1) then
         error stop
       endif
     endif
