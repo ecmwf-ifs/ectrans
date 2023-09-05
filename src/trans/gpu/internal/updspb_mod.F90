@@ -1,5 +1,6 @@
 ! (C) Copyright 1988- ECMWF.
 ! (C) Copyright 1988- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -10,7 +11,7 @@
 
 MODULE UPDSPB_MOD
   CONTAINS
-  SUBROUTINE UPDSPB(KFIELD,KST,POA,PSPEC,KFLDPTR)
+  SUBROUTINE UPDSPB(KFIELD,POA,PSPEC,KFLDPTR)
   
   
   !**** *UPDSPB* - Update spectral arrays after direct Legendre transform
@@ -65,13 +66,12 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   IMPLICIT NONE
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
-  INTEGER(KIND=JPIM),INTENT(IN)  :: KST
-  INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT)   ,INTENT(IN)  :: POA(:,:,:)
+  REAL(KIND=JPRBT)  ,INTENT(IN)  :: POA(:,:,:)
   REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
+  INTEGER(KIND=JPIM) :: KM,KMLOC
   INTEGER(KIND=JPIM) :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
   
   
@@ -97,7 +97,7 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
       !loop over wavenumber
 #ifdef ACCGPU
-  !$ACC DATA COPYIN(KFIELD,KST,POA)
+  !$ACC DATA PRESENT(PSPEC,POA,R_NSMAX,R_NTMAX,D_NUMP,D_MYMS,D_NASM0)
 #endif
 #ifdef OMPGPU
 !WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
@@ -107,46 +107,31 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   !$OMP& SHARED(R_NTMAX,R_NSMAX,D_NUMP,D_MYMS,D_NASM0,PSPEC,KST,KFIELD,POA)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
-  !$ACC& PRESENT(R_NTMAX,R_NSMAX,D_NUMP,D_MYMS,D_NASM0,PSPEC,KST,KFIELD,POA)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
+  !$ACC& FIRSTPRIVATE(KFIELD)
 #endif
-  DO KMLOC=1,D_NUMP     
-       DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2
-          DO JFLD=1,KFIELD
+  DO KMLOC=1,D_NUMP
+    DO JFLD=1,KFIELD
+      KM = D_MYMS(KMLOC)
+      IASM0 = D_NASM0(KM)
 
-             KM = D_MYMS(KMLOC)
-             IASM0 = D_NASM0(KM)
-
-             IF(KM == 0) THEN
-
-                IF (JN .LE. R_NTMAX+2-KM) THEN 
-
-                   INM = IASM0+(R_NTMAX+2-JN)*2
-                   IR = KST+2*JFLD-2
-                   PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
-                   PSPEC(JFLD,INM+1) = 0.0_JPRBT
- 
-                END IF
-             ELSE
- 
- 
-                IF (JN .LE. R_NTMAX+2-KM) THEN
-                   INM = IASM0+((R_NTMAX+2-JN)-KM)*2
- 
-                   IR = KST+2*JFLD-2
-                   II = IR+1
-                   PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
-                   PSPEC(JFLD,INM+1) = POA(II,JN,KMLOC)
- 
-                END IF
-             END IF
-             
-          ENDDO
-       ENDDO
+      IF(KM == 0) THEN
+        !$ACC LOOP SEQ
+        DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2
+          INM = IASM0+(R_NTMAX+2-JN)*2
+          PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
+          PSPEC(JFLD,INM+1) = 0.0_JPRBT
+        ENDDO
+      ELSE
+        !$ACC LOOP SEQ
+        DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2-KM
+          INM = IASM0+((R_NTMAX+2-JN)-KM)*2
+          PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
+          PSPEC(JFLD,INM+1) = POA(2*JFLD  ,JN,KMLOC)
+        ENDDO
+      END IF
     ENDDO
-#ifdef ACCGPU
-  !$ACC END PARALLEL LOOP
-#endif
+  ENDDO
 #ifdef OMPGPU
   !$OMP END TARGET DATA
 #endif
