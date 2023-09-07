@@ -1315,7 +1315,7 @@ function trans_finalize() bind(C,name="trans_finalize")
     ! Don't close devnull in case other code is also using this unit
     ! close (devnull())
   endif
-
+  if( allocated(N_REGIONS) ) deallocate(N_REGIONS)
   is_init = .False.
 
   trans_finalize = TRANS_SUCCESS
