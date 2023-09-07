@@ -113,7 +113,7 @@ if( HAVE_TRANSI )
   ecbuild_debug_var( EC_HAVE_MALLOC_H )
 
 
-  if( EC_HAVE_MALLOC_H AND NOT CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+  if( EC_HAVE_MALLOC_H )
     list( APPEND  TEST_DEFINITIONS
       TRANSI_HAVE_MEMORY
     )
@@ -179,5 +179,12 @@ if( HAVE_TRANSI )
     SOURCES   transi/transi_test_lonlat_diff_incr.c
     LIBS      ectrans_test
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  if( HAVE_TESTS )
+    ecbuild_add_option( FEATURE MEMORY_TESTS DEFAULT ON DESCRIPTION "Enable memory tests" )
+    if( NOT HAVE_MEMORY_TESTS )
+      set_tests_properties( ectrans_test_transi_memory ectrans_test_transi_memory_lonlat PROPERTIES DISABLED ON )
+    endif()
+  endif()
 
 endif()
