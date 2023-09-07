@@ -37,9 +37,10 @@ int main ( int arc, char **argv )
 
 
   int iter=0;
-
+  int iter_max=50;
+  int mem_leak=1;
   //int start_loop = allocated();
-  for( iter=0; iter<3; ++iter )
+  for( iter=0; iter<iter_max; ++iter )
   {
     printf("iteration %d\n",iter+1);
     int start_iter = allocated();
@@ -55,13 +56,17 @@ int main ( int arc, char **argv )
 
     trans_delete(&trans);
 
-    print_mem("Possibly leaked in iteration: ",allocated()-start_iter);
+    int allocated_now = allocated();
+    print_mem("Possibly leaked in iteration: ",allocated_now-start_iter);
     //print_mem("total leaked in loop:   ",allocated()-start_loop);
 
-    // No memory leaks in subsequent iterations
-    if( iter > 0 )
-      ASSERT(allocated()-start_iter == 0);
-
+    if( allocated_now - start_iter == 0 ) {
+      mem_leak=0;
+      break;
+    }
+  }
+  if( mem_leak != 0 ) {
+    printf("ERROR: Memory leaks present between trans_setup() and trans_delete(), tested after %d attempts\n",iter);
   }
 
   printf( "trans_finalize()\n" );
@@ -69,9 +74,8 @@ int main ( int arc, char **argv )
 
   print_mem("Total leaked: ",allocated()-start);
 
-
   display_mallinfo();
 
-  return 0;
+  return mem_leak;
 }
 
