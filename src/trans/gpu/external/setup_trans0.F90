@@ -113,8 +113,12 @@ LOGICAL :: LLP1,LLP2
 
 !     ------------------------------------------------------------------
 
-MYPROC = MPL_MYRANK()
-
+IF( LDMPOFF ) THEN
+  MYPROC = 1
+ELSE
+  MYPROC = MPL_MYRANK()
+ENDIF
+ 
 #ifdef _OPENACC
 IDEVTYPE=ACC_GET_DEVICE_TYPE()
 NUMDEVS = ACC_GET_NUM_DEVICES(IDEVTYPE)
