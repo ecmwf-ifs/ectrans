@@ -22,7 +22,7 @@ ecbuild_add_library( TARGET transi_dp
   PUBLIC_INCLUDES     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                       $<INSTALL_INTERFACE:include>
   PRIVATE_LIBS        trans_dp
-  PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+  PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${fiat_HAVE_MPI}
 )
 ectrans_target_fortran_module_directory( TARGET transi_dp
   MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/module/trans_dp

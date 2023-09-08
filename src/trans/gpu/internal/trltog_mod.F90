@@ -888,15 +888,8 @@ MODULE TRLTOG_MOD
   !USE MYRECVSET_MOD
   USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
   !
-#ifdef ACCGPU
-  USE MPI
-#endif
   
   IMPLICIT NONE
-  
-#ifdef OMPGPU
-  include 'mpif.h'
-#endif
   
   REAL(KIND=JPRBT),  INTENT(IN)  :: PGLAT(:,:)
   INTEGER(KIND=JPIM),INTENT(IN)  :: KVSET(:)

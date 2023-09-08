@@ -200,7 +200,6 @@ MODULE TRLTOM_MOD
 #endif
     !$OMP BARRIER
 
-    CALL MPI_BARRIER(MPI_COMM_WORLD,IERROR)
     CALL GSTATS(806,1)
   ELSE
     ILEN = D%NLTSGTB(MYSETW)*KFIELD
@@ -285,10 +284,6 @@ MODULE TRLTOM_MOD
   USE TPM_DISTR       ,ONLY : D, MTAGLM, MYSETW, NPRTRW, NPROC, MYPROC
   USE TPM_GEN         ,ONLY : LSYNC_TRANS
   
-#ifdef ACCGPU
-  USE MPI
-#endif
-  
   !USE SET2PE_MOD
   !USE MYSENDSET_MOD
   !USE MYRECVSET_MOD
@@ -297,24 +292,6 @@ MODULE TRLTOM_MOD
   
   IMPLICIT NONE
   
-  
-  INTERFACE
-  
-    FUNCTION ALLTOALLV_CUDAIPC(input,len,soff,output,roff,mtol_or_ltom) BIND(C,name='Alltoallv_CUDAIPC')
-      USE, INTRINSIC :: ISO_C_BINDING
-      IMPLICIT NONE
-      real(c_double), dimension(*) :: input,output
-      integer(c_int), dimension(*) :: len,soff,roff
-      integer(c_int),value :: mtol_or_ltom
-      integer(c_int) :: ALLTOALLV_CUDAIPC
-    END FUNCTION ALLTOALLV_CUDAIPC
-
-  END INTERFACE
-
-#ifdef OMPGPU
-  include 'mpif.h'
-#endif
-
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF(:)
   REAL(KIND=JPRBT)   ,INTENT(INOUT)  :: PFBUF_IN(:)
