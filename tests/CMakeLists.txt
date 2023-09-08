@@ -48,7 +48,7 @@ endif()
 
 set( ntasks 0 )
 set( nthreads 1 )
-if( HAVE_MPI )
+if( fiat_HAVE_MPI )
   list( APPEND ntasks 1 2 )
 endif()
 if( HAVE_OMP )

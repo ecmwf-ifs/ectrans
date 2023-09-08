@@ -25,10 +25,6 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
-ecbuild_add_option( FEATURE MPI
-                    DESCRIPTION "Support for MPI distributed memory parallelism"
-                    CONDITION fiat_HAVE_MPI )
-
 ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
