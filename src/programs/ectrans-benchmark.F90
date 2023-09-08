@@ -1336,11 +1336,12 @@ end subroutine dump_gridpoint_field
 !===================================================================================================
 
 function detect_mpirun() result(lmpi_required)
+  use ec_env_mod, only : ec_putenv
   logical :: lmpi_required
   integer :: ilen
-  integer, parameter :: nvars = 5
+  integer, parameter :: nvars = 4
   character(len=32), dimension(nvars) :: cmpirun_detect
-  character(len=4) :: clenv_dr_hook_assert_mpi_initialized
+  character(len=4) :: clenv
   integer :: ivar
 
   ! Environment variables that are set when mpirun, srun, aprun, ... are used
@@ -1348,7 +1349,6 @@ function detect_mpirun() result(lmpi_required)
   cmpirun_detect(2) = 'ALPS_APP_PE'           ! cray pe
   cmpirun_detect(3) = 'PMI_SIZE'              ! intel
   cmpirun_detect(4) = 'SLURM_NTASKS'          ! slurm
-  cmpirun_detect(5) = 'ECTRANS_USE_MPI'       ! forced
 
   lmpi_required = .false.
   do ivar = 1, nvars
@@ -1358,6 +1358,15 @@ function detect_mpirun() result(lmpi_required)
       exit ! break
     endif
   enddo
+
+  call get_environment_variable(name="ECTRANS_USE_MPI", value=clenv, length=ilen )
+  if (ilen > 0) then
+      lmpi_required = .true.
+      if( trim(clenv) == "0" .or. trim(clenv) == "OFF" .or. trim(CLENV) == "off" .or. trim(clenv) == "F" ) then
+        lmpi_required = .false.
+      endif
+      call ec_putenv("DR_HOOK_ASSERT_MPI_INITIALIZED=0", overwrite=.true.)
+  endif
 end function
 
 !===================================================================================================
