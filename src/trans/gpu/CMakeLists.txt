@@ -59,15 +59,16 @@ ectrans_declare_hip_sources( SOURCES_GLOB
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
-	set( GPU_LIBRARY_TYPE SHARED )
-	if( HAVE_GPU_STATIC )
-	    set( GPU_LIBRARY_TYPE STATIC )
+        set( GPU_LIBRARY_TYPE SHARED )
+        if( HAVE_GPU_STATIC )
+            set( GPU_LIBRARY_TYPE STATIC )
         endif()
 
         ectrans_add_library(
           TARGET           trans_gpu_${prec}
           TYPE             ${GPU_LIBRARY_TYPE}
           SOURCES          ${trans_src}
+          LINKER_LANGUAGE  Fortran
           PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
@@ -94,6 +95,14 @@ foreach( prec dp sp )
 
         if( prec STREQUAL sp )
           target_compile_definitions( trans_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
+        endif()
+
+        if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
+          # Propagate flags as link options for downstream targets. Only required for Cray
+          target_link_options( trans_gpu_${prec} INTERFACE
+                $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:C,Cray>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:CXX,Cray>:SHELL:${OpenMP_Fortran_FLAGS}> )
         endif()
 
   endif()
