@@ -29,9 +29,6 @@ hipblasHandle_t handle_hip_dgemm;
 
 extern "C" void hipblasDgemmBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, int tda, const double *B, int ldb, int tdb, double beta, double *C, int ldc, int tdc, int batchCount)
 {
-
-
-  // printf("HIPBLAS m=%d,n=%d,k=%d,batchcount=%d\n",m,n,k,batchCount);
     hipblasStatus_t stat;
 
  
