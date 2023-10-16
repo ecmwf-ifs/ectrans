@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -33,9 +34,9 @@ MODULE LTINV_MOD
   USE ASRE1B_MOD      ,ONLY : ASRE1B
   USE FSPGL_INT_MOD   ,ONLY : FSPGL_INT
   USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-  USE IEEE_ARITHMETIC
   !USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1,ISTAN,ISTAS,ZEPSNM
   USE TPM_FIELDS      ,ONLY : F,ZIA,ZSOA1,ZAOA1
+  USE IEEE_ARITHMETIC
   
   
   !**** *LTINV* - Inverse Legendre transform
@@ -170,6 +171,23 @@ MODULE LTINV_MOD
 
 ! COPY FROM PSPXXXX TO ZIA
 
+  CALL GSTATS(431,0)
+#ifdef OMPGPU
+  !$OMP TARGET DATA IF(KF_UV > 0)                                               MAP(TO:PSPVOR,PSPDIV)
+  !$OMP TARGET DATA IF(KF_SCALARS > 0 .AND. PRESENT(PSPSCALAR))                 MAP(TO:PSPSCALAR)
+  !$OMP TARGET DATA IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC2) .AND. NF_SC2 > 0)   MAP(TO:PSPSC2)
+  !$OMP TARGET DATA IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC3A) .AND. NF_SC3A > 0) MAP(TO:PSPSC3A)
+  !$OMP TARGET DATA IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC3B) .AND. NF_SC3B > 0) MAP(TO:PSPSC3B)
+#endif
+#ifdef ACCGPU
+  !$ACC DATA COPYIN(PSPVOR,PSPDIV) IF(KF_UV > 0)
+  !$ACC DATA COPYIN(PSPSCALAR)     IF(KF_SCALARS > 0 .AND. PRESENT(PSPSCALAR))
+  !$ACC DATA COPYIN(PSPSC2)        IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC2) .AND. NF_SC2 > 0)
+  !$ACC DATA COPYIN(PSPSC3A)       IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC3A) .AND. NF_SC3A > 0)
+  !$ACC DATA COPYIN(PSPSC3B)       IF(KF_SCALARS > 0 .AND. PRESENT(PSPSC3B) .AND. NF_SC3B > 0)
+#endif
+  CALL GSTATS(431,1)
+
   IF (KF_UV > 0) THEN
     IVORL = 1
     IVORU = 2*KF_UV
@@ -182,21 +200,9 @@ MODULE LTINV_MOD
  
     IDIM2=UBOUND(PSPVOR,2)
     CALL GSTATS(431,0)
-#ifdef ACCGPU
-    !$ACC DATA COPYIN(PSPVOR,PSPDIV)
-#endif
-#ifdef OMPGPU
-    !$OMP TARGET DATA MAP(TO:PSPVOR,PSPDIV)
-#endif
     CALL GSTATS(431,1)
     CALL PRFI1B(IVORL,PSPVOR,KF_UV,IDIM2,KFLDPTRUV)
     CALL PRFI1B(IDIVL,PSPDIV,KF_UV,IDIM2,KFLDPTRUV)
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END DATA
-#endif
 
   !     ------------------------------------------------------------------
  
@@ -213,42 +219,14 @@ MODULE LTINV_MOD
       ILAST  = IFIRST - 1 + 2*KF_SCALARS
  
       IDIM2=UBOUND(PSPSCALAR,2)
-      CALL GSTATS(431,0)
-#ifdef ACCGPU
-      !$ACC DATA COPYIN(PSPSCALAR)
-#endif
-#ifdef OMPGPU
-      !$OMP TARGET DATA MAP(TO:PSPSCALAR)
-#endif
-      CALL GSTATS(431,1)
       CALL PRFI1B(IFIRST,PSPSCALAR(:,:),KF_SCALARS,IDIM2,KFLDPTRSC)
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-      !$ACC END DATA
-#endif
     ELSE
       IF(PRESENT(PSPSC2) .AND. NF_SC2 > 0) THEN
         IFIRST = ILAST+1
         ILAST  = IFIRST-1+2*NF_SC2
         IDIM2=UBOUND(PSPSC2,2)
-        CALL GSTATS(431,0)
-#ifdef ACCGPU
-        !$ACC DATA COPYIN(PSPSC2)
-#endif
-#ifdef OMPGPU
-        !$OMP TARGET DATA MAP(TO:PSPSC2)
-#endif
-        CALL GSTATS(431,1)
         !CALL PRFI1B(ZIA(IFIRST:ILAST,:,:),PSPSC2(:,:),NF_SC2,IDIM2)
         CALL PRFI1B(IFIRST,PSPSC2(:,:),NF_SC2,IDIM2)
-#ifdef OMPGPU
-        !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-        !$ACC END DATA
-#endif
       ENDIF
       IF(PRESENT(PSPSC3A) .AND. NF_SC3A > 0) THEN
         IDIM1=NF_SC3A
@@ -256,48 +234,20 @@ MODULE LTINV_MOD
         IFIRST = ILAST+1
         ILAST  = IFIRST-1+2*IDIM1
         IDIM2=UBOUND(PSPSC3A,2)
-        CALL GSTATS(431,0)
-#ifdef ACCGPU
-        !$ACC DATA COPYIN(PSPSC3A)
-#endif
-#ifdef OMPGPU
-        !$OMP TARGET DATA MAP(TO:PSPSC3A)
-#endif
-        CALL GSTATS(431,1)
         DO J3=1,IDIM3
         CALL PRFI1B(IFIRST,PSPSC3A(:,:,J3),IDIM1,IDIM2)
         ENDDO
-#ifdef OMPGPU
-        !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-        !$ACC END DATA
-#endif
       ENDIF
       IF(PRESENT(PSPSC3B) .AND. NF_SC3B > 0) THEN
         IDIM1=NF_SC3B
         IDIM3=UBOUND(PSPSC3B,3)
         IDIM2=UBOUND(PSPSC3B,2)
-        CALL GSTATS(431,0)
-#ifdef ACCGPU
-        !$ACC DATA COPYIN(PSPSC3B)
-#endif
-#ifdef OMPGPU
-        !$OMP TARGET DATA MAP(TO:PSPSC3B)
-#endif
-        CALL GSTATS(431,1)
         DO J3=1,IDIM3
           IFIRST = ILAST+1
           ILAST  = IFIRST-1+2*IDIM1
  
           CALL PRFI1B(IFIRST,PSPSC3B(:,:,J3),IDIM1,IDIM2)
         ENDDO
-#ifdef OMPGPU
-        !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-        !$ACC END DATA
-#endif
       ENDIF
     ENDIF
     IF(ILAST /= 8*KF_UV+2*KF_SCALARS) THEN
@@ -306,6 +256,21 @@ MODULE LTINV_MOD
     ENDIF
   ENDIF
  
+#ifdef OMPGPU
+  !$OMP END TARGET DATA
+  !$OMP END TARGET DATA
+  !$OMP END TARGET DATA
+  !$OMP END TARGET DATA
+  !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+  !$ACC END DATA
+  !$ACC END DATA
+  !$ACC END DATA
+  !$ACC END DATA
+  !$ACC END DATA
+#endif
+
   IF (KF_SCDERS > 0) THEN
   !   stop 'Error: code path not (yet) supported in GPU version'
      ISL = 2*(4*KF_UV)+1
