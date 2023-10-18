@@ -117,15 +117,15 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
 
       IF(KM == 0) THEN
         !$ACC LOOP SEQ
-        DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2
-          INM = IASM0+(R_NTMAX+2-JN)*2
+        DO JN=3,R_NTMAX+3
+          INM = IASM0+(R_NTMAX+3-JN)*2
           PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
           PSPEC(JFLD,INM+1) = 0.0_JPRBT
         ENDDO
       ELSE
         !$ACC LOOP SEQ
-        DO JN=R_NTMAX+2-R_NSMAX,R_NTMAX+2-KM
-          INM = IASM0+((R_NTMAX+2-JN)-KM)*2
+        DO JN=3,R_NTMAX+3-KM
+          INM = IASM0+((R_NTMAX+3-JN)-KM)*2
           PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
           PSPEC(JFLD,INM+1) = POA(2*JFLD  ,JN,KMLOC)
         ENDDO

@@ -131,6 +131,11 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
 !$OMP& MAP(PRESENT,ALLOC:POA1,dzbst0,dzcat0,dzbst0,dzcst0)
 #endif
 
+! TODO this doesn't make sense that we need it (???)
+!$ACC KERNELS
+ZINP(:) = 0
+!$ACC END KERNELS
+
 ! anti-symmetric
 
 #ifdef OMPGPU
@@ -158,6 +163,7 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
     ENDDO
   ENDDO
 
+!------------------------------------------
 
   ! Get C in transpose format to get better memory access patterns later
   !C=A*B =>
@@ -198,7 +204,7 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
         IA  = 1+MOD(R_NTMAX-KM+2,2)
         !$ACC LOOP SEQ
         DO J=1,(R_NSMAX-KM+2)/2
-          POA1(JK,IA+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
+          POA1(JK,IA+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
         ENDDO
       ENDIF
     ENDDO
@@ -242,8 +248,6 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
          & 0.0_JPRD, &
          & ZOUT0, 2*KF_FS, TDZAA, &
          & 1)
-    !CALL HIP_DGEMM('N','N',DTDZBA,TDZAA,DLDZBA,1.0_JPRD,DZBST0,DTDZBA,&
-    !      &ZAA0,LDZAA,0._JPRD,DZCAT0,DTDZCA)
 #ifdef OMPGPU
     !$OMP END TARGET DATA
 #endif
@@ -261,7 +265,7 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
     DO J=1,(R_NSMAX+2)/2
       DO JK=1,2*KF_FS,2
         IA  = 1+MOD(R_NTMAX+2,2)
-        POA1(JK,IA+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
+        POA1(JK,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
       ENDDO
     ENDDO
   ENDIF
@@ -324,8 +328,7 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
   !$OMP&    SHARED(D_NUMP,R_NTMAX,D_MYMS,POA1,DZCST)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE) &
-  !$ACC&    PRESENT(D_NUMP,R_NTMAX,D_MYMS,POA1,DZCST)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE)
 #endif
   DO KMLOC=1,D_NUMP
     DO JK=1,2*KF_FS
@@ -334,7 +337,7 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
         IS  = 1+MOD(R_NTMAX-KM+1,2)
         !$ACC LOOP SEQ
         DO J=1,(R_NSMAX-KM+3)/2
-          POA1(JK,IS+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
+          POA1(JK,IS+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
         ENDDO
       ENDIF
     ENDDO
@@ -347,8 +350,7 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
 #endif
 #ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) &
-    !$ACC&     COPYIN(KMLOC0) &
-    !$ACC&     PRESENT(R_NDGNH,G_NDGLU,DZBST0,F_RW)
+    !$ACC& FIRSTPRIVATE(KMLOC0)
 #endif
     DO JGL=1,G_NDGLU(0)
       DO JF=1,2*KF_FS,2
@@ -388,13 +390,12 @@ ALLOCATE(ZOUT0(2*KF_FS*TDZAS))
 #endif
 #ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IS) DEFAULT(NONE) &
-    !$ACC&    COPYIN(KMLOC0) &
-    !$ACC&    PRESENT(R_NTMAX,POA1,DZCST0)
+    !$ACC& FIRSTPRIVATE(KMLOC0)
 #endif
-    DO J=1,TDZAS
+    DO J=1,(R_NSMAX+3)/2
       DO JK=1,2*KF_FS,2
         IS  = 1+MOD(R_NTMAX+1,2)
-        POA1(JK,IS+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
+        POA1(JK,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
       ENDDO
     ENDDO
   

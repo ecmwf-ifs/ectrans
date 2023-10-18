@@ -89,7 +89,7 @@ REAL(KIND=JPRBT) :: ZKM
 
 #ifdef ACCGPU
 !$ACC DATA                                                &
-!$ACC&      COPYIN (R_NSMAX, D_MYMS,D_NUMP,F_RLAPIN,F_RN) &
+!$ACC&      PRESENT(R_NSMAX, D_MYMS,D_NUMP,F_RLAPIN,F_RN) &
 !$ACC&      PRESENT(PEPSNM, PVOR, PDIV, R_NTMAX)          &
 !$ACC&      PRESENT(PU, PV)
 #endif
