@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -72,7 +73,7 @@ MODULE PRFI1B_MOD
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
-  INTEGER(KIND=JPIM) :: II, INM, IR, J, JFLD, ILCM, IOFF,IFLD
+  INTEGER(KIND=JPIM) :: II, INM, IR, JN, JFLD, ILCM, IASM0, IFLD
   
   !     ------------------------------------------------------------------
   
@@ -102,25 +103,25 @@ MODULE PRFI1B_MOD
  
    !loop over wavenumber
 #ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM)
+   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IASM0,IR,II,INM)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IOFF,IR,II,INM) &
+   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IASM0,IR,II,INM) &
    !$ACC&   FIRSTPRIVATE(KFIELDS)
 #endif
    DO KMLOC=1,D_NUMP
-      DO J=1,R_NSMAX+1
+      DO JN=1,R_NSMAX+1
          DO JFLD=1,KFIELDS
             KM = D_MYMS(KMLOC)
             ILCM = R_NSMAX+1-KM
             IFLD = KFLDPTR(JFLD)
-            IF (J .LE. ILCM) THEN
-               IOFF = D_NASM0(KM)
-               INM = IOFF+(ILCM-J)*2
+            IF (JN .LE. ILCM) THEN
+               IASM0 = D_NASM0(KM)
+               INM = IASM0+(ILCM-JN)*2
                IR = 2*(JFLD-1)+1
                II = IR+1
-               PIA(IR,J+2,KMLOC) = PSPEC(IFLD,INM  )
-               PIA(II,J+2,KMLOC) = PSPEC(IFLD,INM+1)
+               PIA(IR,JN+2,KMLOC) = PSPEC(IFLD,INM  )
+               PIA(II,JN+2,KMLOC) = PSPEC(IFLD,INM+1)
             END IF
          ENDDO
       ENDDO
@@ -143,7 +144,7 @@ MODULE PRFI1B_MOD
          PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
       ENDDO 
       ! end loop over wavenumber
-   END DO
+   ENDDO
 
   ELSE
 
@@ -153,49 +154,46 @@ MODULE PRFI1B_MOD
    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IOFF,INM,IR,II)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(KM,ILCM,IOFF,INM,IR,II) & !!COLLAPSE(3)
+   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ILCM,IASM0,INM,JN) &
    !$ACC&   FIRSTPRIVATE(KFIELDS,KDIM)
 #endif
-   DO KMLOC=1,D_NUMP
-      DO J=1,R_NSMAX+1
-         DO JFLD=1,KFIELDS
-            KM = D_MYMS(KMLOC)
-            ILCM = R_NSMAX+1-KM
-            if (J .le. ILCM) then
-               IOFF = D_NASM0(KM)
-               INM = IOFF+(ILCM-J)*2
-               IR = 2*(JFLD-1)+1
-               II = IR+1
-               IF( INM .LT. KDIM ) THEN
-               PIA(IR,J+2,KMLOC) = PSPEC(JFLD,INM  )
-               PIA(II,J+2,KMLOC) = PSPEC(JFLD,INM+1)
-               ENDIF
-            end if
-         ENDDO
+  DO KMLOC=1,D_NUMP
+    DO JFLD=1,KFIELDS
+      KM = D_MYMS(KMLOC)
+      IASM0 = D_NASM0(KM)
+
+      !$ACC LOOP SEQ
+      DO JN=2,R_NSMAX+2-KM
+        INM = IASM0+((R_NSMAX+2-JN)-KM)*2
+        IF( INM .LT. KDIM ) THEN ! TODO is this really needed, we don't have it in the reverse...
+          ! TODO THIS IS NOT JN+1 in the reverse code but JN
+          PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
+          PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
+        ENDIF
       ENDDO
  
       ! end loop over wavenumber
-   END DO
+    ENDDO
+  ENDDO
 
 #ifdef OMPGPU
    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ILCM) &
+   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,JN) &
    !$ACC&  FIRSTPRIVATE(KFIELDS,KMLOC)
 #endif
-   DO KMLOC=1,D_NUMP
-      DO JFLD=1,2*KFIELDS
-         KM = D_MYMS(KMLOC) 
-         ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRB
-         PIA(JFLD,2,KMLOC) = 0.0_JPRB
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
-      ENDDO 
-      ! end loop over wavenumber
-   END DO
- 
-  END IF   
+  DO KMLOC=1,D_NUMP
+    DO JFLD=1,2*KFIELDS
+      PIA(JFLD,1,KMLOC) = 0.0_JPRB
+      PIA(JFLD,2,KMLOC) = 0.0_JPRB
+
+      KM = D_MYMS(KMLOC)
+      JN = R_NSMAX+3-KM
+      PIA(JFLD,JN+1,KMLOC) = 0.0_JPRB
+    ENDDO
+  END DO
+END IF
 
 #ifdef ACCGPU
 !$ACC END DATA
