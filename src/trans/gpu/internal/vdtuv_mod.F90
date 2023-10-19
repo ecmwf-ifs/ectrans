@@ -88,9 +88,9 @@ INTEGER(KIND=JPIM) :: II, IJ, IR, J, JN, JI
 REAL(KIND=JPRBT) :: ZKM
 
 #ifdef ACCGPU
-!$ACC DATA                                                &
-!$ACC&      PRESENT(R_NSMAX, D_MYMS,D_NUMP,F_RLAPIN,F_RN) &
-!$ACC&      PRESENT(PEPSNM, PVOR, PDIV, R_NTMAX)          &
+!$ACC DATA                                                       &
+!$ACC&      PRESENT(R_NSMAX,R_NTMAX,D_MYMS,D_NUMP,F_RLAPIN,F_RN) &
+!$ACC&      PRESENT(PEPSNM, PVOR, PDIV)                          &
 !$ACC&      PRESENT(PU, PV)
 #endif
 #ifdef OMPGPU
@@ -109,7 +109,7 @@ REAL(KIND=JPRBT) :: ZKM
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II,KM,ZKM,JI) FIRSTPRIVATE(KFIELD,KMLOC)
+!$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IR,II,KM,ZKM,JI) FIRSTPRIVATE(KFIELD,KMLOC)
 #endif
 DO KMLOC=1,D_NUMP
   DO J=1,KFIELD
