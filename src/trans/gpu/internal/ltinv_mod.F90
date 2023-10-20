@@ -189,8 +189,10 @@ MODULE LTINV_MOD
   IFIRST = IFIRST + 2*KF_UV ! V
   PSCALARS => PIA(IFIRST+1:IFIRST+2*KF_SCALARS,:,:)
   IFIRST = IFIRST + 2*KF_SCALARS ! Scalars
-  PSCALARS_NSDER => PIA(IFIRST+1:IFIRST+2*KF_SCALARS,:,:)
-  IF (LSCDERS) IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
+  IF (LSCDERS) THEN
+    PSCALARS_NSDER => PIA(IFIRST+1:IFIRST+2*KF_SCALARS,:,:)
+    IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
+  ENDIF
 
 
   CALL GSTATS(431,1)
@@ -259,7 +261,7 @@ MODULE LTINV_MOD
   !              ---------------------------
 
 
-  ! Forget aobut Vorticity and divergence if we don't need it in the output
+  ! Forget about Vorticity and divergence if we don't need it in the output
   IFIRST = 1
   IF(.NOT. LVORGP) IFIRST = IFIRST+2*KF_UV
   IF(.NOT. LDIVGP) IFIRST = IFIRST+2*KF_UV
