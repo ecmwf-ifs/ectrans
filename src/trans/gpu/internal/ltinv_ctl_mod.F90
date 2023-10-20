@@ -11,7 +11,7 @@
 
 MODULE LTINV_CTL_MOD
   CONTAINS
-  SUBROUTINE LTINV_CTL(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
+  SUBROUTINE LTINV_CTL(KF_UV,KF_SCALARS,&
  &                     PSPVOR,PSPDIV,PSPSCALAR,&
  &                     PSPSC3A,PSPSC3B,PSPSC2,FOUBUF,KFIELD,&
  &                     KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
@@ -25,10 +25,8 @@ MODULE LTINV_CTL_MOD
   !**   Interface.
   !     ----------
   !     CALL INV_TRANS_CTL(...)
-  !     KF_OUT_LT    - number of fields coming out from inverse LT
   !     KF_UV        - local number of spectral u-v fields
   !     KF_SCALARS   - local number of scalar spectral fields
-  !     KF_SCDERS    - local number of derivatives of scalar spectral fields
   !     PSPVOR(:,:)  - spectral vorticity (input)
   !     PSPDIV(:,:)  - spectral divergence (input)
   !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
@@ -70,8 +68,8 @@ MODULE LTINV_CTL_MOD
   USE TRMTOL_MOD    ,ONLY : TRMTOL
 #endif  
   IMPLICIT NONE
- 
-  INTEGER(KIND=JPIM),INTENT(IN) :: KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS
+
+  INTEGER(KIND=JPIM),INTENT(IN) :: KF_UV,KF_SCALARS
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPVOR(:,:)
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPDIV(:,:)
   REAL(KIND=JPRB) ,OPTIONAL, INTENT(IN)  :: PSPSCALAR(:,:)

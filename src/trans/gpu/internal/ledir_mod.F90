@@ -90,14 +90,13 @@ INTEGER(KIND=JPIM) :: KM
 INTEGER(KIND=JPIM) :: KMLOC
 INTEGER(KIND=JPIM) :: IA, IS, ISL, J, JK
 REAL(KIND=JPRBT)   :: PAIA, PAIS
-REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
 
 INTEGER(KIND=JPIM) :: IGLS,  JF, JGL
 INTEGER(KIND=JPIM) :: OFFSET1, OFFSET2
 REAL(KIND=JPRBT), ALLOCATABLE :: ZINPS(:), ZINPA(:), ZOUT(:)
 REAL(KIND=JPRD), ALLOCATABLE :: ZINP0(:), ZOUT0(:)
 
-
+REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 
@@ -139,57 +138,121 @@ ZINPA(:) = 0
 !$ACC END KERNELS
 
 #ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ISL,PAIA) DEFAULT(NONE) &
-  !$OMP&     SHARED(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,F_RW)
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ISL,PAIA) DEFAULT(NONE) &
+!$OMP&     SHARED(D_NUMP,R_NDGNH,D_MYMS,G_NDGLU,F_RW)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,JGL,PAIA,PAIS) FIRSTPRIVATE(KF_FS,KF_UV)
+!$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,JGL,PAIA,PAIS) FIRSTPRIVATE(KF_FS,KF_UV)
 #endif
-  DO KMLOC=1,D_NUMP
-    DO JF=1,KF_FS*2
-      KM = D_MYMS(KMLOC)
-      ISL = R_NDGNH-G_NDGLU(KM)+1
-      !$ACC LOOP SEQ
-      DO JGL=ISL,R_NDGNH
-        IGLS = R_NDGL+1-JGL
-        OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL) )+D_NPNTGTB1(KMLOC,JGL ))*2*KF_FS
-        OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KF_FS
-        PAIA = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
-        PAIS = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
-        IF (JF .LE. 4*KF_UV) THEN
-          ! Multiply in case of velocity
-          PAIA = PAIA*F_RACTHE(JGL)
-          PAIS = PAIS*F_RACTHE(JGL)
-        ENDIF
-        ZINPA(JF+(JGL-ISL+(KMLOC-1)*R_NDGNH)*2*KF_FS)=PAIA*F_RW(JGL)
-        ZINPS(JF+(JGL-ISL+(KMLOC-1)*R_NDGNH)*2*KF_FS)=PAIS*F_RW(JGL)
-      ENDDO
+DO KMLOC=1,D_NUMP
+  DO JF=1,KF_FS*2
+    KM = D_MYMS(KMLOC)
+    ISL = R_NDGNH-G_NDGLU(KM)+1
+    !$ACC LOOP SEQ
+    DO JGL=ISL,R_NDGNH
+      IGLS = R_NDGL+1-JGL
+      OFFSET1 = (D_NSTAGT1B(D_NPROCL(JGL) )+D_NPNTGTB1(KMLOC,JGL ))*2*KF_FS
+      OFFSET2 = (D_NSTAGT1B(D_NPROCL(IGLS))+D_NPNTGTB1(KMLOC,IGLS))*2*KF_FS
+      PAIA = FOUBUF(OFFSET1+JF)-FOUBUF(OFFSET2+JF)
+      PAIS = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
+      IF (JF .LE. 4*KF_UV) THEN
+        ! Multiply in case of velocity
+        PAIA = PAIA*F_RACTHE(JGL)
+        PAIS = PAIS*F_RACTHE(JGL)
+      ENDIF
+      ZINPA(JF+(JGL-ISL+(KMLOC-1)*R_NDGNH)*2*KF_FS)=PAIA*F_RW(JGL)
+      ZINPS(JF+(JGL-ISL+(KMLOC-1)*R_NDGNH)*2*KF_FS)=PAIS*F_RW(JGL)
     ENDDO
   ENDDO
+ENDDO
 
 !------------------------------------------
 
   ! anti-symmetric
 
+! Get C in transpose format to get better memory access patterns later
+!C=A*B =>
+! C^T=B^T*A^T
+#ifdef OMPGPU
+!$OMP TARGET DATA USE_DEVICE_PTR(ZAA,ZINPA,ZOUT)
+#endif
+#ifdef ACCGPU
+!$ACC HOST_DATA USE_DEVICE(ZAA,ZINPA,ZOUT)
+#endif
+CALL HIP_GEMM_BATCHED( &
+  & 'N', 'N', &
+  & 2*KF_FS, TDZAA, R_NDGNH, &
+  & 1.0_JPRBT, &
+  & ZINPA, 2*KF_FS, R_NDGNH, &
+  & ZAA, R_NDGNH, TDZAA, &
+  & 0.0_JPRBT, &
+  & ZOUT, 2*KF_FS, TDZAA, &
+  & D_NUMP)
+#ifdef OMPGPU
+!$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+!$ACC END HOST_DATA
+#endif
+
+#ifdef OMPGPU
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,IA) DEFAULT(NONE) &
+ !$OMP&    SHARED(D_NUMP,R_NTMAX,D_MYMS,POA1)
+#endif
+#ifdef ACCGPU
+!$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(KM,IA) FIRSTPRIVATE(KF_FS,TDZAA)
+#endif
+DO KMLOC=1,D_NUMP
+  DO JK=1,2*KF_FS
+    KM = D_MYMS(KMLOC)
+    IF (KM /= 0) THEN
+      IA  = 1+MOD(R_NTMAX-KM+2,2)
+      !$ACC LOOP SEQ
+      DO J=1,(R_NSMAX-KM+2)/2
+        POA1(JK,IA+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
+      ENDDO
+    ENDIF
+  ENDDO
+ENDDO
+
+! compute m=0 in double precision:
+IF(KMLOC0 > 0) THEN
+  PRINT*,'computing m=0 in double precision'
+
+#ifdef OMPGPU
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE) &
+  !$OMP&     SHARED(R_NDGNH,G_NDGLU,PAIA,KMLOC0,F_RW)
+#endif
+#ifdef ACCGPU
+  !$ACC PARALLEL LOOP COLLAPSE(2) FIRSTPRIVATE(KF_FS,KMLOC0) DEFAULT(NONE)
+#endif
+  DO JGL=1,G_NDGLU(0)
+    DO JF=1,2*KF_FS,2
+      ZINP0((JF-1)/2+1+(JGL-1)*2*KF_FS) &
+          & = ZINPA((JF-1)+1+(JGL-1+(KMLOC0-1)*R_NDGNH)*2*KF_FS)
+    ENDDO
+  ENDDO
+
 
   ! Get C in transpose format to get better memory access patterns later
   !C=A*B =>
   ! C^T=B^T*A^T
+
 #ifdef OMPGPU
-  !$OMP TARGET DATA USE_DEVICE_PTR(ZAA,ZINPA,ZOUT)
+  !$OMP TARGET DATA USE_DEVICE_PTR(ZAA0,ZINP0,ZOUT0)
 #endif
 #ifdef ACCGPU
-  !$ACC HOST_DATA USE_DEVICE(ZAA,ZINPA,ZOUT)
+  !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUT0)
 #endif
-  CALL HIP_GEMM_BATCHED( &
-    & 'N', 'N', &
+  CALL HIP_DGEMM_BATCHED( &
+    & 'N','N', &
     & 2*KF_FS, TDZAA, R_NDGNH, &
-    & 1.0_JPRBT, &
-    & ZINPA, 2*KF_FS, R_NDGNH, &
-    & ZAA, R_NDGNH, TDZAA, &
-    & 0.0_JPRBT, &
-    & ZOUT, 2*KF_FS, TDZAA, &
-    & D_NUMP)
+    & 1.0_JPRD, &
+    & ZINP0, 2*KF_FS, R_NDGNH, &
+    & ZAA0, R_NDGNH, TDZAA, &
+    & 0.0_JPRD, &
+    & ZOUT0, 2*KF_FS, TDZAA, &
+    & 1)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
 #endif
@@ -198,172 +261,106 @@ ZINPA(:) = 0
 #endif
 
 #ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,IA) DEFAULT(NONE) &
-  !$OMP&    SHARED(D_NUMP,R_NTMAX,D_MYMS,POA1)
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE) &
+  !$OMP&    SHARED(R_NTMAX,POA1,KMLOC0)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(KM,IA) FIRSTPRIVATE(KF_FS,TDZAA)
+  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) FIRSTPRIVATE(KF_FS,KMLOC0) DEFAULT(NONE)
 #endif
-  DO KMLOC=1,D_NUMP
-    DO JK=1,2*KF_FS
-      KM = D_MYMS(KMLOC)
-      IF (KM /= 0) THEN
-        IA  = 1+MOD(R_NTMAX-KM+2,2)
-        !$ACC LOOP SEQ
-        DO J=1,(R_NSMAX-KM+2)/2
-          POA1(JK,IA+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAA)*2*KF_FS)
-        ENDDO
-      ENDIF
+  DO J=1,(R_NSMAX+2)/2
+    DO JK=1,2*KF_FS,2
+      IA  = 1+MOD(R_NTMAX+2,2)
+      POA1(JK,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
     ENDDO
   ENDDO
-
-! compute m=0 in double precision:
-  IF(KMLOC0 > 0) THEN
-    PRINT*,'computing m=0 in double precision'
-
-#ifdef OMPGPU
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE) &
-    !$OMP&     SHARED(R_NDGNH,G_NDGLU,PAIA,KMLOC0,F_RW)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) FIRSTPRIVATE(KF_FS,KMLOC0)
-#endif
-    DO JGL=1,G_NDGLU(0)
-      DO JF=1,2*KF_FS,2
-        ZINP0((JF-1)/2+1+(JGL-1)*2*KF_FS) &
-          & = ZINPA((JF-1)+1+(JGL-1+(KMLOC0-1)*R_NDGNH)*2*KF_FS)
-      ENDDO
-    ENDDO
-
-
-    ! Get C in transpose format to get better memory access patterns later
-    !C=A*B =>
-    ! C^T=B^T*A^T
-
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_PTR(ZAA0,ZINP0,ZOUT0)
-#endif
-#ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUT0)
-#endif
-    CALL HIP_DGEMM_BATCHED( &
-         & 'N','N', &
-         & 2*KF_FS, TDZAA, R_NDGNH, &
-         & 1.0_JPRD, &
-         & ZINP0, 2*KF_FS, R_NDGNH, &
-         & ZAA0, R_NDGNH, TDZAA, &
-         & 0.0_JPRD, &
-         & ZOUT0, 2*KF_FS, TDZAA, &
-         & 1)
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
-
-#ifdef OMPGPU
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE) &
-    !$OMP&    SHARED(R_NTMAX,POA1,KMLOC0)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IA) DEFAULT(NONE) FIRSTPRIVATE(KF_FS,KMLOC0)
-#endif
-    DO J=1,(R_NSMAX+2)/2
-      DO JK=1,2*KF_FS,2
-        IA  = 1+MOD(R_NTMAX+2,2)
-        POA1(JK,IA+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
-      ENDDO
-    ENDDO
-  ENDIF
+ENDIF
 
 
 ! symmetric
 
+! Get C in transpose format to get better memory access patterns later
+!C=A*B =>
+! C^T=B^T*A^T
+#ifdef OMPGPU
+!$OMP TARGET DATA USE_DEVICE_PTR(ZAS,ZINPS,ZOUT)
+#endif
+#ifdef ACCGPU
+!$ACC HOST_DATA USE_DEVICE(ZAS,ZINPS,ZOUT)
+#endif
+CALL HIP_GEMM_BATCHED( &
+  & 'N', 'N', &
+  & 2*KF_FS, TDZAS, R_NDGNH, &
+  & 1.0_JPRBT, &
+  & ZINPS, 2*KF_FS, R_NDGNH, &
+  & ZAS, R_NDGNH, TDZAS, &
+  & 0.0_JPRBT, &
+  & ZOUT, 2*KF_FS, TDZAS, &
+  & D_NUMP)
+#ifdef OMPGPU
+!$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+!$ACC END HOST_DATA
+#endif
+
+#ifdef OMPGPU
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE) &
+!$OMP&    SHARED(D_NUMP,R_NTMAX,D_MYMS,POA1)
+#endif
+#ifdef ACCGPU
+!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) FIRSTPRIVATE(KF_FS,TDZAS) DEFAULT(NONE)
+#endif
+DO KMLOC=1,D_NUMP
+  DO JK=1,2*KF_FS
+    KM = D_MYMS(KMLOC)
+    IF (KM /= 0) THEN
+      IS  = 1+MOD(R_NTMAX-KM+1,2)
+      !$ACC LOOP SEQ
+      DO J=1,(R_NSMAX-KM+3)/2
+        POA1(JK,IS+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
+      ENDDO
+    ENDIF
+  ENDDO
+ENDDO
+
+IF(KMLOC0 > 0) THEN
+#ifdef OMPGPU
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE) &
+  !$OMP&     SHARED(R_NDGNH,G_NDGLU,PAIA,KMLOC0,F_RW)
+#endif
+#ifdef ACCGPU
+  !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) FIRSTPRIVATE(KF_FS,KMLOC0)
+#endif
+  DO JGL=1,G_NDGLU(0)
+    DO JF=1,2*KF_FS,2
+      ZINP0((JF-1)/2+1+(JGL-1)*2*KF_FS) &
+          & = ZINPS((JF-1)+1+(JGL-1+(KMLOC0-1)*R_NDGNH)*2*KF_FS)
+    ENDDO
+  ENDDO
+
   ! Get C in transpose format to get better memory access patterns later
   !C=A*B =>
   ! C^T=B^T*A^T
+
 #ifdef OMPGPU
-  !$OMP TARGET DATA USE_DEVICE_PTR(ZAS,ZINPS,ZOUT)
+  !$OMP TARGET DATA USE_DEVICE_PTR(ZAS0)
 #endif
 #ifdef ACCGPU
-  !$ACC HOST_DATA USE_DEVICE(ZAS,ZINPS,ZOUT)
+  !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUT0)
 #endif
-  CALL HIP_GEMM_BATCHED( &
-    & 'N', 'N', &
-    & 2*KF_FS, TDZAS, R_NDGNH, &
-    & 1.0_JPRBT, &
-    & ZINPS, 2*KF_FS, R_NDGNH, &
-    & ZAS, R_NDGNH, TDZAS, &
-    & 0.0_JPRBT, &
-    & ZOUT, 2*KF_FS, TDZAS, &
-    & D_NUMP)
+  CALL HIP_DGEMM_BATCHED('N','N',&
+ &                        2*KF_FS, TDZAS, R_NDGNH, &
+ &                        1.0_JPRD,&
+ &                        ZINP0, 2*KF_FS, R_NDGNH, &
+ &                        ZAS0, R_NDGNH, TDZAS, &
+ &                        0._JPRD, &
+ &                        ZOUT0, 2*KF_FS, TDZAS, &
+ &                        1)
 #ifdef OMPGPU
   !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
   !$ACC END HOST_DATA
-#endif
-
-#ifdef OMPGPU
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE) &
-  !$OMP&    SHARED(D_NUMP,R_NTMAX,D_MYMS,POA1)
-#endif
-#ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) FIRSTPRIVATE(KF_FS,TDZAS) DEFAULT(NONE)
-#endif
-  DO KMLOC=1,D_NUMP
-    DO JK=1,2*KF_FS
-      KM = D_MYMS(KMLOC)
-      IF (KM /= 0) THEN
-        IS  = 1+MOD(R_NTMAX-KM+1,2)
-        !$ACC LOOP SEQ
-        DO J=1,(R_NSMAX-KM+3)/2
-          POA1(JK,IS+1+(J-1)*2,KMLOC) = ZOUT(JK+(J-1+(KMLOC-1)*TDZAS)*2*KF_FS)
-        ENDDO
-      ENDIF
-    ENDDO
-  ENDDO
-
-  IF(KMLOC0 > 0) THEN
-#ifdef OMPGPU
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(ISL) DEFAULT(NONE) &
-    !$OMP&     SHARED(R_NDGNH,G_NDGLU,PAIA,KMLOC0,F_RW)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) &
-    !$ACC& FIRSTPRIVATE(KF_FS,KMLOC0)
-#endif
-    DO JGL=1,G_NDGLU(0)
-      DO JF=1,2*KF_FS,2
-        ZINP0((JF-1)/2+1+(JGL-1)*2*KF_FS) &
-          & = ZINPS((JF-1)+1+(JGL-1+(KMLOC0-1)*R_NDGNH)*2*KF_FS)
-      ENDDO
-    ENDDO
-
-    ! Get C in transpose format to get better memory access patterns later
-    !C=A*B =>
-    ! C^T=B^T*A^T
-
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_PTR(ZAS0)
-#endif
-#ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUT0)
-#endif
-    CALL HIP_DGEMM_BATCHED('N','N',&
- &                          2*KF_FS, TDZAS, R_NDGNH, &
- &                          1.0_JPRD,&
- &                          ZINP0, 2*KF_FS, R_NDGNH, &
- &                          ZAS0, R_NDGNH, TDZAS, &
- &                          0._JPRD, &
- &                          ZOUT0, 2*KF_FS, TDZAS, &
- &                          1)
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
 #endif
 
 #ifdef OMPGPU
@@ -374,14 +371,14 @@ ZINPA(:) = 0
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(IS) DEFAULT(NONE) &
     !$ACC& FIRSTPRIVATE(KF_FS,KMLOC0)
 #endif
-    DO J=1,(R_NSMAX+3)/2
-      DO JK=1,2*KF_FS,2
-        IS  = 1+MOD(R_NTMAX+1,2)
-        POA1(JK,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
-      ENDDO
+  DO J=1,(R_NSMAX+3)/2
+    DO JK=1,2*KF_FS,2
+      IS  = 1+MOD(R_NTMAX+1,2)
+      POA1(JK,IS+1+(J-1)*2,KMLOC0) = ZOUT0((JK-1)/2+1+(J-1)*2*KF_FS)
     ENDDO
-  
-  ENDIF
+  ENDDO
+
+ENDIF
 
 #ifdef OMPGPU
 !$OMP END TARGET DATA
@@ -395,11 +392,11 @@ DEALLOCATE(ZOUT)
 DEALLOCATE(ZINP0)
 DEALLOCATE(ZOUT0)
 
+
 IF (LSYNC_TRANS) THEN
   CALL MPL_BARRIER(CDSTRING='LEDIR BARRIER')
 ENDIF
 CALL GSTATS(452,1)
-
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 

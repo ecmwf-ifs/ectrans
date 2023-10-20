@@ -85,7 +85,7 @@ MODULE LTINV_MOD
   !     ------------------------------------------------------------------
  
   IMPLICIT NONE
- 
+
  
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV
   INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCALARS
@@ -101,18 +101,15 @@ MODULE LTINV_MOD
   REAL(KIND=JPRB)   ,ALLOCATABLE, INTENT(OUT) :: FOUBUF_IN(:)
   INTEGER(KIND=JPIM),             INTENT(OUT) :: FOUBUF_KFIELD
 
- 
- 
- 
   INTEGER(KIND=JPIM) :: IIFC, IDGLU
   INTEGER(KIND=JPIM) :: IFIRST, J3
 
   REAL(KIND=JPRB), ALLOCATABLE, TARGET :: PIA(:,:,:)
   REAL(KIND=JPRB), POINTER :: PU(:,:,:), PV(:,:,:), PVOR(:,:,:), PDIV(:,:,:)
   REAL(KIND=JPRB), POINTER :: PSCALARS(:,:,:), PSCALARS_NSDER(:,:,:)
- 
+
   REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
- 
+
   !     ------------------------------------------------------------------
 
   !*       1.       PERFORM LEGENDRE TRANFORM.
@@ -125,7 +122,7 @@ MODULE LTINV_MOD
 
   !*       3.    SPECTRAL COMPUTATIONS FOR U,V AND DERIVATIVES.
   !              ----------------------------------------------
- 
+
   IF (LSYNC_TRANS) THEN
     CALL MPL_BARRIER(CDSTRING='')
   ENDIF
@@ -194,7 +191,6 @@ MODULE LTINV_MOD
     IFIRST = IFIRST + 2*KF_SCALARS ! Scalars NS Derivatives
   ENDIF
 
-
   CALL GSTATS(431,1)
 
   IF (KF_UV > 0) THEN
@@ -204,7 +200,7 @@ MODULE LTINV_MOD
     ! Compute U and V for VOR and DIV
     CALL VDTUV(KF_UV,ZEPSNM,PVOR,PDIV,PU,PV)
   ENDIF
- 
+
   IF (KF_SCALARS > 0) THEN
     IF(PRESENT(PSPSCALAR)) THEN
       CALL PRFI1B(PSCALARS,PSPSCALAR,KF_SCALARS,UBOUND(PSPSCALAR,2),KFLDPTRSC)
@@ -232,7 +228,6 @@ MODULE LTINV_MOD
       ENDIF
     ENDIF
   ENDIF
-
  
 #ifdef OMPGPU
   !$OMP END TARGET DATA
@@ -255,11 +250,10 @@ MODULE LTINV_MOD
 
 
   !     ------------------------------------------------------------------
- 
- 
+
+
   !*       4.    INVERSE LEGENDRE TRANSFORM.
   !              ---------------------------
-
 
   ! Forget about Vorticity and divergence if we don't need it in the output
   IFIRST = 1

@@ -13,7 +13,6 @@ MODULE FSC_MOD
 CONTAINS
 SUBROUTINE FSC(KF_UV, KF_SCALARS, PUV, PSCALARS, PSCALARS_NSDER, PUV_EWDER, PSCALARS_EWDER)
 
-
 !**** *FSC - Division by a*cos(theta), east-west derivatives
 
 !     Purpose.

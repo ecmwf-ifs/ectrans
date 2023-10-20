@@ -21,7 +21,7 @@ MODULE LTDIR_MOD
   USE YOMHOOK     ,ONLY : LHOOK,   DR_HOOK, JPHOOK
   
   USE TPM_DIM     ,ONLY : R
-  USE TPM_DISTR   ,ONLY : D, myproc
+  USE TPM_DISTR   ,ONLY : D
   USE TPM_GEOMETRY
   
   USE PREPSNM_MOD ,ONLY : PREPSNM
@@ -130,16 +130,14 @@ MODULE LTDIR_MOD
   ! do the legendre transform
   CALL LEDIR(KF_FS,KF_UV,ZOA1)
 
-
   !     ------------------------------------------------------------------
   
   !*       5.    COMPUTE VORTICITY AND DIVERGENCE.
   !              ---------------------------------
-  
+
   IF( KF_UV > 0 ) THEN
-  
      !!CALL PREPSNM
-  
+
      IUS = 1
      IUE = 2*KF_UV
      IVS = 2*KF_UV+1

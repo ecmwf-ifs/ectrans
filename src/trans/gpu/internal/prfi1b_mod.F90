@@ -127,7 +127,8 @@ MODULE PRFI1B_MOD
       ENDDO
  
       ! end loop over wavenumber
-   END DO
+   ENDDO
+
 #ifdef OMPGPU
    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM)
 #endif
@@ -170,8 +171,6 @@ MODULE PRFI1B_MOD
           PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
         ENDIF
       ENDDO
- 
-      ! end loop over wavenumber
     ENDDO
   ENDDO
 
@@ -191,8 +190,8 @@ MODULE PRFI1B_MOD
       JN = R_NSMAX+3-KM
       PIA(JFLD,JN+1,KMLOC) = 0.0_JPRB
     ENDDO
-  END DO
-END IF
+  ENDDO
+ENDIF
 
 #ifdef ACCGPU
 !$ACC END DATA

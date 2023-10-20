@@ -167,7 +167,6 @@ CALL FOURIER_IN(FOUBUF,ZGTF,KF_INPUT)
 
 ! fill the rest of ZGTF
 CALL FSC(KF_UV, KF_SCALARS, PUV, PSCALARS, PSCALARS_NSDER, PUV_EWDER, PSCALARS_EWDER)
- 
 
 !   3.  Fourier transform
 ! inplace operation
