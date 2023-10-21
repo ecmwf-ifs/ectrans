@@ -420,6 +420,7 @@ DEALLOCATE(ZOUT)
 DEALLOCATE(ZINP0)
 DEALLOCATE(ZOUT0)
 
+
 IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 

@@ -230,6 +230,7 @@ ENDIF
 
 #ifdef ACCGPU
 !$ACC WAIT(1)
+
 !$ACC END DATA
 #endif
 #ifdef OMPGPU

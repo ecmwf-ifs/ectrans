@@ -160,9 +160,9 @@ IF(.NOT.D%LGRIDONLY) THEN
   IAUX1 = MAX(D%NLTSGTB(MYSETW),IAUX1)
   D%NSTAGT0B(1) = 0
   D%NSTAGT1B(1) = 0
-  DO JA=2,NPRTRNS+1
-    D%NSTAGT0B(JA) = (JA-1)*IAUX0
-    D%NSTAGT1B(JA) = (JA-1)*IAUX1
+  DO JA=2,NPRTRNS
+    D%NSTAGT0B(JA) = D%NSTAGT0B(JA-1)+D%NLTSGTB(JA-1)
+    D%NSTAGT1B(JA) = D%NSTAGT1B(JA-1)+D%NLTSFTB(JA-1)
   ENDDO
   D%NLENGT0B = D%NSTAGT0B(NPRTRNS)+D%NLTSGTB(NPRTRNS)
   D%NLENGT1B = D%NSTAGT1B(NPRTRNS)+D%NLTSFTB(NPRTRNS)
@@ -264,6 +264,7 @@ IF(.NOT.D%LGRIDONLY) THEN
     D%NSTAGTF(JGL) = IOFF
     IGL = D%NPTRLS(MYSETW) + JGL - 1
     IOFF = IOFF + G%NLOEN(IGL)+3
+    ! Make sure IOFF is even. This could really lead to slightly too large buffers
     ! esp because the (+3) above (needed?), but it is crucial to have those even
     ! because with these offsets we can store complex numbers, and CUFFT won't accept
     ! unaligned complex buffers

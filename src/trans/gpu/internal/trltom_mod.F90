@@ -147,7 +147,6 @@ MODULE TRLTOM_MOD
         ILENR(IRANK) = 0
     ENDIF
 
-
     IF (LSYNC_TRANS) THEN
       CALL GSTATS(420,0)
       CALL MPL_BARRIER(CDSTRING='')
@@ -206,7 +205,6 @@ MODULE TRLTOM_MOD
 #endif
     DEALLOCATE(PFBUF_IN)
   ENDIF
-
 
   IF (LHOOK) CALL DR_HOOK('TRLTOM_CUDAAWARE',1,ZHOOK_HANDLE)
   !     ------------------------------------------------------------------

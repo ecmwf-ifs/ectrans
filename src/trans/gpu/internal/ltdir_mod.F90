@@ -225,6 +225,6 @@ MODULE LTDIR_MOD
   !     ------------------------------------------------------------------
   
   IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',1,ZHOOK_HANDLE)
-  
+
   END SUBROUTINE LTDIR
   END MODULE LTDIR_MOD

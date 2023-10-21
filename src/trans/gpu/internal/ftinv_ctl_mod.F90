@@ -135,7 +135,6 @@ IF (LUVDER) IFIRST = IFIRST+2*KF_UV ! U and V derivatives
 IF (LSCDERS) IFIRST = IFIRST + KF_SCALARS ! Scalars EW Derivatives
 KF_FS = IFIRST
 
-! Note that this buffer is 2X too large, we will need to transpose ZGTF to get rid of this
 ALLOCATE(PREEL_COMPLEX((2*KF_FS)*(D%NLENGTF/2)))
 #ifdef OMPGPU
 #endif

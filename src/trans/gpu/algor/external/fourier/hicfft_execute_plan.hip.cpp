@@ -297,7 +297,7 @@ extern "C" {
 void execute_dir_fft_float(float *data_real, hipfftComplex *data_complex,
         int kfield, int *loens, int *offsets, int nfft) {
     //execute_fft<Float, HIPFFT_R2C>(data_real, data_complex, kfield, loens, offsets, nfft);
-    execute_fft_new<Float, CUFFT_R2C>(data_real, data_complex, kfield, loens, offsets, nfft);
+    execute_fft_new<Float, HIPFFT_R2C>(data_real, data_complex, kfield, loens, offsets, nfft);
 }
 void execute_inv_fft_float(hipfftComplex *data_complex, float *data_real,
         int kfield, int *loens, int *offsets, int nfft) {
