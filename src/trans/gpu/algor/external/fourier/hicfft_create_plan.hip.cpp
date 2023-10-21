@@ -51,7 +51,7 @@ hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *
     }
     else if( ISIGN== 1){
       fftSafeCall(hipfftPlanMany(*plan, 1, &N,
-                    embed, stride/2, dist,
+                    embed, stride, dist,
                     embed, stride, dist,
                     fft_inv, LOT));
     }
