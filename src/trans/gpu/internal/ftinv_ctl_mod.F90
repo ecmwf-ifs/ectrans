@@ -171,9 +171,6 @@ IF (LSCDERS) THEN
   IFIRST = IFIRST + KF_SCALARS ! Scalars EW Derivatives
 ENDIF
 
-! from FOUBUF to PREEL_COMPLEX. Divide by two because we consider this complex space now
-CALL FOURIER_IN(FOUBUF,PREEL_COMPLEX,KF_INPUT/2,KF_FS)
-
 ALLOCATE(PREEL_COMPLEX_TMP(KF_FS*D%NLENGTF))
 #ifdef ACCGPU
 !$ACC DATA PRESENT(PREEL_COMPLEX) CREATE(PREEL_COMPLEX_TMP)
@@ -204,6 +201,9 @@ PREEL_COMPLEX(:) = PREEL_COMPLEX_TMP(:)
 !$ACC END DATA
 #endif
 DEALLOCATE(PREEL_COMPLEX_TMP)
+
+! from FOUBUF to PREEL_COMPLEX. Divide by two because we consider this complex space now
+CALL FOURIER_IN(FOUBUF,PREEL_COMPLEX,KF_INPUT/2,KF_FS)
 
 !    2.  Fourier space computations
 
