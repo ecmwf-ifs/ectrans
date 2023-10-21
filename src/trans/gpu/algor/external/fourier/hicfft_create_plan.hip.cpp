@@ -5,7 +5,7 @@
 // static int allocatedWorkspace=0;
 // static void* planWorkspace;
 // static int planWorkspaceSize=100*1024*1024; //100MB
-void *planWorkspace;
+void *planWorkspace = nullptr;
 static int currentWorkspaceSize = 0;
 
 extern "C"
@@ -46,7 +46,7 @@ hicfft_create_plan_(hipfftHandle * *plan, int *ISIGNp, int *Np, int *LOTp, int *
     if( ISIGN== -1 ){
       fftSafeCall(hipfftPlanMany(*plan, 1, &N,
                     embed, stride, dist,
-                    embed, stride/2, dist,
+                    embed, stride, dist,
                     fft_dir, LOT));
     }
     else if( ISIGN== 1){
