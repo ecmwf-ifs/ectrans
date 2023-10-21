@@ -1,5 +1,6 @@
 ! (C) Copyright 2008- ECMWF.
 ! (C) Copyright 2008- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -163,7 +164,10 @@ ENDDO
 ALLOCATE(ZGTFL(2*IF_FS,D%NLENGTF))
 ! done in setup_trans
 LGPNORM=.TRUE.
-CALL TRGTOL(ZGTFL,IF_FS,IF_GP,IF_SCALARS_G,IVSET,PGP=PGP)
+print *, "not supported"
+flush(6)
+stop 1
+! CALL TRGTOL(ZGTF,IF_FS,IF_GP,IF_SCALARS_G,IVSET,PGP=PGP)
 LGPNORM=.FALSE.
 
 IBEG=1
