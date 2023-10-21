@@ -228,7 +228,7 @@ void execute_fft_new(typename Type::real *data_real, typename Type::cmplx *data_
             int embed[] = {1};
             //fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, dist, embed,
             //                          1, dist / 2, Direction, kfield));
-            fftSafeCall(cufftPlanMany(&plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed,
+            fftSafeCall(hipfftPlanMany(&plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed,
                                       1, is_forward ? dist / 2 : dist, Direction, kfield));
             newPlans[i] = plan;
           }
