@@ -53,6 +53,5 @@ INTEGER(KIND=JPIM) :: R_NSMAX      ! Truncation order
 INTEGER(KIND=JPIM) :: R_NTMAX      ! Truncation order for tendencies
 INTEGER(KIND=JPIM) :: R_NDGNH      ! Number of rows in northern hemisphere
 INTEGER(KIND=JPIM) :: R_NDGL       ! Number of rows of latitudes
-INTEGER(KIND=JPIM) :: R_NNOEXTZL   ! Longitude direction
 
 END MODULE TPM_DIM

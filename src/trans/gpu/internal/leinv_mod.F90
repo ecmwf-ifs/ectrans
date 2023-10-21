@@ -119,6 +119,19 @@ ALLOCATE(ZOUTA(KFIELDS*R_NDGNH*D_NUMP))
 !$OMP&      MAP(PRESENT,ALLOC:ZAA,ZAS,IZCST,ZIA,PSOA1,PAOA1,IZBS)
 #endif
 
+! TODO this doesn't make sense that we need it (???)
+#ifdef ACCGPU
+!$ACC KERNELS
+#endif
+ZINP(:) = 0
+ZOUTS(:) = 0
+ZOUTA(:) = 0
+#ifdef ACCGPU
+!$ACC END KERNELS
+#endif
+
+! READ 2:NSMAX+3
+
 !IF KM=0 and NSMAX is 6:
 !    IA=1
 !    DO=1,6/2+1 ... 1..4
