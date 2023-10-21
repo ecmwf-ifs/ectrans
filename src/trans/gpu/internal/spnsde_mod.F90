@@ -19,7 +19,7 @@ USE TPM_GEN         ,ONLY : NOUT
 USE TPM_DIM         ,ONLY : R, R_NTMAX
 USE TPM_FIELDS      ,ONLY : F_RN
 USE TPM_DISTR       ,ONLY : D, D_MYMS, D_NUMP
-USE TPM_FIELDS      ,ONLY : ZIA, ZEPSNM
+USE TPM_FIELDS      ,ONLY : ZEPSNM
 !USE TPM_TRANS
 
 
@@ -95,8 +95,7 @@ INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
 #ifdef OMPGPU
 !$OMP TARGET DATA                             &
 !$OMP&      MAP(PRESENT,ALLOC:ZN)         &
-!$OMP&      MAP(PRESENT,ALLOC:F_RN)   &
-!$OMP&      MAP(PRESENT,ALLOC: ZIA)
+!$OMP&      MAP(PRESENT,ALLOC:F_RN)
 #endif
 
 !     ------------------------------------------------------------------
