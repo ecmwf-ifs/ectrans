@@ -23,7 +23,7 @@ SUBROUTINE FTINV(PREEL,KFIELD)
 !        CALL FTINV(..)
 
 !        Explicit arguments :  PREEL   - Fourier/grid-point array
-!        --------------------  KFIELDS - number of fields
+!        --------------------  KFIELD   - number of fields
 
 !     Method.
 !     -------
@@ -39,14 +39,13 @@ SUBROUTINE FTINV(PREEL,KFIELD)
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-!        G. Radnoti 01-04-24 : 2D model (NLOEN=1)
+!        G. Radnoti 01-04-24 2D model (NLOEN=1)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
 USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
-
 USE TPM_DISTR       ,ONLY : D,D_NSTAGTF,D_NPTRLS, MYSETW,  MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G, G_NLOEN, G_NMEN
 USE TPM_GEN         ,ONLY : NOUT, LSYNC_TRANS
@@ -67,7 +66,6 @@ INTEGER :: ISTAT
 
 REAL(KIND=JPRBT), POINTER  :: PREEL2(:,:), TMP(:,:)
 
-
 !     ------------------------------------------------------------------
 
 IF(MYPROC > NPROC/2)THEN
@@ -80,25 +78,18 @@ ELSE
   IINC=-1
 ENDIF
 
-ISIZE=SIZE(PREEL,1)
-IDIM2=SIZE(PREEL,2)
-ALLOCATE(PREEL2(ISIZE,IDIM2))
+ALLOCATE(PREEL2(SIZE(PREEL,1),SIZE(PREEL,2)))
+#ifdef ACCGPU
+!$ACC ENTER DATA CREATE(PREEL2)
+!$ACC DATA PRESENT(PREEL,PREEL2)
+#endif
 
 IF (LSYNC_TRANS) THEN
   CALL MPL_BARRIER(CDSTRING='FTINV BARRIER')
 ENDIF
 CALL GSTATS(451,0)
 
-#ifdef ACCGPU
-!$ACC ENTER DATA CREATE(PREEL2)
-
-!$ACC DATA PRESENT(PREEL,PREEL2)
-#endif
-#ifdef OMPGPU
-#endif
-
 DO KGL=IBEG,IEND,IINC
-
   IOFF=D_NSTAGTF(KGL)+1
   IGLG  = D_NPTRLS(MYSETW)+KGL-1
   CALL CREATE_PLAN_FFT(IPLAN_C2R,1,G%NLOEN(IGLG),KFIELD,KFIELD)
