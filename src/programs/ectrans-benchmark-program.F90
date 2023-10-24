@@ -52,8 +52,8 @@ implicit none
 integer(kind=jpim), parameter :: min_octa_points = 20
 
 integer(kind=jpim) :: istack, getstackusage
-real(kind=jprb), dimension(1) :: zmaxerr(5), zerr(5)
-real(kind=jprb) :: zmaxerrg
+real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
+real(kind=jprd) :: zmaxerrg
 
 ! Output unit numbers
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
@@ -88,24 +88,24 @@ real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztste
 real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
 real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
 real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
-
-real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
-real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
-real(kind=jprd) :: zaveave(0:jpmaxstat)
-
-! Grid-point space data structures
-real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
-real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
-
-! Spectral space data structures
-real(kind=jprb), allocatable, target :: sp3d(:,:,:)
-real(kind=jprb), pointer :: zspvor(:,:) => null()
-real(kind=jprb), pointer :: zspdiv(:,:) => null()
-real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
-real(kind=jprb), allocatable :: zspsc2(:,:)
+!
+!real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
+!real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
+!real(kind=jprd) :: zaveave(0:jpmaxstat)
+!
+!! Grid-point space data structures
+!real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
+!real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
+!real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
+!real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
+!real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
+!
+!! Spectral space data structures
+!real(kind=jprb), allocatable, target :: sp3d(:,:,:)
+!real(kind=jprb), pointer :: zspvor(:,:) => null()
+!real(kind=jprb), pointer :: zspdiv(:,:) => null()
+!real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
+!real(kind=jprb), allocatable :: zspsc2(:,:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -144,7 +144,7 @@ logical :: lmpoff = .false. ! Message passing switch
 ! Verbosity level (0 or 1)
 integer :: verbosity = 0
 
-real(kind=jprb) :: zra = 6371229._jprb
+real(kind=jprd) :: zra = 6371229._jprd
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
@@ -280,7 +280,7 @@ endif
 ! This version selects most square-like distribution
 ! These will change if leq_regions=.true.
 if (nproc == 0) nproc = 1
-isqr = int(sqrt(real(nproc,jprb)))
+isqr = int(sqrt(real(nproc,jprd)))
 do ja = isqr, nproc
   ib = nproc/ja
   if (ja*ib == nproc) then
@@ -310,7 +310,7 @@ else
   enddo
   ! Go for approx square partition for backup
   if (nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw) then
-    isqr = int(sqrt(real(nproc,jprb)))
+    isqr = int(sqrt(real(nproc,jprd)))
     do ja = isqr, nproc
       ib = nproc/ja
       if (ja*ib == nproc) then
@@ -716,22 +716,22 @@ do jstep = 1, iters
       do ifld = 1, 1
         write(nout,*) "znormsp", znormsp
         call flush(nout)
-        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
+        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprd)
         zmaxerr(1) = max(zmaxerr(1), zerr(1))
       enddo
       ! Divergence
       do ifld = 1, nflevg
-        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
+        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprd)
         zmaxerr(2) = max(zmaxerr(2), zerr(2))
       enddo
       ! Vorticity
       do ifld = 1, nflevg
-        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
+        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprd)
         zmaxerr(3) = max(zmaxerr(3),zerr(3))
       enddo
       ! Temperature
       do ifld = 1, nflevg
-        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
+        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprd)
         zmaxerr(4) = max(zmaxerr(4), zerr(4))
       enddo
       write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
@@ -807,11 +807,11 @@ if (lprint_norms .or. ncheck > 0) then
     if (myproc == 1) then
       ! If the maximum spectral norm error across all fields is greater than 100 times the machine
       ! epsilon, fail the test
-      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+      if (zmaxerrg > real(ncheck, jprd) * epsilon(1.0_jprd)) then
         write(nout, '(a)') '*******************************'
         write(nout, '(a)') 'Correctness test failed'
         write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprd) * epsilon(1.0_jprd)
         write(nout, '(a)') '*******************************'
         ierr = 1
       endif
@@ -847,20 +847,20 @@ if (luse_mpi) then
   call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
 endif
 
-ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
+ztstepavg = (ztstepavg/real(nproc,jprd))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
 
 call sort(ztstep,iters)
 ztstepmed = ztstep(iters/2)
 
-ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
+ztstepavg1 = (ztstepavg1/real(nproc,jprd))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
 
 call sort(ztstep1, iters)
 ztstepmed1 = ztstep1(iters/2)
 
-ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
+ztstepavg2 = (ztstepavg2/real(nproc,jprd))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 
 call sort(ztstep2,iters)
@@ -1236,98 +1236,98 @@ subroutine print_help(unit)
 
 end subroutine print_help
 
-!===================================================================================================
-
-subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
-
-  integer,         intent(in)    :: nsmax       ! Spectral truncation
-  real(kind=jprb), intent(inout) :: zsp(:,:)    ! Surface pressure
-  real(kind=jprb), intent(inout) :: sp3d(:,:,:) ! 3D fields
-
-  integer(kind=jpim) :: nflevl
-  integer(kind=jpim) :: nfield
-
-  integer :: i, j
-
-  nflevl = size(sp3d, 1)
-  nfield = size(sp3d, 3)
-
-  ! First initialize surface pressure
-  call initialize_2d_spectral_field(nsmax, zsp(1,:))
-
-  ! Then initialize all of the 3D fields
-  do i = 1, nflevl
-    do j = 1, nfield
-      call initialize_2d_spectral_field(nsmax, sp3d(i,:,j))
-    end do
-  end do
-
-end subroutine initialize_spectral_arrays
-
-!===================================================================================================
-
-subroutine initialize_2d_spectral_field(nsmax, field)
-
-  integer,         intent(in)    :: nsmax    ! Spectral truncation
-  real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
-
-  integer :: i, index, num_my_zon_wns
-  integer, allocatable :: my_zon_wns(:), nasm0(:)
-
-  ! Choose a spherical harmonic to initialize arrays
-  integer :: m_num = 4  ! Zonal wavenumber
-  integer :: l_num = 19  ! Total wavenumber
-
-  ! First initialise all spectral coefficients to zero
-  field(:) = 0.0
-
-  ! Get zonal wavenumbers this rank is responsible for
-  call trans_inq(knump=num_my_zon_wns)
-  allocate(my_zon_wns(num_my_zon_wns))
-  call trans_inq(kmyms=my_zon_wns)
-
-  ! If rank is responsible for the chosen zonal wavenumber...
-  if (any(my_zon_wns == m_num) ) then
-    ! Get array of spectral array addresses (this maps (m, n=m) to array index)
-    allocate(nasm0(0:nsmax))
-    call trans_inq(kasm0=nasm0)
-
-    ! Find out local array index of chosen spherical harmonic
-    index = nasm0(m_num) + 2 * (l_num - m_num) + 1
-
-    ! Set just that element to a constant value
-    field(index) = 1.0
-  else
-    return
-  end if
-
-end subroutine initialize_2d_spectral_field
-
-!===================================================================================================
-
-subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, noutdump)
-
-  ! Dump a 2d field to a binary file.
-
-  integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
-  integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
-  integer(kind=jpim), intent(in) :: nproma ! Size of nproma
-  integer(kind=jpim), intent(in) :: ngpblks ! Number of nproma blocks
-  real(kind=jprb)   , intent(in) :: fld(nproma,ngpblks) ! 2D field
-  character         , intent(in) :: fldchar ! Single character field identifier
-  integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
-
-  character(len=14) :: filename = "x.xxx.xxxx.dat"
-
-  write(filename(1:1),'(a1)') fldchar
-  write(filename(3:5),'(i3.3)') jstep
-  write(filename(7:10),'(i4.4)') myproc
-
-  open(noutdump, file=filename, form="unformatted")
-  write(noutdump) reshape(fld, (/ nproma*ngpblks /))
-  close(noutdump)
-
-end subroutine dump_gridpoint_field
+!!===================================================================================================
+!
+!subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
+!
+!  integer,         intent(in)    :: nsmax       ! Spectral truncation
+!  real(kind=jprb), intent(inout) :: zsp(:,:)    ! Surface pressure
+!  real(kind=jprb), intent(inout) :: sp3d(:,:,:) ! 3D fields
+!
+!  integer(kind=jpim) :: nflevl
+!  integer(kind=jpim) :: nfield
+!
+!  integer :: i, j
+!
+!  nflevl = size(sp3d, 1)
+!  nfield = size(sp3d, 3)
+!
+!  ! First initialize surface pressure
+!  call initialize_2d_spectral_field(nsmax, zsp(1,:))
+!
+!  ! Then initialize all of the 3D fields
+!  do i = 1, nflevl
+!    do j = 1, nfield
+!      call initialize_2d_spectral_field(nsmax, sp3d(i,:,j))
+!    end do
+!  end do
+!
+!end subroutine initialize_spectral_arrays
+!
+!!===================================================================================================
+!
+!subroutine initialize_2d_spectral_field(nsmax, field)
+!
+!  integer,         intent(in)    :: nsmax    ! Spectral truncation
+!  real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
+!
+!  integer :: i, index, num_my_zon_wns
+!  integer, allocatable :: my_zon_wns(:), nasm0(:)
+!
+!  ! Choose a spherical harmonic to initialize arrays
+!  integer :: m_num = 4  ! Zonal wavenumber
+!  integer :: l_num = 19  ! Total wavenumber
+!
+!  ! First initialise all spectral coefficients to zero
+!  field(:) = 0.0
+!
+!  ! Get zonal wavenumbers this rank is responsible for
+!  call trans_inq(knump=num_my_zon_wns)
+!  allocate(my_zon_wns(num_my_zon_wns))
+!  call trans_inq(kmyms=my_zon_wns)
+!
+!  ! If rank is responsible for the chosen zonal wavenumber...
+!  if (any(my_zon_wns == m_num) ) then
+!    ! Get array of spectral array addresses (this maps (m, n=m) to array index)
+!    allocate(nasm0(0:nsmax))
+!    call trans_inq(kasm0=nasm0)
+!
+!    ! Find out local array index of chosen spherical harmonic
+!    index = nasm0(m_num) + 2 * (l_num - m_num) + 1
+!
+!    ! Set just that element to a constant value
+!    field(index) = 1.0
+!  else
+!    return
+!  end if
+!
+!end subroutine initialize_2d_spectral_field
+!
+!!===================================================================================================
+!
+!subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, noutdump)
+!
+!  ! Dump a 2d field to a binary file.
+!
+!  integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
+!  integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
+!  integer(kind=jpim), intent(in) :: nproma ! Size of nproma
+!  integer(kind=jpim), intent(in) :: ngpblks ! Number of nproma blocks
+!  real(kind=jprb)   , intent(in) :: fld(nproma,ngpblks) ! 2D field
+!  character         , intent(in) :: fldchar ! Single character field identifier
+!  integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
+!
+!  character(len=14) :: filename = "x.xxx.xxxx.dat"
+!
+!  write(filename(1:1),'(a1)') fldchar
+!  write(filename(3:5),'(i3.3)') jstep
+!  write(filename(7:10),'(i4.4)') myproc
+!
+!  open(noutdump, file=filename, form="unformatted")
+!  write(noutdump) reshape(fld, (/ nproma*ngpblks /))
+!  close(noutdump)
+!
+!end subroutine dump_gridpoint_field
 
 !===================================================================================================
 
