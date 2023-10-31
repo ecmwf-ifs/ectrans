@@ -42,7 +42,10 @@ foreach( prec sp dp )
   endif()
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
-                           SOURCES ectrans-benchmark-program.F90 ectrans-benchmark-driver.F90
+                           SOURCES 
+			   ectrans-benchmark-program.F90 
+			   ectrans-benchmark-driver.F90
+			   ectrans-benchmark-data.F90
                            LIBS
                              fiat
                              parkind_${prec}

@@ -7,7 +7,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-program transform_test
+MODULE transform_driver
 
 !
 ! Spectral transform test
@@ -205,6 +205,7 @@ character(len=16) :: cgrid = ''
 
 integer(kind=jpim) :: ierr
 
+CONTAINS
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -217,307 +218,299 @@ integer(kind=jpim) :: ierr
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
 
+!!===================================================================================================
+!
+!luse_mpi = detect_mpirun()
+!
+!! Setup
+!call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
+!  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
+!if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
+!call parse_grid(cgrid, ndgl, nloen)
+!nflevg = nlev
+!
+!!===================================================================================================
+!
+!if (luse_mpi) then
+!  call mpl_init(ldinfo=(verbosity>=1))
+!  nproc  = mpl_nproc()
+!  myproc = mpl_myrank()
+!else
+!  nproc = 1
+!  myproc = 1
+!  mpl_comm = -1
+!endif
+!nthread = oml_max_threads()
+!
+!call dr_hook_init()
+!
+!!===================================================================================================
+!
+!if( lstats ) call gstats(0,0)
+!ztinit = timef()
+!
+!! only output to stdout on pe 1
+!if (nproc > 1) then
+!  if (myproc /= 1) then
+!    open(unit=nout, file='/dev/null')
+!  endif
+!endif
+!
+!if (ldetailed_stats) then
+!  lstats_omp    = .true.
+!  lstats_comms  = .true.
+!  lstats_mpl    = .true.
+!  lstatscpu     = .true.
+!  nprnt_stats   = nproc
+!!  lstats_mem   = .true.
+!!  lstats_alloc = .true.
+!endif
+!
+!!===================================================================================================
+!
+!allocate(nprcids(nproc))
+!do jj = 1, nproc
+!  nprcids(jj) = jj
+!enddo
+!
+!if (nproc <= 1) then
+!  lmpoff = .true.
+!endif
+!
+!! Compute nprgpns and nprgpew
+!! This version selects most square-like distribution
+!! These will change if leq_regions=.true.
+!if (nproc == 0) nproc = 1
+!isqr = int(sqrt(real(nproc,jprb)))
+!do ja = isqr, nproc
+!  ib = nproc/ja
+!  if (ja*ib == nproc) then
+!    nprgpns = max(ja,ib)
+!    nprgpew = min(ja,ib)
+!    exit
+!  endif
+!enddo
+!
+!! From sumpini, although this should be specified in namelist
+!if (nspecresmin == 0) nspecresmin = nproc
+!
+!! Compute nprtrv and nprtrw if not provided on the command line
+!if (nprtrv > 0 .or. nprtrw > 0) then
+!  if (nprtrv == 0) nprtrv = nproc/nprtrw
+!  if (nprtrw == 0) nprtrw = nproc/nprtrv
+!  if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
+!  if (nprtrw > nspecresmin) call abor1('transform_test:nprtrw > nspecresmin')
+!else
+!  do jprtrv = 4, nproc
+!    nprtrv = jprtrv
+!    nprtrw = nproc/nprtrv
+!    if (nprtrv*nprtrw /= nproc) cycle
+!    if (nprtrv > nprtrw) exit
+!    if (nprtrw > nspecresmin) cycle
+!    if (nprtrw <= nspecresmin/(2*oml_max_threads())) exit
+!  enddo
+!  ! Go for approx square partition for backup
+!  if (nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw) then
+!    isqr = int(sqrt(real(nproc,jprb)))
+!    do ja = isqr, nproc
+!      ib = nproc/ja
+!      if (ja*ib == nproc) then
+!        nprtrw = max(ja, ib)
+!        nprtrv = min(ja, ib)
+!        if (nprtrw > nspecresmin ) then
+!          call abor1('transform_test:nprtrw (approx square value) > nspecresmin')
+!        endif
+!        exit
+!      endif
+!    enddo
+!  endif
+!endif
+!
+!! Create communicators for mpi groups
+!if (.not.lmpoff) then
+!  call mpl_groups_create(nprtrw, nprtrv)
+!endif
+!
+!if (lmpoff) then
+!  mysetw = (myproc - 1)/nprtrv + 1
+!  mysetv = mod(myproc - 1, nprtrv) + 1
+!else
+!  call mpl_cart_coords(myproc, mysetw, mysetv)
+!
+!  ! Just checking for now...
+!  iprtrv = mod(myproc - 1, nprtrv) + 1
+!  iprtrw = (myproc - 1)/nprtrv + 1
+!  if (iprtrv /= mysetv .or. iprtrw /= mysetw) then
+!    call abor1('transform_test:inconsistency when computing mysetw and mysetv')
+!  endif
+!endif
+!
+!if (.not. lmpoff) then
+!  call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(verbosity>=1))
+!endif
+!
+!! Determine number of local levels for fourier and legendre calculations
+!! based on the values of nflevg and nprtrv
+!allocate(numll(nprtrv+1))
+!
+!! Calculate remainder
+!iprused = min(nflevg+1, nprtrv)
+!ilevpp = nflevg/nprtrv
+!irest = nflevg -ilevpp*nprtrv
+!do jroc = 1, nprtrv
+!  if (jroc <= irest) then
+!    numll(jroc) = ilevpp+1
+!  else
+!    numll(jroc) = ilevpp
+!  endif
+!enddo
+!numll(iprused+1:nprtrv+1) = 0
+!
+!nflevl = numll(mysetv)
+!
+!ivsetsc(1) = iprused
+!ifld = 0
+!
+!!===================================================================================================
+!! Setup gstats
+!!===================================================================================================
+!
+!if (lstats) then
+!  call gstats_setup(nproc, myproc, nprcids,                                            &
+!    & lstats, lstatscpu, lsyncstats, ldetailed_stats, lbarrier_stats, lbarrier_stats2, &
+!    & lstats_omp, lstats_comms, lstats_mem, nstats_mem, lstats_alloc,                  &
+!    & ltrace_stats, ntrace_stats, nprnt_stats, lxml_stats)
+!  call gstats_psut
+!
+!  ! Assign labels to GSTATS regions
+!  call gstats_labels
+!endif
+!
 !===================================================================================================
-
-luse_mpi = detect_mpirun()
-
-! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
-if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
-call parse_grid(cgrid, ndgl, nloen)
-nflevg = nlev
-
+! ecTrans setup routines
 !===================================================================================================
+SUBROUTINE ectrans_setup(kout,kerr,kverbosity,kprgpns,kprgpew,kprtw,lduse_mpi)
+integer(kind=jpim), intent(in) :: kout, kerr
+integer, intent(in) :: kverbosity
+integer(kind=jpim), intent(in) :: kprgpns, kprgpew, kprtw
+logical, intent(in) :: lduse_mpi 
+integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
+integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
+integer(kind=jpim) :: kcombflen = 1800000 ! Size of comm buffer
+logical :: lsync_trans = .true. ! Activate barrier sync
+logical :: leq_regions = .true. ! Eq regions flag
+real(kind=jprd) :: zra = 6371229._jprd
 
-if (luse_mpi) then
-  call mpl_init(ldinfo=(verbosity>=1))
-  nproc  = mpl_nproc()
-  myproc = mpl_myrank()
-else
-  nproc = 1
-  myproc = 1
-  mpl_comm = -1
-endif
-nthread = oml_max_threads()
+call setup_trans0(kout=kout, kerr=kerr, kprintlev=merge(2, 0, kverbosity == 1),                &
+  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=kprgpns, kprgpew=kprgpew, &
+  &               kprtrw=nprtrw, kcombflen=kcombflen, ldsync_trans=lsync_trans,               &
+  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=lduse_mpi)
 
-call dr_hook_init()
+END SUBROUTINE ectrans_setup
 
-!===================================================================================================
-
-if( lstats ) call gstats(0,0)
-ztinit = timef()
-
-! only output to stdout on pe 1
-if (nproc > 1) then
-  if (myproc /= 1) then
-    open(unit=nout, file='/dev/null')
-  endif
-endif
-
-if (ldetailed_stats) then
-  lstats_omp    = .true.
-  lstats_comms  = .true.
-  lstats_mpl    = .true.
-  lstatscpu     = .true.
-  nprnt_stats   = nproc
-!  lstats_mem   = .true.
-!  lstats_alloc = .true.
-endif
-
-!===================================================================================================
-
-allocate(nprcids(nproc))
-do jj = 1, nproc
-  nprcids(jj) = jj
-enddo
-
-if (nproc <= 1) then
-  lmpoff = .true.
-endif
-
-! Compute nprgpns and nprgpew
-! This version selects most square-like distribution
-! These will change if leq_regions=.true.
-if (nproc == 0) nproc = 1
-isqr = int(sqrt(real(nproc,jprb)))
-do ja = isqr, nproc
-  ib = nproc/ja
-  if (ja*ib == nproc) then
-    nprgpns = max(ja,ib)
-    nprgpew = min(ja,ib)
-    exit
-  endif
-enddo
-
-! From sumpini, although this should be specified in namelist
-if (nspecresmin == 0) nspecresmin = nproc
-
-! Compute nprtrv and nprtrw if not provided on the command line
-if (nprtrv > 0 .or. nprtrw > 0) then
-  if (nprtrv == 0) nprtrv = nproc/nprtrw
-  if (nprtrw == 0) nprtrw = nproc/nprtrv
-  if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
-  if (nprtrw > nspecresmin) call abor1('transform_test:nprtrw > nspecresmin')
-else
-  do jprtrv = 4, nproc
-    nprtrv = jprtrv
-    nprtrw = nproc/nprtrv
-    if (nprtrv*nprtrw /= nproc) cycle
-    if (nprtrv > nprtrw) exit
-    if (nprtrw > nspecresmin) cycle
-    if (nprtrw <= nspecresmin/(2*oml_max_threads())) exit
-  enddo
-  ! Go for approx square partition for backup
-  if (nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw) then
-    isqr = int(sqrt(real(nproc,jprb)))
-    do ja = isqr, nproc
-      ib = nproc/ja
-      if (ja*ib == nproc) then
-        nprtrw = max(ja, ib)
-        nprtrv = min(ja, ib)
-        if (nprtrw > nspecresmin ) then
-          call abor1('transform_test:nprtrw (approx square value) > nspecresmin')
-        endif
-        exit
-      endif
-    enddo
-  endif
-endif
-
-! Create communicators for mpi groups
-if (.not.lmpoff) then
-  call mpl_groups_create(nprtrw, nprtrv)
-endif
-
-if (lmpoff) then
-  mysetw = (myproc - 1)/nprtrv + 1
-  mysetv = mod(myproc - 1, nprtrv) + 1
-else
-  call mpl_cart_coords(myproc, mysetw, mysetv)
-
-  ! Just checking for now...
-  iprtrv = mod(myproc - 1, nprtrv) + 1
-  iprtrw = (myproc - 1)/nprtrv + 1
-  if (iprtrv /= mysetv .or. iprtrw /= mysetw) then
-    call abor1('transform_test:inconsistency when computing mysetw and mysetv')
-  endif
-endif
-
-if (.not. lmpoff) then
-  call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(verbosity>=1))
-endif
-
-! Determine number of local levels for fourier and legendre calculations
-! based on the values of nflevg and nprtrv
-allocate(numll(nprtrv+1))
-
-! Calculate remainder
-iprused = min(nflevg+1, nprtrv)
-ilevpp = nflevg/nprtrv
-irest = nflevg -ilevpp*nprtrv
-do jroc = 1, nprtrv
-  if (jroc <= irest) then
-    numll(jroc) = ilevpp+1
-  else
-    numll(jroc) = ilevpp
-  endif
-enddo
-numll(iprused+1:nprtrv+1) = 0
-
-nflevl = numll(mysetv)
-
-ivsetsc(1) = iprused
-ifld = 0
-
-!===================================================================================================
-! Setup gstats
-!===================================================================================================
-
-if (lstats) then
-  call gstats_setup(nproc, myproc, nprcids,                                            &
-    & lstats, lstatscpu, lsyncstats, ldetailed_stats, lbarrier_stats, lbarrier_stats2, &
-    & lstats_omp, lstats_comms, lstats_mem, nstats_mem, lstats_alloc,                  &
-    & ltrace_stats, ntrace_stats, nprnt_stats, lxml_stats)
-  call gstats_psut
-
-  ! Assign labels to GSTATS regions
-  call gstats_labels
-endif
-
-!===================================================================================================
-! Call ecTrans setup routines
-!===================================================================================================
-
-if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
-
-call gstats(1, 0)
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
-  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
-  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
-call gstats(1, 1)
-
-call gstats(2, 0)
-call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
+SUBROUTINE ectrans_setup0(ksmax,kdgl,kloen, lduseflt)
+integer(kind=jpim), intent(in) :: ksmax,kdgl 
+integer(kind=jpim), intent(in) :: kloen(:)
+logical, intent(in) :: lduseflt
+logical :: ldsplit = .true.
+logical :: lfftw = .true. ! Use FFTW for Fourier transforms
+logical :: luserpnm = .false.
+logical :: lkeeprpnm = .false.
+call setup_trans(ksmax=ksmax, kdgl=kdgl, kloen=nloen, ldsplit,          &
   &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &                 lduseflt=luseflt)
-call gstats(2, 1)
+  &                 lduseflt=lduseflt)
+END SUBROUTINE ectrans_setup0
 
-call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
+SUBROUTINE ectrans_trains_inq(kspec2, kspec2g, kgptot, kgptotg)
+integer(kind=jpim), intent(out) :: kspec2
+integer(kind=jpim), intent(out) :: kspec2g
+integer(kind=jpim), intent(out) :: kgptot
+integer(kind=jpim), intent(out) :: kgptotg
+call trans_inq(kspec2=kspec2, kspec2g=kspec2g, kgptot=kgptot, kgptotg=kgptotg)
+END SUBROUTINE ectrans_trains_inq
 
-if (nproma == 0) then ! no blocking (default when not specified)
-  nproma = ngptot
-endif
-
-! Calculate number of NPROMA blocks
-ngpblks = (ngptot - 1)/nproma+1
-
-!===================================================================================================
-! Print information before starting
-!===================================================================================================
-
-! Print configuration details
-if (verbosity >= 0) then
-  write(nout,'(" ")')
-  write(nout,'(a)')'======= Start of runtime parameters ======='
-  write(nout,'(" ")')
-  write(nout,'("nsmax     ",i0)') nsmax
-  write(nout,'("grid      ",a)') trim(cgrid)
-  write(nout,'("ndgl      ",i0)') ndgl
-  write(nout,'("nproc     ",i0)') nproc
-  write(nout,'("nthread   ",i0)') nthread
-  write(nout,'("nprgpns   ",i0)') nprgpns
-  write(nout,'("nprgpew   ",i0)') nprgpew
-  write(nout,'("nprtrw    ",i0)') nprtrw
-  write(nout,'("nprtrv    ",i0)') nprtrv
-  write(nout,'("ngptot    ",i0)') ngptot
-  write(nout,'("ngptotg   ",i0)') ngptotg
-  write(nout,'("nfld      ",i0)') nfld
-  write(nout,'("nlev      ",i0)') nlev
-  write(nout,'("nproma    ",i0)') nproma
-  write(nout,'("ngpblks   ",i0)') ngpblks
-  write(nout,'("nspec2    ",i0)') nspec2
-  write(nout,'("nspec2g   ",i0)') nspec2g
-  write(nout,'("luseflt   ",l)') luseflt
-  write(nout,'("lvordiv   ",l)') lvordiv
-  write(nout,'("lscders   ",l)') lscders
-  write(nout,'("luvders   ",l)') luvders
-  write(nout,'(" ")')
-  write(nout,'(a)') '======= End of runtime parameters ======='
-  write(nout,'(" ")')
-end if
-
-!===================================================================================================
-! Allocate and Initialize spectral arrays
-!===================================================================================================
-
-! Allocate spectral arrays
+SUBROUTINE ectrans_allocate_spectral(kflevl,kspec2,kfld,ksmax)
+USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a
+USE transform_driver_data_mod, ONLY :: sp3d
+integer(kind=jpim), intent(in) :: kflevl,kspec2,kfld,ksmax
 ! Try to mimick IFS layout as much as possible
 nullify(zspvor)
 nullify(zspdiv)
 nullify(zspsc3a)
-allocate(sp3d(nflevl,nspec2,2+nfld))
-allocate(zspsc2(1,nspec2))
-
-call initialize_spectral_arrays(nsmax, zspsc2, sp3d)
-
+allocate(sp3d(kflevl,kspec2,2+kfld))
+allocate(zspsc2(1,kspec2))
+call initialize_spectral_arrays(ksmax, zspsc2, sp3d)
 ! Point convenience variables to storage variable sp3d
 zspvor  => sp3d(:,:,1)
 zspdiv  => sp3d(:,:,2)
-zspsc3a => sp3d(:,:,3:3+(nfld-1))
+zspsc3a => sp3d(:,:,3:3+(kfld-1))
+END SUBROUTINE ectrans_allocate_spectral
+
+
+SUBROUTINE ectrans_allocate_grid(nproma, ngpblks, nfld, &
+        & ldvordiv, lduvders, ldscders) 
+  USE transform_driver_data_mod, ONLY:  zgmv,zgmvs
+  USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
+  integer(kind=jpim), intent(in) :: nproma
+  integer(kind=jpim), intent(in) :: ngpblks
+  integer(kind=jpim), intent(in) :: nfld
+  logical, intent(in) :: ldvordiv, lduvders, ldscders
+  integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
+  integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
+  integer(kind=jpim) :: jbegin_uv = 0
+  integer(kind=jpim) :: jend_uv   = 0
+  integer(kind=jpim) :: jbegin_sc = 0
+  integer(kind=jpim) :: jend_sc   = 0
+  integer(kind=jpim) :: jbegin_scder_NS = 0
+  integer(kind=jpim) :: jend_scder_NS = 0
+  integer(kind=jpim) :: jbegin_scder_EW = 0
+  integer(kind=jpim) :: jend_scder_EW = 0
+  integer(kind=jpim) :: jbegin_uder_EW = 0
+  integer(kind=jpim) :: jend_uder_EW = 0
+  integer(kind=jpim) :: jbegin_vder_EW = 0
+  integer(kind=jpim) :: jend_vder_EW = 0
+
+
+ if (ldvordiv) then
+    jbegin_uv = 1
+    jend_uv = 2
+  endif
+  if (lduvders) then
+    jbegin_uder_EW  = jend_uv + 1
+    jend_uder_EW    = jbegin_uder_EW + 1
+    jbegin_vder_EW  = jend_uder_EW + 1
+    jend_vder_EW    = jbegin_vder_EW + 1
+  else
+    jbegin_uder_EW = jend_uv
+    jend_uder_EW   = jend_uv
+    jbegin_vder_EW = jend_uv
+    jend_vder_EW   = jend_uv
+  endif
+
+  jbegin_sc = jbegin_vder_EW + 1
+  jend_sc   = jbegin_vder_EW + nfld
+
+  if (ldscders) then
+    ndimgmvs = 3
+    jbegin_scder_NS = jend_sc + 1
+    jend_scder_NS   = jend_sc + nfld
+    jbegin_scder_EW = jend_scder_NS + 1
+    jend_scder_EW   = jend_scder_NS + nfld
+  else
+    ndimgmvs = 1
+    jbegin_scder_NS = jend_sc
+    jend_scder_NS   = jend_sc
+    jbegin_scder_EW = jend_sc
+    jend_scder_EW   = jend_sc
+  endif
+
+  ndimgmv = jend_scder_EW
+
+
 
 !===================================================================================================
 ! Allocate gridpoint arrays
 !===================================================================================================
-
-allocate(ivset(nflevg))
-
-! Compute spectral distribution
-ilev = 0
-do jb = 1, nprtrv
-  do jlev=1, numll(jb)
-    ilev = ilev + 1
-    ivset(ilev) = jb
-  enddo
-enddo
-
-! Allocate grid-point arrays
-if (lvordiv) then
-  jbegin_uv = 1
-  jend_uv = 2
-endif
-if (luvders) then
-  jbegin_uder_EW  = jend_uv + 1
-  jend_uder_EW    = jbegin_uder_EW + 1
-  jbegin_vder_EW  = jend_uder_EW + 1
-  jend_vder_EW    = jbegin_vder_EW + 1
-else
-  jbegin_uder_EW = jend_uv
-  jend_uder_EW   = jend_uv
-  jbegin_vder_EW = jend_uv
-  jend_vder_EW   = jend_uv
-endif
-
-jbegin_sc = jbegin_vder_EW + 1
-jend_sc   = jbegin_vder_EW + nfld
-
-if (lscders) then
-  ndimgmvs = 3
-  jbegin_scder_NS = jend_sc + 1
-  jend_scder_NS   = jend_sc + nfld
-  jbegin_scder_EW = jend_scder_NS + 1
-  jend_scder_EW   = jend_scder_NS + nfld
-else
-  ndimgmvs = 1
-  jbegin_scder_NS = jend_sc
-  jend_scder_NS   = jend_sc
-  jbegin_scder_EW = jend_sc
-  jend_scder_EW   = jend_sc
-endif
-
-ndimgmv = jend_scder_EW
-
 allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
 allocate(zgmvs(nproma,ndimgmvs,ngpblks))
 
@@ -525,11 +518,23 @@ zgpuv => zgmv(:,:,1:jend_vder_EW,:)
 zgp3a => zgmv(:,:,jbegin_sc:jend_scder_EW,:)
 zgp2  => zgmvs(:,:,:)
 
+END SUBROUTINE ectrans_allocate_grid
+SUBROUTINE ectrans_deallocate_grid
+deallocate(zgmv)
+deallocate(zgmvs)
+END SUBROUTINE ectrans_deallocate_grid
+
 !===================================================================================================
 ! Allocate norm arrays
 !===================================================================================================
 
-if (lprint_norms .or. ncheck > 0) then
+SUBROUTINE ectrans_allocate_normdata(nflevl, nflevg)
+USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY :: znormsp, znormsp1 
+USE transform_driver_data_mod, ONLY :: znormvor, znormvor1 
+USE transform_driver_data_mod, ONLY :: znormdiv, znormdiv1 
+USE transform_driver_data_mod, ONLY :: znormt, znormt1 
+  integer(kind=jpim), intent(in) :: nflevl,nflevg
   allocate(znormsp(1))
   allocate(znormsp1(1))
   allocate(znormvor(nflevg))
@@ -539,12 +544,42 @@ if (lprint_norms .or. ncheck > 0) then
   allocate(znormt(nflevg))
   allocate(znormt1(nflevg))
 
+END SUBROUTINE ectrans_allocate_normdata
+
+SUBROUTINE ectrans_calculate_norms(indx, nflevl, nflevg, ivset,ivsetsc)
+USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY :: znormsp, znormsp1 
+USE transform_driver_data_mod, ONLY :: znormvor, znormvor1 
+USE transform_driver_data_mod, ONLY :: znormdiv, znormdiv1 
+USE transform_driver_data_mod, ONLY :: znormt, znormt1 
+  integer(kind=jpim), intent(in) :: indx,nflevl,nflevg,ivsetsc
+  integer(kind=jpim), intent(in) :: ivset(:)
+  select case(indx)
+    case(0) 
+  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
+  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
+  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
+    case(1) 
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
+    case(2) 
+  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
+  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
+  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
+  end select
+END SUBROUTINE ectrans_calculate_norms
 
-  if (verbosity >= 1) then
+SUBROUTINE ectrans_print_norms_init(nout,nflevg)
+USE transform_driver_data_mod, ONLY :: znormsp1 
+USE transform_driver_data_mod, ONLY :: znormvor1 
+USE transform_driver_data_mod, ONLY :: znormdiv1 
+USE transform_driver_data_mod, ONLY :: znormt1 
+  integer(kind=jpim), intent(in) :: nout,nflevg
+  integer(kind=jpim) :: ifld
     do ifld = 1, nflevg
       write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
     enddo
@@ -557,24 +592,17 @@ if (lprint_norms .or. ncheck > 0) then
     do ifld = 1, 1
       write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
     enddo
-  endif
-endif
-
+END SUBROUTINE ectrans_print_norms_init
 !===================================================================================================
 ! Setup timers
 !===================================================================================================
 
-ztinit = (timef() - ztinit)/1000.0_jprd
 
-if (verbosity >= 0) then
-  write(nout,'(" ")')
-  write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
-                                & " tasks, took",ztinit," sec"
-  write(nout,'(" ")')
-endif
-
-if (iters <= 0) call abor1('transform_test:iters <= 0')
-
+SUBROUTINE ectrans_allocate_timers(iters,nout,nflevg)
+USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2 
+USE transform_driver_data_mod, ONLY :: ztstepmax1, ztstepmin1, ztstepavg1 
+USE transform_driver_data_mod, ONLY :: ztstepmax2, ztstepmin2, ztstepavg2 
+  integer(kind=jpim), intent(in) :: iters 
 allocate(ztstep(iters))
 allocate(ztstep1(iters))
 allocate(ztstep2(iters))
@@ -588,27 +616,45 @@ ztstepmin1 = 9999999999999999._jprd
 ztstepavg2 = 0._jprd
 ztstepmax2 = 0._jprd
 ztstepmin2 = 9999999999999999._jprd
+END SUBROUTINE ectrans_allocate_timers
 
-write(nout,'(a)') '======= Start of spectral transforms  ======='
-write(nout,'(" ")')
+SUBROUTINE ectrans_set_ztstep_start(indx,jstep)
+USE transform_driver_data_mod, ONLY :: ztstep,ztstep1,ztstep2
+  integer(kind=jpim), intent(in) :: indx,jstep 
+  select case(indx)
+     case (0)
+       ztstep(jstep) = timef()
+     case (1)
+       ztstep1(jstep) = timef()
+     case (2)
+       ztstep2(jstep) = timef()
+   end select
+END SUBROUTINE ectrans_set_ztstep_start
 
-ztloop = timef()
-
-!===================================================================================================
-! Do spectral transform loop
-!===================================================================================================
-
-do jstep = 1, iters
-  call gstats(3,0)
-  ztstep(jstep) = timef()
-
+SUBROUTINE ectrans_set_ztstep_end(indx,jstep)
+USE transform_driver_data_mod, ONLY :: ztstep,ztstep1,ztstep2
+  integer(kind=jpim), intent(in) :: indx, jstep 
+  select case(indx)
+     case (0)
+  ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
+     case (1)
+  ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
+     case (2)
+  ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
+   end select
+END SUBROUTINE ectrans_set_ztstep_end(jstep)
   !=================================================================================================
   ! Do inverse transform
   !=================================================================================================
 
-  ztstep1(jstep) = timef()
-  call gstats(4,0)
-  if (lvordiv) then
+SUBROUTINE ectrans_inv_trans(nproma,lscders,luvders,ivset,ivsetc)
+USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
+  integer(kind=jpim), intent(in) :: nproma, ivsetc 
+  integer(kind=jpim), intent(in) :: ivset(:)
+  logical, intent(in) :: lscders
+  logical, intent(in), optional :: luvders
+    if(present(luvders)) then
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspvor=zspvor,                     & ! spectral vorticity
@@ -634,30 +680,35 @@ do jstep = 1, iters
        & pgp2=zgp2,                         &
        & pgp3a=zgp3a)
   endif
+END SUBROUTINE ectrans_inv_trans
   call gstats(4,1)
-
-  ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
   !=================================================================================================
   ! While in grid point space, dump the values to disk, for debugging only
   !=================================================================================================
 
-  if (ldump_values) then
+SUBROUTINE ectrans_dump(jstep, myproc, nproma, ngpblks, noutdump)
+USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
+  integer(kind=jpim), intent(in) :: jstep, myproc, nproma, ngpblks, noutdump 
     ! dump a field to a binary file
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
-  endif
+END SUBROUTINE ectrans_dump
 
   !=================================================================================================
   ! Do direct transform
   !=================================================================================================
 
-  ztstep2(jstep) = timef()
 
-  call gstats(5,0)
-  if (lvordiv) then
+SUBROUTINE ectrans_dir_trans(nproma,nfld,ivset,ivsetc,lvordiv)
+USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgmvs
+  integer(kind=jpim), intent(in) :: nproma, ivsetc 
+  integer(kind=jpim), intent(in) :: ivset(:)
+  logical, intent(in), optional :: lvordiv
+    if(present(lvordiv)) then
     call dir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgmvs(:,1:1,:),                &
       & pgpuv=zgpuv(:,:,1:2,:),             &
@@ -678,13 +729,16 @@ do jstep = 1, iters
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
-  call gstats(5,1)
-  ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
+END SUBROUTINE ectrans_dir_trans
 
   !=================================================================================================
   ! Calculate timings
   !=================================================================================================
 
+SUBROUTINE ectrans_calculate_timings(jstep)
+USE transform_driver_data_mod, ONLY:: ztstepmax1, ztstepmin1, ztstepavg1
+USE transform_driver_data_mod, ONLY:: ztstepmax2, ztstepmin2, ztstepavg2
+USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
   ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
 
   ztstepavg = ztstepavg + ztstep(jstep)
@@ -698,18 +752,20 @@ do jstep = 1, iters
   ztstepavg2 = ztstepavg2 + ztstep2(jstep)
   ztstepmin2 = min(ztstep2(jstep), ztstepmin2)
   ztstepmax2 = max(ztstep2(jstep), ztstepmax2)
+END SUBROUTINE ectrans_calculate_timings
 
   !=================================================================================================
   ! Print norms
   !=================================================================================================
 
-  if (lprint_norms) then
-    call gstats(6,0)
-    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
-    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
-    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
 
+    SUBROUTINE ectrans_print_norms_calc(nout,ifld,jstep,myproc)
+USE transform_driver_data_mod, ONLY :: znormsp,znormsp1 
+USE transform_driver_data_mod, ONLY :: znormvor,znormvor1 
+USE transform_driver_data_mod, ONLY :: znormdiv,znormdiv1 
+USE transform_driver_data_mod, ONLY :: znormt,znormt1 
+USE transform_driver_data_mod, ONLY :: zerr,zmaxerr 
+integer(kind=jpim), intent(in) :: nout,ifld,jstep,myproc
     ! Surface pressure
     if (myproc == 1) then
       zmaxerr(:) = -999.0
@@ -738,28 +794,16 @@ do jstep = 1, iters
                   & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
                   &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
     endif
-    call gstats(6,1)
-  else
-    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
-  endif
-  call gstats(3,1)
-enddo
+    END SUBROUTINE ectrans_print_norms_calc
 
-!===================================================================================================
-
-ztloop = (timef() - ztloop)/1000.0_jprd
-
-write(nout,'(" ")')
-write(nout,'(a)') '======= End of spectral transforms  ======='
-write(nout,'(" ")')
-
-if (lprint_norms .or. ncheck > 0) then
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
-  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
-  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
-
-  if (myproc == 1) then
+    SUBROUTINE ectrans_print_norms_fin(nout,ifld,nflevg,verbosity)
+USE transform_driver_data_mod, ONLY :: znormsp,znormsp1 
+USE transform_driver_data_mod, ONLY :: znormvor,znormvor1 
+USE transform_driver_data_mod, ONLY :: znormdiv,znormdiv1 
+USE transform_driver_data_mod, ONLY :: znormt,znormt1 
+USE transform_driver_data_mod, ONLY :: zerr,zmaxerr 
+integer(kind=jpim), intent(in) :: nout,ifld,nflevg
+logical, intent(in)  :: verbosity
     zmaxerr(:) = -999.0
     do ifld = 1, nflevg
       zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
@@ -801,12 +845,14 @@ if (lprint_norms .or. ncheck > 0) then
     write(nout,*)
     write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
     write(nout,*)
+    END SUBROUTINE ectrans_print_norms_fin
   endif
-  if (ncheck > 0) then
-    ierr = 0
-    if (myproc == 1) then
       ! If the maximum spectral norm error across all fields is greater than 100 times the machine
       ! epsilon, fail the test
+    FUNCTION ectrans_print_norms_fails(ncheck) result (ierr)
+      integer(kind=jpim), intent(in) :: ncheck
+      integer(kind=jpim), intent(out) :: ierr 
+      ierr = 0
       if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
         write(nout, '(a)') '*******************************'
         write(nout, '(a)') 'Correctness test failed'
@@ -815,21 +861,12 @@ if (lprint_norms .or. ncheck > 0) then
         write(nout, '(a)') '*******************************'
         ierr = 1
       endif
-    endif
-
-    ! Root rank broadcasts the correctness checker result to the other ranks
-    if (luse_mpi) then
-      call mpl_broadcast(ierr,kroot=1,ktag=1)
-    endif
-
-    ! Halt if correctness checker failed
-    if (ierr == 1) then
-      error stop
-    endif
-  endif
-endif
-
-if (luse_mpi) then
+    END SUBROUTINE ectrans_print_norms_fails
+    SUBROUTINE ectrans_norms_reduce(ztloop)
+USE transform_driver_data_mod, ONLY:: ztstepmax1, ztstepmin1, ztstepavg1
+USE transform_driver_data_mod, ONLY:: ztstepmax2, ztstepmin2, ztstepavg2
+USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
+    real(kind=jprd), intent(inout) :: ztloop
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
   call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
   call mpl_allreduce(ztstepavg,  'sum', ldreprod=.false.)
@@ -845,10 +882,14 @@ if (luse_mpi) then
   call mpl_allreduce(ztstepavg2, 'sum', ldreprod=.false.)
   call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
   call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
-endif
-
+ END SUBROUTINE ectrans_norms_reduce
+ctrans_print_time_stats(ztlo
+ SUBROUTINE ectrans_compute_time_stats(nproc,iters)
+USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
+USE transform_driver_data_mod, ONLY :: ztstepavg, ztstepavg1, ztstepavg2  
+USE transform_driver_data_mod, ONLY :: ztstepmed, ztstepmed1, ztstepmed2  
+      integer(kind=jpim), intent(in) :: nproc,iters
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
-ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
 
 call sort(ztstep,iters)
@@ -866,6 +907,13 @@ ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
 
+ END SUBROUTINE ectrans_compute_time_stats
+ SUBROUTINE ectrans_print_time_stats(ztloop,nproc)
+USE transform_driver_data_mod, ONLY :: ztstepavg, ztstepavg1, ztstepavg2  
+USE transform_driver_data_mod, ONLY :: ztstepmax, ztstepmax1, ztstepmax2  
+USE transform_driver_data_mod, ONLY :: ztstepmin, ztstepmin1, ztstepmin2  
+USE transform_driver_data_mod, ONLY :: ztstepmed, ztstepmed1, ztstepmed2  
+ztloop = ztloop/real(nproc,jprd)
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
 write(nout,'("Inverse transforms")')
@@ -892,65 +940,7 @@ write(nout,'("loop (s): ",f8.4)') ztloop
 write(nout,'(" ")')
 write(nout,'(a)') '======= End of time step stats ======='
 write(nout,'(" ")')
-
-if (lstack) then
-  ! Gather stack usage statistics
-  istack = getstackusage()
-  if (myproc == 1) then
-    print 9000, istack
-    9000 format("Stack utilisation information",/,&
-         &"=============================",//,&
-         &"Task           size(bytes)",/,&
-         &"====           ===========",//,&
-         &"   1",11x,i10)
-
-    do i = 2, nproc
-      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='transform_test:')
-      print '(i4,11x,i10)', i, istack
-    enddo
-  else
-    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='transform_test:')
-  endif
-endif
-
-
-!===================================================================================================
-! Cleanup
-!===================================================================================================
-
-deallocate(zgmv)
-deallocate(zgmvs)
-
-!===================================================================================================
-
-if (lstats) then
-  call gstats(0,1)
-  call gstats_print(nout, zaveave, jpmaxstat)
-endif
-
-if (lmeminfo) then
-  write(nout,*)
-  call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
-      & kcall=1)
-endif
-
-!===================================================================================================
-! Finalize MPI
-!===================================================================================================
-
-if (luse_mpi) then
-  call mpl_end(ldmeminfo=.false.)
-endif
-
-!===================================================================================================
-! Close file
-!===================================================================================================
-
-if (nproc > 1) then
-  if (myproc /= 1) then
-    close(unit=nout)
-  endif
-endif
+END SUBROUTINE ectrans_print_time_stats
 
 !===================================================================================================
 

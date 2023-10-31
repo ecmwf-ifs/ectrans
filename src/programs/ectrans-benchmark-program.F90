@@ -146,7 +146,7 @@ integer :: verbosity = 0
 
 real(kind=jprd) :: zra = 6371229._jprd
 
-integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
+integer(kind=jpim) : nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
 integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
 
@@ -182,19 +182,7 @@ integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 
 integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
 integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
-
-integer(kind=jpim) :: jbegin_uv = 0
-integer(kind=jpim) :: jend_uv   = 0
-integer(kind=jpim) :: jbegin_sc = 0
-integer(kind=jpim) :: jend_sc   = 0
-integer(kind=jpim) :: jbegin_scder_NS = 0
-integer(kind=jpim) :: jend_scder_NS = 0
-integer(kind=jpim) :: jbegin_scder_EW = 0
-integer(kind=jpim) :: jend_scder_EW = 0
-integer(kind=jpim) :: jbegin_uder_EW = 0
-integer(kind=jpim) :: jend_uder_EW = 0
-integer(kind=jpim) :: jbegin_vder_EW = 0
-integer(kind=jpim) :: jend_vder_EW = 0
+!
 
 logical :: ldump_values = .false.
 
@@ -207,15 +195,15 @@ integer(kind=jpim) :: ierr
 
 !===================================================================================================
 
-#include "setup_trans0.h"
-#include "setup_trans.h"
-#include "inv_trans.h"
-#include "dir_trans.h"
-#include "trans_inq.h"
-#include "specnorm.h"
-#include "abor1.intfb.h"
-#include "gstats_setup.intfb.h"
-#include "ec_meminfo.intfb.h"
+!#include "setup_trans0.h"
+!#include "setup_trans.h"
+!#include "inv_trans.h"
+!#include "dir_trans.h"
+!#include "trans_inq.h"
+!#include "specnorm.h"
+!#include "abor1.intfb.h"
+!#include "gstats_setup.intfb.h"
+!#include "ec_meminfo.intfb.h"
 
 !===================================================================================================
 
@@ -385,73 +373,53 @@ if (lstats) then
   call gstats_labels
 endif
 
-!!===================================================================================================
-!! Call ecTrans setup routines
-!!===================================================================================================
-!
-!if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
-!
-!call gstats(1, 0)
+!===================================================================================================
+! Call ecTrans setup routines
+!===================================================================================================
+
+if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
+
+call gstats(1, 0)
+call ectrans_setup0(kout=nout, kerr=nerr, kverbosity=verbosity, kprgpns=nprgpns, kprgpew=nprgpew, &
+  & kprtrw=nprtrw, ldusempi=.not.luse_mpi) 
 !call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
 !  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
 !  &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
 !  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
-!call gstats(1, 1)
+call gstats(1, 1)
 !
-!call gstats(2, 0)
+call gstats(2, 0)
+call ectrans_setup(ksmax=nsmax, kdgl=ndgl, kloen=nloen, lduseflt=luseflt) 
 !call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
 !  &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
 !  &                 lduseflt=luseflt)
-!call gstats(2, 1)
+call gstats(2, 1)
 !
+call ectrans_trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
 !call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
-!
-!if (nproma == 0) then ! no blocking (default when not specified)
-!  nproma = ngptot
-!endif
-!
-!! Calculate number of NPROMA blocks
-!ngpblks = (ngptot - 1)/nproma+1
-!
-!!===================================================================================================
-!! Print information before starting
-!!===================================================================================================
-!
-!! Print configuration details
-!if (verbosity >= 0) then
-!  write(nout,'(" ")')
-!  write(nout,'(a)')'======= Start of runtime parameters ======='
-!  write(nout,'(" ")')
-!  write(nout,'("nsmax     ",i0)') nsmax
-!  write(nout,'("grid      ",a)') trim(cgrid)
-!  write(nout,'("ndgl      ",i0)') ndgl
-!  write(nout,'("nproc     ",i0)') nproc
-!  write(nout,'("nthread   ",i0)') nthread
-!  write(nout,'("nprgpns   ",i0)') nprgpns
-!  write(nout,'("nprgpew   ",i0)') nprgpew
-!  write(nout,'("nprtrw    ",i0)') nprtrw
-!  write(nout,'("nprtrv    ",i0)') nprtrv
-!  write(nout,'("ngptot    ",i0)') ngptot
-!  write(nout,'("ngptotg   ",i0)') ngptotg
-!  write(nout,'("nfld      ",i0)') nfld
-!  write(nout,'("nlev      ",i0)') nlev
-!  write(nout,'("nproma    ",i0)') nproma
-!  write(nout,'("ngpblks   ",i0)') ngpblks
-!  write(nout,'("nspec2    ",i0)') nspec2
-!  write(nout,'("nspec2g   ",i0)') nspec2g
-!  write(nout,'("luseflt   ",l)') luseflt
-!  write(nout,'("lvordiv   ",l)') lvordiv
-!  write(nout,'("lscders   ",l)') lscders
-!  write(nout,'("luvders   ",l)') luvders
-!  write(nout,'(" ")')
-!  write(nout,'(a)') '======= End of runtime parameters ======='
-!  write(nout,'(" ")')
-!end if
-!
-!!===================================================================================================
-!! Allocate and Initialize spectral arrays
-!!===================================================================================================
-!
+
+
+if (nproma == 0) then ! no blocking (default when not specified)
+  nproma = ngptot
+endif
+
+! Calculate number of NPROMA blocks
+ngpblks = (ngptot - 1)/nproma+1
+
+!===================================================================================================
+! Print information before starting
+!===================================================================================================
+
+! Print configuration details
+if (verbosity >= 0) then
+call ectrans_print_runtimepars('default')
+end if
+
+!===================================================================================================
+! Allocate and Initialize spectral arrays
+!===================================================================================================
+
+call ectrans_allocate_spectral(nflevl,nspec2,nfld,nsmax)
 !! Allocate spectral arrays
 !! Try to mimick IFS layout as much as possible
 !nullify(zspvor)
@@ -470,54 +438,19 @@ endif
 !!===================================================================================================
 !! Allocate gridpoint arrays
 !!===================================================================================================
+allocate(ivset(nflevg))
+
+! Compute spectral distribution
+ilev = 0
+do jb = 1, nprtrv
+  do jlev=1, numll(jb)
+    ilev = ilev + 1
+    ivset(ilev) = jb
+  enddo
+enddo
 !
-!allocate(ivset(nflevg))
 !
-!! Compute spectral distribution
-!ilev = 0
-!do jb = 1, nprtrv
-!  do jlev=1, numll(jb)
-!    ilev = ilev + 1
-!    ivset(ilev) = jb
-!  enddo
-!enddo
-!
-!! Allocate grid-point arrays
-!if (lvordiv) then
-!  jbegin_uv = 1
-!  jend_uv = 2
-!endif
-!if (luvders) then
-!  jbegin_uder_EW  = jend_uv + 1
-!  jend_uder_EW    = jbegin_uder_EW + 1
-!  jbegin_vder_EW  = jend_uder_EW + 1
-!  jend_vder_EW    = jbegin_vder_EW + 1
-!else
-!  jbegin_uder_EW = jend_uv
-!  jend_uder_EW   = jend_uv
-!  jbegin_vder_EW = jend_uv
-!  jend_vder_EW   = jend_uv
-!endif
-!
-!jbegin_sc = jbegin_vder_EW + 1
-!jend_sc   = jbegin_vder_EW + nfld
-!
-!if (lscders) then
-!  ndimgmvs = 3
-!  jbegin_scder_NS = jend_sc + 1
-!  jend_scder_NS   = jend_sc + nfld
-!  jbegin_scder_EW = jend_scder_NS + 1
-!  jend_scder_EW   = jend_scder_NS + nfld
-!else
-!  ndimgmvs = 1
-!  jbegin_scder_NS = jend_sc
-!  jend_scder_NS   = jend_sc
-!  jbegin_scder_EW = jend_sc
-!  jend_scder_EW   = jend_sc
-!endif
-!
-!ndimgmv = jend_scder_EW
-!
+call ectrans_allocate_grid(nproma, ngpblks, nfld,lvordiv, luvders, lscders)
 !allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
 !allocate(zgmvs(nproma,ndimgmvs,ngpblks))
 !
@@ -529,7 +462,9 @@ endif
 !! Allocate norm arrays
 !!===================================================================================================
 !
-!if (lprint_norms .or. ncheck > 0) then
+if (lprint_norms .or. ncheck > 0) then
+call ectrans_allocate_normdata(nflevl=nflevl, nflevg=nflevg)
+call ectrans_calculate_norms(indx=1, nflevl, nflevg, ivset,ivsetsc)
 !  allocate(znormsp(1))
 !  allocate(znormsp1(1))
 !  allocate(znormvor(nflevg))
@@ -544,7 +479,8 @@ endif
 !  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
 !  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 !
-!  if (verbosity >= 1) then
+  if (verbosity >= 1) then
+    call ectrans_print_norms_init(nout,nflevg)
 !    do ifld = 1, nflevg
 !      write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
 !    enddo
@@ -557,23 +493,24 @@ endif
 !    do ifld = 1, 1
 !      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
 !    enddo
-!  endif
-!endif
+  endif
+endif
 !
 !!===================================================================================================
 !! Setup timers
 !!===================================================================================================
+call ectrans_setup_timers
 !
-!ztinit = (timef() - ztinit)/1000.0_jprd
-!
-!if (verbosity >= 0) then
-!  write(nout,'(" ")')
-!  write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
-!                                & " tasks, took",ztinit," sec"
-!  write(nout,'(" ")')
-!endif
-!
-!if (iters <= 0) call abor1('transform_test:iters <= 0')
+ztinit = (timef() - ztinit)/1000.0_jprd
+
+if (verbosity >= 0) then
+  write(nout,'(" ")')
+  write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
+                                & " tasks, took",ztinit," sec"
+  write(nout,'(" ")')
+endif
+
+if (iters <= 0) call abor1('transform_test:iters <= 0')
 !
 !allocate(ztstep(iters))
 !allocate(ztstep1(iters))
@@ -589,26 +526,31 @@ endif
 !ztstepmax2 = 0._jprd
 !ztstepmin2 = 9999999999999999._jprd
 !
-!write(nout,'(a)') '======= Start of spectral transforms  ======='
-!write(nout,'(" ")')
+call ectrans_allocate_timers(nout,nflevg)
+
+write(nout,'(a)') '======= Start of spectral transforms  ======='
+write(nout,'(" ")')
 !
-!ztloop = timef()
+ztloop = timef()
 !
 !!===================================================================================================
 !! Do spectral transform loop
 !!===================================================================================================
-!
-!do jstep = 1, iters
-!  call gstats(3,0)
-!  ztstep(jstep) = timef()
+do jstep = 1, iters
+call ectrans_spectral_loop
+  call gstats(3,0)
+! ztstep(jstep) = timef()
+  call ectrans_set_ztstep_start(indx=0,jstep=jstep)
 !
 !  !=================================================================================================
 !  ! Do inverse transform
 !  !=================================================================================================
 !
-!  ztstep1(jstep) = timef()
-!  call gstats(4,0)
-!  if (lvordiv) then
+! ztstep1(jstep) = timef()
+  call ectrans_set_ztstep_start(indx=1,jstep=jstep)
+  call gstats(4,0)
+  if (lvordiv) then
+  call ectrans_inv_trans(nproma=nproma,lscders=lscders,luvders=luvders,ivset=ivset,ivsetc=ivsetc)
 !    call inv_trans(kresol=1, kproma=nproma, &
 !       & pspsc2=zspsc2,                     & ! spectral surface pressure
 !       & pspvor=zspvor,                     & ! spectral vorticity
@@ -624,7 +566,8 @@ endif
 !       & pgp2=zgp2,                         &
 !       & pgpuv=zgpuv,                       &
 !       & pgp3a=zgp3a)
-!  else
+  else
+  call ectrans_inv_trans(nproma=nproma,lscders=lscders,ivset=ivset,ivsetc=ivsetc)
 !    call inv_trans(kresol=1, kproma=nproma, &
 !       & pspsc2=zspsc2,                     & ! spectral surface pressure
 !       & pspsc3a=zspsc3a,                   & ! spectral scalars
@@ -633,31 +576,35 @@ endif
 !       & kvsetsc3a=ivset,                   &
 !       & pgp2=zgp2,                         &
 !       & pgp3a=zgp3a)
-!  endif
-!  call gstats(4,1)
+  endif
+  call gstats(4,1)
 !
-!  ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
+  call ectrans_set_ztstep_end(indx=1,jstep=jstep)
+! ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 !
 !  !=================================================================================================
 !  ! While in grid point space, dump the values to disk, for debugging only
 !  !=================================================================================================
 !
-!  if (ldump_values) then
+   if (ldump_values) then
+     call ectrans_dump(jstep, myproc, nproma, ngpblks, noutdump)
 !    ! dump a field to a binary file
 !    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
 !    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
 !    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
 !    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
-!  endif
-!
-!  !=================================================================================================
-!  ! Do direct transform
-!  !=================================================================================================
-!
-!  ztstep2(jstep) = timef()
-!
-!  call gstats(5,0)
-!  if (lvordiv) then
+   endif
+ 
+  !=================================================================================================
+  ! Do direct transform
+  !=================================================================================================
+
+  call ectrans_set_ztstep_start(indx=2,jstep=jstep)
+! ztstep2(jstep) = timef()
+
+  call gstats(5,0)
+  if (lvordiv) then
+  call ectrans_direct_transform(nproma,nfld,ivset,ivsetc,lvordiv)
 !    call dir_trans(kresol=1, kproma=nproma, &
 !      & pgp2=zgmvs(:,1:1,:),                &
 !      & pgpuv=zgpuv(:,:,1:2,:),             &
@@ -669,7 +616,8 @@ endif
 !      & kvsetuv=ivset,                      &
 !      & kvsetsc2=ivsetsc,                   &
 !      & kvsetsc3a=ivset)
-!  else
+  else
+  call ectrans_direct_transform(nproma,nfld,ivset,ivsetc)
 !    call dir_trans(kresol=1, kproma=nproma, &
 !      & pgp2=zgmvs(:,1:1,:),                &
 !      & pgp3a=zgp3a(:,:,1:nfld,:),          &
@@ -677,14 +625,16 @@ endif
 !      & pspsc3a=zspsc3a,                    &
 !      & kvsetsc2=ivsetsc,                   &
 !      & kvsetsc3a=ivset)
-!  endif
-!  call gstats(5,1)
-!  ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
-!
-!  !=================================================================================================
-!  ! Calculate timings
-!  !=================================================================================================
-!
+  endif
+  call gstats(5,1)
+! ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
+  call ectrans_set_ztstep_end(indx=2,jstep=jstep)
+
+  !=================================================================================================
+  ! Calculate timings
+  !=================================================================================================
+  call ectrans_calculate_timings(jstep)
+
 !  ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
 !
 !  ztstepavg = ztstepavg + ztstep(jstep)
@@ -698,18 +648,20 @@ endif
 !  ztstepavg2 = ztstepavg2 + ztstep2(jstep)
 !  ztstepmin2 = min(ztstep2(jstep), ztstepmin2)
 !  ztstepmax2 = max(ztstep2(jstep), ztstepmax2)
-!
-!  !=================================================================================================
-!  ! Print norms
-!  !=================================================================================================
-!
-!  if (lprint_norms) then
-!    call gstats(6,0)
+ 
+   !=================================================================================================
+   ! Print norms
+   !=================================================================================================
+ 
+   if (lprint_norms) then
+     call gstats(6,0)
+     call ectrans_calculate_norms(indx=0, nflevl, nflevg, ivset,ivsetsc)
 !    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
 !    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
 !    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
 !    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
 !
+     call ectrans_print_norms_calc(nout, ifld, jstep, myproc)
 !    ! Surface pressure
 !    if (myproc == 1) then
 !      zmaxerr(:) = -999.0
@@ -738,28 +690,31 @@ endif
 !                  & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
 !                  &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
 !    endif
-!    call gstats(6,1)
-!  else
-!    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
-!  endif
-!  call gstats(3,1)
-!enddo
+    call gstats(6,1)
+  else
+    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
+  endif
+  call gstats(3,1)
+enddo
 !
 !!===================================================================================================
 !
-!ztloop = (timef() - ztloop)/1000.0_jprd
+ztloop = (timef() - ztloop)/1000.0_jprd
+
+write(nout,'(" ")')
+write(nout,'(a)') '======= End of spectral transforms  ======='
+write(nout,'(" ")')
 !
-!write(nout,'(" ")')
-!write(nout,'(a)') '======= End of spectral transforms  ======='
-!write(nout,'(" ")')
 !
-!if (lprint_norms .or. ncheck > 0) then
+if (lprint_norms .or. ncheck > 0) then
+     call ectrans_calculate_norms(indx=2, nflevl, nflevg, ivset,ivsetsc)
 !  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
 !  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
 !  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
 !  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 !
-!  if (myproc == 1) then
+   if (myproc == 1) then
+    call ectrans_print_norms_fin(nout,ifld,nflevg,myproc)
 !    zmaxerr(:) = -999.0
 !    do ifld = 1, nflevg
 !      zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
@@ -801,12 +756,13 @@ endif
 !    write(nout,*)
 !    write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
 !    write(nout,*)
-!  endif
-!  if (ncheck > 0) then
-!    ierr = 0
-!    if (myproc == 1) then
+   endif
+   if (ncheck > 0) then
+     ierr = 0
+     if (myproc == 1) then
 !      ! If the maximum spectral norm error across all fields is greater than 100 times the machine
 !      ! epsilon, fail the test
+       ierr=ectrans_print_norms_fails(ncheck)
 !      if (zmaxerrg > real(ncheck, jprd) * epsilon(1.0_jprd)) then
 !        write(nout, '(a)') '*******************************'
 !        write(nout, '(a)') 'Correctness test failed'
@@ -815,21 +771,22 @@ endif
 !        write(nout, '(a)') '*******************************'
 !        ierr = 1
 !      endif
-!    endif
+     endif
 !
-!    ! Root rank broadcasts the correctness checker result to the other ranks
-!    if (luse_mpi) then
-!      call mpl_broadcast(ierr,kroot=1,ktag=1)
-!    endif
+    ! Root rank broadcasts the correctness checker result to the other ranks
+    if (luse_mpi) then
+      call mpl_broadcast(ierr,kroot=1,ktag=1)
+    endif
 !
-!    ! Halt if correctness checker failed
-!    if (ierr == 1) then
-!      error stop
-!    endif
-!  endif
-!endif
+    ! Halt if correctness checker failed
+    if (ierr == 1) then
+      error stop
+     endif
+   endif
+ endif
 !
-!if (luse_mpi) then
+if (luse_mpi) then
+  call ectrans_norms_reduce(ztloop)
 !  call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
 !  call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
 !  call mpl_allreduce(ztstepavg,  'sum', ldreprod=.false.)
@@ -845,7 +802,8 @@ endif
 !  call mpl_allreduce(ztstepavg2, 'sum', ldreprod=.false.)
 !  call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
 !  call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
-!endif
+endif
+call ectrans_compute_time_stats(nproc,iters)
 !
 !ztstepavg = (ztstepavg/real(nproc,jprd))/real(iters,jprd)
 !ztloop = ztloop/real(nproc,jprd)
@@ -865,6 +823,7 @@ endif
 !
 !call sort(ztstep2,iters)
 !ztstepmed2 = ztstep2(iters/2)
+call ectrans_print_time_stats(ztloop,nproc)
 !
 !write(nout,'(a)') '======= Start of time step stats ======='
 !write(nout,'(" ")')
@@ -893,47 +852,44 @@ endif
 !write(nout,'(a)') '======= End of time step stats ======='
 !write(nout,'(" ")')
 !
-!if (lstack) then
-!  ! Gather stack usage statistics
-!  istack = getstackusage()
-!  if (myproc == 1) then
-!    print 9000, istack
-!    9000 format("Stack utilisation information",/,&
-!         &"=============================",//,&
-!         &"Task           size(bytes)",/,&
-!         &"====           ===========",//,&
-!         &"   1",11x,i10)
-!
-!    do i = 2, nproc
-!      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='transform_test:')
-!      print '(i4,11x,i10)', i, istack
-!    enddo
-!  else
-!    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='transform_test:')
-!  endif
-!endif
-!
-!
-!!===================================================================================================
-!! Cleanup
-!!===================================================================================================
-!
-!deallocate(zgmv)
-!deallocate(zgmvs)
+ if (lstack) then
+   ! Gather stack usage statistics
+   istack = getstackusage()
+   if (myproc == 1) then
+     print 9000, istack
+     9000 format("Stack utilisation information",/,&
+          &"=============================",//,&
+          &"Task           size(bytes)",/,&
+          &"====           ===========",//,&
+          &"   1",11x,i10)
+ 
+     do i = 2, nproc
+       call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='transform_test:')
+       print '(i4,11x,i10)', i, istack
+     enddo
+   else
+     call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='transform_test:')
+   endif
+ endif
+ 
+!===================================================================================================
+! Cleanup
+!===================================================================================================
+call ectrans_deallocate_grid
 !
 !!===================================================================================================
 !
-!if (lstats) then
-!  call gstats(0,1)
-!  call gstats_print(nout, zaveave, jpmaxstat)
-!endif
-!
-!if (lmeminfo) then
-!  write(nout,*)
-!  call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
-!      & kcall=1)
-!endif
-!
+if (lstats) then
+  call gstats(0,1)
+  call gstats_print(nout, zaveave, jpmaxstat)
+endif
+
+if (lmeminfo) then
+  write(nout,*)
+  call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
+      & kcall=1)
+endif
+
 !===================================================================================================
 ! Finalize MPI
 !===================================================================================================
@@ -1140,6 +1096,34 @@ subroutine str2int(str, int, stat)
 
 end subroutine str2int
 
+subroutine compute_grid_extents()
+  integer(kind=jpim) :: jbegin_uv = 0
+  integer(kind=jpim) :: jend_uv   = 0
+  integer(kind=jpim) :: jbegin_sc = 0
+  integer(kind=jpim) :: jend_sc   = 0
+  integer(kind=jpim) :: jbegin_scder_NS = 0
+  integer(kind=jpim) :: jend_scder_NS = 0
+  integer(kind=jpim) :: jbegin_scder_EW = 0
+  integer(kind=jpim) :: jend_scder_EW = 0
+  integer(kind=jpim) :: jbegin_uder_EW = 0
+  integer(kind=jpim) :: jend_uder_EW = 0
+  integer(kind=jpim) :: jbegin_vder_EW = 0
+  integer(kind=jpim) :: jend_vder_EW = 0
+  integer(kind=jpim) :: ib
+  integer(kind=jpim) :: jb
+  integer(kind=jpim) :: ilev, jlev
+  allocate(ivset(nflevg))
+  
+  ! Compute spectral distribution
+  ilev = 0
+  do jb = 1, nprtrv
+    do jlev=1, numll(jb)
+      ilev = ilev + 1
+      ivset(ilev) = jb
+    enddo
+  enddo
+  
+end subroutine compute_grid_extents
 !!===================================================================================================
 !
 !subroutine sort(a, n)
@@ -1358,29 +1342,62 @@ end function
 
 !===================================================================================================
 
-!! Assign GSTATS labels to the main regions of ecTrans
-!subroutine gstats_labels
-!
-!  call gstats_label(0,   '   ', 'PROGRAM        - Total')
-!  call gstats_label(1,   '   ', 'SETUP_TRANS0   - Setup ecTrans')
-!  call gstats_label(2,   '   ', 'SETUP_TRANS    - Setup ecTrans handle')
-!  call gstats_label(3,   '   ', 'TIME STEP      - Time step')
-!  call gstats_label(4,   '   ', 'INV_TRANS      - Inverse transform')
-!  call gstats_label(5,   '   ', 'DIR_TRANS      - Direct transform')
-!  call gstats_label(6,   '   ', 'NORMS          - Norm comp. (optional)')
-!  call gstats_label(102, '   ', 'LTINV_CTL      - Inv. Legendre transform')
-!  call gstats_label(103, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
-!  call gstats_label(106, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
-!  call gstats_label(107, '   ', 'FTINV_CTL      - Inv. Fourier transform')
-!  call gstats_label(140, '   ', 'SULEG          - Comp. of Leg. poly.')
-!  call gstats_label(152, '   ', 'LTINV_CTL      - M to L transposition')
-!  call gstats_label(153, '   ', 'LTDIR_CTL      - L to M transposition')
-!  call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
-!  call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
-!  call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
-!
-!end subroutine gstats_labels
+! Assign GSTATS labels to the main regions of ecTrans
+subroutine gstats_labels(koffset)
+integer koffset        
 
+  call gstats_label(0            , '   ', 'PROGRAM        - Total')
+  call gstats_label(1   + koffset, '   ', 'SETUP_TRANS0   - Setup ecTrans')
+  call gstats_label(2   + koffset, '   ', 'SETUP_TRANS    - Setup ecTrans handle')
+  call gstats_label(3   + koffset, '   ', 'TIME STEP      - Time step')
+  call gstats_label(4   + koffset, '   ', 'INV_TRANS      - Inverse transform')
+  call gstats_label(5   + koffset, '   ', 'DIR_TRANS      - Direct transform')
+  call gstats_label(6   + koffset, '   ', 'NORMS          - Norm comp. (optional)')
+  call gstats_label(102 + koffset, '   ', 'LTINV_CTL      - Inv. Legendre transform')
+  call gstats_label(103 + koffset, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
+  call gstats_label(106 + koffset, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
+  call gstats_label(107 + koffset, '   ', 'FTINV_CTL      - Inv. Fourier transform')
+  call gstats_label(140 + koffset, '   ', 'SULEG          - Comp. of Leg. poly.')
+  call gstats_label(152 + koffset, '   ', 'LTINV_CTL      - M to L transposition')
+  call gstats_label(153 + koffset, '   ', 'LTDIR_CTL      - L to M transposition')
+  call gstats_label(157 + koffset, '   ', 'FTINV_CTL      - L to G transposition')
+  call gstats_label(158 + koffset, '   ', 'FTDIR_CTL      - G to L transposition')
+  call gstats_label(400 + koffset, '   ', 'GSTATS         - GSTATS itself')
+
+end subroutine gstats_labels
+
+!===================================================================================================
+subroutine ectrans_print_runtimepars(variant)
+character, len(:) :: variant
+  write(nout,'(" ")')
+  write(nout,'(a)')'======= Start of runtime parameters ======='
+  write(nout,'("ectrans variant",a)') trim(variant)
+  write(nout,'(" ")')
+  write(nout,'("nsmax     ",i0)') nsmax
+  write(nout,'("grid      ",a)') trim(cgrid)
+  write(nout,'("ndgl      ",i0)') ndgl
+  write(nout,'("nproc     ",i0)') nproc
+  write(nout,'("nthread   ",i0)') nthread
+  write(nout,'("nprgpns   ",i0)') nprgpns
+  write(nout,'("nprgpew   ",i0)') nprgpew
+  write(nout,'("nprtrw    ",i0)') nprtrw
+  write(nout,'("nprtrv    ",i0)') nprtrv
+  write(nout,'("ngptot    ",i0)') ngptot
+  write(nout,'("ngptotg   ",i0)') ngptotg
+  write(nout,'("nfld      ",i0)') nfld
+  write(nout,'("nlev      ",i0)') nlev
+  write(nout,'("nproma    ",i0)') nproma
+  write(nout,'("ngpblks   ",i0)') ngpblks
+  write(nout,'("nspec2    ",i0)') nspec2
+  write(nout,'("nspec2g   ",i0)') nspec2g
+  write(nout,'("luseflt   ",l)') luseflt
+  write(nout,'("lvordiv   ",l)') lvordiv
+  write(nout,'("lscders   ",l)') lscders
+  write(nout,'("luvders   ",l)') luvders
+  write(nout,'(" ")')
+  write(nout,'(a)') '======= End of runtime parameters ======='
+  write(nout,'(" ")')
+subroutine ectrans_print_runtimepars
 end program transform_test
 
 !===================================================================================================
