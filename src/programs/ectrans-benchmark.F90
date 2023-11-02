@@ -128,7 +128,7 @@ logical :: lfftw = .true. ! Use FFTW for Fourier transforms
 logical :: lvordiv = .false.
 logical :: lscders = .false.
 logical :: luvders = .false.
-logical :: lprint_norms = .false. ! Calculate and print spectral norms
+logical :: lprint_norms = .true. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
 
 integer(kind=jpim) :: nstats_mem = 0
