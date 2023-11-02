@@ -47,165 +47,8 @@ use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
 
 implicit none
-
-! Number of points in top/bottom latitudes
-integer(kind=jpim), parameter :: min_octa_points = 20
-
-integer(kind=jpim) :: istack, getstackusage
-real(kind=jprb), dimension(1) :: zmaxerr(5), zerr(5)
-real(kind=jprb) :: zmaxerrg
-
-! Output unit numbers
-integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
-integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
-integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
-
-! Default parameters
-integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
-integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
-integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
-integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
-
-integer(kind=jpim) :: nflevg
-integer(kind=jpim) :: ndgl ! Number of latitudes
-integer(kind=jpim) :: nspec2
-integer(kind=jpim) :: ngptot
-integer(kind=jpim) :: ngptotg
-integer(kind=jpim) :: ifld
-integer(kind=jpim) :: jroc
-integer(kind=jpim) :: jb
-integer(kind=jpim) :: nspec2g
-integer(kind=jpim) :: i
-integer(kind=jpim) :: ja
-integer(kind=jpim) :: ib
-integer(kind=jpim) :: jprtrv
-
-integer(kind=jpim), allocatable :: nloen(:), nprcids(:)
-integer(kind=jpim) :: myproc, jj
-integer :: jstep
-
-real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
-real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
-real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
-real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
-
-real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
-real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
-real(kind=jprd) :: zaveave(0:jpmaxstat)
-
-! Grid-point space data structures
-real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
-real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
-
-! Spectral space data structures
-real(kind=jprb), allocatable, target :: sp3d(:,:,:)
-real(kind=jprb), pointer :: zspvor(:,:) => null()
-real(kind=jprb), pointer :: zspdiv(:,:) => null()
-real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
-real(kind=jprb), allocatable :: zspsc2(:,:)
-
-logical :: lstack = .false. ! Output stack info
-logical :: luserpnm = .false.
-logical :: lkeeprpnm = .false.
-logical :: luseflt = .false. ! Use fast legendre transforms
-logical :: ltrace_stats = .false.
-logical :: lstats_omp = .false.
-logical :: lstats_comms = .false.
-logical :: lstats_mpl = .false.
-logical :: lstats = .true. ! gstats statistics
-logical :: lbarrier_stats = .false.
-logical :: lbarrier_stats2 = .false.
-logical :: ldetailed_stats = .false.
-logical :: lstats_alloc = .false.
-logical :: lsyncstats = .false.
-logical :: lstatscpu = .false.
-logical :: lstats_mem = .false.
-logical :: lxml_stats = .false.
-logical :: lfftw = .true. ! Use FFTW for Fourier transforms
-logical :: lvordiv = .false.
-logical :: lscders = .false.
-logical :: luvders = .false.
-logical :: lprint_norms = .false. ! Calculate and print spectral norms
-logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
-
-integer(kind=jpim) :: nstats_mem = 0
-integer(kind=jpim) :: ntrace_stats = 0
-integer(kind=jpim) :: nprnt_stats = 1
-
-! The multiplier of the machine epsilon used as a tolerance for correctness checking
-! ncheck = 0 (the default) means that correctness checking is disabled
-integer(kind=jpim) :: ncheck = 0
-
-logical :: lmpoff = .false. ! Message passing switch
-
-! Verbosity level (0 or 1)
-integer :: verbosity = 0
-
-real(kind=jprb) :: zra = 6371229._jprb
-
-integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
-integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
-integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
-
-integer(kind=jpim) :: nproc ! Number of procs
-integer(kind=jpim) :: nthread
-integer(kind=jpim) :: nprgpns ! Grid-point decomp
-integer(kind=jpim) :: nprgpew ! Grid-point decomp
-integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
-integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
-integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
-integer(kind=jpim) :: mysetv
-integer(kind=jpim) :: mysetw
-integer(kind=jpim) :: mp_type = 2 ! Message passing type
-integer(kind=jpim) :: mbx_size = 150000000 ! Mailbox size
-
-integer(kind=jpim), allocatable :: numll(:), ivset(:)
-integer(kind=jpim) :: ivsetsc(1)
-
-integer(kind=jpim) :: nflevl
-
-! sumpini
-integer(kind=jpim) :: isqr
-logical :: lsync_trans = .true. ! Activate barrier sync
-logical :: leq_regions = .true. ! Eq regions flag
-
-
-integer(kind=jpim) :: nproma = 0
-integer(kind=jpim) :: ngpblks
-! locals
-integer(kind=jpim) :: iprtrv
-integer(kind=jpim) :: iprtrw
-integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
-
-integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
-integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
-
-integer(kind=jpim) :: jbegin_uv = 0
-integer(kind=jpim) :: jend_uv   = 0
-integer(kind=jpim) :: jbegin_sc = 0
-integer(kind=jpim) :: jend_sc   = 0
-integer(kind=jpim) :: jbegin_scder_NS = 0
-integer(kind=jpim) :: jend_scder_NS = 0
-integer(kind=jpim) :: jbegin_scder_EW = 0
-integer(kind=jpim) :: jend_scder_EW = 0
-integer(kind=jpim) :: jbegin_uder_EW = 0
-integer(kind=jpim) :: jend_uder_EW = 0
-integer(kind=jpim) :: jbegin_vder_EW = 0
-integer(kind=jpim) :: jend_vder_EW = 0
-
-logical :: ldump_values = .false.
-
-integer, external :: ec_mpirank
-logical :: luse_mpi = .true.
-
-character(len=16) :: cgrid = ''
-
-integer(kind=jpim) :: ierr
-
-CONTAINS
+external timef
+real(kind=jprd) :: timef
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -214,11 +57,9 @@ CONTAINS
 #include "dir_trans.h"
 #include "trans_inq.h"
 #include "specnorm.h"
-#include "abor1.intfb.h"
-#include "gstats_setup.intfb.h"
-#include "ec_meminfo.intfb.h"
 
 !!===================================================================================================
+CONTAINS
 !
 !luse_mpi = detect_mpirun()
 !
@@ -389,26 +230,26 @@ CONTAINS
 !===================================================================================================
 ! ecTrans setup routines
 !===================================================================================================
-SUBROUTINE ectrans_setup(kout,kerr,kverbosity,kprgpns,kprgpew,kprtw,lduse_mpi)
+SUBROUTINE ectrans_setup0(kout,kerr,kverbosity,kprgpns,kprgpew,kprtrw,lduse_mpi)
 integer(kind=jpim), intent(in) :: kout, kerr
 integer, intent(in) :: kverbosity
-integer(kind=jpim), intent(in) :: kprgpns, kprgpew, kprtw
+integer(kind=jpim), intent(in) :: kprgpns, kprgpew, kprtrw
 logical, intent(in) :: lduse_mpi 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
 integer(kind=jpim) :: kcombflen = 1800000 ! Size of comm buffer
 logical :: lsync_trans = .true. ! Activate barrier sync
 logical :: leq_regions = .true. ! Eq regions flag
-real(kind=jprd) :: zra = 6371229._jprd
+real(kind=jprb) :: zra = 6371229._jprd
 
 call setup_trans0(kout=kout, kerr=kerr, kprintlev=merge(2, 0, kverbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=kprgpns, kprgpew=kprgpew, &
-  &               kprtrw=nprtrw, kcombflen=kcombflen, ldsync_trans=lsync_trans,               &
+  &               kprtrw=kprtrw, kcombflen=kcombflen, ldsync_trans=lsync_trans,               &
   &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=lduse_mpi)
 
-END SUBROUTINE ectrans_setup
+END SUBROUTINE ectrans_setup0
 
-SUBROUTINE ectrans_setup0(ksmax,kdgl,kloen, lduseflt)
+SUBROUTINE ectrans_setup(ksmax,kdgl,kloen, lduseflt)
 integer(kind=jpim), intent(in) :: ksmax,kdgl 
 integer(kind=jpim), intent(in) :: kloen(:)
 logical, intent(in) :: lduseflt
@@ -416,22 +257,22 @@ logical :: ldsplit = .true.
 logical :: lfftw = .true. ! Use FFTW for Fourier transforms
 logical :: luserpnm = .false.
 logical :: lkeeprpnm = .false.
-call setup_trans(ksmax=ksmax, kdgl=kdgl, kloen=nloen, ldsplit,          &
+call setup_trans(ksmax=ksmax, kdgl=kdgl, kloen=kloen, ldsplit=ldsplit,          &
   &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
   &                 lduseflt=lduseflt)
-END SUBROUTINE ectrans_setup0
+END SUBROUTINE ectrans_setup
 
-SUBROUTINE ectrans_trains_inq(kspec2, kspec2g, kgptot, kgptotg)
+SUBROUTINE ectrans_trans_inq(kspec2, kspec2g, kgptot, kgptotg)
 integer(kind=jpim), intent(out) :: kspec2
 integer(kind=jpim), intent(out) :: kspec2g
 integer(kind=jpim), intent(out) :: kgptot
 integer(kind=jpim), intent(out) :: kgptotg
 call trans_inq(kspec2=kspec2, kspec2g=kspec2g, kgptot=kgptot, kgptotg=kgptotg)
-END SUBROUTINE ectrans_trains_inq
+END SUBROUTINE ectrans_trans_inq
 
 SUBROUTINE ectrans_allocate_spectral(kflevl,kspec2,kfld,ksmax)
-USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a
-USE transform_driver_data_mod, ONLY :: sp3d
+USE transform_driver_data_mod, ONLY : zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY : sp3d
 integer(kind=jpim), intent(in) :: kflevl,kspec2,kfld,ksmax
 ! Try to mimick IFS layout as much as possible
 nullify(zspvor)
@@ -447,13 +288,14 @@ zspsc3a => sp3d(:,:,3:3+(kfld-1))
 END SUBROUTINE ectrans_allocate_spectral
 
 
-SUBROUTINE ectrans_allocate_grid(nproma, ngpblks, nfld, &
+SUBROUTINE ectrans_allocate_grid(nproma, ngpblks, nfld,nflevg, &
         & ldvordiv, lduvders, ldscders) 
   USE transform_driver_data_mod, ONLY:  zgmv,zgmvs
   USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
   integer(kind=jpim), intent(in) :: nproma
   integer(kind=jpim), intent(in) :: ngpblks
   integer(kind=jpim), intent(in) :: nfld
+  integer(kind=jpim), intent(in) :: nflevg
   logical, intent(in) :: ldvordiv, lduvders, ldscders
   integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
   integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
@@ -520,6 +362,7 @@ zgp2  => zgmvs(:,:,:)
 
 END SUBROUTINE ectrans_allocate_grid
 SUBROUTINE ectrans_deallocate_grid
+USE transform_driver_data_mod, ONLY : zgmv, zgmvs 
 deallocate(zgmv)
 deallocate(zgmvs)
 END SUBROUTINE ectrans_deallocate_grid
@@ -529,11 +372,11 @@ END SUBROUTINE ectrans_deallocate_grid
 !===================================================================================================
 
 SUBROUTINE ectrans_allocate_normdata(nflevl, nflevg)
-USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
-USE transform_driver_data_mod, ONLY :: znormsp, znormsp1 
-USE transform_driver_data_mod, ONLY :: znormvor, znormvor1 
-USE transform_driver_data_mod, ONLY :: znormdiv, znormdiv1 
-USE transform_driver_data_mod, ONLY :: znormt, znormt1 
+USE transform_driver_data_mod, ONLY : zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY : znormsp, znormsp1 
+USE transform_driver_data_mod, ONLY : znormvor, znormvor1 
+USE transform_driver_data_mod, ONLY : znormdiv, znormdiv1 
+USE transform_driver_data_mod, ONLY : znormt, znormt1 
   integer(kind=jpim), intent(in) :: nflevl,nflevg
   allocate(znormsp(1))
   allocate(znormsp1(1))
@@ -547,13 +390,13 @@ USE transform_driver_data_mod, ONLY :: znormt, znormt1
 END SUBROUTINE ectrans_allocate_normdata
 
 SUBROUTINE ectrans_calculate_norms(indx, nflevl, nflevg, ivset,ivsetsc)
-USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
-USE transform_driver_data_mod, ONLY :: znormsp, znormsp1 
-USE transform_driver_data_mod, ONLY :: znormvor, znormvor1 
-USE transform_driver_data_mod, ONLY :: znormdiv, znormdiv1 
-USE transform_driver_data_mod, ONLY :: znormt, znormt1 
-  integer(kind=jpim), intent(in) :: indx,nflevl,nflevg,ivsetsc
-  integer(kind=jpim), intent(in) :: ivset(:)
+USE transform_driver_data_mod, ONLY : zspvor,zspdiv,zspsc3a,zspsc2
+USE transform_driver_data_mod, ONLY : znormsp, znormsp1 
+USE transform_driver_data_mod, ONLY : znormvor, znormvor1 
+USE transform_driver_data_mod, ONLY : znormdiv, znormdiv1 
+USE transform_driver_data_mod, ONLY : znormt, znormt1 
+  integer(kind=jpim), intent(in) :: indx,nflevl,nflevg
+  integer(kind=jpim), intent(in) :: ivset(:),ivsetsc(1)
   select case(indx)
     case(0) 
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
@@ -574,10 +417,10 @@ USE transform_driver_data_mod, ONLY :: znormt, znormt1
 END SUBROUTINE ectrans_calculate_norms
 
 SUBROUTINE ectrans_print_norms_init(nout,nflevg)
-USE transform_driver_data_mod, ONLY :: znormsp1 
-USE transform_driver_data_mod, ONLY :: znormvor1 
-USE transform_driver_data_mod, ONLY :: znormdiv1 
-USE transform_driver_data_mod, ONLY :: znormt1 
+USE transform_driver_data_mod, ONLY : znormsp1 
+USE transform_driver_data_mod, ONLY : znormvor1 
+USE transform_driver_data_mod, ONLY : znormdiv1 
+USE transform_driver_data_mod, ONLY : znormt1 
   integer(kind=jpim), intent(in) :: nout,nflevg
   integer(kind=jpim) :: ifld
     do ifld = 1, nflevg
@@ -598,11 +441,12 @@ END SUBROUTINE ectrans_print_norms_init
 !===================================================================================================
 
 
-SUBROUTINE ectrans_allocate_timers(iters,nout,nflevg)
-USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2 
-USE transform_driver_data_mod, ONLY :: ztstepmax1, ztstepmin1, ztstepavg1 
-USE transform_driver_data_mod, ONLY :: ztstepmax2, ztstepmin2, ztstepavg2 
-  integer(kind=jpim), intent(in) :: iters 
+SUBROUTINE ectrans_allocate_timers(iters)
+USE transform_driver_data_mod, ONLY : ztstep, ztstep1, ztstep2 
+USE transform_driver_data_mod, ONLY : ztstepmax , ztstepmin , ztstepavg  
+USE transform_driver_data_mod, ONLY : ztstepmax1, ztstepmin1, ztstepavg1 
+USE transform_driver_data_mod, ONLY : ztstepmax2, ztstepmin2, ztstepavg2 
+  integer(kind=jpim), intent(in) :: iters
 allocate(ztstep(iters))
 allocate(ztstep1(iters))
 allocate(ztstep2(iters))
@@ -619,7 +463,7 @@ ztstepmin2 = 9999999999999999._jprd
 END SUBROUTINE ectrans_allocate_timers
 
 SUBROUTINE ectrans_set_ztstep_start(indx,jstep)
-USE transform_driver_data_mod, ONLY :: ztstep,ztstep1,ztstep2
+USE transform_driver_data_mod, ONLY : ztstep,ztstep1,ztstep2
   integer(kind=jpim), intent(in) :: indx,jstep 
   select case(indx)
      case (0)
@@ -632,7 +476,7 @@ USE transform_driver_data_mod, ONLY :: ztstep,ztstep1,ztstep2
 END SUBROUTINE ectrans_set_ztstep_start
 
 SUBROUTINE ectrans_set_ztstep_end(indx,jstep)
-USE transform_driver_data_mod, ONLY :: ztstep,ztstep1,ztstep2
+USE transform_driver_data_mod, ONLY : ztstep,ztstep1,ztstep2
   integer(kind=jpim), intent(in) :: indx, jstep 
   select case(indx)
      case (0)
@@ -642,16 +486,16 @@ USE transform_driver_data_mod, ONLY :: ztstep,ztstep1,ztstep2
      case (2)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
    end select
-END SUBROUTINE ectrans_set_ztstep_end(jstep)
+END SUBROUTINE ectrans_set_ztstep_end
   !=================================================================================================
   ! Do inverse transform
   !=================================================================================================
 
-SUBROUTINE ectrans_inv_trans(nproma,lscders,luvders,ivset,ivsetc)
-USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
+SUBROUTINE ectrans_inv_trans(nproma,lscders,luvders,ivset,ivsetsc)
+USE transform_driver_data_mod, ONLY : zspvor,zspdiv,zspsc3a,zspsc2
 USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
-  integer(kind=jpim), intent(in) :: nproma, ivsetc 
-  integer(kind=jpim), intent(in) :: ivset(:)
+  integer(kind=jpim), intent(in) :: nproma
+  integer(kind=jpim), intent(in) :: ivset(:),ivsetsc(1)
   logical, intent(in) :: lscders
   logical, intent(in), optional :: luvders
     if(present(luvders)) then
@@ -681,15 +525,14 @@ USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
        & pgp3a=zgp3a)
   endif
 END SUBROUTINE ectrans_inv_trans
-  call gstats(4,1)
 
   !=================================================================================================
   ! While in grid point space, dump the values to disk, for debugging only
   !=================================================================================================
 
-SUBROUTINE ectrans_dump(jstep, myproc, nproma, ngpblks, noutdump)
+SUBROUTINE ectrans_dump(jstep, myproc, nproma, ngpblks, nflevg, noutdump)
 USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgp2
-  integer(kind=jpim), intent(in) :: jstep, myproc, nproma, ngpblks, noutdump 
+  integer(kind=jpim), intent(in) :: jstep, myproc, nproma, ngpblks, nflevg, noutdump 
     ! dump a field to a binary file
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
@@ -702,11 +545,11 @@ END SUBROUTINE ectrans_dump
   !=================================================================================================
 
 
-SUBROUTINE ectrans_dir_trans(nproma,nfld,ivset,ivsetc,lvordiv)
-USE transform_driver_data_mod, ONLY :: zspvor,zspdiv,zspsc3a,zspsc2
+SUBROUTINE ectrans_direct_trans(nproma,nfld,ivset,ivsetsc,lvordiv)
+USE transform_driver_data_mod, ONLY : zspvor,zspdiv,zspsc3a,zspsc2
 USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgmvs
-  integer(kind=jpim), intent(in) :: nproma, ivsetc 
-  integer(kind=jpim), intent(in) :: ivset(:)
+  integer(kind=jpim), intent(in) :: nproma, nfld
+  integer(kind=jpim), intent(in) :: ivset(:), ivsetsc(1)
   logical, intent(in), optional :: lvordiv
     if(present(lvordiv)) then
     call dir_trans(kresol=1, kproma=nproma, &
@@ -729,16 +572,18 @@ USE transform_driver_data_mod, ONLY:  zgpuv, zgp3a, zgmvs
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
-END SUBROUTINE ectrans_dir_trans
+END SUBROUTINE ectrans_direct_trans
 
   !=================================================================================================
   ! Calculate timings
   !=================================================================================================
 
 SUBROUTINE ectrans_calculate_timings(jstep)
-USE transform_driver_data_mod, ONLY:: ztstepmax1, ztstepmin1, ztstepavg1
-USE transform_driver_data_mod, ONLY:: ztstepmax2, ztstepmin2, ztstepavg2
-USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
+USE transform_driver_data_mod, ONLY: ztstepmax , ztstepmin , ztstepavg 
+USE transform_driver_data_mod, ONLY: ztstepmax1, ztstepmin1, ztstepavg1
+USE transform_driver_data_mod, ONLY: ztstepmax2, ztstepmin2, ztstepavg2
+USE transform_driver_data_mod, ONLY : ztstep, ztstep1, ztstep2
+  integer(kind=jpim), intent(in) :: jstep 
   ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
 
   ztstepavg = ztstepavg + ztstep(jstep)
@@ -759,13 +604,20 @@ END SUBROUTINE ectrans_calculate_timings
   !=================================================================================================
 
 
-    SUBROUTINE ectrans_print_norms_calc(nout,ifld,jstep,myproc)
-USE transform_driver_data_mod, ONLY :: znormsp,znormsp1 
-USE transform_driver_data_mod, ONLY :: znormvor,znormvor1 
-USE transform_driver_data_mod, ONLY :: znormdiv,znormdiv1 
-USE transform_driver_data_mod, ONLY :: znormt,znormt1 
-USE transform_driver_data_mod, ONLY :: zerr,zmaxerr 
-integer(kind=jpim), intent(in) :: nout,ifld,jstep,myproc
+    SUBROUTINE ectrans_print_timestep(nout,jstep)
+USE transform_driver_data_mod, ONLY : ztstep
+integer(kind=jpim), intent(in) :: nout,jstep
+write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
+END SUBROUTINE ectrans_print_timestep
+    SUBROUTINE ectrans_print_norms_calc(nout,jstep,myproc,nflevg)
+USE transform_driver_data_mod, ONLY : znormsp,znormsp1 
+USE transform_driver_data_mod, ONLY : znormvor,znormvor1 
+USE transform_driver_data_mod, ONLY : znormdiv,znormdiv1 
+USE transform_driver_data_mod, ONLY : znormt,znormt1 
+USE transform_driver_data_mod, ONLY : ztstep
+USE transform_driver_data_mod, ONLY : zerr,zmaxerr 
+integer(kind=jpim), intent(in) :: nout,jstep,myproc,nflevg
+integer(kind=jpim) :: ifld
     ! Surface pressure
     if (myproc == 1) then
       zmaxerr(:) = -999.0
@@ -796,14 +648,15 @@ integer(kind=jpim), intent(in) :: nout,ifld,jstep,myproc
     endif
     END SUBROUTINE ectrans_print_norms_calc
 
-    SUBROUTINE ectrans_print_norms_fin(nout,ifld,nflevg,verbosity)
-USE transform_driver_data_mod, ONLY :: znormsp,znormsp1 
-USE transform_driver_data_mod, ONLY :: znormvor,znormvor1 
-USE transform_driver_data_mod, ONLY :: znormdiv,znormdiv1 
-USE transform_driver_data_mod, ONLY :: znormt,znormt1 
-USE transform_driver_data_mod, ONLY :: zerr,zmaxerr 
-integer(kind=jpim), intent(in) :: nout,ifld,nflevg
-logical, intent(in)  :: verbosity
+    SUBROUTINE ectrans_print_norms_fin(nout,nflevg,verbosity)
+USE transform_driver_data_mod, ONLY : znormsp,znormsp1 
+USE transform_driver_data_mod, ONLY : znormvor,znormvor1 
+USE transform_driver_data_mod, ONLY : znormdiv,znormdiv1 
+USE transform_driver_data_mod, ONLY : znormt,znormt1 
+USE transform_driver_data_mod, ONLY : zerr,zmaxerr,zmaxerrg 
+integer(kind=jpim), intent(in) :: nout,nflevg
+integer(kind=jpim) :: ifld
+integer, intent(in)  :: verbosity
     zmaxerr(:) = -999.0
     do ifld = 1, nflevg
       zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
@@ -846,12 +699,12 @@ logical, intent(in)  :: verbosity
     write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
     write(nout,*)
     END SUBROUTINE ectrans_print_norms_fin
-  endif
       ! If the maximum spectral norm error across all fields is greater than 100 times the machine
       ! epsilon, fail the test
-    FUNCTION ectrans_print_norms_fails(ncheck) result (ierr)
-      integer(kind=jpim), intent(in) :: ncheck
-      integer(kind=jpim), intent(out) :: ierr 
+    FUNCTION ectrans_print_norms_fails(nout,ncheck) result (ierr)
+USE transform_driver_data_mod, ONLY : zmaxerrg 
+      integer(kind=jpim), intent(in) :: nout,ncheck
+      integer(kind=jpim) :: ierr 
       ierr = 0
       if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
         write(nout, '(a)') '*******************************'
@@ -861,11 +714,12 @@ logical, intent(in)  :: verbosity
         write(nout, '(a)') '*******************************'
         ierr = 1
       endif
-    END SUBROUTINE ectrans_print_norms_fails
+    END FUNCTION ectrans_print_norms_fails
     SUBROUTINE ectrans_norms_reduce(ztloop)
-USE transform_driver_data_mod, ONLY:: ztstepmax1, ztstepmin1, ztstepavg1
-USE transform_driver_data_mod, ONLY:: ztstepmax2, ztstepmin2, ztstepavg2
-USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
+USE transform_driver_data_mod, ONLY: ztstepmax , ztstepmin , ztstepavg 
+USE transform_driver_data_mod, ONLY: ztstepmax1, ztstepmin1, ztstepavg1
+USE transform_driver_data_mod, ONLY: ztstepmax2, ztstepmin2, ztstepavg2
+USE transform_driver_data_mod, ONLY: ztstep, ztstep1, ztstep2
     real(kind=jprd), intent(inout) :: ztloop
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
   call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
@@ -883,11 +737,10 @@ USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
   call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
   call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
  END SUBROUTINE ectrans_norms_reduce
-ctrans_print_time_stats(ztlo
  SUBROUTINE ectrans_compute_time_stats(nproc,iters)
-USE transform_driver_data_mod, ONLY :: ztstep, ztstep1, ztstep2
-USE transform_driver_data_mod, ONLY :: ztstepavg, ztstepavg1, ztstepavg2  
-USE transform_driver_data_mod, ONLY :: ztstepmed, ztstepmed1, ztstepmed2  
+USE transform_driver_data_mod, ONLY : ztstep, ztstep1, ztstep2
+USE transform_driver_data_mod, ONLY : ztstepavg, ztstepavg1, ztstepavg2  
+USE transform_driver_data_mod, ONLY : ztstepmed, ztstepmed1, ztstepmed2  
       integer(kind=jpim), intent(in) :: nproc,iters
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
@@ -908,11 +761,14 @@ call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
 
  END SUBROUTINE ectrans_compute_time_stats
- SUBROUTINE ectrans_print_time_stats(ztloop,nproc)
-USE transform_driver_data_mod, ONLY :: ztstepavg, ztstepavg1, ztstepavg2  
-USE transform_driver_data_mod, ONLY :: ztstepmax, ztstepmax1, ztstepmax2  
-USE transform_driver_data_mod, ONLY :: ztstepmin, ztstepmin1, ztstepmin2  
-USE transform_driver_data_mod, ONLY :: ztstepmed, ztstepmed1, ztstepmed2  
+
+ SUBROUTINE ectrans_print_time_stats(nout,ztloop,nproc)
+USE transform_driver_data_mod, ONLY : ztstepavg, ztstepavg1, ztstepavg2  
+USE transform_driver_data_mod, ONLY : ztstepmax, ztstepmax1, ztstepmax2  
+USE transform_driver_data_mod, ONLY : ztstepmin, ztstepmin1, ztstepmin2  
+USE transform_driver_data_mod, ONLY : ztstepmed, ztstepmed1, ztstepmed2  
+    real(kind=jprd), intent(inout) :: ztloop
+      integer(kind=jpim), intent(in) :: nproc,nout
 ztloop = ztloop/real(nproc,jprd)
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
@@ -944,192 +800,190 @@ END SUBROUTINE ectrans_print_time_stats
 
 !===================================================================================================
 
-contains
-
 !===================================================================================================
 
-subroutine parse_grid(cgrid,ndgl,nloen)
-
-  character(len=*) :: cgrid
-  integer, intent(inout) :: ndgl
-  integer, intent(inout), allocatable :: nloen(:)
-  integer :: ios
-  integer :: gaussian_number
-  read(cgrid(2:len_trim(cgrid)),*,IOSTAT=ios) gaussian_number
-  if (ios==0) then
-    ndgl = 2 * gaussian_number
-    allocate(nloen(ndgl))
-    if (cgrid(1:1) == 'F') then ! Regular Gaussian grid
-      nloen(:) = gaussian_number * 4
-      return
-    endif
-    if (cgrid(1:1) == 'O') then ! Octahedral Gaussian grid
-      do i = 1, ndgl / 2
-        nloen(i) = 20 + 4 * (i - 1)
-        nloen(ndgl - i + 1) = nloen(i)
-      end do
-      return
-    endif
-  endif
-  call parsing_failed("ERROR: Unsupported grid specified: "// trim(cgrid))
-
-end subroutine
-
-!===================================================================================================
-
-function get_int_value(cname, iarg) result(value)
-
-  integer :: value
-  character(len=*), intent(in) :: cname
-  integer, intent(inout) :: iarg
-  character(len=128) :: carg
-  integer :: stat
-
-  carg = get_str_value(cname, iarg)
-  call str2int(carg, value, stat)
-
-  if (stat /= 0) then
-    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
-  end if
-
-end function
-
-!===================================================================================================
-
-function get_str_value(cname, iarg) result(value)
-
-  character(len=128) :: value
-  character(len=*), intent(in) :: cname
-  integer, intent(inout) :: iarg
-
-  iarg = iarg + 1
-  call get_command_argument(iarg, value)
-
-  if (value == "") then
-    call parsing_failed("Invalid argument for " // trim(cname) // ": no value provided")
-  end if
-
-end function
-
-!===================================================================================================
-
-subroutine parsing_failed(message)
-
-  character(len=*), intent(in) :: message
-  if (luse_mpi) call mpl_init(ldinfo=.false.)
-  if (ec_mpirank() == 0) then
-    write(nerr,"(a)") trim(message)
-    call print_help(unit=nerr)
-  endif
-  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-  stop
-
-end subroutine
-
-!===================================================================================================
-
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
-
-  integer, intent(inout) :: nsmax           ! Spectral truncation
-  character(len=16), intent(inout) :: cgrid ! Spectral truncation
-  integer, intent(inout) :: iters           ! Number of iterations for transform test
-  integer, intent(inout) :: nfld            ! Number of scalar fields
-  integer, intent(inout) :: nlev            ! Number of vertical levels
-  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
-  logical, intent(inout) :: lscders         ! Compute scalar derivatives
-  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
-  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
-  integer, intent(inout) :: nproma          ! NPROMA
-  integer, intent(inout) :: verbosity       ! Level of verbosity
-  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
-  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
-  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
-                                            ! end
-  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
-  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
-  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
-                                            ! tolerance for correctness checking
-
-  character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
-  integer            :: stat          ! For storing success status of string->integer conversion
-  integer            :: myproc
-
-  do while (iarg <= command_argument_count())
-    call get_command_argument(iarg, carg)
-
-    select case(carg)
-      ! Parse help argument
-      case('-h', '--help')
-        if (luse_mpi) call mpl_init(ldinfo=.false.)
-        if (ec_mpirank()==0) call print_help()
-        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-        stop
-      ! Parse verbosity argument
-      case('-v')
-        verbosity = 1
-      ! Parse number of iterations argument
-      case('-n', '--niter')
-        iters = get_int_value('-n', iarg)
-        if (iters < 1) then
-          call parsing_failed("Invalid argument for -n: must be > 0")
-        end if
-      ! Parse spectral truncation argument
-      case('-t', '--truncation')
-        nsmax = get_int_value('-t', iarg)
-        if (nsmax < 1) then
-          call parsing_failed("Invalid argument for -t: must be > 0")
-        end if
-      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
-      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
-      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
-      case('--vordiv'); lvordiv = .True.
-      case('--scders'); lscders = .True.
-      case('--uvders'); luvders = .True.
-      case('--flt'); luseflt = .True.
-      case('--nproma'); nproma = get_int_value('--nproma', iarg)
-      case('--dump-values'); ldump_values = .true.
-      case('--norms'); lprint_norms = .true.
-      case('--meminfo'); lmeminfo = .true.
-      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
-      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
-      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
-      case default
-        call parsing_failed("Unrecognised argument: " // trim(carg))
-
-    end select
-    iarg = iarg + 1
-  end do
-
-  if (.not. lvordiv) then
-    luvders = .false.
-  endif
-
-end subroutine get_command_line_arguments
-
-!===================================================================================================
-
-function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
-
-  character(len=16) :: cgrid
-  integer, intent(in) :: nsmax
-  write(cgrid,'(a,i0)') 'O',nsmax+1
-
-end function
-
-!===================================================================================================
-
-subroutine str2int(str, int, stat)
-
-  character(len=*), intent(in) :: str
-  integer, intent(out) :: int
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) int
-
-end subroutine str2int
-
+!subroutine parse_grid(cgrid,ndgl,nloen)
+!
+!  character(len=*) :: cgrid
+!  integer, intent(inout) :: ndgl
+!  integer, intent(inout), allocatable :: nloen(:)
+!  integer :: ios
+!  integer :: gaussian_number
+!  read(cgrid(2:len_trim(cgrid)),*,IOSTAT=ios) gaussian_number
+!  if (ios==0) then
+!    ndgl = 2 * gaussian_number
+!    allocate(nloen(ndgl))
+!    if (cgrid(1:1) == 'F') then ! Regular Gaussian grid
+!      nloen(:) = gaussian_number * 4
+!      return
+!    endif
+!    if (cgrid(1:1) == 'O') then ! Octahedral Gaussian grid
+!      do i = 1, ndgl / 2
+!        nloen(i) = 20 + 4 * (i - 1)
+!        nloen(ndgl - i + 1) = nloen(i)
+!      end do
+!      return
+!    endif
+!  endif
+!  call parsing_failed("ERROR: Unsupported grid specified: "// trim(cgrid))
+!
+!end subroutine
+!
+!!===================================================================================================
+!
+!function get_int_value(cname, iarg) result(value)
+!
+!  integer :: value
+!  character(len=*), intent(in) :: cname
+!  integer, intent(inout) :: iarg
+!  character(len=128) :: carg
+!  integer :: stat
+!
+!  carg = get_str_value(cname, iarg)
+!  call str2int(carg, value, stat)
+!
+!  if (stat /= 0) then
+!    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
+!  end if
+!
+!end function
+!
+!!===================================================================================================
+!
+!function get_str_value(cname, iarg) result(value)
+!
+!  character(len=128) :: value
+!  character(len=*), intent(in) :: cname
+!  integer, intent(inout) :: iarg
+!
+!  iarg = iarg + 1
+!  call get_command_argument(iarg, value)
+!
+!  if (value == "") then
+!    call parsing_failed("Invalid argument for " // trim(cname) // ": no value provided")
+!  end if
+!
+!end function
+!
+!!===================================================================================================
+!
+!subroutine parsing_failed(message)
+!
+!  character(len=*), intent(in) :: message
+!  if (luse_mpi) call mpl_init(ldinfo=.false.)
+!  if (ec_mpirank() == 0) then
+!    write(nerr,"(a)") trim(message)
+!    call print_help(unit=nerr)
+!  endif
+!  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
+!  stop
+!
+!end subroutine
+!
+!!===================================================================================================
+!
+!subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
+!  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
+!  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
+!
+!  integer, intent(inout) :: nsmax           ! Spectral truncation
+!  character(len=16), intent(inout) :: cgrid ! Spectral truncation
+!  integer, intent(inout) :: iters           ! Number of iterations for transform test
+!  integer, intent(inout) :: nfld            ! Number of scalar fields
+!  integer, intent(inout) :: nlev            ! Number of vertical levels
+!  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
+!  logical, intent(inout) :: lscders         ! Compute scalar derivatives
+!  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
+!  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
+!  integer, intent(inout) :: nproma          ! NPROMA
+!  integer, intent(inout) :: verbosity       ! Level of verbosity
+!  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
+!  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
+!  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
+!                                            ! end
+!  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
+!  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
+!  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
+!                                            ! tolerance for correctness checking
+!
+!  character(len=128) :: carg          ! Storage variable for command line arguments
+!  integer            :: iarg = 1      ! Argument index
+!  integer            :: stat          ! For storing success status of string->integer conversion
+!  integer            :: myproc
+!
+!  do while (iarg <= command_argument_count())
+!    call get_command_argument(iarg, carg)
+!
+!    select case(carg)
+!      ! Parse help argument
+!      case('-h', '--help')
+!        if (luse_mpi) call mpl_init(ldinfo=.false.)
+!        if (ec_mpirank()==0) call print_help()
+!        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
+!        stop
+!      ! Parse verbosity argument
+!      case('-v')
+!        verbosity = 1
+!      ! Parse number of iterations argument
+!      case('-n', '--niter')
+!        iters = get_int_value('-n', iarg)
+!        if (iters < 1) then
+!          call parsing_failed("Invalid argument for -n: must be > 0")
+!        end if
+!      ! Parse spectral truncation argument
+!      case('-t', '--truncation')
+!        nsmax = get_int_value('-t', iarg)
+!        if (nsmax < 1) then
+!          call parsing_failed("Invalid argument for -t: must be > 0")
+!        end if
+!      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
+!      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
+!      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
+!      case('--vordiv'); lvordiv = .True.
+!      case('--scders'); lscders = .True.
+!      case('--uvders'); luvders = .True.
+!      case('--flt'); luseflt = .True.
+!      case('--nproma'); nproma = get_int_value('--nproma', iarg)
+!      case('--dump-values'); ldump_values = .true.
+!      case('--norms'); lprint_norms = .true.
+!      case('--meminfo'); lmeminfo = .true.
+!      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
+!      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
+!      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
+!      case default
+!        call parsing_failed("Unrecognised argument: " // trim(carg))
+!
+!    end select
+!    iarg = iarg + 1
+!  end do
+!
+!  if (.not. lvordiv) then
+!    luvders = .false.
+!  endif
+!
+!end subroutine get_command_line_arguments
+!
+!!===================================================================================================
+!
+!function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
+!
+!  character(len=16) :: cgrid
+!  integer, intent(in) :: nsmax
+!  write(cgrid,'(a,i0)') 'O',nsmax+1
+!
+!end function
+!
+!!===================================================================================================
+!
+!subroutine str2int(str, int, stat)
+!
+!  character(len=*), intent(in) :: str
+!  integer, intent(out) :: int
+!  integer, intent(out) :: stat
+!  read(str, *, iostat=stat) int
+!
+!end subroutine str2int
+!
 !===================================================================================================
 
 subroutine sort(a, n)
@@ -1155,77 +1009,77 @@ subroutine sort(a, n)
 end subroutine sort
 
 !===================================================================================================
-
-subroutine print_help(unit)
-
-  integer, optional :: unit
-  integer :: nout = 6
-  if (present(unit)) then
-    nout = unit
-  endif
-
-  write(nout, "(a)") ""
-
-  if (jprb == jprd) then
-    write(nout, "(a)") "NAME    ectrans-benchmark-dp"
-  else
-    write(nout, "(a)") "NAME    ectrans-benchmark-sp"
-  end if
-  write(nout, "(a)") ""
-
-  write(nout, "(a)") "DESCRIPTION"
-  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
-    & between spectral "
-  if (jprb == jprd) then
-    write(nout, "(a)") "        space and grid-point space (double-precision version)"
-  else
-    write(nout, "(a)") "        space and grid-point space (single-precision version)"
-  end if
-  write(nout, "(a)") ""
-
-  write(nout, "(a)") "USAGE"
-  if (jprb == jprd) then
-    write(nout, "(a)") "        ectrans-benchmark-dp [options]"
-  else
-    write(nout, "(a)") "        ectrans-benchmark-sp [options]"
-  end if
-  write(nout, "(a)") ""
-
-  write(nout, "(a)") "OPTIONS"
-  write(nout, "(a)") "    -h, --help          Print this message"
-  write(nout, "(a)") "    -v                  Run with verbose output"
-  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation&
-    & (default = 79)"
-  write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
-  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1&
-    & (cubic relation)"
-  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
-    & iterations (default = 10)"
-  write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
-  write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
-  write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
-  write(nout, "(a)") "    --scders            Compute scalar derivatives (default off)"
-  write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
-    & when also --vordiv is given"
-  write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
-  write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
-  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed&
-    & fields"
-  write(nout, "(a)") "                        The computation of spectral norms will skew overall&
-    & timings"
-  write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
-    & subroutine on memory usage, thread-binding etc."
-  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
-  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
-  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
-   & tolerance for correctness checking"
-  write(nout, "(a)") ""
-  write(nout, "(a)") "DEBUGGING"
-  write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
-  write(nout, "(a)") ""
-
-end subroutine print_help
-
+!
+!subroutine print_help(unit)
+!
+!  integer, optional :: unit
+!  integer :: nout = 6
+!  if (present(unit)) then
+!    nout = unit
+!  endif
+!
+!  write(nout, "(a)") ""
+!
+!  if (jprb == jprd) then
+!    write(nout, "(a)") "NAME    ectrans-benchmark-dp"
+!  else
+!    write(nout, "(a)") "NAME    ectrans-benchmark-sp"
+!  end if
+!  write(nout, "(a)") ""
+!
+!  write(nout, "(a)") "DESCRIPTION"
+!  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
+!    & between spectral "
+!  if (jprb == jprd) then
+!    write(nout, "(a)") "        space and grid-point space (double-precision version)"
+!  else
+!    write(nout, "(a)") "        space and grid-point space (single-precision version)"
+!  end if
+!  write(nout, "(a)") ""
+!
+!  write(nout, "(a)") "USAGE"
+!  if (jprb == jprd) then
+!    write(nout, "(a)") "        ectrans-benchmark-dp [options]"
+!  else
+!    write(nout, "(a)") "        ectrans-benchmark-sp [options]"
+!  end if
+!  write(nout, "(a)") ""
+!
+!  write(nout, "(a)") "OPTIONS"
+!  write(nout, "(a)") "    -h, --help          Print this message"
+!  write(nout, "(a)") "    -v                  Run with verbose output"
+!  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation&
+!    & (default = 79)"
+!  write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
+!  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1&
+!    & (cubic relation)"
+!  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
+!    & iterations (default = 10)"
+!  write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
+!  write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
+!  write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
+!  write(nout, "(a)") "    --scders            Compute scalar derivatives (default off)"
+!  write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
+!    & when also --vordiv is given"
+!  write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
+!  write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
+!  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed&
+!    & fields"
+!  write(nout, "(a)") "                        The computation of spectral norms will skew overall&
+!    & timings"
+!  write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
+!    & subroutine on memory usage, thread-binding etc."
+!  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
+!  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
+!  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
+!   & tolerance for correctness checking"
+!  write(nout, "(a)") ""
+!  write(nout, "(a)") "DEBUGGING"
+!  write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
+!  write(nout, "(a)") ""
+!
+!end subroutine print_help
+!
 !===================================================================================================
 
 subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
@@ -1320,57 +1174,57 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, no
 end subroutine dump_gridpoint_field
 
 !===================================================================================================
+!
+!function detect_mpirun() result(lmpi_required)
+!  logical :: lmpi_required
+!  integer :: ilen
+!  integer, parameter :: nvars = 5
+!  character(len=32), dimension(nvars) :: cmpirun_detect
+!  character(len=4) :: clenv_dr_hook_assert_mpi_initialized
+!  integer :: ivar
+!
+!  ! Environment variables that are set when mpirun, srun, aprun, ... are used
+!  cmpirun_detect(1) = 'OMPI_COMM_WORLD_SIZE'  ! openmpi
+!  cmpirun_detect(2) = 'ALPS_APP_PE'           ! cray pe
+!  cmpirun_detect(3) = 'PMI_SIZE'              ! intel
+!  cmpirun_detect(4) = 'SLURM_NTASKS'          ! slurm
+!  cmpirun_detect(5) = 'ECTRANS_USE_MPI'       ! forced
+!
+!  lmpi_required = .false.
+!  do ivar = 1, nvars
+!    call get_environment_variable(name=trim(cmpirun_detect(ivar)), length=ilen)
+!    if (ilen > 0) then
+!      lmpi_required = .true.
+!      exit ! break
+!    endif
+!  enddo
+!end function
+!
+!!===================================================================================================
+!
+!! Assign GSTATS labels to the main regions of ecTrans
+!subroutine gstats_labels
+!
+!  call gstats_label(0,   '   ', 'PROGRAM        - Total')
+!  call gstats_label(1,   '   ', 'SETUP_TRANS0   - Setup ecTrans')
+!  call gstats_label(2,   '   ', 'SETUP_TRANS    - Setup ecTrans handle')
+!  call gstats_label(3,   '   ', 'TIME STEP      - Time step')
+!  call gstats_label(4,   '   ', 'INV_TRANS      - Inverse transform')
+!  call gstats_label(5,   '   ', 'DIR_TRANS      - Direct transform')
+!  call gstats_label(6,   '   ', 'NORMS          - Norm comp. (optional)')
+!  call gstats_label(102, '   ', 'LTINV_CTL      - Inv. Legendre transform')
+!  call gstats_label(103, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
+!  call gstats_label(106, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
+!  call gstats_label(107, '   ', 'FTINV_CTL      - Inv. Fourier transform')
+!  call gstats_label(140, '   ', 'SULEG          - Comp. of Leg. poly.')
+!  call gstats_label(152, '   ', 'LTINV_CTL      - M to L transposition')
+!  call gstats_label(153, '   ', 'LTDIR_CTL      - L to M transposition')
+!  call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
+!  call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
+!  call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
+!
+!end subroutine gstats_labels
 
-function detect_mpirun() result(lmpi_required)
-  logical :: lmpi_required
-  integer :: ilen
-  integer, parameter :: nvars = 5
-  character(len=32), dimension(nvars) :: cmpirun_detect
-  character(len=4) :: clenv_dr_hook_assert_mpi_initialized
-  integer :: ivar
-
-  ! Environment variables that are set when mpirun, srun, aprun, ... are used
-  cmpirun_detect(1) = 'OMPI_COMM_WORLD_SIZE'  ! openmpi
-  cmpirun_detect(2) = 'ALPS_APP_PE'           ! cray pe
-  cmpirun_detect(3) = 'PMI_SIZE'              ! intel
-  cmpirun_detect(4) = 'SLURM_NTASKS'          ! slurm
-  cmpirun_detect(5) = 'ECTRANS_USE_MPI'       ! forced
-
-  lmpi_required = .false.
-  do ivar = 1, nvars
-    call get_environment_variable(name=trim(cmpirun_detect(ivar)), length=ilen)
-    if (ilen > 0) then
-      lmpi_required = .true.
-      exit ! break
-    endif
-  enddo
-end function
-
-!===================================================================================================
-
-! Assign GSTATS labels to the main regions of ecTrans
-subroutine gstats_labels
-
-  call gstats_label(0,   '   ', 'PROGRAM        - Total')
-  call gstats_label(1,   '   ', 'SETUP_TRANS0   - Setup ecTrans')
-  call gstats_label(2,   '   ', 'SETUP_TRANS    - Setup ecTrans handle')
-  call gstats_label(3,   '   ', 'TIME STEP      - Time step')
-  call gstats_label(4,   '   ', 'INV_TRANS      - Inverse transform')
-  call gstats_label(5,   '   ', 'DIR_TRANS      - Direct transform')
-  call gstats_label(6,   '   ', 'NORMS          - Norm comp. (optional)')
-  call gstats_label(102, '   ', 'LTINV_CTL      - Inv. Legendre transform')
-  call gstats_label(103, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
-  call gstats_label(106, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
-  call gstats_label(107, '   ', 'FTINV_CTL      - Inv. Fourier transform')
-  call gstats_label(140, '   ', 'SULEG          - Comp. of Leg. poly.')
-  call gstats_label(152, '   ', 'LTINV_CTL      - M to L transposition')
-  call gstats_label(153, '   ', 'LTDIR_CTL      - L to M transposition')
-  call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
-  call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
-  call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
-
-end subroutine gstats_labels
-
-end program transform_test
+end module transform_driver
 
 !===================================================================================================

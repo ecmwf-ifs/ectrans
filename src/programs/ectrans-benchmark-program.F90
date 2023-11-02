@@ -45,27 +45,38 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
+use transform_driver,only : ectrans_setup, ectrans_setup0, &
+ ectrans_trans_inq, ectrans_allocate_spectral, &
+ ectrans_allocate_grid, ectrans_deallocate_grid, &
+ ectrans_allocate_normdata, ectrans_calculate_norms, & 
+ ectrans_print_norms_init, ectrans_allocate_timers, &
+ ectrans_set_ztstep_start, ectrans_set_ztstep_end, & 
+ ectrans_inv_trans, ectrans_dump, ectrans_direct_trans, &
+ ectrans_calculate_timings, ectrans_print_norms_calc, &
+ ectrans_print_norms_fin, ectrans_print_norms_fails, &
+ ectrans_norms_reduce, ectrans_compute_time_stats, &
+ ectrans_print_time_stats, ectrans_print_timestep
 
 implicit none
 
-! Number of points in top/bottom latitudes
-integer(kind=jpim), parameter :: min_octa_points = 20
-
+!! Number of points in top/bottom latitudes
+!integer(kind=jpim), parameter :: min_octa_points = 20
+!
 integer(kind=jpim) :: istack, getstackusage
-real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
-real(kind=jprd) :: zmaxerrg
-
+!real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
+!real(kind=jprd) :: zmaxerrg
+!
 ! Output unit numbers
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
 integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
-
-! Default parameters
+!
+!! Default parameters
 integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
-
+!
 integer(kind=jpim) :: nflevg
 integer(kind=jpim) :: ndgl ! Number of latitudes
 integer(kind=jpim) :: nspec2
@@ -79,37 +90,37 @@ integer(kind=jpim) :: i
 integer(kind=jpim) :: ja
 integer(kind=jpim) :: ib
 integer(kind=jpim) :: jprtrv
-
+!
 integer(kind=jpim), allocatable :: nloen(:), nprcids(:)
 integer(kind=jpim) :: myproc, jj
 integer :: jstep
-
-real(kind=jprd) :: ztinit, ztloop, timef, ztstepmax, ztstepmin, ztstepavg, ztstepmed
-real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
-real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
-real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
 !
-!real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
-!real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
-!real(kind=jprd) :: zaveave(0:jpmaxstat)
+real(kind=jprd) :: ztinit, ztloop, timef !, ztstepmax, ztstepmin, ztstepavg, ztstepmed
+!real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
+!real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
+!real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
+!!
+!!real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
+!!real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
+real(kind=jprd) :: zaveave(0:jpmaxstat)
+!!
+!!! Grid-point space data structures
+!!real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
+!!real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
+!!real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
+!!real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
+!!real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
+!!
+!!! Spectral space data structures
+!!real(kind=jprb), allocatable, target :: sp3d(:,:,:)
+!!real(kind=jprb), pointer :: zspvor(:,:) => null()
+!!real(kind=jprb), pointer :: zspdiv(:,:) => null()
+!!real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
+!!real(kind=jprb), allocatable :: zspsc2(:,:)
 !
-!! Grid-point space data structures
-!real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
-!real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
-!real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
-!real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
-!real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
-!
-!! Spectral space data structures
-!real(kind=jprb), allocatable, target :: sp3d(:,:,:)
-!real(kind=jprb), pointer :: zspvor(:,:) => null()
-!real(kind=jprb), pointer :: zspdiv(:,:) => null()
-!real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
-!real(kind=jprb), allocatable :: zspsc2(:,:)
-
 logical :: lstack = .false. ! Output stack info
-logical :: luserpnm = .false.
-logical :: lkeeprpnm = .false.
+!logical :: luserpnm = .false.
+!logical :: lkeeprpnm = .false.
 logical :: luseflt = .false. ! Use fast legendre transforms
 logical :: ltrace_stats = .false.
 logical :: lstats_omp = .false.
@@ -124,32 +135,31 @@ logical :: lsyncstats = .false.
 logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
-logical :: lfftw = .true. ! Use FFTW for Fourier transforms
+!logical :: lfftw = .true. ! Use FFTW for Fourier transforms
 logical :: lvordiv = .false.
 logical :: lscders = .false.
 logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
-
+!
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
-
+!
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
 integer(kind=jpim) :: ncheck = 0
-
+!
 logical :: lmpoff = .false. ! Message passing switch
-
+!
 ! Verbosity level (0 or 1)
 integer :: verbosity = 0
-
-real(kind=jprd) :: zra = 6371229._jprd
-
-integer(kind=jpim) : nmax_resol = 37 ! Max number of resolutions
-integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
-integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
-
+!
+!real(kind=jprd) :: zra = 6371229._jprd
+!
+!integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
+!integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
+!
 integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
 integer(kind=jpim) :: nprgpns ! Grid-point decomp
@@ -161,49 +171,43 @@ integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
 integer(kind=jpim) :: mp_type = 2 ! Message passing type
 integer(kind=jpim) :: mbx_size = 150000000 ! Mailbox size
-
+!
 integer(kind=jpim), allocatable :: numll(:), ivset(:)
 integer(kind=jpim) :: ivsetsc(1)
-
+!
 integer(kind=jpim) :: nflevl
-
+!
 ! sumpini
 integer(kind=jpim) :: isqr
-logical :: lsync_trans = .true. ! Activate barrier sync
-logical :: leq_regions = .true. ! Eq regions flag
-
-
+!logical :: lsync_trans = .true. ! Activate barrier sync
+!logical :: leq_regions = .true. ! Eq regions flag
+!
+!
 integer(kind=jpim) :: nproma = 0
 integer(kind=jpim) :: ngpblks
-! locals
+!! locals
 integer(kind=jpim) :: iprtrv
 integer(kind=jpim) :: iprtrw
 integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
-
-integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
-integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
 !
-
+!integer(kind=jpim) :: ndimgmv  = 0 ! Third dim. of gmv "(nproma,nflevg,ndimgmv,ngpblks)"
+!integer(kind=jpim) :: ndimgmvs = 0 ! Second dim. gmvs "(nproma,ndimgmvs,ngpblks)"
+!!
+!
 logical :: ldump_values = .false.
-
+!
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
-
+!
 character(len=16) :: cgrid = ''
-
+!
 integer(kind=jpim) :: ierr
 
 !===================================================================================================
 
-!#include "setup_trans0.h"
-!#include "setup_trans.h"
-!#include "inv_trans.h"
-!#include "dir_trans.h"
-!#include "trans_inq.h"
-!#include "specnorm.h"
-!#include "abor1.intfb.h"
-!#include "gstats_setup.intfb.h"
-!#include "ec_meminfo.intfb.h"
+#include "abor1.intfb.h"
+#include "gstats_setup.intfb.h"
+#include "ec_meminfo.intfb.h"
 
 !===================================================================================================
 
@@ -356,7 +360,7 @@ numll(iprused+1:nprtrv+1) = 0
 nflevl = numll(mysetv)
 
 ivsetsc(1) = iprused
-ifld = 0
+!ifld = 0
 
 !===================================================================================================
 ! Setup gstats
@@ -370,7 +374,7 @@ if (lstats) then
   call gstats_psut
 
   ! Assign labels to GSTATS regions
-  call gstats_labels
+  call gstats_labels(0)
 endif
 
 !===================================================================================================
@@ -381,7 +385,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
 call gstats(1, 0)
 call ectrans_setup0(kout=nout, kerr=nerr, kverbosity=verbosity, kprgpns=nprgpns, kprgpew=nprgpew, &
-  & kprtrw=nprtrw, ldusempi=.not.luse_mpi) 
+  & kprtrw=nprtrw, lduse_mpi=.not.luse_mpi) 
 !call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
 !  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
 !  &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
@@ -450,7 +454,7 @@ do jb = 1, nprtrv
 enddo
 !
 !
-call ectrans_allocate_grid(nproma, ngpblks, nfld,lvordiv, luvders, lscders)
+call ectrans_allocate_grid(nproma, ngpblks, nfld, nflevg, lvordiv, luvders, lscders)
 !allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
 !allocate(zgmvs(nproma,ndimgmvs,ngpblks))
 !
@@ -464,7 +468,7 @@ call ectrans_allocate_grid(nproma, ngpblks, nfld,lvordiv, luvders, lscders)
 !
 if (lprint_norms .or. ncheck > 0) then
 call ectrans_allocate_normdata(nflevl=nflevl, nflevg=nflevg)
-call ectrans_calculate_norms(indx=1, nflevl, nflevg, ivset,ivsetsc)
+call ectrans_calculate_norms(indx=1, nflevl=nflevl, nflevg=nflevg, ivset=ivset,ivsetsc=ivsetsc)
 !  allocate(znormsp(1))
 !  allocate(znormsp1(1))
 !  allocate(znormvor(nflevg))
@@ -499,7 +503,6 @@ endif
 !!===================================================================================================
 !! Setup timers
 !!===================================================================================================
-call ectrans_setup_timers
 !
 ztinit = (timef() - ztinit)/1000.0_jprd
 
@@ -526,7 +529,7 @@ if (iters <= 0) call abor1('transform_test:iters <= 0')
 !ztstepmax2 = 0._jprd
 !ztstepmin2 = 9999999999999999._jprd
 !
-call ectrans_allocate_timers(nout,nflevg)
+call ectrans_allocate_timers(iters)
 
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
@@ -537,7 +540,6 @@ ztloop = timef()
 !! Do spectral transform loop
 !!===================================================================================================
 do jstep = 1, iters
-call ectrans_spectral_loop
   call gstats(3,0)
 ! ztstep(jstep) = timef()
   call ectrans_set_ztstep_start(indx=0,jstep=jstep)
@@ -550,7 +552,7 @@ call ectrans_spectral_loop
   call ectrans_set_ztstep_start(indx=1,jstep=jstep)
   call gstats(4,0)
   if (lvordiv) then
-  call ectrans_inv_trans(nproma=nproma,lscders=lscders,luvders=luvders,ivset=ivset,ivsetc=ivsetc)
+  call ectrans_inv_trans(nproma=nproma,lscders=lscders,luvders=luvders,ivset=ivset,ivsetsc=ivsetsc)
 !    call inv_trans(kresol=1, kproma=nproma, &
 !       & pspsc2=zspsc2,                     & ! spectral surface pressure
 !       & pspvor=zspvor,                     & ! spectral vorticity
@@ -567,7 +569,7 @@ call ectrans_spectral_loop
 !       & pgpuv=zgpuv,                       &
 !       & pgp3a=zgp3a)
   else
-  call ectrans_inv_trans(nproma=nproma,lscders=lscders,ivset=ivset,ivsetc=ivsetc)
+  call ectrans_inv_trans(nproma=nproma,lscders=lscders,ivset=ivset,ivsetsc=ivsetsc)
 !    call inv_trans(kresol=1, kproma=nproma, &
 !       & pspsc2=zspsc2,                     & ! spectral surface pressure
 !       & pspsc3a=zspsc3a,                   & ! spectral scalars
@@ -587,7 +589,7 @@ call ectrans_spectral_loop
 !  !=================================================================================================
 !
    if (ldump_values) then
-     call ectrans_dump(jstep, myproc, nproma, ngpblks, noutdump)
+     call ectrans_dump(jstep, myproc, nproma, ngpblks, nflevg, noutdump)
 !    ! dump a field to a binary file
 !    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
 !    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
@@ -604,7 +606,7 @@ call ectrans_spectral_loop
 
   call gstats(5,0)
   if (lvordiv) then
-  call ectrans_direct_transform(nproma,nfld,ivset,ivsetc,lvordiv)
+  call ectrans_direct_trans(nproma,nfld,ivset,ivsetsc,lvordiv)
 !    call dir_trans(kresol=1, kproma=nproma, &
 !      & pgp2=zgmvs(:,1:1,:),                &
 !      & pgpuv=zgpuv(:,:,1:2,:),             &
@@ -617,7 +619,7 @@ call ectrans_spectral_loop
 !      & kvsetsc2=ivsetsc,                   &
 !      & kvsetsc3a=ivset)
   else
-  call ectrans_direct_transform(nproma,nfld,ivset,ivsetc)
+  call ectrans_direct_trans(nproma,nfld,ivset,ivsetsc)
 !    call dir_trans(kresol=1, kproma=nproma, &
 !      & pgp2=zgmvs(:,1:1,:),                &
 !      & pgp3a=zgp3a(:,:,1:nfld,:),          &
@@ -655,13 +657,13 @@ call ectrans_spectral_loop
  
    if (lprint_norms) then
      call gstats(6,0)
-     call ectrans_calculate_norms(indx=0, nflevl, nflevg, ivset,ivsetsc)
+     call ectrans_calculate_norms(indx=0, nflevl=nflevl, nflevg=nflevg, ivset=ivset,ivsetsc=ivsetsc)
 !    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
 !    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
 !    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
 !    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
 !
-     call ectrans_print_norms_calc(nout, ifld, jstep, myproc)
+     call ectrans_print_norms_calc(nout, jstep, myproc,nflevg)
 !    ! Surface pressure
 !    if (myproc == 1) then
 !      zmaxerr(:) = -999.0
@@ -692,7 +694,7 @@ call ectrans_spectral_loop
 !    endif
     call gstats(6,1)
   else
-    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
+    call ectrans_print_timestep(nout,jstep)
   endif
   call gstats(3,1)
 enddo
@@ -707,14 +709,14 @@ write(nout,'(" ")')
 !
 !
 if (lprint_norms .or. ncheck > 0) then
-     call ectrans_calculate_norms(indx=2, nflevl, nflevg, ivset,ivsetsc)
+     call ectrans_calculate_norms(indx=2, nflevl=nflevl, nflevg=nflevg, ivset=ivset,ivsetsc=ivsetsc)
 !  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
 !  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
 !  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
 !  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 !
    if (myproc == 1) then
-    call ectrans_print_norms_fin(nout,ifld,nflevg,myproc)
+    call ectrans_print_norms_fin(nout,nflevg,myproc)
 !    zmaxerr(:) = -999.0
 !    do ifld = 1, nflevg
 !      zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
@@ -762,7 +764,7 @@ if (lprint_norms .or. ncheck > 0) then
      if (myproc == 1) then
 !      ! If the maximum spectral norm error across all fields is greater than 100 times the machine
 !      ! epsilon, fail the test
-       ierr=ectrans_print_norms_fails(ncheck)
+       ierr=ectrans_print_norms_fails(nout,ncheck)
 !      if (zmaxerrg > real(ncheck, jprd) * epsilon(1.0_jprd)) then
 !        write(nout, '(a)') '*******************************'
 !        write(nout, '(a)') 'Correctness test failed'
@@ -823,7 +825,7 @@ call ectrans_compute_time_stats(nproc,iters)
 !
 !call sort(ztstep2,iters)
 !ztstepmed2 = ztstep2(iters/2)
-call ectrans_print_time_stats(ztloop,nproc)
+call ectrans_print_time_stats(nout,ztloop,nproc)
 !
 !write(nout,'(a)') '======= Start of time step stats ======='
 !write(nout,'(" ")')
@@ -1368,7 +1370,7 @@ end subroutine gstats_labels
 
 !===================================================================================================
 subroutine ectrans_print_runtimepars(variant)
-character, len(:) :: variant
+character(len=*) :: variant
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'("ectrans variant",a)') trim(variant)
@@ -1397,7 +1399,7 @@ character, len(:) :: variant
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
-subroutine ectrans_print_runtimepars
+end subroutine ectrans_print_runtimepars
 end program transform_test
 
 !===================================================================================================

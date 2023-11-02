@@ -45,7 +45,7 @@ foreach( prec sp dp )
                            SOURCES 
 			   ectrans-benchmark-program.F90 
 			   ectrans-benchmark-driver.F90
-			   ectrans-benchmark-data.F90
+			   ectrans-benchmark-data_mod.F90
                            LIBS
                              fiat
                              parkind_${prec}

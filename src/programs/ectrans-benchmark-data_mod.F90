@@ -10,6 +10,8 @@
 module transform_driver_data_mod
 
 use parkind1, only: jpim, jprb, jprd
+use yomgstats, only: jpmaxstat
+
 
 implicit none
 
