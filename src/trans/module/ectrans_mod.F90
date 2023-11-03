@@ -20,6 +20,10 @@ submodule (ectrans_mod) inv_trans_mod
 contains
 #include "inv_trans.F90"
 end submodule inv_trans_mod
+submodule (ectrans_mod) dir_trans_mod
+contains
+#include "dir_trans.F90"
+end submodule dir_trans_mod
 submodule (ectrans_mod) trans_inq__mod
 contains
 #include "trans_inq.F90"
