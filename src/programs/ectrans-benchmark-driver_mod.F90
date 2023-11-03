@@ -12,18 +12,23 @@ use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
-
+use ectrans_mod, only: setup_trans0
+use ectrans_mod, only: setup_trans
+use ectrans_mod, only: inv_trans
+!use ectrans_mod, only: dir_trans
+use ectrans_mod, only: trans_inq 
+use ectrans_mod, only: specnorm 
 implicit none
 external timef
 real(kind=jprd) :: timef
 !===================================================================================================
 
-#include "setup_trans0.h"
-#include "setup_trans.h"
-#include "inv_trans.h"
+!#include "setup_trans0.h"
+!#include "setup_trans.h"
+!#include "inv_trans.h"
 #include "dir_trans.h"
-#include "trans_inq.h"
-#include "specnorm.h"
+!#include "trans_inq.h"
+!#include "specnorm.h"
 
 !!===================================================================================================
 CONTAINS
