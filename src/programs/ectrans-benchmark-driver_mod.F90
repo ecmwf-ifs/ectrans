@@ -7,7 +7,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-MODULE transform_driver
+MODULE transform_driver_mod
 use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use yomgstats, only: jpmaxstat
@@ -718,6 +718,6 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, no
 end subroutine dump_gridpoint_field
 
 
-end module transform_driver
+end module transform_driver_mod
 
 !===================================================================================================

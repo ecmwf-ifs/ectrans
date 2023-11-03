@@ -44,7 +44,7 @@ foreach( prec sp dp )
     ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
                            SOURCES 
 			   ectrans-benchmark-program.F90 
-			   ectrans-benchmark-driver.F90
+			   ectrans-benchmark-driver_mod.F90
 			   ectrans-benchmark-data_mod.F90
                            LIBS
                              fiat

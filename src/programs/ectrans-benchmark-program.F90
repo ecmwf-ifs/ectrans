@@ -45,7 +45,7 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
-use transform_driver,only : ectrans_setup, ectrans_setup0, &
+use transform_driver_mod, only : ectrans_setup, ectrans_setup0, &
  ectrans_trans_inq, ectrans_allocate_spectral, &
  ectrans_allocate_grid, ectrans_deallocate_grid, &
  ectrans_allocate_normdata, ectrans_calculate_norms, & 
