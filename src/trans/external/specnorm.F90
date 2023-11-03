@@ -8,8 +8,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#ifndef INMODULE
 SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
-
+#else
+MODULE PROCEDURE SPECNORM
+#endif
 !**** *SPECNORM* - Compute global spectral norms
 
 !     Purpose.
@@ -65,12 +68,14 @@ IMPLICIT NONE
 ! Declaration of arguments
 
 
+#ifndef INMODULE
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PNORM(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+#endif
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IMASTER,IFLD,IFLD_G,J
@@ -140,5 +145,9 @@ CALL SPNORM_CTL(PSPEC,IFLD,IFLD_G,KVSET,IMASTER,PMET,PNORM)
 
 !     ------------------------------------------------------------------
 
+#ifndef INMODULE
 END SUBROUTINE SPECNORM
+#else
+END PROCEDURE SPECNORM
+#endif
 

@@ -9,6 +9,9 @@
 !
 
 INTERFACE
+#ifdef INMODULE
+MODULE &
+#endif
 SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
 
 !**** *SPECNORM* - Compute global spectral norms
