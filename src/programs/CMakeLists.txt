@@ -30,51 +30,36 @@ if( HAVE_TOOLS )
 
 endif()
 
-ecbuild_list_add_pattern( LIST driver_src
-                          GLOB
-			    ectrans-benchmark-driver_mod.F90
-			    ectrans-benchmark-data_mod.F90
-                          QUIET
-                        )
 foreach( prec sp dp )
   if( HAVE_${prec} )
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
                            SOURCES ectrans-benchmark.F90
+                                   ectrans-benchmark-driver_mod.F90
+                                   ectrans-benchmark-data_mod.F90
                            LIBS
                              fiat
                              parkind_${prec}
                              trans_${prec}
                           )
-  endif()
-  if( HAVE_${prec} )
-
-  ecbuild_add_library(
-      TARGET           driver_${prec}
-      LINKER_LANGUAGE  Fortran
-      SOURCES          ${driver_src}
-      #      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
-      #                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
-      #                       $<INSTALL_INTERFACE:include/ectrans>
-      #                       $<INSTALL_INTERFACE:include>
-      #      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
-      PUBLIC_LIBS      fiat parkind_${prec} trans_${prec}
-    )
-
     ectrans_target_fortran_module_directory(
-      TARGET            trans_${prec}
-      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/trans_${prec}
-      INSTALL_DIRECTORY module/trans_${prec}
+      TARGET            ectrans-benchmark-${prec}
+      MODULE_DIRECTORY  ${CMAKE_CURRENT_BINARY_DIR}/module/ectrans-benchmark-${prec}
     )
 
     ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
-                           SOURCES 
-			   ectrans-benchmark-program.F90 
+                           SOURCES ectrans-benchmark-program.F90
+                                   ectrans-benchmark-driver_mod.F90
+                                   ectrans-benchmark-data_mod.F90
                            LIBS
                              fiat
                              parkind_${prec}
                              trans_${prec}
-                             driver_${prec}
                           )
+    ectrans_target_fortran_module_directory(
+      TARGET             ectrans-benchmark-uni-${prec}
+      MODULE_DIRECTORY   ${CMAKE_CURRENT_BINARY_DIR}/module/ectrans-benchmark-uni-${prec}
+    )
+
   endif()
 endforeach()
 
