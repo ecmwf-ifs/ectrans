@@ -60,6 +60,7 @@ foreach( prec dp sp )
                        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
+      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
       PUBLIC_LIBS      fiat parkind_${prec}
     )
     ectrans_target_fortran_module_directory(
