@@ -77,6 +77,18 @@ foreach( prec sp dp )
                           )
   endif()
 endforeach()
+    ecbuild_add_executable(TARGET  ectrans-benchmark-uni
+                           SOURCES 
+			   ectrans-benchmark-program.F90 
+                           LIBS
+                             fiat
+                             parkind_sp
+                             trans_sp
+                             driver_sp
+                             parkind_dp
+                             trans_dp
+                             driver_dp   
+                          )
 
 # ectrans information tool
 
