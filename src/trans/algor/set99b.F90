@@ -1,3 +1,4 @@
+#include "renames.inc"
 ! (C) Copyright 1998- ECMWF.
 ! (C) Copyright 2013- Meteo-France.
 ! 
@@ -34,7 +35,7 @@
 !
       IXXX=1
 !
-      DEL=4.0E0_JPRB*ASIN(1.0E0_JPRB)/REAL(N,KIND=JPRB)
+      DEL=4.0E0_JPRB * ASIN(1.0E0_JPRB)/REAL(N,KIND=JPRB)
       NIL=0
       NHL=(N/2)-1
       DO 10 K=NIL,NHL
