@@ -57,13 +57,14 @@ foreach( prec sp dp )
       #                       $<INSTALL_INTERFACE:include/ectrans>
       #                       $<INSTALL_INTERFACE:include>
       #      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
-      PUBLIC_LIBS      fiat parkind_${prec} trans_${prec}
+      PUBLIC_LIBS      fiat 
+      PRIVATE_LIBS     parkind_${prec} trans_${prec}
     )
 
     ectrans_target_fortran_module_directory(
-      TARGET            trans_${prec}
-      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/trans_${prec}
-      INSTALL_DIRECTORY module/trans_${prec}
+      TARGET            driver_${prec}
+      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/driver_${prec}
+      INSTALL_DIRECTORY module/driver_${prec}
     )
 
     ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
