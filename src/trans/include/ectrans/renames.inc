@@ -126,6 +126,12 @@
 #define VDTUV_MOD  SUFFIXIZE(VDTUV_MOD)
 #define WRITE_LEGPOL_MOD  SUFFIXIZE(WRITE_LEGPOL_MOD)
 #define ectrans_mod SUFFIXIZE(ectrans_mod)
+!DIR_TRANS
+!INV_TRANS
+!SETUP_TRANS0
+!SETUP_TRANS
+!SPECNORM
+!TRANS_INQ
 !Pure replacements below
 #define parkind1 ec_parkind
 #define PARKIND1 EC_PARKIND

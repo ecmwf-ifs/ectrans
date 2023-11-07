@@ -43,7 +43,8 @@ foreach( prec sp dp )
                            LIBS
                              fiat
                              parkind_${prec}
-                             trans_${prec}
+			     #   trans_${prec}
+                             ectrans
                           )
   endif()
   if( HAVE_${prec} )

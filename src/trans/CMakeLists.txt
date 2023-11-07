@@ -92,6 +92,42 @@ foreach( prec dp sp )
   endif()
 endforeach()
 
+    ecbuild_add_library(
+      TARGET           ectrans
+      LINKER_LANGUAGE  Fortran
+      SOURCES          external/dir_trans.F90
+                       external/inv_trans.F90 
+                       external/dir_transad.F90
+                       external/dir_trans.F90
+                       external/dist_grid_32.F90
+                       external/dist_grid.F90
+                       external/dist_spec.F90
+                       external/gath_grid_32.F90
+                       external/gath_grid.F90
+                       external/gath_spec.F90
+                       external/get_current.F90
+                       external/gpnorm_trans.F90
+                       external/ini_spec_dist.F90
+                       external/inv_transad.F90
+                       external/inv_trans.F90
+                       external/setup_trans0.F90
+                       external/setup_trans.F90
+                       external/specnorm.F90
+                       external/sugawc.F90
+                       external/trans_end.F90
+                       external/trans_inq.F90
+                       external/trans_pnm.F90
+                       external/trans_release.F90
+                       external/vordiv_to_uv.F90
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
+      PRIVATE_DEFINITIONS SYMBOLSUFFIX 
+      PUBLIC_LIBS      fiat trans_sp trans_dp
+    )
+
 ## Install trans interface
 
 file( GLOB trans_interface include/ectrans/* )
