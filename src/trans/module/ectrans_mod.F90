@@ -1,3 +1,4 @@
+#include "renames.inc"
 #define INMODULE
 module ectrans_mod
 #include "setup_trans0.h"

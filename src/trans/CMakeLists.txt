@@ -39,7 +39,7 @@ ecbuild_list_add_pattern( LIST trans_src
                                 sharedmem/*
                                 algor/*
                                 internal/*
-                                external/*
+				#external/*
                                 module/*
                                 ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET

@@ -59,6 +59,7 @@ foreach( prec sp dp )
       #      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
       PUBLIC_LIBS      fiat 
       PRIVATE_LIBS     parkind_${prec} trans_${prec}
+   PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
     )
 
     ectrans_target_fortran_module_directory(
