@@ -95,17 +95,17 @@ foreach( prec sp dp )
       INSTALL_DIRECTORY module/driver_${prec}
     )
 
-    ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
-                           SOURCES 
-			   ectrans-benchmark-program.F90 
-                           LIBS
-                             fiat
-                             parkind_${prec}
-                             trans_${prec}
-                             driver_${prec}
-                             DEFINITIONS "SYMBOLSUFFIX=${prec}"
-                          )
-  endif()
+#   ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
+#                          SOURCES 
+#       		   ectrans-benchmark-program.F90 
+#                          LIBS
+#                            fiat
+#                            parkind_${prec}
+#                            trans_${prec}
+#                            driver_${prec}
+#                            DEFINITIONS "SYMBOLSUFFIX=${prec}"
+#                         )
+ endif()
 endforeach()
     ecbuild_add_executable(TARGET  ectrans-benchmark-uni
                            SOURCES 
@@ -118,7 +118,6 @@ endforeach()
                              parkind_dp
                              trans_dp
                              driver_dp   
-                             DEFINITIONS "SYMBOLSUFFIX=sp"
                           )
 
 # ectrans information tool
