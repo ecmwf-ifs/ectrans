@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -56,13 +57,17 @@ INTEGER(KIND=JPIM) :: NGPBLKS ! Number of NPROMA blocks
 LOGICAL :: LGPNORM = .FALSE.  ! indicates whether transform is being done for gpnorm
 
 REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: ZGTF(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: ZGTFTMP(:,:)
 
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZAVE(:,:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGL(:,:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGL(:,:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGPN(:)
 REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
+
+! This is used in fourier space. It's reused among the transforms because
+! we cannot reallocate - the captured CUDA graphs should not be modified.
+! Hence, we keep it if it is large enough, otherwise we adapt the size.
+REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: PREEL_PTR(:)
 
 !!! with Cray compiler this creates a lot more problems than good ... , Nils
 !!!$ACC DECLARE CREATE(FOUBUF_IN)
