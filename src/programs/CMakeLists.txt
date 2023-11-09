@@ -38,29 +38,55 @@ ecbuild_list_add_pattern( LIST driver_src
                         )
 foreach( prec sp dp )
   if( HAVE_${prec} )
+     if( ${prec} MATCHES "sp" )
+       set(precno 1)
+     elseif (${prec} MATCHES "dp")
+       set(precno 2)
+     endif()
+    ecbuild_add_library(
+      TARGET           ectrans_interfaces_${prec}
+      LINKER_LANGUAGE  Fortran
+      SOURCES          wrappers/dir_trans.F90
+                       wrappers/inv_trans.F90 
+                       wrappers/setup_trans0.F90
+                       wrappers/setup_trans.F90
+                       wrappers/specnorm.F90
+                       wrappers/trans_inq.F90
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+		       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+      PRIVATE_DEFINITIONS SYMBOLSUFFIX 
+                       PRECOPT=${precno}
+      PUBLIC_LIBS      fiat parkind_${prec} trans_dp trans_sp
+    )
+
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
                            SOURCES ectrans-benchmark.F90
                            LIBS
                              fiat
                              parkind_${prec}
-			     #   trans_${prec}
-                             ectrans
+			       trans_${prec}
+			       ectrans_interfaces_${prec}
+
                           )
   endif()
   if( HAVE_${prec} )
+     if( ${prec} MATCHES "sp" )
+       set(precno 1)
+     elseif (${prec} MATCHES "dp")
+       set(precno 2)
+     endif()
 
   ecbuild_add_library(
       TARGET           driver_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${driver_src}
-      #      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
-      #                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
-      #                       $<INSTALL_INTERFACE:include/ectrans>
-      #                       $<INSTALL_INTERFACE:include>
-      #      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
       PUBLIC_LIBS      fiat 
       PRIVATE_LIBS     parkind_${prec} trans_${prec}
    PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+                            PRECOPT=${precno}
+
     )
 
     ectrans_target_fortran_module_directory(
@@ -77,6 +103,7 @@ foreach( prec sp dp )
                              parkind_${prec}
                              trans_${prec}
                              driver_${prec}
+                             DEFINITIONS "SYMBOLSUFFIX=${prec}"
                           )
   endif()
 endforeach()
@@ -91,6 +118,7 @@ endforeach()
                              parkind_dp
                              trans_dp
                              driver_dp   
+                             DEFINITIONS "SYMBOLSUFFIX=sp"
                           )
 
 # ectrans information tool

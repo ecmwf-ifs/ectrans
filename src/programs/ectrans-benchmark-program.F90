@@ -6,7 +6,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 program transform_test
 
 !
@@ -45,10 +45,15 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
-use transform_driver_mod, only : ectrans_setup, ectrans_setup0, &
- ectrans_trans_inq, ectrans_allocate_spectral, &
- ectrans_allocate_grid, ectrans_deallocate_grid, &
- ectrans_allocate_normdata, ectrans_calculate_norms, & 
+use transform_driver_mod, only :& 
+ ectrans_setup, & 
+ ectrans_setup0, &
+ ectrans_trans_inq, &
+ ectrans_allocate_spectral, &
+ ectrans_allocate_grid, &
+ ectrans_deallocate_grid, &
+ ectrans_allocate_normdata,  &
+ ectrans_calculate_norms, & 
  ectrans_print_norms_init, ectrans_allocate_timers, &
  ectrans_set_ztstep_start, ectrans_set_ztstep_end, & 
  ectrans_inv_trans, ectrans_dump, ectrans_direct_trans, &

@@ -3,8 +3,6 @@
 #define PASTE2(x,y) x/**/y
 #define EVALUATOR(x,y) PASTE2(PASTE2(x,_),y)
 #define SUFFIXIZE(fun) EVALUATOR(fun,SYMBOLSUFFIX)
-#define upwind3d_gpubc SUFFIXIZE(upwind3d_gpubc)
-
 #define ABORT_TRANS_MOD  SUFFIXIZE(ABORT_TRANS_MOD)
 #define ASRE1AD_MOD  SUFFIXIZE(ASRE1AD_MOD)
 #define ASRE1BAD_MOD  SUFFIXIZE(ASRE1BAD_MOD)
@@ -126,23 +124,19 @@
 #define VDTUV_MOD  SUFFIXIZE(VDTUV_MOD)
 #define WRITE_LEGPOL_MOD  SUFFIXIZE(WRITE_LEGPOL_MOD)
 #define ectrans_mod SUFFIXIZE(ectrans_mod)
-!DIR_TRANS
-!INV_TRANS
-!SETUP_TRANS0
-!SETUP_TRANS
-!SPECNORM
-!TRANS_INQ
+#define transform_driver_data_mod SUFFIXIZE(transform_driver_data_mod)
+#define transform_driver_mod SUFFIXIZE(transform_driver_mod)
 !Pure replacements below
 #define parkind1 ec_parkind
 #define PARKIND1 EC_PARKIND
 !Conditional replacements
-#if SYMBOLSUFFIX == sp
-!#warning defining jprb as sp
+#if PRECOPT == 1 
+!#warning defining jprb as sp(SYMBOLSUFFIX)
 #define JPRB JPRM
 #define jprb jprm
 #define _JPRB _JPRM
 #define _jprb _jprm
-#elif SUMBOLSUFFIX == dp
+#elif PRECOPT == 2
 !#warning defining jprb as dp
 #define JPRB JPRD
 #define jprb jprd
