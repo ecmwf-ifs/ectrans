@@ -50,7 +50,7 @@ foreach( prec sp dp )
                        wrappers/inv_trans.F90 
                        wrappers/setup_trans0.F90
                        wrappers/setup_trans.F90
-                       wrappers/specnorm.F90
+		       #                wrappers/specnorm.F90
                        wrappers/trans_inq.F90
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
 		       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>

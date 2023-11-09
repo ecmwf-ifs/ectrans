@@ -126,6 +126,8 @@
 #define ectrans_mod SUFFIXIZE(ectrans_mod)
 #define transform_driver_data_mod SUFFIXIZE(transform_driver_data_mod)
 #define transform_driver_mod SUFFIXIZE(transform_driver_mod)
+#define SPECNORM SUFFIXIZE(SPECNORM)
+#define specnorm SUFFIXIZE(specnorm)
 !Pure replacements below
 #define parkind1 ec_parkind
 #define PARKIND1 EC_PARKIND

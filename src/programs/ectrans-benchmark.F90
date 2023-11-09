@@ -212,7 +212,7 @@ integer(kind=jpim) :: ierr
 #include "inv_trans.h"
 #include "dir_trans.h"
 #include "trans_inq.h"
-#include "specnorm.h"
+#include "./wrappers/specnorm.inc"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
