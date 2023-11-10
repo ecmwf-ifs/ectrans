@@ -141,6 +141,7 @@ DO KMLOC=1,D_NUMP
         PDIV(II,IN,KMLOC) = +ZKM*PU(IR,IN,KMLOC)+&
          &ZJN*ZEPSNM(KMLOC,JN+1)*PV(II,IN-1,KMLOC)-&
          &(ZJN+1)*ZEPSNM(KMLOC,JN)*PV(II,IN+1,KMLOC)
+
       ELSEIF(KM == 0) THEN
         ! (DO JN=0,R_NTMAX)
         IN = R_NTMAX+3-JN
