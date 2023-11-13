@@ -17,6 +17,7 @@ MODULE TPM_FFTW
 !   -------------- 
 !     Original      October 2014
 !     R. El Khatib 01-Sep-2015 More subroutines for better modularity
+!        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 
 USE, INTRINSIC :: ISO_C_BINDING
 
@@ -44,7 +45,8 @@ TYPE FFTW_TYPE
   INTEGER(KIND=JPIM),ALLOCATABLE :: N_PLANS(:)
   TYPE(FFTW_PLAN),POINTER :: FFTW_PLANS(:) => NULL()
   INTEGER(KIND=JPIM) :: N_MAX=0         ! maximum number of latitudes
-  INTEGER(KIND=JPIM) :: N_MAX_PLANS=4   ! maximum number of plans for each active latitudes
+  INTEGER(KIND=JPIM) :: N_MAX_PLANS=4   ! maximum number of plans for each active latitude
+  LOGICAL            :: LALL_FFTW=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 END TYPE FFTW_TYPE
 
 
@@ -422,8 +424,8 @@ IF( LD_ALL )THEN
        CALL SFFTW_EXECUTE_DFT_C2R(IPLAN_C2R,ZFFT,ZFFT)
     END IF
     IF (LHOOK) CALL DR_HOOK('FFTW_EXECUTE_DFT_C2R',1,ZHOOK_HANDLE2)
-    DO JJ=1,KRLEN
-      DO JF=1,KFIELDS
+    DO JF=1,KFIELDS
+      DO JJ=1,KRLEN
         PREEL(KOFF+JJ-1,JF)=ZFFT(JJ,JF)
       ENDDO
     ENDDO
@@ -440,8 +442,8 @@ IF( LD_ALL )THEN
        CALL SFFTW_EXECUTE_DFT_R2C(IPLAN_C2R,ZFFT,ZFFT)
     END IF
     IF (LHOOK) CALL DR_HOOK('FFTW_EXECUTE_DFT_R2C',1,ZHOOK_HANDLE2)
-    DO JJ=1,KCLEN
-      DO JF=1,KFIELDS
+    DO JF=1,KFIELDS
+      DO JJ=1,KCLEN
         PREEL(KOFF+JJ-1,JF)=ZFFT(JJ,JF)/REAL(KRLEN,JPRB)
       ENDDO
     ENDDO

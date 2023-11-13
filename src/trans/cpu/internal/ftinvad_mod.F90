@@ -42,7 +42,7 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
-
+!        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
@@ -50,7 +50,7 @@ USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_FFTW        ,ONLY : EXEC_FFTW
+USE TPM_FFTW        ,ONLY : TW, EXEC_FFTW
 USE TPM_DIM         ,ONLY : R
 !
 
@@ -61,7 +61,6 @@ REAL(KIND=JPRB), INTENT(OUT)  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,JJ,JF,ILOEN
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN,ITYPE
-LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 !     ------------------------------------------------------------------
 
@@ -81,7 +80,7 @@ DO JJ=1,ILOEN
   ENDDO
 ENDDO
 
-CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,TW%LALL_FFTW,PREEL)
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS

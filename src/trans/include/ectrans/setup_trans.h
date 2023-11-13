@@ -11,7 +11,7 @@
 INTERFACE
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
-&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
+&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,LD_ALL_FFTW,&
 &LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
@@ -52,6 +52,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomialsonly, not the FFTs.
 !     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
+!     LD_ALL_FFTW : T to transform all fields in one call, F to transforms fields one after another
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL 
 !                                 or KDGL+2 in the case that includes poles + equator
@@ -97,6 +98,7 @@ REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
+LOGICAL   ,OPTIONAL,INTENT(IN):: LD_ALL_FFTW
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDPNMONLY
