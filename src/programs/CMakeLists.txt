@@ -37,7 +37,7 @@ ecbuild_list_add_pattern( LIST driver_src
                           QUIET
                         )
 set(CMAKE_Fortran_PREPROCESS_SOURCE
-  "gcc -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
 foreach( prec sp dp )
   if( HAVE_${prec} )
      if( ${prec} MATCHES "sp" )

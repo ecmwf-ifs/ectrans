@@ -48,9 +48,8 @@ ecbuild_list_add_pattern( LIST trans_src
 if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
-
 set(CMAKE_Fortran_PREPROCESS_SOURCE
-  "gcc -cpp <DEFINES> <INCLUDES>  -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES>  -E <SOURCE> -o <PREPROCESSED_SOURCE>")
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
