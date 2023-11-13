@@ -24,7 +24,7 @@ MODULE INTERPOL_DECOMP_MOD
 ! Author: Mats Hamrud
 
 
-USE PARKIND1, ONLY : JPRB, JPIM, JPRD, JPIB
+USE PARKIND1, ONLY : JPIM, JPRD, JPIB
 IMPLICIT NONE
 CONTAINS
 !===========================================================================
