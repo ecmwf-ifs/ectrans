@@ -38,15 +38,14 @@ ecbuild_list_add_pattern( LIST driver_src
                         )
 set(CMAKE_Fortran_PREPROCESS_SOURCE
 	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
-foreach( prec sp dp )
-  if( HAVE_${prec} )
-     if( ${prec} MATCHES "sp" )
-       set(precno 1)
-     elseif (${prec} MATCHES "dp")
-       set(precno 2)
-     endif()
+# if( HAVE_${prec} )
+#    if( ${prec} MATCHES "sp" )
+#      set(precno 1)
+#    elseif (${prec} MATCHES "dp")
+#      set(precno 2)
+#    endif()
     ecbuild_add_library(
-      TARGET           ectrans_interfaces_${prec}
+      TARGET           ectrans_interfaces #_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          wrappers/dir_trans.F90
                        wrappers/inv_trans.F90 
@@ -59,26 +58,30 @@ foreach( prec sp dp )
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
       PRIVATE_DEFINITIONS SYMBOLSUFFIX 
-                       PRECOPT=${precno}
-      PUBLIC_LIBS      fiat parkind_${prec} trans_dp trans_sp
+                       PRECOPT #=${precno}
+      PUBLIC_LIBS      fiat  trans_sp trans_dp
     )
 
-    ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                           SOURCES ectrans-benchmark.F90
-                           LIBS
-                             fiat
-                             parkind_${prec}
-			       trans_${prec}
-			       ectrans_interfaces_${prec}
-
-                          )
-  endif()
+# endif()
+foreach( prec sp dp )
   if( HAVE_${prec} )
      if( ${prec} MATCHES "sp" )
        set(precno 1)
      elseif (${prec} MATCHES "dp")
        set(precno 2)
      endif()
+    ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
+                           SOURCES ectrans-benchmark.F90
+		       #                wrappers/specnorm.F90
+                           LIBS
+                             fiat
+                             parkind_${prec}
+			       trans_sp
+			       trans_dp
+			         ectrans_interfaces #_${prec}
+			     # trans_${prec}
+
+                          )
 
   ecbuild_add_library(
       TARGET           driver_${prec}

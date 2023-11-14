@@ -144,6 +144,16 @@
 #define FFTB_PLAN SUFFIXIZE(FFTB_PLAN)
 #define FFTB_TYPE SUFFIXIZE(FFTB_TYPE)
 #define BLUESTEIN_FFT SUFFIXIZE(BLUESTEIN_FFT)
+#define dir_trans SUFFIXIZE(dir_trans)
+#define DIR_TRANS SUFFIXIZE(DIR_TRANS)
+#define inv_trans SUFFIXIZE(inv_trans)
+#define INV_TRANS SUFFIXIZE(INV_TRANS)
+#define trans_inq SUFFIXIZE(trans_inq)
+#define TRANS_INQ SUFFIXIZE(TRANS_INQ)
+#define setup_trans0 SUFFIXIZE(setup_trans0)
+#define SETUP_TRANS0 SUFFIXIZE(SETUP_TRANS0)
+#define setup_trans SUFFIXIZE(setup_trans)
+#define SETUP_TRANS SUFFIXIZE(SETUP_TRANS)
 !Pure replacements below
 #define parkind1 ec_parkind
 #define PARKIND1 EC_PARKIND
