@@ -36,8 +36,9 @@ ecbuild_list_add_pattern( LIST driver_src
 			    ectrans-benchmark-data_mod.F90
                           QUIET
                         )
-set(CMAKE_Fortran_PREPROCESS_SOURCE
-	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+		#set(CMAKE_Fortran_PREPROCESS_SOURCE
+	#	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+	#	"gcc -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
 # if( HAVE_${prec} )
 #    if( ${prec} MATCHES "sp" )
 #      set(precno 1)
@@ -89,7 +90,7 @@ foreach( prec sp dp )
       SOURCES          ${driver_src}
       PUBLIC_LIBS      fiat 
       PRIVATE_LIBS     parkind_${prec} trans_${prec}
-   PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+   PRIVATE_DEFINITIONS SYMBOLSUFFIX=_${prec}
                             PRECOPT=${precno}
 
     )

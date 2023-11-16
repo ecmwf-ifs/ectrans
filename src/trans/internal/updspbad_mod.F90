@@ -57,6 +57,7 @@ SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC,KFLDPTR)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DIM         ,ONLY : R
 !USE TPM_FIELDS
@@ -95,7 +96,7 @@ ITMAX = R%NTMAX
 IASM0 = D%NASM0(KM)
 
 
-POA(:,:) = 0.0_JPRB
+POA(:,:) = 0.0_JPRC
 
 !*       1.1   KM=0
 
@@ -107,7 +108,7 @@ IF(KM == 0) THEN
       DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
         INM = IASM0+(ITMAX+2-JN)*2
         POA(JN,IR) = PSPEC(IFLD,INM)
-        PSPEC(IFLD,INM) = 0.0_JPRB
+        PSPEC(IFLD,INM) = 0.0_JPRC
       ENDDO
     ENDDO
   ELSE
@@ -118,7 +119,7 @@ IF(KM == 0) THEN
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
         POA(JN,IR) = PSPEC(JFLD,INM)
-        PSPEC(JFLD,INM) = 0.0_JPRB
+        PSPEC(JFLD,INM) = 0.0_JPRC
       ENDDO
     ENDDO
   ENDIF
@@ -134,8 +135,8 @@ ELSE
         INM = IASM0+((ITMAX+2-JN)-KM)*2
         POA(JN,IR) = PSPEC(IFLD,INM)
         POA(JN,II) = PSPEC(IFLD,INM+1)
-        PSPEC(IFLD,INM)   = 0.0_JPRB
-        PSPEC(IFLD,INM+1) = 0.0_JPRB
+        PSPEC(IFLD,INM)   = 0.0_JPRC
+        PSPEC(IFLD,INM+1) = 0.0_JPRC
       ENDDO
     ENDDO
   ELSE
@@ -148,8 +149,8 @@ ELSE
         II = IR+1
         POA(JN,IR) = PSPEC(JFLD,INM)
         POA(JN,II) = PSPEC(JFLD,INM+1)
-        PSPEC(JFLD,INM)   = 0.0_JPRB
-        PSPEC(JFLD,INM+1) = 0.0_JPRB
+        PSPEC(JFLD,INM)   = 0.0_JPRC
+        PSPEC(JFLD,INM+1) = 0.0_JPRC
       ENDDO
     ENDDO
   ENDIF

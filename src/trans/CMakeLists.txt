@@ -48,8 +48,8 @@ ecbuild_list_add_pattern( LIST trans_src
 if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
-set(CMAKE_Fortran_PREPROCESS_SOURCE
-	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES>  -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+#set(CMAKE_Fortran_PREPROCESS_SOURCE
+#	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES>  -E <SOURCE> -o <PREPROCESSED_SOURCE>")
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
@@ -69,7 +69,7 @@ foreach( prec dp sp )
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
       PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
-      PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+      PRIVATE_DEFINITIONS SYMBOLSUFFIX=_${prec}
                                PRECOPT=${precno}
       PUBLIC_LIBS      fiat parkind_${prec}
     )

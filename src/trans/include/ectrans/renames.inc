@@ -1,12 +1,12 @@
 !#define PASTER(x,y) x ## _ ## y
 !#define EVALUATOR(x,y)  PASTER(x,y)
-#define PASTE2(x,y) x/**/y
-#define EVALUATOR(x,y) PASTE2(PASTE2(x,_),y)
-#define SUFFIXIZE(fun) EVALUATOR(fun,SYMBOLSUFFIX)
-!#define __ATLAS_IO_SPLICE(a, b) __ATLAS_IO_SPLICE_1(a, b)
-!#define __ATLAS_IO_SPLICE_1(a, b) __ATLAS_IO_SPLICE_2(a, b)
-!#define __ATLAS_IO_SPLICE_2(a, b) a##b
-!#define SUFFIXIZE(fun) __ATLAS_IO_SPLICE(fun,SYMBOLSUFFIX)
+!#define PASTE2(x,y) x/**/y
+!#define EVALUATOR(x,y) PASTE2(PASTE2(x,_),y)
+!#define SUFFIXIZE(fun) EVALUATOR(fun,SYMBOLSUFFIX)
+#define __ATLAS_IO_SPLICE(a, b) __ATLAS_IO_SPLICE_1(a, b)
+#define __ATLAS_IO_SPLICE_1(a, b) __ATLAS_IO_SPLICE_2(a, b)
+#define __ATLAS_IO_SPLICE_2(a, b) a##b
+#define SUFFIXIZE(fun) __ATLAS_IO_SPLICE(fun,SYMBOLSUFFIX)
 #define ABORT_TRANS_MOD  SUFFIXIZE(ABORT_TRANS_MOD)
 #define ASRE1AD_MOD  SUFFIXIZE(ASRE1AD_MOD)
 #define ASRE1BAD_MOD  SUFFIXIZE(ASRE1BAD_MOD)
@@ -162,14 +162,14 @@
 !#warning defining jprb as sp(SYMBOLSUFFIX)
 #define JPRB JPRM
 #define jprb jprm
-#define _JPRB _JPRM
-#define _jprb _jprm
+!#define _JPRB _JPRM
+!#define _jprb _jprm
 #elif PRECOPT == 2
 !#warning defining jprb as dp
 #define JPRB JPRD
 #define jprb jprd
-#define _JPRB _JPRD
-#define _jprb _jprd
+!#define _JPRB _JPRD
+!#define _jprb _jprd
 #else
 #endif
 

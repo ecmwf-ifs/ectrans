@@ -9,6 +9,7 @@
 #include "renames.inc"
 MODULE transform_driver_mod
 use parkind1, only: jpim, jprb, jprd
+use parkind1, only: jprc => jprb
 use oml_mod ,only : oml_max_threads
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
@@ -429,22 +430,22 @@ integer(kind=jpim) :: ifld
       do ifld = 1, 1
         write(nout,*) "znormsp", znormsp
         call flush(nout)
-        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
+        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprc)
         zmaxerr(1) = max(zmaxerr(1), zerr(1))
       enddo
       ! Divergence
       do ifld = 1, nflevg
-        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
+        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprc)
         zmaxerr(2) = max(zmaxerr(2), zerr(2))
       enddo
       ! Vorticity
       do ifld = 1, nflevg
-        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
+        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprc)
         zmaxerr(3) = max(zmaxerr(3),zerr(3))
       enddo
       ! Temperature
       do ifld = 1, nflevg
-        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
+        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprc)
         zmaxerr(4) = max(zmaxerr(4), zerr(4))
       enddo
       write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
@@ -511,11 +512,11 @@ USE transform_driver_data_mod, ONLY : zmaxerrg
       integer(kind=jpim), intent(in) :: nout,ncheck
       integer(kind=jpim) :: ierr 
       ierr = 0
-      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprc)) then
         write(nout, '(a)') '*******************************'
         write(nout, '(a)') 'Correctness test failed'
         write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprc)
         write(nout, '(a)') '*******************************'
         ierr = 1
       endif
