@@ -90,7 +90,7 @@ foreach( prec sp dp )
       SOURCES          ${driver_src}
       PUBLIC_LIBS      fiat 
       PRIVATE_LIBS     parkind_${prec} trans_${prec}
-   PRIVATE_DEFINITIONS SYMBOLSUFFIX=_${prec}
+   PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
                             PRECOPT=${precno}
 
     )
