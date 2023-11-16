@@ -43,7 +43,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
 !        G. Mozdzynski (Oct 2014): support for FFTW transforms
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
-
+!        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
@@ -61,11 +61,10 @@ USE TPM_DIM         ,ONLY : R
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELDS,KGL
-REAL(KIND=JPRB), INTENT(INOUT) :: PREEL(:,:)
+REAL(KIND=JPRB), POINTER, CONTIGUOUS, INTENT(INOUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
-LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 
 !     ------------------------------------------------------------------
 
@@ -103,7 +102,7 @@ IF (G%NLOEN(IGLG)>1) THEN
 #ifdef WITH_FFTW
   ELSE
 
-    CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,LL_ALL,PREEL)
+    CALL EXEC_FFTW(ITYPE,IRLEN,ICLEN,IOFF,KFIELDS,TW%LALL_FFTW,PREEL)
   
   ENDIF
 #endif
@@ -113,9 +112,7 @@ ENDIF
 IST1=1
 IF (G%NLOEN(IGLG)==1) IST1=0
 DO JJ=IST1,ILEN
-  DO JF=1,KFIELDS
-    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = 0.0_JPRB
-  ENDDO
+  PREEL(1:KFIELDS,IST+D%NSTAGTF(KGL)+JJ-1) = 0.0_JPRB
 ENDDO
 
 !     ------------------------------------------------------------------

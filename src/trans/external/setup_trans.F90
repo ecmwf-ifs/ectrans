@@ -10,7 +10,7 @@
 
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
-&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
+&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,LD_ALL_FFTW,&
 &LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
@@ -52,6 +52,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomials only, not the FFTs.
 !     LDUSEFFTW    - Use FFTW for FFTs
+!     LD_ALL_FFTW : T to transform all fields in one call, F to transforms fields one after another
+
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL
 !                                 or KDGL+2 in the case that includes poles + equator
@@ -94,6 +96,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW
 !        M.Hamrud/W.Deconinck : July 2015 IO options for Legenndre polynomials
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
+!        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB,  JPRD
@@ -141,6 +144,7 @@ REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
+LOGICAL   ,OPTIONAL,INTENT(IN):: LD_ALL_FFTW
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
@@ -228,6 +232,7 @@ S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
 #ifdef WITH_FFTW
 TW%LFFTW=.FALSE. ! Use FFTW interface for FFTs
+TW%LALL_FFTW=.FALSE. ! transform fields one at a time
 #endif
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
@@ -340,6 +345,9 @@ IF(PRESENT(LDUSEFFTW)) THEN
 ENDIF
 IF( LLSPSETUPONLY .OR. D%LGRIDONLY ) THEN
   TW%LFFTW = .FALSE.
+ENDIF
+IF(PRESENT(LD_ALL_FFTW)) THEN
+  TW%LALL_FFTW=LD_ALL_FFTW
 ENDIF
 #endif
 
