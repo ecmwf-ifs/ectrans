@@ -36,8 +36,8 @@ ecbuild_list_add_pattern( LIST driver_src
 			    ectrans-benchmark-data_mod.F90
                           QUIET
                         )
-		#set(CMAKE_Fortran_PREPROCESS_SOURCE
-	#	"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
+		#		set(CMAKE_Fortran_PREPROCESS_SOURCE
+		#		"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
 	#	"gcc -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
 # if( HAVE_${prec} )
 #    if( ${prec} MATCHES "sp" )

@@ -44,79 +44,79 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
-use transform_driver_mod_dp, only :& 
- ectrans_setup_dp =>     ectrans_setup, & 
- ectrans_setup0_dp =>     ectrans_setup0, &
- ectrans_trans_inq_dp =>     ectrans_trans_inq, &
- ectrans_allocate_spectral_dp =>     ectrans_allocate_spectral, &
- ectrans_allocate_grid_dp =>     ectrans_allocate_grid, &
- ectrans_deallocate_grid_dp =>     ectrans_deallocate_grid, &
- ectrans_allocate_normdata_dp =>     ectrans_allocate_normdata,  &
- ectrans_calculate_norms_dp =>     ectrans_calculate_norms, & 
- ectrans_print_norms_init_dp =>     ectrans_print_norms_init, &
- ectrans_allocate_timers_dp =>     ectrans_allocate_timers, &
- ectrans_set_ztstep_start_dp =>     ectrans_set_ztstep_start, &
- ectrans_set_ztstep_end_dp =>     ectrans_set_ztstep_end, & 
- ectrans_inv_trans_dp =>     ectrans_inv_trans,&
- ectrans_dump_dp =>     ectrans_dump, &
- ectrans_direct_trans_dp =>     ectrans_direct_trans, &
- ectrans_calculate_timings_dp =>     ectrans_calculate_timings, &
- ectrans_print_norms_calc_dp =>     ectrans_print_norms_calc, &
- ectrans_print_norms_fin_dp =>     ectrans_print_norms_fin, &
- ectrans_print_norms_fails_dp =>     ectrans_print_norms_fails, &
- ectrans_norms_reduce_dp =>     ectrans_norms_reduce, &
- ectrans_compute_time_stats_dp =>     ectrans_compute_time_stats, &
- ectrans_print_time_stats_dp =>     ectrans_print_time_stats, &
- ectrans_print_timestep_dp =>     ectrans_print_timestep
+use transform_driver_mod_ver_dp, only :& 
+ ectrans_setup_ver_dp =>     ectrans_setup, & 
+ ectrans_setup0_ver_dp =>     ectrans_setup0, &
+ ectrans_trans_inq_ver_dp =>     ectrans_trans_inq, &
+ ectrans_allocate_spectral_ver_dp =>     ectrans_allocate_spectral, &
+ ectrans_allocate_grid_ver_dp =>     ectrans_allocate_grid, &
+ ectrans_deallocate_grid_ver_dp =>     ectrans_deallocate_grid, &
+ ectrans_allocate_normdata_ver_dp =>     ectrans_allocate_normdata,  &
+ ectrans_calculate_norms_ver_dp =>     ectrans_calculate_norms, & 
+ ectrans_print_norms_init_ver_dp =>     ectrans_print_norms_init, &
+ ectrans_allocate_timers_ver_dp =>     ectrans_allocate_timers, &
+ ectrans_set_ztstep_start_ver_dp =>     ectrans_set_ztstep_start, &
+ ectrans_set_ztstep_end_ver_dp =>     ectrans_set_ztstep_end, & 
+ ectrans_inv_trans_ver_dp =>     ectrans_inv_trans,&
+ ectrans_dump_ver_dp =>     ectrans_dump, &
+ ectrans_direct_trans_ver_dp =>     ectrans_direct_trans, &
+ ectrans_calculate_timings_ver_dp =>     ectrans_calculate_timings, &
+ ectrans_print_norms_calc_ver_dp =>     ectrans_print_norms_calc, &
+ ectrans_print_norms_fin_ver_dp =>     ectrans_print_norms_fin, &
+ ectrans_print_norms_fails_ver_dp =>     ectrans_print_norms_fails, &
+ ectrans_norms_reduce_ver_dp =>     ectrans_norms_reduce, &
+ ectrans_compute_time_stats_ver_dp =>     ectrans_compute_time_stats, &
+ ectrans_print_time_stats_ver_dp =>     ectrans_print_time_stats, &
+ ectrans_print_timestep_ver_dp =>     ectrans_print_timestep
 
-use transform_driver_mod_sp, only :& 
- ectrans_setup_sp =>     ectrans_setup, & 
- ectrans_setup0_sp =>     ectrans_setup0, &
- ectrans_trans_inq_sp =>     ectrans_trans_inq, &
- ectrans_allocate_spectral_sp =>     ectrans_allocate_spectral, &
- ectrans_allocate_grid_sp =>     ectrans_allocate_grid, &
- ectrans_deallocate_grid_sp =>     ectrans_deallocate_grid, &
- ectrans_allocate_normdata_sp =>     ectrans_allocate_normdata,  &
- ectrans_calculate_norms_sp =>     ectrans_calculate_norms, & 
- ectrans_print_norms_init_sp =>     ectrans_print_norms_init, &
- ectrans_allocate_timers_sp =>     ectrans_allocate_timers, &
- ectrans_set_ztstep_start_sp =>     ectrans_set_ztstep_start, &
- ectrans_set_ztstep_end_sp =>     ectrans_set_ztstep_end, & 
- ectrans_inv_trans_sp =>     ectrans_inv_trans,&
- ectrans_dump_sp =>     ectrans_dump, &
- ectrans_direct_trans_sp =>     ectrans_direct_trans, &
- ectrans_calculate_timings_sp =>     ectrans_calculate_timings, &
- ectrans_print_norms_calc_sp =>     ectrans_print_norms_calc, &
- ectrans_print_norms_fin_sp =>     ectrans_print_norms_fin, &
- ectrans_print_norms_fails_sp =>     ectrans_print_norms_fails, &
- ectrans_norms_reduce_sp =>     ectrans_norms_reduce, &
- ectrans_compute_time_stats_sp =>     ectrans_compute_time_stats, &
- ectrans_print_time_stats_sp =>     ectrans_print_time_stats, &
- ectrans_print_timestep_sp =>     ectrans_print_timestep
+use transform_driver_mod_ver_sp, only :& 
+ ectrans_setup_ver_sp =>     ectrans_setup, & 
+ ectrans_setup0_ver_sp =>     ectrans_setup0, &
+ ectrans_trans_inq_ver_sp =>     ectrans_trans_inq, &
+ ectrans_allocate_spectral_ver_sp =>     ectrans_allocate_spectral, &
+ ectrans_allocate_grid_ver_sp =>     ectrans_allocate_grid, &
+ ectrans_deallocate_grid_ver_sp =>     ectrans_deallocate_grid, &
+ ectrans_allocate_normdata_ver_sp =>     ectrans_allocate_normdata,  &
+ ectrans_calculate_norms_ver_sp =>     ectrans_calculate_norms, & 
+ ectrans_print_norms_init_ver_sp =>     ectrans_print_norms_init, &
+ ectrans_allocate_timers_ver_sp =>     ectrans_allocate_timers, &
+ ectrans_set_ztstep_start_ver_sp =>     ectrans_set_ztstep_start, &
+ ectrans_set_ztstep_end_ver_sp =>     ectrans_set_ztstep_end, & 
+ ectrans_inv_trans_ver_sp =>     ectrans_inv_trans,&
+ ectrans_dump_ver_sp =>     ectrans_dump, &
+ ectrans_direct_trans_ver_sp =>     ectrans_direct_trans, &
+ ectrans_calculate_timings_ver_sp =>     ectrans_calculate_timings, &
+ ectrans_print_norms_calc_ver_sp =>     ectrans_print_norms_calc, &
+ ectrans_print_norms_fin_ver_sp =>     ectrans_print_norms_fin, &
+ ectrans_print_norms_fails_ver_sp =>     ectrans_print_norms_fails, &
+ ectrans_norms_reduce_ver_sp =>     ectrans_norms_reduce, &
+ ectrans_compute_time_stats_ver_sp =>     ectrans_compute_time_stats, &
+ ectrans_print_time_stats_ver_sp =>     ectrans_print_time_stats, &
+ ectrans_print_timestep_ver_sp =>     ectrans_print_timestep
 implicit none
- procedure(ectrans_setup_dp),pointer ::     ectrans_setup  
- procedure(ectrans_setup0_dp),pointer ::     ectrans_setup0 
- procedure(ectrans_trans_inq_dp),pointer ::     ectrans_trans_inq 
- procedure(ectrans_allocate_spectral_dp ),pointer ::     ectrans_allocate_spectral 
- procedure(ectrans_allocate_grid_dp),pointer ::     ectrans_allocate_grid 
- procedure(ectrans_deallocate_grid_dp),pointer ::     ectrans_deallocate_grid 
- procedure(ectrans_allocate_normdata_dp),pointer ::     ectrans_allocate_normdata
- procedure(ectrans_calculate_norms_dp),pointer ::     ectrans_calculate_norms  
- procedure(ectrans_print_norms_init_dp),pointer ::     ectrans_print_norms_init 
- procedure(ectrans_allocate_timers_dp),pointer ::     ectrans_allocate_timers 
- procedure(ectrans_set_ztstep_start_dp),pointer ::     ectrans_set_ztstep_start 
- procedure(ectrans_set_ztstep_end_dp),pointer ::     ectrans_set_ztstep_end  
- procedure(ectrans_inv_trans_dp),pointer ::     ectrans_inv_trans
- procedure(ectrans_dump_dp),pointer ::     ectrans_dump 
- procedure(ectrans_direct_trans_dp),pointer ::     ectrans_direct_trans 
- procedure(ectrans_calculate_timings_dp),pointer ::     ectrans_calculate_timings 
- procedure(ectrans_print_norms_calc_dp),pointer ::     ectrans_print_norms_calc 
- procedure(ectrans_print_norms_fin_dp),pointer ::     ectrans_print_norms_fin 
- procedure(ectrans_print_norms_fails_dp),pointer ::     ectrans_print_norms_fails 
- procedure(ectrans_norms_reduce_dp),pointer ::     ectrans_norms_reduce 
- procedure(ectrans_compute_time_stats_dp),pointer ::     ectrans_compute_time_stats 
- procedure(ectrans_print_time_stats_dp),pointer ::     ectrans_print_time_stats 
- procedure(ectrans_print_timestep_dp),pointer ::     ectrans_print_timestep
+ procedure(ectrans_setup_ver_dp),pointer ::     ectrans_setup  
+ procedure(ectrans_setup0_ver_dp),pointer ::     ectrans_setup0 
+ procedure(ectrans_trans_inq_ver_dp),pointer ::     ectrans_trans_inq 
+ procedure(ectrans_allocate_spectral_ver_dp ),pointer ::     ectrans_allocate_spectral 
+ procedure(ectrans_allocate_grid_ver_dp),pointer ::     ectrans_allocate_grid 
+ procedure(ectrans_deallocate_grid_ver_dp),pointer ::     ectrans_deallocate_grid 
+ procedure(ectrans_allocate_normdata_ver_dp),pointer ::     ectrans_allocate_normdata
+ procedure(ectrans_calculate_norms_ver_dp),pointer ::     ectrans_calculate_norms  
+ procedure(ectrans_print_norms_init_ver_dp),pointer ::     ectrans_print_norms_init 
+ procedure(ectrans_allocate_timers_ver_dp),pointer ::     ectrans_allocate_timers 
+ procedure(ectrans_set_ztstep_start_ver_dp),pointer ::     ectrans_set_ztstep_start 
+ procedure(ectrans_set_ztstep_end_ver_dp),pointer ::     ectrans_set_ztstep_end  
+ procedure(ectrans_inv_trans_ver_dp),pointer ::     ectrans_inv_trans
+ procedure(ectrans_dump_ver_dp),pointer ::     ectrans_dump 
+ procedure(ectrans_direct_trans_ver_dp),pointer ::     ectrans_direct_trans 
+ procedure(ectrans_calculate_timings_ver_dp),pointer ::     ectrans_calculate_timings 
+ procedure(ectrans_print_norms_calc_ver_dp),pointer ::     ectrans_print_norms_calc 
+ procedure(ectrans_print_norms_fin_ver_dp),pointer ::     ectrans_print_norms_fin 
+ procedure(ectrans_print_norms_fails_ver_dp),pointer ::     ectrans_print_norms_fails 
+ procedure(ectrans_norms_reduce_ver_dp),pointer ::     ectrans_norms_reduce 
+ procedure(ectrans_compute_time_stats_ver_dp),pointer ::     ectrans_compute_time_stats 
+ procedure(ectrans_print_time_stats_ver_dp),pointer ::     ectrans_print_time_stats 
+ procedure(ectrans_print_timestep_ver_dp),pointer ::     ectrans_print_timestep
 
 integer(kind=jpim) :: istack, getstackusage
 !
@@ -400,54 +400,54 @@ do ibackend=1,2
 if(ibackend == 1) write(nout,'(a)')'======= Running benchmark #1 (sp) ======='
 if(ibackend == 2) write(nout,'(a)')'======= Running benchmark #2 (dp) ======='
 if(ibackend == 1) then
- ectrans_setup =>     ectrans_setup_sp  
- ectrans_setup0 =>     ectrans_setup0_sp 
- ectrans_trans_inq =>     ectrans_trans_inq_sp 
- ectrans_allocate_spectral =>     ectrans_allocate_spectral_sp 
- ectrans_allocate_grid =>     ectrans_allocate_grid_sp 
- ectrans_deallocate_grid =>     ectrans_deallocate_grid_sp 
- ectrans_allocate_normdata =>     ectrans_allocate_normdata_sp  
- ectrans_calculate_norms =>     ectrans_calculate_norms_sp  
- ectrans_print_norms_init =>     ectrans_print_norms_init_sp 
- ectrans_allocate_timers =>     ectrans_allocate_timers_sp 
- ectrans_set_ztstep_start =>     ectrans_set_ztstep_start_sp 
- ectrans_set_ztstep_end =>     ectrans_set_ztstep_end_sp  
- ectrans_inv_trans =>     ectrans_inv_trans_sp 
- ectrans_dump =>     ectrans_dump_sp 
- ectrans_direct_trans =>     ectrans_direct_trans_sp 
- ectrans_calculate_timings =>     ectrans_calculate_timings_sp 
- ectrans_print_norms_calc =>     ectrans_print_norms_calc_sp 
- ectrans_print_norms_fin =>     ectrans_print_norms_fin_sp 
- ectrans_print_norms_fails =>     ectrans_print_norms_fails_sp 
- ectrans_norms_reduce =>     ectrans_norms_reduce_sp 
- ectrans_compute_time_stats =>     ectrans_compute_time_stats_sp 
- ectrans_print_time_stats =>     ectrans_print_time_stats_sp 
- ectrans_print_timestep =>     ectrans_print_timestep_sp
+ ectrans_setup =>     ectrans_setup_ver_sp  
+ ectrans_setup0 =>     ectrans_setup0_ver_sp 
+ ectrans_trans_inq =>     ectrans_trans_inq_ver_sp 
+ ectrans_allocate_spectral =>     ectrans_allocate_spectral_ver_sp 
+ ectrans_allocate_grid =>     ectrans_allocate_grid_ver_sp 
+ ectrans_deallocate_grid =>     ectrans_deallocate_grid_ver_sp 
+ ectrans_allocate_normdata =>     ectrans_allocate_normdata_ver_sp  
+ ectrans_calculate_norms =>     ectrans_calculate_norms_ver_sp  
+ ectrans_print_norms_init =>     ectrans_print_norms_init_ver_sp 
+ ectrans_allocate_timers =>     ectrans_allocate_timers_ver_sp 
+ ectrans_set_ztstep_start =>     ectrans_set_ztstep_start_ver_sp 
+ ectrans_set_ztstep_end =>     ectrans_set_ztstep_end_ver_sp  
+ ectrans_inv_trans =>     ectrans_inv_trans_ver_sp 
+ ectrans_dump =>     ectrans_dump_ver_sp 
+ ectrans_direct_trans =>     ectrans_direct_trans_ver_sp 
+ ectrans_calculate_timings =>     ectrans_calculate_timings_ver_sp 
+ ectrans_print_norms_calc =>     ectrans_print_norms_calc_ver_sp 
+ ectrans_print_norms_fin =>     ectrans_print_norms_fin_ver_sp 
+ ectrans_print_norms_fails =>     ectrans_print_norms_fails_ver_sp 
+ ectrans_norms_reduce =>     ectrans_norms_reduce_ver_sp 
+ ectrans_compute_time_stats =>     ectrans_compute_time_stats_ver_sp 
+ ectrans_print_time_stats =>     ectrans_print_time_stats_ver_sp 
+ ectrans_print_timestep =>     ectrans_print_timestep_ver_sp
 
 elseif(ibackend == 2) then
- ectrans_setup =>     ectrans_setup_dp  
- ectrans_setup0 =>     ectrans_setup0_dp 
- ectrans_trans_inq =>     ectrans_trans_inq_dp 
- ectrans_allocate_spectral =>     ectrans_allocate_spectral_dp 
- ectrans_allocate_grid =>     ectrans_allocate_grid_dp 
- ectrans_deallocate_grid =>     ectrans_deallocate_grid_dp 
- ectrans_allocate_normdata =>     ectrans_allocate_normdata_dp  
- ectrans_calculate_norms =>     ectrans_calculate_norms_dp  
- ectrans_print_norms_init =>     ectrans_print_norms_init_dp 
- ectrans_allocate_timers =>     ectrans_allocate_timers_dp 
- ectrans_set_ztstep_start =>     ectrans_set_ztstep_start_dp 
- ectrans_set_ztstep_end =>     ectrans_set_ztstep_end_dp  
- ectrans_inv_trans =>     ectrans_inv_trans_dp 
- ectrans_dump =>     ectrans_dump_dp 
- ectrans_direct_trans =>     ectrans_direct_trans_dp 
- ectrans_calculate_timings =>     ectrans_calculate_timings_dp 
- ectrans_print_norms_calc =>     ectrans_print_norms_calc_dp 
- ectrans_print_norms_fin =>     ectrans_print_norms_fin_dp 
- ectrans_print_norms_fails =>     ectrans_print_norms_fails_dp 
- ectrans_norms_reduce =>     ectrans_norms_reduce_dp 
- ectrans_compute_time_stats =>     ectrans_compute_time_stats_dp 
- ectrans_print_time_stats =>     ectrans_print_time_stats_dp 
- ectrans_print_timestep =>     ectrans_print_timestep_dp
+ ectrans_setup =>     ectrans_setup_ver_dp  
+ ectrans_setup0 =>     ectrans_setup0_ver_dp 
+ ectrans_trans_inq =>     ectrans_trans_inq_ver_dp 
+ ectrans_allocate_spectral =>     ectrans_allocate_spectral_ver_dp 
+ ectrans_allocate_grid =>     ectrans_allocate_grid_ver_dp 
+ ectrans_deallocate_grid =>     ectrans_deallocate_grid_ver_dp 
+ ectrans_allocate_normdata =>     ectrans_allocate_normdata_ver_dp  
+ ectrans_calculate_norms =>     ectrans_calculate_norms_ver_dp  
+ ectrans_print_norms_init =>     ectrans_print_norms_init_ver_dp 
+ ectrans_allocate_timers =>     ectrans_allocate_timers_ver_dp 
+ ectrans_set_ztstep_start =>     ectrans_set_ztstep_start_ver_dp 
+ ectrans_set_ztstep_end =>     ectrans_set_ztstep_end_ver_dp  
+ ectrans_inv_trans =>     ectrans_inv_trans_ver_dp 
+ ectrans_dump =>     ectrans_dump_ver_dp 
+ ectrans_direct_trans =>     ectrans_direct_trans_ver_dp 
+ ectrans_calculate_timings =>     ectrans_calculate_timings_ver_dp 
+ ectrans_print_norms_calc =>     ectrans_print_norms_calc_ver_dp 
+ ectrans_print_norms_fin =>     ectrans_print_norms_fin_ver_dp 
+ ectrans_print_norms_fails =>     ectrans_print_norms_fails_ver_dp 
+ ectrans_norms_reduce =>     ectrans_norms_reduce_ver_dp 
+ ectrans_compute_time_stats =>     ectrans_compute_time_stats_ver_dp 
+ ectrans_print_time_stats =>     ectrans_print_time_stats_ver_dp 
+ ectrans_print_timestep =>     ectrans_print_timestep_ver_dp
 endif !backend 
 !===================================================================================================
 ! Call ecTrans setup routines
