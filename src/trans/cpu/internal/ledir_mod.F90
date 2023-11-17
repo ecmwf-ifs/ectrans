@@ -55,7 +55,7 @@ SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KSL,KDGLU,KLED2,PAIA,PSIA,POA1,PW)
 !      P. Dueben : Dec 2019 Improvements for mass conservation in single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRD, JPIM, JPRB
+USE PARKIND1  ,ONLY : JPRD, JPRM, JPIM, JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
