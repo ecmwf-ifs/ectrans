@@ -395,10 +395,10 @@ IF( LLOLD ) THEN
     IF(LLP2)THEN
       WRITE(UNIT=NOUT,FMT=&
        &'('' M ='',I4,'' ROW ='',I4,'' ITERATIONS='',I4,'' ROOT='',F30.20,&
-       &'' WEIGHT='',F30.20,'' MODIF :'',E8.2)')KM,JGL,ITER(JGL),PL(JGL)&
+       &'' WEIGHT='',F30.20,'' MODIF :'',E9.2)')KM,JGL,ITER(JGL),PL(JGL)&
        &,PW(JGL),PL(JGL)-ZLI(JGL)
       WRITE(UNIT=NOUT,FMT=&
-       &'(10X,'' LAST INC. : '',E8.2,'' MODIF IN M : '',F10.3,&
+       &'(10X,'' LAST INC. : '',E9.2,'' MODIF IN M : '',F10.3,&
        &'' FROM THE REGULAR GRID : '',F10.3,'' COLAT '',F10.3)')&
        &ZMOD(JGL),ZM(JGL),ZRR(JGL),ZT(JGL)
     ENDIF
