@@ -54,7 +54,7 @@ SUBROUTINE LEINVAD(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KDGLU,PIA,PAOA1,PSOA1)
 !        Modified ! 16/10/12 J.Hague : DR_HOOK round calls to DGEMM:
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD
+USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD, JPRM
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
