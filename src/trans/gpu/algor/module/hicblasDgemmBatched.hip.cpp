@@ -124,6 +124,32 @@ extern "C" void hipblasDgemmStridedBatched_wrapper (char transa, char transb, in
 
 }
 
+extern "C" void hipblasDgemmGrouped_wrapper(char transa,
+                                  char transb, int m, int *n,
+                                  int *k, double alpha, const double *A, int lda,
+                                  int tda, const double *B, int ldb, int tdb,
+                                  double beta, double *C, int ldc, int tdc,
+                                  int batchCount) {
+
+  hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
+
+  if (transa=='T' || transa=='t')
+    op_t1=HIPBLAS_OP_T;
+
+  if (transb=='T' || transb=='t')
+    op_t2=HIPBLAS_OP_T;
+
+  static hipblasHandle_t handle_dgemm_grouped = nullptr;
+  if (!handle_dgemm_grouped)
+    HIC_CHECK(hipblasCreate(&handle_dgemm_grouped));
+
+  for (int i = 0; i < batchCount; ++i) {
+    HIC_CHECK(hipblasDgemm(handle_dgemm_grouped, op_t1, op_t2, m, n[i], k[i], &alpha,
+                             A + i * tda, lda, B + i * tdb, ldb, &beta,
+                             C + i * tdc, ldc));
+  }
+}
+
 extern "C" void hipblasDgemmBatched_finalize ()
 {
 
