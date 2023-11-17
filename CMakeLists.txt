@@ -25,6 +25,11 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
+ecbuild_add_option( FEATURE MPI
+                    DESCRIPTION "Support for MPI distributed memory parallelism"
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran CXX"
+                    CONDITION fiat_HAVE_MPI )
+
 ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
@@ -116,8 +121,8 @@ endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
-                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
+                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI)"
+                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) AND HAVE_MPI )
 
 if( HAVE_GPU )
   if( HAVE_ACC )
