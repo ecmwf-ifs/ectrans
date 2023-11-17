@@ -57,7 +57,6 @@ SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KSL,KDGLU,KLED2,PAIA,PSIA,POA1,PW)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPRD, JPIM, JPRB
-USE PARKIND1  ,ONLY : JPRC => JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
@@ -140,16 +139,16 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
-       CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRC,S%FA(KMLOC)%RPNMA,KDGLU,&
-            &ZB,KDGLU,0._JPRC,ZCA,ILA)
+       CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
+            &ZB,KDGLU,0._JPRD,ZCA,ILA)
     ELSE
        IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
           IF (LL_IEEE_HALT) THEN
              call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
              if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
           ENDIF
-          CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRC,S%FA(KMLOC)%RPNMA,KDGLU,&
-               &ZB,KDGLU,0._JPRC,ZCA,ILA)
+          CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
+               &ZB,KDGLU,0._JPRM,ZCA,ILA)
           if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
        ELSE
           I1 = size(S%FA(KMLOC)%RPNMA(:,1))
@@ -214,16 +213,16 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
-       CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRC,S%FA(KMLOC)%RPNMS,KDGLU,&
-            &ZB,KDGLU,0._JPRC,ZCS,ILS)
+       CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZB,KDGLU,0._JPRD,ZCS,ILS)
     ELSE
        IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
           IF (LL_IEEE_HALT) THEN
              call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
              if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
           ENDIF
-          CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRC,S%FA(KMLOC)%RPNMS,KDGLU,&
-               &ZB,KDGLU,0._JPRC,ZCS,ILS)
+          CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
+               &ZB,KDGLU,0._JPRM,ZCS,ILS)
           if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
        ELSE
           I1 = size(S%FA(KMLOC)%RPNMS(:,1))

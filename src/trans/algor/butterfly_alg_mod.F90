@@ -11,7 +11,6 @@
 
 MODULE BUTTERFLY_ALG_MOD 
 USE PARKIND1, ONLY : JPRD, JPIM, JPRB, JPIB
-USE PARKIND1, ONLY : JPRC => JPRB
 USE INTERPOL_DECOMP_MOD
 USE SHAREDMEM_MOD
 
@@ -623,8 +622,8 @@ IF(LLTRANSPOSE) THEN
                & 0.0_JPRD,ZBETA(IBTST:IBTEN,IBETALV),1)
             ELSE
               CALL SGEMV('T',IROWS,YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IRANK,&
-               & 1.0_JPRC,YNODE%B,IROWS,PVECIN(IFR:ILR),1,&
-               & 0.0_JPRC,ZBETA(IBTST:IBTEN,IBETALV),1)
+               & 1.0_JPRM,YNODE%B,IROWS,PVECIN(IFR:ILR),1,&
+               & 0.0_JPRM,ZBETA(IBTST:IBTEN,IBETALV),1)
             ENDIF
           ENDIF
           ILM1 = JL-1
@@ -702,8 +701,8 @@ ELSE
              & 0.0_JPRD,PVECOUT(IFR:ILR),1)
           ELSE
             CALL SGEMV('N',IROWS,YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IRANK,&
-             & 1.0_JPRC,YNODE%B,IROWS,ZBETA(IBTST:IBTEN,IBETALV),1,&
-             & 0.0_JPRC,PVECOUT(IFR:ILR),1)
+             & 1.0_JPRM,YNODE%B,IROWS,ZBETA(IBTST:IBTEN,IBETALV),1,&
+             & 0.0_JPRM,PVECOUT(IFR:ILR),1)
           ENDIF
         ENDIF
       ENDDO
@@ -802,8 +801,8 @@ IF(LLTRANSPOSE) THEN
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRC,&
-                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRC,&
+               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRM,&
                     & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -847,8 +846,8 @@ IF(LLTRANSPOSE) THEN
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('T','N',IRANK,KF,IROWS,1.0_JPRC,&
-                    & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRC,&
+               CALL SGEMM('T','N',IRANK,KF,IROWS,1.0_JPRM,&
+                    & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRM,&
                     & ZBETA(IBTST,1,IBETALV),ILBETA)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -901,8 +900,8 @@ IF(LLTRANSPOSE) THEN
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRC,&
-                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRC,&
+               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRM,&
                     & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -979,8 +978,8 @@ ELSE
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRC,&
-                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRC,&
+               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRM,&
                     & ZBETA(IBTST,1,IBETALV),ILBETA)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -1027,8 +1026,8 @@ ELSE
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRC,&
-                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRC,&
+               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRM,&
                     & ZBETA(IBTST,1,IBETALV),ILBETA)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -1048,8 +1047,8 @@ ELSE
                 call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                 if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
              ENDIF
-             CALL SGEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRC,&
-                  & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRC,&
+             CALL SGEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRM,&
+                  & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRM,&
                   & PVECOUT(IFR,1),IROUT)
              if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
           ENDIF
@@ -1086,10 +1085,10 @@ IF(YDNODE%ICOLS > IRANK) THEN
   IM = IRANK
   IN = YDNODE%ICOLS-IRANK
   IF (JPRB == JPRD) THEN
-     CALL DGEMV('N',IM,IN,1.0_JPRC,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRC,ZVECOUT,1)
+     CALL DGEMV('N',IM,IN,1.0_JPRD,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRD,ZVECOUT,1)
      PVECOUT(:)=ZVECOUT(:)
   ELSE
-     CALL SGEMV('N',IM,IN,1.0_JPRC,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRC,PVECOUT,1)
+     CALL SGEMV('N',IM,IN,1.0_JPRM,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRM,PVECOUT,1)
   ENDIF
 ENDIF
 
@@ -1133,8 +1132,8 @@ IF(YDNODE%ICOLS > IRANK) THEN
         call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
         if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
      ENDIF
-     CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRC,&
-          & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRC,&
+     CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRM,&
+          & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRM,&
           & PVECOUT,IRANK)
      if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
   ENDIF
@@ -1160,7 +1159,7 @@ IF(IN>0) THEN
      ZVECIN(:) = PVECIN(:)
      CALL DGEMV('T',IM,IN,1.0_JPRD,YDNODE%PNONIM,IRANK,ZVECIN,1,0.0_JPRD,ZVECOUT(IRANK+1),1)
   ELSE
-     CALL SGEMV('T',IM,IN,1.0_JPRC,YDNODE%PNONIM,IRANK,PVECIN,1,0.0_JPRC,ZVECOUT(IRANK+1),1)
+     CALL SGEMV('T',IM,IN,1.0_JPRM,YDNODE%PNONIM,IRANK,PVECIN,1,0.0_JPRM,ZVECOUT(IRANK+1),1)
   ENDIF
 ENDIF
 DO JK=1,IRANK
@@ -1202,8 +1201,8 @@ IF(IN>0) THEN
          call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
          if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
       ENDIF
-      CALL SGEMM('T','N',IN,KF,IM,1.0_JPRC,&
-           & YDNODE%PNONIM(1),IM,PVECIN,IM,0.0_JPRC,&
+      CALL SGEMM('T','N',IN,KF,IM,1.0_JPRM,&
+           & YDNODE%PNONIM(1),IM,PVECIN,IM,0.0_JPRM,&
            & ZVECOUT(YDNODE%IRANK+1,1),YDNODE%ICOLS)
       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
    ENDIF

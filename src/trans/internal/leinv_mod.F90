@@ -142,15 +142,25 @@ IF( KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
+<<<<<<< HEAD
       CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRC,S%FA(KMLOC)%RPNMA,KDGLU,&
        &ZBA,ILA,0._JPRC,ZC,KDGLU)
+=======
+      CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
+       &ZBA,ILA,0._JPRD,ZC,KDGLU)
+>>>>>>> 72a7d17 (Constant numbers in BLAS calls are now JPRD for DP calls and JPRM for SP calls (instead of JPRB). Explicit type cast of JPRD to JPRB is added in gpnorm MIN/MAX calls to remove compilation warning of NVHPC)
     ELSE
        IF (LL_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
+<<<<<<< HEAD
        CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRC,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZBA,ILA,0._JPRC,ZC,KDGLU)
+=======
+       CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
+            &ZBA,ILA,0._JPRM,ZC,KDGLU)
+>>>>>>> 72a7d17 (Constant numbers in BLAS calls are now JPRD for DP calls and JPRM for SP calls (instead of JPRB). Explicit type cast of JPRD to JPRB is added in gpnorm MIN/MAX calls to remove compilation warning of NVHPC)
        if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
@@ -186,15 +196,25 @@ IF( KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
+<<<<<<< HEAD
        CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRC,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZBS,ILS,0._JPRC,ZC,KDGLU)
+=======
+       CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZBS,ILS,0._JPRD,ZC,KDGLU)
+>>>>>>> 72a7d17 (Constant numbers in BLAS calls are now JPRD for DP calls and JPRM for SP calls (instead of JPRB). Explicit type cast of JPRD to JPRB is added in gpnorm MIN/MAX calls to remove compilation warning of NVHPC)
     ELSE
        IF (LL_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
+<<<<<<< HEAD
        CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRC,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZBS,ILS,0._JPRC,ZC,KDGLU)
+=======
+       CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZBS,ILS,0._JPRM,ZC,KDGLU)
+>>>>>>> 72a7d17 (Constant numbers in BLAS calls are now JPRD for DP calls and JPRM for SP calls (instead of JPRB). Explicit type cast of JPRD to JPRB is added in gpnorm MIN/MAX calls to remove compilation warning of NVHPC)
        if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
