@@ -150,6 +150,20 @@ extern "C" void hipblasDgemmGrouped_wrapper(char transa,
   }
 }
 
+
+extern "C" void blas_dgemm_wrapper_grouped(char transa,
+                                char transb, int m, int *n, int *k,
+                                double alpha, const double *A, int lda, int tda,
+                                const double *B, int ldb, int tdb, double beta,
+                                double *C, int ldc, int tdc, int batchCount) {
+  hipblasDgemmGrouped_wrapper(transa, transb, m, n, k, alpha, A, lda, tda, B,
+                              ldb, tdb, beta, C, ldc, tdc, batchCount);
+}
+
+
+
+
+
 extern "C" void hipblasDgemmBatched_finalize ()
 {
 

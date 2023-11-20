@@ -71,7 +71,6 @@ elseif( HAVE_CUDA )
 else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
-ecbuild_find_package( NAME NvidiaCutlass REQUIRED)
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
@@ -97,6 +96,7 @@ foreach( prec dp sp )
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
+                               $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
           PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
                                ${GPU_RUNTIME}GPU
                                $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>

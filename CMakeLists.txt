@@ -135,6 +135,14 @@ if( HAVE_GPU )
   endif()
 endif()
 
+ecbuild_find_package( NAME NvidiaCutlass )
+ecbuild_add_option( FEATURE CUTLASS
+                    DEFAULT OFF
+                    CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
+                    DESCRIPTION "Support for Cutlass BLAS operations"
+                    REQUIRED_PACKAGES "NvidiaCutlass" )
+
+
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT OFF
                     CONDITION HAVE_GPU

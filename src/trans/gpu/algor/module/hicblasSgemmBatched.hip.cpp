@@ -18,6 +18,12 @@
 
 #include "hicblas.h"
 
+#ifdef USE_CUTLASS
+constexpr bool use_cutlass = false;
+#else
+constexpr bool use_cutlass = false;
+#endif
+
 bool hip_alreadyAllocated_sgemm=false;
 bool hip_alreadyAllocated_sgemm_handle=false;
 
@@ -134,6 +140,22 @@ extern "C" void hipblasSgemmGrouped_wrapper(char transa,
   }
 }
 
+
+extern "C" void blas_sgemm_wrapper_grouped(char transa,
+                                char transb, int m, int *n, int *k,
+                                float alpha, const float *A, int lda, int tda,
+                                const float *B, int ldb, int tdb, float beta,
+                                float *C, int ldc, int tdc, int batchCount) {
+#ifdef USE_CUTLASS
+    cutlass_sgemm_wrapper_grouped(transa, transb, m, n, k, alpha, A, lda, tda,
+                                  B, ldb, tdb, beta, C, ldc, tdc, batchCount);
+#else
+    hipblasSgemmGrouped_wrapper(transa, transb, m, n, k, alpha, A, lda, tda, B,
+                                ldb, tdb, beta, C, ldc, tdc, batchCount);
+#endif
+}
+
+
 extern "C" void hipblasSgemmBatched_finalize ()
 {
 
@@ -154,3 +176,5 @@ extern "C" void hipblasSgemmBatched_finalize ()
   }
 
 }
+
+
