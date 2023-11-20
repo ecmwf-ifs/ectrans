@@ -39,7 +39,7 @@ ecbuild_list_add_pattern( LIST trans_src
                                 sharedmem/*
                                 algor/*
                                 internal/*
-                                external/*
+				external/specnorm.F90
                                 module/*
                                 ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
@@ -51,6 +51,12 @@ endif()
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
+  
+    if( ${prec} MATCHES "sp" )
+       set(precno 1)
+    elseif (${prec} MATCHES "dp")
+       set(precno 2)
+    endif()
 
     ecbuild_add_library(
       TARGET           trans_${prec}
