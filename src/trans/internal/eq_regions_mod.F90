@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE eq_regions_mod
 !
 !     Purpose.
@@ -71,6 +72,7 @@ MODULE eq_regions_mod
 !--------------------------------------------------------------------------------
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 
 IMPLICIT NONE
 
@@ -151,7 +153,7 @@ integer(kind=jpim) :: n_collars,j
 real(kind=jprb),allocatable :: r_regions(:)
 real(kind=jprb) :: c_polar
 
-pi=2.0_jprb*asin(1.0_jprb)
+pi=2.0_jprc*asin(1.0_jprc)
 
 n_regions(:)=0
 
@@ -259,14 +261,14 @@ real(kind=jprb),intent(out) :: r_regions(n_collars+2)
 integer(kind=jpim) :: collar_n
 real(kind=jprb) :: ideal_region_area,ideal_collar_area
 real(kind=jprb) :: a_fitting
-r_regions(:)=0.0_jprb
-r_regions(1) = 1.0_jprb
+r_regions(:)=0.0_jprc
+r_regions(1) = 1.0_jprc
 if( n_collars > 0 )then
   !
   ! Based on n_collars and c_polar, determine a_fitting,
   ! the collar angle such that n_collars collars fit between the polar caps.
   !
-  a_fitting = (pi-2.0_jprb*c_polar)/float(n_collars)
+  a_fitting = (pi-2.0_jprc*c_polar)/float(n_collars)
   ideal_region_area = area_of_ideal_region(N)
   do collar_n=1,n_collars
     ideal_collar_area = area_of_collar(c_polar+(collar_n-1)*a_fitting, &
@@ -289,7 +291,7 @@ USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprb) :: ideal
-ideal = area_of_ideal_region(N)**(0.5_jprb)
+ideal = area_of_ideal_region(N)**(0.5_jprc)
 return
 end function ideal_collar_angle
 
@@ -312,7 +314,7 @@ real(kind=jprb),intent(in) :: r_regions(n_collars+2)
 integer(kind=jpim) :: zone_n
 real(kind=jprb) :: discrepancy
 n_regions(1:n_collars+2) = r_regions(:)
-discrepancy = 0.0_jprb
+discrepancy = 0.0_jprc
 do zone_n = 1,n_collars+2
     n_regions(zone_n) = nint(r_regions(zone_n)+discrepancy);
     discrepancy = discrepancy+r_regions(zone_n)-float(n_regions(zone_n));
@@ -330,7 +332,7 @@ integer(kind=jpim),intent(in) :: N
 real(kind=jprb) :: area
 real(kind=jprb) :: polar_c
 if( N == 1 ) polar_c=pi
-if( N == 2 ) polar_c=pi/2.0_jprb
+if( N == 2 ) polar_c=pi/2.0_jprc
 if( N > 2 )then
   area=area_of_ideal_region(N)
   polar_c=sradius_of_cap(area)
@@ -348,7 +350,7 @@ IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprb) :: area_of_sphere
 real(kind=jprb) :: area
-area_of_sphere = (2.0_jprb*pi**1.5_jprb/gamma(1.5_jprb))
+area_of_sphere = (2.0_jprc*pi**1.5_jprc/gamma(1.5_jprc))
 area = area_of_sphere/float(N)
 return
 end function area_of_ideal_region
@@ -362,7 +364,7 @@ USE PARKIND1  ,ONLY : JPIM,   JPRB
 IMPLICIT NONE
 real(kind=jprb),intent(in) :: area
 real(kind=jprb) :: sradius
-sradius = 2.0_jprb*asin(sqrt(area/pi)/2.0_jprb)
+sradius = 2.0_jprc*asin(sqrt(area/pi)/2.0_jprc)
 return
 end function sradius_of_cap
 
@@ -391,7 +393,7 @@ function area_of_cap(s_cap) result(area)
 !
 real(kind=jprb),intent(in) :: s_cap
 real(kind=jprb) area
-area = 4.0_jprb*pi * sin(s_cap/2.0_jprb)**2
+area = 4.0_jprc*pi * sin(s_cap/2.0_jprc)**2
 return
 end function area_of_cap
 
@@ -405,21 +407,21 @@ real(kind=jprb) :: p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13
 real(kind=jprb) :: w,y
 integer(kind=jpim) :: k,n
 parameter (&
-& p0 =   0.999999999999999990e+00_jprb,&
-& p1 =  -0.422784335098466784e+00_jprb,&
-& p2 =  -0.233093736421782878e+00_jprb,&
-& p3 =   0.191091101387638410e+00_jprb,&
-& p4 =  -0.024552490005641278e+00_jprb,&
-& p5 =  -0.017645244547851414e+00_jprb,&
-& p6 =   0.008023273027855346e+00_jprb)
+& p0 =   0.999999999999999990e+00_jprc,&
+& p1 =  -0.422784335098466784e+00_jprc,&
+& p2 =  -0.233093736421782878e+00_jprc,&
+& p3 =   0.191091101387638410e+00_jprc,&
+& p4 =  -0.024552490005641278e+00_jprc,&
+& p5 =  -0.017645244547851414e+00_jprc,&
+& p6 =   0.008023273027855346e+00_jprc)
 parameter (&
-& p7 =  -0.000804329819255744e+00_jprb,&
-& p8 =  -0.000360837876648255e+00_jprb,&
-& p9 =   0.000145596568617526e+00_jprb,&
-& p10 = -0.000017545539395205e+00_jprb,&
-& p11 = -0.000002591225267689e+00_jprb,&
-& p12 =  0.000001337767384067e+00_jprb,&
-& p13 = -0.000000199542863674e+00_jprb)
+& p7 =  -0.000804329819255744e+00_jprc,&
+& p8 =  -0.000360837876648255e+00_jprc,&
+& p9 =   0.000145596568617526e+00_jprc,&
+& p10 = -0.000017545539395205e+00_jprc,&
+& p11 = -0.000002591225267689e+00_jprc,&
+& p12 =  0.000001337767384067e+00_jprc,&
+& p13 = -0.000000199542863674e+00_jprc)
 n = nint(x - 2)
 w = x - (n + 2)
 y = ((((((((((((p13 * w + p12) * w + p11) * w + p10) *&

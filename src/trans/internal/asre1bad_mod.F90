@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE ASRE1BAD_MOD
 CONTAINS
 SUBROUTINE ASRE1BAD(KFIELD,KM,KMLOC,PAOA,PSOA)

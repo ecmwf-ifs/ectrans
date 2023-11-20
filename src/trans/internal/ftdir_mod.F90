@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTDIR_MOD
 CONTAINS
 SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
@@ -47,6 +48,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G
@@ -114,7 +116,7 @@ IST1=1
 IF (G%NLOEN(IGLG)==1) IST1=0
 DO JJ=IST1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = 0.0_JPRB
+    PREEL(JF,IST+D%NSTAGTF(KGL)+JJ-1) = 0.0_JPRC
   ENDDO
 ENDDO
 

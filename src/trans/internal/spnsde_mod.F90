@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SPNSDE_MOD
 CONTAINS
 SUBROUTINE SPNSDE(KM,KF_SCALARS,PEPSNM,PF,PNSD)

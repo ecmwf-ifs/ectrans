@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LEDIRAD_MOD
 CONTAINS
 SUBROUTINE LEDIRAD(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
@@ -60,6 +61,7 @@ SUBROUTINE LEDIRAD(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD, JPRM
+USE PARKIND1  ,ONLY : JPRC => JPRD
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
@@ -112,8 +114,8 @@ IF(KM == 0)THEN
   ISKIP = 2
   DO JGL=ISL,R%NDGNH
     DO J1=2,KFC,2
-      PSIA(J1,JGL)=0.0_JPRB
-      PAIA(J1,JGL)=0.0_JPRB
+      PSIA(J1,JGL)=0.0_JPRC
+      PAIA(J1,JGL)=0.0_JPRC
     ENDDO
   ENDDO
 ELSE

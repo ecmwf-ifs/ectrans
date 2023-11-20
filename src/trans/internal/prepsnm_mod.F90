@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PREPSNM_MOD
 CONTAINS
 SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
@@ -51,6 +52,7 @@ SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F
@@ -72,7 +74,7 @@ INTEGER(KIND=JPIM) :: JN
 
 
 IF (KM > 0) THEN
-  PEPSNM(0:KM-1) = 0.0_JPRB
+  PEPSNM(0:KM-1) = 0.0_JPRC
 ENDIF
 
 DO JN=KM,R%NTMAX+2

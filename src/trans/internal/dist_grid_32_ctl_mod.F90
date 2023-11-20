@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE DIST_GRID_32_CTL_MOD
 CONTAINS
 SUBROUTINE DIST_GRID_32_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
@@ -43,7 +44,7 @@ SUBROUTINE DIST_GRID_32_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB  ,JPRM
+USE PARKIND1  ,ONLY : JPIM     ,JPRM
 USE MPL_MODULE
 
 USE TPM_DISTR

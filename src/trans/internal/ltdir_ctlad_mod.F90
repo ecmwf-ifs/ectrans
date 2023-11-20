@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LTDIR_CTLAD_MOD
 CONTAINS
 SUBROUTINE LTDIR_CTLAD(KF_FS,KF_UV,KF_SCALARS, &
