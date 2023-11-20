@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2015- ECMWF.
 ! (C) Copyright 2015- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE WRITE_LEGPOL_MOD
 CONTAINS
 SUBROUTINE WRITE_LEGPOL

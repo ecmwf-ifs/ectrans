@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1991- ECMWF.
 ! (C) Copyright 1991- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UVTVDAD_MOD
 CONTAINS
 SUBROUTINE UVTVDAD(KM,KFIELD,PEPSNM,PU,PV,PVOR,PDIV)

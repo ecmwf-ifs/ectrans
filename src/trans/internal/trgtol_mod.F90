@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TRGTOL_MOD
 
 PUBLIC TRGTOL

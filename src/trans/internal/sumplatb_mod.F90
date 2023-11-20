@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1998- ECMWF.
 ! (C) Copyright 1998- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUMPLATB_MOD
 CONTAINS
 SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&

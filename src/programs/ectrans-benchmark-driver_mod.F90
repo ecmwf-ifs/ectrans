@@ -515,8 +515,8 @@ USE transform_driver_data_mod, ONLY : zmaxerrg
       if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprc)) then
         write(nout, '(a)') '*******************************'
         write(nout, '(a)') 'Correctness test failed'
-        write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprc)
+        write(nout, '(a,1e9.2)') 'Maximum spectral norm error = ', zmaxerrg
+        write(nout, '(a,1e9.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprc)
         write(nout, '(a)') '*******************************'
         ierr = 1
       endif

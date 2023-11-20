@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,13 +8,14 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE INIGPTR_MOD
 CONTAINS
 SUBROUTINE INIGPTR(KGPTRSEND,KGPTRRECV)
 
 !     Compute tables to assist GP to/from Fourier space transpositions
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_GEN         ,ONLY : NOUT
 USE TPM_DISTR       ,ONLY : D, NPRTRNS

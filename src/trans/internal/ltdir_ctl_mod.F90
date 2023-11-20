@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LTDIR_CTL_MOD
 CONTAINS
 SUBROUTINE LTDIR_CTL(KF_FS,KF_UV,KF_SCALARS, &

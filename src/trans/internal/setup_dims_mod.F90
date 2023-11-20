@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,11 +8,12 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SETUP_DIMS_MOD
 CONTAINS
 SUBROUTINE SETUP_DIMS
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FLT         ,ONLY : S

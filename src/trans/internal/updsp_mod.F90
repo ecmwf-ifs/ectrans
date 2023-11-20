@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1988- ECMWF.
 ! (C) Copyright 1988- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSP_MOD
 CONTAINS
 SUBROUTINE UPDSP(KM,KF_UV,KF_SCALARS,POA1,POA2, &

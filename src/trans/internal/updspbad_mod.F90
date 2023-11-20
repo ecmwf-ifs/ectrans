@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1988- ECMWF.
 ! (C) Copyright 1988- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSPBAD_MOD
 CONTAINS
 SUBROUTINE UPDSPBAD(KM,KFIELD,POA,PSPEC,KFLDPTR)

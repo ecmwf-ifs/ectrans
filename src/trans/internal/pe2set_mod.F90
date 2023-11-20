@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1998- ECMWF.
 ! (C) Copyright 1998- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PE2SET_MOD
 CONTAINS
 SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
@@ -71,7 +71,7 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !        Revision : 98-10-13 row ordering
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_DISTR       ,ONLY : LEQ_REGIONS, NPRGPEW, NPROC, NPRTRV
 USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS

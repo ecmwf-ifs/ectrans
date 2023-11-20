@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2001- ECMWF.
 ! (C) Copyright 2001- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE INV_TRANS_CTLAD_MOD
 CONTAINS
 SUBROUTINE INV_TRANS_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_OUT_LT,&

@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUSTAONL_MOD
 CONTAINS
 SUBROUTINE SUSTAONL(KMEDIAP,KRESTM,LDWEIGHTED_DISTR,PWEIGHT,PMEDIAP,KPROCAGP)

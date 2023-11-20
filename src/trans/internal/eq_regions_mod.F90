@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2006- ECMWF.
 ! (C) Copyright 2006- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE eq_regions_mod
 !
 !     Purpose.
@@ -73,7 +73,6 @@ MODULE eq_regions_mod
 !
 USE PARKIND1  ,ONLY : JPIM,   JPRB
 USE PARKIND1  ,ONLY : JPRC => JPRB
-
 
 IMPLICIT NONE
 

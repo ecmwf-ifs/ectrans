@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2001- ECMWF.
 ! (C) Copyright 2001- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE ASRE1_MOD
 CONTAINS
 SUBROUTINE ASRE1(KM,KMLOC,KF_OUT_LT,PAOA1,PSOA1)

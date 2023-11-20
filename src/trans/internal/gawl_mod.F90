@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1992- ECMWF.
 ! (C) Copyright 1992- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE GAWL_MOD
 CONTAINS
 SUBROUTINE GAWL(PFN,PL,PW,PEPS,KN,KITER,PMOD)

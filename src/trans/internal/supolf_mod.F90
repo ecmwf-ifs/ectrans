@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1987- ECMWF.
 ! (C) Copyright 1987- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUPOLF_MOD
 CONTAINS
 SUBROUTINE SUPOLF(KM,KNSMAX,DDMU,DDPOL,KCHEAP)

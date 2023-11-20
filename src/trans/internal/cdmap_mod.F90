@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2014- ECMWF.
 ! (C) Copyright 2014- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE CDMAP_MOD
 CONTAINS
 SUBROUTINE CDMAP(KM,KMLOC,KSL,KSLO,PEPSNM, KDIR, KDGNH, KDGNHD,&

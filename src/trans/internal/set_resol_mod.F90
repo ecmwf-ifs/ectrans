@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,10 +8,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SET_RESOL_MOD
 CONTAINS
 SUBROUTINE SET_RESOL(KRESOL,LDSETUP)
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM 
 
 USE TPM_GEN         ,ONLY : NOUT, MSETUP0, NCUR_RESOL, NMAX_RESOL,LENABLED
 USE TPM_DIM         ,ONLY : R, DIM_RESOL

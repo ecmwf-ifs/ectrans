@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LEDIR_MOD
 CONTAINS
 SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KSL,KDGLU,KLED2,PAIA,PSIA,POA1,PW)

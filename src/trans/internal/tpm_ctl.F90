@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,9 +8,10 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_CTL
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM 
 USE, INTRINSIC :: iso_c_binding, ONLY:  C_PTR, C_NULL_PTR
 USE SHAREDMEM_MOD ,ONLY : SHAREDMEM
 IMPLICIT NONE

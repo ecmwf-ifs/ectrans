@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE MYSENDSET_MOD
 CONTAINS
 FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
@@ -51,7 +51,7 @@ FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE

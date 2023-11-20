@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 1996- ECMWF.
 ! (C) Copyright 1996- Meteo-France.
 ! 
@@ -9,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUWAVEDI_MOD
 CONTAINS
 SUBROUTINE SUWAVEDI(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&

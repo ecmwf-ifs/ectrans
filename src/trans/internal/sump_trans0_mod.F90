@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -9,13 +8,14 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUMP_TRANS0_MOD
 CONTAINS
 SUBROUTINE SUMP_TRANS0
 
 ! Set up distributed environment for the transform package (part 0)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM 
 USE MPL_MODULE  ,ONLY : MPL_GROUPS_CREATE, MPL_MYRANK, MPL_NPROC
 
 USE TPM_GEN         ,ONLY : NOUT, LMPOFF, NPRINTLEV
