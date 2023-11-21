@@ -47,6 +47,8 @@ void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
 
   Gemm gemm_op;
   for (int i = 0; i < batchCount; ++i) {
+    if (m == 0 || n[i] == 0 || k[i] == 0)
+      continue;
     CUTLASS_CHECK(gemm_op({//
                            {(m + sz_align - 1) / sz_align * sz_align,
                             (n[i] + sz_align - 1) / sz_align * sz_align,

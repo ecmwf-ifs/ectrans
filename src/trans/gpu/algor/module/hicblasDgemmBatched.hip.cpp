@@ -150,6 +150,8 @@ extern "C" void hipblasDgemmGrouped_wrapper(char transa, char transb,
     HIC_CHECK(hipblasCreate(&handle_dgemm_grouped));
 
   for (int i = 0; i < batchCount; ++i) {
+    if (m == 0 || n[i] == 0 || k[i] == 0)
+      continue;
     HIC_CHECK(hipblasDgemm(handle_dgemm_grouped, op_t1, op_t2, m, n[i], k[i], &alpha,
                              A + offsetsA[i], lda, B + offsetsB[i], ldb, &beta,
                              C + offsetsC[i], ldc));
