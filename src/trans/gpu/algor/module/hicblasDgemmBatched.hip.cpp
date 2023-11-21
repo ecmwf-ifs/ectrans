@@ -29,7 +29,11 @@ double **Carray_hip;
 
 hipblasHandle_t handle_hip_dgemm;
 
-extern "C" void hipblasDgemmBatched_wrapper (char transa, char transb, int m, int n,int k, double alpha, const double *A, int lda, int tda, const double *B, int ldb, int tdb, double beta, double *C, int ldc, int tdc, int batchCount)
+extern "C" void hipblasDgemmBatched_wrapper (char transa, char transb, 
+                                             int m, int n,int k, double alpha, 
+                                             const double *A, int lda, int tda, 
+                                             const double *B, int ldb, int tdb, double beta, 
+                                              double *C, int ldc, int tdc, int batchCount)
 {
 
 
@@ -124,11 +128,13 @@ extern "C" void hipblasDgemmStridedBatched_wrapper (char transa, char transb, in
 
 }
 
-extern "C" void hipblasDgemmGrouped_wrapper(char transa,
-                                  char transb, int m, int *n,
-                                  int *k, double alpha, const double *A, int lda,
-                                  int tda, const double *B, int ldb, int tdb,
-                                  double beta, double *C, int ldc, int tdc,
+extern "C" void hipblasDgemmGrouped_wrapper(char transa, char transb, 
+                                  int m, int *n, int *k, 
+                                  double alpha, 
+                                  const double *A, int lda, int *offsetsA, 
+                                  const double *B, int ldb, int *offsetsB, 
+                                  double beta, 
+                                  double *C, int ldc, int *offsetsC,
                                   int batchCount) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
@@ -145,19 +151,20 @@ extern "C" void hipblasDgemmGrouped_wrapper(char transa,
 
   for (int i = 0; i < batchCount; ++i) {
     HIC_CHECK(hipblasDgemm(handle_dgemm_grouped, op_t1, op_t2, m, n[i], k[i], &alpha,
-                             A + i * tda, lda, B + i * tdb, ldb, &beta,
-                             C + i * tdc, ldc));
+                             A + offsetsA[i], lda, B + offsetsB[i], ldb, &beta,
+                             C + offsetsC[i], ldc));
   }
 }
 
 
-extern "C" void blas_dgemm_wrapper_grouped(char transa,
-                                char transb, int m, int *n, int *k,
-                                double alpha, const double *A, int lda, int tda,
-                                const double *B, int ldb, int tdb, double beta,
-                                double *C, int ldc, int tdc, int batchCount) {
-  hipblasDgemmGrouped_wrapper(transa, transb, m, n, k, alpha, A, lda, tda, B,
-                              ldb, tdb, beta, C, ldc, tdc, batchCount);
+extern "C" void blas_dgemm_wrapper_grouped(char transa, char transb, 
+                                int m, int *n, int *k, double alpha, 
+                                const double *A, int lda, int *offsetsA,
+                                const double *B, int ldb, int *offsetsB, double beta,
+                                double *C, int ldc, int *offsetsC, 
+                                int batchCount) {
+  hipblasDgemmGrouped_wrapper(transa, transb, m, n, k, alpha, A, lda, offsetsA, B,
+                              ldb, offsetsB, beta, C, ldc, offsetsC, batchCount);
 }
 
 
