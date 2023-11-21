@@ -55,7 +55,9 @@ foreach( prec sp dp )
                            LIBS
                              fiat
                              parkind_${prec}
-                             trans_${prec}
+			       trans_sp
+			       trans_dp
+                               ectrans_interfaces 
                           )
   endif()
 endforeach()
