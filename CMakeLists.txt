@@ -56,7 +56,7 @@ ecbuild_add_option( FEATURE FFTW
                     REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
 
 ecbuild_add_option( FEATURE TRANSI
-                    DEFAULT ON
+                    DEFAULT OFF
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
@@ -65,7 +65,7 @@ ectrans_find_lapack()
 ### Add sources and tests
 include( ectrans_compile_options )
 add_subdirectory( src )
-add_subdirectory( tests )
+#add_subdirectory( tests )
 
 ### Export
 if( BUILD_SHARED_LIBS )

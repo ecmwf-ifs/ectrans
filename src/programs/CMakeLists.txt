@@ -55,11 +55,50 @@ foreach( prec sp dp )
                            LIBS
                              fiat
                              parkind_${prec}
-                             trans_${prec}
+                             trans_sp
+			     trans_dp
+			     ectrans_interfaces 
                           )
   endif()
 endforeach()
 
+foreach( prec sp dp )
+  if( HAVE_${prec} )
+    if( ${prec} MATCHES "sp" )
+      set(precno 1)
+    elseif (${prec} MATCHES "dp")
+      set(precno 2)
+    endif()
+
+    ecbuild_add_library(
+        TARGET           driver_${prec}
+        LINKER_LANGUAGE  Fortran
+        SOURCES          ectrans-benchmark-driver_mod.F90
+                         ectrans-benchmark-data_mod.F90
+        PUBLIC_LIBS      fiat
+        PRIVATE_LIBS     parkind_${prec} trans_${prec}
+     PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+                              PRECOPT=${precno}
+      )
+
+    ectrans_target_fortran_module_directory(
+      TARGET            driver_${prec}
+      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/driver_${prec}
+      INSTALL_DIRECTORY module/driver_${prec}
+      )
+
+ endif()
+endforeach()
+ecbuild_add_executable(TARGET  ectrans-benchmark-uni
+                       SOURCES ectrans-benchmark-program.F90
+                       LIBS    fiat
+                               parkind_sp
+                               trans_sp
+                               driver_sp
+                               parkind_dp
+                               trans_dp
+                               driver_dp
+                          )
 # ectrans information tool
 
 get_property( langs GLOBAL PROPERTY ENABLED_LANGUAGES )
