@@ -30,100 +30,73 @@ if( HAVE_TOOLS )
 
 endif()
 
-ecbuild_list_add_pattern( LIST driver_src
-                          GLOB
-			    ectrans-benchmark-driver_mod.F90
-			    ectrans-benchmark-data_mod.F90
-                          QUIET
-                        )
-		#		set(CMAKE_Fortran_PREPROCESS_SOURCE
-		#		"<CMAKE_C_COMPILER> -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
-	#	"gcc -cpp <DEFINES> <INCLUDES> -E <SOURCE> -o <PREPROCESSED_SOURCE>")
-# if( HAVE_${prec} )
-#    if( ${prec} MATCHES "sp" )
-#      set(precno 1)
-#    elseif (${prec} MATCHES "dp")
-#      set(precno 2)
-#    endif()
-    ecbuild_add_library(
-      TARGET           ectrans_interfaces #_${prec}
-      LINKER_LANGUAGE  Fortran
-      SOURCES          wrappers/dir_trans.F90
-                       wrappers/inv_trans.F90 
-                       wrappers/setup_trans0.F90
-                       wrappers/setup_trans.F90
-		       #                wrappers/specnorm.F90
-                       wrappers/trans_inq.F90
-      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
-		       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
-                       $<INSTALL_INTERFACE:include/ectrans>
-                       $<INSTALL_INTERFACE:include>
-      PRIVATE_DEFINITIONS SYMBOLSUFFIX 
-                       PRECOPT #=${precno}
-      PUBLIC_LIBS      fiat  trans_sp trans_dp
-    )
 
-# endif()
+ecbuild_add_library(
+  TARGET           ectrans_interfaces
+  LINKER_LANGUAGE  Fortran
+  SOURCES          wrappers/dir_trans.F90
+                   wrappers/inv_trans.F90 
+                   wrappers/setup_trans0.F90
+                   wrappers/setup_trans.F90
+                   wrappers/trans_inq.F90
+  PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+    	       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                   $<INSTALL_INTERFACE:include/ectrans>
+                   $<INSTALL_INTERFACE:include>
+  PRIVATE_DEFINITIONS SYMBOLSUFFIX 
+                   PRECOPT 
+  PUBLIC_LIBS      fiat  trans_sp trans_dp
+)
+
 foreach( prec sp dp )
   if( HAVE_${prec} )
-     if( ${prec} MATCHES "sp" )
-       set(precno 1)
-     elseif (${prec} MATCHES "dp")
-       set(precno 2)
-     endif()
     ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
                            SOURCES ectrans-benchmark.F90
-		       #                wrappers/specnorm.F90
                            LIBS
                              fiat
                              parkind_${prec}
-			       trans_sp
-			       trans_dp
-			         ectrans_interfaces #_${prec}
-			     # trans_${prec}
-
+                             trans_sp
+			     trans_dp
+			     ectrans_interfaces 
                           )
+ endif()
+endforeach()
+foreach( prec sp dp )
+  if( HAVE_${prec} )
+    if( ${prec} MATCHES "sp" )
+      set(precno 1)
+    elseif (${prec} MATCHES "dp")
+      set(precno 2)
+    endif()
 
-  ecbuild_add_library(
-      TARGET           driver_${prec}
-      LINKER_LANGUAGE  Fortran
-      SOURCES          ${driver_src}
-      PUBLIC_LIBS      fiat 
-      PRIVATE_LIBS     parkind_${prec} trans_${prec}
-   PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
-                            PRECOPT=${precno}
-
-    )
+    ecbuild_add_library(
+        TARGET           driver_${prec}
+        LINKER_LANGUAGE  Fortran
+        SOURCES          ectrans-benchmark-driver_mod.F90
+                         ectrans-benchmark-data_mod.F90
+        PUBLIC_LIBS      fiat 
+        PRIVATE_LIBS     parkind_${prec} trans_${prec}
+     PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+                              PRECOPT=${precno}
+      )
 
     ectrans_target_fortran_module_directory(
       TARGET            driver_${prec}
       MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/driver_${prec}
       INSTALL_DIRECTORY module/driver_${prec}
-    )
+      )
 
-#   ecbuild_add_executable(TARGET  ectrans-benchmark-uni-${prec}
-#                          SOURCES 
-#       		   ectrans-benchmark-program.F90 
-#                          LIBS
-#                            fiat
-#                            parkind_${prec}
-#                            trans_${prec}
-#                            driver_${prec}
-#                            DEFINITIONS "SYMBOLSUFFIX=${prec}"
-#                         )
  endif()
 endforeach()
-    ecbuild_add_executable(TARGET  ectrans-benchmark-uni
-                           SOURCES 
-			   ectrans-benchmark-program.F90 
-                           LIBS
-                             fiat
-                             parkind_sp
-                             trans_sp
-                             driver_sp
-                             parkind_dp
-                             trans_dp
-                             driver_dp   
+ecbuild_add_executable(TARGET  ectrans-benchmark-uni
+                       SOURCES ectrans-benchmark-program.F90 
+                       LIBS    fiat
+                               parkind_sp
+                               trans_sp
+                               driver_sp
+                               parkind_dp
+                               trans_dp
+                               driver_dp   
                           )
 
 # ectrans information tool

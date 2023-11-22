@@ -8,6 +8,6 @@
 
 add_subdirectory( trans )
 add_subdirectory( programs )
-if( HAVE_TRANSI )
-  add_subdirectory(transi)
-endif()
+#if( HAVE_TRANSI )
+#  add_subdirectory(transi)
+#endif()
