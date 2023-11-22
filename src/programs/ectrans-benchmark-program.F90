@@ -394,7 +394,7 @@ if (lstats) then
   call gstats_psut
 
   ! Assign labels to GSTATS regions
-  call gstats_labels(0)
+  call gstats_labels
 endif
 do ibackend=1,2
 if(ibackend == 1) write(nout,'(a)')'======= Running benchmark #1 (sp) ======='
@@ -673,10 +673,6 @@ call ectrans_deallocate_grid
 !
 !!===================================================================================================
 !
-if (lstats) then
-  call gstats(0,1)
-  call gstats_print(nout, zaveave, jpmaxstat)
-endif
 
 if (lmeminfo) then
   write(nout,*)
@@ -687,6 +683,10 @@ enddo !ibackend
 !===================================================================================================
 ! Finalize MPI
 !===================================================================================================
+if (lstats) then
+  call gstats(0,1)
+  call gstats_print(nout, zaveave, jpmaxstat)
+endif
 
 if (luse_mpi) then
   call mpl_end(ldmeminfo=.false.)
@@ -1018,26 +1018,25 @@ end function
 !===================================================================================================
 
 ! Assign GSTATS labels to the main regions of ecTrans
-subroutine gstats_labels(koffset)
-integer koffset        
+subroutine gstats_labels
 
-  call gstats_label(0            , '   ', 'PROGRAM        - Total')
-  call gstats_label(1   + koffset, '   ', 'SETUP_TRANS0   - Setup ecTrans')
-  call gstats_label(2   + koffset, '   ', 'SETUP_TRANS    - Setup ecTrans handle')
-  call gstats_label(3   + koffset, '   ', 'TIME STEP      - Time step')
-  call gstats_label(4   + koffset, '   ', 'INV_TRANS      - Inverse transform')
-  call gstats_label(5   + koffset, '   ', 'DIR_TRANS      - Direct transform')
-  call gstats_label(6   + koffset, '   ', 'NORMS          - Norm comp. (optional)')
-  call gstats_label(102 + koffset, '   ', 'LTINV_CTL      - Inv. Legendre transform')
-  call gstats_label(103 + koffset, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
-  call gstats_label(106 + koffset, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
-  call gstats_label(107 + koffset, '   ', 'FTINV_CTL      - Inv. Fourier transform')
-  call gstats_label(140 + koffset, '   ', 'SULEG          - Comp. of Leg. poly.')
-  call gstats_label(152 + koffset, '   ', 'LTINV_CTL      - M to L transposition')
-  call gstats_label(153 + koffset, '   ', 'LTDIR_CTL      - L to M transposition')
-  call gstats_label(157 + koffset, '   ', 'FTINV_CTL      - L to G transposition')
-  call gstats_label(158 + koffset, '   ', 'FTDIR_CTL      - G to L transposition')
-  call gstats_label(400 + koffset, '   ', 'GSTATS         - GSTATS itself')
+  call gstats_label(0  , '   ', 'PROGRAM        - Total')
+  call gstats_label(1  , '   ', 'SETUP_TRANS0   - Setup ecTrans')
+  call gstats_label(2  , '   ', 'SETUP_TRANS    - Setup ecTrans handle')
+  call gstats_label(3  , '   ', 'TIME STEP      - Time step')
+  call gstats_label(4  , '   ', 'INV_TRANS      - Inverse transform')
+  call gstats_label(5  , '   ', 'DIR_TRANS      - Direct transform')
+  call gstats_label(6  , '   ', 'NORMS          - Norm comp. (optional)')
+  call gstats_label(102, '   ', 'LTINV_CTL      - Inv. Legendre transform')
+  call gstats_label(103, '   ', 'LTDIR_CTL      - Dir. Legendre transform')
+  call gstats_label(106, '   ', 'FTDIR_CTL      - Dir. Fourier transform')
+  call gstats_label(107, '   ', 'FTINV_CTL      - Inv. Fourier transform')
+  call gstats_label(140, '   ', 'SULEG          - Comp. of Leg. poly.')
+  call gstats_label(152, '   ', 'LTINV_CTL      - M to L transposition')
+  call gstats_label(153, '   ', 'LTDIR_CTL      - L to M transposition')
+  call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
+  call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
+  call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
 
 end subroutine gstats_labels
 
