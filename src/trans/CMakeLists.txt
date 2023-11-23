@@ -64,9 +64,12 @@ foreach( prec dp sp )
       SOURCES          ${trans_src}
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+		       #                 $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/internal>
+		       # $<INSTALL_INTERFACE:include/ectrans/internal>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
       PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
+                       ${PROJECT_SOURCE_DIR}/src/trans/internal
       PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
                                PRECOPT=${precno}
       PUBLIC_LIBS      fiat parkind_${prec}
