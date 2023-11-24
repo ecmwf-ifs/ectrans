@@ -788,7 +788,7 @@ IF(LLTRANSPOSE) THEN
                   CALL DGEMM('T','N',IN,KF,IM,1.0_JPRD,&
                        & ZPNONIM_D,IM,ZBETA_D,ILBETA,0.0_JPRD,&
                        & ZOUT_D,YD_STRUCT%N_ORDER)
-                  ZVECOUT(YNODE%IRANK+1:YNODE%IRANK+IN,1:KF) = REAL(ZOUT_D(1:IN,1:KF),JPRB)
+                  ZVECOUT(YNODE%IRANK+1:YNODE%IRANK+IN,1:KF) = REAL(ZOUT_D(1:IN,1:KF),JPRM)
                   DEALLOCATE(ZPNONIM_D)
                ELSE
                   CALL DGEMM('T','N',IN,KF,IM,1.0_JPRD,&
@@ -832,7 +832,7 @@ IF(LLTRANSPOSE) THEN
                        & ZB_D,IROWS,ZIN_D,IRIN,0.0_JPRD,&
                        & ZBETA_D,ILBETA)
                   
-                  ZBETA(IBTST:IBTST+IRANK-1,1:KF,IBETALV)=REAL(ZBETA_D(1:IRANK,1:KF),JPRB)
+                  ZBETA(IBTST:IBTST+IRANK-1,1:KF,IBETALV)=REAL(ZBETA_D(1:IRANK,1:KF),JPRM)
                   DEALLOCATE(ZB_D)
                   
                ELSE
@@ -887,7 +887,7 @@ IF(LLTRANSPOSE) THEN
                         & ZPNONIM_D,IM,ZBETA_D,ILBETA,0.0_JPRD,&
                         & ZOUT_D,YD_STRUCT%N_ORDER)
                    
-                   ZVECOUT(YNODE%IRANK+1:YNODE%IRANK+IN,1:KF) = REAL(ZOUT_D(1:IN,1:KF),JPRB)
+                   ZVECOUT(YNODE%IRANK+1:YNODE%IRANK+IN,1:KF) = REAL(ZOUT_D(1:IN,1:KF),JPRM)
                    DEALLOCATE(ZPNONIM_D)
                 ELSE
                    CALL DGEMM('T','N',IN,KF,IM,1.0_JPRD,&
