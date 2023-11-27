@@ -13,6 +13,8 @@
 // Alan Gray, NVIDIA
 //
 
+#ifdef FALSE
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -185,4 +187,4 @@ extern "C" void hipblasSgemmBatched_finalize ()
 
 }
 
-
+#endif

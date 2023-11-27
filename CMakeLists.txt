@@ -17,6 +17,8 @@ find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUR
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
 
+set(CMAKE_CXX_STANDARD 17)
+
 option(IFS_SHARED_LIBS "Build shared libraries (overrides BUILD_SHARED_LIBS)" ON)
 set(BUILD_SHARED_LIBS ${IFS_SHARED_LIBS})
 
@@ -135,7 +137,7 @@ if( HAVE_GPU )
   endif()
 endif()
 
-ecbuild_find_package( NAME NvidiaCutlass )
+find_package( NvidiaCutlass CONFIG)
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"

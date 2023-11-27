@@ -58,7 +58,6 @@ real(c_double), dimension(ldc,*) :: C
 end subroutine hip_dgemm
 end interface
 
-
 INTERFACE
     SUBROUTINE HIP_DGEMM_BATCHED(&
         & CTA, CTB,               &
@@ -69,7 +68,7 @@ INTERFACE
         & BETA,                   &
         & C, LDC, TDC,            &
         & BATCHCOUNT              &
-    &) BIND(C, NAME='hipblasDgemmBatched_wrapper')
+    &) BIND(C, NAME='hipblas_dgemm_wrapper')
         USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
         INTEGER(C_INT),      VALUE            :: M, N, K, LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
@@ -110,7 +109,6 @@ INTERFACE
 END INTERFACE
 
 INTERFACE
-
     SUBROUTINE HIP_SGEMM_BATCHED(&
         & CTA, CTB,               &
         & M, N, K,                &
@@ -120,7 +118,7 @@ INTERFACE
         & BETA,                   &
         & C, LDC, TDC,            &
         & BATCHCOUNT              &
-    &) BIND(C, NAME='hipblasSgemmBatched_wrapper')
+    &) BIND(C, NAME='hipblas_sgemm_wrapper')
         USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
         INTEGER(C_INT),      VALUE            :: M, N, K, LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT

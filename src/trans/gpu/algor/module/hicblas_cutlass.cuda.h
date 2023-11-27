@@ -2,6 +2,15 @@
 #include "hicblas.h"
 #include "cutlass/gemm/device/gemm.h"
 
+#define CUTLASS_CHECK(e)                                                       \
+  {                                                                            \
+    cutlass::Status err = (e);                                                 \
+    if (err != cutlass::Status::kSuccess) {                                    \
+      fprintf(stderr, "CUTLASS error: %s, line %d, %s: %i\n", __FILE__,        \
+              __LINE__, #e, (int)err);                                         \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  }
 
 
 template <cublasOperation_t TransA, cublasOperation_t TransB>
@@ -12,7 +21,7 @@ void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
                                      int *offsetsC, int batchCount) {
   // this was verified using Volta and uses FP32
   constexpr int AlignmentA = 1;
-  constexpr int AlignmentB = 1;x
+  constexpr int AlignmentB = 1;
   using ThreadblockShape = cutlass::gemm::GemmShape<128, 128, 8>;
   using WarpShape = cutlass::gemm::GemmShape<32, 32, 8>;
   using InstructionShape = cutlass::gemm::GemmShape<1, 1, 1>;
@@ -59,27 +68,29 @@ void cutlass_sgemm_wrapper_grouped_v(int m, int *n, int *k, float alpha,
                            {C + offsetsC[i], ldc},
                            {alpha, beta}}));
   }
-  CUDA_CHECK(cudaDeviceSynchronize());
+  HIC_CHECK(cudaDeviceSynchronize());
 }
-void cutlass_sgemm_wrapper_grouped(cublasOperation_t transa,
-                                   cublasOperation_t transb, int m, int *n,
-                                   int *k, float alpha, const float *A, int lda,
-                                   int *offsetsA, const float *B, int ldb,
-                                   int *offsetsB, float beta, float *C, int ldc,
-                                   int *offsetsC, int batchCount) {
-  if (transa == CUBLAS_OP_N && transb == CUBLAS_OP_N)
+
+void cutlass_sgemm_wrapper_grouped(char transa, char transb,
+                                   int m, int *n, int *k, float alpha,
+                                   const float *A, int lda, int *offsetsA,
+                                   const float *B, int ldb, int *offsetsB, float beta,
+                                   float *C, int ldc, int *offsetsC,
+                                   int batchCount) {
+
+  if (transa == 'N' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_N, CUBLAS_OP_N>(
         m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
         batchCount);
-  else if (transa == CUBLAS_OP_N && transb == CUBLAS_OP_T)
+  else if (transa == 'N' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_N, CUBLAS_OP_T>(
-        m, n, k, alpha, A, lda, offfsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
+        m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
         batchCount);
-  else if (transa == CUBLAS_OP_T && transb == CUBLAS_OP_N)
+  else if (transa == 'T' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_T, CUBLAS_OP_N>(
         m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
         batchCount);
-  else if (transa == CUBLAS_OP_T && transb == CUBLAS_OP_T)
+  else if (transa == 'T' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_v<CUBLAS_OP_T, CUBLAS_OP_T>(
         m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
         batchCount);

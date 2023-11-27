@@ -11,6 +11,7 @@
 //
 // Alan Gray, NVIDIA
 //
+#ifdef FALSE
 
 #include <stdio.h>
 
@@ -196,3 +197,5 @@ extern "C" void hipblasDgemmBatched_finalize ()
   hip_alreadyAllocated_dgemm=false;
 
 }
+
+#endif

@@ -13,6 +13,7 @@
 #define __HICBLAS_CUDA_H__
 
 #include "cublas_v2.h"
+#include <cstdio>
 
 // Library name
 #define hipblas cublas
@@ -82,7 +83,17 @@ inline static const char * _blasGetErrorEnum(cublasStatus_t error)
     return "<unknown>";
 }
 
-#define HIC_CHECK(e)                                                         \
+#define HIC_CHECK(e)                                                          \
+  {                                                                            \
+    cudaError_t err = (e);                                                     \
+    if (err != cudaSuccess) {                                                  \
+      fprintf(stderr, "CUDA error: %s, line %d, %s: %s\n", __FILE__, __LINE__, \
+              #e, cudaGetErrorString(err));                                    \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  }
+
+#define HICBLAS_CHECK(e)                                                         \
 {                                                                            \
   cublasStatus_t err = (e);                                                     \
   if (err != CUBLAS_STATUS_SUCCESS) {                                                  \
@@ -91,6 +102,5 @@ inline static const char * _blasGetErrorEnum(cublasStatus_t error)
     exit(EXIT_FAILURE);                                                      \
   }                                                                          \
 }
-//            #e, cudaGetErrorString(err));                                    \
 
 #endif
