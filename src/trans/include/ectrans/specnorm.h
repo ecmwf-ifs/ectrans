@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,7 +9,10 @@
 !
 
 INTERFACE
-SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
+#ifdef INMODULE
+MODULE &
+#endif
+SUBROUTINE SPECNORM(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
 
 !**** *SPECNORM* - Compute global spectral norms
 
@@ -55,11 +58,11 @@ IMPLICIT NONE
 ! Declaration of arguments
 
 
+REAL(KIND=JPRB)             , INTENT(OUT) :: PNORM(:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PNORM(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 
 !     ------------------------------------------------------------------

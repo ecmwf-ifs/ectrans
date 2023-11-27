@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FOURIER_INAD_MOD
 CONTAINS
 SUBROUTINE FOURIER_INAD(PREEL,KFIELDS,KGL)

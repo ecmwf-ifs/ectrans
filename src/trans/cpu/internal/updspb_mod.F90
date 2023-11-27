@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSPB_MOD
 CONTAINS
 SUBROUTINE UPDSPB(KM,KFIELD,POA,PSPEC,KFLDPTR)
@@ -56,6 +57,7 @@ SUBROUTINE UPDSPB(KM,KFIELD,POA,PSPEC,KFLDPTR)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DIM         ,ONLY : R
 !USE TPM_FIELDS
@@ -104,7 +106,7 @@ IF(KM == 0) THEN
       DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
         INM = IASM0+(ITMAX+2-JN)*2
         PSPEC(IFLD,INM)   = POA(JN,IR)
-        PSPEC(IFLD,INM+1) = 0.0_JPRB
+        PSPEC(IFLD,INM+1) = 0.0_JPRC
       ENDDO
     ENDDO
   ELSE
@@ -115,7 +117,7 @@ IF(KM == 0) THEN
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
         PSPEC(JFLD,INM)   = POA(JN,IR)
-        PSPEC(JFLD,INM+1) = 0.0_JPRB
+        PSPEC(JFLD,INM+1) = 0.0_JPRC
       ENDDO
     ENDDO
   ENDIF

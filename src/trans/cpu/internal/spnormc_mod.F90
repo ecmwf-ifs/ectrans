@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SPNORMC_MOD
 CONTAINS
 SUBROUTINE SPNORMC(PSM,KFLD_G,KVSET,KMASTER,KSMAX,PGM)

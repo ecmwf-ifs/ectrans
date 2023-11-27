@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_FFT
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE BLUESTEIN_MOD ,ONLY : FFTB_TYPE

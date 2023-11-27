@@ -7,10 +7,14 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
+#ifndef INMODULE
 SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 & LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
 & PGP,PGPUV,PGP3A,PGP3B,PGP2)
+#else
+MODULE PROCEDURE DIR_TRANS
+#endif
 
 
 !**** *DIR_TRANS* - Direct spectral transform (from grid-point to spectral).
@@ -127,6 +131,7 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
+#ifndef INMODULE
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)
@@ -147,7 +152,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGPUV(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP2(:,:,:)
-
+#endif
 !ifndef INTERFACE
 
 ! Local variables
@@ -504,5 +509,9 @@ IF (LHOOK) CALL DR_HOOK('DIR_TRANS',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 !endif INTERFACE
 
+#ifndef INMODULE
 END SUBROUTINE DIR_TRANS
+#else
+END PROCEDURE DIR_TRANS
+#endif
 

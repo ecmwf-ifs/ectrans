@@ -81,7 +81,7 @@ ecbuild_add_option( FEATURE CPU
                    )
 
 ecbuild_add_option( FEATURE TRANSI
-                    DEFAULT ON
+	            DEFAULT OFF
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION AND HAVE_CPU )
 

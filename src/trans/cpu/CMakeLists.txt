@@ -39,7 +39,9 @@ ecbuild_list_add_pattern( LIST trans_src
                                 sharedmem/*
                                 algor/*
                                 internal/*
-                                external/*
+				external/specnorm.F90
+				external/gpnorm_trans.F90
+                                module/*
                                 ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
@@ -50,6 +52,12 @@ endif()
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
+  
+    if( ${prec} MATCHES "sp" )
+       set(precno 1)
+    elseif (${prec} MATCHES "dp")
+       set(precno 2)
+    endif()
 
     ecbuild_add_library(
       TARGET           trans_${prec}
@@ -59,6 +67,9 @@ foreach( prec dp sp )
                        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
+      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/cpu/external
+      PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+                               PRECOPT=${precno}
       PUBLIC_LIBS      fiat parkind_${prec}
     )
     ectrans_target_fortran_module_directory(

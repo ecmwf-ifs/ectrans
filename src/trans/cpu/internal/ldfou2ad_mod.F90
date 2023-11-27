@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LDFOU2AD_MOD
 CONTAINS
 SUBROUTINE LDFOU2AD(KM,KF_UV,PAIA,PSIA)

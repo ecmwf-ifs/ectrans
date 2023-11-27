@@ -40,7 +40,7 @@ program transform_test
 !           Sam Hatfield
 !
 
-use parkind1, only: jpim, jprb, jprd
+use parkind1, only: jpim, jprb, jprm, jprd
 use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat
@@ -54,6 +54,7 @@ integer(kind=jpim), parameter :: min_octa_points = 20
 integer(kind=jpim) :: istack, getstackusage
 real(kind=jprb), dimension(1) :: zmaxerr(5), zerr(5)
 real(kind=jprb) :: zmaxerrg
+real(kind=jprb) :: backend_flag=1. 
 
 ! Output unit numbers
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
@@ -207,12 +208,12 @@ character(len=16) :: cgrid = ''
 
 !===================================================================================================
 
-#include "setup_trans0.h"
-#include "setup_trans.h"
-#include "inv_trans.h"
-#include "dir_trans.h"
-#include "trans_inq.h"
-#include "specnorm.h"
+#include "./wrappers/specnorm.inc"
+#include "./wrappers/setup_trans.inc"
+#include "./wrappers/dir_trans.inc"
+#include "./wrappers/inv_trans.inc"
+#include "./wrappers/trans_inq.inc"
+#include "./wrappers/setup_trans0.inc"
 #include "gpnorm_trans.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
@@ -221,6 +222,10 @@ character(len=16) :: cgrid = ''
 !===================================================================================================
 
 luse_mpi = detect_mpirun()
+
+!Select sp/dp backend  
+If(jprb == jprm) backend_flag=1
+If(jprb == jprd) backend_flag=2
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, lgpnorms, &
@@ -396,7 +401,7 @@ call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
-  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi, precbackend_flag=backend_flag)
 call gstats(1, 1)
 
 call gstats(2, 0)
@@ -406,10 +411,10 @@ call set_ectrans_gpu_nflev(nflevl)
   ! In long run, ectrans should grow its internal buffers automatically
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
   &              ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &              lduseflt=luseflt)
+  &              lduseflt=luseflt, precbackend_flag=backend_flag)
 call gstats(2, 1)
 
-call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
+call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg, precbackend_flag=backend_flag)
 
 if (nproma == 0) then ! no blocking (default when not specified)
   nproma = ngptot
@@ -632,7 +637,8 @@ do jstep = 1, iters
        & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
        & ldscders=.true.,                   & ! scalar derivatives
        & kvsetsc=ivsetsc,                   &
-       & pgp=zreel)
+       & pgp=zreel,                         &
+      & precbackend_flag=backend_flag)
 
     if( lgpnorms ) then
     ! reset prev value
@@ -672,7 +678,8 @@ do jstep = 1, iters
        & kvsetsc3a=ivset,                   &
        & pgp2=zgp2,                         &
        & pgpuv=zgpuv,                       &
-       & pgp3a=zgp3a)
+       & pgp3a=zgp3a,                       &
+       & precbackend_flag=backend_flag)
 
     if( lgpnorms ) then
     write(nout,*) 'statistics gpnorm_trans all levels ...'
@@ -723,7 +730,8 @@ do jstep = 1, iters
        & pspscalar=zspsc2(1:ilf,:),         & ! spectral scalar
        & ldscders=.true.,                   & ! scalar derivatives
        & kvsetsc=ivsetsc,                   &
-       & pgp=zreel)
+       & pgp=zreel,                         &
+      & precbackend_flag=backend_flag)
 
     if( lgpnorms ) then
     ! reset prev value
@@ -753,7 +761,8 @@ do jstep = 1, iters
        & kvsetsc2=ivsetsc,                  &
        & kvsetsc3a=ivset,                   &
        & pgp2=zgp2,                         &
-       & pgp3a=zgp3a)
+       & pgp3a=zgp3a,                       &
+       & precbackend_flag=backend_flag)
   endif
   call gstats(4,1)
 
@@ -789,19 +798,21 @@ do jstep = 1, iters
       & pspsc3a=zspsc3a,                    &
       & kvsetuv=ivset,                      &
       & kvsetsc2=ivsetsc,                   &
-      & kvsetsc3a=ivset)
+      & kvsetsc3a=ivset,                    &
+      & precbackend_flag=backend_flag)
   else
     call dir_trans(kresol=1, kproma=nproma, &
        & pgp=zgp3a(:,1,1:nfld,:),              &
        & pspscalar=zspsc3a(1:1,1:nfld,1), & ! spectral scalar
-       & kvsetsc=ivset)
+       & kvsetsc=ivset,                    &
+      & precbackend_flag=backend_flag)
 !    call dir_trans(kresol=1, kproma=nproma, &
 !      & pgp2=zgmvs(:,1:1,:),                &
 !      & pgp3a=zgp3a(:,:,1:nfld,:),          &
 !      & pspsc2=zspsc2,                      &
 !      & pspsc3a=zspsc3a,                    &
 !      & kvsetsc2=ivsetsc,                   &
-!      & kvsetsc3a=ivset)
+!      & kvsetsc3a=ivset
   endif
   call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
@@ -1391,15 +1402,15 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   field(:) = 0.0
 
   ! Get zonal wavenumbers this rank is responsible for
-  call trans_inq(knump=num_my_zon_wns)
+  call trans_inq(knump=num_my_zon_wns, precbackend_flag=backend_flag)
   allocate(my_zon_wns(num_my_zon_wns))
-  call trans_inq(kmyms=my_zon_wns)
+  call trans_inq(kmyms=my_zon_wns, precbackend_flag=backend_flag)
 
   ! If rank is responsible for the chosen zonal wavenumber...
   if (any(my_zon_wns == m_num) ) then
     ! Get array of spectral array addresses (this maps (m, n=m) to array index)
     allocate(nasm0(0:nsmax))
-    call trans_inq(kasm0=nasm0)
+    call trans_inq(kasm0=nasm0, precbackend_flag=backend_flag)
 
     ! Find out local array index of chosen spherical harmonic
     index = nasm0(m_num) + 2 * (l_num - m_num) + 1

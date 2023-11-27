@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE TRANS_END(CDMODE)
 
 !**** *TRANS_END* - Terminate transform package

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LEINV_MOD
 CONTAINS
 SUBROUTINE LEINV(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KSL,KDGLU,PIA,PAOA1,PSOA1)
@@ -55,6 +56,7 @@ SUBROUTINE LEINV(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KSL,KDGLU,PIA,PAOA1,PSOA1)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPRD, JPRM, JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
@@ -114,8 +116,8 @@ IF(KM == 0)THEN
   ISKIP = 2
   DO J1=2,KFC,2
     DO JGL=ISL,IEND
-      PSOA1(J1,JGL) = 0.0_JPRB
-      PAOA1(J1,JGL) = 0.0_JPRB
+      PSOA1(J1,JGL) = 0.0_JPRC
+      PAOA1(J1,JGL) = 0.0_JPRC
     ENDDO
   ENDDO
 ELSE

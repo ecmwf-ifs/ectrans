@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSP_MOD
 CONTAINS
 SUBROUTINE UPDSP(KM,KF_UV,KF_SCALARS,POA1,POA2, &
@@ -64,6 +65,7 @@ SUBROUTINE UPDSP(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
 USE TPM_DISTR       ,ONLY : D
@@ -114,13 +116,13 @@ IF (KF_UV > 0) THEN
     IF(PRESENT(KFLDPTRUV)) THEN
       DO JFLD=1,KF_UV
         IFLD = KFLDPTRUV(JFLD)
-        PSPVOR(IFLD,D%NASM0(0)) = 0.0_JPRB
-        PSPDIV(IFLD,D%NASM0(0)) = 0.0_JPRB
+        PSPVOR(IFLD,D%NASM0(0)) = 0.0_JPRC
+        PSPDIV(IFLD,D%NASM0(0)) = 0.0_JPRC
       ENDDO
     ELSE
       DO JFLD=1,KF_UV
-        PSPVOR(JFLD,D%NASM0(0)) = 0.0_JPRB
-        PSPDIV(JFLD,D%NASM0(0)) = 0.0_JPRB
+        PSPVOR(JFLD,D%NASM0(0)) = 0.0_JPRC
+        PSPDIV(JFLD,D%NASM0(0)) = 0.0_JPRC
       ENDDO
     ENDIF
   ENDIF

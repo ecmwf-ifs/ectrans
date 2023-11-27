@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
 
 !**** *GET_CURRENT* - Extract current information from the transform package

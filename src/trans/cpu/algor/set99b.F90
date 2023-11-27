@@ -1,3 +1,4 @@
+#include "renames.inc"
 ! (C) Copyright 1998- ECMWF.
 ! (C) Copyright 2013- Meteo-France.
 ! 
@@ -11,6 +12,7 @@
       SUBROUTINE SET99B(TRIGS,IFAX,N,LDUSEFFT992)
 !AUTOPROMOTE
       USE PARKIND1, ONLY : JPIM, JPRB
+      USE PARKIND1, ONLY : JPRC => JPRB
 !
       IMPLICIT NONE
 !
@@ -34,7 +36,7 @@
 !
       IXXX=1
 !
-      DEL=4.0E0_JPRB*ASIN(1.0E0_JPRB)/REAL(N,KIND=JPRB)
+      DEL=4.0_JPRC * ASIN(1.0_JPRC)/REAL(N,KIND=JPRB)
       NIL=0
       NHL=(N/2)-1
       DO 10 K=NIL,NHL

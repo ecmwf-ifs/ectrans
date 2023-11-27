@@ -30,6 +30,23 @@ if( HAVE_TOOLS )
 
 endif()
 
+ecbuild_add_library(
+  TARGET           ectrans_interfaces
+  LINKER_LANGUAGE  Fortran
+  SOURCES          wrappers/dir_trans.F90
+                   wrappers/inv_trans.F90
+                   wrappers/setup_trans0.F90
+                   wrappers/setup_trans.F90
+                   wrappers/trans_inq.F90
+  PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                   $<INSTALL_INTERFACE:include/ectrans>
+                   $<INSTALL_INTERFACE:include>
+  PRIVATE_DEFINITIONS SYMBOLSUFFIX
+                      PRECOPT
+  PUBLIC_LIBS      fiat  trans_sp trans_dp
+)
+
 foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 
   if ( HAVE_CPU )
@@ -41,7 +58,9 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                 LIBS
                                   fiat
                                   parkind_${prec}
-                                  trans_${prec}
+                                  trans_sp
+                                  trans_dp
+                                  ectrans_interfaces
         )
       endif()
     endforeach( prec)

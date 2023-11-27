@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UVTVD_MOD
 CONTAINS
 SUBROUTINE UVTVD(KM,KFIELD,PEPSNM,PU,PV,PVOR,PDIV)
@@ -58,6 +59,7 @@ SUBROUTINE UVTVD(KM,KFIELD,PEPSNM,PU,PV,PVOR,PDIV)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F
@@ -95,8 +97,8 @@ ZN(KM-1:ITMAX+3) = F%RN(KM-1:ITMAX+3)
 
 IN = F%NLTN(KM-1)
 DO J=1,2*KFIELD
-  PU(IN,J) = 0.0_JPRB
-  PV(IN,J) = 0.0_JPRB
+  PU(IN,J) = 0.0_JPRC
+  PV(IN,J) = 0.0_JPRC
 ENDDO
 
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
