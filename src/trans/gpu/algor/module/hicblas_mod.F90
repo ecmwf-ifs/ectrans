@@ -185,36 +185,36 @@ END INTERFACE
 
 INTERFACE
 SUBROUTINE HIP_DGEMM_GROUPED(&
-    & CTA, CTB,               &
-    & M, N, K,                &
-    & ALPHA,                  &
-    & A, LDA, OFFSETA,        &
-    & B, LDB, OFFSETB,        &
-    & BETA,                   &
-    & C, LDC, OFFSETC,        &
-    & BATCHCOUNT              &
+    & BLAS_ID, CTA, CTB,     &
+    & M, N, K,               &
+    & ALPHA,                 &
+    & A, LDA, OFFSETA,       &
+    & B, LDB, OFFSETB,       &
+    & BETA,                  &
+    & C, LDC, OFFSETC,       &
+    & BATCHCOUNT             &
 &) BIND(C, NAME='blas_dgemm_wrapper_grouped')
     USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
 !!    INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
-    INTEGER(C_INT), VALUE :: M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
+    INTEGER(C_INT), VALUE :: BLAS_ID, M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
     REAL(C_DOUBLE), VALUE  :: ALPHA,BETA
     REAL(C_DOUBLE)         :: A(*), B(*), C(*)
 END SUBROUTINE HIP_DGEMM_GROUPED
 SUBROUTINE HIP_SGEMM_GROUPED(&
-    & CTA, CTB,               &
-    & M, N, K,                &
-    & ALPHA,                  &
-    & A, LDA, OFFSETA,        &
-    & B, LDB, OFFSETB,        &
-    & BETA,                   &
-    & C, LDC, OFFSETC,        &
-    & BATCHCOUNT              &
+    & BLAS_ID, CTA, CTB,     &
+    & M, N, K,               &
+    & ALPHA,                 &
+    & A, LDA, OFFSETA,       &
+    & B, LDB, OFFSETB,       &
+    & BETA,                  &
+    & C, LDC, OFFSETC,       &
+    & BATCHCOUNT             &
 &) BIND(C, NAME='blas_sgemm_wrapper_grouped')
     USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
 !!    INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
-    INTEGER(C_INT), VALUE :: M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
+    INTEGER(C_INT), VALUE :: BLAS_ID, M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
     REAL(C_FLOAT), VALUE  :: ALPHA,BETA
     REAL(C_FLOAT)         :: A(*), B(*), C(*)
 END SUBROUTINE HIP_SGEMM_GROUPED
@@ -223,7 +223,7 @@ END INTERFACE
 CONTAINS
 
 SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD(&
-    & TRANSA, TRANSB, &
+    & BLAS_ID, TRANSA, TRANSB, &
     & M, N, K, &
     & ALPHA, &
     & AARRAY, LDA, OFFSETA, &
@@ -233,6 +233,7 @@ SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD(&
     & BATCHCOUNT)
 !!  INTEGER(KIND=C_INT), INTENT(IN) :: TRANSA
 !!  INTEGER(KIND=C_INT), INTENT(IN) :: TRANSB
+  INTEGER(KIND=C_INT), INTENT(IN) :: BLAS_ID
   CHARACTER(1,C_CHAR), VALUE :: TRANSA, TRANSB
   INTEGER(KIND=JPIM) :: M
   INTEGER(KIND=JPIM) :: N(:)
@@ -251,7 +252,7 @@ SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD(&
   INTEGER(KIND=JPIM) :: BATCHCOUNT
 
   CALL HIP_DGEMM_GROUPED( &
-      & TRANSA, TRANSB, &
+      & BLAS_ID, TRANSA, TRANSB, &
       & M, N, K, &
       & ALPHA, &
       & AARRAY, LDA, OFFSETA, &
@@ -263,7 +264,7 @@ SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD(&
 END SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD
 
 SUBROUTINE HIP_SGEMM_GROUPED_OVERLOAD(&
-    & TRANSA, TRANSB, & 
+    & BLAS_ID, TRANSA, TRANSB, & 
     & M, N, K, & 
     & ALPHA, & 
     & AARRAY, LDA, OFFSETA, & 
@@ -273,6 +274,7 @@ SUBROUTINE HIP_SGEMM_GROUPED_OVERLOAD(&
     & BATCHCOUNT)
 !!  INTEGER(KIND=C_INT), INTENT(IN) :: TRANSA
 !!  INTEGER(KIND=C_INT), INTENT(IN) :: TRANSB
+  INTEGER(KIND=C_INT), INTENT(IN) :: BLAS_ID
   CHARACTER(1,C_CHAR), VALUE :: TRANSA, TRANSB
   INTEGER(KIND=JPIM) :: M 
   INTEGER(KIND=JPIM) :: N(:)
@@ -291,7 +293,7 @@ SUBROUTINE HIP_SGEMM_GROUPED_OVERLOAD(&
   INTEGER(KIND=JPIM) :: BATCHCOUNT
     
   CALL HIP_SGEMM_GROUPED( &
-      & TRANSA, TRANSB, &
+      & BLAS_ID, TRANSA, TRANSB, &
       & M, N, K, &
       & ALPHA, &
       & AARRAY, LDA, OFFSETA, &

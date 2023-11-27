@@ -26,9 +26,13 @@
 
 // Data types
 #define hipError_t cudaError_t
+#define hipStream_t cudaStream_t
 #define hipblasHandle_t cublasHandle_t
 #define hipblasStatus_t cublasStatus_t
 #define hipblasOperation_t cublasOperation_t
+#define hipGraph_t cudaGraph_t
+#define hipGraphNode_t cudaGraphNode_t
+#define hipGraphExec_t cudaGraphExec_t
 
 // Constants
 #define hipMemcpyHostToDevice cudaMemcpyHostToDevice
@@ -43,6 +47,19 @@
 #define hipblasSgemmBatched cublasSgemmBatched
 #define hipblasDgemmStridedBatched cublasDgemmStridedBatched
 #define hipblasSgemmStridedBatched cublasSgemmStridedBatched
+#define hipblasSetStream cublasSetStream
+
+#define hipGraphExecDestroy cudaGraphExecDestroy
+#define hipGraphCreate cudaGraphCreate
+#define hipGraphDestroy cudaGraphDestroy
+#define hipGraphLaunch cudaGraphLaunch
+#define hipGraphInstantiate cudaGraphInstantiate
+#define hipGraphAddChildGraphNode cudaGraphAddChildGraphNode
+#define hipStreamCreate cudaStreamCreate
+#define hipStreamDestroy cudaStreamDestroy
+#define hipStreamCaptureModeGlobal cudaStreamCaptureModeGlobal
+#define hipStreamBeginCapture cudaStreamBeginCapture
+#define hipStreamEndCapture cudaStreamEndCapture
 
 // Runtime calls
 #define hipHostMalloc(PTR, SIZE, FLAGS) cudaMallocHost(PTR, SIZE)
