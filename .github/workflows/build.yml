@@ -34,7 +34,7 @@ jobs:
           - linux gnu-10
           - linux clang-12
           - linux nvhpc-21.9
-          - linux intel
+          - linux intel-classic
           - macos
 
         include:
@@ -77,9 +77,9 @@ jobs:
             ctest_options: -E memory
             caching: false
 
-          - name : linux intel
+          - name : linux intel-classic
             os: ubuntu-20.04
-            compiler: intel-oneapi
+            compiler: intel-classic
             compiler_cc: icc
             compiler_cxx: icpc
             compiler_fc: ifort
@@ -139,7 +139,7 @@ jobs:
         ${ECTRANS_TOOLS}/install-intel-oneapi.sh
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
-        echo "CACHE_SUFFIX=$(icc -dumpversion)" >> $GITHUB_ENV
+        echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
 
     - name: Install MPI
       shell: bash -eux {0}
