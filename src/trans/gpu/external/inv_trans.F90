@@ -7,12 +7,17 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
+#ifndef INMODULE
 SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & FSPGL_PROC,&
  & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
  & PGP,PGPUV,PGP3A,PGP3B,PGP2)
+#else
+MODULE PROCEDURE INV_TRANS
+#endif
+
 
 !**** *INV_TRANS* - Inverse spectral transform.
 
@@ -155,6 +160,7 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
+#ifndef INMODULE
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) :: PSPVOR(:,:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) :: PSPDIV(:,:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) :: PSPSCALAR(:,:)
@@ -180,6 +186,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGPUV(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP2(:,:,:)
+#endif
 
 !ifndef INTERFACE
 
@@ -656,4 +663,9 @@ CALL GSTATS(441,1)
 
 !endif INTERFACE
 
+#ifndef INMODULE
 END SUBROUTINE INV_TRANS
+#else
+END PROCEDURE INV_TRANS
+#endif
+

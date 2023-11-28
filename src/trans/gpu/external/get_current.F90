@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
 
 !**** *GET_CURRENT* - Extract current information from the transform package
@@ -45,8 +46,8 @@ USE PARKIND1  ,ONLY : JPIM
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_GEOMETRY
+USE TPM_GEN,      ONLY : NCUR_RESOL
+USE TPM_GEOMETRY, ONLY : G
 
 !endif INTERFACE
 

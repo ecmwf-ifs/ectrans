@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP,KSORT)
 
 !**** *DIST_GRID* - Distribute global gridpoint array among processors
@@ -78,7 +79,7 @@ INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IFSEND,J,IUBOUND(3),IPROMA,IGPBLKS
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 

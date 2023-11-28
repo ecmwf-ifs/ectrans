@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
 !**** *GATH_GRID_32* - Gather global gridpoint array from processors
@@ -46,7 +47,7 @@ SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRM
+USE PARKIND1  ,ONLY : JPIM     ,JPRB   ,JPRM
 
 !ifndef INTERFACE
 
