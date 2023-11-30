@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PRFI2BAD_MOD
 CONTAINS
 SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
@@ -57,7 +58,7 @@ SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : FOUBUF
@@ -68,7 +69,7 @@ USE TPM_DISTR       ,ONLY : D
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD,KM,KMLOC
-REAL(KIND=JPRBT)  , INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB)  , INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IGLS,  ISL, ISTAN, ISTAS, JF, JGL

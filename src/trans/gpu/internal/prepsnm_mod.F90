@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PREPSNM_MOD
   CONTAINS
   SUBROUTINE PREPSNM
@@ -50,7 +51,8 @@ MODULE PREPSNM_MOD
   
   !     ------------------------------------------------------------------
  
-  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+  USE PARKIND1        ,ONLY : JPIM     ,JPRB
+  USE PARKIND1        ,ONLY : JPRC => JPRB
  
   USE TPM_DIM         ,ONLY : R
   USE TPM_FIELDS      ,ONLY : F, ZEPSNM
@@ -86,7 +88,7 @@ MODULE PREPSNM_MOD
 !        !$ACC loop
 !#endif
         DO JN=0,KM-1
-           ZEPSNM(KMLOC,JN) = 0.0_JPRBT
+           ZEPSNM(KMLOC,JN) = 0.0_JPRC
         ENDDO
      ENDIF
  
@@ -102,4 +104,4 @@ MODULE PREPSNM_MOD
  
   END SUBROUTINE PREPSNM
  
- END MODULE PREPSNM_MOD  
+ END MODULE PREPSNM_MOD

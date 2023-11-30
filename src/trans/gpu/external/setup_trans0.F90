@@ -8,6 +8,10 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
+#ifdef INMODULE
+MODULE &
+#endif
 SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       KPRGPNS,KPRGPEW,KPRTRW,KCOMBFLEN,&
 &                       LDMPOFF,LDSYNC_TRANS,KTRANS_SYNC_LEVEL,&
@@ -65,7 +69,8 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM   ,JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 
 !ifndef INTERFACE
 
@@ -169,7 +174,7 @@ LMPOFF = .FALSE.
 LSYNC_TRANS=.FALSE.
 NTRANS_SYNC_LEVEL=0
 LEQ_REGIONS=.FALSE.
-RA=6371229._JPRB
+RA=6371229._JPRC
 LALLOPERM=.FALSE.
 
 ! Optional arguments
@@ -255,6 +260,7 @@ MSETUP0 = 1
 !     ------------------------------------------------------------------
 
 !endif INTERFACE
+
 
 END SUBROUTINE SETUP_TRANS0
 

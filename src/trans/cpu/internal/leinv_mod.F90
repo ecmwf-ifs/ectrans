@@ -38,7 +38,7 @@ SUBROUTINE LEINV(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KSL,KDGLU,PIA,PAOA1,PSOA1)
 !     Method.    use butterfly or dgemm
 !     -------
 
-!     Externals.   
+!     Externals.
 !     ----------
 
 !     Reference.

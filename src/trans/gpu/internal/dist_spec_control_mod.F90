@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE DIST_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
@@ -46,8 +47,8 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 
 !     ------------------------------------------------------------------
 
-
 USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPRC => JPRB
 USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT, &
      &                      JP_NON_BLOCKING_STANDARD
 

@@ -18,7 +18,7 @@ SUBROUTINE SUMP_TRANS
 ! Modifications :
 ! P.Marguinaud : 11-Sep-2012 : Fix twice allocated pointer
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,  JPRD
+USE PARKIND1        ,ONLY : JPIM     ,JPRB,  JPRD
 
 USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
 USE TPM_DIM         ,ONLY : R

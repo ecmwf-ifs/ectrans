@@ -1,4 +1,3 @@
-#include "renames.inc"
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! 
@@ -8,7 +7,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 MODULE FTDIRAD_MOD
 CONTAINS
 SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
@@ -46,7 +45,7 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRB
+USE PARKIND1, ONLY : JPIM, JPRB
 USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW

@@ -12,9 +12,9 @@
 MODULE UPDSP_MOD
 CONTAINS
 SUBROUTINE UPDSP(KM,KF_UV,KF_SCALARS,POA1,POA2, &
- & PSPVOR,PSPDIV,PSPSCALAR,&
- & PSPSC3A,PSPSC3B,PSPSC2 , &
- & KFLDPTRUV,KFLDPTRSC)
+ &               PSPVOR,PSPDIV,PSPSCALAR,&
+ &               PSPSC3A,PSPSC3B,PSPSC2 , &
+ &               KFLDPTRUV,KFLDPTRSC)
 
 !**** *UPDSP* - Update spectral arrays after direct Legendre transform
 
@@ -64,8 +64,8 @@ SUBROUTINE UPDSP(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 !        MPP Group: 95-10-01 Support for Distributed Memory version
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE PARKIND1, ONLY : JPRC => JPRB
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPRC => JPRB
 
 USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
 USE TPM_DISTR       ,ONLY : D

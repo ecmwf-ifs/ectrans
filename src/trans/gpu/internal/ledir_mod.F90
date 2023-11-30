@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LEDIR_MOD
 CONTAINS
 SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,POA1,KMODE)
@@ -54,7 +55,7 @@ SUBROUTINE LEDIR(KF_FS,KLED2,PAIA,POA1,KMODE)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM ,JPRB,  JPRBT
+USE PARKIND1         ,ONLY : JPIM , JPRB
 USE YOMHOOK          ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM          ,ONLY : R_NDGNH,R_NSMAX,R_NTMAX
 USE TPM_GEOMETRY     ,ONLY : G_NDGLU
@@ -90,9 +91,9 @@ INTEGER(KIND=JPIM), INTENT(IN)  :: KF_FS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KLED2
 INTEGER(KIND=JPIM), INTENT(IN)  :: KMODE
 
-REAL(KIND=JPRBT),    INTENT(IN)  :: PAIA(:,:,:)
-!REAL(KIND=JPRBT),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: POA1(:,:,:)
+REAL(KIND=JPRB),    INTENT(IN)  :: PAIA(:,:,:)
+!REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:,:),   PAIA(:,:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:,:)
 
 !     LOCAL VARIABLES
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IF, J, JK, IRET
@@ -130,8 +131,8 @@ KIFC = KFC
 !!$ACC PARALLEL LOOP COLLAPSE(2)
 !DO KMLOC=1,SIZE(ZAMAX,2)
 !  DO JK=1,SIZE(ZAMAX,1)
-!    ZAMAX(JK,KMLOC) = 0.0_JPRBT
-!    ZSMAX(JK,KMLOC) = 0.0_JPRBT
+!    ZAMAX(JK,KMLOC) = 0.0_JPRB
+!    ZSMAX(JK,KMLOC) = 0.0_JPRB
 !  ENDDO
 !ENDDO
 
@@ -184,10 +185,10 @@ END DO
 CALL HIP_GEMM_BATCHED( &
   & 'N', 'N', &
   & DTDZBA, TDZAA, DLDZBA, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & DZBST, DTDZBA, DLDZBA, &
   & ZAA, LDZAA, TDZAA, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & DZCAT, DTDZCA, DLDZCA, &
   & D_NUMP)
 #ifdef OMPGPU
@@ -352,10 +353,10 @@ END DO
 CALL HIP_GEMM_BATCHED( &
   & 'N', 'N', &
   & DTDZBS, TDZAS, DLDZBS, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & DZBST, DTDZBS, DLDZBS, &
   & ZAS, LDZAS, TDZAS, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & DZCST, DTDZCS, DLDZCS, &
   & D_NUMP)
 #ifdef OMPGPU

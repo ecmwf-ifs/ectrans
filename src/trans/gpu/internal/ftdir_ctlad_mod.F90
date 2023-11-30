@@ -8,12 +8,13 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTDIR_CTLAD_MOD
 CONTAINS
 SUBROUTINE FTDIR_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
- &                    KVSETUV,KVSETSC,KPTRGP,&
- &                    KVSETSC3A,KVSETSC3B,KVSETSC2,&
- &                    PGP,PGPUV,PGP3A,PGP3B,PGP2)
+ &                     KVSETUV,KVSETSC,KPTRGP,&
+ &                     KVSETSC3A,KVSETSC3B,KVSETSC2,&
+ &                     PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
 
 !**** *FTDIR_CTLAD - Direct Fourier transform control - adjoint
@@ -55,7 +56,7 @@ SUBROUTINE FTDIR_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS   ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !USE TPM_GEN
 !USE TPM_DIM
@@ -85,7 +86,7 @@ REAL(KIND=JPRB),OPTIONAL    , INTENT(OUT) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    , INTENT(OUT) :: PGP2(:,:,:)
 
 ! Local variables
-REAL(KIND=JPRBT) :: ZGTF(KF_FS,D%NLENGTF)
+REAL(KIND=JPRB) :: ZGTF(KF_FS,D%NLENGTF)
 
 
 INTEGER(KIND=JPIM) :: IST

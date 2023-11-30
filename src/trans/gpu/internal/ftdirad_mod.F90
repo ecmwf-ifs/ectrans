@@ -7,7 +7,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 MODULE FTDIRAD_MOD
 CONTAINS
 SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
@@ -45,7 +45,8 @@ SUBROUTINE FTDIRAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
+USE PARKIND1, ONLY : JPIM, JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G
@@ -55,11 +56,11 @@ USE TPM_DIM         ,ONLY : R
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELDS,KGL
-REAL(KIND=JPRBT),  INTENT(INOUT) :: PREEL(:,:)
+REAL(KIND=JPRB),  INTENT(INOUT) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,ILOEN
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN,ITYPE
-REAL(KIND=JPRBT) :: ZMUL
+REAL(KIND=JPRB) :: ZMUL
 LOGICAL :: LL_ALL=.FALSE. ! T=do kfields ffts in one batch, F=do kfields ffts one at a time
 !     ------------------------------------------------------------------
 
@@ -75,13 +76,13 @@ ICLEN = (IRLEN/2+1)*2
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRBT
+    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRC
   ENDDO
 ENDDO
 
   ! Change of metric (not in forward routine)
 
-ZMUL = 1.0_JPRBT/ILOEN
+ZMUL = 1.0_JPRC/ILOEN
 DO JJ=1,ILOEN
   DO JF=1,KFIELDS
     PREEL(JF,IOFF-1+JJ) = PREEL(JF,IOFF-1+JJ)*ZMUL

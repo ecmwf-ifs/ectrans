@@ -34,7 +34,7 @@ SUBROUTINE GATH_GRID_CTL(PGPG,KFGATHG,KPROMA,KTO,PGP)
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1    ,ONLY : JPIM     ,JPRB
 USE MPL_MODULE  ,ONLY : MPL_ALLTOALLV, MPL_RECV, MPL_SEND, MPL_WAIT,   &
      &                  JP_BLOCKING_STANDARD, JP_NON_BLOCKING_STANDARD
 

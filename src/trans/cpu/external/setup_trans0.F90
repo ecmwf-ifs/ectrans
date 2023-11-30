@@ -70,8 +70,8 @@ MODULE PROCEDURE SETUP_TRANS0
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE PARKIND1, ONLY : JPRC => JPRB
+USE PARKIND1  ,ONLY : JPIM   ,JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 
 !ifndef INTERFACE
 

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SET_RESOL_MOD
 CONTAINS
 SUBROUTINE SET_RESOL(KRESOL,LDSETUP)

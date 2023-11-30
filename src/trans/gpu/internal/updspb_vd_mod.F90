@@ -6,7 +6,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 MODULE UPDSPB_VD_MOD
 CONTAINS
 SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
@@ -53,7 +53,8 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
  
-  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+  USE PARKIND1        ,ONLY : JPIM    ,JPRB
+  USE PARKIND1        ,ONLY : JPRC =>  JPRB
 
   USE TPM_DIM         ,ONLY : R,R_NSMAX,R_NTMAX
   USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
@@ -124,16 +125,16 @@ SUBROUTINE UPDSPB_VD(KFIELD,PSPVOR,PSPDIV,KFLDPTR)
                    IR = 2*JFLD-1
                    PSPVOR(JFLD,INM)   = ZOA2(IVORS+IR-1,JN,KMLOC)
                    PSPDIV(JFLD,INM)   = ZOA2(IDIVS+IR-1,JN,KMLOC)
-                   PSPVOR(JFLD,INM+1) = 0.0_JPRBT
-                   PSPDIV(JFLD,INM+1) = 0.0_JPRBT
+                   PSPVOR(JFLD,INM+1) = 0.0_JPRC
+                   PSPDIV(JFLD,INM+1) = 0.0_JPRC
                 END IF
                 IF(PRESENT(KFLDPTR)) THEN
                   IFLD = KFLDPTR(JFLD)
-                  PSPVOR(IFLD,IASM0) = 0.0_JPRBT
-                  PSPDIV(IFLD,IASM0) = 0.0_JPRBT
+                  PSPVOR(IFLD,IASM0) = 0.0_JPRC
+                  PSPDIV(IFLD,IASM0) = 0.0_JPRC
                 ELSE
-                  PSPVOR(JFLD,IASM0) = 0.0_JPRBT
-                  PSPDIV(JFLD,IASM0) = 0.0_JPRBT
+                  PSPVOR(JFLD,IASM0) = 0.0_JPRC
+                  PSPDIV(JFLD,IASM0) = 0.0_JPRC
                 ENDIF
 
              ELSE

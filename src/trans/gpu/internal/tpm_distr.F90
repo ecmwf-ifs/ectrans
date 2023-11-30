@@ -8,11 +8,12 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_DISTR
 
 ! Module for distributed memory environment.
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 IMPLICIT NONE
 
@@ -157,7 +158,7 @@ INTEGER(KIND=JPIM) :: NGPTOTG  ! Total number of grid columns on the Globe
 INTEGER(KIND=JPIM) :: NGPTOTMX ! Maximum number of grid columns on any of the PEs
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each PE.
 
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
+REAL(KIND=JPRB) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
 INTEGER(KIND=JPIM) :: IADJUST_D

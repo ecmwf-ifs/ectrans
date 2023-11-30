@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE VD2UV_CTL_MOD
 CONTAINS
 SUBROUTINE VD2UV_CTL(KF_UV,PSPVOR,PSPDIV,PU,PV)

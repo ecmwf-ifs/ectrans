@@ -26,7 +26,10 @@ ecbuild_list_add_pattern( LIST trans_src
                                 sharedmem/*
                                 algor/*
                                 internal/*
-                                external/*
+				external/specnorm.F90
+				external/gpnorm_trans.F90
+				external/gpnorm_trans_gpu.F90
+                                module/*
                           QUIET
                         )
 
@@ -76,6 +79,11 @@ foreach( prec dp sp )
         if( HAVE_GPU_STATIC )
             set( GPU_LIBRARY_TYPE STATIC )
         endif()
+        if( ${prec} MATCHES "sp" )
+           set(precno 1)
+        elseif (${prec} MATCHES "dp")
+           set(precno 2)
+        endif()
 
         ectrans_add_library(
           TARGET               trans_gpu_${prec}
@@ -89,6 +97,7 @@ foreach( prec dp sp )
                                $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS          parkind_${prec}
                                fiat
+          PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/gpu/external
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                ${LAPACK_LIBRARIES} # we still have symbols in some files
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
@@ -98,6 +107,9 @@ foreach( prec dp sp )
                                ${GPU_RUNTIME}GPU
                                $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
                                $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
+			       SYMBOLSUFFIX=${prec}
+                               PRECOPT=${precno}
+
         )
 
         ectrans_target_fortran_module_directory(

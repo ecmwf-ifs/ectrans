@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE GATH_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
@@ -35,7 +36,8 @@ SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPIM     ,JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, MPL_BARRIER, MPL_WAIT,     &
  &                          JP_BLOCKING_STANDARD, JP_NON_BLOCKING_STANDARD
 
@@ -198,7 +200,7 @@ ELSE
         DO JN=0,KSMAX
           ISP = KDIM0G(0)+JN*2+1
           II = II+2
-          PSPECG(JFLD,II) = 0.0_JPRB
+          PSPECG(JFLD,II) = 0.0_JPRC
         ENDDO
       ENDIF
     ELSE
@@ -210,7 +212,7 @@ ELSE
         DO JN=0,KSMAX
           ISP = KDIM0G(0)+JN*2+1
           II = II+2
-          PSPECG(II,JFLD) = 0.0_JPRB
+          PSPECG(II,JFLD) = 0.0_JPRC
         ENDDO
       ENDIF
     ENDIF

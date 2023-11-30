@@ -8,13 +8,14 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_CONSTANTS
-USE PARKIND_ECTRANS  ,ONLY : JPRBT
+USE PARKIND1  ,ONLY : JPRB
 
 IMPLICIT NONE
 
 SAVE
 
-REAL(KIND=JPRBT) :: RA  ! Radius of Earth
+REAL(KIND=JPRB) :: RA  ! Radius of Earth
 
 END MODULE TPM_CONSTANTS

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSPAD_MOD
 CONTAINS
 SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &
@@ -63,7 +64,8 @@ SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &
 !        MPP Group: 95-10-01 Support for Distributed Memory version
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPRC => JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
@@ -79,8 +81,8 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KF_UV,KF_SCALARS
 
-REAL(KIND=JPRBT) , INTENT(OUT)  :: POA1(:,:)
-REAL(KIND=JPRBT) , INTENT(OUT)  :: POA2(:,:)
+REAL(KIND=JPRB) , INTENT(OUT)  :: POA1(:,:)
+REAL(KIND=JPRB) , INTENT(OUT)  :: POA2(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPVOR(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPSCALAR(:,:)
@@ -113,24 +115,24 @@ IF (KF_UV > 0) THEN
     IF(PRESENT(KFLDPTRUV)) THEN
       DO JFLD=1,KF_UV
         IFLD = KFLDPTRUV(JFLD)
-        PSPVOR(IFLD,D%NASM0(0)) = 0.0_JPRBT
-        PSPDIV(IFLD,D%NASM0(0)) = 0.0_JPRBT
+        PSPVOR(IFLD,D%NASM0(0)) = 0.0_JPRC
+        PSPDIV(IFLD,D%NASM0(0)) = 0.0_JPRC
       ENDDO
       DO JN=0,R%NSMAX
         ISE = 1+JN*2+1
         DO JFLD=1,KF_UV
           IFLD = KFLDPTRUV(JFLD)
-          PSPDIV(IFLD,ISE) = 0.0_JPRBT
-          PSPVOR(IFLD,ISE) = 0.0_JPRBT
+          PSPDIV(IFLD,ISE) = 0.0_JPRC
+          PSPVOR(IFLD,ISE) = 0.0_JPRC
         ENDDO
       ENDDO
     ELSE
-      PSPVOR(:,D%NASM0(0)) = 0.0_JPRBT
-      PSPDIV(:,D%NASM0(0)) = 0.0_JPRBT
+      PSPVOR(:,D%NASM0(0)) = 0.0_JPRC
+      PSPDIV(:,D%NASM0(0)) = 0.0_JPRC
       DO JN=0,R%NSMAX
         ISE = 1+JN*2+1
-        PSPDIV(:,ISE) = 0.0_JPRBT
-        PSPVOR(:,ISE) = 0.0_JPRBT
+        PSPDIV(:,ISE) = 0.0_JPRC
+        PSPVOR(:,ISE) = 0.0_JPRC
       ENDDO
     ENDIF
   ENDIF

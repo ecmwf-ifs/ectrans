@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTINV_CTL_MOD
 CONTAINS
 SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
@@ -60,7 +61,8 @@ SUBROUTINE FTINV_CTL(KF_UV_G,KF_SCALARS_G,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1        ,ONLY : JPIM, JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 
 USE TPM_GEN         ,ONLY : NERR, NOUT
 !USE TPM_DIM

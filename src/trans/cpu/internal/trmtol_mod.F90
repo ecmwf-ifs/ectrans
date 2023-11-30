@@ -1,4 +1,4 @@
-#include "renames.inc"
+
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
 ! 
@@ -8,7 +8,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 MODULE TRMTOL_MOD
 
 CONTAINS

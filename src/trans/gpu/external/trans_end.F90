@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE TRANS_END(CDMODE)
 
 !**** *TRANS_END* - Terminate transform package
@@ -41,7 +42,7 @@ SUBROUTINE TRANS_END(CDMODE)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 

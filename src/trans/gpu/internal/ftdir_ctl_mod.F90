@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTDIR_CTL_MOD
 CONTAINS
 SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
@@ -55,7 +56,7 @@ SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : NOUT
 !USE TPM_DIM
@@ -106,7 +107,7 @@ REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP2(:,:,:)
 
 ! Local variables
-!REAL(KIND=JPRBT),ALLOCATABLE :: ZGTF(:,:)
+!REAL(KIND=JPRB),ALLOCATABLE :: ZGTF(:,:)
 
 INTEGER(KIND=JPIM) :: IST,JGL,IGL,JF_FS
 INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)

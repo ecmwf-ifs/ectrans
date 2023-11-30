@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_CTL
 
 USE PARKIND1  ,ONLY : JPIM

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PRFI2AD_MOD
 CONTAINS
 SUBROUTINE PRFI2AD(KM,KMLOC,KF_FS,PAIA,PSIA)
@@ -65,7 +66,7 @@ SUBROUTINE PRFI2AD(KM,KMLOC,KF_FS,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE PRFI2BAD_MOD    ,ONLY : PRFI2BAD
 !
@@ -76,7 +77,7 @@ INTEGER(KIND=JPIM) , INTENT(IN) :: KM
 INTEGER(KIND=JPIM) , INTENT(IN) :: KMLOC
 INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS
 
-REAL(KIND=JPRBT) , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
+REAL(KIND=JPRB) , INTENT(IN) :: PSIA(:,:),   PAIA(:,:)
 
 !     ------------------------------------------------------------------
 

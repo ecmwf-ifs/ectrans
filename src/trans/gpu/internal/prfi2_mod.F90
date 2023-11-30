@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PRFI2_MOD
     CONTAINS
     SUBROUTINE PRFI2(KF_FS,PAIA,PSIA)
@@ -65,7 +66,7 @@ MODULE PRFI2_MOD
     !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
     !     ------------------------------------------------------------------
     
-    USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+    USE PARKIND1        ,ONLY : JPIM     ,JPRB
     
     !USE TPM_TRANS
     
@@ -81,7 +82,7 @@ MODULE PRFI2_MOD
     INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS
     
     
-    REAL(KIND=JPRBT) , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
+    REAL(KIND=JPRB) , INTENT(OUT) :: PSIA(:,:,:),   PAIA(:,:,:)
 
 
     !     LOCAL INTEGER SCALARS

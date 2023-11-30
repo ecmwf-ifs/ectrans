@@ -6,9 +6,9 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 MODULE BUTTERFLY_ALG_MOD 
-USE PARKIND_ECTRANS, ONLY : JPRD, JPIM, JPRB, JPRBT, JPIB
+USE PARKIND1, ONLY : JPRD, JPRM, JPIM, JPRB, JPIB
 USE INTERPOL_DECOMP_MOD
 USE SHAREDMEM_MOD
 
@@ -38,8 +38,8 @@ INTEGER(KIND=JPIM) :: IROWS   =0   ! Number of rows
 INTEGER(KIND=JPIM) :: IRANK   =0   ! Rank of interpolative decomposition
 INTEGER(KIND=JPIM) :: IOFFBETA=0   ! Offset in "beta" work space
 INTEGER(KIND=JPIM),POINTER :: ICLIST(:) => NULL() ! List of columns in B (column skeleton matrix)
-REAL(KIND=JPRBT),POINTER :: PNONIM(:)  => NULL() ! Non-identety part of interpolation matrix
-REAL(KIND=JPRBT),POINTER :: B(:,:)  => NULL()  ! Column skeleton matrix
+REAL(KIND=JPRB),POINTER :: PNONIM(:)  => NULL() ! Non-identety part of interpolation matrix
+REAL(KIND=JPRB),POINTER :: B(:,:)  => NULL()  ! Column skeleton matrix
 REAL(KIND=JPRD),POINTER :: DB(:,:)  => NULL()  ! Column skeleton matrix, as part of pre-computations only
 END TYPE NODE_TYPE
 
@@ -60,7 +60,7 @@ TYPE(LEV_STRUCT),POINTER :: SLEV(:) => NULL() ! Level structure (dimensioned 0:n
 END TYPE BUTTERFLY_STRUCT
 
 TYPE CLONE
-REAL(KIND=JPRBT) , ALLOCATABLE :: COMMSBUF(:) ! for communicating packed bufferfly_structs
+REAL(KIND=JPRB) , ALLOCATABLE :: COMMSBUF(:) ! for communicating packed bufferfly_structs
 END TYPE CLONE                          ! between MPI tasks
 
 #ifdef WITH_IEEE_HALT
@@ -69,7 +69,7 @@ LOGICAL, PARAMETER :: LL_IEEE_HALT = .TRUE.
 LOGICAL, PARAMETER :: LL_IEEE_HALT = .FALSE.
 #endif
 
-LOGICAL, PARAMETER :: LLDOUBLE = (JPRBT == JPRD)
+LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 
 CONTAINS
 !================================================================================
@@ -376,7 +376,7 @@ TYPE(BUTTERFLY_STRUCT),INTENT(OUT) :: YD_STRUCT      ! Structure needed to apply
 TYPE(CLONE), TARGET, OPTIONAL,INTENT(IN) :: YD_CLONE          ! for communicating packed bufferfly_structs
 TYPE(SHAREDMEM),OPTIONAL,INTENT(INOUT) :: YDMEMBUF   ! Memory buffer
 INTEGER(KIND=JPIM) :: ILEN,I,JL,JIK,JIJ,J,J1,J2,II
-REAL(KIND=JPRBT),POINTER :: ZBUF(:)
+REAL(KIND=JPRB),POINTER :: ZBUF(:)
 LOGICAL :: LLMEMBUF
 !--------------------------------------------------------------------------------
 IF(PRESENT(YDMEMBUF)) THEN
@@ -391,11 +391,11 @@ IF(LLMEMBUF) THEN
 ELSE
   ZBUF => YD_CLONE%COMMSBUF(I+1:I+5)
 ENDIF
-YD_STRUCT%M_ORDER     = NINT(ZBUF(1),JPRBT)
-YD_STRUCT%N_ORDER     = NINT(ZBUF(2),JPRBT)
-YD_STRUCT%N_CMAX      = NINT(ZBUF(3),JPRBT)
-YD_STRUCT%N_LEVELS    = NINT(ZBUF(4),JPRBT)
-YD_STRUCT%IBETALEN_MAX = NINT(ZBUF(5),JPRBT)
+YD_STRUCT%M_ORDER      = NINT(ZBUF(1),JPIM)
+YD_STRUCT%N_ORDER      = NINT(ZBUF(2),JPIM)
+YD_STRUCT%N_CMAX       = NINT(ZBUF(3),JPIM)
+YD_STRUCT%N_LEVELS     = NINT(ZBUF(4),JPIM)
+YD_STRUCT%IBETALEN_MAX = NINT(ZBUF(5),JPIM)
 I=I+5
 
 ALLOCATE(YD_STRUCT%SLEV(0:YD_STRUCT%N_LEVELS))
@@ -405,9 +405,9 @@ DO JL=0,YD_STRUCT%N_LEVELS
   ELSE
     ZBUF => YD_CLONE%COMMSBUF(I+1:I+3)
   ENDIF
-  YD_STRUCT%SLEV(JL)%IJ      =NINT(ZBUF(1),JPRBT)
-  YD_STRUCT%SLEV(JL)%IK      =NINT(ZBUF(2),JPRBT)
-  YD_STRUCT%SLEV(JL)%IBETALEN=NINT(ZBUF(3),JPRBT)
+  YD_STRUCT%SLEV(JL)%IJ      =NINT(ZBUF(1),JPIM)
+  YD_STRUCT%SLEV(JL)%IK      =NINT(ZBUF(2),JPIM)
+  YD_STRUCT%SLEV(JL)%IBETALEN=NINT(ZBUF(3),JPIM)
   I=I+3
   ALLOCATE(YD_STRUCT%SLEV(JL)%NODE(YD_STRUCT%SLEV(JL)%IJ,YD_STRUCT%SLEV(JL)%IK))
   DO JIK=1,YD_STRUCT%SLEV(JL)%IK
@@ -417,15 +417,15 @@ DO JL=0,YD_STRUCT%N_LEVELS
       ELSE
         ZBUF => YD_CLONE%COMMSBUF(I+1:I+10)
       ENDIF
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ILEV    = NINT(ZBUF(1),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IFCOL   = NINT(ZBUF(2),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ILCOL   = NINT(ZBUF(3),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IFROW   = NINT(ZBUF(4),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ILROW   = NINT(ZBUF(5),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ICOLS   = NINT(ZBUF(6),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IROWS   = NINT(ZBUF(7),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IRANK   = NINT(ZBUF(8),JPRBT)
-      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IOFFBETA= NINT(ZBUF(9),JPRBT)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ILEV    = NINT(ZBUF(1),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IFCOL   = NINT(ZBUF(2),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ILCOL   = NINT(ZBUF(3),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IFROW   = NINT(ZBUF(4),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ILROW   = NINT(ZBUF(5),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ICOLS   = NINT(ZBUF(6),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IROWS   = NINT(ZBUF(7),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IRANK   = NINT(ZBUF(8),JPIM)
+      YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%IOFFBETA= NINT(ZBUF(9),JPIM)
       J = NINT(ZBUF(10))
       I=I+10
       ALLOCATE(YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ICLIST(J))
@@ -436,7 +436,7 @@ DO JL=0,YD_STRUCT%N_LEVELS
           ZBUF => YD_CLONE%COMMSBUF(I+1:I+J)
         ENDIF
         DO II=1,J
-           YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ICLIST(II)=NINT(ZBUF(II),JPRBT)
+           YD_STRUCT%SLEV(JL)%NODE(JIJ,JIK)%ICLIST(II)=NINT(ZBUF(II),JPIM)
         END DO
         I=I+J
       ENDIF
@@ -445,7 +445,7 @@ DO JL=0,YD_STRUCT%N_LEVELS
       ELSE
         ZBUF => YD_CLONE%COMMSBUF(I+1:I+1)
       ENDIF
-      J=NINT(ZBUF(1),JPRBT)
+      J=NINT(ZBUF(1),JPIM)
       I=I+1
       IF( J > 0 )THEN
         IF(LLMEMBUF) THEN
@@ -461,8 +461,8 @@ DO JL=0,YD_STRUCT%N_LEVELS
       ELSE
         ZBUF => YD_CLONE%COMMSBUF(I+1:I+2)
       ENDIF
-      J1=NINT(ZBUF(1),JPRBT)
-      J2=NINT(ZBUF(2),JPRBT)
+      J1=NINT(ZBUF(1),JPIM)
+      J2=NINT(ZBUF(2),JPIM)
       I=I+2
       IF( J1 > 0 .AND. J2 > 0 )THEN
         IF(LLMEMBUF) THEN
@@ -565,7 +565,7 @@ II = 0
 DO JN=1,KCOLS-IRANK
   DO JM=1,IRANK
     II = II+1
-    YDNODE%PNONIM(II) = REAL(ZPNONIM(JM,JN), JPRBT)
+    YDNODE%PNONIM(II) = REAL(ZPNONIM(JM,JN), JPRB)
   ENDDO
 ENDDO
 DO JR=1,IRANK
@@ -580,14 +580,14 @@ IMPLICIT NONE
 
 TYPE(BUTTERFLY_STRUCT),INTENT(IN) :: YD_STRUCT ! Structure from constucT-butterfly
 CHARACTER(LEN=1),INTENT(IN)   :: CDTRANS       ! 'N' normal matmul, 'T' with transpose of matrix
-REAL(KIND=JPRBT),INTENT(IN)    :: PVECIN(:)     ! Input vector
-REAL(KIND=JPRBT),INTENT(OUT)   :: PVECOUT(:)    ! Output vector
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)     ! Input vector
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)    ! Output vector
 
-REAL(KIND=JPRBT),ALLOCATABLE   :: ZBETA(:,:)
+REAL(KIND=JPRB),ALLOCATABLE   :: ZBETA(:,:)
 INTEGER(KIND=JPIM) :: JL,JJ,JK,ILEVS,IFR,ILR,IROWS
 INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR
 INTEGER(KIND=JPIM) :: IBETALV,IBTST,IBTEN,IBETALVM1,IBTSTL,IBTENL,IBTSTR,IBTENR
-REAL(KIND=JPRBT) :: ZVECOUT(SIZE(PVECOUT))
+REAL(KIND=JPRB) :: ZVECOUT(SIZE(PVECOUT))
 LOGICAL :: LLTRANSPOSE
 TYPE(NODE_TYPE),POINTER :: YNODEL,YNODER,YNODE 
 !----------------------------------------------------------------------------------
@@ -620,8 +620,8 @@ IF(LLTRANSPOSE) THEN
                & 0.0_JPRD,ZBETA(IBTST:IBTEN,IBETALV),1)
             ELSE
               CALL SGEMV('T',IROWS,YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IRANK,&
-               & 1.0_JPRBT,YNODE%B,IROWS,PVECIN(IFR:ILR),1,&
-               & 0.0_JPRBT,ZBETA(IBTST:IBTEN,IBETALV),1)
+               & 1.0_JPRM,YNODE%B,IROWS,PVECIN(IFR:ILR),1,&
+               & 0.0_JPRM,ZBETA(IBTST:IBTEN,IBETALV),1)
             ENDIF
           ENDIF
           ILM1 = JL-1
@@ -699,8 +699,8 @@ ELSE
              & 0.0_JPRD,PVECOUT(IFR:ILR),1)
           ELSE
             CALL SGEMV('N',IROWS,YD_STRUCT%SLEV(ILEVS)%NODE(JJ,JK)%IRANK,&
-             & 1.0_JPRBT,YNODE%B,IROWS,ZBETA(IBTST:IBTEN,IBETALV),1,&
-             & 0.0_JPRBT,PVECOUT(IFR:ILR),1)
+             & 1.0_JPRM,YNODE%B,IROWS,ZBETA(IBTST:IBTEN,IBETALV),1,&
+             & 0.0_JPRM,PVECOUT(IFR:ILR),1)
           ENDIF
         ENDIF
       ENDDO
@@ -717,15 +717,15 @@ IMPLICIT NONE
 CHARACTER(LEN=1),INTENT(IN)   :: CDTRANS       ! 'N' normal matmul, 'T' with transpose of matrix
 TYPE(BUTTERFLY_STRUCT),INTENT(IN) :: YD_STRUCT ! Structure from constucT-butterfly
 INTEGER(KIND=JPIM),INTENT(IN) :: KF            ! Number of fields
-REAL(KIND=JPRBT),INTENT(IN)    :: PVECIN(:,:)     ! Input vector
-REAL(KIND=JPRBT),INTENT(OUT)   :: PVECOUT(:,:)    ! Output vector
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)     ! Input vector
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)    ! Output vector
 
 INTEGER(KIND=JPIM) :: JL,JJ,JK,ILEVS,IFR,ILR,IROWS,JF
 INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR,IROUT,IRIN
 INTEGER(KIND=JPIM) :: IRANK,IM,IN,JN,IDX
 INTEGER(KIND=JPIM) :: IBETALV,IBTST,IBTEN,IBETALVM1,IBTSTL,IBTENL,IBTSTR,IBTENR,ILBETA
-REAL(KIND=JPRBT) :: ZVECIN(YD_STRUCT%N_ORDER,KF),ZVECOUT(YD_STRUCT%N_ORDER,KF)
-REAL(KIND=JPRBT),ALLOCATABLE   :: ZBETA(:,:,:)
+REAL(KIND=JPRB) :: ZVECIN(YD_STRUCT%N_ORDER,KF),ZVECOUT(YD_STRUCT%N_ORDER,KF)
+REAL(KIND=JPRB),ALLOCATABLE   :: ZBETA(:,:,:)
 LOGICAL :: LLTRANSPOSE
 LOGICAL :: LL_HALT_INVALID
 
@@ -766,8 +766,8 @@ IF(LLTRANSPOSE) THEN
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRBT,&
-                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRBT,&
+               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRM,&
                     & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -797,8 +797,8 @@ IF(LLTRANSPOSE) THEN
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('T','N',IRANK,KF,IROWS,1.0_JPRBT,&
-                    & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRBT,&
+               CALL SGEMM('T','N',IRANK,KF,IROWS,1.0_JPRM,&
+                    & YNODE%B,IROWS,PVECIN(IFR,1),IRIN,0.0_JPRM,&
                     & ZBETA(IBTST,1,IBETALV),ILBETA)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -832,8 +832,8 @@ IF(LLTRANSPOSE) THEN
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRBT,&
-                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRBT,&
+               CALL SGEMM('T','N',IN,KF,IM,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRM,&
                     & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -903,8 +903,8 @@ ELSE
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRBT,&
-                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRBT,&
+               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRM,&
                     & ZBETA(IBTST,1,IBETALV),ILBETA)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -951,8 +951,8 @@ ELSE
                   call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                   if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
                ENDIF
-               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRBT,&
-                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRBT,&
+               CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRM,&
+                    & YNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YD_STRUCT%N_ORDER,1.0_JPRM,&
                     & ZBETA(IBTST,1,IBETALV),ILBETA)
                if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
             ENDIF
@@ -972,8 +972,8 @@ ELSE
                 call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
                 if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
              ENDIF
-             CALL SGEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRBT,&
-                  & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRBT,&
+             CALL SGEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRM,&
+                  & YNODE%B,IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRM,&
                   & PVECOUT(IFR,1),IROUT)
              if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
           ENDIF
@@ -989,10 +989,10 @@ SUBROUTINE MULT_P(YDNODE,PVECIN,PVECOUT)
 ! Multiply vector by projection matrix
 IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
-REAL(KIND=JPRBT),INTENT(IN)    :: PVECIN(:)
-REAL(KIND=JPRBT),INTENT(OUT)   :: PVECOUT(:)
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)
 
-REAL(KIND=JPRBT) :: ZVECIN(YDNODE%ICOLS), ZVECOUT(SIZE(PVECOUT))
+REAL(KIND=JPRB) :: ZVECIN(YDNODE%ICOLS), ZVECOUT(SIZE(PVECOUT))
 INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN
 !---------------------------------------------------------
 
@@ -1009,11 +1009,11 @@ ENDDO
 IF(YDNODE%ICOLS > IRANK) THEN
   IM = IRANK
   IN = YDNODE%ICOLS-IRANK
-  IF (JPRBT == JPRD) THEN
-     CALL DGEMV('N',IM,IN,1.0_JPRBT,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRBT,ZVECOUT,1)
+  IF (JPRB == JPRD) THEN
+     CALL DGEMV('N',IM,IN,1.0_JPRD,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRD,ZVECOUT,1)
      PVECOUT(:)=ZVECOUT(:)
   ELSE
-     CALL SGEMV('N',IM,IN,1.0_JPRBT,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRBT,PVECOUT,1)
+     CALL SGEMV('N',IM,IN,1.0_JPRM,YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1),1,1.0_JPRM,PVECOUT,1)
   ENDIF
 ENDIF
 
@@ -1025,10 +1025,10 @@ IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 INTEGER(KIND=JPIM),INTENT(IN) :: KF 
 INTEGER(KIND=JPIM),INTENT(IN) :: KLBETA
-REAL(KIND=JPRBT),INTENT(IN)    :: PVECIN(:,:)
-REAL(KIND=JPRBT),INTENT(OUT)   :: PVECOUT(:,:)
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)
 
-REAL(KIND=JPRBT) :: ZVECIN(YDNODE%ICOLS,KF), ZVECOUT(SIZE(PVECOUT(:,1)),KF)
+REAL(KIND=JPRB) :: ZVECIN(YDNODE%ICOLS,KF), ZVECOUT(SIZE(PVECOUT(:,1)),KF)
 INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN,JF
 
 LOGICAL :: LL_HALT_INVALID
@@ -1048,7 +1048,7 @@ DO JF=1,KF
   ENDDO
 ENDDO
 IF(YDNODE%ICOLS > IRANK) THEN
-  IF (JPRBT == JPRD) THEN
+  IF (JPRB == JPRD) THEN
     CALL DGEMM('N','N',IRANK,KF,IN,1.0_JPRD,&
      & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRD,&
      & PVECOUT,IRANK)
@@ -1057,8 +1057,8 @@ IF(YDNODE%ICOLS > IRANK) THEN
         call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
         if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
      ENDIF
-     CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRBT,&
-          & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRBT,&
+     CALL SGEMM('N','N',IRANK,KF,IN,1.0_JPRM,&
+          & YDNODE%PNONIM(1),IRANK,ZVECIN(IRANK+1,1),YDNODE%ICOLS,1.0_JPRM,&
           & PVECOUT,IRANK)
      if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
   ENDIF
@@ -1069,10 +1069,10 @@ SUBROUTINE MULT_P_TR(YDNODE,PVECIN,PVECOUT)
 ! Multiply vector by transposed procetion matrix
 IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
-REAL(KIND=JPRBT),INTENT(IN)    :: PVECIN(:)
-REAL(KIND=JPRBT),INTENT(OUT)   :: PVECOUT(:)
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)
 
-REAL(KIND=JPRBT) :: ZVECOUT(YDNODE%ICOLS), ZVECIN(SIZE(PVECIN))
+REAL(KIND=JPRB) :: ZVECOUT(YDNODE%ICOLS), ZVECIN(SIZE(PVECIN))
 INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN
 !---------------------------------------------------------
 
@@ -1080,11 +1080,11 @@ IRANK = YDNODE%IRANK
 IN = YDNODE%ICOLS-IRANK
 IF(IN>0) THEN
   IM = IRANK
-  IF (JPRBT == JPRD) THEN
+  IF (JPRB == JPRD) THEN
      ZVECIN(:) = PVECIN(:)
      CALL DGEMV('T',IM,IN,1.0_JPRD,YDNODE%PNONIM,IRANK,ZVECIN,1,0.0_JPRD,ZVECOUT(IRANK+1),1)
   ELSE
-     CALL SGEMV('T',IM,IN,1.0_JPRBT,YDNODE%PNONIM,IRANK,PVECIN,1,0.0_JPRBT,ZVECOUT(IRANK+1),1)
+     CALL SGEMV('T',IM,IN,1.0_JPRM,YDNODE%PNONIM,IRANK,PVECIN,1,0.0_JPRM,ZVECOUT(IRANK+1),1)
   ENDIF
 ENDIF
 DO JK=1,IRANK
@@ -1103,10 +1103,10 @@ SUBROUTINE MULT_P_TRM(YDNODE,KF,PVECIN,PVECOUT)
 IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 INTEGER(KIND=JPIM),INTENT(IN) :: KF 
-REAL(KIND=JPRBT),INTENT(IN)    :: PVECIN(:,:)
-REAL(KIND=JPRBT),INTENT(OUT)   :: PVECOUT(:,:)
+REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)
+REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)
 
-REAL(KIND=JPRBT) :: ZVECOUT(YDNODE%ICOLS,KF), ZVECIN(SIZE(PVECIN(:,1)),KF)
+REAL(KIND=JPRB) :: ZVECOUT(YDNODE%ICOLS,KF), ZVECIN(SIZE(PVECIN(:,1)),KF)
 INTEGER(KIND=JPIM) :: JK,JN,IDX,IRANK,IM,IN,JF
 
 LOGICAL :: LL_HALT_INVALID
@@ -1116,7 +1116,7 @@ LOGICAL :: LL_HALT_INVALID
 IN = YDNODE%ICOLS-YDNODE%IRANK
 IM = YDNODE%IRANK
 IF(IN>0) THEN
-   IF (JPRBT == JPRD) THEN
+   IF (JPRB == JPRD) THEN
       ZVECIN(:,:) = PVECIN(:,:)
       CALL DGEMM('T','N',IN,KF,IM,1.0_JPRD,&
            & YDNODE%PNONIM(1),IM,ZVECIN,IM,0.0_JPRD,&
@@ -1126,8 +1126,8 @@ IF(IN>0) THEN
          call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
          if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
       ENDIF
-      CALL SGEMM('T','N',IN,KF,IM,1.0_JPRBT,&
-           & YDNODE%PNONIM(1),IM,PVECIN,IM,0.0_JPRBT,&
+      CALL SGEMM('T','N',IN,KF,IM,1.0_JPRM,&
+           & YDNODE%PNONIM(1),IM,PVECIN,IM,0.0_JPRM,&
            & ZVECOUT(YDNODE%IRANK+1,1),YDNODE%ICOLS)
       if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
    ENDIF

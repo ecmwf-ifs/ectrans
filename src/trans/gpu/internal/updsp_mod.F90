@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSP_MOD
 CONTAINS
 SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1,POA2, &
@@ -63,7 +64,8 @@ SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1,POA2, &
 !        MPP Group: 95-10-01 Support for Distributed Memory version
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPRC => JPRB
 
 USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
 USE TPM_DISTR       ,ONLY : D
@@ -77,8 +79,8 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_UV,KF_SCALARS
 
-REAL(KIND=JPRBT) , INTENT(IN)  :: POA1(:,:,:)
-REAL(KIND=JPRBT) , INTENT(IN)  :: POA2(:,:,:)
+REAL(KIND=JPRB) , INTENT(IN)  :: POA1(:,:,:)
+REAL(KIND=JPRB) , INTENT(IN)  :: POA2(:,:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)  ,OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)

@@ -6,7 +6,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 module seefmm_mix
 !**** *SEEFMM_MIX*  - Implementation of Simple Exponential Expansion FMM
 
@@ -38,9 +38,12 @@ module seefmm_mix
 !     ------------------------------------------------------------------
 
 
-use parkind_ectrans,only : jpim     ,JPRBT, jprd
-use ecsort_mix
-use wts500_mod
+use parkind1,only : jpim     ,jprb, jprd
+use parkind1,only : jprc => jprb
+use ecsort_mix, only : keysort
+use wts500_mod, only: wts500
+
+private
 
 integer(kind=jpim) :: nfmm_lim=200 ! Appr. break-even limit for FMM
 integer(kind=jpim),parameter :: nquadEm14=28 ! Quadrature size for eps~=1.e-14
@@ -52,13 +55,15 @@ integer(kind=jpim)          :: nxy    ! Total number of point "nx+ny"
 integer(kind=jpim)          :: nx     ! Number of 'x' points
 integer(kind=jpim)          :: nquad  ! Quadrature N
 integer(kind=jpim)          :: ncik   ! Number of elem. in cik
-real(kind=JPRBT)             :: rw(56) ! Quadrature weights
-real(kind=JPRBT)   , pointer :: rdexp(:,:)  ! exp(xy(i)-xy(i-1))
+real(kind=jprb)             :: rw(56) ! Quadrature weights
+real(kind=jprb)   , pointer :: rdexp(:,:)  ! exp(xy(i)-xy(i-1))
 integer(kind=jpim), pointer :: index(:)    ! index for sorted xy
 integer(kind=jpim), pointer :: nclose(:)   ! No of "close" points
-real(kind=JPRBT)   , pointer :: cik(:)      ! Correction term (142 in [1])
+real(kind=jprb)   , pointer :: cik(:)      ! Correction term (142 in [1])
 
 end type fmm_type
+
+public :: fmm_type, setup_seefmm, free_seefmm, seefmm_mulm
 
 contains
 recursive subroutine setup_seefmm(kx,px,ky,py,ydfmm,pdiff)
@@ -81,12 +86,12 @@ implicit none
 integer(kind=jpim),intent(in)  :: kx    
 real(kind=jprd)   ,intent(in)  :: px(:)
 integer(kind=jpim),intent(in)  :: ky
-real(kind=JPRBT)   ,intent(in)  :: py(:)
+real(kind=jprb)   ,intent(in)  :: py(:)
 type(fmm_type)    ,intent(out) :: ydfmm
-real(kind=JPRBT),optional,intent(in)  :: pdiff(:,:)
+real(kind=jprb),optional,intent(in)  :: pdiff(:,:)
 
-real(kind=JPRBT) :: zxy(kx+ky),zrt(56),zcik((kx+ky)*(kx+ky))
-real(kind=JPRBT) :: zr
+real(kind=jprb) :: zxy(kx+ky),zrt(56),zcik((kx+ky)*(kx+ky))
+real(kind=jprb) :: zr
 integer(kind=jpim) :: ixy
 !---------------------------------------------------------------------------
 ydfmm%nx=kx
@@ -139,16 +144,16 @@ integer(kind=jpim),intent(in)  :: kn
 integer(kind=jpim),intent(in)  :: kx
 logical           ,intent(in)  :: ldxout
 integer(kind=jpim),intent(in)  :: kquad
-real(kind=JPRBT)   ,intent(in)  :: prw(:)
-real(kind=JPRBT)   ,intent(in)  :: pq(:)
-real(kind=JPRBT)   ,intent(in)  :: prdexp(:,:)
+real(kind=jprb)   ,intent(in)  :: prw(:)
+real(kind=jprb)   ,intent(in)  :: pq(:)
+real(kind=jprb)   ,intent(in)  :: prdexp(:,:)
 integer(kind=jpim),intent(in)  :: kindex(:)
 integer(kind=jpim),intent(in)  :: kclosel(:)
 integer(kind=jpim),intent(in)  :: kcik
-real(kind=JPRBT)   ,intent(in)  :: pcik(:)
-real(kind=JPRBT)   ,intent(out) :: ptheta(:)
+real(kind=jprb)   ,intent(in)  :: pcik(:)
+real(kind=jprb)   ,intent(out) :: ptheta(:)
 
-real(kind=JPRBT)    :: zalpha(kquad),zq(kn),ztheta(kn)
+real(kind=jprb)    :: zalpha(kquad),zq(kn),ztheta(kn)
 integer(kind=jpim) :: j1,j2,jm,inumc,idist,iquad
 integer(kind=jpim) :: iout,iq,i1,i1p1,i1pd,ik1,ix,iy
 logical :: lxy,llxy(kn)
@@ -156,7 +161,7 @@ logical :: lxy,llxy(kn)
 lxy(ik1) = (ik1 <= kx .eqv. ldxout)
 !-------------------------------------------------------------------------
 
-ztheta(:)=0.0_JPRBT
+ztheta(:)=0.0_JPRC
 if(ldxout) then
   ix=0
   iy=-kx
@@ -171,7 +176,7 @@ do j1=1,kn
   if(llxy(j1)) then
     zq(j1)=pq(kindex(j1)+ix)
   else
-    zq(j1)=0.0_JPRBT
+    zq(j1)=0.0_jprc
   endif
 enddo
 
@@ -234,8 +239,8 @@ implicit none
 
 type(fmm_type)    ,intent(in)  :: ydfmm
 logical           ,intent(in)  :: ldxout
-real(kind=JPRBT)   ,intent(in)  :: pq(:)
-real(kind=JPRBT)   ,intent(out) :: ptheta(:)
+real(kind=jprb)   ,intent(in)  :: pq(:)
+real(kind=jprb)   ,intent(out) :: ptheta(:)
 
 !-------------------------------------------------------------------------
 call potf(ydfmm%nxy,ydfmm%nx,ldxout,ydfmm%nquad,&
@@ -251,8 +256,8 @@ type(fmm_type)    ,intent(in)  :: ydfmm
 integer(kind=jpim),intent(in)  :: km
 integer(kind=jpim),intent(in)  :: kskip
 logical           ,intent(in)  :: ldxout
-real(kind=JPRBT)   ,intent(in)  :: pq(:,:)
-real(kind=JPRBT)   ,intent(out) :: ptheta(:,:)
+real(kind=jprb)   ,intent(in)  :: pq(:,:)
+real(kind=jprb)   ,intent(out) :: ptheta(:,:)
 
 !-------------------------------------------------------------------------
 call potfm(ydfmm%nxy,km,kskip,ydfmm%nx,ldxout,ydfmm%nquad,&
@@ -270,16 +275,16 @@ integer(kind=jpim),intent(in)  :: kskip
 integer(kind=jpim),intent(in)  :: kx
 logical           ,intent(in)  :: ldxout
 integer(kind=jpim),intent(in)  :: kquad
-real(kind=JPRBT)   ,intent(in)  :: prw(:)
-real(kind=JPRBT)   ,intent(in)  :: pq(:,:)
-real(kind=JPRBT)   ,intent(in)  :: prdexp(:,:)
+real(kind=jprb)   ,intent(in)  :: prw(:)
+real(kind=jprb)   ,intent(in)  :: pq(:,:)
+real(kind=jprb)   ,intent(in)  :: prdexp(:,:)
 integer(kind=jpim),intent(in)  :: kindex(:)
 integer(kind=jpim),intent(in)  :: kclosel(:)
 integer(kind=jpim),intent(in)  :: kcik
-real(kind=JPRBT)   ,intent(in)  :: pcik(:)
-real(kind=JPRBT)   ,intent(out) :: ptheta(:,:)
+real(kind=jprb)   ,intent(in)  :: pcik(:)
+real(kind=jprb)   ,intent(out) :: ptheta(:,:)
 
-real(kind=JPRBT) :: zalpha(kquad,km)
+real(kind=jprb) :: zalpha(kquad,km)
 integer(kind=jpim) :: j1,j2,jm,jq,inumc,idist,iquad
 integer(kind=jpim) :: iout,iq,i1,i1p1,i1pd,ik1,ix,iy
 logical :: lxy,llxy(kn)
@@ -288,7 +293,7 @@ lxy(ik1) = (ik1 <= kx .eqv. ldxout)
 !-------------------------------------------------------------------------
 
 !CALL GSTATS(209,0)
-ptheta(:,:)=0.0_JPRBT
+ptheta(:,:)=0.0_JPRC
 if(ldxout) then
   ix=0
   iy=-kx
@@ -306,7 +311,7 @@ if(llxy(1)) then
     zalpha(:,jm)=pq(jm,kindex(1)+ix)
   enddo
 else
-  zalpha(:,:)=0.0_JPRBT
+  zalpha(:,:)=0.0_jprc
 endif
 !CALL GSTATS(209,1)
 !CALL GSTATS(210,0)
@@ -428,13 +433,13 @@ recursive subroutine suquad(kn,prange,kquad,prw,prt,pr)
 implicit none
 
 integer(kind=jpim)        ,intent(in)  :: kn
-real(kind=JPRBT),intent(in)  :: prange
+real(kind=jprb),intent(in)  :: prange
 integer(kind=jpim)        ,intent(in) :: kquad
-real(kind=JPRBT),intent(out) :: prw(:)
-real(kind=JPRBT),intent(out) :: prt(:)
-real(kind=JPRBT),intent(out) :: pr
+real(kind=jprb),intent(out) :: prw(:)
+real(kind=jprb),intent(out) :: prt(:)
+real(kind=jprb),intent(out) :: pr
 
-real(kind=JPRBT) :: za,zb,zs
+real(kind=jprb) :: za,zb,zs
 integer(kind=jpim) :: jm
 !-------------------------------------------------------------------------
 
@@ -456,9 +461,9 @@ implicit none
 
 integer(kind=jpim), intent(in)  :: kx,ky
 real(kind=jprd),    intent(in)  :: px(:)
-real(kind=JPRBT),    intent(in)  :: py(:)
+real(kind=jprb),    intent(in)  :: py(:)
 integer(kind=jpim), intent(in)  :: kxy
-real(kind=JPRBT),    intent(out) :: pxy(:)
+real(kind=jprb),    intent(out) :: pxy(:)
 integer(kind=jpim), intent(out) :: kindex(:)
 integer(kind=jpim) :: jxy,ix,iy,iret
 
@@ -482,20 +487,20 @@ implicit none
 integer(kind=jpim), intent(in)  :: kx
 integer(kind=jpim), intent(in)  :: kxy
 integer(kind=jpim), intent(in)  :: kquad
-real(kind=JPRBT),    intent(in)  :: pxy(:)
-real(kind=JPRBT),    intent(in)  :: prw(:)
-real(kind=JPRBT),    intent(in)  :: pr
-real(kind=JPRBT),    intent(in)  :: prt(:)
+real(kind=jprb),    intent(in)  :: pxy(:)
+real(kind=jprb),    intent(in)  :: prw(:)
+real(kind=jprb),    intent(in)  :: pr
+real(kind=jprb),    intent(in)  :: prt(:)
 integer(kind=jpim), intent(in)  :: kindex(:)
-real(kind=JPRBT),    intent(out) :: prdexp(:,:)
+real(kind=jprb),    intent(out) :: prdexp(:,:)
 integer(kind=jpim), intent(out) :: kclosel(:)
-real(kind=JPRBT),    intent(out) :: pcik(:)
+real(kind=jprb),    intent(out) :: pcik(:)
 integer(kind=jpim), intent(out) :: knocik
-real(kind=JPRBT),optional, intent(in)  :: pdiff(:,:)
+real(kind=jprb),optional, intent(in)  :: pdiff(:,:)
 
-real(kind=JPRBT) :: zdx
-real(kind=JPRBT) :: zsum
-real(kind=JPRBT) :: zdiff(kxy,kxy)
+real(kind=jprb) :: zdx
+real(kind=jprb) :: zsum
+real(kind=jprb) :: zdiff(kxy,kxy)
 integer(kind=jpim)  :: jxy,jq,isize,jdist,ixy,ixym1,i1,i1pd,j1,j2
 logical :: llexit
 !-------------------------------------------------------------------------
@@ -529,11 +534,11 @@ do jxy=1,kxy-1
       kclosel(jxy)=kclosel(jxy)+1
       if((i1 > kx .and. i1pd <= kx) .or. (i1pd > kx .and.  i1 <= kx)) then
         knocik=knocik+1
-        zsum=0.0_JPRBT
+        zsum=0.0_jprc
         do jq=1,kquad
           zsum=zsum+prw(jq)*exp(-zdx*prt(jq))
         enddo
-        pcik(knocik)=1.0_JPRBT/zdx-zsum
+        pcik(knocik)=1.0_jprc/zdx-zsum
       endif
     else
       exit

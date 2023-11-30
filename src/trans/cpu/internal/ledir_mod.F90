@@ -38,7 +38,7 @@ SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KSL,KDGLU,KLED2,PAIA,PSIA,POA1,PW)
 !     Method.
 !     -------   use butterfly or dgemm
 
-!     Externals.   
+!     Externals.
 !     ----------
 
 !     Reference.

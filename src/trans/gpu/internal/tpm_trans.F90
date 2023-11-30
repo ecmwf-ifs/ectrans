@@ -8,12 +8,13 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_TRANS
 
 ! Module to contain variables "local" to a specific call to a transform
 
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
+USE PARKIND1  ,ONLY : JPIM,   JPRB
 
 IMPLICIT NONE
 
@@ -47,22 +48,22 @@ LOGICAL   :: LATLON     ! lat-lon output requested
 !INTEGER_M :: NF_UV_G      ! Global version of NF_UV (grid-point space)
 !INTEGER_M :: NF_SCALARS_G ! Global version of NF_SCALARS (grid-point space)
 
-REAL(KIND=JPRBT), ALLOCATABLE :: FOUBUF_IN(:)  ! Fourier buffer
-REAL(KIND=JPRBT), ALLOCATABLE :: FOUBUF(:)     ! Fourier buffer
+REAL(KIND=JPRB), ALLOCATABLE :: FOUBUF_IN(:)  ! Fourier buffer
+REAL(KIND=JPRB), ALLOCATABLE :: FOUBUF(:)     ! Fourier buffer
 
 INTEGER(KIND=JPIM) :: NPROMA  ! Blocking factor for gridpoint input/output
 INTEGER(KIND=JPIM) :: NGPBLKS ! Number of NPROMA blocks
 
 LOGICAL :: LGPNORM = .FALSE.  ! indicates whether transform is being done for gpnorm
 
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: ZGTF(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE,TARGET  :: ZGTFTMP(:,:)
+REAL(KIND=JPRB),ALLOCATABLE,TARGET  :: ZGTF(:,:)
+REAL(KIND=JPRB),ALLOCATABLE,TARGET  :: ZGTFTMP(:,:)
 
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZAVE(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGL(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGL(:,:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMINGPN(:)
-REAL(KIND=JPRBT),ALLOCATABLE  :: ZMAXGPN(:)
+REAL(KIND=JPRB),ALLOCATABLE  :: ZAVE(:,:)
+REAL(KIND=JPRB),ALLOCATABLE  :: ZMINGL(:,:)
+REAL(KIND=JPRB),ALLOCATABLE  :: ZMAXGL(:,:)
+REAL(KIND=JPRB),ALLOCATABLE  :: ZMINGPN(:)
+REAL(KIND=JPRB),ALLOCATABLE  :: ZMAXGPN(:)
 
 !!! with Cray compiler this creates a lot more problems than good ... , Nils
 !!!$ACC DECLARE CREATE(FOUBUF_IN)

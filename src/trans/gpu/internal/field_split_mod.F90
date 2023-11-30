@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FIELD_SPLIT_MOD
 CONTAINS
 SUBROUTINE FIELD_SPLIT(KBLK,KF_GP,KKF_UV_G,KVSETUV,KVSETSC,&

@@ -7,9 +7,9 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
+#include "renames.inc"
 MODULE TPM_FFT
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 ! Module for Fourier transforms.
 
@@ -18,7 +18,7 @@ IMPLICIT NONE
 SAVE
 
 TYPE FFT_TYPE
-  REAL(KIND=JPRBT)  ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values
+  REAL(KIND=JPRB)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values
   INTEGER(KIND=JPIM),ALLOCATABLE :: NFAX(:,:)  ! list of factors of truncation
 END TYPE FFT_TYPE
 

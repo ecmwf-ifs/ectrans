@@ -8,11 +8,13 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PRFI1B_MOD
   CONTAINS
           SUBROUTINE PRFI1B(KFIRST,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
   USE PARKIND1  ,ONLY : JPIM     ,JPRB
+  USE PARKIND1  ,ONLY : JPRC =>   JPRB
   
   USE TPM_GEN   ,ONLY : NOUT
   USE TPM_DIM   ,ONLY : R,R_NSMAX
@@ -142,9 +144,9 @@ MODULE PRFI1B_MOD
       DO JFLD=KFIRST,2*KFIELDS+KFIRST-1
          KM = D_MYMS(KMLOC) 
          ILCM = R_NSMAX+1-KM
-         ZIA(JFLD,1,KMLOC) = 0.0_JPRB
-         ZIA(JFLD,2,KMLOC) = 0.0_JPRB
-         ZIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,1,KMLOC) = 0.0_JPRC
+         ZIA(JFLD,2,KMLOC) = 0.0_JPRC
+         ZIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRC
       ENDDO 
       ! end loop over wavenumber
    END DO
@@ -194,9 +196,9 @@ MODULE PRFI1B_MOD
      DO JFLD=KFIRST,2*KFIELDS+KFIRST-1
          KM = D_MYMS(KMLOC) 
          ILCM = R_NSMAX+1-KM
-         ZIA(JFLD,1,KMLOC) = 0.0_JPRB
-         ZIA(JFLD,2,KMLOC) = 0.0_JPRB
-         ZIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
+         ZIA(JFLD,1,KMLOC) = 0.0_JPRC
+         ZIA(JFLD,2,KMLOC) = 0.0_JPRC
+         ZIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRC
       ENDDO 
       ! end loop over wavenumber
    END DO

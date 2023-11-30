@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE GPNORM_TRANS_GPU(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 
 
@@ -51,7 +52,7 @@ SUBROUTINE GPNORM_TRANS_GPU(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 !     ------------------------------------------------------------------
 
 USE PARKIND1        ,ONLY : JPIM     ,JPRB , JPRD
-USE PARKIND_ECTRANS ,ONLY : JPRBT
+USE PARKIND1        ,ONLY : JPRC =>  JPRB
 
 !ifndef INTERFACE
 
@@ -206,7 +207,7 @@ IF( IF_FS > 0 )THEN
   DO JGL=IBEG,IEND
     IGL = D_NPTRLS(MYSETW) + JGL - 1
     DO JF=1,IF_FS
-      ZAVE(JF,JGL)=0.0_JPRBT
+      ZAVE(JF,JGL)=0.0_JPRC
 #ifdef ACCGPU
       !$ACC LOOP
 #endif
@@ -430,17 +431,17 @@ IF( MYSETV == 1 )THEN
           ENDDO
           IF(.NOT.LDAVE_ONLY)THEN
             IND=IND+1
-            ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+            ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),KIND=JPRB))
             IND=IND+1
-            ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+            ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),KIND=JPRB))
           ENDIF
         ENDDO
         IF(LDAVE_ONLY)THEN
           DO JF=1,KFIELDS
             IND=IND+1
-            ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+            ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),KIND=JPRB))
             IND=IND+1
-            ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+            ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),KIND=JPRB))
           ENDDO
         ENDIF
         DEALLOCATE(ZRCV)
@@ -492,7 +493,7 @@ CALL GSTATS(815,1)
 
 IF( MYSETW == 1 .AND. MYSETV == 1 )THEN
 
-  PAVE(:)=0.0_JPRB
+  PAVE(:)=0.0_JPRC
   DO JGL=1,R%NDGL
     PAVE(:)=PAVE(:)+REAL(ZAVEG(JGL,:),JPRB)
   ENDDO

@@ -58,7 +58,7 @@ SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : FOUBUF

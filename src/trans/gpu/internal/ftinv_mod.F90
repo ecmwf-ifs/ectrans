@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTINV_MOD
 CONTAINS
 SUBROUTINE FTINV(PREEL,KFIELDS)
@@ -44,7 +45,8 @@ SUBROUTINE FTINV(PREEL,KFIELDS)
 !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM, JPRBT
+USE PARKIND1  ,ONLY : JPIM, JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DISTR       ,ONLY : D,D_NSTAGTF,D_NPTRLS, MYSETW,  MYPROC, NPROC
 USE TPM_GEOMETRY    ,ONLY : G, G_NLOEN, G_NMEN
@@ -59,7 +61,7 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS
 INTEGER(KIND=JPIM) :: KGL
-REAL(KIND=JPRBT), INTENT(INOUT)  :: PREEL(:,:)
+REAL(KIND=JPRB), INTENT(INOUT)  :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: IGLG,IST,ILEN,IJUMP,JJ,JF,IST1
 INTEGER(KIND=JPIM) :: IOFF,IRLEN,ICLEN, ITYPE
@@ -69,7 +71,7 @@ INTEGER(KIND=JPIM) :: IBEG,IEND,IINC,ISIZE, IDIM2
 integer :: istat,idev, iunit
 INTEGER :: I, J
 
-REAL(KIND=JPRBT), allocatable  :: ZREEL2(:,:)
+REAL(KIND=JPRB), allocatable  :: ZREEL2(:,:)
 
 !     ------------------------------------------------------------------
 
@@ -120,7 +122,7 @@ DO KGL=IBEG,IEND,IINC
 #endif
   DO JJ=IST1,ILEN
      DO JF=1,KFIELDS
-        PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRBT
+        PREEL(JF,IST+IOFF+JJ-1) = 0.0_JPRC
      ENDDO
   ENDDO
 

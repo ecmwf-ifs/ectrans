@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FOURIER_INAD_MOD
 CONTAINS
 SUBROUTINE FOURIER_INAD(PREEL,KFIELDS,KGL)
@@ -38,7 +39,7 @@ SUBROUTINE FOURIER_INAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_TRANS       ,ONLY : FOUBUF
@@ -49,7 +50,7 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
 
-REAL(KIND=JPRBT), INTENT(IN) :: PREEL(:,:)
+REAL(KIND=JPRB), INTENT(IN) :: PREEL(:,:)
 
 INTEGER(KIND=JPIM) :: JM,JF,IGLG,IPROC,IR,II,ISTA
 

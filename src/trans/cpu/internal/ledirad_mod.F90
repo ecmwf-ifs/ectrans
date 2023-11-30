@@ -61,7 +61,7 @@ SUBROUTINE LEDIRAD(KM,KMLOC,KFC,KIFC,KDGLU,KLED2,PAIA,PSIA,POA1)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB     ,JPRD, JPRM
-USE PARKIND1  ,ONLY : JPRC => JPRD
+USE PARKIND1  ,ONLY : JPRC => JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R

@@ -75,7 +75,9 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                     LIBS
                                       fiat
                                       parkind_${prec}
-                                      trans_gpu_${prec}
+                                      trans_gpu_sp
+                                      trans_gpu_dp
+                                      ectrans_interfaces
             )
        endif()
     endforeach( prec )

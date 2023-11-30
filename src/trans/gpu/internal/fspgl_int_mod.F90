@@ -8,12 +8,13 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FSPGL_INT_MOD
 CONTAINS
 SUBROUTINE FSPGL_INT(KF_UV,KF_SCALARS,KF_SCDERS,KF_OUT_LT,&
  &                   FSPGL_PROC,KFLDPTRUV,KFLDPTRSC)
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_DIM         ,ONLY : R,R_NDGNH, R_NDGL
 USE TPM_TRANS       ,ONLY : FOUBUF_IN, LDIVGP, LVORGP
@@ -38,7 +39,7 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)  :: KFLDPTRSC(:)
 ! the 2 extra rows are used inside the model Fourier space computations
 ! (outside the transform package - see FSPGLH in Arpege/IFS).
 !
-REAL(KIND=JPRBT) :: ZFIELD(2*KF_OUT_LT,0:R%NDGL+1)
+REAL(KIND=JPRB) :: ZFIELD(2*KF_OUT_LT,0:R%NDGL+1)
 
 
 INTEGER(KIND=JPIM) :: ISL, IGLS, JFLD, JGL ,IPROC,  IPROCS

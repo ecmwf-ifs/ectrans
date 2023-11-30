@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_POL
 
 !     MODIFICATIONS.
@@ -49,9 +50,6 @@ DD(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPRD)*REAL(KKN+KKM-1,JPRD)&
                   &*REAL(KKN+KKM-2,JPRD)) )
 DE(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPRD)*REAL(KKN-KKM,JPRD))&
                 &/ (REAL(2*KKN-1,JPRD)*REAL(KKN+KKM,JPRD)) )
-!DA(KKN,KKM)=SQRT( (REAL(2*KKN+1,JPRD)*REAL(KKN-KKM,JPRD)&
-!                   &*REAL(KKN+KKM,JPRD))&
-!                &/  REAL(2*KKN-1,JPRD) )
 
 IF (PRESENT(LDFAST)) THEN
   LLFAST=LDFAST

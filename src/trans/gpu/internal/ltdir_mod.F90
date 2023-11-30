@@ -8,13 +8,15 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LTDIR_MOD
   CONTAINS
   SUBROUTINE LTDIR(KF_FS,KF_UV,KF_SCALARS,KLED2,&
  &                 PSPVOR,PSPDIV,PSPSCALAR,&
  &                 PSPSC3A,PSPSC3B,PSPSC2, &
  &                 KFLDPTRUV,KFLDPTRSC)
-  
+
+
   
   USE PARKIND1    ,ONLY : JPIM     ,JPRB
   USE YOMHOOK     ,ONLY : LHOOK,   DR_HOOK, JPHOOK

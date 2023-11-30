@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE DIR_TRANS_CTL_MOD
 CONTAINS
 SUBROUTINE DIR_TRANS_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_UV,KF_SCALARS,&
@@ -72,7 +73,7 @@ SUBROUTINE DIR_TRANS_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_UV,KF_SCALARS,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM, JPRB, JPRBT
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : NPROMATR
 USE TPM_TRANS       ,ONLY : FOUBUF_IN, NF_SC2, NF_SC3A, NF_SC3B
@@ -135,7 +136,7 @@ INTEGER(KIND=JPIM) :: JFLD,ISTSC_G,IENSC_G,ISTSC,IENSC,IENUV,IF_GPB
 !!$ACC KERNELS
 !#endif
 
-!!ZGTF(:,:) = 0._JPRBT
+!!ZGTF(:,:) = 0._JPRB
 !!$ACC UPDATE DEVICE(ZGTF)
 
 !#ifdef ACCGPU

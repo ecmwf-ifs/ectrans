@@ -8,9 +8,10 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_FLT
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT, JPRD
+USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
 USE BUTTERFLY_ALG_MOD,ONLY : BUTTERFLY_STRUCT
 USE SEEFMM_MIX
 IMPLICIT NONE
@@ -23,16 +24,16 @@ INTEGER(KIND=JPIM) :: NSPOLEGL
 INTEGER(KIND=JPIM) :: NDGNH
 INTEGER(KIND=JPIM) :: INS2
 INTEGER(KIND=JPIM) :: INA2
-REAL(KIND=JPRBT) ,POINTER :: RPNMS(:,:) ! Legendre polynomials
-REAL(KIND=JPRBT) ,POINTER :: RPNMA(:,:) ! Legendre polynomials
+REAL(KIND=JPRB) ,POINTER :: RPNMS(:,:) ! Legendre polynomials
+REAL(KIND=JPRB) ,POINTER :: RPNMA(:,:) ! Legendre polynomials
 REAL(KIND=JPRD) ,POINTER :: RPNMDS(:,:) ! Legendre polynomials
 REAL(KIND=JPRD) ,POINTER :: RPNMDA(:,:) ! Legendre polynomials
-REAL(KIND=JPRBT) :: RCS
-REAL(KIND=JPRBT) :: RCA
-!REAL(KIND=JPRBT) ,POINTER :: RPNMCDO(:,:) ! Legendre polynomials for C-D formula at orig roots
-!REAL(KIND=JPRBT) ,POINTER :: RPNMCDD(:,:) ! Legendre polynomials for C-D formula at dual roots
-REAL(KIND=JPRBT) ,POINTER :: RPNMWI(:,:) ! special weights
-REAL(KIND=JPRBT) ,POINTER :: RPNMWO(:,:) ! special weights
+REAL(KIND=JPRB) :: RCS
+REAL(KIND=JPRB) :: RCA
+!REAL(KIND=JPRB) ,POINTER :: RPNMCDO(:,:) ! Legendre polynomials for C-D formula at orig roots
+!REAL(KIND=JPRB) ,POINTER :: RPNMCDD(:,:) ! Legendre polynomials for C-D formula at dual roots
+REAL(KIND=JPRB) ,POINTER :: RPNMWI(:,:) ! special weights
+REAL(KIND=JPRB) ,POINTER :: RPNMWO(:,:) ! special weights
 INTEGER(KIND=JPIM) :: ISLD ! starting latitude dual
 
 ! Butterfly

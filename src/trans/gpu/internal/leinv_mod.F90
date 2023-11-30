@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LEINV_MOD
 CONTAINS
 SUBROUTINE LEINV(KFC,KSTA,KF_OUT_LT,PAOA1,PSOA1)
@@ -54,7 +55,8 @@ SUBROUTINE LEINV(KFC,KSTA,KF_OUT_LT,PAOA1,PSOA1)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+USE PARKIND1        ,ONLY : JPIM, JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R, R_NDGNH,R_NSMAX
 USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
@@ -87,8 +89,8 @@ INTEGER(KIND=JPIM)  :: KIFC
 INTEGER(KIND=JPIM)  :: KDGLU
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_OUT_LT
 !REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: PSOA1(:,:,:)
-REAL(KIND=JPRBT),    INTENT(OUT) :: PAOA1(:,:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PSOA1(:,:,:)
+REAL(KIND=JPRB),    INTENT(OUT) :: PAOA1(:,:,:)
 
 !     LOCAL
 INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, J1, IF, JGL,JK, J,JI, IRET
@@ -133,8 +135,8 @@ DO KMLOC=1,D_NUMP
 
          KM = D_MYMS(KMLOC)
          IF(KM == 0)THEN
-            PSOA1(J1,JGL,KMLOC) = 0.0_JPRBT
-            PAOA1(J1,JGL,KMLOC) = 0.0_JPRBT
+            PSOA1(J1,JGL,KMLOC) = 0.0_JPRC
+            PAOA1(J1,JGL,KMLOC) = 0.0_JPRC
          END IF
       ENDDO
    ENDDO
@@ -187,10 +189,10 @@ ENDDO
 CALL HIP_GEMM_BATCHED( &
   & 'N', 'T', &
   & ITDZCA, ILDZCA, ILDZBA, &
-  & 1.0_JPRBT, &
+  & 1.0_JPRB, &
   & IZBS, ITDZBA, ILDZBA,&
   & ZAA, LDZAA, TDZAA, &
-  & 0._JPRBT, &
+  & 0._JPRB, &
   & IZCST, ITDZCA, ILDZCA, &
   & D_NUMP)
 #ifdef OMPGPU
@@ -272,10 +274,10 @@ ENDDO
 CALL HIP_GEMM_BATCHED( &
  & 'N', 'T', &
  & ITDZCS, ILDZCS, ILDZBS, &
- & 1.0_JPRBT, &
+ & 1.0_JPRB, &
  & IZBS, ITDZBS, ILDZBS, &
  & ZAS, LDZAS, TDZAS, &
- & 0._JPRBT, &
+ & 0._JPRB, &
  & IZCST, ITDZCS, ILDZCS, &
  & D_NUMP)
 #ifdef OMPGPU

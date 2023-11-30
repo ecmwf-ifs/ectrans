@@ -47,7 +47,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
+USE PARKIND1, ONLY : JPIM, JPIB, JPRB
 USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW

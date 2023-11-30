@@ -52,7 +52,7 @@ SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE PARKIND1, ONLY : JPRC => JPRB
+USE PARKIND1  ,ONLY : JPRC => JPRB
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F

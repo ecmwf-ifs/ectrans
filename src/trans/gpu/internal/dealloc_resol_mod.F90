@@ -1,6 +1,6 @@
 ! (C) Copyright 2013- ECMWF.
 ! (C) Copyright 2013- Meteo-France.
-!
+! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE DEALLOC_RESOL_MOD
 CONTAINS
 SUBROUTINE DEALLOC_RESOL(KRESOL)

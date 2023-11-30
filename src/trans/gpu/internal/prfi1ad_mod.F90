@@ -8,12 +8,13 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PRFI1AD_MOD
 CONTAINS
 SUBROUTINE PRFI1AD(KM,KF_UV,KF_SCALARS,PIA,PSPVOR,PSPDIV,PSPSCALAR,&
  &                 KFLDPTRUV,KFLDPTRSC)
 
-USE PARKIND1    ,ONLY : JPIM     ,JPRB
+USE PARKIND1     ,ONLY : JPIM     ,JPRB
 
 !USE TPM_DISTR
 !USE TPM_TRANS

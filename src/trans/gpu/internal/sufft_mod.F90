@@ -8,11 +8,12 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUFFT_MOD
   CONTAINS
   SUBROUTINE SUFFT
 
-  USE PARKIND1      ,ONLY : JPIM
+  USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
   USE TPM_DIM       ,ONLY : R
   USE TPM_GEN       ,ONLY : NOUT, NPRINTLEV

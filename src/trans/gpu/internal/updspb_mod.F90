@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE UPDSPB_MOD
   CONTAINS
   SUBROUTINE UPDSPB(KFIELD,KST,POA,PSPEC,KFLDPTR)
@@ -55,7 +56,8 @@ MODULE UPDSPB_MOD
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
+  USE PARKIND1      ,ONLY : JPIM   ,JPRB
+  USE PARKIND1      ,ONLY : JPRC => JPRB
   
   USE TPM_DIM       ,ONLY : R_NSMAX,R_NTMAX
   !USE TPM_FIELDS
@@ -67,7 +69,7 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
   INTEGER(KIND=JPIM),INTENT(IN)  :: KST
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  REAL(KIND=JPRBT)   ,INTENT(IN)  :: POA(:,:,:)
+  REAL(KIND=JPRB)   ,INTENT(IN)  :: POA(:,:,:)
   REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
@@ -124,7 +126,7 @@ USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
                    INM = IASM0+(R_NTMAX+2-JN)*2
                    IR = KST+2*JFLD-2
                    PSPEC(JFLD,INM)   = POA(IR,JN,KMLOC)
-                   PSPEC(JFLD,INM+1) = 0.0_JPRBT
+                   PSPEC(JFLD,INM+1) = 0.0_JPRC
  
                 END IF
              ELSE
