@@ -54,7 +54,7 @@ SUBROUTINE LEINV(KM,KMLOC,KFC,KIFC,KF_OUT_LT,KSL,KDGLU,PIA,PAOA1,PSOA1)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRD, JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRD, JPRM, JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
@@ -140,15 +140,15 @@ IF( KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
-      CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
-       &ZBA,ILA,0._JPRB,ZC,KDGLU)
+      CALL DGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
+       &ZBA,ILA,0._JPRD,ZC,KDGLU)
     ELSE
        IF (LL_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
-       CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRB,S%FA(KMLOC)%RPNMA,KDGLU,&
-            &ZBA,ILA,0._JPRB,ZC,KDGLU)
+       CALL SGEMM('N','N',KDGLU,KIFC,ILA,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
+            &ZBA,ILA,0._JPRM,ZC,KDGLU)
        if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
@@ -184,15 +184,15 @@ IF( KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
-       CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
-            &ZBS,ILS,0._JPRB,ZC,KDGLU)
+       CALL DGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZBS,ILS,0._JPRD,ZC,KDGLU)
     ELSE
        IF (LL_IEEE_HALT) THEN
           call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
           if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
        ENDIF
-       CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRB,S%FA(KMLOC)%RPNMS,KDGLU,&
-            &ZBS,ILS,0._JPRB,ZC,KDGLU)
+       CALL SGEMM('N','N',KDGLU,KIFC,ILS,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
+            &ZBS,ILS,0._JPRM,ZC,KDGLU)
        if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEINV_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
