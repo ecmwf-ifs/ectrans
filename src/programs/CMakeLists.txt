@@ -60,6 +60,7 @@ ecbuild_add_library(
                    $<INSTALL_INTERFACE:include>
   PRIVATE_DEFINITIONS SYMBOLSUFFIX
                       PRECOPT
+	              ACCGPU
   PUBLIC_LIBS      fiat  trans_gpu_sp trans_gpu_dp
 )
 
@@ -91,9 +92,13 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                     LIBS
                                       fiat
                                       parkind_${prec}
+				      #  trans_sp
+				      # trans_dp
                                       trans_gpu_sp
                                       trans_gpu_dp
+				      #ectrans_interfaces
                                       ectrans_interfaces_gpu
+                                    DEFINITIONS ACCGPU
             )
        endif()
     endforeach( prec )

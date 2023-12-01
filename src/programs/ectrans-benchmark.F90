@@ -143,7 +143,7 @@ integer(kind=jpim) :: ncheck = 0
 logical :: lmpoff = .false. ! Message passing switch
 
 ! Verbosity level (0 or 1)
-integer :: verbosity = 0
+integer :: verbosity = 1
 
 real(kind=jprb) :: zra = 6371229._jprb
 
