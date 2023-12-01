@@ -46,6 +46,22 @@ ecbuild_add_library(
                       PRECOPT
   PUBLIC_LIBS      fiat  trans_sp trans_dp
 )
+ecbuild_add_library(
+  TARGET           ectrans_interfaces_gpu
+  LINKER_LANGUAGE  Fortran
+  SOURCES          wrappers/dir_trans.F90
+                   wrappers/inv_trans.F90
+                   wrappers/setup_trans0.F90
+                   wrappers/setup_trans.F90
+                   wrappers/trans_inq.F90
+  PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                   $<INSTALL_INTERFACE:include/ectrans>
+                   $<INSTALL_INTERFACE:include>
+  PRIVATE_DEFINITIONS SYMBOLSUFFIX
+                      PRECOPT
+  PUBLIC_LIBS      fiat  trans_gpu_sp trans_gpu_dp
+)
 
 foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 
@@ -77,7 +93,7 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                       parkind_${prec}
                                       trans_gpu_sp
                                       trans_gpu_dp
-                                      ectrans_interfaces
+                                      ectrans_interfaces_gpu
             )
        endif()
     endforeach( prec )

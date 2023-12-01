@@ -16,7 +16,7 @@ find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUR
 project( ectrans LANGUAGES C Fortran CXX )
 include( ectrans_macros )
 
-option(IFS_SHARED_LIBS "Build shared libraries (overrides BUILD_SHARED_LIBS)" ON)
+option(IFS_SHARED_LIBS "Build shared libraries (overrides BUILD_SHARED_LIBS)" OFF)
 set(BUILD_SHARED_LIBS ${IFS_SHARED_LIBS})
 
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )

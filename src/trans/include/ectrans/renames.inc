@@ -144,6 +144,7 @@
 #define FFTB_PLAN                 SUFFIXIZE(FFTB_PLAN_VER)
 #define FFTB_TYPE                 SUFFIXIZE(FFTB_TYPE_VER)
 #define BLUESTEIN_FFT             SUFFIXIZE(BLUESTEIN_FFT_VER)
+#define BLUESTEIN_MOD             SUFFIXIZE(BLUESTEIN_MOD_VER)
 #define gpnorm_trans_gpu          SUFFIXIZE(gpnorm_trans_gpu)
 #define GPNORM_TRANS_GPU          SUFFIXIZE(GPNORM_TRANS_GPU)
 #define dir_trans                 SUFFIXIZE(dir_trans_ver)

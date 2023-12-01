@@ -1,6 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -139,7 +139,7 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM) ,INTENT(IN) :: KSMAX,KDGL
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KDLON
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
-LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
+LOGICAL            ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
 REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)

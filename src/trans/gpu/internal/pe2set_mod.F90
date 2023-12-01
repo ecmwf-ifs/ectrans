@@ -87,7 +87,6 @@ INTEGER(KIND=JPIM) :: IPE,JA
 
 !*       1.    Check input argument for validity
 !              ---------------------------------
-
 IF(KPE <= 0.OR.KPE > NPROC) THEN
   WRITE(*,'(A,2I8)') ' PE2SET INVALID ARGUMENT ',KPE,NPROC
   CALL ABORT_TRANS(' PE2SET INVALID ARGUMENT ')
