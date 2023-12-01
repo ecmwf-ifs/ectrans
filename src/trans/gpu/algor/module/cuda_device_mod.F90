@@ -9,6 +9,7 @@
 
 module cuda_device_mod
 
+        use cudafor
 interface device_sync
 
 integer function device_synchronize() bind(C,name='cudaDeviceSynchronize')
@@ -61,5 +62,14 @@ integer(c_int) :: devnum
 end function device_GetDeviceCount
 
 end interface devicegetdevicecount
+
+interface devicegetmeminfo
+
+integer function device_MemGetInfo(memfree_mb,memtotal_mb) bind(C,name='c_cudamemgetinfo')
+use iso_c_binding
+integer(c_int) :: memfree_mb, memtotal_mb
+end function device_MemGetInfo
+
+end interface devicegetmeminfo
 
 end module cuda_device_mod
