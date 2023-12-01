@@ -153,11 +153,6 @@ IF(KF_SCALARS_G > 0) THEN
   IST = IST+KF_SCALARS_G
 ENDIF
 
-! Note that this buffer is 2X too large, we will need to transpose PREEL to get rid of this
-ALLOCATE(PREEL_REAL(KF_FS*D%NLENGTF))
-#ifdef ACCGPU
-!$ACC ENTER DATA CREATE(PREEL_REAL)
-#endif
 IF (.NOT. ALLOCATED(PREEL_PTR)) THEN
   ALLOCATE(PREEL_PTR(KF_FS*D%NLENGTF))
 #ifdef ACCGPU
