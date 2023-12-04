@@ -131,18 +131,21 @@ ALLOC_SZ = ALIGN(IIN_STRIDES1*D_NUMP,8)*SIZEOF(ZINP(1)) &
     +ALIGN(IOUT_STRIDES1*D_NUMP,8)*SIZEOF(ZOUTA(1)) &
     +ALIGN(IIN0_STRIDES1,8)*SIZEOF(ZINP0(1)) &
     +ALIGN(IOUT0_STRIDES1,8)*SIZEOF(ZOUT0(1))
-print *,'LEINV ALLOC_SZ : ',alloc_sz
 IF (.NOT. ALLOCATED(PREEL_PTR)) THEN
   ALLOCATE(PREEL_PTR(ALLOC_SZ/SIZEOF(PREEL_PTR(1))))
-  print *,'LEINV preel_ptr wasnt allocd  : ',alloc_sz, sizeof(preel_ptr(1)), ALLOC_SZ/SIZEOF(PREEL_PTR(1))
+#ifdef ACCGPU
   !$ACC ENTER DATA CREATE(PREEL_PTR)
+#endif
 ELSEIF (SIZEOF(PREEL_PTR) <= ALLOC_SZ) THEN
   ! and reallocate if needed
+#ifdef ACCGPU
   !$ACC EXIT DATA DELETE(PREEL_PTR)
+#endif
   DEALLOCATE(PREEL_PTR)
   ALLOCATE(PREEL_PTR(ALLOC_SZ/SIZEOF(PREEL_PTR(1))))
-  print *,'LEINV preel_ptr being reallocd  : ',alloc_sz, sizeof(preel_ptr(1)), ALLOC_SZ/SIZEOF(PREEL_PTR(1))
+#ifdef ACCGPU
   !$ACC ENTER DATA CREATE(PREEL_PTR)
+#endif
 ENDIF
 
 ! Figure out which pointers to use
@@ -213,12 +216,16 @@ DO KMLOC=1,D_NUMP
     KM =  D_MYMS(KMLOC)
     IA  = 1+MOD(R_NSMAX-KM+2,2)
     IF(KM /= 0)THEN
+#ifdef ACCGPU
       !$ACC LOOP SEQ
+#endif
       DO J=1,(R_NSMAX-KM+2)/2
         ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
       ENDDO
     ELSEIF (MOD((JK+1),2) .EQ. 0) THEN
+#ifdef ACCGPU
       !$ACC LOOP SEQ
+#endif
       DO J=1,(R_NSMAX+2)/2
         ZINP((JK-1)/2+1+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
       ENDDO
@@ -349,12 +356,16 @@ DO KMLOC=1,D_NUMP
     KM =  D_MYMS(KMLOC)
     IS = 1+MOD(R_NSMAX-KM+1,2)
     IF(KM /= 0)THEN
+#ifdef ACCGPU
       !$ACC LOOP SEQ
+#endif
       DO J=1,(R_NSMAX-KM+3)/2
         ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
       ENDDO
     ELSEIF (MOD((JK+1),2) .EQ. 0) THEN
+#ifdef ACCGPU
       !$ACC LOOP SEQ
+#endif
       DO J=1,(R_NSMAX+3)/2
         ZINP((JK-1)/2+1+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
       ENDDO
