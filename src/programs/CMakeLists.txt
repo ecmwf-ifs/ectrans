@@ -46,6 +46,8 @@ ecbuild_add_library(
                       PRECOPT
   PUBLIC_LIBS      fiat  trans_sp trans_dp
 )
+
+if( HAVE_GPU )
 ecbuild_add_library(
   TARGET           ectrans_interfaces_gpu
   LINKER_LANGUAGE  Fortran
@@ -63,6 +65,7 @@ ecbuild_add_library(
 	              ACCGPU
   PUBLIC_LIBS      fiat  trans_gpu_sp trans_gpu_dp
 )
+  endif()
 
 foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 
