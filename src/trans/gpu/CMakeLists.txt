@@ -101,7 +101,8 @@ foreach( prec dp sp )
                                ${GPU_RUNTIME}GPU
                                $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
                                $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
-			       $<${HAVE_CUTLASS}:USE_CUTLASS>
+                               $<${HAVE_CUTLASS}:USE_CUTLASS>
+                               $<${HAVE_3XTF32}:USE_3XTF32>
         )
 
         ectrans_target_fortran_module_directory(

@@ -113,8 +113,9 @@ if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
         ecbuild_info("No target CUDA::cufft")
       endif()
       if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 70 80)
+        set(CMAKE_CUDA_ARCHITECTURES 80)
       endif()
+      ecbuild_info( "cublas                  : ${CMAKE_CUDA_ARCHITECTURES}" )
       ecbuild_info( "cublas                  : [${CUDA_cublas_LIBRARY}]" )
       ecbuild_info( "cufft                   : [${CUDA_cufft_LIBRARY}]" )
       ecbuild_info( "cuda arch               : [${CMAKE_CUDA_ARCHITECTURES}]" )
@@ -142,6 +143,13 @@ ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
                     DESCRIPTION "Support for Cutlass BLAS operations"
+                    REQUIRED_PACKAGES "NvidiaCutlass" )
+
+# following also needs cuda arch sm80
+ecbuild_add_option( FEATURE 3XTF32
+                    DEFAULT OFF
+		    CONDITION HAVE_CUTLASS
+		    DESCRIPTION "Support for 3xTF32 with Cutlass (>= 2.8)"
                     REQUIRED_PACKAGES "NvidiaCutlass" )
 
 
