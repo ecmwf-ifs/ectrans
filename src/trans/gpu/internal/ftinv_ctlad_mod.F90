@@ -196,9 +196,7 @@ IF(KF_SCALARS_G > 0) THEN
 ENDIF
 
 CALL GSTATS(182,0)
-print *, "not supported..."
-flush(6)
-stop
+CALL ABORT_TRANS('TLAD code path not yet supported on GPU')
 ! CALL TRGTOL(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
 ! &PGP,PGPUV,PGP3A,PGP3B,PGP2)
 CALL GSTATS(182,1)
