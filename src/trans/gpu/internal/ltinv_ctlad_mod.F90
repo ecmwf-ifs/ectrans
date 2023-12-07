@@ -60,6 +60,7 @@ USE TPM_TRANS       ,ONLY : FOUBUF, FOUBUF_IN
 USE TPM_DISTR       ,ONLY : D
 USE LTINVAD_MOD     ,ONLY : LTINVAD
 !USE TRLTOM_MOD      ,ONLY : TRLTOM
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
@@ -78,6 +79,8 @@ OPTIONAL  FSPGL_PROC
 INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILEI2,IDIM1
 
 !     ------------------------------------------------------------------
+
+CALL ABORT_TRANS('TLAD code path not yet implemented on GPU')
 
 ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS
 IDIM1 = 2*KF_OUT_LT
