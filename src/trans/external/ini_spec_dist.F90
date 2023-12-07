@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
                     &KUMPP,KSPEC,KSPEC2,KSPEC2MX,KPOSSP,KMYMS,KPTRMS,KALLMS)
 

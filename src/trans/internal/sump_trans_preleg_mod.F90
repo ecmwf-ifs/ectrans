@@ -8,13 +8,14 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUMP_TRANS_PRELEG_MOD
 CONTAINS
 SUBROUTINE SUMP_TRANS_PRELEG
 
 ! Set up distributed environment for the transform package (part 1)
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
 USE TPM_DIM         ,ONLY : R

@@ -1,3 +1,4 @@
+#include "renames.inc"
 ! (C) Copyright 2009- ECMWF.
 ! (C) Copyright 2013- Meteo-France.
 ! 
@@ -40,6 +41,7 @@ module seefmm_mix
 
 
 use parkind1,only : jpim     ,jprb, jprd
+use parkind1,only : jprc => jprb
 use ecsort_mix, only : keysort
 use wts500_mod, only: wts500
 
@@ -161,7 +163,7 @@ logical :: lxy,llxy(kn)
 lxy(ik1) = (ik1 <= kx .eqv. ldxout)
 !-------------------------------------------------------------------------
 
-ztheta(:)=0.0_JPRB
+ztheta(:)=0.0_JPRC
 if(ldxout) then
   ix=0
   iy=-kx
@@ -176,7 +178,7 @@ do j1=1,kn
   if(llxy(j1)) then
     zq(j1)=pq(kindex(j1)+ix)
   else
-    zq(j1)=0.0_jprb
+    zq(j1)=0.0_jprc
   endif
 enddo
 
@@ -293,7 +295,7 @@ lxy(ik1) = (ik1 <= kx .eqv. ldxout)
 !-------------------------------------------------------------------------
 
 !CALL GSTATS(209,0)
-ptheta(:,:)=0.0_JPRB
+ptheta(:,:)=0.0_JPRC
 if(ldxout) then
   ix=0
   iy=-kx
@@ -311,7 +313,7 @@ if(llxy(1)) then
     zalpha(:,jm)=pq(jm,kindex(1)+ix)
   enddo
 else
-  zalpha(:,:)=0.0_jprb
+  zalpha(:,:)=0.0_jprc
 endif
 !CALL GSTATS(209,1)
 !CALL GSTATS(210,0)
@@ -534,11 +536,11 @@ do jxy=1,kxy-1
       kclosel(jxy)=kclosel(jxy)+1
       if((i1 > kx .and. i1pd <= kx) .or. (i1pd > kx .and.  i1 <= kx)) then
         knocik=knocik+1
-        zsum=0.0_jprb
+        zsum=0.0_jprc
         do jq=1,kquad
           zsum=zsum+prw(jq)*exp(-zdx*prt(jq))
         enddo
-        pcik(knocik)=1.0_jprb/zdx-zsum
+        pcik(knocik)=1.0_jprc/zdx-zsum
       endif
     else
       exit

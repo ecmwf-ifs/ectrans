@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUMPLATF_MOD
 CONTAINS
 SUBROUTINE SUMPLATF(KDGL,KPROCA,KMYSETA,&

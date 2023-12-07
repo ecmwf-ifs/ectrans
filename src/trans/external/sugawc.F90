@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 SUBROUTINE SUGAWC(KDGLG,PMU,PW)
 
 !**** *SUGAWC* - Compute Gaussian latitudes and weights 

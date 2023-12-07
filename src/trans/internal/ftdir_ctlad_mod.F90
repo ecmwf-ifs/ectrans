@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTDIR_CTLAD_MOD
 CONTAINS
 SUBROUTINE FTDIR_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &

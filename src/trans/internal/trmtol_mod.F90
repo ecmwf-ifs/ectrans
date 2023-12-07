@@ -1,3 +1,4 @@
+#include "renames.inc"
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
 ! 

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FOURIER_OUT_MOD
 CONTAINS
 SUBROUTINE FOURIER_OUT(PREEL,KFIELDS,KGL)

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FTINVAD_MOD
 CONTAINS
 SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
@@ -46,6 +47,7 @@ SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_DIM         ,ONLY : R
@@ -116,7 +118,7 @@ ENDIF
 
 DO JJ=1,ILEN
   DO JF=1,KFIELDS
-    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRB
+    PREEL(JF,IST+IOFF-1+JJ-1) = 0.0_JPRC
   ENDDO
 ENDDO
 

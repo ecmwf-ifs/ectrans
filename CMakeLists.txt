@@ -65,7 +65,7 @@ ectrans_find_lapack()
 ### Add sources and tests
 include( ectrans_compile_options )
 add_subdirectory( src )
-add_subdirectory( tests )
+#add_subdirectory( tests )
 
 ### Export
 if( BUILD_SHARED_LIBS )

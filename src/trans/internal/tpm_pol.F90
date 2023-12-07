@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TPM_POL
 
 !     MODIFICATIONS.
@@ -34,6 +35,7 @@ INTEGER(KIND=JPIM), INTENT(IN) :: KNSMAX
 LOGICAL, INTENT(IN), OPTIONAL :: LDFAST
 
 REAL(KIND=JPRD) :: DC,DD,DE 
+
 INTEGER(KIND=JPIM) :: KKN, KKM
 
 INTEGER(KIND=JPIM) :: JN, JM

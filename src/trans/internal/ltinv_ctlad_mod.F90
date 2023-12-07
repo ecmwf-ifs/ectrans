@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE LTINV_CTLAD_MOD
 CONTAINS
 SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&

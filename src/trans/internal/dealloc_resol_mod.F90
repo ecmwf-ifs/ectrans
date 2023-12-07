@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE DEALLOC_RESOL_MOD
 CONTAINS
 SUBROUTINE DEALLOC_RESOL(KRESOL)
@@ -41,7 +42,7 @@ SUBROUTINE DEALLOC_RESOL(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEN         ,ONLY : LENABLED, NOUT,NDEF_RESOL
