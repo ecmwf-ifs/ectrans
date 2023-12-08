@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FSC_MOD
 CONTAINS
 SUBROUTINE FSC(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
@@ -47,6 +48,7 @@ SUBROUTINE FSC(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRC =>   JPRB
 
 USE TPM_TRANS       ,ONLY : LUVDER, LATLON
 USE TPM_DISTR       ,ONLY : D, MYSETW
@@ -79,8 +81,8 @@ ISTAGTF = D%NSTAGTF(KGL)
 ZACHTE2  = F%RACTHE(IGLG)
 
 IF( LATLON.AND.S%LDLL ) THEN
-  ZPI = 2.0_JPRB*ASIN(1.0_JPRB)
-  ZACHTE2 = 1._JPRB
+  ZPI = 2.0_JPRC*ASIN(1.0_JPRC)
+  ZACHTE2 = 1._JPRC
   ZACHTE  = F%RACTHE2(IGLG)
   
   ! apply shift for (even) lat-lon output grid

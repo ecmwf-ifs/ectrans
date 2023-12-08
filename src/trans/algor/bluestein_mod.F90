@@ -1,3 +1,4 @@
+#include "renames.inc"
 ! (C) Copyright 2015- ECMWF.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -6,7 +7,6 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-
 MODULE BLUESTEIN_MOD
 
 ! Implementation of the Bluestein FFT algorithm as described in a paper titled
@@ -18,6 +18,7 @@ MODULE BLUESTEIN_MOD
 ! The naming convention follows the algorithm description in the above paper.
 !
 USE PARKIND1, ONLY : JPIM, JPRB
+USE PARKIND1, ONLY : JPRC => JPRB
 
 IMPLICIT NONE
 
@@ -97,7 +98,7 @@ ELSEIF( KSIGN==1 )THEN
       ZDATAI(JLOT,K)=PDAT(JLOT,K*2+2)
       ZDATAI(JLOT,N-K) = -PDAT(JLOT,K*2+2)
     ENDDO
-    ZDATAI(JLOT,0)=0._JPRB
+    ZDATAI(JLOT,0)=0._JPRC
   ENDDO
 
 ENDIF
@@ -137,7 +138,7 @@ ENDDO
 ! zero padding of Y
 
 DO I=N,(M/2+1)*2
-  ZY(:,I) = 0._JPRB
+  ZY(:,I) = 0._JPRC
 ENDDO
 
 ! FFT of Y
@@ -321,8 +322,8 @@ DO JLAT=1,TB%NLAT_COUNT
     ENDDO
   
     DO K=0,(M/2+1)*2
-      TB%FFTB(N)%H2xT(1,K,ISIGN) = 0._JPRB
-      TB%FFTB(N)%H2xT(2,K,ISIGN) = 0._JPRB
+      TB%FFTB(N)%H2xT(1,K,ISIGN) = 0._JPRC
+      TB%FFTB(N)%H2xT(2,K,ISIGN) = 0._JPRC
     ENDDO
     TB%FFTB(N)%H2xT(1,0,ISIGN) = TB%FFTB(N)%HS(1,0,ISIGN)
     TB%FFTB(N)%H2xT(2,0,ISIGN) = TB%FFTB(N)%HS(2,0,ISIGN)
@@ -335,8 +336,8 @@ DO JLAT=1,TB%NLAT_COUNT
     ENDDO
     IF( M > 2*N-2 ) THEN
       DO K=N,M-N+1
-        TB%FFTB(N)%H2xT(1,K,ISIGN)   = 0._JPRB
-        TB%FFTB(N)%H2xT(2,K,ISIGN)   = 0._JPRB
+        TB%FFTB(N)%H2xT(1,K,ISIGN)   = 0._JPRC
+        TB%FFTB(N)%H2xT(2,K,ISIGN)   = 0._JPRC
       ENDDO
     ENDIF
 

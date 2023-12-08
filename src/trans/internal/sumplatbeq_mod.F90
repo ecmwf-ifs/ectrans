@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE SUMPLATBEQ_MOD
 CONTAINS
 SUBROUTINE SUMPLATBEQ(KDGSA,KDGL,KPROC,KPROCA,KLOENG,LDSPLIT,LDEQ_REGIONS,&

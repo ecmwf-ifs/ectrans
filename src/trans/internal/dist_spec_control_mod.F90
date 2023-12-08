@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE DIST_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
@@ -58,6 +59,7 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     ------------------------------------------------------------------
 
 USE PARKIND1        ,ONLY : JPIM     ,JPRB
+USE PARKIND1        ,ONLY : JPRC => JPRB
 USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, MPL_WAITANY, JP_NON_BLOCKING_STANDARD
 USE TPM_DISTR       ,ONLY : MTAGDISTSP, MYSETV, MYSETW, NPRCIDS, NPRTRW, MYPROC, NPROC, NPRTRV, D
 USE SET2PE_MOD      ,ONLY : SET2PE
@@ -163,7 +165,7 @@ ALLOCATE(ZBUF(KSPEC2MX,COUNT(KFROM(:)==MYPROC),NPRTRW))
 ! The next lines ensure the large array zbuf is allocated right here and not inside an omp loop below,
 ! where an extra omp synchro might be needed :
 IF (SIZE(ZBUF) > 0) THEN
-  ZBUF(LBOUND(ZBUF,DIM=1),LBOUND(ZBUF,DIM=2),LBOUND(ZBUF,DIM=3))=HUGE(1._JPRB)
+  ZBUF(LBOUND(ZBUF,DIM=1),LBOUND(ZBUF,DIM=2),LBOUND(ZBUF,DIM=3))=HUGE(1._JPRC)
 ENDIF
 
 IF (LDIM1_IS_FLD) THEN

@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE PRFI2_MOD
 CONTAINS
 SUBROUTINE PRFI2(KM,KMLOC,KF_FS,PAIA,PSIA)

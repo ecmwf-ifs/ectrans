@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE TRLTOM_MOD
 CONTAINS
 SUBROUTINE TRLTOM(PFBUF_IN,PFBUF,KFIELD)

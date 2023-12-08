@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+#include "renames.inc"
 MODULE FSCAD_MOD
 CONTAINS
 SUBROUTINE FSCAD(KGL,KF_UV,KF_SCALARS,KF_SCDERS,&

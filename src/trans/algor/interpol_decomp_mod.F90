@@ -1,3 +1,4 @@
+#include "renames.inc"
 ! (C) Copyright 2015- ECMWF.
 ! (C) Copyright 2015- Meteo-France.
 ! 
@@ -23,7 +24,7 @@ MODULE INTERPOL_DECOMP_MOD
 ! Author: Mats Hamrud
 
 
-USE PARKIND1, ONLY : JPRB, JPIM, JPRD, JPIB
+USE PARKIND1, ONLY : JPIM, JPRD, JPIB
 IMPLICIT NONE
 CONTAINS
 !===========================================================================
