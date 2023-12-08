@@ -353,11 +353,8 @@ if (.not. lmpoff) then
   call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(verbosity>=1))
 endif
 
-! Determine number of local levels for fourier and legendre calculations
-! based on the values of nflevg and nprtrv
-allocate(numll(nprtrv+1))
-
-! Calculate remainder
+! Determine the number of levels attributed to each member of the V set
+allocate(numll(nprtrv))
 iprused = min(nflevg+1, nprtrv)
 ilevpp = nflevg/nprtrv
 irest = nflevg -ilevpp*nprtrv
@@ -368,7 +365,6 @@ do jroc = 1, nprtrv
     numll(jroc) = ilevpp
   endif
 enddo
-numll(iprused+1:nprtrv+1) = 0
 
 nflevl = numll(mysetv)
 
