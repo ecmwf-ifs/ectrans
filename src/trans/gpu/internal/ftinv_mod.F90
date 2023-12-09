@@ -85,6 +85,8 @@ INTEGER(KIND=JPIM) :: IGLG,KGL,ISTAT
 !     ------------------------------------------------------------------
 
 PREEL_REAL => PREEL_COMPLEX
+#ifdef OMPGPU
+#endif
 #ifdef ACCGPU
 !$ACC DATA PRESENT(PREEL_REAL,PREEL_COMPLEX)
 #endif
