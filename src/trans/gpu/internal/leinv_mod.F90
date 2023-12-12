@@ -178,6 +178,8 @@ CONTAINS
         KM =  D_MYMS(KMLOC)
         IA  = 1+MOD(R_NSMAX-KM+2,2)
         IF(KM /= 0)THEN
+#ifdef OMPGPU
+#endif
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
@@ -186,6 +188,8 @@ CONTAINS
           ENDDO
         ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
           ! every other field is sufficient because Im(KM=0) == 0
+#ifdef OMPGPU
+#endif
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
@@ -270,8 +274,6 @@ CONTAINS
 #endif
 
     IF (LSYNC_TRANS) THEN
-#ifdef OMPGPU
-#endif
 #ifdef ACCGPU
       !$ACC WAIT(1)
 #endif
@@ -400,9 +402,13 @@ CONTAINS
     ENDIF
     CALL GSTATS(424,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC WAIT(1)
 
     !$ACC END DATA
+#endif
 
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------
@@ -476,10 +482,14 @@ CONTAINS
     CALL LEINV_STRIDES(KF_LEG,IOUT_STRIDES0=IOUT_STRIDES0,IOUT_STRIDES1=IOUT_STRIDES1,&
                        IOUT0_STRIDES0=IOUT0_STRIDES0,IOUT0_STRIDES1=IOUT0_STRIDES1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA PRESENT(D,D_MYMS,D_NPNTGTB1,G,G_NDGLU) &
     !$ACC&     PRESENT(ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
 
     !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,OFFSET1,OFFSET2,ZAOA,ZSOA) ASYNC(1)
+#endif
     DO KMLOC=1,D_NUMP
       DO JGL=1,R_NDGNH
         DO JK=1,2*KF_LEG
@@ -516,6 +526,7 @@ CONTAINS
     !$ACC WAIT(1)
 
     !$ACC END DATA
+#endif
 
     IF (LHOOK) CALL DR_HOOK('LEINV_PACK',1,ZHOOK_HANDLE)
 
