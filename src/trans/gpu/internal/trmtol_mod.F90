@@ -140,9 +140,17 @@ CONTAINS
           TO_SEND = FROM_SEND + ILENS(IRANK) - 1
           FROM_RECV = IOFFR(IRANK) + 1
           TO_RECV = FROM_RECV + ILENR(IRANK) - 1
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC KERNELS ASYNC(1) DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN)
+#endif
           PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC END KERNELS
+#endif
           ILENS(IRANK) = 0
           ILENR(IRANK) = 0
       ENDIF
@@ -153,11 +161,19 @@ CONTAINS
         CALL GSTATS(440,1)
       ENDIF
       CALL GSTATS(421,0)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
+#endif
       CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRMTOL_DTYPE,&
        & PFBUF,ILENR,IOFFR,TRMTOL_DTYPE,&
        & MPL_ALL_MS_COMM,IERROR)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(441,0)
         CALL MPL_BARRIER(CDSTRING='')
@@ -165,13 +181,19 @@ CONTAINS
       ENDIF
       CALL GSTATS(421,1)
 
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(807,1)
     ELSE
       ILEN = D%NLTSGTB(MYSETW)*2*KF_LEG
       ISTA = D%NSTAGT0B(MYSETW)*2*KF_LEG+1
       CALL GSTATS(1608,0)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN)
+#endif
       DO J=ISTA,ISTA+ILEN-1
         PFBUF(J) = PFBUF_IN(J)
       ENDDO

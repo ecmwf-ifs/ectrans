@@ -146,11 +146,15 @@ CONTAINS
     CALL LEDIR_STRIDES(KF_FS,IOUT_STRIDES0,IOUT_STRIDES1,IIN_STRIDES0,IIN_STRIDES1,&
                        IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA &
     !$ACC& PRESENT(ZINPS,ZINPA,ZOUT,ZINPS0,ZINPA0,ZOUT0) &
     !$ACC& PRESENT(F) &!,F%RW) &
     !$ACC& PRESENT(D,D_MYMS,R,G,G_NDGLU) &
     !$ACC& PRESENT(ZAA,ZAS,POA1)
+#endif
 
     ! anti-symmetric
     IF(KMLOC0 > 0) THEN
@@ -158,7 +162,9 @@ CONTAINS
     ENDIF
 
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(430,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(430,1)
@@ -227,25 +233,39 @@ CONTAINS
     !$ACC END HOST_DATA
 #endif
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(434,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(434,1)
     ENDIF
     CALL GSTATS(414,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) DEFAULT(NONE) ASYNC(1)
+#endif
     DO KMLOC=1,D_NUMP
       DO JF=1,2*KF_FS
         KM = D_MYMS(KMLOC)
         IA  = 1+MOD(R_NTMAX-KM+2,2)
         IF (KM /= 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R%NSMAX-KM+2)/2
             POA1(JF,IA+1+(J-1)*2,KMLOC) = ZOUT(JF+(J-1)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
           ENDDO
         ELSEIF (MOD(JF-1,2) == 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX+2)/2
             POA1(JF,IA+1+(J-1)*2,KMLOC) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
           ENDDO
@@ -256,7 +276,9 @@ CONTAINS
     ! symmetric
 
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(430,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(430,1)
@@ -326,34 +348,52 @@ CONTAINS
     !$ACC END HOST_DATA
 #endif
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(434,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(434,1)
     ENDIF
     CALL GSTATS(414,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) DEFAULT(NONE) ASYNC(1)
+#endif
     DO KMLOC=1,D_NUMP
       DO JF=1,2*KF_FS
         KM = D_MYMS(KMLOC)
         IS  = 1+MOD(R_NTMAX-KM+1,2)
         IF (KM /= 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX-KM+3)/2
             POA1(JF,IS+1+(J-1)*2,KMLOC) = ZOUT(JF+(J-1)*IOUT_STRIDES0+(KMLOC-1)*IOUT_STRIDES1)
           ENDDO
         ELSEIF (MOD(JF-1,2) == 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX+3)/2
             POA1(JF,IS+1+(J-1)*2,KMLOC) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
           ENDDO
         ENDIF
       ENDDO
     ENDDO
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC WAIT(1)
 
     !$ACC END DATA
+#endif
 
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------

@@ -119,7 +119,11 @@ CONTAINS
     CALL ASSIGN_PTR(PFBUF, GET_ALLOCATION(ALLOCATOR, HTRLTOM%HPFBUF),&
         & 1_C_SIZE_T, D%NLENGT1B*2*KF_FS*SIZEOF(PFBUF(1)))
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA PRESENT(PFBUF,PFBUF_IN)
+#endif
 
     IF(NPROC > 1) THEN
       DO J=1,NPRTRW
@@ -142,9 +146,17 @@ CONTAINS
           TO_SEND = FROM_SEND + ILENS(IRANK) - 1
           FROM_RECV = IOFFR(IRANK) + 1
           TO_RECV = FROM_RECV + ILENR(IRANK) - 1
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC KERNELS ASYNC(1)
+#endif
           PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC END KERNELS
+#endif
           ILENS(IRANK) = 0
           ILENR(IRANK) = 0
       ENDIF
@@ -155,11 +167,19 @@ CONTAINS
         CALL GSTATS(430,1)
       ENDIF
       CALL GSTATS(411,0)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
+#endif
       CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRLTOM_DTYPE,&
        & PFBUF,ILENR,IOFFR, TRLTOM_DTYPE, &
        & MPL_ALL_MS_COMM,IERROR)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(431,0)
         CALL MPL_BARRIER(CDSTRING='')
@@ -167,20 +187,30 @@ CONTAINS
       ENDIF
       CALL GSTATS(411,1)
 
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(806,1)
     ELSE
       ILEN = D%NLTSGTB(MYSETW)*2*KF_FS
       ISTA = D%NSTAGT1B(MYSETW)*2*KF_FS+1
       CALL GSTATS(1607,0)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE)
+#endif
       DO J=ISTA,ISTA+ILEN-1
         PFBUF(J) = PFBUF_IN(J)
       ENDDO
       CALL GSTATS(1607,1)
     ENDIF
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END DATA
+#endif
 
     IF (LHOOK) CALL DR_HOOK('TRLTOM_CUDAAWARE',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------

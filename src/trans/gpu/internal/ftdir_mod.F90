@@ -104,7 +104,6 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC END DATA
 #endif
-
 #ifdef OMPGPU
     !$OMP END TARGET DATA
 #endif

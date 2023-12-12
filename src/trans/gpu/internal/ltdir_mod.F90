@@ -217,11 +217,15 @@ CONTAINS
     ! do the legendre transform
     CALL LEDIR(ZINPS,ZINPA,ZINPS0,ZINPA0,ZOUT,ZOUT0,POA1,KF_FS)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA COPYOUT(PSPVOR,PSPDIV) IF(KF_UV > 0)
     !$ACC DATA COPYOUT(PSPSCALAR) IF(PRESENT(PSPSCALAR) .AND. KF_SCALARS > 0)
     !$ACC DATA COPYOUT(PSPSC2) IF(NF_SC2 > 0)
     !$ACC DATA COPYOUT(PSPSC3A) IF(NF_SC3A > 0)
     !$ACC DATA COPYOUT(PSPSC3B) IF(NF_SC3B > 0)
+#endif
 
     !     ------------------------------------------------------------------
 
@@ -265,11 +269,15 @@ CONTAINS
       CALL GSTATS(430,1)
     ENDIF
     CALL GSTATS(412,0)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END DATA
     !$ACC END DATA
     !$ACC END DATA
     !$ACC END DATA
     !$ACC END DATA
+#endif
     IF (LSYNC_TRANS) THEN
       CALL GSTATS(432,0)
       CALL MPL_BARRIER(CDSTRING='')

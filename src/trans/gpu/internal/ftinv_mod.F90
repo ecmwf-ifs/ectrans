@@ -106,7 +106,11 @@ CONTAINS
     ENDIF
     CALL GSTATS(423,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END DATA
+#endif
 
     NULLIFY(PREEL_COMPLEX)
 

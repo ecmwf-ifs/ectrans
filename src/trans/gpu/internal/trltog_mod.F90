@@ -503,7 +503,11 @@ CONTAINS
         ENDIF
       ENDDO
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC DATA COPYIN(IFLDA(1:IFLDS)) ASYNC(1)
+#endif
 
       CALL GSTATS(1604,0)
 
@@ -511,7 +515,11 @@ CONTAINS
       IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(MYSETW)
       IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(MYPROC)
       IF (PRESENT(PGP)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) ASYNC(1)
+#endif
         DO JFLD=1,KF_FS
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
@@ -523,7 +531,11 @@ CONTAINS
           ENDDO
         ENDDO
       ELSE
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) ASYNC(1)
+#endif
         DO JFLD=1,KF_FS
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
@@ -545,7 +557,11 @@ CONTAINS
       ENDIF
       CALL GSTATS(1604,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC END DATA
+#endif
 
     ENDIF
 
@@ -588,14 +604,22 @@ CONTAINS
           & ICOMBUFS_OFFSET(ISEND_COUNTS+1)*SIZEOF(ZCOMBUFS(1)))
     ENDIF
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA PRESENT(ZCOMBUFS)
+#endif
     CALL GSTATS(1605,0)
     DO INS=1,ISEND_COUNTS
       IPROC = ISEND_TO_PROC(INS)
       ILEN = ISENDTOT(IPROC)/KF_FS
       IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(IPROC)
       ICOMBUFS_OFFSET_V = ICOMBUFS_OFFSET(INS)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) PRIVATE(IPOS) COLLAPSE(2) ASYNC(1)
+#endif
       DO JFLD=1,KF_FS
         DO JL=1,ILEN
           IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
@@ -605,15 +629,15 @@ CONTAINS
       ENDDO
     ENDDO
     CALL GSTATS(1605,1)
-    !$ACC END DATA ! ZCOMBUFS
-
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
+    !$ACC END DATA ! ZCOMBUFS
+
     !$ACC END DATA ! PREEL_REAL
-#endif
 
     !$ACC WAIT(1)
+#endif
 
     CALL GSTATS(805,0)
 
@@ -626,7 +650,11 @@ CONTAINS
 
     IR=0
     !...Receive loop.........................................................
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
+#endif
     DO INR=1,IRECV_COUNTS
       IR=IR+1
       IRECV=IRECV_TO_PROC(INR)
@@ -644,7 +672,11 @@ CONTAINS
       CALL MPI_ISEND(ZCOMBUFS(ICOMBUFS_OFFSET(INS)+1:ICOMBUFS_OFFSET(INS+1)),ISENDTOT(ISEND), &
         & TRLTOG_DTYPE, NPRCIDS(ISEND)-1,MTAGLG,MPL_COMM_OML(OML_MY_THREAD()),IREQ(IR),IERROR)
     ENDDO
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END HOST_DATA
+#endif
 
     IF(IR > 0) THEN
       CALL MPL_WAIT(KREQUEST=IREQ(1:IR), &
@@ -658,7 +690,11 @@ CONTAINS
     ENDIF
     CALL GSTATS(421,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA PRESENT(ZCOMBUFR)
+#endif
     CALL GSTATS(805,1)
 
     !  Unpack loop.........................................................
@@ -683,12 +719,20 @@ CONTAINS
         ENDIF
       ENDDO
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC DATA COPYIN(IFLDA(1:IRECV_FIELD_COUNT_V)) ASYNC(1)
+#endif
 
       IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(ISETW)
       IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(ISETW)
       IF (PRESENT(PGP)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) ASYNC(1)
+#endif
         DO JFLD=1,IRECV_FIELD_COUNT_V
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
@@ -699,7 +743,11 @@ CONTAINS
           ENDDO
         ENDDO
       ELSE
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) ASYNC(1)
+#endif
         DO JFLD=1,IRECV_FIELD_COUNT_V
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
@@ -718,32 +766,52 @@ CONTAINS
           ENDDO
         ENDDO
       ENDIF
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC END DATA
+#endif
     ENDDO
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END DATA ! ZOMBUFR
+#endif
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(440,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(440,1)
     ENDIF
     CALL GSTATS(422,0)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END DATA ! PGP3B
     !$ACC END DATA ! PGP3A
     !$ACC END DATA ! PGP2
     !$ACC END DATA ! PGPUV
     !$ACC END DATA ! PGP
+#endif
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(442,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(442,1)
     ENDIF
     CALL GSTATS(422,1)
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC END DATA ! IRECVBUFR_TO_OUT,PGPINDICES
 
     !$ACC WAIT(1)
+#endif
 
     CALL GSTATS(1606,1)
 
