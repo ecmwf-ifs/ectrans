@@ -51,7 +51,7 @@ CONTAINS
       IIN0_STRIDES0 = ALIGN(KF_LEG,A)
     IF (PRESENT(IIN0_STRIDES1)) &
       IIN0_STRIDES1 = IIN0_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
-  END SUBROUTINE
+  END SUBROUTINE LEINV_STRIDES
 
   SUBROUTINE LEINV(PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN)
 
@@ -157,10 +157,14 @@ CONTAINS
                        IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
 
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA PRESENT(D,D_MYMS,G,G_NDGLU,R) &
     !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
     !$ACC&     PRESENT(ZAA,ZAS,PIA) &
     !$ACC&     PRESENT(D_MYMS,D_NPNTGTB1,G_NDGLU)
+#endif
 
     IF (KMLOC0 > 0) THEN
       print*,'computing m=0 in double precision'
@@ -177,19 +181,27 @@ CONTAINS
     !    DO=1,7/2+1 ... 1..4
     !       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) DEFAULT(NONE) ASYNC(1)
+#endif
     DO KMLOC=1,D_NUMP
       DO JK=1,2*KF_LEG
         KM =  D_MYMS(KMLOC)
         IA  = 1+MOD(R_NSMAX-KM+2,2)
         IF(KM /= 0)THEN
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX-KM+2)/2
             ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IA+1+(J-1)*2,KMLOC)
           ENDDO
         ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
           ! every other field is sufficient because Im(KM=0) == 0
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX+2)/2
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
           ENDDO
@@ -265,7 +277,11 @@ CONTAINS
 #endif
 
     IF (LSYNC_TRANS) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(444,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(444,1)
@@ -282,18 +298,30 @@ CONTAINS
     !    DO=1,5
     !       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) DEFAULT(NONE) ASYNC(1)
+#endif
     DO KMLOC=1,D_NUMP
       DO JK=1,2*KF_LEG
         KM =  D_MYMS(KMLOC)
         IS  = 1+MOD(R_NSMAX-KM+1,2)
         IF(KM /= 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX-KM+3)/2
             ZINP(JK+(J-1)*IIN_STRIDES0+(KMLOC-1)*IIN_STRIDES1)=PIA(JK,IS+1+(J-1)*2,KMLOC)
           ENDDO
         ELSEIF (MOD((JK-1),2) == 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
           !$ACC LOOP SEQ
+#endif
           DO J=1,(R_NSMAX+3)/2
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
           ENDDO
@@ -302,7 +330,9 @@ CONTAINS
     ENDDO
 
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(440,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(440,1)
@@ -325,6 +355,8 @@ CONTAINS
         & 0.0_JPRD, &
         & ZOUTS0, IOUT0_STRIDES0, 0, &
         & 1, STREAM=1_C_LONG)
+#ifdef OMPGPU
+#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
@@ -358,19 +390,27 @@ CONTAINS
       & 0.0_JPRBT, &
       & ZOUTS, IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, STREAM=1_C_LONG)
+#ifdef OMPGPU
+#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
     IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
       !$ACC WAIT(1)
+#endif
       CALL GSTATS(444,0)
       CALL MPL_BARRIER(CDSTRING='')
       CALL GSTATS(444,1)
     ENDIF
     CALL GSTATS(424,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC DATA PRESENT(FOUBUF_IN)
     !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ISL,IGLS,ISTAS,ZAOA,ZSOA) ASYNC(1)
+#endif
     DO KMLOC=1,D_NUMP
       DO JGL=1,R_NDGNH
         DO JK=1,2*KF_LEG
@@ -401,10 +441,14 @@ CONTAINS
       ENDDO
     ENDDO
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC WAIT(1)
 
     !$ACC END DATA
     !$ACC END DATA
+#endif
 
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------

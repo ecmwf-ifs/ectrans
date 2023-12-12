@@ -402,7 +402,11 @@ MODULE TRGTOL_MOD
   ENDIF
 
   !....Pack loop.........................................................
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
   !$ACC DATA IF(ISEND_COUNTS > 0) PRESENT(ZCOMBUFS) ASYNC(1)
+#endif
 
   CALL GSTATS(1602,0)
   DO INS=1,ISEND_COUNTS

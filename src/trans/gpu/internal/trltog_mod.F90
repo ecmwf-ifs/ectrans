@@ -547,7 +547,11 @@ CONTAINS
         & ICOMBUFS_OFFSET(ISEND_COUNTS+1)*SIZEOF(ZCOMBUFS(1)))
   ENDIF
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
   !$ACC DATA PRESENT(ZCOMBUFS)
+#endif
   CALL GSTATS(1605,0)
 
   DO INS=1,ISEND_COUNTS
@@ -645,7 +649,11 @@ CONTAINS
   ENDIF
   CALL GSTATS(421,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
   !$ACC DATA PRESENT(ZCOMBUFR)
+#endif
   CALL GSTATS(805,1)
 
   !  Unpack loop.........................................................
