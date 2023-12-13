@@ -473,6 +473,8 @@ CONTAINS
       ISENDTOT(JROC) = IPOS*KF_FS
     ENDDO
 
+#ifdef OMPGPU
+#endif
 #ifdef ACCGPU
     !$ACC DATA COPYIN(IIN_TO_SEND_BUFR,IGP_OFFSETS) ASYNC(1)
 #endif
@@ -827,19 +829,39 @@ CONTAINS
     !$ACC END DATA ! PGP
 #endif
     IF (PRESENT(PGP)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC UPDATE HOST(PGP) ASYNC(1)
+#endif
     ENDIF
     IF (PRESENT(PGPUV)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC UPDATE HOST(PGPUV) ASYNC(1)
+#endif
     ENDIF
     IF (PRESENT(PGP2)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC UPDATE HOST(PGP2) ASYNC(1)
+#endif
     ENDIF
     IF (PRESENT(PGP3A)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC UPDATE HOST(PGP3A) ASYNC(1)
+#endif
     ENDIF
     IF (PRESENT(PGP3B)) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
       !$ACC UPDATE HOST(PGP3B) ASYNC(1)
+#endif
     ENDIF
     IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_DELETE(ACC_POINTERS(1:ACC_POINTERS_CNT),STREAM=1_ACC_HANDLE_KIND)
     IF (LSYNC_TRANS) THEN
