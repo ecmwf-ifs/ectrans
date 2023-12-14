@@ -18,6 +18,7 @@
 MODULE HICBLAS_MOD
 
 USE PARKIND1, ONLY : JPIM, JPRM, JPRD
+USE GROWING_ALLOCATOR_MOD, ONLY: GROWING_ALLOCATION_TYPE
 USE ISO_C_BINDING
 USE OPENACC, ONLY: ACC_GET_CUDA_STREAM
 
@@ -67,15 +68,15 @@ end subroutine hip_dgemm
 end interface
 
 INTERFACE
-    SUBROUTINE HIP_DGEMM_BATCHED(&
-        & CTA, CTB,               &
-        & M, N, K,                &
-        & ALPHA,                  &
-        & A, LDA, TDA,            &
-        & B, LDB, TDB,            &
-        & BETA,                   &
-        & C, LDC, TDC,            &
-        & BATCHCOUNT, STREAM      &
+    SUBROUTINE HIP_DGEMM_BATCHED(   &
+        & CTA, CTB,                 &
+        & M, N, K,                  &
+        & ALPHA,                    &
+        & A, LDA, TDA,              &
+        & B, LDB, TDB,              &
+        & BETA,                     &
+        & C, LDC, TDC,              &
+        & BATCHCOUNT, STREAM, ALLOC &
     &) BIND(C, NAME='hipblas_dgemm_wrapper')
         USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
@@ -85,6 +86,7 @@ INTERFACE
         REAL(C_DOUBLE),      DIMENSION(LDB,*) :: B
         REAL(C_DOUBLE),      DIMENSION(LDC,*) :: C
         INTEGER(KIND=C_SIZE_T) :: STREAM
+        TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
     END SUBROUTINE HIP_DGEMM_BATCHED
 END INTERFACE
 
@@ -119,15 +121,15 @@ INTERFACE
 END INTERFACE
 
 INTERFACE
-    SUBROUTINE HIP_SGEMM_BATCHED(&
-        & CTA, CTB,               &
-        & M, N, K,                &
-        & ALPHA,                  &
-        & A, LDA, TDA,            &
-        & B, LDB, TDB,            &
-        & BETA,                   &
-        & C, LDC, TDC,            &
-        & BATCHCOUNT, STREAM      &
+    SUBROUTINE HIP_SGEMM_BATCHED(   &
+        & CTA, CTB,                 &
+        & M, N, K,                  &
+        & ALPHA,                    &
+        & A, LDA, TDA,              &
+        & B, LDB, TDB,              &
+        & BETA,                     &
+        & C, LDC, TDC,              &
+        & BATCHCOUNT, STREAM, ALLOC &
     &) BIND(C, NAME='hipblas_sgemm_wrapper')
         USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
@@ -137,6 +139,7 @@ INTERFACE
         REAL(C_FLOAT),       DIMENSION(LDB,*) :: B
         REAL(C_FLOAT),       DIMENSION(LDC,*) :: C
         INTEGER(KIND=C_SIZE_T) :: STREAM
+        TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
     END SUBROUTINE HIP_SGEMM_BATCHED
 END INTERFACE
 
@@ -196,15 +199,15 @@ INTERFACE
 END INTERFACE
 
 INTERFACE
-SUBROUTINE HIP_DGEMM_GROUPED(&
-    & BLAS_ID, CTA, CTB,     &
-    & M, N, K,               &
-    & ALPHA,                 &
-    & A, LDA, OFFSETA,       &
-    & B, LDB, OFFSETB,       &
-    & BETA,                  &
-    & C, LDC, OFFSETC,       &
-    & BATCHCOUNT, STREAM     &
+SUBROUTINE HIP_DGEMM_GROUPED(   &
+    & BLAS_ID, CTA, CTB,        &
+    & M, N, K,                  &
+    & ALPHA,                    &
+    & A, LDA, OFFSETA,          &
+    & B, LDB, OFFSETB,          &
+    & BETA,                     &
+    & C, LDC, OFFSETC,          &
+    & BATCHCOUNT, STREAM, ALLOC &
 &) BIND(C, NAME='blas_dgemm_wrapper_grouped')
     USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
@@ -213,16 +216,17 @@ SUBROUTINE HIP_DGEMM_GROUPED(&
     REAL(C_DOUBLE), VALUE  :: ALPHA,BETA
     REAL(C_DOUBLE)         :: A(*), B(*), C(*)
     INTEGER(KIND=c_size_t) :: STREAM
+    TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
 END SUBROUTINE HIP_DGEMM_GROUPED
-SUBROUTINE HIP_SGEMM_GROUPED(&
-    & BLAS_ID, CTA, CTB,     &
-    & M, N, K,               &
-    & ALPHA,                 &
-    & A, LDA, OFFSETA,       &
-    & B, LDB, OFFSETB,       &
-    & BETA,                  &
-    & C, LDC, OFFSETC,       &
-    & BATCHCOUNT, STREAM     &
+SUBROUTINE HIP_SGEMM_GROUPED(   &
+    & BLAS_ID, CTA, CTB,        &
+    & M, N, K,                  &
+    & ALPHA,                    &
+    & A, LDA, OFFSETA,          &
+    & B, LDB, OFFSETB,          &
+    & BETA,                     &
+    & C, LDC, OFFSETC,          &
+    & BATCHCOUNT, STREAM, ALLOC &
 &) BIND(C, NAME='blas_sgemm_wrapper_grouped')
     USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
@@ -231,6 +235,7 @@ SUBROUTINE HIP_SGEMM_GROUPED(&
     REAL(C_FLOAT), VALUE  :: ALPHA,BETA
     REAL(C_FLOAT)         :: A(*), B(*), C(*)
     INTEGER(KIND=C_SIZE_T) :: STREAM
+    TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
 END SUBROUTINE HIP_SGEMM_GROUPED
 END INTERFACE
 
@@ -244,7 +249,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, STRIDEB, &
       & BETA, &
       & CARRAY, LDC, STRIDEC, &
-      & BATCHCOUNT, STREAM)
+      & BATCHCOUNT, STREAM, ALLOC)
     CHARACTER(1,C_CHAR), VALUE :: TRANSA, TRANSB
     INTEGER(KIND=JPIM) :: M
     INTEGER(KIND=JPIM) :: N
@@ -262,6 +267,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=JPIM) :: STRIDEC
     INTEGER(KIND=JPIM) :: BATCHCOUNT
     INTEGER(KIND=C_LONG) :: STREAM
+    TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
     CALL HIP_DGEMM_BATCHED( &
       & TRANSA, TRANSB, &
@@ -271,7 +277,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, STRIDEB, &
       & BETA, &
       & CARRAY, LDC, STRIDEC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM))
+      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
   END SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD
 
   SUBROUTINE HIP_SGEMM_BATCHED_OVERLOAD( &
@@ -282,7 +288,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, STRIDEB, &
       & BETA, &
       & CARRAY, LDC, STRIDEC, &
-      & BATCHCOUNT, STREAM)
+      & BATCHCOUNT, STREAM, ALLOC)
     CHARACTER(1,C_CHAR), VALUE :: TRANSA, TRANSB
     INTEGER(KIND=JPIM) :: M
     INTEGER(KIND=JPIM) :: N
@@ -300,6 +306,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=JPIM) :: STRIDEC
     INTEGER(KIND=JPIM) :: BATCHCOUNT
     INTEGER(KIND=C_LONG) :: STREAM
+    TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
     CALL HIP_SGEMM_BATCHED( &
       & TRANSA, TRANSB, &
@@ -309,7 +316,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, STRIDEB, &
       & BETA, &
       & CARRAY, LDC, STRIDEC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM))
+      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
   END SUBROUTINE HIP_SGEMM_BATCHED_OVERLOAD
 
 
@@ -321,7 +328,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, OFFSETB, &
       & BETA, &
       & CARRAY, LDC, OFFSETC, &
-      & BATCHCOUNT, STREAM)
+      & BATCHCOUNT, STREAM, ALLOC)
     INTEGER(KIND=C_INT), INTENT(IN) :: BLAS_ID
     CHARACTER(1,C_CHAR), VALUE :: TRANSA, TRANSB
     INTEGER(KIND=JPIM) :: M
@@ -340,6 +347,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=JPIM) :: OFFSETC(:)
     INTEGER(KIND=JPIM) :: BATCHCOUNT
     INTEGER(KIND=C_LONG) :: STREAM
+    TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
     CALL HIP_DGEMM_GROUPED( &
       & BLAS_ID, TRANSA, TRANSB, &
@@ -349,7 +357,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, OFFSETB, &
       & BETA, &
       & CARRAY, LDC, OFFSETC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM))
+      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
 
   END SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD
 
@@ -361,7 +369,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, OFFSETB, &
       & BETA, &
       & CARRAY, LDC, OFFSETC, &
-      & BATCHCOUNT, STREAM)
+      & BATCHCOUNT, STREAM, ALLOC)
     INTEGER(KIND=C_INT), INTENT(IN) :: BLAS_ID
     CHARACTER(1,C_CHAR), VALUE :: TRANSA, TRANSB
     INTEGER(KIND=JPIM) :: M
@@ -380,6 +388,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=JPIM) :: OFFSETC(:)
     INTEGER(KIND=JPIM) :: BATCHCOUNT
     INTEGER(KIND=C_LONG) :: STREAM
+    TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
     CALL HIP_SGEMM_GROUPED( &
       & BLAS_ID, TRANSA, TRANSB, &
@@ -389,7 +398,7 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, OFFSETB, &
       & BETA, &
       & CARRAY, LDC, OFFSETC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM))
+      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
 
   END SUBROUTINE HIP_SGEMM_GROUPED_OVERLOAD
 

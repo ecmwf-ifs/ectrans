@@ -46,30 +46,30 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_3xtf32, TransA, TransB> {
   using Gemm = cutlass::gemm::device::Gemm<
       float,
       std::conditional_t<TransA == CUBLAS_OP_N, cutlass::layout::ColumnMajor,
-                         cutlass::layout::RowMajor>,  //
+                         cutlass::layout::RowMajor>, //
       float,
       std::conditional_t<TransB == CUBLAS_OP_N, cutlass::layout::ColumnMajor,
-                         cutlass::layout::RowMajor>,  //
-      float, cutlass::layout::ColumnMajor,            //
-      float,                                          //
-      OperatorClass, cutlass::arch::Sm80,             //
-      ThreadblockShape, WarpShape, InstructionShape,  //
-      cutlass::epilogue::thread::LinearCombination<   //
-          float,                                      //
+                         cutlass::layout::RowMajor>, //
+      float, cutlass::layout::ColumnMajor,           //
+      float,                                         //
+      OperatorClass, cutlass::arch::Sm80,            //
+      ThreadblockShape, WarpShape, InstructionShape, //
+      cutlass::epilogue::thread::LinearCombination<  //
+          float,                                     //
           128 / cutlass::sizeof_bits<float>::value,
-          float,                                                     //
-          float                                                      //
-          >,                                                         //
-      cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>,  //
-      3,                                                             //
-      AlignmentA,                                                    //
-      AlignmentB,                                                    //
-      true,                                                          //
-      MyOp                                                           //
+          float,                                                    //
+          float                                                     //
+          >,                                                        //
+      cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>, //
+      3,                                                            //
+      AlignmentA,                                                   //
+      AlignmentB,                                                   //
+      true,                                                         //
+      MyOp                                                          //
       >;
   static constexpr int sz_align = 8;
 
- public:
+public:
   void operator()(cudaStream_t stream, int m, int n, int k, float alpha,
                   const float *A, int lda, const float *B, int ldb, float beta,
                   float *C, int ldc) const {
@@ -124,8 +124,7 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_fp32, TransA, TransB> {
       >;
   static constexpr int sz_align = 1;
 
-
- public:
+public:
   void operator()(cudaStream_t stream, int m, int n, int k, float alpha,
                   const float *A, int lda, const float *B, int ldb, float beta,
                   float *C, int ldc) const {
@@ -144,14 +143,15 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_fp32, TransA, TransB> {
   }
 };
 
-}  // namespace detail
+} // namespace detail
 template <cublasOperation_t TransA, cublasOperation_t TransB>
 void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
                                       float alpha, const float *A, int lda,
                                       int *offsetsA, const float *B, int ldb,
                                       int *offsetsB, float beta, float *C,
                                       int ldc, int *offsetsC, int batchCount,
-				      cudaStream_t stream) {
+                                      cudaStream_t stream,
+                                      void *growing_allocator) {
   using namespace detail;
   int device;
   HIC_CHECK(cudaGetDevice(&device));
@@ -162,12 +162,14 @@ void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
     run_group_graph(cutlass_sgemm_grouped<detail::CutlassType::cutlass_3xtf32,
                                           TransA, TransB>(),
                     m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-                    ldc, offsetsC, batchCount, stream, blas_id);
+                    ldc, offsetsC, batchCount, stream, blas_id,
+                    growing_allocator);
   else
     run_group_graph(cutlass_sgemm_grouped<detail::CutlassType::cutlass_fp32,
                                           TransA, TransB>(),
                     m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-                    ldc, offsetsC, batchCount, stream, blas_id);
+                    ldc, offsetsC, batchCount, stream, blas_id,
+                    growing_allocator);
 }
 
 void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
@@ -175,24 +177,25 @@ void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    const float *A, int lda, int *offsetsA,
                                    const float *B, int ldb, int *offsetsB, float beta,
                                    float *C, int ldc, int *offsetsC,
-                                   int batchCount, cudaStream_t stream) {
+                                   int batchCount, cudaStream_t stream,
+                                   void *growing_allocator) {
 
   if (transa == 'N' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_N, CUBLAS_OP_N>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount, stream);
+        ldc, offsetsC, batchCount, stream, growing_allocator);
   else if (transa == 'N' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_N, CUBLAS_OP_T>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount, stream);
+        ldc, offsetsC, batchCount, stream, growing_allocator);
   else if (transa == 'T' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_T, CUBLAS_OP_N>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount, stream);
+        ldc, offsetsC, batchCount, stream, growing_allocator);
   else if (transa == 'T' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_T, CUBLAS_OP_T>(
         blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
-        ldc, offsetsC, batchCount, stream);
+        ldc, offsetsC, batchCount, stream, growing_allocator);
   else
     assert(false);
 }

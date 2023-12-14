@@ -19,6 +19,8 @@
 #include "cutlass/gemm/device/gemm.h"
 #endif
 
+#include "../external/growing_allocator.h"
+
 
 bool hip_alreadyAllocated_sgemm=false;
 bool hip_alreadyAllocated_sgemm_handle=false;
@@ -39,23 +41,42 @@ struct pair_hash {
 };
 }  // namespace detail
 
+template <typename Gemm, typename Real> auto &get_graph_cache() {
+  // we store at most one graph per "m" (# fields) and "blas id"
+  static std::unordered_map<std::pair<int, int>, hipGraphExec_t,
+                            detail::pair_hash>
+      graphCache;
+  return graphCache;
+}
+template <typename Gemm, typename Real> auto &get_ptr_cache() {
+  static std::unordered_map<
+      std::pair<int, int>, std::tuple<Real const *, Real const *, Real const *>,
+      detail::pair_hash>
+      ptrCache;
+  return ptrCache;
+}
+
+template <typename Gemm, typename Real> void free_gemm_cache(float *, size_t) {
+  std::cout << "free gemm cache" << std::endl;
+  get_graph_cache<Gemm, Real>().clear();
+  get_ptr_cache<Gemm, Real>().clear();
+}
+
 // this version is using graphs and caches the graphs
 template <typename Gemm, typename Real>
 void run_group_graph(Gemm &&gemm, int m, int *n, int *k, Real alpha,
                      const Real *A, int lda, int *offsetsA, const Real *B,
                      int ldb, int *offsetsB, Real beta, Real *C, int ldc,
                      int *offsetsC, int batchCount, hipStream_t stream,
-                     int blas_id = -1) {
+                     int blas_id, void *growing_allocator) {
+  growing_allocator_register_free_c(growing_allocator,
+                                    free_gemm_cache<Gemm, Real>);
+
   // we store at most one graph per "m" (# fields) and "blas id"
-  static std::unordered_map<std::pair<int, int>, hipGraphExec_t,
-                            detail::pair_hash>
-      graphCache;
+  auto &graphCache = get_graph_cache<Gemm, Real>();
 
   // we also store A, B, and C and recreate the graph if they change
-  static std::unordered_map<
-      std::pair<int, int>, std::tuple<Real const *, Real const *, Real const *>,
-      detail::pair_hash>
-      ptrCache;
+  auto &ptrCache = get_ptr_cache<Gemm, Real>();
 
   auto key = std::make_pair(m, blas_id);
 
@@ -66,7 +87,12 @@ void run_group_graph(Gemm &&gemm, int m, int *n, int *k, Real alpha,
     // the plan is cached, but the pointers are not correct. we remove and
     // delete the graph, but we keep the hipblas handles, if this happens more
     // often, we should cache this...
-    std::cout << "WARNING: POINTER CHANGE --> THIS MIGHT BE SLOW" << std::endl;
+    std::cout << "WARNING GEMM: POINTER CHANGE - Graph recreation might be slow." << std::endl;
+    std::cout << "We have an entry with key {m=" << m << ", blas_id=" << blas_id
+              << "}\n";
+    std::cout << "Pointers: " << std::get<0>(ptrs->second) << ", "
+              << std::get<1>(ptrs->second) << ", " << std::get<2>(ptrs->second)
+              << " vs. " << A << ", " << B << ", " << C << std::endl;
     HIC_CHECK(hipGraphExecDestroy(graphCache[key]));
     graphCache.erase(key);
     ptrCache.erase(key);
@@ -81,7 +107,8 @@ void run_group_graph(Gemm &&gemm, int m, int *n, int *k, Real alpha,
     hipGraph_t new_graph;
     hipGraphCreate(&new_graph, 0);
     for (int i = 0; i < batchCount; ++i) {
-      if (m == 0 || n[i] == 0 || k[i] == 0) continue;
+      if (m == 0 || n[i] == 0 || k[i] == 0)
+        continue;
 
       HIC_CHECK(hipStreamBeginCapture(stream, hipStreamCaptureModeGlobal));
       gemm(stream, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i],
@@ -111,7 +138,8 @@ void run_group(Gemm &&gemm, int m, int *n, int *k, Real alpha, const Real *A,
                Real beta, Real *C, int ldc, int *offsetsC, int batchCount,
                hipStream_t stream, int = -1) {
   for (int i = 0; i < batchCount; ++i) {
-    if (m == 0 || n[i] == 0 || k[i] == 0) continue;
+    if (m == 0 || n[i] == 0 || k[i] == 0)
+      continue;
     gemm(stream, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i], ldb,
          beta, C + offsetsC[i], ldc);
   }
@@ -124,12 +152,12 @@ void run_group(Gemm &&gemm, int m, int *n, int *k, Real alpha, const Real *A,
 namespace detail {
 hipblasHandle_t get_hipblas_handle() {
   static hipblasHandle_t handle;
-  if (!handle) HICBLAS_CHECK(hipblasCreate(&handle));
+  if (!handle)
+    HICBLAS_CHECK(hipblasCreate(&handle));
   return handle;
 }
-template <typename Real>
-struct hipblas_gemm_grouped {
- public:
+template <typename Real> struct hipblas_gemm_grouped {
+public:
   hipblas_gemm_grouped(hipblasOperation_t transa, hipblasOperation_t transb)
       : transa_(transa), transb_(transb) {
     // we need to get the hipblas handle here, otherwise this could be created
@@ -150,17 +178,18 @@ struct hipblas_gemm_grouped {
                                lda, B, ldb, &beta, C, ldc));
   }
 
- private:
+private:
   hipblasOperation_t transa_, transb_;
 };
-}  // namespace detail
+} // namespace detail
 
 void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    int m, int *n, int *k, float alpha,
                                    const float *A, int lda, int *offsetsA,
                                    const float *B, int ldb, int *offsetsB, float beta,
                                    float *C, int ldc, int *offsetsC,
-                                   int batchCount, hipStream_t stream) {
+                                   int batchCount, hipStream_t stream,
+                                  void *growing_allocator) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
   if (transa=='T' || transa=='t')
@@ -171,7 +200,7 @@ void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
   using namespace detail;
   run_group_graph(hipblas_gemm_grouped<float>(op_t1, op_t2), m, n, k, alpha, A,
                   lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
-                  batchCount, stream, blas_id);
+                  batchCount, stream, blas_id, growing_allocator);
 }
 
 void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
@@ -181,7 +210,7 @@ void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    const double *B, int ldb, int *offsetsB,
                                    double beta,
                                    double *C, int ldc, int *offsetsC,
-                                   int batchCount, hipStream_t stream) {
+                                   int batchCount, hipStream_t stream, void *) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
   if (transa=='T' || transa=='t')
@@ -190,11 +219,11 @@ void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
     op_t2=HIPBLAS_OP_T;
 
   using namespace detail;
-  run_group_graph(hipblas_gemm_grouped<double>(op_t1, op_t2), m, n, k, alpha,
+  run_group(hipblas_gemm_grouped<double>(op_t1, op_t2), m, n, k, alpha,
                   A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
                   batchCount, stream, blas_id);
 }
-}  // namespace
+} // namespace
 
 extern "C" {
 void hipblas_dgemm_wrapper (char transa, char transb,
@@ -202,7 +231,8 @@ void hipblas_dgemm_wrapper (char transa, char transb,
                             const double *A, int lda, int tda,
                             const double *B, int ldb, int tdb, double beta,
                             double *C, int ldc, int tdc, int batchCount,
-                            size_t stream) {
+                            size_t stream,
+                            void *growing_allocator) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
 
@@ -230,7 +260,8 @@ void hipblas_sgemm_wrapper (char transa, char transb,
                             const float *A, int lda, int tda,
                             const float *B, int ldb, int tdb, float beta,
                             float *C, int ldc, int tdc,
-                            int batchCount) {
+                            int batchCount,
+                            void *growing_allocator) {
 
   hipblasOperation_t op_t1=HIPBLAS_OP_N, op_t2=HIPBLAS_OP_N;
 
@@ -254,16 +285,19 @@ void blas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 const float *A, int lda, int *offsetsA,
                                 const float *B, int ldb, int *offsetsB, float beta,
                                 float *C, int ldc, int *offsetsC,
-                                int batchCount, size_t stream) {
+                                int batchCount, size_t stream,
+                                void *growing_allocator) {
 #ifdef USE_CUTLASS
     cutlass_sgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda, offsetsA,
                                   B, ldb, offsetsB, beta, C, ldc, offsetsC, batchCount,
-+                                 *(hipStream_t*)stream);
+                                  *(hipStream_t*)stream,
+                                  growing_allocator);
 #else
     hipblas_sgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda,
                                   offsetsA, B, ldb, offsetsB, beta, C, ldc,
                                   offsetsC, batchCount,
-+                                 *(hipStream_t*)stream);
+                                  *(hipStream_t*)stream
+                                  growing_allocator);
 #endif
 }
 
@@ -272,10 +306,12 @@ void blas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 const double *A, int lda, int *offsetsA,
                                 const double *B, int ldb, int *offsetsB, double beta,
                                 double *C, int ldc, int *offsetsC,
-                                int batchCount, size_t stream) {
+                                int batchCount, size_t stream,
+                                void *growing_allocator) {
     hipblas_dgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda, offsetsA, B,
                                 ldb, offsetsB, beta, C, ldc, offsetsC, batchCount,
-+                               *(hipStream_t*)stream);
+                                *(hipStream_t*)stream,
+                                growing_allocator);
 }
 }
 
