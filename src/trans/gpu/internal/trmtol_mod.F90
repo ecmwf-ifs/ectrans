@@ -161,18 +161,28 @@ CONTAINS
         CALL GSTATS(440,1)
       ENDIF
       CALL GSTATS(421,0)
+#ifdef USE_CUDA_AWARE_MPI_FT
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
 #endif
+#else
+    !! this is safe-but-slow fallback for running without GPU-aware MPI
+    !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
+#endif
       CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRMTOL_DTYPE,&
        & PFBUF,ILENR,IOFFR,TRMTOL_DTYPE,&
        & MPL_ALL_MS_COMM,IERROR)
+#ifdef USE_CUDA_AWARE_MPI_FT
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
+#else
+    !! this is safe-but-slow fallback for running without GPU-aware MPI
+    !$ACC UPDATE DEVICE(PFBUF)
 #endif
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(441,0)

@@ -683,10 +683,15 @@ CONTAINS
 
     IR=0
     !...Receive loop.........................................................
+#ifdef USE_CUDA_AWARE_MPI_FT
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
+#endif
+#else
+    !! this is safe-but-slow fallback for running without GPU-aware MPI
+    !$ACC UPDATE HOST(ZCOMBUFS)
 #endif
     DO INR=1,IRECV_COUNTS
       IR=IR+1
@@ -705,16 +710,22 @@ CONTAINS
       CALL MPI_ISEND(ZCOMBUFS(ICOMBUFS_OFFSET(INS)+1:ICOMBUFS_OFFSET(INS+1)),ISENDTOT(ISEND), &
         & TRLTOG_DTYPE, NPRCIDS(ISEND)-1,MTAGLG,MPL_COMM_OML(OML_MY_THREAD()),IREQ(IR),IERROR)
     ENDDO
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
 
     IF(IR > 0) THEN
       CALL MPL_WAIT(KREQUEST=IREQ(1:IR), &
       & CDSTRING='TRLTOG_CUDAAWARE: WAIT FOR SENDS AND RECEIVES')
     ENDIF
+
+#ifdef USE_CUDA_AWARE_MPI_FT
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+    !$ACC END HOST_DATA
+#endif
+#else
+    !! this is safe-but-slow fallback for running without GPU-aware MPI
+    !$ACC UPDATE DEVICE(ZCOMBUFR)
+#endif
 
     IF (LSYNC_TRANS) THEN
       CALL GSTATS(441,0)
