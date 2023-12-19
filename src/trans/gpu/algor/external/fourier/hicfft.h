@@ -44,7 +44,7 @@ inline void __fftSafeCall(hipfftResult err, const char *file, const int line)
     if( hipSuccess != (int) err) {
         _printError("GPU runtime", file, line, err, _fftGetErrorEnum(err));
         hipDeviceReset();
-        return;
+        abort();
     }
 }
 
