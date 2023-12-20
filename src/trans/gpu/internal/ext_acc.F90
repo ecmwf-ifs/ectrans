@@ -18,7 +18,8 @@ module openacc_ext_type
 end module
 module openacc_ext
   use iso_c_binding
-  use openacc
+  use iso_fortran_env
+  use openacc, only : acc_create, acc_copyin, acc_handle_kind
   use openacc_ext_type
   implicit none
 
@@ -32,42 +33,7 @@ module openacc_ext
   end type
 
   interface ext_acc_pass
-    function ext_acc_pass_2d_r4(arr) result(ret)
-      use openacc_ext_type
-      implicit none
-      type(ext_acc_arr_desc) :: ret
-      real(4), intent(in) :: arr(:,:)
-    end function
-    function ext_acc_pass_3d_r4(arr) result(ret)
-      use openacc_ext_type
-      implicit none
-      type(ext_acc_arr_desc) :: ret
-      real(4), intent(in) :: arr(:,:,:)
-    end function
-    function ext_acc_pass_4d_r4(arr) result(ret)
-      use openacc_ext_type
-      implicit none
-      type(ext_acc_arr_desc) :: ret
-      real(4), intent(in) :: arr(:,:,:,:)
-    end function
-    function ext_acc_pass_2d_r8(arr) result(ret)
-      use openacc_ext_type
-      implicit none
-      type(ext_acc_arr_desc) :: ret
-      real(8), intent(in) :: arr(:,:)
-    end function
-    function ext_acc_pass_3d_r8(arr) result(ret)
-      use openacc_ext_type
-      implicit none
-      type(ext_acc_arr_desc) :: ret
-      real(8), intent(in) :: arr(:,:,:)
-    end function
-    function ext_acc_pass_4d_r8(arr) result(ret)
-      use openacc_ext_type
-      implicit none
-      type(ext_acc_arr_desc) :: ret
-      real(8), intent(in) :: arr(:,:,:,:)
-    end function
+    module procedure ext_acc_pass_2d_r4, ext_acc_pass_3d_r4, ext_acc_pass_4d_r4, ext_acc_pass_2d_r8, ext_acc_pass_3d_r8, ext_acc_pass_4d_r8
   end interface
 contains
 
@@ -282,7 +248,7 @@ contains
     enddo
   end function
   subroutine ext_acc_create(ptrs, stream)
-    use openacc
+    use openacc, only : acc_create, acc_async_sync
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -290,7 +256,7 @@ contains
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
-    integer(4), pointer :: pp(:)
+    integer(kind=int32), pointer :: pp(:)
     integer(acc_handle_kind) :: stream_act
 
     if (present(stream)) then
@@ -303,7 +269,8 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      call acc_create_async(pp, common_ptrs(i)%sz, async=stream_act)
+      !!call acc_create_async(pp, common_ptrs(i)%sz, async=stream_act)
+      call acc_create(pp, int(common_ptrs(i)%sz))
     enddo
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
@@ -329,7 +296,8 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      call acc_copyin_async(pp, common_ptrs(i)%sz, async=stream_act)
+      !!call acc_copyin_async(pp, common_ptrs(i)%sz, async=stream_act)
+      call acc_copyin(pp, int(common_ptrs(i)%sz))
     enddo
   end subroutine
   subroutine ext_acc_copyout(ptrs, stream)
@@ -355,7 +323,8 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      call acc_copyout_async(pp, common_ptrs(i)%sz, async=stream_act)
+      !!call acc_copyout_async(pp, common_ptrs(i)%sz, async=stream_act)
+      call acc_copyout(pp, int(common_ptrs(i)%sz))
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
@@ -381,7 +350,8 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      call acc_delete_async(pp, common_ptrs(i)%sz, async=stream_act)
+      !!call acc_delete_async(pp, common_ptrs(i)%sz, async=stream_act)
+      call acc_delete(pp, int(common_ptrs(i)%sz))
     enddo
   end subroutine
 end module

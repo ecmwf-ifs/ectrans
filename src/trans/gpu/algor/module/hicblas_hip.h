@@ -11,6 +11,9 @@
 #ifndef __HICBLAS_HIP_H__
 #define __HICBLAS_HIP_H__
 
+#include <cstdio>
+#include <hip/hip_runtime.h>
+
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#pragma-messages"
@@ -20,7 +23,7 @@
 #pragma clang diagnostic pop
 #endif
 
-inline static const char * _fftGetErrorEnum(hipfftResult error)
+inline static const char * _blasGetErrorEnum(hipblasStatus_t error)
 {
     switch (error)
     {
@@ -57,7 +60,7 @@ inline static const char * _fftGetErrorEnum(hipfftResult error)
     hipblasStatus_t err = (e);                                                \
     if (err != HIPBLAS_STATUS_SUCCESS) {                                      \
       fprintf(stderr, "HIP error: %s, line %d, %s: %s\n", __FILE__, __LINE__, \
-              #e, hipGetErrorString(err));                                    \
+              #e, _blasGetErrorEnum(err));                                    \
       exit(EXIT_FAILURE);                                                     \
     }                                                                         \
   }

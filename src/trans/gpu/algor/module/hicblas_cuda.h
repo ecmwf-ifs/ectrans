@@ -67,6 +67,7 @@
 #define hipFree cudaFree
 #define hipMemcpy cudaMemcpy
 #define hipDeviceSynchronize cudaDeviceSynchronize
+#define hipMemGetInfo cudaMemGetInfo
 
 inline static const char * _blasGetErrorEnum(cublasStatus_t error)
 {

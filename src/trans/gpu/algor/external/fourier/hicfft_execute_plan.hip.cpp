@@ -99,9 +99,7 @@ template <class Type, hipfftType Direction> auto &get_ptr_cache() {
 }
 
 template <class Type, hipfftType Direction>
-void free_fft_cache(float *, size_t sz) {
-  std::cout << "free fft cache" << std::endl;
-  get_fft_plan_cache<Type, Direction>().clear();
+void free_fft_cache(float *, size_t) {
   get_graph_cache<Type, Direction>().clear();
   get_ptr_cache<Type, Direction>().clear();
 }

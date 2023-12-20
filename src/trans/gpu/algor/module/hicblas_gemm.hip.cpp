@@ -57,7 +57,6 @@ template <typename Gemm, typename Real> auto &get_ptr_cache() {
 }
 
 template <typename Gemm, typename Real> void free_gemm_cache(float *, size_t) {
-  std::cout << "free gemm cache" << std::endl;
   get_graph_cache<Gemm, Real>().clear();
   get_ptr_cache<Gemm, Real>().clear();
 }
@@ -296,7 +295,7 @@ void blas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
     hipblas_sgemm_wrapper_grouped(blas_id, transa, transb, m, n, k, alpha, A, lda,
                                   offsetsA, B, ldb, offsetsB, beta, C, ldc,
                                   offsetsC, batchCount,
-                                  *(hipStream_t*)stream
+                                  *(hipStream_t*)stream,
                                   growing_allocator);
 #endif
 }

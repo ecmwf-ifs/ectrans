@@ -13,6 +13,7 @@
 #elif defined CUDAGPU
 #define hipblasSgemm 'cublasSgemm'
 #define hipblasDgemm 'cublasDgemm'
+#define ACC_GET_HIP_STREAM acc_get_cuda_stream
 #endif
 
 MODULE HICBLAS_MOD
@@ -20,8 +21,10 @@ MODULE HICBLAS_MOD
 USE PARKIND1, ONLY : JPIM, JPRM, JPRD
 USE GROWING_ALLOCATOR_MOD, ONLY: GROWING_ALLOCATION_TYPE
 USE ISO_C_BINDING
-USE OPENACC, ONLY: ACC_GET_CUDA_STREAM
+!!USE OPENACC, ONLY: ACC_GET_HIP_STREAM
+USE OPENACC_LIB, ONLY: ACC_HANDLE_KIND, ACC_GET_HIP_STREAM
 
+IMPLICIT NONE
 
   INTERFACE HIP_GEMM_BATCHED
     MODULE PROCEDURE HIP_DGEMM_BATCHED_OVERLOAD
@@ -211,8 +214,8 @@ SUBROUTINE HIP_DGEMM_GROUPED(   &
 &) BIND(C, NAME='blas_dgemm_wrapper_grouped')
     USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
-!!    INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
-    INTEGER(C_INT), VALUE :: BLAS_ID, M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
+    INTEGER(C_INT), VALUE  :: BLAS_ID, M, LDA, LDB, LDC, BATCHCOUNT
+    INTEGER(C_INT)         :: N(*), K(*), OFFSETA(*), OFFSETB(*), OFFSETC(*)
     REAL(C_DOUBLE), VALUE  :: ALPHA,BETA
     REAL(C_DOUBLE)         :: A(*), B(*), C(*)
     INTEGER(KIND=c_size_t) :: STREAM
@@ -230,8 +233,8 @@ SUBROUTINE HIP_SGEMM_GROUPED(   &
 &) BIND(C, NAME='blas_sgemm_wrapper_grouped')
     USE ISO_C_BINDING
         CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
-!!    INTEGER(C_INT), VALUE :: CTA, CTB, M, N(:), K(:), LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
-    INTEGER(C_INT), VALUE :: BLAS_ID, M, N(:), K(:), LDA, LDB, LDC, OFFSETA(:), OFFSETB(:), OFFSETC(:), BATCHCOUNT
+    INTEGER(C_INT), VALUE :: BLAS_ID, M, LDA, LDB, LDC, BATCHCOUNT
+    INTEGER(C_INT)        :: N(*), K(*), OFFSETA(*), OFFSETB(*), OFFSETC(*)
     REAL(C_FLOAT), VALUE  :: ALPHA,BETA
     REAL(C_FLOAT)         :: A(*), B(*), C(*)
     INTEGER(KIND=C_SIZE_T) :: STREAM
@@ -269,6 +272,12 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=C_LONG) :: STREAM
     TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
+    integer(kind=c_long) :: laccgethipstream
+    integer(kind=acc_handle_kind) :: lhand
+
+    lhand = acc_get_hip_stream(int(stream,kind=c_int))
+    laccgethipstream = int(lhand,kind=c_long)
+
     CALL HIP_DGEMM_BATCHED( &
       & TRANSA, TRANSB, &
       & M, N, K, &
@@ -277,7 +286,8 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, STRIDEB, &
       & BETA, &
       & CARRAY, LDC, STRIDEC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
+!!      & BATCHCOUNT, ACC_GET_HIP_STREAM(lstream), C_LOC(ALLOC))
+      & BATCHCOUNT, lACCGETHIPSTREAM, C_LOC(ALLOC))
   END SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD
 
   SUBROUTINE HIP_SGEMM_BATCHED_OVERLOAD( &
@@ -308,6 +318,12 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=C_LONG) :: STREAM
     TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
+    integer(kind=c_long) :: laccgethipstream
+    integer(kind=acc_handle_kind) :: lhand
+
+    lhand = acc_get_hip_stream(int(stream,kind=c_int))
+    laccgethipstream = int(lhand,kind=c_long)
+
     CALL HIP_SGEMM_BATCHED( &
       & TRANSA, TRANSB, &
       & M, N, K, &
@@ -316,7 +332,8 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, STRIDEB, &
       & BETA, &
       & CARRAY, LDC, STRIDEC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
+      !!& BATCHCOUNT, ACC_GET_HIP_STREAM(STREAM), C_LOC(ALLOC))
+      & BATCHCOUNT, lACCGETHIPSTREAM, C_LOC(ALLOC))
   END SUBROUTINE HIP_SGEMM_BATCHED_OVERLOAD
 
 
@@ -349,6 +366,12 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=C_LONG) :: STREAM
     TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
+    integer(kind=c_long) :: laccgethipstream
+    integer(kind=acc_handle_kind) :: lhand
+
+    lhand = acc_get_hip_stream(int(stream,kind=c_int))
+    laccgethipstream = int(lhand,kind=c_long)
+
     CALL HIP_DGEMM_GROUPED( &
       & BLAS_ID, TRANSA, TRANSB, &
       & M, N, K, &
@@ -357,7 +380,8 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, OFFSETB, &
       & BETA, &
       & CARRAY, LDC, OFFSETC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
+      !!& BATCHCOUNT, ACC_GET_HIP_STREAM(STREAM), C_LOC(ALLOC))
+      & BATCHCOUNT, lACCGETHIPSTREAM, C_LOC(ALLOC))
 
   END SUBROUTINE HIP_DGEMM_GROUPED_OVERLOAD
 
@@ -390,6 +414,12 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
     INTEGER(KIND=C_LONG) :: STREAM
     TYPE(GROWING_ALLOCATION_TYPE), INTENT(IN) :: ALLOC
 
+    integer(kind=c_long) :: laccgethipstream
+    integer(kind=acc_handle_kind) :: lhand
+
+    lhand = acc_get_hip_stream(int(stream,kind=c_int))
+    laccgethipstream = int(lhand,kind=c_long)
+
     CALL HIP_SGEMM_GROUPED( &
       & BLAS_ID, TRANSA, TRANSB, &
       & M, N, K, &
@@ -398,7 +428,8 @@ SUBROUTINE HIP_DGEMM_BATCHED_OVERLOAD( &
       & BARRAY, LDB, OFFSETB, &
       & BETA, &
       & CARRAY, LDC, OFFSETC, &
-      & BATCHCOUNT, ACC_GET_CUDA_STREAM(STREAM), C_LOC(ALLOC))
+!!      & BATCHCOUNT, ACC_GET_HIP_STREAM(STREAM), C_LOC(ALLOC))
+      & BATCHCOUNT, lACCGETHIPSTREAM, C_LOC(ALLOC))
 
   END SUBROUTINE HIP_SGEMM_GROUPED_OVERLOAD
 
