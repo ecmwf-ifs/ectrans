@@ -141,6 +141,7 @@ ENDIF
 WRITE(NOUT,'(A)')
 WRITE(NOUT,'(A)') "ecTrans at version: " // ECTRANS_VERSION_STR()
 WRITE(NOUT,'(A)') "commit: " // ECTRANS_GIT_SHA1()
+WRITE(NOUT,'(A)') "CPU version"
 WRITE(NOUT,'(A)')
 
 LLP1 = NPRINTLEV>0
