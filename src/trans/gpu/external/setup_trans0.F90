@@ -188,7 +188,11 @@ ENDIF
 WRITE(NOUT,'(A)')
 WRITE(NOUT,'(A)') "ecTrans at version: " // ECTRANS_VERSION_STR()
 WRITE(NOUT,'(A)') "commit: " // ECTRANS_GIT_SHA1()
+#ifdef USE_CUDA_AWARE_MPI_FT
+WRITE(NOUT,'(A)') "GPU version with GPU-aware MPI"
+#else
 WRITE(NOUT,'(A)') "GPU version"
+#endif
 WRITE(NOUT,'(A)')
 
 LLP1 = NPRINTLEV>0
