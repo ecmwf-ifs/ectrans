@@ -41,9 +41,92 @@ ecbuild_list_add_pattern( LIST trans_src
                                 internal/*
 				external/specnorm.F90
                                 module/*
-                                ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
+                               ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
+
+get_target_property(fiat_include fiat INTERFACE_INCLUDE_DIRECTORIES)
+set(fiat_include_opts ${fiat_include})
+list(TRANSFORM fiat_include_opts PREPEND " -I")
+list(JOIN fiat_include_opts " " fiat_include_opts_j1)
+separate_arguments(fiat_include_opts_j  UNIX_COMMAND "${fiat_include_opts_j1}")
+
+
+function(DEFINE_PREPROCESS) 
+set (options ONGPU )
+set (oneValueArgs INDIR OUTDIR SUBDIR BUILDTYPE)
+set (multiValueArgs SOURCEFILES SPECOPTS)
+cmake_parse_arguments(DPSPREFIX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+set(indir   ${DPSPREFIX_INDIR})
+set(outdir  ${DPSPREFIX_OUTDIR})
+set(subdir  ${DPSPREFIX_SUBDIR})
+set(destdir ${DPSPREFIX_BUILDTYPE})
+set(custopt ${DPSPREFIX_SPECOPTS})
+set(files   ${DPSPREFIX_SOURCEFILES})
+message (STATUS "Subdir: " ${subdir})
+message (STATUS "Buildtype: " ${destdir})
+message (STATUS "Specopts: " ${custopt})
+message (STATUS "Files " "${files}")
+set(sourcesdir "${indir}/${subdir}")
+set(destdir  "${outdir}/${destdir}/${subdir}")
+message(STATUS "Sources dir:" ${sourcesdir})
+message(STATUS "Destination dir:" ${destdir})
+foreach( file_i ${files})
+        message (STATUS "Define preprocessing for file: ${destdir}/${file_i}")
+        add_custom_command( 
+	COMMAND gcc-13 -E -P  -cpp  ${sourcesdir}/${file_i} -I${FFTW_INCLUDE_DIRS} ${fiat_include_opts_j}  -I${PROJECT_SOURCE_DIR}/src/trans/include/ectrans -I${PROJECT_SOURCE_DIR}/src/trans/external -DSYMBOLSUFFIX=${prec} -DPRECOPT=${precno} > "${destdir}/${file_i}.pp.f90"
+        DEPENDS  ${sourcesdir}/${file_i}
+        OUTPUT  ${destdir}/${file_i}.pp.f90
+        COMMENT "Preprocessing ${sourcesdir}/${file_i} to ${destdir}/${file_i}.pp.f90"
+        VERBATIM
+)
+endforeach( file_i )
+endfunction(DEFINE_PREPROCESS)
+
+function(GENERATE_BUILD) 
+set (options ONGPU )
+set (oneValueArgs BUILDTYPE)
+set (multiValueArgs SPECOPTS )
+cmake_parse_arguments(GBPREFIX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+set(buildtype ${GBPREFIX_BUILDTYPE}) #buildtype_arg
+set(specopts  ${GBPREFIX_SPECOPTS}) #specopts_arg} )
+set(ongpu ${GBPREFIX_ONGPU}) #  ${driverfile_arg} )
+message (STATUS "Buildtype: " ${buildtype})
+message (STATUS "Specopts: " ${specopts})
+#file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src) 
+#file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}) 
+#file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/sharedmem) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/algor) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/internal) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/external) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/module) 
+list(REMOVE_ITEM trans_src ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90) 
+list(REMOVE_ITEM trans_src sharedmem/sharedmem.c) 
+define_preprocess(INDIR ${PROJECT_SOURCE_DIR} OUTDIR  "${CMAKE_BINARY_DIR}/preprocessed_src"  SUBDIR "src/trans/"  BUILDTYPE  ${buildtype}  SOURCEFILES ${trans_src}  SPECOPTS ${specopts})
+set(trans_sources ${trans_src})
+#list(REMOVE_ITEM trans_sources ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90) 
+#list(REMOVE_ITEM trans_sources sharedmem/sharedmem.c) 
+list(TRANSFORM trans_sources PREPEND ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/)
+list(TRANSFORM trans_sources APPEND .pp.f90)
+list(APPEND trans_sources ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90) 
+list(APPEND trans_sources sharedmem/sharedmem.c) 
+set(trans_sources_listname "trans_sources_${buildtype}")
+message(STATUS "Trans source list name:"  ${trans_sources_listname})
+set("${trans_sources_listname}" ${trans_sources} PARENT_SCOPE)
+endfunction(GENERATE_BUILD)
+
+
+
+
+foreach( prec dp sp )
+    if( ${prec} MATCHES "sp" )
+       set(precno 1)
+    elseif (${prec} MATCHES "dp")
+       set(precno 2)
+    endif()
+endforeach( prec )
+
 
 if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
@@ -57,16 +140,17 @@ foreach( prec dp sp )
     elseif (${prec} MATCHES "dp")
        set(precno 2)
     endif()
-
+    generate_build( SPECOPTS  ${custopts} BUILDTYPE ${prec} )
+    message(STATUS "Preprocessed sources:" ${trans_sources_${prec}})
     ecbuild_add_library(
       TARGET           trans_${prec}
       LINKER_LANGUAGE  Fortran
-      SOURCES          ${trans_src}
+      SOURCES          ${trans_sources_${prec}}
+                       ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
-      PRIVATE_INCLUDES ${PROJECT_SOURCE_DIR}/src/trans/external
       PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
                                PRECOPT=${precno}
       PUBLIC_LIBS      fiat parkind_${prec}

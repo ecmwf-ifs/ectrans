@@ -56,7 +56,7 @@ ecbuild_add_option( FEATURE FFTW
                     REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
 
 ecbuild_add_option( FEATURE TRANSI
-                    DEFAULT ON
+	            DEFAULT OFF
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
