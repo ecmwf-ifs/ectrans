@@ -193,6 +193,7 @@ WRITE(NOUT,'(A)') "GPU version with GPU-aware MPI"
 #else
 WRITE(NOUT,'(A)') "GPU version"
 #endif
+WRITE(NOUT,*) 'MYPROC:', MYPROC, 'GPU:', MYGPU, 'of ', NUMDEVS
 WRITE(NOUT,'(A)')
 
 LLP1 = NPRINTLEV>0
