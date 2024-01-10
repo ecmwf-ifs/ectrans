@@ -524,8 +524,6 @@ LDZAA=R%NDGNH
 LDZAS=R%NDGNH
 TDZAA=(R%NTMAX+2)/2
 TDZAS=(R%NTMAX+3)/2
-print*,'R%NTMAX=',R%NTMAX
-print*,'R%NSMAX=',R%NSMAX
 !similarly for B (ltinv)
 ILDZBA=(R%NSMAX+2)/2
 ILDZBS=(R%NSMAX+3)/2
@@ -555,7 +553,6 @@ DTDZCS0=IF_FS_DIR0
 
 !allocate matrices for matrix multiplications
 ALLOCATE(IZBS(IF_FS_INV0*TDZAS*D%NUMP))
-PRINT*,"New: allocating IZBS as a 1D array!"
 ! just use IZBS
 !IZBA=>IZBS(:,1:TDZAA,:)
 

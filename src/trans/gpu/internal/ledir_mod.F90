@@ -230,7 +230,6 @@ ENDDO
 
 ! compute m=0 in double precision:
 IF(KMLOC0 > 0) THEN
-   PRINT*,'computing m=0 in double precision'
    ISKIP = 2
 
 #ifdef OMPGPU
