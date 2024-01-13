@@ -50,7 +50,7 @@ info()
   echo "    flags         : @EC_Fortran_FLAGS@"
   echo ""
   echo "Features:"
-  echo "  MPI             : @ectrans_HAVE_MPI@"
+  echo "  MPI             : @fiat_HAVE_MPI@"
   echo "  OMP             : @ectrans_HAVE_OMP@"
   echo "  MKL             : @ectrans_HAVE_MKL@"
   echo "  FFTW            : @ectrans_HAVE_FFTW@"

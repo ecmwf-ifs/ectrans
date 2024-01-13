@@ -24,7 +24,7 @@
 ## Export project variables
 
 set( ectrans_VERSION_STR             @ectrans_VERSION_STR@ )
-set( ectrans_HAVE_MPI                @ectrans_HAVE_MPI@ )
+set( ectrans_HAVE_MPI                @fiat_HAVE_MPI@ )
 set( ectrans_HAVE_OMP                @ectrans_HAVE_OMP@ )
 set( ectrans_HAVE_FFTW               @ectrans_HAVE_FFTW@ )
 set( ectrans_HAVE_TRANSI             @ectrans_HAVE_TRANSI@ )

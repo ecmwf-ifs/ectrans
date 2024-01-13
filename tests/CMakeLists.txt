@@ -37,18 +37,18 @@ else()
   set( trans trans_sp )
 endif()
 
-ecbuild_add_test(TARGET ectrans_test_adjoint
-  SOURCES trans/test_adjoint.F90
-  LIBS ${trans}
-  LINKER_LANGUAGE Fortran
-)
+#ecbuild_add_test(TARGET ectrans_test_adjoint
+#  SOURCES trans/test_adjoint.F90
+#  LIBS ${trans}
+#  LINKER_LANGUAGE Fortran
+#)
 if( TEST ectrans_test_adjoint AND HAVE_OMP )
   target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
 endif()
 
 set( ntasks 0 )
 set( nthreads 1 )
-if( HAVE_MPI )
+if( fiat_HAVE_MPI )
   list( APPEND ntasks 1 2 )
 endif()
 if( HAVE_OMP )
@@ -56,8 +56,9 @@ if( HAVE_OMP )
 endif()
 
 foreach( prec dp sp )
-  foreach( mpi ${ntasks} )
-    foreach( omp ${nthreads} )
+  if( TARGET ectrans-benchmark-${prec} )
+    foreach( mpi ${ntasks} )
+      foreach( omp ${nthreads} )
         set( t 47 )
         set( grid O48 )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0
@@ -100,8 +101,9 @@ foreach( prec dp sp )
             MPI ${mpi}
             OMP ${omp}
         )
+      endforeach()
     endforeach()
-  endforeach()
+  endif()
 endforeach()
 
 

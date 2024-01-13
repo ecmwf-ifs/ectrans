@@ -30,17 +30,83 @@ if( HAVE_TOOLS )
 
 endif()
 
-foreach( prec sp dp )
-  if( HAVE_${prec} )
-    ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                           SOURCES ectrans-benchmark.F90
-                           LIBS
-                             fiat
-                             parkind_${prec}
-                             trans_${prec}
-                          )
+ecbuild_add_library(
+  TARGET           ectrans_interfaces
+  LINKER_LANGUAGE  Fortran
+  SOURCES          wrappers/dir_trans.F90
+                   wrappers/inv_trans.F90
+                   wrappers/setup_trans0.F90
+                   wrappers/setup_trans.F90
+                   wrappers/trans_inq.F90
+  PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                   $<INSTALL_INTERFACE:include/ectrans>
+                   $<INSTALL_INTERFACE:include>
+  PRIVATE_DEFINITIONS SYMBOLSUFFIX
+                      PRECOPT
+  PUBLIC_LIBS      fiat  trans_sp trans_dp
+)
+
+if( HAVE_GPU )
+ecbuild_add_library(
+  TARGET           ectrans_interfaces_gpu
+  LINKER_LANGUAGE  Fortran
+  SOURCES          wrappers/dir_trans.F90
+                   wrappers/inv_trans.F90
+                   wrappers/setup_trans0.F90
+                   wrappers/setup_trans.F90
+                   wrappers/trans_inq.F90
+  PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                   $<INSTALL_INTERFACE:include/ectrans>
+                   $<INSTALL_INTERFACE:include>
+  PRIVATE_DEFINITIONS SYMBOLSUFFIX
+                      PRECOPT
+	              ACCGPU
+  PUBLIC_LIBS      fiat  trans_gpu_sp trans_gpu_dp
+)
   endif()
-endforeach()
+
+foreach( program ectrans-benchmark ectrans-benchmark-ifs )
+
+  if ( HAVE_CPU )
+    foreach( prec dp sp )
+      if( HAVE_${prec} )
+        ecbuild_add_executable( TARGET  ${program}-${prec}
+                                SOURCES ${program}.F90
+                                LINKER_LANGUAGE Fortran
+                                LIBS
+                                  fiat
+                                  parkind_${prec}
+                                  trans_sp
+                                  trans_dp
+                                  ectrans_interfaces
+        )
+      endif()
+    endforeach( prec)
+  endif()
+
+  if( HAVE_GPU )
+    foreach( prec dp sp )
+      if( HAVE_${prec} )
+            ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
+                                    SOURCES ${program}.F90
+                                    LINKER_LANGUAGE Fortran
+                                    LIBS
+                                      fiat
+                                      parkind_${prec}
+				      #  trans_sp
+				      # trans_dp
+                                      trans_gpu_sp
+                                      trans_gpu_dp
+				      #ectrans_interfaces
+                                      ectrans_interfaces_gpu
+                                    DEFINITIONS ACCGPU
+            )
+       endif()
+    endforeach( prec )
+  endif( HAVE_GPU )
+endforeach( program )
 
 # ectrans information tool
 
@@ -64,4 +130,3 @@ install( FILES
   PERMISSIONS
   OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
-
