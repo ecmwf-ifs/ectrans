@@ -2,6 +2,6 @@
 #define INMODULE
 submodule (ectrans_mod) specnorm_mod
 contains
-#include "specnorm.F90"
+#include "spec_norm.F90"
 end submodule specnorm_mod
 
