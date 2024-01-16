@@ -90,15 +90,18 @@ set(sourcesdir "${indir}/${subdir}")
 set(destdir  "${outdir}/${destdir}/${subdir}")
 message(STATUS "Sources dir:" ${sourcesdir})
 message(STATUS "Destination dir:" ${destdir})
+math(EXPR value "0" )
 foreach( file_i ${files})
-        message (STATUS "Define preprocessing for file: ${destdir}/${file_i}")
+math(EXPR value "${value}+1")
+        message (STATUS "Define preprocessing for ${value}  file: ${destdir}/${file_i}")
         add_custom_command( 
 #	COMMAND gcc-13 -E -P  -cpp  ${sourcesdir}/${file_i} -I${FFTW_INCLUDE_DIRS} ${fiat_include_opts_j}  -I${PROJECT_SOURCE_DIR}/src/trans/include/ectrans -I${PROJECT_SOURCE_DIR}/src/trans/external -DSYMBOLSUFFIX=${prec} -DPRECOPT=${precno} > "${destdir}/${file_i}.pp.f90"
-COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenames.txt | sed -e ${vartypesed} -e ${prectypesed}  > sedtest.txt && sed -f sedtest.txt  ${sourcesdir}/${file_i} > "${destdir}/${file_i}.pp.F90"
+#COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenames.txt | sed -e ${vartypesed} -e ${prectypesed}  > sedtest${value}.txt.${DPSPREFIX_BUILDTYPE} && sed -f sedtest${value}.txt.${DPSPREFIX_BUILDTYPE}  ${sourcesdir}/${file_i} > "${destdir}/${file_i}.pp.F90"
+COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenames.txt | sed -e ${vartypesed} -e ${prectypesed} | sed -f -  ${sourcesdir}/${file_i} > "${destdir}/${file_i}.pp.F90"
 
         DEPENDS  ${sourcesdir}/${file_i}
         OUTPUT  ${destdir}/${file_i}.pp.F90
-        COMMENT "Preprocessing ${sourcesdir}/${file_i} to ${destdir}/${file_i}.pp.F90"
+        COMMENT "Preprocessing using sedtest${value}.txt.${DPSPREFIX_BUILDTYPE}  file: ${sourcesdir}/${file_i} to ${destdir}/${file_i}.pp.F90"
         VERBATIM
 )
 endforeach( file_i )
@@ -135,7 +138,8 @@ foreach( file_i ${files})
         message (STATUS "Define preprocessing for file: ${destdir}/${file_i}")
         add_custom_command( 
 #	COMMAND gcc-13 -E -P  -cpp  ${sourcesdir}/${file_i} -I${FFTW_INCLUDE_DIRS} ${fiat_include_opts_j}  -I${PROJECT_SOURCE_DIR}/src/trans/include/ectrans -I${PROJECT_SOURCE_DIR}/src/trans/external -DSYMBOLSUFFIX=${prec} -DPRECOPT=${precno} > "${destdir}/${file_i}.pp.f90"
-COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenamesext.txt | sed -e ${vartypesed} -e ${prectypesed}  > sedtest.txt && sed -f sedtest.txt  ${sourcesdir}/${file_i} > "${destdir}/${file_i}"
+#COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenamesext.txt | sed -e ${vartypesed} -e ${prectypesed}  > sedtest.txt && sed -f sedtest.txt  ${sourcesdir}/${file_i} > "${destdir}/${file_i}"
+COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenamesext.txt | sed -e ${vartypesed} -e ${prectypesed} | sed -f -  ${sourcesdir}/${file_i} > "${destdir}/${file_i}"
 
         DEPENDS  ${sourcesdir}/${file_i}
         OUTPUT  ${destdir}/${file_i}
@@ -202,7 +206,7 @@ endforeach( prec )
 if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
 endif()
-
+set (precold)
 foreach( prec dp sp )
   if( HAVE_${prec} )
   
@@ -231,7 +235,9 @@ foreach( prec dp sp )
       PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
                                PRECOPT=${precno}
       PUBLIC_LIBS      fiat parkind_${prec} 
+      DEPENDS ${precold}
     )
+    set(precold trans_${prec})
     ectrans_target_fortran_module_directory(
       TARGET            trans_${prec}
       MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/trans_${prec}
