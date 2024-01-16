@@ -39,14 +39,14 @@ ecbuild_list_add_pattern( LIST trans_src
                                 sharedmem/*
                                 algor/*
                                 internal/*
-				#external/spec_norm.F90
+				external/spec_norm.F90
                                 module/*
 				#  ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
 ecbuild_list_add_pattern( LIST trans_src_ext
                           GLOB
-				external/spec_norm.F90
+			  #			external/spec_norm.F90
 				external/dir__trans.F90
 				external/inv__trans.F90
 				external/trans__inq.F90
