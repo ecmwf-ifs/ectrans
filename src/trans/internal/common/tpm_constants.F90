@@ -10,12 +10,12 @@
 
 #include "renames.inc"
 MODULE TPM_CONSTANTS
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRD
 
 IMPLICIT NONE
 
 SAVE
 
-REAL(KIND=JPRB) :: RA  ! Radius of Earth
+REAL(KIND=JPRD) :: RA  ! Radius of Earth
 
 END MODULE TPM_CONSTANTS
