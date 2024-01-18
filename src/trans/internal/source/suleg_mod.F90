@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SULEG_MOD
 #ifdef __NEC__
 #define SIZEOF(x) STORAGE_SIZE(x)/KIND(x)

@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE ABORT_TRANS_MOD
 CONTAINS
 SUBROUTINE ABORT_TRANS(CDTEXT)

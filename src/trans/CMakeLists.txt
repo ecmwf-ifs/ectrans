@@ -61,7 +61,7 @@ ecbuild_list_add_pattern( LIST trans_src_ext
 
 
 function(DEFINE_CODE_SPEC) 
-set (oneValueArgs INDIR OUTDIR SUBDIR BUILDTYPE PRECTYPE SUFFIX)
+set (oneValueArgs INDIR OUTDIR SUBDIR BUILDTYPE SUFFIX)
 set (multiValueArgs SRCFILES)
 cmake_parse_arguments(DPSPREFIX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 set(indir   ${DPSPREFIX_INDIR})
@@ -70,10 +70,6 @@ set(subdir  ${DPSPREFIX_SUBDIR})
 set(destdir ${DPSPREFIX_BUILDTYPE})
 set(files   ${DPSPREFIX_SRCFILES})
 set(suffix  ${DPSPREFIX_SUFFIX})
-
-set(precsed "s/JPRBC/"${DPSPREFIX_PRECTYPE}"/g")
-list(JOIN precsed "" precsedtmp)
-separate_arguments(prectypesed  UNIX_COMMAND "${precsedtmp}")
 
 set(variantsed "s/VARIANTDESIGNATOR/"${DPSPREFIX_BUILDTYPE}"/g")
 list(JOIN variantsed "" varianttmp)
@@ -87,7 +83,7 @@ foreach( file_i ${files})
         message (STATUS "Define preprocessing for file: ${destdir}/${file_i}")
         add_custom_command( 
         COMMAND  cat ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/sedrenames.txt | 
-	         sed -e ${vartypesed} -e ${prectypesed} | 
+	         sed -e ${vartypesed} | 
 		 sed -f -  ${sourcesdir}/${file_i} > "${destdir}/${file_i}${suffix}"
         DEPENDS  ${sourcesdir}/${file_i}
         OUTPUT  ${destdir}/${file_i}${suffix}
@@ -97,65 +93,47 @@ foreach( file_i ${files})
 endforeach( file_i )
 endfunction(DEFINE_CODE_SPEC)
 
-function(GENERATE_BUILD) 
-set (oneValueArgs BUILDTYPE PRECTYPE)
+function(GENERATE_TRANS_BUILD) 
+set (oneValueArgs BUILDTYPE )
 cmake_parse_arguments(GBPREFIX "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 set(buildtype ${GBPREFIX_BUILDTYPE}) #buildtype_arg
-set(precd ${GBPREFIX_PRECTYPE})
-message (STATUS "Buildtype: " ${buildtype})
-message (STATUS "Specopts: " ${specopts})
-#execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/src/trans 
-#                                                           ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/sharedmem/sources-c) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/sharedmem/sources-f) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/algor) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/internal/common) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/internal/source) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/external) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/module) 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/include/ectrans) 
-#list(REMOVE_ITEM trans_src internal/ectrans_version_mod.F90.in) 
-#list(REMOVE_ITEM trans_src internal/ectrans_version_mod.F90) 
-#list(REMOVE_ITEM trans_src sharedmem/sharedmem.c) 
-define_code_spec(INDIR ${PROJECT_SOURCE_DIR} OUTDIR  "${CMAKE_BINARY_DIR}/preprocessed_src"  SUBDIR "src/trans/"  BUILDTYPE  ${buildtype} PRECTYPE ${precd} SRCFILES ${trans_src} SUFFIX ".pp.F90" )
-define_code_spec(INDIR ${PROJECT_SOURCE_DIR} OUTDIR  "${CMAKE_BINARY_DIR}/preprocessed_src"  SUBDIR "src/trans/"  BUILDTYPE  ${buildtype} PRECTYPE ${precd} SRCFILES ${trans_src_ext} )
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/algor) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/internal/source) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/external) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/module) 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/include/ectrans) 
+define_code_spec(INDIR ${PROJECT_SOURCE_DIR}/src OUTDIR  "${CMAKE_BINARY_DIR}/specialized_src"  BUILDTYPE  ${buildtype}  SUBDIR "trans/" SRCFILES ${trans_src} SUFFIX ".pp.F90" )
 set(trans_sources ${trans_src})
-set(trans_sources_ext ${trans_src_ext})
-#list(REMOVE_ITEM trans_sources ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90) 
-#list(REMOVE_ITEM trans_sources sharedmem/sharedmem.c) 
-list(TRANSFORM trans_sources PREPEND ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/)
+list(TRANSFORM trans_sources PREPEND ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/)
 list(TRANSFORM trans_sources APPEND .pp.F90)
-list(TRANSFORM trans_sources_ext PREPEND ${CMAKE_BINARY_DIR}/preprocessed_src/${buildtype}/src/trans/)
-#list(APPEND trans_sources internal/ectrans_version_mod.F90) 
-#list(APPEND trans_sources sharedmem/sharedmem.c) 
+define_code_spec(INDIR ${PROJECT_SOURCE_DIR}/src OUTDIR  "${CMAKE_BINARY_DIR}/specialized_src"  BUILDTYPE  ${buildtype}  SUBDIR "trans/" SRCFILES ${trans_src_ext} )
 set(trans_sources_listname "trans_sources_${buildtype}")
-message(STATUS "Trans source list name:"  ${trans_sources_listname})
 set("${trans_sources_listname}" ${trans_sources} PARENT_SCOPE)
+message(STATUS "Trans source list name:"  ${trans_sources_listname})
+
+set(trans_sources_ext ${trans_src_ext})
+list(TRANSFORM trans_sources_ext PREPEND ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/)
 set(trans_sources_ext_listname "trans_sources_ext_${buildtype}")
 message(STATUS "Trans source list name:"  ${trans_sources_ext_listname})
 set("${trans_sources_ext_listname}" ${trans_sources_ext} PARENT_SCOPE)
-endfunction(GENERATE_BUILD)
+
+endfunction(GENERATE_TRANS_BUILD)
 
 
-if( NOT HAVE_FFTW )
-  ecbuild_list_exclude_pattern( LIST trans_sources REGEX tpm_fftw.F90 )
-endif()
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
-  
     if( ${prec} MATCHES "sp" )
-       set(precno 1)
        set(precdef JPRM)
     elseif (${prec} MATCHES "dp")
-       set(precno 2)
        set(precdef JPRD)
     endif()
-    generate_build( BUILDTYPE ${prec} PRECTYPE ${precdef} )
-    message(STATUS "Preprocessed sources ext:" ${trans_sources_ext_${prec}})
-	# LIST(APPEND trans_sources_${prec} ${trans_sources_ext_${prec}} ${trans_src_common}) 
-	##     LIST(APPEND trans_sources_${prec} ${trans_src_common}) 
-       message(STATUS "Preprocessed sources:" ${trans_sources_${prec}})
+    generate_trans_build( BUILDTYPE ${prec}  )
+    if( NOT HAVE_FFTW )
+      ecbuild_list_exclude_pattern( LIST trans_sources_${prec} REGEX tpm_fftw.F90 )
+    endif()
+    #message(STATUS "Preprocessed sources ext:" ${trans_sources_ext_${prec}})
+    #message(STATUS "Preprocessed sources:" ${trans_sources_${prec}})
     ecbuild_add_library(
       TARGET           trans_${prec}
       LINKER_LANGUAGE  Fortran
@@ -167,14 +145,13 @@ foreach( prec dp sp )
                        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
-      PRIVATE_INCLUDES ${CMAKE_BINARY_DIR}/preprocessed_src/${prec}/src/trans/external
+      PRIVATE_INCLUDES ${CMAKE_BINARY_DIR}/specialized_src/${prec}/trans/external
       PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
-                               PRECOPT=${precno}
                           JPRB=${precdef}
                           jprb=${precdef}
                           PARKIND1=EC_PARKIND
                           parkind1=EC_PARKIND
-      PUBLIC_LIBS      fiat parkind_${prec} 
+      PUBLIC_LIBS      fiat
     )
 
     ectrans_target_fortran_module_directory(

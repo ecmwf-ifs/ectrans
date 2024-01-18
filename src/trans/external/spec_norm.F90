@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 #ifndef INMODULE
 SUBROUTINE SPECNORM(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
 #else

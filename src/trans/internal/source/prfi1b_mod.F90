@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE PRFI1B_MOD
 CONTAINS
 SUBROUTINE PRFI1B(KM,PIA,PSPEC,KFIELDS,KFLDPTR)

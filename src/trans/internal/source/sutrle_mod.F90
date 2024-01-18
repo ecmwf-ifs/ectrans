@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SUTRLE_MOD
 CONTAINS
 SUBROUTINE SUTRLE(PNM,KGL,KLOOP)

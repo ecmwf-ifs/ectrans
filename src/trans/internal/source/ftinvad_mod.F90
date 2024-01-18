@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE FTINVAD_MOD
 CONTAINS
 SUBROUTINE FTINVAD(PREEL,KFIELDS,KGL)

@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE PRE_SULEG_MOD
 CONTAINS
 SUBROUTINE PRE_SULEG

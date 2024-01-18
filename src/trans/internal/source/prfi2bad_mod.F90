@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE PRFI2BAD_MOD
 CONTAINS
 SUBROUTINE PRFI2BAD(KFIELD,KM,KMLOC,PAIA,PSIA)

@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE VDTUVAD_MOD
 CONTAINS
 SUBROUTINE VDTUVAD(KM,KFIELD,PEPSNM,PVOR,PDIV,PU,PV)

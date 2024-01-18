@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE UPDSPB_MOD
 CONTAINS
 SUBROUTINE UPDSPB(KM,KFIELD,POA,PSPEC,KFLDPTR)

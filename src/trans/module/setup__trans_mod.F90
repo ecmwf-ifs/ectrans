@@ -1,4 +1,4 @@
-#include "renames.inc"
+
 #define INMODULE
 submodule (ectrans_mod) setup_trans_mod
 contains

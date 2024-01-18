@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SUPOL_MOD
 CONTAINS
 SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL)

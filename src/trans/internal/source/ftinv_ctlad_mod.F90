@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE FTINV_CTLAD_MOD
 CONTAINS
 SUBROUTINE FTINV_CTLAD(KF_UV_G,KF_SCALARS_G,&

@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SUPOLF_MOD
 CONTAINS
 SUBROUTINE SUPOLF(KM,KNSMAX,DDMU,DDPOL,KCHEAP)

@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE GATH_GRID_32_CTL_MOD
 CONTAINS
 SUBROUTINE GATH_GRID_32_CTL(PGPG,KFGATHG,KPROMA,KTO,PGP)

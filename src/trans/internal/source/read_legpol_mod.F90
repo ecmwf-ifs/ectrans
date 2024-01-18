@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE READ_LEGPOL_MOD
 CONTAINS
 SUBROUTINE READ_LEGPOL

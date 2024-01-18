@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE TRLTOG_MOD
 
 PUBLIC TRLTOG

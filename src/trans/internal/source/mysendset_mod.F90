@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE MYSENDSET_MOD
 CONTAINS
 FUNCTION MYSENDSET(KSETS,KMYSET,KSET)

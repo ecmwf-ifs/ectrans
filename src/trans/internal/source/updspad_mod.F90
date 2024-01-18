@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE UPDSPAD_MOD
 CONTAINS
 SUBROUTINE UPDSPAD(KM,KF_UV,KF_SCALARS,POA1,POA2, &

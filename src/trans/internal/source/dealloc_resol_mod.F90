@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE DEALLOC_RESOL_MOD
 CONTAINS
 SUBROUTINE DEALLOC_RESOL(KRESOL)

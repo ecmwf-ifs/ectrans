@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE VD2UV_MOD
 CONTAINS
 SUBROUTINE VD2UV(KM,KMLOC,KF_UV,KLEI2,PSPVOR,PSPDIV,PU,PV)

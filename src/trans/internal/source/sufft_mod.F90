@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SUFFT_MOD
 CONTAINS
 SUBROUTINE SUFFT

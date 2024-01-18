@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE UVTVD_MOD
 CONTAINS
 SUBROUTINE UVTVD(KM,KFIELD,PEPSNM,PU,PV,PVOR,PDIV)

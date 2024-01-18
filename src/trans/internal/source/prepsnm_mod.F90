@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE PREPSNM_MOD
 CONTAINS
 SUBROUTINE PREPSNM(KM,KMLOC,PEPSNM)

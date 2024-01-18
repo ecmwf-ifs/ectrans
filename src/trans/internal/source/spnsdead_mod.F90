@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SPNSDEAD_MOD
 CONTAINS
 SUBROUTINE SPNSDEAD(KM,KF_SCALARS,PEPSNM,PF,PNSD)

@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE DIST_GRID_32_CTL_MOD
 CONTAINS
 SUBROUTINE DIST_GRID_32_CTL(PGPG,KFDISTG,KPROMA,KFROM,PGP)

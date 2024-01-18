@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE FTDIR_MOD
 CONTAINS
 SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)

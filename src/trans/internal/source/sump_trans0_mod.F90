@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SUMP_TRANS0_MOD
 CONTAINS
 SUBROUTINE SUMP_TRANS0

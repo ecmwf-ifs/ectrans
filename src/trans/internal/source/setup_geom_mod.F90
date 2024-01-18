@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SETUP_GEOM_MOD
 CONTAINS
 SUBROUTINE SETUP_GEOM

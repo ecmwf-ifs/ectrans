@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE SPNORMD_MOD
 CONTAINS
 SUBROUTINE SPNORMD(PSPEC,KFLD,PMET,PSM)

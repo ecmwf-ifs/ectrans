@@ -8,7 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-#include "renames.inc"
+
 MODULE INIGPTR_MOD
 CONTAINS
 SUBROUTINE INIGPTR(KGPTRSEND,KGPTRRECV)
