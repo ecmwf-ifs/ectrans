@@ -477,7 +477,7 @@ MYGPU = ACC_GET_DEVICE_NUM(IDEVTYPE)
 
 ! add additional post-processing requirements
 !IF_PP = 2*NFLEV0
-IF_PP = 0
+IF_PP = 3*NFLEV0+1
 
 ! u/v + scalars 3d + scalars 2d
 IF_UV = NFLEV0
