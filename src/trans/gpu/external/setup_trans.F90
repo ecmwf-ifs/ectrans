@@ -195,6 +195,7 @@ CHARACTER(LEN=8)  :: CENV
 INTEGER(ACC_DEVICE_KIND) :: IDEVTYPE
 #endif
 INTEGER :: INUMDEVS, IUNIT, ISTAT, IDEV, MYGPU
+INTEGER :: IF_PP_FACT
 
 #include "user_clock.intfb.h"
 !     ------------------------------------------------------------------
@@ -477,7 +478,10 @@ MYGPU = ACC_GET_DEVICE_NUM(IDEVTYPE)
 
 ! add additional post-processing requirements
 !IF_PP = 2*NFLEV0
-IF_PP = 3*NFLEV0+1
+CALL EC_GETENV("ECTRANS_GPU_IF_PP_FACT",CENV)
+WRITE(NOUT,'(2A)') "${ECTRANS_GPU_IF_PP_FACT}=",CENV
+READ(CENV,*) IF_PP_FACT
+IF_PP = IF_PP_FACT*NFLEV0
 
 ! u/v + scalars 3d + scalars 2d
 IF_UV = NFLEV0
