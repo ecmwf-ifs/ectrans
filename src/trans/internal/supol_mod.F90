@@ -77,7 +77,6 @@ REAL(KIND=JPRD) :: ZDLX,ZDLX1,ZDLSITA,ZDL1SITA,ZDLS,ZDLK,ZDLLDN
 
 INTEGER(KIND=JPIM) :: JM, JN, JK
 REAL(KIND=JPRD) :: Z
-REAL(KIND=JPRD) :: DCL, DDL
 
 !     ------------------------------------------------------------------
 

@@ -154,8 +154,8 @@ real(kind=jprb)   ,intent(in)  :: pcik(:)
 real(kind=jprb)   ,intent(out) :: ptheta(:)
 
 real(kind=jprb)    :: zalpha(kquad),zq(kn),ztheta(kn)
-integer(kind=jpim) :: j1,j2,jm,inumc,idist,iquad
-integer(kind=jpim) :: iout,iq,i1,i1p1,i1pd,ik1,ix,iy
+integer(kind=jpim) :: j1,j2,jm,inumc,idist
+integer(kind=jpim) :: i1,ik1,ix,iy
 logical :: lxy,llxy(kn)
  
 lxy(ik1) = (ik1 <= kx .eqv. ldxout)
@@ -285,8 +285,8 @@ real(kind=jprb)   ,intent(in)  :: pcik(:)
 real(kind=jprb)   ,intent(out) :: ptheta(:,:)
 
 real(kind=jprb) :: zalpha(kquad,km)
-integer(kind=jpim) :: j1,j2,jm,jq,inumc,idist,iquad
-integer(kind=jpim) :: iout,iq,i1,i1p1,i1pd,ik1,ix,iy
+integer(kind=jpim) :: j1,j2,jm,jq,inumc,idist
+integer(kind=jpim) :: i1,i1p1,i1pd,ik1,ix,iy
 logical :: lxy,llxy(kn)
  
 lxy(ik1) = (ik1 <= kx .eqv. ldxout)
@@ -465,7 +465,8 @@ real(kind=jprb),    intent(in)  :: py(:)
 integer(kind=jpim), intent(in)  :: kxy
 real(kind=jprb),    intent(out) :: pxy(:)
 integer(kind=jpim), intent(out) :: kindex(:)
-integer(kind=jpim) :: jxy,ix,iy,iret
+integer(kind=jpim) :: iret
+!integer(kind=jpim) :: jxy
 
 !-------------------------------------------------------------------------
 
