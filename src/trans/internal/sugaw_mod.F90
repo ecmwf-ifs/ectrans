@@ -20,8 +20,8 @@ USE TPM_CONSTANTS   ,ONLY : RA
 USE TPM_GEN         ,ONLY : NOUT
 USE GAWL_MOD        ,ONLY : GAWL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-USE SUPOLF_MOD
-USE TPM_POL
+USE SUPOLF_MOD      ,ONLY : SUPOLF
+USE TPM_POL         ,ONLY : DDI
 
 !**** *SUGAW * - Routine to initialize the Gaussian
 !                 abcissa and the associated weights

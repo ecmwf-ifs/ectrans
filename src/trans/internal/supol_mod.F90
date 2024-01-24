@@ -63,7 +63,7 @@ SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPRD, JPIM
-USE TPM_POL
+USE TPM_POL   ,ONLY : DDI, DDA, DDH, DDE, DDC, DDD
 
 IMPLICIT NONE
 
