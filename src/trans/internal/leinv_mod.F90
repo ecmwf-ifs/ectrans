@@ -59,7 +59,6 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_FLT         ,ONLY : S
-!USE TPM_GEN ! Fpr nout
 USE BUTTERFLY_ALG_MOD, ONLY : MULT_BUTM
 
 use, intrinsic :: ieee_exceptions
