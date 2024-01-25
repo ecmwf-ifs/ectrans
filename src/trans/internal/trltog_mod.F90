@@ -153,8 +153,7 @@ SUBROUTINE TRLTOG_PROLOG(KF_FS,KF_GP,KVSET,&
 !        Original  : 18-Aug-2014 from trltog
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE YOMHOOK   ,ONLY : DR_HOOK, JPHOOK
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_DISTR       ,ONLY : D, MYSETW, NPRTRNS, MYPROC, NPROC
 USE TPM_TRANS       ,ONLY : NGPBLKS
