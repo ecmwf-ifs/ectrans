@@ -10,7 +10,7 @@
 
 MODULE LDFOU2_MOD
 CONTAINS
-SUBROUTINE LDFOU2(KF_UV,PAIA)
+SUBROUTINE LDFOU2(KF_UV, P_FOURIER_FIELDS)
 
 !**** *LDFOU2* - Division by a*cos(theta) of u and v
 
@@ -20,15 +20,11 @@ SUBROUTINE LDFOU2(KF_UV,PAIA)
 
 !**   Interface.
 !     ----------
-!        CALL LDFOU2(KM,PAIA,PSIA)
+!        CALL LDFOU2(KM,P_FOURIER_FIELDS)
 
 !        Explicit arguments :
 !        --------------------  KM - zonal wavenumber
-!                              PAIA - antisymmetric fourier fields
-!                              PSIA - symmetric fourierfields
-
-!        Implicit arguments :  RACTHE - 1./(a*cos(theta))
-!        --------------------
+!                              P_FOURIER_FIELDS - Fourier fields
 
 !     Method.
 !     -------
@@ -55,77 +51,48 @@ SUBROUTINE LDFOU2(KF_UV,PAIA)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
-
-USE TPM_FIELDS      ,ONLY : F_RACTHE
-USE TPM_DISTR       ,ONLY : D,D_NUMP,D_MYMS
-USE TPM_DIM         ,ONLY : R, R_NDGNH, R_NDGL
-USE TPM_GEOMETRY    ,ONLY : G, G_NDGLU
-
-!
+USE PARKIND_ECTRANS, ONLY : JPIM, JPRBT
+USE TPM_FIELDS,      ONLY : F_RACTHE
+USE TPM_DISTR,       ONLY : D, D_NUMP, D_MYMS
+USE TPM_DIM,         ONLY : R, R_NDGNH, R_NDGL
+USE TPM_GEOMETRY,    ONLY : G, G_NDGLU
+USE ABORT_TRANS_MOD  ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
-
 !     DUMMY INTEGER SCALARS
 INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV
-INTEGER(KIND=JPIM) :: KM,KMLOC
-
-REAL(KIND=JPRBT) ,INTENT(INOUT) :: PAIA(:,:,:)
-!REAL(KIND=JPRBT) ,INTENT(INOUT) :: PSIA(:,:,:),   PAIA(:,:,:)
+REAL(KIND=JPRBT), INTENT(INOUT) :: P_FOURIER_FIELDS(:,:,:)
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: J, JGL ,IFLD ,ISL, IGLS
+INTEGER(KIND=JPIM) :: J, JGL, ISL, KM, KMLOC
 
 !     ------------------------------------------------------------------
 
 !*       1.    DIVIDE U V BY A*COS(THETA)
 !              --------------------------
 
-IFLD = 4*KF_UV
-IF( IFLD > 0 ) THEN
-
-#ifdef ACCGPU
-!$ACC DATA &
-!$ACC& COPYIN(KF_UV,F_RACTHE) &
-!$ACC& PRESENT(D_NUMP,D_MYMS,R_NDGNH,R_NDGL,G_NDGLU) &
-!$ACC& PRESENT(PAIA)
-#endif
-#ifdef OMPGPU
-!$OMP TARGET DATA &
-!$OMP& MAP(TO:F_RACTHE,D,D_NUMP,D_MYMS,R_NDGNH,R_NDGL,G_NDGLU) &
-!$OMP& MAP(TOFROM:PAIA)
-#endif
+IF (KF_UV > 0) THEN
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3)
-!! DEFAULT(NONE) PRIVATE(KM,ISL,IGLS) &
-!!$OMP&      SHARED(D_NUMP,R_NDGNH,KF_UV,D_MYMS,R_NDGNH,G_NDGLU,R_NDGL,PAIA,F_RACTHE)
+  CALL ABOR_TRANS("LDFOU2: OpenMP offload not implemented yet for LDFOU2")
 #endif
 #ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,ISL,IGLS) DEFAULT(NONE) &
-!$ACC&      PRESENT(D_NUMP,R_NDGNH,KF_UV,D_MYMS,R_NDGNH,G_NDGLU,R_NDGL,PAIA,F_RACTHE)
+  !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) &
+  !$ACC& PRIVATE(KMLOC,JGL,J,KM,ISL) COPYIN(KF_UV,F_RACTHE) &
+  !$ACC& PRESENT(D_NUMP,D_MYMS,R_NDGNH,R_NDGL,G_NDGLU,P_FOURIER_FIELDS)
 #endif
-DO KMLOC=1,D_NUMP
-  DO JGL=1,R_NDGNH
-    DO J=1,4*KF_UV
-       KM = D_MYMS(KMLOC)
-       ISL  = MAX(R_NDGNH-G_NDGLU(KM)+1,1)
-!*       1.1      U AND V
-       if (JGL .ge. ISL) then
-         IGLS = R_NDGL+1-JGL
-         PAIA(J,JGL,KMLOC) = PAIA(J,JGL,KMLOC)*F_RACTHE(JGL)
-!         PSIA(J,JGL,KMLOC) = PSIA(J,JGL,KMLOC)*F_RACTHE(JGL)
-       endif
+  DO KMLOC = 1, D_NUMP
+    DO JGL = 1, R_NDGNH
+      DO J = 1, 4 * KF_UV
+         KM = D_MYMS(KMLOC)
+         ISL = MAX(R_NDGNH - G_NDGLU(KM) + 1, 1)
+         IF (JGL >= ISL) THEN
+           P_FOURIER_FIELDS(J,JGL,KMLOC) = P_FOURIER_FIELDS(J,JGL,KMLOC) * F_RACTHE(JGL)
+         ENDIF
+       ENDDO
      ENDDO
-   ENDDO
-ENDDO
-#ifdef OMPGPU
-!$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-!$ACC END DATA
-#endif
+  ENDDO
 
 ENDIF
 
