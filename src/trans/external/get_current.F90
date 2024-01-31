@@ -41,7 +41,7 @@ SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM
+USE EC_PARKIND  ,ONLY : JPIM
 
 !ifndef INTERFACE
 

@@ -59,7 +59,7 @@ SUBROUTINE SUPOLF(KM,KNSMAX,DDMU,DDPOL,KCHEAP)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRD, JPIM
+USE EC_PARKIND  ,ONLY : JPRD, JPIM
 
 USE TPM_POL   ,ONLY : DFI, DFB, DFG, DFA, DFF
 

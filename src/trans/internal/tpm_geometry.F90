@@ -12,7 +12,7 @@ MODULE TPM_GEOMETRY
 
 ! Module containing data describing Gaussian grid.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
 
 IMPLICIT NONE
 
@@ -27,7 +27,7 @@ INTEGER(KIND=JPIM),ALLOCATABLE :: NDGLU(:) ! NUMBER OF HEMISPERIC LATITUDES
 LOGICAL :: LAM           ! LAM geometry if T, Global geometry if F
 LOGICAL :: LREDUCED_GRID ! Reduced Gaussian grid if T
 !                          quadratic Gaussian grid otherwise.
-REAL(KIND=JPRB) :: RSTRET ! Stretching factor (for Legendre polynomials
+REAL(KIND=JPRD) :: RSTRET ! Stretching factor (for Legendre polynomials
 !                           computed on stretched latitudes only)
 END TYPE GEOM_TYPE
 
