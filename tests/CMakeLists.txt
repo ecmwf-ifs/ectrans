@@ -33,13 +33,15 @@ endif()
 
 if( HAVE_DOUBLE_PRECISION )
   set( trans trans_dp )
+  set( parkind parkind_dp )
 else()
   set( trans trans_sp )
+  set( parkind parkind_sp )
 endif()
 
 ecbuild_add_test(TARGET ectrans_test_adjoint
   SOURCES trans/test_adjoint.F90
-  LIBS ${trans}
+  LIBS ${trans} ${parkind}
   LINKER_LANGUAGE Fortran
 )
 if( TEST ectrans_test_adjoint AND HAVE_OMP )
