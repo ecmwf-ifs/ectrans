@@ -52,8 +52,8 @@ implicit none
 integer(kind=jpim), parameter :: min_octa_points = 20
 
 integer(kind=jpim) :: istack, getstackusage
-real(kind=jprb), dimension(1) :: zmaxerr(5), zerr(5)
-real(kind=jprb) :: zmaxerrg
+real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
+real(kind=jprd) :: zmaxerrg
 
 ! Output unit numbers
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
@@ -1060,8 +1060,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
-  integer            :: stat          ! For storing success status of string->integer conversion
-  integer            :: myproc
 
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
@@ -1267,7 +1265,7 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   integer,         intent(in)    :: nsmax    ! Spectral truncation
   real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
 
-  integer :: i, index, num_my_zon_wns
+  integer :: index, num_my_zon_wns
   integer, allocatable :: my_zon_wns(:), nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays
@@ -1332,7 +1330,7 @@ function detect_mpirun() result(lmpi_required)
   integer :: ilen
   integer, parameter :: nvars = 5
   character(len=32), dimension(nvars) :: cmpirun_detect
-  character(len=4) :: clenv_dr_hook_assert_mpi_initialized
+! character(len=4) :: clenv_dr_hook_assert_mpi_initialized
   integer :: ivar
 
   ! Environment variables that are set when mpirun, srun, aprun, ... are used
