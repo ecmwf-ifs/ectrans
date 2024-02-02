@@ -176,6 +176,8 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCL(:) ! Process responsible for each la
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB1(:,:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
 INTEGER(KIND=JPIM) ,ALLOCATABLE  :: D_NSTAGTF(:) ! Offset for specific latitude in 
+INTEGER(KIND=JPIM) :: D_NDGL_FS     ! Number of rows of latitudes for which this process is
+                                  ! performing Fourier Space calculations
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MSTABF(:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB0(:,:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCM(:)  ! Process that does the calc. for certain 
