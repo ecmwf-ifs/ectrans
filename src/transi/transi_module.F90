@@ -542,7 +542,6 @@ function trans_init() bind(C,name="trans_init") result(iret)
   integer :: NPRTRW, NPRGPNS
   integer, allocatable :: I_REGIONS(:)
   logical :: LMPOFF
-  integer :: devnull_unit
 
   LMPOFF = .not. USE_MPI
 
@@ -1064,7 +1063,7 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
   !logical(c_bool), pointer :: bool1(:)
   integer(c_int), pointer :: int1(:), int2(:,:)
   real(c_double), pointer :: double1(:), double2(:,:)
-  logical, allocatable :: booltmp(:)
+  !logical, allocatable :: booltmp(:)
 
   nvars = count(transfer(vars_fstr, 'a', len(vars_fstr)) == ",") + 1
   read(vars_fstr, *) var_arr(1:nvars)
@@ -1381,7 +1380,7 @@ function prepare_global_invtrans(trans,RGP,RGPM) result(iret)
   real(c_double), target, intent(in) :: RGP(:,:,:)      !(NPROMA==ngptotg,NFLD,NGPBLKS==1)
   real(c_double), pointer, intent(out) :: RGPM(:,:,:)   !(NPROMA==ngptot, NFLD,NGPBLKS==1)
     !! Modified RGP to add one duplicate latitude at equator
-  integer :: ilat, ilon, nfld
+  integer :: nfld
 
   iret = assert_global(trans,RGP)
   if( iret /= TRANS_SUCCESS ) return
@@ -2331,7 +2330,6 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
   real(c_double), pointer :: RNORM(:)
   real(c_double), pointer :: RMET(:)
   type(Trans_t), pointer  :: trans
-  integer :: jfld, irecv
 
   if( args%count > 0 ) then
     call transi_error( "trans_specnorm: ERROR: arguments are not new" )

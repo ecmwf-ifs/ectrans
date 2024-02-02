@@ -67,9 +67,6 @@ SUBROUTINE PRFI2(KM,KMLOC,KF_FS,PAIA,PSIA)
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-
-!USE TPM_TRANS
-
 USE PRFI2B_MOD      ,ONLY : PRFI2B
 !
 

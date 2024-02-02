@@ -79,7 +79,7 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KPE
 
-INTEGER(KIND=JPIM) :: IPE,JA
+INTEGER(KIND=JPIM) :: JA
 !     ------------------------------------------------------------------
 
 !*       1.    Choose from input parameters
