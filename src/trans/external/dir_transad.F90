@@ -8,11 +8,13 @@
 ! nor does it submit to any jurisdiction.
 !
 
-
+#ifndef INMODULE
 SUBROUTINE DIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 & KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
 & PGP,PGPUV,PGP3A,PGP3B,PGP2)
-
+#else
+MODULE PROCEDURE DIR_TRANSAD
+#endif
 
 !**** *DIR_TRANSAD* - Direct spectral transform - adjoint.
 
@@ -126,7 +128,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 IMPLICIT NONE
 
 ! Declaration of arguments
-
+#ifndef INMODULE
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(INOUT) :: PSPVOR(:,:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(INOUT) :: PSPDIV(:,:)
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(INOUT) :: PSPSCALAR(:,:)
@@ -146,7 +148,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGPUV(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP2(:,:,:)
-
+#endif
 !ifndef INTERFACE
 
 ! Local variables
@@ -502,6 +504,9 @@ IF (LHOOK) CALL DR_HOOK('DIR_TRANSAD',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 !endif INTERFACE
 
+
+#ifndef INMODULE
 END SUBROUTINE DIR_TRANSAD
-
-
+#else
+END PROCEDURE DIR_TRANSAD
+#endif

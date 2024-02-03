@@ -39,7 +39,8 @@ endif()
 
 ecbuild_add_test(TARGET ectrans_test_adjoint
   SOURCES trans/test_adjoint.F90
-  LIBS ${trans}
+  INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/programs/wrappers>
+  LIBS ${trans} ectrans_interfaces
   LINKER_LANGUAGE Fortran
 )
 if( TEST ectrans_test_adjoint AND HAVE_OMP )

@@ -38,6 +38,10 @@ ecbuild_add_library(
                    wrappers/setup_trans0.F90
                    wrappers/setup_trans.F90
                    wrappers/trans_inq.F90
+                   wrappers/dir_transad.F90
+                   wrappers/inv_transad.F90
+                   wrappers/gath_spec.F90
+                   wrappers/dist_spec.F90
   PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                    $<INSTALL_INTERFACE:include/ectrans>

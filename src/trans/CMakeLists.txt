@@ -39,6 +39,7 @@ ecbuild_list_add_pattern( LIST trans_src
                                 algor/*
                                 internal/source/*
 				external/spec_norm.F90
+				external/dist_grid.F90
                           QUIET
                         )
 ecbuild_list_add_pattern( LIST trans_src_common
@@ -49,12 +50,15 @@ ecbuild_list_add_pattern( LIST trans_src_common
                         )
 ecbuild_list_add_pattern( LIST trans_src_ext
                           GLOB
-			  #			external/spec_norm.F90
 				external/dir__trans.F90
 				external/inv__trans.F90
+				external/dir_transad.F90
+				external/inv_transad.F90
 				external/trans__inq.F90
 				external/setup__trans.F90
 				external/setup__trans0.F90
+				external/dist_spec.F90
+				external/gath_spec.F90
                                 module/*
                           QUIET
                         )

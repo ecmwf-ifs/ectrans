@@ -9,6 +9,9 @@
 !
 
 INTERFACE
+#ifdef INMODULE
+MODULE &
+#endif
 SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
 
 !**** *GATH_SPEC* - Gather global spectral array from processors

@@ -8,8 +8,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
-
+#ifndef INMODULE
 SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
+#else
+MODULE PROCEDURE GATH_SPEC
+#endif
 
 !**** *GATH_SPEC* - Gather global spectral array from processors
 
@@ -68,7 +71,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 IMPLICIT NONE
 
 ! Declaration of arguments
-
+#ifndef INMODULE
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT)  :: PSPECG(:,:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
@@ -78,7 +81,7 @@ REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDZA0IP
-
+#endif
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IVSET(KFGATHG)
@@ -191,5 +194,8 @@ IF (LHOOK) CALL DR_HOOK('GATH_SPEC',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
+#ifndef INMODULE
 END SUBROUTINE GATH_SPEC
-
+#else
+END PROCEDURE GATH_SPEC
+#endif 

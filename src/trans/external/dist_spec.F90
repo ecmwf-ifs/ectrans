@@ -9,8 +9,12 @@
 !
 
 
+#ifndef INMODULE
 SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
  & LDIM1_IS_FLD,KSMAX,KSORT)
+#else
+MODULE PROCEDURE DIST_SPEC
+#endif
 
 !**** *DIST_SPEC* - Distribute global spectral array among processors
 
@@ -69,7 +73,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 IMPLICIT NONE
 
 ! Declaration of arguments
-
+#ifndef INMODULE
 REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPECG(:,:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
@@ -79,7 +83,7 @@ REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
-
+#endif
 !ifndef INTERFACE
 
 INTEGER(KIND=JPIM) :: IVSET(KFDISTG)
@@ -211,5 +215,8 @@ IF (LHOOK) CALL DR_HOOK('DIST_SPEC',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
+#ifndef INMODULE
 END SUBROUTINE DIST_SPEC
-
+#else
+END PROCEDURE DIST_SPEC 
+#endif
