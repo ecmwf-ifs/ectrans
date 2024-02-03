@@ -1,7 +1,7 @@
 
 #define INMODULE
 module ectrans_mod
-#include "setup__trans0.h"
+#include "setup_trans0.h"
 #include "setup__trans.h"
 #include "inv__trans.h"
 #include "dir__trans.h"
