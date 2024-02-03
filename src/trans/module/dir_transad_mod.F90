@@ -1,6 +1,6 @@
 
 #define INMODULE
-submodule (ectrans_mod) dir_trans_mod
+submodule (ectrans_mod) dir_transad_mod
 contains
 #include "dir_transad.F90"
-end submodule dir_trans_mod
+end submodule dir_transad_mod
