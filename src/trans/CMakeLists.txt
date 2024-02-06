@@ -50,19 +50,23 @@ ecbuild_list_add_pattern( LIST trans_src_common
                         )
 ecbuild_list_add_pattern( LIST trans_src_ext
                           GLOB
-				external/dir__trans.F90
-				external/inv__trans.F90
-				external/dir_transad.F90
-				external/inv_transad.F90
-				external/trans__inq.F90
-				external/setup__trans.F90
-				external/setup__trans0.F90
-				external/dist_spec.F90
-				external/gath_spec.F90
-                                module/*
+  		        external/dir__trans.F90
+     			external/inv__trans.F90
+     			external/dir_transad.F90
+     			external/inv_transad.F90
+     			external/trans__inq.F90
+     			external/setup__trans.F90
+     			external/setup__trans0.F90
+     			external/dist_spec.F90
+     			external/gath_spec.F90
                           QUIET
                         )
 
+ecbuild_list_add_pattern( LIST trans_src_ext_mod
+                          GLOB
+                         module/*
+                          QUIET
+                        )
 
 function(DEFINE_CODE_SPEC) 
 set (oneValueArgs INDIR OUTDIR SUBDIR BUILDTYPE SUFFIX)
@@ -110,20 +114,48 @@ define_code_spec(INDIR ${PROJECT_SOURCE_DIR}/src OUTDIR  "${CMAKE_BINARY_DIR}/sp
 set(trans_sources ${trans_src})
 list(TRANSFORM trans_sources PREPEND ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/)
 list(TRANSFORM trans_sources APPEND .pp.F90)
-define_code_spec(INDIR ${PROJECT_SOURCE_DIR}/src OUTDIR  "${CMAKE_BINARY_DIR}/specialized_src"  BUILDTYPE  ${buildtype}  SUBDIR "trans/" SRCFILES ${trans_src_ext} )
+
 set(trans_sources_listname "trans_sources_${buildtype}")
 set("${trans_sources_listname}" ${trans_sources} PARENT_SCOPE)
 message(STATUS "Trans source list name:"  ${trans_sources_listname})
 
+define_code_spec(INDIR ${PROJECT_SOURCE_DIR}/src OUTDIR  "${CMAKE_BINARY_DIR}/specialized_src"  BUILDTYPE  ${buildtype}  SUBDIR "trans/" SRCFILES ${trans_src_ext} )
 set(trans_sources_ext ${trans_src_ext})
 list(TRANSFORM trans_sources_ext PREPEND ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/)
 set(trans_sources_ext_listname "trans_sources_ext_${buildtype}")
 message(STATUS "Trans source list name:"  ${trans_sources_ext_listname})
 set("${trans_sources_ext_listname}" ${trans_sources_ext} PARENT_SCOPE)
 
+define_code_spec(INDIR ${PROJECT_SOURCE_DIR}/src OUTDIR  "${CMAKE_BINARY_DIR}/specialized_src"  BUILDTYPE  ${buildtype}  SUBDIR "trans/" SRCFILES ${trans_src_ext_mod} )
+set(trans_sources_ext_mod ${trans_src_ext_mod})
+list(TRANSFORM trans_sources_ext_mod PREPEND ${CMAKE_BINARY_DIR}/specialized_src/${buildtype}/trans/)
+set(trans_sources_ext_mod_listname "trans_sources_ext_mod_${buildtype}")
+message(STATUS "Trans source list name:"  ${trans_sources_ext_mod_listname})
+set("${trans_sources_ext_mod_listname}" ${trans_sources_ext_mod} PARENT_SCOPE)
 endfunction(GENERATE_TRANS_BUILD)
 
 
+ecbuild_add_library(
+      TARGET           trans_common
+      LINKER_LANGUAGE  Fortran
+      SOURCES          ${trans_src_common}
+                       ${CMAKE_CURRENT_BINARY_DIR}/internal/common/ectrans_version_mod.F90
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+      PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+      #                          JPRB=${precdef}
+      #                          jprb=${precdef}
+                          PARKIND1=EC_PARKIND
+                          parkind1=EC_PARKIND
+      PUBLIC_LIBS      fiat
+    )
+    ectrans_target_fortran_module_directory(
+      TARGET            trans_common
+      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/trans_common
+      INSTALL_DIRECTORY module/trans_common
+    )
 
 foreach( prec dp sp )
   if( HAVE_${prec} )
@@ -139,10 +171,9 @@ foreach( prec dp sp )
     #message(STATUS "Preprocessed sources ext:" ${trans_sources_ext_${prec}})
     #message(STATUS "Preprocessed sources:" ${trans_sources_${prec}})
     ecbuild_add_library(
-      TARGET           trans_${prec}
+      TARGET           trans_fake_${prec}
       LINKER_LANGUAGE  Fortran
       SOURCES          ${trans_sources_${prec}}
-                       ${trans_src_common}
                        ${trans_sources_ext_${prec}}
                        ${CMAKE_CURRENT_BINARY_DIR}/internal/common/ectrans_version_mod.F90
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
@@ -155,7 +186,32 @@ foreach( prec dp sp )
                           jprb=${precdef}
                           PARKIND1=EC_PARKIND
                           parkind1=EC_PARKIND
-      PUBLIC_LIBS      fiat
+      PUBLIC_LIBS      fiat trans_common
+    )
+    ectrans_target_fortran_module_directory(
+      TARGET            trans_fake_${prec}
+      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/trans_fake_${prec}
+      INSTALL_DIRECTORY module/trans_fake_${prec}
+    )
+
+    ecbuild_add_library(
+      TARGET           trans_${prec}
+      LINKER_LANGUAGE  Fortran
+      SOURCES          ${trans_sources_${prec}}
+                       ${trans_sources_ext_mod_${prec}}
+                       ${CMAKE_CURRENT_BINARY_DIR}/internal/common/ectrans_version_mod.F90
+      PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+      DEPENDS          trans_fake_${prec}
+      PRIVATE_INCLUDES ${CMAKE_BINARY_DIR}/specialized_src/${prec}/trans/external
+      PRIVATE_DEFINITIONS SYMBOLSUFFIX=${prec}
+                          JPRB=${precdef}
+                          jprb=${precdef}
+                          PARKIND1=EC_PARKIND
+                          parkind1=EC_PARKIND
+      PUBLIC_LIBS      fiat trans_common
     )
 
     ectrans_target_fortran_module_directory(
@@ -164,6 +220,7 @@ foreach( prec dp sp )
       INSTALL_DIRECTORY module/trans_${prec}
     )
     target_link_libraries( trans_${prec} PUBLIC fiat parkind_${prec} )
+    target_link_libraries( trans_fake_${prec} PUBLIC fiat parkind_${prec} )
     if( HAVE_FFTW )
       set( FFTW_LINK PRIVATE )
       if( LAPACK_${prec} MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
@@ -175,9 +232,13 @@ foreach( prec dp sp )
       target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
       target_include_directories( trans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
       target_compile_definitions( trans_${prec} PRIVATE WITH_FFTW )
+      target_link_libraries( trans_fake_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+      target_include_directories( trans_fake_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+      target_compile_definitions( trans_fake_${prec} PRIVATE WITH_FFTW )
     endif()
     ecbuild_debug("target_link_libraries( trans_${prec} ${LAPACK_LINK} ${LAPACK_${prec}} )")
     target_link_libraries( trans_${prec} ${LAPACK_LINK} ${LAPACK_${prec}} )
+    target_link_libraries( trans_fake_${prec} ${LAPACK_LINK} ${LAPACK_${prec}} )
     if( HAVE_OMP )
       ecbuild_debug("target_link_libraries( trans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
       target_link_libraries( trans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
