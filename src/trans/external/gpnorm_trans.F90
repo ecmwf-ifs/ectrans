@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+
 SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 
 

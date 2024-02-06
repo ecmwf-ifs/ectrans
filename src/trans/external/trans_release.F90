@@ -8,6 +8,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
+
 SUBROUTINE TRANS_RELEASE(KRESOL)
 
 !**** *TRANS_RELEASE* - release a spectral resolution

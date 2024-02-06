@@ -1,0 +1,31 @@
+! (C) Copyright 2000- ECMWF.
+! (C) Copyright 2000- Meteo-France.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+INTERFACE SPECNORM
+SUBROUTINE SPECNORM_SP(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
+USE EC_PARKIND, ONLY: JPRM, JPIM
+REAL(KIND=JPRM)             , INTENT(OUT) :: PNORM(:)
+REAL(KIND=JPRM)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
+REAL(KIND=JPRM)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+END SUBROUTINE SPECNORM_SP
+SUBROUTINE SPECNORM_DP(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
+USE EC_PARKIND, ONLY: JPRD, JPIM
+REAL(KIND=JPRD)             , INTENT(OUT) :: PNORM(:)
+REAL(KIND=JPRD)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
+REAL(KIND=JPRD)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+END SUBROUTINE SPECNORM_DP
+END INTERFACE SPECNORM
+
+
