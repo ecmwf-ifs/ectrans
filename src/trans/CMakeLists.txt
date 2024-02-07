@@ -49,11 +49,9 @@ list( APPEND ectrans_common_src
   internal/tpm_geometry.F90
   internal/tpm_pol.F90
   external/get_current.F90
-  external/sugawc.F90
   ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
 )
 list( APPEND ectrans_common_includes
-  include/ectrans/sugawc.h
   include/ectrans/get_current.h
 )
 
