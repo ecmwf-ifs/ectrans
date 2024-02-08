@@ -50,7 +50,7 @@ FUNCTION MYSENDSET(KSETS,KMYSET,KSET)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM
+USE EC_PARKIND  ,ONLY : JPIM
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
