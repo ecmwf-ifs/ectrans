@@ -130,7 +130,7 @@ IF (KF_UV > 0) THEN
            & ZIA(:,IUL:IUU),ZIA(:,IVL:IVU))
   ILCM = R%NSMAX+1-KM
   IOFF = D%NASM0(KM)
-  ZA_R = 1.0_JPRB/RA
+  ZA_R = 1.0_JPRB/REAL(RA,JPRB)
   DO J=1,ILCM
     INM = IOFF+(ILCM-J)*2
     DO JFLD=1,KF_UV

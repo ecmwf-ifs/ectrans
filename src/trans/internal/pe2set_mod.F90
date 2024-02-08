@@ -70,7 +70,7 @@ SUBROUTINE PE2SET(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !        Revision : 98-10-13 row ordering
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM
+USE EC_PARKIND      ,ONLY : JPIM
 
 USE TPM_DISTR       ,ONLY : LEQ_REGIONS, NPRGPEW, NPROC, NPRTRV
 USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS
