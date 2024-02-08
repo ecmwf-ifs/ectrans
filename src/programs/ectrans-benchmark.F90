@@ -144,7 +144,7 @@ logical :: lmpoff = .false. ! Message passing switch
 ! Verbosity level (0 or 1)
 integer :: verbosity = 0
 
-real(kind=jprb) :: zra = 6371229._jprb
+real(kind=jprd) :: zra = 6371229._jprd
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
