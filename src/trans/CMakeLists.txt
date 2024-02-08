@@ -48,6 +48,20 @@ list( APPEND ectrans_common_src
   internal/tpm_gen.F90
   internal/tpm_geometry.F90
   internal/tpm_pol.F90
+  internal/tpm_distr.F90
+  internal/pe2set_mod.F90
+  internal/set2pe_mod.F90
+  internal/eq_regions_mod.F90
+  internal/sump_trans0_mod.F90
+  internal/sustaonl_mod.F90
+  internal/sumplat_mod.F90
+  internal/sumplatb_mod.F90
+  internal/sumplatbeq_mod.F90
+  internal/sumplatf_mod.F90
+  internal/mysendset_mod.F90
+  internal/myrecvset_mod.F90
+  internal/suwavedi_mod.F90
+  internal/sump_trans_preleg_mod.F90
   external/get_current.F90
   ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
 )
