@@ -81,7 +81,7 @@ PRIVATE
 PUBLIC eq_regions,l_regions_debug,n_regions_ns,n_regions_ew,n_regions,my_region_ns,my_region_ew
 PUBLIC eq_regions_t, eq_regions_save, eq_regions_load, eq_regions_free
 
-real(kind=jprd) pi
+real(kind=jprd) :: pi
 
 type eq_regions_t
 logical :: l_regions_debug=.false.
