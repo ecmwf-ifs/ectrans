@@ -125,9 +125,9 @@ foreach( prec dp sp )
         if( HAVE_ACC AND CMAKE_Fortran_COMPILER_ID MATCHES NVHPC )
           # Propagate flags as link options for downstream targets. Only required for NVHPC
           target_link_options( trans_gpu_${prec} INTERFACE
-                $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenACC_Fortran_FLAGS}>
-                $<$<LINK_LANG_AND_ID:C,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}>
-                $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}> )
+                $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenACC_Fortran_FLAGS} -gpu=pinned>
+                $<$<LINK_LANG_AND_ID:C,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS} -gpu=pinned>
+                $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS} -gpu=pinned> )
         endif()
 
   endif()
