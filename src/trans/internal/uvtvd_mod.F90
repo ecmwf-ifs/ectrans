@@ -95,8 +95,8 @@ ZN(KM-1:ITMAX+3) = F%RN(KM-1:ITMAX+3)
 
 IN = F%NLTN(KM-1)
 DO J=1,2*KFIELD
-  PU(IN,J) = 0.0_JPRB
-  PV(IN,J) = 0.0_JPRB
+  PU(J,IN) = 0.0_JPRB
+  PV(J,IN) = 0.0_JPRB
 ENDDO
 
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
@@ -109,18 +109,18 @@ IF(KM /= 0) THEN
     DO J=1,KFIELD
       IR = 2*J-1
       II = IR+1
-      PVOR(IN,IR) = -ZKM*PV(IN,II)-&
-       &ZN(JN)*PEPSNM(JN+1)*PU(IN-1,IR)+&
-       &ZN(JN+1)*PEPSNM(JN)*PU(IN+1,IR)
-      PVOR(IN,II) = +ZKM*PV(IN,IR)-&
-       &ZN(JN)*PEPSNM(JN+1)*PU(IN-1,II)+&
-       &ZN(JN+1)*PEPSNM(JN)*PU(IN+1,II)
-      PDIV(IN,IR) = -ZKM*PU(IN,II)+&
-       &ZN(JN)*PEPSNM(JN+1)*PV(IN-1,IR)-&
-       &ZN(JN+1)*PEPSNM(JN)*PV(IN+1,IR)
-      PDIV(IN,II) = +ZKM*PU(IN,IR)+&
-       &ZN(JN)*PEPSNM(JN+1)*PV(IN-1,II)-&
-       &ZN(JN+1)*PEPSNM(JN)*PV(IN+1,II)
+      PVOR(IR,IN) = -ZKM*PV(II,IN)-&
+       &ZN(JN)*PEPSNM(JN+1)*PU(IR,IN-1)+&
+       &ZN(JN+1)*PEPSNM(JN)*PU(IR,IN+1)
+      PVOR(II,IN) = +ZKM*PV(IR,IN)-&
+       &ZN(JN)*PEPSNM(JN+1)*PU(II,IN-1)+&
+       &ZN(JN+1)*PEPSNM(JN)*PU(II,IN+1)
+      PDIV(IR,IN) = -ZKM*PU(II,IN)+&
+       &ZN(JN)*PEPSNM(JN+1)*PV(IR,IN-1)-&
+       &ZN(JN+1)*PEPSNM(JN)*PV(IR,IN+1)
+      PDIV(II,IN) = +ZKM*PU(IR,IN)+&
+       &ZN(JN)*PEPSNM(JN+1)*PV(II,IN-1)-&
+       &ZN(JN+1)*PEPSNM(JN)*PV(II,IN+1)
     ENDDO
   ENDDO
 ELSE
@@ -128,12 +128,12 @@ ELSE
     IN = ITMAX+2-JN
     DO J=1,KFIELD
       IR = 2*J-1
-      PVOR(IN,IR) = -&
-       &ZN(JN)*PEPSNM(JN+1)*PU(IN-1,IR)+&
-       &ZN(JN+1)*PEPSNM(JN)*PU(IN+1,IR)
-      PDIV(IN,IR) = &
-       &ZN(JN)*PEPSNM(JN+1)*PV(IN-1,IR)-&
-       &ZN(JN+1)*PEPSNM(JN)*PV(IN+1,IR)
+      PVOR(IR,IN) = -&
+       &ZN(JN)*PEPSNM(JN+1)*PU(IR,IN-1)+&
+       &ZN(JN+1)*PEPSNM(JN)*PU(IR,IN+1)
+      PDIV(IR,IN) = &
+       &ZN(JN)*PEPSNM(JN+1)*PV(IR,IN-1)-&
+       &ZN(JN+1)*PEPSNM(JN)*PV(IR,IN+1)
     ENDDO
   ENDDO
 ENDIF
