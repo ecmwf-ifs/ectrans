@@ -7,7 +7,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-program transform_test
+program ectrans_benchmark
 
 !
 ! Spectral transform test
@@ -293,7 +293,7 @@ enddo
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
-  if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
+  if (nprtrw*nprtrv /= nproc) call abor1('ectrans_benchmark:nprtrw*nprtrv /= nproc')
 else
   do jprtrv = 4, nproc
     nprtrv = jprtrv
@@ -330,7 +330,7 @@ else
   iprtrv = mod(myproc - 1, nprtrv) + 1
   iprtrw = (myproc - 1)/nprtrv + 1
   if (iprtrv /= mysetv .or. iprtrw /= mysetw) then
-    call abor1('transform_test:inconsistency when computing mysetw and mysetv')
+    call abor1('ectrans_benchmark:inconsistency when computing mysetw and mysetv')
   endif
 endif
 
@@ -564,12 +564,12 @@ ztinit = (timef() - ztinit)/1000.0_jprd
 
 if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
+  write(nout,'(a,i6,a,f9.2,a)') "ectrans_benchmark initialisation, on",nproc,&
                                 & " tasks, took",ztinit," sec"
   write(nout,'(" ")')
 endif
 
-if (iters <= 0) call abor1('transform_test:iters <= 0')
+if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
 
 allocate(ztstep(iters))
 allocate(ztstep1(iters))
@@ -915,11 +915,11 @@ if (lstack) then
          &"   1",11x,i10)
 
     do i = 2, nproc
-      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='transform_test:')
+      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='ectrans_benchmark:')
       print '(i4,11x,i10)', i, istack
     enddo
   else
-    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='transform_test:')
+    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='ectrans_benchmark:')
   endif
 endif
 
@@ -1412,6 +1412,6 @@ subroutine set_ectrans_gpu_nflev(kflev)
   call ec_putenv(ECTRANS_GPU_NFLEV, overwrite=.true.)
 end subroutine
 
-end program transform_test
+end program ectrans_benchmark
 
 !===================================================================================================
