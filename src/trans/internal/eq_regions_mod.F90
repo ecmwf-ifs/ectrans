@@ -70,7 +70,7 @@ MODULE eq_regions_mod
 !
 !--------------------------------------------------------------------------------
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 
 IMPLICIT NONE
 
@@ -81,7 +81,7 @@ PRIVATE
 PUBLIC eq_regions,l_regions_debug,n_regions_ns,n_regions_ew,n_regions,my_region_ns,my_region_ew
 PUBLIC eq_regions_t, eq_regions_save, eq_regions_load, eq_regions_free
 
-real(kind=jprb) pi
+real(kind=jprd) :: pi
 
 type eq_regions_t
 logical :: l_regions_debug=.false.
@@ -144,14 +144,14 @@ subroutine eq_regions(N)
 ! eq_regions uses the zonal equal area sphere partitioning algorithm to partition
 ! the surface of a sphere into N regions of equal area and small diameter.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 integer(kind=jpim) :: n_collars,j
-real(kind=jprb),allocatable :: r_regions(:)
-real(kind=jprb) :: c_polar
+real(kind=jprd),allocatable :: r_regions(:)
+real(kind=jprd) :: c_polar
 
-pi=2.0_jprb*asin(1.0_jprb)
+pi=2.0_jprd*asin(1.0_jprd)
 
 n_regions(:)=0
 
@@ -223,10 +223,10 @@ function num_collars(N,c_polar,a_ideal) result(num_c)
 ! Given N, an ideal angle, and c_polar,
 ! determine n_collars, the number of collars between the polar caps.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
-real(kind=jprb),intent(in) :: a_ideal,c_polar
+real(kind=jprd),intent(in) :: a_ideal,c_polar
 integer(kind=jpim) :: num_c
 logical enough
 enough = (N > 2) .and. (a_ideal > 0)
@@ -251,22 +251,22 @@ subroutine ideal_region_list(N,c_polar,n_collars,r_regions)
 ! r_regions[n_collars+2] is 1.
 ! The sum of r_regions is N.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N,n_collars
-real(kind=jprb),intent(in) :: c_polar
-real(kind=jprb),intent(out) :: r_regions(n_collars+2)
+real(kind=jprd),intent(in) :: c_polar
+real(kind=jprd),intent(out) :: r_regions(n_collars+2)
 integer(kind=jpim) :: collar_n
-real(kind=jprb) :: ideal_region_area,ideal_collar_area
-real(kind=jprb) :: a_fitting
-r_regions(:)=0.0_jprb
-r_regions(1) = 1.0_jprb
+real(kind=jprd) :: ideal_region_area,ideal_collar_area
+real(kind=jprd) :: a_fitting
+r_regions(:)=0.0_jprd
+r_regions(1) = 1.0_jprd
 if( n_collars > 0 )then
   !
   ! Based on n_collars and c_polar, determine a_fitting,
   ! the collar angle such that n_collars collars fit between the polar caps.
   !
-  a_fitting = (pi-2.0_jprb*c_polar)/float(n_collars)
+  a_fitting = (pi-2.0_jprd*c_polar)/real(n_collars,jprd)
   ideal_region_area = area_of_ideal_region(N)
   do collar_n=1,n_collars
     ideal_collar_area = area_of_collar(c_polar+(collar_n-1)*a_fitting, &
@@ -285,11 +285,11 @@ function ideal_collar_angle(N) result(ideal)
 ! IDEAL_COLLAR_ANGLE(N) sets ANGLE to the ideal angle for the
 ! spherical collars of an EQ partition of the unit sphere S^2 into N regions.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
-real(kind=jprb) :: ideal
-ideal = area_of_ideal_region(N)**(0.5_jprb)
+real(kind=jprd) :: ideal
+ideal = area_of_ideal_region(N)**(0.5_jprd)
 return
 end function ideal_collar_angle
 
@@ -305,17 +305,17 @@ subroutine round_to_naturals(N,n_collars,r_regions)
 ! n_regions[n_collars+2] is 1.
 ! The sum of n_regions is N.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N,n_collars
-real(kind=jprb),intent(in) :: r_regions(n_collars+2)
+real(kind=jprd),intent(in) :: r_regions(n_collars+2)
 integer(kind=jpim) :: zone_n
-real(kind=jprb) :: discrepancy
+real(kind=jprd) :: discrepancy
 n_regions(1:n_collars+2) = r_regions(:)
-discrepancy = 0.0_jprb
+discrepancy = 0.0_jprd
 do zone_n = 1,n_collars+2
     n_regions(zone_n) = nint(r_regions(zone_n)+discrepancy);
-    discrepancy = discrepancy+r_regions(zone_n)-float(n_regions(zone_n));
+    discrepancy = discrepancy+r_regions(zone_n)-real(n_regions(zone_n),jprd);
 enddo
 return
 end subroutine round_to_naturals
@@ -324,13 +324,13 @@ function polar_colat(N) result(polar_c)
 !
 ! Given N, determine the colatitude of the North polar spherical cap.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
-real(kind=jprb) :: area
-real(kind=jprb) :: polar_c
+real(kind=jprd) :: area
+real(kind=jprd) :: polar_c
 if( N == 1 ) polar_c=pi
-if( N == 2 ) polar_c=pi/2.0_jprb
+if( N == 2 ) polar_c=pi/2.0_jprd
 if( N > 2 )then
   area=area_of_ideal_region(N)
   polar_c=sradius_of_cap(area)
@@ -343,13 +343,13 @@ function area_of_ideal_region(N) result(area)
 ! AREA_OF_IDEAL_REGION(N) sets AREA to be the area of one of N equal
 ! area regions on S^2, that is 1/N times AREA_OF_SPHERE.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
-real(kind=jprb) :: area_of_sphere
-real(kind=jprb) :: area
-area_of_sphere = (2.0_jprb*pi**1.5_jprb/gamma(1.5_jprb))
-area = area_of_sphere/float(N)
+real(kind=jprd) :: area_of_sphere
+real(kind=jprd) :: area
+area_of_sphere = (2.0_jprd*pi**1.5_jprd/gamma(1.5_jprd))
+area = area_of_sphere/real(N,jprd)
 return
 end function area_of_ideal_region
 
@@ -358,11 +358,11 @@ function sradius_of_cap(area) result(sradius)
 ! SRADIUS_OF_CAP(AREA) returns the spherical radius of
 ! an S^2 spherical cap of area AREA.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
-real(kind=jprb),intent(in) :: area
-real(kind=jprb) :: sradius
-sradius = 2.0_jprb*asin(sqrt(area/pi)/2.0_jprb)
+real(kind=jprd),intent(in) :: area
+real(kind=jprd) :: sradius
+sradius = 2.0_jprd*asin(sqrt(area/pi)/2.0_jprd)
 return
 end function sradius_of_cap
 
@@ -374,10 +374,10 @@ function area_of_collar(a_top, a_bot) result(area)
 ! collar specified by A_TOP, A_BOT, where A_TOP is top (smaller) spherical radius,
 ! A_BOT is bottom (larger) spherical radius.
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
-real(kind=jprb),intent(in) :: a_top,a_bot
-real(kind=jprb) area
+real(kind=jprd),intent(in) :: a_top,a_bot
+real(kind=jprd) area
 area = area_of_cap(a_bot) - area_of_cap(a_top)
 return
 end function area_of_collar
@@ -389,37 +389,37 @@ function area_of_cap(s_cap) result(area)
 ! AREA_OF_CAP(S_CAP) sets AREA to be the area of an S^2 spherical
 ! cap of spherical radius S_CAP.
 !
-real(kind=jprb),intent(in) :: s_cap
-real(kind=jprb) area
-area = 4.0_jprb*pi * sin(s_cap/2.0_jprb)**2
+real(kind=jprd),intent(in) :: s_cap
+real(kind=jprd) area
+area = 4.0_jprd*pi * sin(s_cap/2.0_jprd)**2
 return
 end function area_of_cap
 
 function gamma(x) result(gamma_res)
 !
-USE PARKIND1  ,ONLY : JPIM,   JPRB
+USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
-real(kind=jprb),intent(in) :: x
-real(kind=jprb) :: gamma_res
-real(kind=jprb) :: p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13
-real(kind=jprb) :: w,y
+real(kind=jprd),intent(in) :: x
+real(kind=jprd) :: gamma_res
+real(kind=jprd) :: p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13
+real(kind=jprd) :: w,y
 integer(kind=jpim) :: k,n
 parameter (&
-& p0 =   0.999999999999999990e+00_jprb,&
-& p1 =  -0.422784335098466784e+00_jprb,&
-& p2 =  -0.233093736421782878e+00_jprb,&
-& p3 =   0.191091101387638410e+00_jprb,&
-& p4 =  -0.024552490005641278e+00_jprb,&
-& p5 =  -0.017645244547851414e+00_jprb,&
-& p6 =   0.008023273027855346e+00_jprb)
+& p0 =   0.999999999999999990e+00_jprd,&
+& p1 =  -0.422784335098466784e+00_jprd,&
+& p2 =  -0.233093736421782878e+00_jprd,&
+& p3 =   0.191091101387638410e+00_jprd,&
+& p4 =  -0.024552490005641278e+00_jprd,&
+& p5 =  -0.017645244547851414e+00_jprd,&
+& p6 =   0.008023273027855346e+00_jprd)
 parameter (&
-& p7 =  -0.000804329819255744e+00_jprb,&
-& p8 =  -0.000360837876648255e+00_jprb,&
-& p9 =   0.000145596568617526e+00_jprb,&
-& p10 = -0.000017545539395205e+00_jprb,&
-& p11 = -0.000002591225267689e+00_jprb,&
-& p12 =  0.000001337767384067e+00_jprb,&
-& p13 = -0.000000199542863674e+00_jprb)
+& p7 =  -0.000804329819255744e+00_jprd,&
+& p8 =  -0.000360837876648255e+00_jprd,&
+& p9 =   0.000145596568617526e+00_jprd,&
+& p10 = -0.000017545539395205e+00_jprd,&
+& p11 = -0.000002591225267689e+00_jprd,&
+& p12 =  0.000001337767384067e+00_jprd,&
+& p13 = -0.000000199542863674e+00_jprd)
 n = nint(x - 2)
 w = x - (n + 2)
 y = ((((((((((((p13 * w + p12) * w + p11) * w + p10) *&

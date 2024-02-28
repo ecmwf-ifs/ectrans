@@ -35,7 +35,9 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
-!     PWEIGHT - the weight per grid-point (for a weighted distribution)
+!     PWEIGHT - the weight per grid-point (for a weighted distribution);
+!               Note, only seems to be used from within enkf
+
 !     LDGRIDONLY - true if only grid space is required
 
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
@@ -96,7 +98,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,  JPRD
+USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
 USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
 
 !ifndef INTERFACE
@@ -137,8 +139,8 @@ INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
-REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
-REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PSTRET
+REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
+REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
@@ -218,7 +220,7 @@ IF(LLP1) WRITE(NOUT,*) '=== DEFINING RESOLUTION ',NCUR_RESOL
 
 
 G%LREDUCED_GRID = .FALSE.
-G%RSTRET=1.0_JPRB
+G%RSTRET=1.0_JPRD
 D%LGRIDONLY = .FALSE.
 D%LSPLIT = .FALSE.
 D%LCPNMONLY=.FALSE.
@@ -311,7 +313,7 @@ IF(PRESENT(PWEIGHT)) THEN
   IF(SIZE(PWEIGHT) /= SUM(G%NLOEN(:)) )THEN
     CALL ABORT_TRANS('SETUP_TRANS:SIZE(PWEIGHT) /= SUM(G%NLOEN(:))')
   ENDIF
-  IF( MINVAL(PWEIGHT(:)) < 0.0_JPRB )THEN
+  IF( MINVAL(PWEIGHT(:)) < 0.0_JPRD )THEN
     CALL ABORT_TRANS('SETUP_TRANS: INVALID WEIGHTS')
   ENDIF
   ALLOCATE(D%RWEIGHT(SIZE(PWEIGHT)))
@@ -344,7 +346,7 @@ ENDIF
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
-  IF (ABS(PSTRET-1.0_JPRB)>100._JPRB*EPSILON(1._JPRB)) THEN
+  IF (ABS(PSTRET-1.0_JPRD)>100._JPRD*EPSILON(1._JPRD)) THEN
     G%RSTRET=PSTRET
     S%LSOUTHPNM=.TRUE.
   ENDIF

@@ -7,6 +7,11 @@
 # nor does it submit to any jurisdiction.
 
 cmake_minimum_required( VERSION 3.12 FATAL_ERROR )
+
+# Once we update the minimum required version to 3.20,
+# we can use the command `cmake_path` instead of `get_filename_component`.
+# For discussion, see https://github.com/ecmwf-ifs/ectrans/pull/61#discussion_r1494362092
+
 find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( ectrans LANGUAGES C Fortran )
