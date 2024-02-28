@@ -34,6 +34,7 @@ endif()
 
 ## Sources which are precision independent can go into a common library
 list( APPEND ectrans_common_src
+  algor/ectrans_blas_mod.F90
   sharedmem/sharedmem_mod.F90
   sharedmem/sharedmem.c
   internal/abort_trans_mod.F90
@@ -76,6 +77,7 @@ ecbuild_add_library(
   LINKER_LANGUAGE  Fortran
   SOURCES          ${ectrans_common_src}
   PUBLIC_LIBS      fiat
+  PRIVATE_LIBS     ${LAPACK_LIBRARIES}
 )
 ectrans_target_fortran_module_directory(
   TARGET            ectrans_common
