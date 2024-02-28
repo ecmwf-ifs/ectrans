@@ -1181,9 +1181,9 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
 
   if (jprb == jprd) then
-    write(nout, "(a)") "NAME    ectrans-benchmark-dp"
+    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-dp"
   else
-    write(nout, "(a)") "NAME    ectrans-benchmark-sp"
+    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-sp"
   end if
   write(nout, "(a)") ""
 
@@ -1199,9 +1199,9 @@ subroutine print_help(unit)
 
   write(nout, "(a)") "USAGE"
   if (jprb == jprd) then
-    write(nout, "(a)") "        ectrans-benchmark-dp [options]"
+    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-dp [options]"
   else
-    write(nout, "(a)") "        ectrans-benchmark-sp [options]"
+    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-sp [options]"
   end if
   write(nout, "(a)") ""
 
