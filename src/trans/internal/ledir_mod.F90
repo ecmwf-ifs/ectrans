@@ -61,9 +61,7 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE TPM_DIM         ,ONLY : R
 USE TPM_FLT         ,ONLY : S
 USE BUTTERFLY_ALG_MOD, ONLY : MULT_BUTM
-
-use, intrinsic :: ieee_exceptions
-
+USE ECTRANS_BLAS_MOD, ONLY : GEMM
 
 IMPLICIT NONE
 
@@ -86,12 +84,6 @@ INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IFLD, J, JK, I1, I2, I3, I4
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCA_D(:,:), ZCS_D(:,:),ZRPNMA(:,:), ZRPNMS(:,:)
-LOGICAL :: LL_HALT_INVALID
-#ifdef WITH_IEEE_HALT
-LOGICAL, PARAMETER :: LL_IEEE_HALT = .TRUE.
-#else
-LOGICAL, PARAMETER :: LL_IEEE_HALT = .FALSE.
-#endif
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 CHARACTER(LEN=1) :: CLX
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
@@ -136,17 +128,12 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
-       CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
+       CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZB,KDGLU,0._JPRD,ZCA,ILA)
     ELSE
        IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
-          IF (LL_IEEE_HALT) THEN
-             call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
-             if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
-          ENDIF
-          CALL SGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
+          CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCA,ILA)
-          if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
        ELSE
           I1 = size(S%FA(KMLOC)%RPNMA(:,1))
           I2 = size(S%FA(KMLOC)%RPNMA(1,:))
@@ -165,7 +152,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
                 ZRPNMA(I3,I4) = S%FA(KMLOC)%RPNMA(I3,I4)
              END DO
           END DO
-          CALL DGEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
+          CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
                &ZB_D,KDGLU,0._JPRD,ZCA_D,ILA)
           IFLD=0
           DO JK=1,KFC,ISKIP
@@ -210,17 +197,12 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
     IF (LLDOUBLE) THEN
-       CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
+       CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZB,KDGLU,0._JPRD,ZCS,ILS)
     ELSE
        IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
-          IF (LL_IEEE_HALT) THEN
-             call ieee_get_halting_mode(ieee_invalid,LL_HALT_INVALID)
-             if (LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.false.)
-          ENDIF
-          CALL SGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
+          CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCS,ILS)
-          if (LL_IEEE_HALT .and. LL_HALT_INVALID) call ieee_set_halting_mode(ieee_invalid,.true.)
        ELSE
           I1 = size(S%FA(KMLOC)%RPNMS(:,1))
           I2 = size(S%FA(KMLOC)%RPNMS(1,:))
@@ -239,7 +221,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
                 ZRPNMS(I3,I4) = S%FA(KMLOC)%RPNMS(I3,I4)
              END DO
           END DO
-          CALL DGEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
+          CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
                &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
           IFLD=0
           DO JK=1,KFC,ISKIP
