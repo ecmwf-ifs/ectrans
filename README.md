@@ -97,7 +97,7 @@ Optionally, tests can be run to check succesful compilation, when the feature TE
 
 The benchmark drivers are found in the bin directory.
 A brief description of available command-line arguments can be obtained with e.g.
-ectrans-benchmark-sp --help
+ectrans-benchmark-cpu-sp --help
 
 Reporting Bugs
 ==============

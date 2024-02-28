@@ -35,7 +35,7 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
   if ( HAVE_CPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
-        ecbuild_add_executable( TARGET  ${program}-${prec}
+        ecbuild_add_executable( TARGET  ${program}-cpu-${prec}
                                 SOURCES ${program}.F90
                                 LINKER_LANGUAGE Fortran
                                 LIBS
@@ -43,6 +43,7 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
                                   parkind_${prec}
                                   trans_${prec}
         )
+        target_compile_definitions(${program}-cpu-${prec} PRIVATE VERSION="cpu")
       endif()
     endforeach( prec)
   endif()
@@ -50,15 +51,16 @@ foreach( program ectrans-benchmark ectrans-benchmark-ifs )
   if( HAVE_GPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
-            ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
-                                    SOURCES ${program}.F90
-                                    LINKER_LANGUAGE Fortran
-                                    LIBS
-                                      fiat
-                                      parkind_${prec}
-                                      trans_gpu_${prec}
-            )
-       endif()
+        ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
+                                SOURCES ${program}.F90
+                                LINKER_LANGUAGE Fortran
+                                LIBS
+                                  fiat
+                                  parkind_${prec}
+                                  trans_gpu_${prec}
+        )
+        target_compile_definitions(${program}-gpu-${prec} PRIVATE VERSION="gpu")
+      endif()
     endforeach( prec )
   endif( HAVE_GPU )
 endforeach( program )
