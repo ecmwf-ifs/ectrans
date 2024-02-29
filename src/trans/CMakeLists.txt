@@ -129,7 +129,7 @@ function(generate_backend_includes)
   set(backend     ${_PAR_BACKEND})
 
   file(MAKE_DIRECTORY ${destination})
-  file(MAKE_DIRECTORY ${destination}/${backend})
+  file(MAKE_DIRECTORY ${destination}/trans_${backend})
 
   ecbuild_list_add_pattern( LIST files GLOB include/ectrans/*.h QUIET )
 
