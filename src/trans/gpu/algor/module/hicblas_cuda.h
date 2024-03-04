@@ -13,6 +13,7 @@
 #define __HICBLAS_CUDA_H__
 
 #include "cublas_v2.h"
+#include <cuda_runtime.h>
 #include <cstdio>
 
 // Library name

@@ -65,7 +65,7 @@ end interface devicegetdevicecount
 
 interface devicegetmeminfo
 
-integer function device_MemGetInfo(memfree_mb,memtotal_mb) bind(C,name='c_cudamemgetinfo')
+integer function device_MemGetInfo(memfree_mb,memtotal_mb) bind(C,name='c_hipmemgetinfo')
 use iso_c_binding
 integer(c_int) :: memfree_mb, memtotal_mb
 end function device_MemGetInfo
