@@ -495,8 +495,8 @@ else
   jend_vder_EW   = jend_uv
 endif
 
-jbegin_sc = jbegin_vder_EW + 1
-jend_sc   = jbegin_vder_EW + nfld
+jbegin_sc = jend_vder_EW + 1
+jend_sc   = jend_vder_EW + nfld
 
 if (lscders) then
   ndimgmvs = 3
