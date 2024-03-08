@@ -170,27 +170,6 @@ INTERFACE
 END INTERFACE
 
 INTERFACE
-    SUBROUTINE HIP_STCGEMM_BATCHED(&
-        & CTA, CTB,                &
-        & M, N, K,                 &
-        & ALPHA,                   &
-        & A, LDA, TDA,             &
-        & B, LDB, TDB,             &
-        & BETA,                    &
-        & C, LDC, TDC,             &
-        & BATCHCOUNT               &
-    &) BIND(C, NAME='hipblasSTCgemmBatched_wrapper')
-        USE ISO_C_BINDING
-        CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
-        INTEGER(C_INT),      VALUE            :: M, N, K, LDA, LDB, LDC, TDA, TDB, TDC, BATCHCOUNT
-        REAL(C_FLOAT),       VALUE            :: ALPHA, BETA
-        REAL(C_FLOAT),       DIMENSION(LDA,*) :: A
-        REAL(C_FLOAT),       DIMENSION(LDB,*) :: B
-        REAL(C_FLOAT),       DIMENSION(LDC,*) :: C
-    END SUBROUTINE HIP_STCGEMM_BATCHED
-END INTERFACE
-
-INTERFACE
 SUBROUTINE HIP_DGEMM_GROUPED(   &
     & BLAS_ID, CTA, CTB,        &
     & M, N, K,                  &
