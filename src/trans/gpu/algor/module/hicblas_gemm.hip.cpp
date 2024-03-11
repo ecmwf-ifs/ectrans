@@ -197,9 +197,15 @@ void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
     op_t2=HIPBLAS_OP_T;
 
   using namespace detail;
+#ifdef USE_GRAPHS_GEMM
   run_group_graph(hipblas_gemm_grouped<float>(op_t1, op_t2), m, n, k, alpha, A,
                   lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
                   batchCount, stream, blas_id, growing_allocator);
+#else
+  run_group(hipblas_gemm_grouped<float>(op_t1, op_t2), m, n, k, alpha, A,
+            lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
+            batchCount, stream);
+#endif
 }
 
 void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,

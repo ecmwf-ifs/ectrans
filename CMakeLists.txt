@@ -163,6 +163,11 @@ ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
                     CONDITION HAVE_GPU
                     DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
 
+ecbuild_add_option( FEATURE GPU_GRAPHS
+                    DEFAULT ON
+                    CONDITION HAVE_GPU
+                    DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )
+
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
 else()

@@ -108,6 +108,7 @@ foreach( prec dp sp )
                                $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_3XTF32}:USE_3XTF32>
+                               $<${HAVE_GPU_GRAPHS}:USE_GRAPHS_GEMM>
         )
 
         ectrans_target_fortran_module_directory(
