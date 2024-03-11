@@ -79,15 +79,21 @@ Extra options can be added to the `cmake` command to control the build:
  - `-DENABLE_GPU=<ON|OFF>`              default=OFF
  - `-DCMAKE_INSTALL_PREFIX=<install-prefix>`
 
+Specific extra options exist for GPU installation:
+ - `-DENABLE_GPU_AWARE_MPI=<ON|OFF>`    default=OF
+ - `-DENABLE_GPU_GRAPHS_GEMM=<ON|OFF>`  default=ON
+ - `-DENABLE_CUTLASS=<ON|OFF>`          default=OFF
+ - `-DENABLE_3XTF32=<ON|OFF>`           default=OFF
+
+GPU-aware MPI allows buffers residing on GPU to be passed to MPI communication calls directly. This requires a compatible MPI installation.
+Graph work-flows allow a series of GPU operations to be scheduled in an efficient manner. 
+This is useful both for the batched FFTs and the batched GEMMs on which ecTrans relies, although for FFTs this is currently relied upon.
+Cutlass is an Nvidia library of templates for GEMM operations. 3xTF32 is a specific acceleration for single precision operations, enabled by Cutlass.
+
 More options to control compilation flags, only when defaults are not sufficient
 
  - `-DCMAKE_Fortran_FLAGS=<fortran-flags>`
  - `-DCMAKE_C_FLAGS=<c-flags>`
-
-Additional option for the GPU code, allowing to reduce memory consumption on the GPU at the 
-cost of slower execution:
-
- - `-DENABLE_REDUCED_MEMORY=ON`
 
 Once this has finished successfully, run ``make`` and ``make install``.
 
