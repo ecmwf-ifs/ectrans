@@ -158,12 +158,7 @@ ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
                     DESCRIPTION "Enable CUDA-aware MPI" )
 
-ecbuild_add_option( FEATURE GPU_REDUCED_MEMORY
-                    DEFAULT OFF
-                    CONDITION HAVE_GPU
-                    DESCRIPTION "Use (slower) code that reduces memory requirements on GPU" )
-
-ecbuild_add_option( FEATURE GPU_GRAPHS
+ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     DEFAULT ON
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )

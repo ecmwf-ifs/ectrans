@@ -1,1 +1,0 @@
-hicblasDgemmBatched.hip.cpp

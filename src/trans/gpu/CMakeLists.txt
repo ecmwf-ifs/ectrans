@@ -29,16 +29,6 @@ ecbuild_list_add_pattern( LIST trans_src
                                 external/*
                           QUIET
                         )
-## for reduced memory option, replace source files
-if( HAVE_GPU_REDUCED_MEMORY )
-  ecbuild_list_add_pattern( LIST reducedmem_files
-                            GLOB internal_reducedmem/* QUIET )
-  foreach( src_file ${reducedmem_files} )
-    get_filename_component( base_name ${src_file} NAME )
-    list(REMOVE_ITEM trans_src "internal/${base_name}" )
-    list(APPEND      trans_src ${src_file} )
-  endforeach()
-endif()
 
 ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
 ecbuild_list_exclude_pattern( LIST trans_src            REGEX cuda_gemm_batched_mod.F90 )
@@ -68,11 +58,6 @@ elseif( HAVE_CUDA )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx )
   ecbuild_list_exclude_pattern( LIST trans_src  REGEX \.hip\.cpp )
   ecbuild_list_exclude_pattern( LIST trans_src  REGEX hip_device_mod.F90 )
-# temporary exclusion
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX fft_wrapper.cu )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX gemm_wrapper.cu )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX cuda_gemm_batched_mod.F90 )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX tpm_fftc.F90 )
 else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
@@ -105,10 +90,9 @@ foreach( prec dp sp )
           PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
                                ${GPU_RUNTIME}GPU
                                $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
-                               $<${HAVE_GPU_REDUCED_MEMORY}:REDUCED_MEM>
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_3XTF32}:USE_3XTF32>
-                               $<${HAVE_GPU_GRAPHS}:USE_GRAPHS_GEMM>
+			       $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
         )
 
         ectrans_target_fortran_module_directory(
