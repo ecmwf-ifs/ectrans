@@ -85,7 +85,7 @@ foreach( prec dp sp )
                                ${LAPACK_LIBRARIES} # we still have symbols in some files
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                               $<${HAVE_GPU_AWARE_MPI}:MPI::MPI_Fortran MPI::MPI_CXX>
+                               MPI::MPI_Fortran MPI::MPI_CXX
                                $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
           PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
                                ${GPU_RUNTIME}GPU
