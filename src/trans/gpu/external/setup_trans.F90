@@ -195,6 +195,7 @@ CHARACTER(LEN=8)  :: CENV
 INTEGER(ACC_DEVICE_KIND) :: IDEVTYPE
 #endif
 INTEGER :: INUMDEVS, IUNIT, ISTAT, IDEV, MYGPU
+INTEGER :: IF_PP_FACT
 
 #include "user_clock.intfb.h"
 !     ------------------------------------------------------------------
@@ -475,9 +476,19 @@ MYGPU = ACC_GET_DEVICE_NUM(IDEVTYPE)
 !IF_OUT_LT = 5*NFLEV0+2
 !IF_FS = 6*NFLEV0+3
 
-! add additional post-processing requirements
-!IF_PP = 2*NFLEV0
-IF_PP = 0
+! Add additional post-processing requirements, based on environment variable ECTRANS_GPU_IF_PP_FACT
+! This variable determines the extra number of fields, on top of the standard number required for
+! a model spectral transform, which post-processing might need
+! It's given in units of NFLEV0
+CALL EC_GETENV("ECTRANS_GPU_IF_PP_FACT", CENV)
+IF (LEN_TRIM(CENV) > 0) THEN
+  WRITE(NOUT,'(A)') "Allocating additional device memory for post-processing"
+  WRITE(NOUT,'(2A)') "${ECTRANS_GPU_IF_PP_FACT}=", CENV
+  READ(CENV,*) IF_PP_FACT
+ELSE
+  IF_PP_FACT = 0
+ENDIF
+IF_PP = IF_PP_FACT*NFLEV0
 
 ! u/v + scalars 3d + scalars 2d
 IF_UV = NFLEV0
