@@ -12,6 +12,9 @@ MODULE SULEG_MOD
 #ifdef __NEC__
 #define SIZEOF(x) STORAGE_SIZE(x)/KIND(x)
 #endif
+#ifdef NAG
+#define SIZEOF(x) STORAGE_SIZE(x)/KIND(x)
+#endif
 CONTAINS
 SUBROUTINE SULEG
 !DEC$ OPTIMIZE:1
