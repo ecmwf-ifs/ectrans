@@ -68,7 +68,7 @@ ecbuild_add_option( FEATURE TRANSI
 ectrans_find_lapack()
 
 ### Add sources and tests
-include( ectrans_compile_options )
+include( ectrans_compile_flags )
 add_subdirectory( src )
 add_subdirectory( tests )
 
