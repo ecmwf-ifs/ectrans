@@ -711,7 +711,7 @@ do jstep = 1, iters
       zmaxerr(:) = -999.0
       do ifld = 1, 1
         write(nout,*) "znormsp", znormsp
-        call flush(nout)
+        flush(nout)
         zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
         zmaxerr(1) = max(zmaxerr(1), zerr(1))
       enddo
