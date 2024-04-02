@@ -17,6 +17,10 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"
   ecbuild_add_fortran_flags("-fallow-argument-mismatch")
 endif()
 
+if( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
+  ecbuild_add_fortran_flags("-march=core-avx2 -no-fma -fast-transcendentals")
+  ecbuild_add_fortran_flags("-fp-model precise -fp-speculation=safe")
+endif()
 
 macro( ectrans_add_compile_options )
   set( options  )
