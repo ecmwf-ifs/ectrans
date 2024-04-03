@@ -1138,8 +1138,8 @@ end subroutine str2int
 
 subroutine sort(a, n)
 
-  real(kind=jprd), intent(inout) :: a(n)
   integer(kind=jpim), intent(in) :: n
+  real(kind=jprd), intent(inout) :: a(n)
 
   real(kind=jprd) :: x
 
