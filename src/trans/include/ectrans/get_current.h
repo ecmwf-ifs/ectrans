@@ -1,4 +1,4 @@
-! (C) Copyright 2000- Meteo France.
+! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
