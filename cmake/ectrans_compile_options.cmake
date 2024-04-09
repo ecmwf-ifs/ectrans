@@ -9,14 +9,15 @@
 
 if( CMAKE_Fortran_COMPILER_ID MATCHES "XL" )
   ecbuild_add_fortran_flags("-qextname -qnobindcextname")
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU" )
+  # gfortran 10 has become stricter with argument matching
+  if( NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 10 )
+    ecbuild_add_fortran_flags("-fallow-argument-mismatch")
+  endif()
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
+  ecbuild_add_fortran_flags("-march=core-avx2 -no-fma" BUILD BIT)
+  ecbuild_add_fortran_flags("-fast-transcendentals -fp-model precise -fp-speculation=safe")
 endif()
-
-# gfortran 10 has become stricter with argument matching
-if( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"
-    AND NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 10 )
-  ecbuild_add_fortran_flags("-fallow-argument-mismatch")
-endif()
-
 
 macro( ectrans_add_compile_options )
   set( options  )
