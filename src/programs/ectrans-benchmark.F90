@@ -435,10 +435,10 @@ if (verbosity >= 0) then
   write(nout,'("ngpblks   ",i0)') ngpblks
   write(nout,'("nspec2    ",i0)') nspec2
   write(nout,'("nspec2g   ",i0)') nspec2g
-  write(nout,'("luseflt   ",l)') luseflt
-  write(nout,'("lvordiv   ",l)') lvordiv
-  write(nout,'("lscders   ",l)') lscders
-  write(nout,'("luvders   ",l)') luvders
+  write(nout,'("luseflt   ",l1)') luseflt
+  write(nout,'("lvordiv   ",l1)') lvordiv
+  write(nout,'("lscders   ",l1)') lscders
+  write(nout,'("luvders   ",l1)') luvders
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
