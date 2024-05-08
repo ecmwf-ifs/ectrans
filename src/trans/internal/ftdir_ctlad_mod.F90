@@ -93,7 +93,6 @@ INTEGER(KIND=JPIM) :: IVSETSC(KF_SCALARS_G)
 INTEGER(KIND=JPIM) :: IVSET(KF_GP)
 INTEGER(KIND=JPIM) :: JGL,IGL
 INTEGER(KIND=JPIM) :: IFGP2,IFGP3A,IFGP3B,IOFF,J3
-INTEGER(KIND=JPIM) :: IBEG,IEND,IINC
 
 !     ------------------------------------------------------------------
 
@@ -113,21 +112,12 @@ ELSE
   ZGTF => ZGTF_HEAP(:,:)
 ENDIF
 
-IF(MYPROC > NPROC/2)THEN
-  IBEG=1
-  IEND=D%NDGL_FS
-  IINC=1
-ELSE
-  IBEG=D%NDGL_FS
-  IEND=1
-  IINC=-1
-ENDIF
-
 CALL GSTATS(1642, 0)
 ! If this rank has any Fourier fields, Fourier transform them
 IF (KF_FS > 0) THEN
+  ! Loop over latitudes
   !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL)
-  DO JGL = IBEG, IEND, IINC
+  DO JGL = 1, D%NDGL_FS
     ! Copy out Fourier data from FOUBUF_IN
     CALL FOURIER_OUTAD(ZGTF, KF_FS, JGL)
 
