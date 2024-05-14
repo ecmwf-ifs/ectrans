@@ -108,16 +108,28 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCL(:) ! Process responsible for each lat.
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRLS(:) ! Pointer to first lat. (F.S)
 
 ! NSTAGT0B to NLENGT0B: help arrays for spectral to fourier space transposition
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT0B(:) ! Start adresses for segments within buffer
-                                  ! (according to processors to whom data 
-                                  ! is going to be sent) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT1B(:) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB0(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB1(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSFTB(:)  
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSGTB(:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: MSTABF(:)
-INTEGER(KIND=JPIM) :: NLENGT0B  ! dimension
+
+! For index I, offset from which to take data from send buffer of TRMTOL to be sent to processor I
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT0B(:) ! (1:NPRTRW+1)
+! For index I, offset at which to put data in receive buffer of TRLTOM for sending processor I
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT1B(:) ! (1:NPRTRW+1)
+! For wavenumber JM (first dimension) and latitude KGL (second dimension), this gives the offset
+! into the TRLTOM/TRMTOL send/receive buffers (FOUBUF, FOUBUF_IN) for JM and KGL, starting from the
+! offset for the processor (i.e. this must be used in combination with NSTAGT0B)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB0(:,:) ! (0:R%NSMAX,D%NDGL_FS)
+
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB1(:,:) ! (D%NUMP,R%NDGL)
+! For index I, this tells you how many values will be transferred from this processor to processor I
+! in TRMTOL and from processor I to this processor in TRLTOM
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSFTB(:) ! (1:NPRTRW+1)
+! For index I, this tells you how many values will be transferred from this processor to processor I
+! in TRLTOM and from processor I to this processor in TRMTOL
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSGTB(:) ! (1:NPRTRW+1)
+! For index I, this tells you from where in the TRLTOM send buffer to take the data to send to
+! processor I
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: MSTABF(:) ! (1:NPRTRW+1)
+! Size of FOUBUF_IN, FOUBUF, except for the fields (i.e. this will be multiplied by 2 * KFIELD)
+INTEGER(KIND=JPIM) :: NLENGT0B
 
 ! GRIDPOINT SPACE
 
