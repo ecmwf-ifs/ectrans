@@ -107,7 +107,7 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NULTPP(:) ! No of lats. for each wave_set  (F
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCL(:) ! Process responsible for each lat. (F.S)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRLS(:) ! Pointer to first lat. (F.S)
 
-! NSTAGT0B to NLENGT1B: help arrays for spectral to fourier space transposition
+! NSTAGT0B to NLENGT0B: help arrays for spectral to fourier space transposition
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT0B(:) ! Start adresses for segments within buffer
                                   ! (according to processors to whom data 
                                   ! is going to be sent) 
@@ -118,7 +118,6 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSFTB(:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSGTB(:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: MSTABF(:)
 INTEGER(KIND=JPIM) :: NLENGT0B  ! dimension
-INTEGER(KIND=JPIM) :: NLENGT1B  ! dimension
 
 ! GRIDPOINT SPACE
 
