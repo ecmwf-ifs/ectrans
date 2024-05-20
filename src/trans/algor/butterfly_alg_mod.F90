@@ -68,7 +68,6 @@ LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 CONTAINS
 !================================================================================
 SUBROUTINE CONSTRUCT_BUTTERFLY(PEPS,KCMAX,KM,KN,PMAT,YD_STRUCT)
-IMPLICIT NONE
 
 ! Constuct butterfly
 
@@ -264,7 +263,7 @@ RETURN
 END SUBROUTINE CONSTRUCT_BUTTERFLY
 !=============================================================================
 SUBROUTINE PACK_BUTTERFLY_STRUCT(YD_STRUCT,YD_CLONE)
-IMPLICIT NONE
+
 ! Pack butterfly struct into array
 TYPE(BUTTERFLY_STRUCT),INTENT(IN) :: YD_STRUCT ! Structure needed to apply butterfly
 TYPE(CLONE), TARGET, INTENT(OUT) :: YD_CLONE            ! for communicating packed bufferfly_structs
@@ -362,7 +361,7 @@ ENDIF
 END SUBROUTINE PACK_BUTTERFLY_STRUCT
 !=====================================================================================
 SUBROUTINE UNPACK_BUTTERFLY_STRUCT(YD_STRUCT,YD_CLONE,YDMEMBUF)
-IMPLICIT NONE
+
 ! Construct butterfly struct from packed array
 TYPE(BUTTERFLY_STRUCT),INTENT(OUT) :: YD_STRUCT      ! Structure needed to apply butterfly
 TYPE(CLONE), TARGET, OPTIONAL,INTENT(IN) :: YD_CLONE          ! for communicating packed bufferfly_structs
@@ -479,7 +478,7 @@ ENDIF
 END SUBROUTINE UNPACK_BUTTERFLY_STRUCT
 !===========================================================================
 SUBROUTINE EXTRACT_SUB(YDNODE,PMAT,PSUB)
-IMPLICIT NONE
+
 TYPE(NODE_TYPE),INTENT(IN) :: YDNODE
 REAL(KIND=JPRD),INTENT(IN) :: PMAT(:,:)
 REAL(KIND=JPRD),INTENT(OUT) :: PSUB(:,:)
@@ -500,7 +499,7 @@ ENDDO
 END SUBROUTINE EXTRACT_SUB
 !===================================================================
 SUBROUTINE COMBINE_B(PBL,KRANKL,PBR,KRANKR,KROWS,KOFFROW,PBCOMB)
-IMPLICIT NONE
+
 REAL(KIND=JPRD),INTENT(IN) :: PBL(:,:)
 INTEGER(KIND=JPIM),INTENT(IN) :: KRANKL
 REAL(KIND=JPRD),INTENT(IN) :: PBR(:,:)
@@ -525,7 +524,7 @@ ENDDO
 END SUBROUTINE COMBINE_B
 !===================================================================
 SUBROUTINE COMPRESS_MAT(YDNODE,YDBNODE,PEPS,KROWS,KCOLS,PSUB)
-IMPLICIT NONE
+
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDBNODE
 REAL(KIND=JPRD),INTENT(IN)    :: PEPS
@@ -564,7 +563,7 @@ ENDDO
 END SUBROUTINE COMPRESS_MAT
 !====================================================================
 SUBROUTINE MULT_BUTV(CDTRANS,YD_STRUCT,PVECIN,PVECOUT)
-IMPLICIT NONE
+
 ! Multiply vector by matrix represented by buttervfly
 
 TYPE(BUTTERFLY_STRUCT),INTENT(IN) :: YD_STRUCT ! Structure from constucT-butterfly
@@ -687,7 +686,6 @@ ENDIF
 END SUBROUTINE MULT_BUTV
 !====================================================================
 SUBROUTINE MULT_BUTM(CDTRANS,YD_STRUCT,KF,PVECIN,PVECOUT,KWV)
-IMPLICIT NONE
 
 ! Multiply matrix by matrix represented by butterfly
 
@@ -988,7 +986,6 @@ END SUBROUTINE MULT_BUTM
 !=====================================================================
 SUBROUTINE MULT_P(YDNODE,PVECIN,PVECOUT)
 ! Multiply vector by projection matrix
-IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)
 REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)
@@ -1021,7 +1018,6 @@ ENDIF
 END SUBROUTINE MULT_P
 !=====================================================================
 SUBROUTINE MULT_PM(YDNODE,KF,KLBETA,PVECIN,PVECOUT)
-IMPLICIT NONE
 ! Multiply matrix by projection matrix
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 INTEGER(KIND=JPIM),INTENT(IN) :: KF 
@@ -1056,7 +1052,6 @@ END SUBROUTINE MULT_PM
 !==================================================================
 SUBROUTINE MULT_P_TR(YDNODE,PVECIN,PVECOUT)
 ! Multiply vector by transposed procetion matrix
-IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:)
 REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:)
@@ -1089,7 +1084,6 @@ END SUBROUTINE MULT_P_TR
 !==================================================================
 SUBROUTINE MULT_P_TRM(YDNODE,KF,PVECIN,PVECOUT)
 ! Multiply matrix by transposed procetion matrix
-IMPLICIT NONE
 TYPE(NODE_TYPE),INTENT(INOUT) :: YDNODE
 INTEGER(KIND=JPIM),INTENT(IN) :: KF 
 REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)
