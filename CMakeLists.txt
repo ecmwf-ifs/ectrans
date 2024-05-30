@@ -60,6 +60,10 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
+ecbuild_add_option( FEATURE ETRANS
+                    DEFAULT OFF
+                    DESCRIPTION "Include Limited-Area-Model Transforms" )
+
 ectrans_find_lapack()
 
 ### Add sources and tests
