@@ -30,18 +30,20 @@ if( HAVE_TOOLS )
 
 endif()
 
-foreach( prec sp dp )
-  if( HAVE_${prec} )
-    ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                           SOURCES ectrans-benchmark.F90
-                           LINKER_LANGUAGE Fortran
-                           LIBS
+if ( HAVE_CPU )
+  foreach( prec sp dp )
+    if( HAVE_${prec} )
+      ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
+                             SOURCES ectrans-benchmark.F90
+                             LINKER_LANGUAGE Fortran
+                             LIBS
                              fiat
                              parkind_${prec}
                              trans_${prec}
-                          )
-  endif()
-endforeach()
+                            )
+    endif()
+  endforeach()
+endif()
 
 # ectrans information tool
 
