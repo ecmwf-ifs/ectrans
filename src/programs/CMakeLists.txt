@@ -52,6 +52,20 @@ foreach( program ectrans-benchmark )
   endif( HAVE_GPU )
 endforeach( program )
 
+if( HAVE_ETRANS )
+  foreach( prec sp dp )
+    if( HAVE_${prec} )
+      ecbuild_add_executable( TARGET  ectrans-lam-benchmark-${prec}
+                              SOURCES ectrans-lam-benchmark.F90
+                              LIBS
+                                fiat
+                                parkind_${prec}
+                                trans_${prec}
+                            )
+    endif()
+  endforeach()
+endif()
+
 # ectrans information tool
 
 get_property( langs GLOBAL PROPERTY ENABLED_LANGUAGES )
