@@ -40,19 +40,6 @@ ecbuild_list_add_pattern( LIST trans_src
                           QUIET
                         )
 
-if ( HAVE_ETRANS )
-  # add LAM sources
-  ecbuild_list_add_pattern( LIST trans_src
-                          GLOB
-                                ../etrans/biper/internal/*
-                                ../etrans/biper/external/*
-                                ../etrans/etrans/aux/*
-                                ../etrans/etrans/internal/*
-                                ../etrans/etrans/external/*
-                          QUIET
-                        )
-endif()
-
 
 if( NOT HAVE_FFTW )
   ecbuild_list_exclude_pattern( LIST trans_src REGEX tpm_fftw.F90 )
@@ -102,22 +89,7 @@ foreach( prec sp dp )
 endforeach()
 
 ## Install trans interface
-ecbuild_list_add_pattern( LIST trans_interface
-                          GLOB
-                                include/ectrans/*
-                          QUIET
-                        )
-
-if ( HAVE_ETRANS )
-  # add LAM interfaces
-  ecbuild_list_add_pattern( LIST trans_interface
-                          GLOB
-                                ../etrans/biper/include/*
-                                ../etrans/etrans/include/*
-                          QUIET
-                        )
-endif()
-
+file( GLOB trans_interface include/ectrans/* )
 install(
   FILES        ${trans_interface}
   DESTINATION  include/ectrans
