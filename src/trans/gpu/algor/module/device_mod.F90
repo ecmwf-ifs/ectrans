@@ -11,7 +11,8 @@ module device_mod
 
 #ifdef HIPGPU
 use hip_device_mod
-#elif defined(CUDAGPU)
+#endif
+#ifdef CUDAGPU
 use cuda_device_mod
 #endif
 
