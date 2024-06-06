@@ -156,7 +156,6 @@ integer(kind=jpim) :: nprgpns ! Grid-point decomp
 integer(kind=jpim) :: nprgpew ! Grid-point decomp
 integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
 integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
-integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
 integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
 integer(kind=jpim) :: mp_type = 2 ! Message passing type
@@ -290,35 +289,26 @@ do ja = isqr, nproc
   endif
 enddo
 
-! From sumpini, although this should be specified in namelist
-if (nspecresmin == 0) nspecresmin = nproc
-
 ! Compute nprtrv and nprtrw if not provided on the command line
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
   if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
-  if (nprtrw > nspecresmin) call abor1('transform_test:nprtrw > nspecresmin')
 else
   do jprtrv = 4, nproc
     nprtrv = jprtrv
     nprtrw = nproc/nprtrv
     if (nprtrv*nprtrw /= nproc) cycle
     if (nprtrv > nprtrw) exit
-    if (nprtrw > nspecresmin) cycle
-    if (nprtrw <= nspecresmin/(2*oml_max_threads())) exit
   enddo
   ! Go for approx square partition for backup
-  if (nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw) then
+  if (nprtrv*nprtrw /= nproc .or. nprtrv > nprtrw) then
     isqr = int(sqrt(real(nproc,jprb)))
     do ja = isqr, nproc
       ib = nproc/ja
       if (ja*ib == nproc) then
         nprtrw = max(ja, ib)
         nprtrv = min(ja, ib)
-        if (nprtrw > nspecresmin ) then
-          call abor1('transform_test:nprtrw (approx square value) > nspecresmin')
-        endif
         exit
       endif
     enddo
