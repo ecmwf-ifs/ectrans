@@ -1077,6 +1077,10 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
 
+#ifdef USE_GPU
+  !$acc init
+#endif
+
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
