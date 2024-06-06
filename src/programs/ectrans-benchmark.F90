@@ -710,7 +710,9 @@ do jstep = 1, iters
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+    if (nfld > 0) then
+      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+    endif
 
     ! Surface pressure
     if (myproc == 1) then
@@ -758,7 +760,9 @@ write(nout,'(" ")')
 if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
-  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  if (nfld > 0) then
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  endif
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
   if (myproc == 1) then
