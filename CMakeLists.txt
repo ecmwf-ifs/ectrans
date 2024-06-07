@@ -19,11 +19,11 @@ include( ectrans_macros )
 
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
-### Find (optional) dependencies 
+### Find (optional) dependencies
 
 ecbuild_find_package( NAME fiat REQUIRED )
 
-ecbuild_add_option( FEATURE MPI 
+ecbuild_add_option( FEATURE MPI
                     DESCRIPTION "Support for MPI distributed memory parallelism"
                     CONDITION fiat_HAVE_MPI )
 
@@ -59,6 +59,11 @@ ecbuild_add_option( FEATURE FFTW
                     DEFAULT ON
                     DESCRIPTION "Support for fftw"
                     REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
+
+ecbuild_add_option( FEATURE CPU
+                    DEFAULT ON
+                    DESCRIPTION "Compile CPU version of ectrans"
+                   )
 
 ecbuild_add_option( FEATURE TRANSI
                     DEFAULT ON
