@@ -21,7 +21,7 @@ foreach( prec sp dp )
 	target_sources(trans_${prec} PRIVATE ${etrans_src})
 	# add include directories
 	target_include_directories(trans_${prec}
-	    PRIVATE
+	    PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/biper/include>
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/etrans/include>
     )
