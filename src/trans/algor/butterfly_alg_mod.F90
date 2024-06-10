@@ -699,10 +699,10 @@ REAL(KIND=JPRB),INTENT(IN)    :: PVECIN(:,:)     ! Input vector
 REAL(KIND=JPRB),INTENT(OUT)   :: PVECOUT(:,:)    ! Output vector
 
 INTEGER(KIND=JPIM) :: JL,JJ,JK,ILEVS,IFR,ILR,IROWS,JF
-INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR,IROUT,IRIN
+INTEGER(KIND=JPIM) :: ILM1,IJL,IKL,IJR,IKR,IRANKL,IRANKR
 INTEGER(KIND=JPIM) :: IRANK,IM,IN,JN,JM,IDX,IKWV,II
 INTEGER(KIND=JPIM) :: IBETALV,IBTST,IBTEN,IBETALVM1,IBTSTL,IBTENL,IBTSTR,IBTENR,ILBETA
-REAL(KIND=JPRB) :: ZVECIN(YD_STRUCT%N_ORDER,KF),ZVECOUT(YD_STRUCT%N_ORDER,KF)
+REAL(KIND=JPRB),ALLOCATABLE :: ZVECIN(:,:),ZVECOUT(:,:)
 REAL(KIND=JPRB),ALLOCATABLE   :: ZBETA(:,:,:)
 LOGICAL :: LLTRANSPOSE
 
@@ -720,19 +720,19 @@ ENDIF
 
 !----------------------------------------------------------------------------------
 LLTRANSPOSE = (CDTRANS == 'T' .OR. CDTRANS == 't') 
-IROUT=SIZE(PVECOUT(:,1))
-IRIN=SIZE(PVECIN(:,1))
 
 ILEVS = YD_STRUCT%N_LEVELS
 ILBETA = YD_STRUCT%IBETALEN_MAX
-ALLOCATE(ZBETA(ILBETA,KF,0:1)) ! Work space for "beta"
 
 ! ONWR 5.4.3
 IF(LLTRANSPOSE) THEN
+   ALLOCATE(ZVECIN(KF,YD_STRUCT%N_ORDER))
+   ALLOCATE(ZVECOUT(KF,YD_STRUCT%N_ORDER))
+   ALLOCATE(ZBETA(KF,ILBETA,0:1)) ! Work space for "beta"
    IF( IKWV == 0 ) THEN
-      ALLOCATE(ZBETA_D(ILBETA,KF))
-      ALLOCATE(ZOUT_D(YD_STRUCT%N_ORDER,KF))
-      ALLOCATE(ZIN_D(IRIN,KF))
+      ALLOCATE(ZBETA_D(KF,ILBETA))
+      ALLOCATE(ZOUT_D(KF,YD_STRUCT%N_ORDER))
+      ALLOCATE(ZIN_D(KF,SIZE(PVECIN(1,:))))
    ENDIF
 
   DO JL=ILEVS,0,-1
@@ -759,31 +759,31 @@ IF(LLTRANSPOSE) THEN
                         ZPNONIM_D(JM,JN) = REAL(YNODE%PNONIM(II),JPRD)
                      ENDDO
                   ENDDO
-                  ZBETA_D(1:IM,1:KF)=REAL(ZBETA(IBTST:IBTST+IM-1,1:KF,IBETALV),JPRD)
-                  CALL GEMM('T','N',IN,KF,IM,1.0_JPRD,&
-                       & ZPNONIM_D(1,1),IM,ZBETA_D(1,1),ILBETA,0.0_JPRD,&
-                       & ZOUT_D(1,1),YD_STRUCT%N_ORDER)
-                  ZVECOUT(YNODE%IRANK+1:YNODE%IRANK+IN,1:KF) = REAL(ZOUT_D(1:IN,1:KF),JPRM)
+                  ZBETA_D(1:KF,1:IM)=REAL(ZBETA(1:KF,IBTST:IBTST+IM-1,IBETALV),JPRD)
+                  CALL GEMM('N','N',KF,IN,IM,1.0_JPRD,&
+                       & ZBETA_D(1,1),KF,ZPNONIM_D(1,1),IM,0.0_JPRD,&
+                       & ZOUT_D(1,1),KF)
+                  ZVECOUT(1:KF,YNODE%IRANK+1:YNODE%IRANK+IN) = REAL(ZOUT_D(1:KF,1:IN),JPRM)
                   DEALLOCATE(ZPNONIM_D)
                ELSE
-                  CALL GEMM('T','N',IN,KF,IM,1.0_JPRD,&
-                       & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRD,&
-                       & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+                  CALL GEMM('N','N',KF,IN,IM,1.0_JPRD,&
+                       & ZBETA(1,IBTST,IBETALV),KF,YNODE%PNONIM(1),IM,0.0_JPRD,&
+                       & ZVECOUT(1,YNODE%IRANK+1),KF)
                ENDIF
             ELSE
-               CALL GEMM('T','N',IN,KF,IM,1.0_JPRM,&
-                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRM,&
-                    & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+               CALL GEMM('N','N',KF,IN,IM,1.0_JPRM,&
+                    & ZBETA(1,IBTST,IBETALV),KF,YNODE%PNONIM(1),IM,0.0_JPRM,&
+                    & ZVECOUT(1,YNODE%IRANK+1),KF)
             ENDIF
           ENDIF
           DO JF=1,KF
             DO JN=1,YNODE%IRANK
               IDX = YNODE%ICLIST(JN)
-              PVECOUT(IFR+IDX-1,JF) = ZBETA(IBTST+JN-1,JF,IBETALV)
+              PVECOUT(JF,IFR+IDX-1) = ZBETA(JF,IBTST+JN-1,IBETALV)
             ENDDO
             DO JN=YNODE%IRANK+1,YNODE%ICOLS
               IDX = YNODE%ICLIST(JN)
-              PVECOUT(IFR+IDX-1,JF) = ZVECOUT(JN,JF)
+              PVECOUT(JF,IFR+IDX-1) = ZVECOUT(JF,JN)
             ENDDO
           ENDDO
         ELSE
@@ -796,24 +796,26 @@ IF(LLTRANSPOSE) THEN
                IF(.NOT.LLDOUBLE) THEN
                   ALLOCATE(ZB_D(IROWS,IRANK))
                   ZB_D(1:IROWS,1:IRANK) = REAL(YNODE%B(1:IROWS,1:IRANK),JPRD)
-                  ZIN_D(1:ILR-IFR+1,1:KF) = REAL(PVECIN(IFR:ILR,1:KF),JPRD)
+                  ZIN_D(1:KF,1:ILR-IFR+1) = REAL(PVECIN(1:KF,IFR:ILR),JPRD)
                   
-                  CALL GEMM('T','N',IRANK,KF,IROWS,1.0_JPRD,&
-                       & ZB_D,IROWS,ZIN_D,IRIN,0.0_JPRD,&
-                       & ZBETA_D,ILBETA)
+                  CALL GEMM('N','N',KF,IRANK,IROWS,1.0_JPRD,&
+                       & ZIN_D,KF,ZB_D,IROWS,0.0_JPRD,&
+                       & ZBETA_D,KF)
                   
-                  ZBETA(IBTST:IBTST+IRANK-1,1:KF,IBETALV)=REAL(ZBETA_D(1:IRANK,1:KF),JPRM)
+                  ZBETA(1:KF,IBTST:IBTST+IRANK-1,IBETALV)=REAL(ZBETA_D(1:KF,1:IRANK),JPRM)
                   DEALLOCATE(ZB_D)
+
+                  !WRITE(6,*) "LEVEL", JL, "MINMAX:", MINVAL(ZBETA_D), MAXVAL(ZBETA_D)
                   
                ELSE
-                  CALL GEMM('T','N',IRANK,KF,IROWS,1.0_JPRD,&
-                       & YNODE%B(1,1),IROWS,PVECIN(IFR,1),IRIN,0.0_JPRD,&
-                       & ZBETA(IBTST,1,IBETALV),ILBETA)
+                  CALL GEMM('N','N',KF,IRANK,IROWS,1.0_JPRD,&
+                       & PVECIN(1,IFR),KF,YNODE%B(1,1),IROWS,0.0_JPRD,&
+                       & ZBETA(1,IBTST,IBETALV),KF)
                END IF
             ELSE
-               CALL GEMM('T','N',IRANK,KF,IROWS,1.0_JPRM,&
-                    & YNODE%B(1,1),IROWS,PVECIN(IFR,1),IRIN,0.0_JPRM,&
-                    & ZBETA(IBTST,1,IBETALV),ILBETA)
+               CALL GEMM('N','N',KF,IRANK,IROWS,1.0_JPRM,&
+                    & PVECIN(1,IFR),KF,YNODE%B(1,1),IROWS,0.0_JPRM,&
+                    & ZBETA(1,IBTST,IBETALV),KF)
             ENDIF
           ENDIF
           ILM1 = JL-1
@@ -846,48 +848,48 @@ IF(LLTRANSPOSE) THEN
                          ZPNONIM_D(JM,JN) = REAL(YNODE%PNONIM(II),JPRD)
                       ENDDO
                    ENDDO
-                   ZBETA_D(1:IM,1:KF)=REAL(ZBETA(IBTST:IBTST+IM-1,1:KF,IBETALV),JPRD)
+                   ZBETA_D(1:KF,1:IM)=REAL(ZBETA(1:KF,IBTST:IBTST+IM-1,IBETALV),JPRD)
                    
-                   CALL GEMM('T','N',IN,KF,IM,1.0_JPRD,&
-                        & ZPNONIM_D,IM,ZBETA_D,ILBETA,0.0_JPRD,&
-                        & ZOUT_D,YD_STRUCT%N_ORDER)
+                   CALL GEMM('N','N',KF,IN,IM,1.0_JPRD,&
+                        & ZBETA_D,KF,ZPNONIM_D,IM,0.0_JPRD,&
+                        & ZOUT_D,KF)
                    
-                   ZVECOUT(YNODE%IRANK+1:YNODE%IRANK+IN,1:KF) = REAL(ZOUT_D(1:IN,1:KF),JPRM)
+                   ZVECOUT(1:KF,YNODE%IRANK+1:YNODE%IRANK+IN) = REAL(ZOUT_D(1:KF,1:IN),JPRM)
                    DEALLOCATE(ZPNONIM_D)
                 ELSE
-                   CALL GEMM('T','N',IN,KF,IM,1.0_JPRD,&
-                        & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRD,&
-                        & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+                   CALL GEMM('N','N',KF,IN,IM,1.0_JPRD,&
+                        & ZBETA(1,IBTST,IBETALV),KF,YNODE%PNONIM(1),IM,0.0_JPRD,&
+                        & ZVECOUT(1,YNODE%IRANK+1),KF)
                 ENDIF
             ELSE
-               CALL GEMM('T','N',IN,KF,IM,1.0_JPRM,&
-                    & YNODE%PNONIM(1),IM,ZBETA(IBTST,1,IBETALV),ILBETA,0.0_JPRM,&
-                    & ZVECOUT(YNODE%IRANK+1,1),YD_STRUCT%N_ORDER)
+               CALL GEMM('N','N',KF,IN,IM,1.0_JPRM,&
+                    & ZBETA(1,IBTST,IBETALV),KF,YNODE%PNONIM(1),IM,0.0_JPRM,&
+                    & ZVECOUT(1,YNODE%IRANK+1),KF)
             ENDIF
           ENDIF
           DO JF=1,KF
             DO JN=1,YNODE%IRANK
               IDX = YNODE%ICLIST(JN)
-              ZVECIN(IDX,JF) = ZBETA(IBTST+JN-1,JF,IBETALV)
+              ZVECIN(JF,IDX) = ZBETA(JF,IBTST+JN-1,IBETALV)
             ENDDO
             DO JN=YNODE%IRANK+1,YNODE%ICOLS
               IDX = YNODE%ICLIST(JN)
-              ZVECIN(IDX,JF) = ZVECOUT(JN,JF)
+              ZVECIN(JF,IDX) = ZVECOUT(JF,JN)
             ENDDO
           ENDDO
           
           DO JF=1,KF
             IF(MOD(JJ,2) == 1) THEN
-              ZBETA(IBTSTL:IBTENL,JF,IBETALVM1)= ZVECIN(1:IRANKL,JF)
+              ZBETA(JF,IBTSTL:IBTENL,IBETALVM1)= ZVECIN(JF,1:IRANKL)
               IF(IRANKR > 0) THEN
-                ZBETA(IBTSTR:IBTENR,JF,IBETALVM1)=ZVECIN(IRANKL+1:IRANKL+IRANKR,JF)
+                ZBETA(JF,IBTSTR:IBTENR,IBETALVM1)=ZVECIN(JF,IRANKL+1:IRANKL+IRANKR)
               ENDIF
             ELSE
-              ZBETA(IBTSTL:IBTENL,JF,IBETALVM1)=ZBETA(IBTSTL:IBTENL,JF,IBETALVM1)+ &
-               & ZVECIN(1:IRANKL,JF)
+              ZBETA(JF,IBTSTL:IBTENL,IBETALVM1)=ZBETA(JF,IBTSTL:IBTENL,IBETALVM1)+ &
+               & ZVECIN(JF,1:IRANKL)
               IF(IRANKR > 0) THEN
-                ZBETA(IBTSTR:IBTENR,JF,IBETALVM1)=ZBETA(IBTSTR:IBTENR,JF,IBETALVM1) + &
-                 &  ZVECIN(IRANKL+1:IRANKL+IRANKR,JF)
+                ZBETA(JF,IBTSTR:IBTENR,IBETALVM1)=ZBETA(JF,IBTSTR:IBTENR,IBETALVM1) + &
+                 &  ZVECIN(JF,IRANKL+1:IRANKL+IRANKR)
               ENDIF
             ENDIF
           ENDDO
@@ -903,6 +905,9 @@ IF(LLTRANSPOSE) THEN
   ENDIF
 
 ELSE
+  ALLOCATE(ZVECIN(YD_STRUCT%N_ORDER,KF))
+  ALLOCATE(ZVECOUT(YD_STRUCT%N_ORDER,KF))
+  ALLOCATE(ZBETA(ILBETA,KF,0:1)) ! Work space for "beta"
   DO JL=0,ILEVS
     IBETALV = MOD(JL,2)
     DO JJ=1,YD_STRUCT%SLEV(JL)%IJ
@@ -977,12 +982,14 @@ ELSE
           IROWS = YNODE%IROWS
           CALL GEMM('N','N',IROWS,KF,YNODE%IRANK,1.0_JPRB,&
              & YNODE%B(1,1),IROWS,ZBETA(IBTST,1,IBETALV),YD_STRUCT%IBETALEN_MAX,0.0_JPRB,&
-             & PVECOUT(IFR,1),IROUT)
+             & PVECOUT(IFR,1),SIZE(PVECOUT(:,1)))
         ENDIF
       ENDDO
     ENDDO
   ENDDO
 ENDIF
+DEALLOCATE(ZVECIN)
+DEALLOCATE(ZVECOUT)
 DEALLOCATE(ZBETA)
 END SUBROUTINE MULT_BUTM
 !=====================================================================
