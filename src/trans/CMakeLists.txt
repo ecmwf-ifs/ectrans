@@ -57,8 +57,6 @@ foreach( prec sp dp )
       SOURCES          ${trans_src}
       PUBLIC_INCLUDES  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/ectrans>
-					   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../etrans/biper/include>
-					   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../etrans/etrans/include>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
       PUBLIC_LIBS      fiat parkind_${prec}
