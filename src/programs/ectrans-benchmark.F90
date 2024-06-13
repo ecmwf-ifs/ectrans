@@ -571,9 +571,9 @@ endif
 
 if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
 
-allocate(ztstep(iters))
-allocate(ztstep1(iters))
-allocate(ztstep2(iters))
+allocate(ztstep(iters+2))
+allocate(ztstep1(iters+2))
+allocate(ztstep2(iters+2))
 
 ztstepavg  = 0._jprd
 ztstepmax  = 0._jprd
