@@ -30,7 +30,8 @@ if( HAVE_TOOLS )
 
 endif()
 
-foreach( program ectrans-benchmark ectrans-benchmark-ifs )
+#foreach( program ectrans-benchmark ectrans-benchmark-ifs )
+foreach( program ectrans-benchmark )
 
   if ( HAVE_CPU )
     foreach( prec dp sp )
