@@ -41,7 +41,7 @@ SUBROUTINE DEALLOC_RESOL(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM
 
 USE TPM_DIM         ,ONLY : R
 USE TPM_GEN         ,ONLY : LENABLED, NOUT,NDEF_RESOL
@@ -55,7 +55,7 @@ USE TPM_FFTW        ,ONLY : TW,DESTROY_PLANS_FFTW
 #endif
 USE TPM_FLT         ,ONLY : S
 USE TPM_CTL         ,ONLY : C
-USE SEEFMM_MIX
+USE SEEFMM_MIX      ,ONLY : FREE_SEEFMM
 
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 !

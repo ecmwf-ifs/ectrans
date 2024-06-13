@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,33 +9,34 @@
 !
 
 INTERFACE
-SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
+SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
 
-!**** *GATH_GRID_32* - Gather global gridpoint array from processors
+!**** *GATH_SPEC* - Gather global spectral array from processors
 
 !     Purpose.
 !     --------
-!        Interface routine for gathering gripoint array
+!        Interface routine for gathering spectral array
 
 !**   Interface.
 !     ----------
-!     CALL GATH_GRID_32(...)
+!     CALL GATH_SPEC(...)
 
 !     Explicit arguments : 
 !     -------------------- 
-!     PGPG(:,:)   - Global gridpoint array
+!     PSPECG(:,:) - Global spectral array
 !     KFGATHG     - Global number of fields to be gathered
-!     KPROMA      - blocking factor for gridpoint input
 !     KTO(:)      - Processor responsible for gathering each field
+!     KVSET(:)    - "B-Set" for each field
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PGP(:,:,:)  - Local spectral array
+!     PSPEC(:,:)  - Local spectral array
+!     LDIM1_IS_FLD - If TRUE first dimension of PSCPEC and PSPECG is the field dimension [.T.]
 !
 !     Method.
 !     -------
 
 !     Externals.  SET_RESOL   - set resolution
-!     ----------  GATH_GRID_32_CTL -  control routine
+!     ----------  GATH_SPEC_CONTROL - control routine
 
 !     Author.
 !     -------
@@ -47,23 +48,26 @@ SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRM
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRM)    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPECG(:,:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL(KIND=JPRM)             , INTENT(IN)  :: PGP(:,:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
+LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDZA0IP
 
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE GATH_GRID_32
+END SUBROUTINE GATH_SPEC
 
 END INTERFACE

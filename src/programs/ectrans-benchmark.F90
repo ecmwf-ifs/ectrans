@@ -52,8 +52,8 @@ implicit none
 integer(kind=jpim), parameter :: min_octa_points = 20
 
 integer(kind=jpim) :: istack, getstackusage
-real(kind=jprb), dimension(1) :: zmaxerr(5), zerr(5)
-real(kind=jprb) :: zmaxerrg
+real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
+real(kind=jprd) :: zmaxerrg
 
 ! Output unit numbers
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
@@ -144,7 +144,7 @@ logical :: lmpoff = .false. ! Message passing switch
 ! Verbosity level (0 or 1)
 integer :: verbosity = 0
 
-real(kind=jprb) :: zra = 6371229._jprb
+real(kind=jprd) :: zra = 6371229._jprd
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
@@ -156,7 +156,6 @@ integer(kind=jpim) :: nprgpns ! Grid-point decomp
 integer(kind=jpim) :: nprgpew ! Grid-point decomp
 integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
 integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
-integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
 integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
 integer(kind=jpim) :: mp_type = 2 ! Message passing type
@@ -290,35 +289,26 @@ do ja = isqr, nproc
   endif
 enddo
 
-! From sumpini, although this should be specified in namelist
-if (nspecresmin == 0) nspecresmin = nproc
-
 ! Compute nprtrv and nprtrw if not provided on the command line
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
   if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
-  if (nprtrw > nspecresmin) call abor1('transform_test:nprtrw > nspecresmin')
 else
   do jprtrv = 4, nproc
     nprtrv = jprtrv
     nprtrw = nproc/nprtrv
     if (nprtrv*nprtrw /= nproc) cycle
     if (nprtrv > nprtrw) exit
-    if (nprtrw > nspecresmin) cycle
-    if (nprtrw <= nspecresmin/(2*oml_max_threads())) exit
   enddo
   ! Go for approx square partition for backup
-  if (nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw) then
+  if (nprtrv*nprtrw /= nproc .or. nprtrv > nprtrw) then
     isqr = int(sqrt(real(nproc,jprb)))
     do ja = isqr, nproc
       ib = nproc/ja
       if (ja*ib == nproc) then
         nprtrw = max(ja, ib)
         nprtrv = min(ja, ib)
-        if (nprtrw > nspecresmin ) then
-          call abor1('transform_test:nprtrw (approx square value) > nspecresmin')
-        endif
         exit
       endif
     enddo
@@ -348,11 +338,8 @@ if (.not. lmpoff) then
   call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(verbosity>=1))
 endif
 
-! Determine number of local levels for fourier and legendre calculations
-! based on the values of nflevg and nprtrv
-allocate(numll(nprtrv+1))
-
-! Calculate remainder
+! Determine the number of levels attributed to each member of the V set
+allocate(numll(nprtrv))
 iprused = min(nflevg+1, nprtrv)
 ilevpp = nflevg/nprtrv
 irest = nflevg -ilevpp*nprtrv
@@ -363,7 +350,6 @@ do jroc = 1, nprtrv
     numll(jroc) = ilevpp
   endif
 enddo
-numll(iprused+1:nprtrv+1) = 0
 
 nflevl = numll(mysetv)
 
@@ -443,10 +429,10 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("ngpblks   ",i0)') ngpblks
   write(nout,'("nspec2    ",i0)') nspec2
   write(nout,'("nspec2g   ",i0)') nspec2g
-  write(nout,'("luseflt   ",l)') luseflt
-  write(nout,'("lvordiv   ",l)') lvordiv
-  write(nout,'("lscders   ",l)') lscders
-  write(nout,'("luvders   ",l)') luvders
+  write(nout,'("luseflt   ",l1)') luseflt
+  write(nout,'("lvordiv   ",l1)') lvordiv
+  write(nout,'("lscders   ",l1)') lscders
+  write(nout,'("luvders   ",l1)') luvders
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -503,8 +489,8 @@ else
   jend_vder_EW   = jend_uv
 endif
 
-jbegin_sc = jbegin_vder_EW + 1
-jend_sc   = jbegin_vder_EW + nfld
+jbegin_sc = jend_vder_EW + 1
+jend_sc   = jend_vder_EW + nfld
 
 if (lscders) then
   ndimgmvs = 3
@@ -545,21 +531,27 @@ if (lprint_norms .or. ncheck > 0) then
 
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
-  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
+  if (nfld > 0) then
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
+  endif
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
   if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
       write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
+      write(nout,'("0x",Z16.16)') znormvor1(ifld)
     enddo
     do ifld = 1, nflevg
       write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
+      write(nout,'("0x",Z16.16)') znormdiv1(ifld)
     enddo
     do ifld = 1, nflevg
       write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
+      write(nout,'("0x",Z16.16)') znormt1(ifld)
     enddo
     do ifld = 1, 1
       write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
+      write(nout,'("0x",Z16.16)') znormsp1(ifld)
     enddo
   endif
 endif
@@ -718,14 +710,16 @@ do jstep = 1, iters+2
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+    if (nfld > 0) then
+      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+    endif
 
     ! Surface pressure
     if (myproc == 1) then
       zmaxerr(:) = -999.0
       do ifld = 1, 1
         write(nout,*) "znormsp", znormsp
-        call flush(nout)
+        flush(nout)
         zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
         zmaxerr(1) = max(zmaxerr(1), zerr(1))
       enddo
@@ -766,7 +760,9 @@ write(nout,'(" ")')
 if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
-  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  if (nfld > 0) then
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  endif
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
   if (myproc == 1) then
@@ -775,28 +771,32 @@ if (lprint_norms .or. ncheck > 0) then
       zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
       zmaxerr(3) = max(zmaxerr(3), zerr(3))
       if (verbosity >= 1) then
-        write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor1(ifld), zerr(3)
+        write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor(ifld), zerr(3)
+        write(nout,'("0x",Z16.16)') znormvor(ifld)
       endif
     enddo
     do ifld = 1, nflevg
       zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
       zmaxerr(2) = max(zmaxerr(2),zerr(2))
       if (verbosity >= 1) then
-        write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv1(ifld), zerr(2)
+        write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv(ifld), zerr(2)
+        write(nout,'("0x",Z16.16)') znormdiv(ifld)
       endif
     enddo
     do ifld = 1, nflevg
       zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
       zmaxerr(4) = max(zmaxerr(4), zerr(4))
       if (verbosity >= 1) then
-        write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt1(ifld), zerr(4)
+        write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt(ifld), zerr(4)
+        write(nout,'("0x",Z16.16)') znormt(ifld)
       endif
     enddo
     do ifld = 1, 1
       zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
       zmaxerr(1) = max(zmaxerr(1), zerr(1))
       if (verbosity >= 1) then
-        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp1(ifld), zerr(1)
+        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp(ifld), zerr(1)
+        write(nout,'("0x",Z16.16)') znormsp(ifld)
       endif
     enddo
 
@@ -820,8 +820,8 @@ if (lprint_norms .or. ncheck > 0) then
       if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
         write(nout, '(a)') '*******************************'
         write(nout, '(a)') 'Correctness test failed'
-        write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+        write(nout, '(a,1e9.2)') 'Maximum spectral norm error = ', zmaxerrg
+        write(nout, '(a,1e9.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
         write(nout, '(a)') '*******************************'
         ierr = 1
       endif
@@ -1074,8 +1074,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
-  integer            :: stat          ! For storing success status of string->integer conversion
-  integer            :: myproc
 
 #ifdef USE_GPU
   !$acc init
@@ -1158,8 +1156,8 @@ end subroutine str2int
 
 subroutine sort(a, n)
 
-  real(kind=jprd), intent(inout) :: a(n)
   integer(kind=jpim), intent(in) :: n
+  real(kind=jprd), intent(inout) :: a(n)
 
   real(kind=jprd) :: x
 
@@ -1285,7 +1283,7 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   integer,         intent(in)    :: nsmax    ! Spectral truncation
   real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
 
-  integer :: i, index, num_my_zon_wns
+  integer :: index, num_my_zon_wns
   integer, allocatable :: my_zon_wns(:), nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays

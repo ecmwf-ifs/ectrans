@@ -61,7 +61,7 @@ SUBROUTINE GAWL(PFN,PL,PW,PEPS,KN,KITER,PMOD)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRD, JPIM
+USE EC_PARKIND  ,ONLY : JPRD, JPIM
 
 USE CPLEDN_MOD      ,ONLY : CPLEDN
 

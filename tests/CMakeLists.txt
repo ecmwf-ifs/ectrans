@@ -22,6 +22,14 @@ if( HAVE_TESTS )
       list( APPEND _test_args "-DCMAKE_${lang}_COMPILER=${CMAKE_${lang}_COMPILER}" )
     endif()
   endforeach()
+  foreach( lang C CXX Fortran )
+    if( CMAKE_${lang}_FLAGS )
+      list( APPEND _test_args "-DCMAKE_${lang}_FLAGS=${CMAKE_${lang}_FLAGS}" )
+    endif()
+  endforeach()
+  if( CMAKE_EXE_LINKER_FLAGS )
+    list( APPEND _test_args "-DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}" )
+  endif()
   if( NOT HAVE_DOUBLE_PRECISION )
     list( APPEND _test_args "-DCOMPONENTS=single" )
   endif() 
@@ -33,15 +41,17 @@ endif()
 
 if( HAVE_DOUBLE_PRECISION )
   set( trans trans_dp )
+  set( parkind parkind_dp )
 else()
   set( trans trans_sp )
+  set( parkind parkind_sp )
 endif()
 
-#ecbuild_add_test(TARGET ectrans_test_adjoint
-#  SOURCES trans/test_adjoint.F90
-#  LIBS ${trans}
-#  LINKER_LANGUAGE Fortran
-#)
+ecbuild_add_test(TARGET ectrans_test_adjoint
+  SOURCES trans/test_adjoint.F90
+  LIBS ${trans} ${parkind}
+  LINKER_LANGUAGE Fortran
+)
 if( TEST ectrans_test_adjoint AND HAVE_OMP )
   target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
 endif()
@@ -62,42 +72,42 @@ foreach( prec dp sp )
         set( t 47 )
         set( grid O48 )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 -v --meminfo --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 --meminfo --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_scders
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --scders --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --scders --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_uvders
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 1000
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 1000 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
         ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100 --norms -v
             MPI ${mpi}
             OMP ${omp}
         )
@@ -131,53 +141,63 @@ if( HAVE_TRANSI )
   ecbuild_add_test( TARGET ectrans_test_transi_program
     SOURCES   transi/transi_test_program.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_timings
     SOURCES   transi/transi_test_timings.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_lonlat
     SOURCES   transi/transi_test_lonlat.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_io
     SOURCES   transi/transi_test_io.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_memory
     SOURCES   transi/transi_test_memory.c
     LIBS      ectrans_test
     CONDITION EC_HAVE_MALLOC_H
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_memory_lonlat
     SOURCES   transi/transi_test_memory_lonlat.c
     LIBS      ectrans_test
     CONDITION EC_HAVE_MALLOC_H
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_vordiv_to_UV
     SOURCES   transi/transi_test_vordiv_to_UV.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_dirtrans_adjoint
     SOURCES   transi/transi_test_dirtrans_adjoint.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_invtrans_adjoint
     SOURCES   transi/transi_test_invtrans_adjoint.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   ecbuild_add_test( TARGET ectrans_test_transi_lonlat_diff_incr
     SOURCES   transi/transi_test_lonlat_diff_incr.c
     LIBS      ectrans_test
+    LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
   if( HAVE_TESTS )

@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,10 +9,10 @@
 !
 
 INTERFACE
-SUBROUTINE GPNORM_TRANS_GPU(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
+SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 
 
-!**** *GPNORM_TRANS_GPU* - calculate grid-point norms
+!**** *GPNORM_TRANS* - calculate grid-point norms
 
 !     Purpose.
 !     --------
@@ -65,5 +65,5 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KPROMA
 LOGICAL,INTENT(IN)            :: LDAVE_ONLY
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 
-END SUBROUTINE GPNORM_TRANS_GPU
+END SUBROUTINE GPNORM_TRANS
 END INTERFACE

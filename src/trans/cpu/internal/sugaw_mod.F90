@@ -12,16 +12,15 @@ MODULE SUGAW_MOD
 CONTAINS
 SUBROUTINE SUGAW(KDGL,KM,KN,PL,PW,PANM,PFN)
 
-USE PARKIND1  ,ONLY : JPRD, JPIM
-USE PARKIND2  ,ONLY : JPRH
+USE EC_PARKIND  ,ONLY : JPRD, JPIM
 
 USE TPM_CONSTANTS   ,ONLY : RA
 
 USE TPM_GEN         ,ONLY : NOUT
 USE GAWL_MOD        ,ONLY : GAWL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-USE SUPOLF_MOD
-USE TPM_POL
+USE SUPOLF_MOD      ,ONLY : SUPOLF
+USE TPM_POL         ,ONLY : DDI
 
 !**** *SUGAW * - Routine to initialize the Gaussian
 !                 abcissa and the associated weights
@@ -108,6 +107,7 @@ REAL(KIND=JPRD) :: Z, ZEPS, Z0, ZPI
 
 ! computations in extended precision for alternative root finding
 ! which also works for associated polynomials (m>0)
+INTEGER, PARAMETER :: JPRH = JPRD
 REAL(KIND=JPRH) :: ZLK, ZLK1, ZLLDN, ZANM
 REAL(KIND=JPRH) :: ZTHETA, ZTHETA0, ZX, ZX0, ZDX0, ZH, ZPIH, ZS0
 REAL(KIND=JPRH) :: ZK1, ZK2, ZK3, ZK4
@@ -394,10 +394,10 @@ IF( LLOLD ) THEN
     IF(LLP2)THEN
       WRITE(UNIT=NOUT,FMT=&
        &'('' M ='',I4,'' ROW ='',I4,'' ITERATIONS='',I4,'' ROOT='',F30.20,&
-       &'' WEIGHT='',F30.20,'' MODIF :'',E8.2)')KM,JGL,ITER(JGL),PL(JGL)&
+       &'' WEIGHT='',F30.20,'' MODIF :'',E9.2)')KM,JGL,ITER(JGL),PL(JGL)&
        &,PW(JGL),PL(JGL)-ZLI(JGL)
       WRITE(UNIT=NOUT,FMT=&
-       &'(10X,'' LAST INC. : '',E8.2,'' MODIF IN M : '',F10.3,&
+       &'(10X,'' LAST INC. : '',E9.2,'' MODIF IN M : '',F10.3,&
        &'' FROM THE REGULAR GRID : '',F10.3,'' COLAT '',F10.3)')&
        &ZMOD(JGL),ZM(JGL),ZRR(JGL),ZT(JGL)
     ENDIF

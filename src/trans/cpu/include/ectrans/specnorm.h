@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,34 +9,33 @@
 !
 
 INTERFACE
-SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
+SUBROUTINE SPECNORM(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
 
-!**** *GATH_SPEC* - Gather global spectral array from processors
+!**** *SPECNORM* - Compute global spectral norms
 
 !     Purpose.
 !     --------
-!        Interface routine for gathering spectral array
+!        Interface routine for computing spectral norms
 
 !**   Interface.
 !     ----------
-!     CALL GATH_SPEC(...)
+!     CALL SPECNORM(...)
 
-!     Explicit arguments : 
+!     Explicit arguments : All arguments optional
 !     -------------------- 
-!     PSPECG(:,:) - Global spectral array
-!     KFGATHG     - Global number of fields to be gathered
-!     KTO(:)      - Processor responsible for gathering each field
+!     PSPEC(:,:)  - Spectral array
 !     KVSET(:)    - "B-Set" for each field
+!     KMASTER     - processor to recieve norms
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PSPEC(:,:)  - Local spectral array
-!     LDIM1_IS_FLD - If TRUE first dimension of PSCPEC and PSPECG is the field dimension [.T.]
+!     PMET(:)     - metric
+!     PNORM(:)    - Norms (output for processor KMASTER)
 !
 !     Method.
 !     -------
 
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  GATH_SPEC_CONTROL - control routine
+!     Externals.  SET_RESOL - set resolution
+!     ----------  SPNORM_CTL - control routine
 
 !     Author.
 !     -------
@@ -55,19 +54,16 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPECG(:,:)
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
-LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
-LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDZA0IP
 
+REAL(KIND=JPRB)             , INTENT(OUT) :: PNORM(:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE GATH_SPEC
+END SUBROUTINE SPECNORM
 
 END INTERFACE

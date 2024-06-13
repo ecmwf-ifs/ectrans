@@ -14,10 +14,8 @@ SUBROUTINE SPNSDEAD(KM,KF_SCALARS,PEPSNM,PF,PNSD)
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-!USE TPM_GEN
 USE TPM_DIM         ,ONLY : R
 USE TPM_FIELDS      ,ONLY : F
-!USE TPM_TRANS
 
 !**** *SPNSDEAD* - Compute North-South derivative in spectral space
 

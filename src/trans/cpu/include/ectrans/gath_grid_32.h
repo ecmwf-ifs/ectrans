@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,33 +9,33 @@
 !
 
 INTERFACE
-SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
+SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
-!**** *SPECNORM* - Compute global spectral norms
+!**** *GATH_GRID_32* - Gather global gridpoint array from processors
 
 !     Purpose.
 !     --------
-!        Interface routine for computing spectral norms
+!        Interface routine for gathering gripoint array
 
 !**   Interface.
 !     ----------
-!     CALL SPECNORM(...)
+!     CALL GATH_GRID_32(...)
 
-!     Explicit arguments : All arguments optional
+!     Explicit arguments : 
 !     -------------------- 
-!     PSPEC(:,:)  - Spectral array
-!     KVSET(:)    - "B-Set" for each field
-!     KMASTER     - processor to recieve norms
+!     PGPG(:,:)   - Global gridpoint array
+!     KFGATHG     - Global number of fields to be gathered
+!     KPROMA      - blocking factor for gridpoint input
+!     KTO(:)      - Processor responsible for gathering each field
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PMET(:)     - metric
-!     PNORM(:)    - Norms (output for processor KMASTER)
+!     PGP(:,:,:)  - Local spectral array
 !
 !     Method.
 !     -------
 
-!     Externals.  SET_RESOL - set resolution
-!     ----------  SPNORM_CTL - control routine
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  GATH_GRID_32_CTL -  control routine
 
 !     Author.
 !     -------
@@ -47,23 +47,23 @@ SUBROUTINE SPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRM
 
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPEC(:,:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KMASTER
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PMET(:)
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PNORM(:)
+REAL(KIND=JPRM)    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRM)             , INTENT(IN)  :: PGP(:,:,:)
+
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE SPECNORM
+END SUBROUTINE GATH_GRID_32
 
 END INTERFACE

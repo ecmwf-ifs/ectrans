@@ -48,6 +48,7 @@ SUBROUTINE GPNORM_TRANS_CTL(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,PW)
 !        Original : 19th Sept 2008
 !        R. El Khatib 07-08-2009 Optimisation directive for NEC
 !        R. El Khatib 16-Sep-2019 merge with LAM code
+!        R. El Khatib 02-Jun-2022 Optimization/Cleaning
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
@@ -59,7 +60,6 @@ USE TPM_DIM         ,ONLY : R
 USE TPM_TRANS       ,ONLY : LGPNORM, NGPBLKS, NPROMA
 USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRV, NPRTRW, MYSETV, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_FIELDS      ,ONLY : F
 USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 USE TRGTOL_MOD      ,ONLY : TRGTOL
 USE SET2PE_MOD      ,ONLY : SET2PE
@@ -154,6 +154,7 @@ DO J=1,KFIELDS
 ENDDO
 
 ALLOCATE(ZGTF(IF_FS,D%NLENGTF))
+IF (SIZE(ZGTF) > 0) ZGTF(1,1)=0._JPRB ! force allocation right here, not inside an omp region below
 LGPNORM=.TRUE.
 CALL TRGTOL(ZGTF,IF_FS,IF_GP,IF_SCALARS_G,IVSET,PGP=PGP)
 LGPNORM=.FALSE.
@@ -184,7 +185,6 @@ IF( IF_FS > 0 )THEN
 
 CALL GSTATS(1429,0)
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL,IGL,JF,JL)
-! This OMP directive may need to be disabled for amdflang (cfr. Andreas Mueller)
   DO JGL=IBEG,IEND
     IGL = D%NPTRLS(MYSETW) + JGL - 1
 !CDIR NOLOOPCHG
@@ -284,9 +284,9 @@ IF( MYSETV==1 )THEN
       IF(LDAVE_ONLY)THEN
         DO JF=1,KFIELDS
           IND=IND+1
-          ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+          ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),KIND=JPRB))
           IND=IND+1
-          ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+          ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),KIND=JPRB))
         ENDDO
       ENDIF
       DEALLOCATE(ZRCV)
@@ -364,17 +364,17 @@ IF( MYSETV == 1 )THEN
           ENDDO
           IF(.NOT.LDAVE_ONLY)THEN
             IND=IND+1
-            ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+            ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),KIND=JPRB))
             IND=IND+1
-            ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+            ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),KIND=JPRB))
           ENDIF
         ENDDO
         IF(LDAVE_ONLY)THEN
           DO JF=1,KFIELDS
             IND=IND+1
-            ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+            ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),KIND=JPRB))
             IND=IND+1
-            ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+            ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),KIND=JPRB))
           ENDDO
         ENDIF
         DEALLOCATE(ZRCV)

@@ -27,7 +27,7 @@ ecbuild_add_library( TARGET transi_dp
 ectrans_target_fortran_module_directory( TARGET transi_dp
   MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/module/trans_dp
 )
-file( GLOB transi_includes include/ectrans/* )
+set( transi_includes transi.h version.h )
 install(
   FILES        ${transi_includes}
   DESTINATION  include/ectrans

@@ -12,7 +12,7 @@ MODULE TPM_DIM
 
 ! Module for dimensions.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE EC_PARKIND  ,ONLY : JPIM
 
 IMPLICIT NONE
 

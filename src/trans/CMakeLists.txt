@@ -20,4 +20,3 @@ install(
   FILES        ${trans_interface}
   DESTINATION  include/ectrans
 )
-

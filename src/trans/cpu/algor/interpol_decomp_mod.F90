@@ -23,7 +23,7 @@ MODULE INTERPOL_DECOMP_MOD
 ! Author: Mats Hamrud
 
 
-USE PARKIND1, ONLY : JPRB, JPIM, JPRD, JPIB
+USE EC_PARKIND, ONLY : JPIM, JPRD, JPIB
 IMPLICIT NONE
 CONTAINS
 !===========================================================================
@@ -121,7 +121,7 @@ REAL(KIND=JPRD),INTENT(INOUT)  :: PA(:,:)  ! On input : original matrix
 INTEGER(KIND=JPIM),INTENT(OUT) :: KRANK    ! Numerical rank of matrix
 INTEGER(KIND=JPIM),INTENT(OUT) :: KLIST(:) ! List of columns (pivots)
 
-INTEGER(KIND=JPIM)           :: JM,JN,ISWAP,JK,IK,IIK,IM,IN,IMIN,ILIST(KN)
+INTEGER(KIND=JPIM)           :: JN,ISWAP,IK,IM,IN,IMIN,ILIST(KN)
 REAL(KIND=JPRD) :: ZC(KN),ZTAU,ZSWAPA(KM),ZSWAP,ZV(KM),ZBETA,ZWORK(KN),ZTAU_IN
 REAL(KIND=JPRD) :: ZTAU_REC,ZEPS
 !-------------------------------------------------------------------------------

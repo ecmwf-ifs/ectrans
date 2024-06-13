@@ -26,7 +26,7 @@ CONTAINS
 
     !**** *ECTRANS_VERSION_INT* - Return ecTrans version as an integer
 
-    USE PARKIND1 ,ONLY : JPIM
+    USE EC_PARKIND ,ONLY : JPIM
 
     INTEGER(KIND=JPIM) :: ECTRANS_VERSION_INT
 

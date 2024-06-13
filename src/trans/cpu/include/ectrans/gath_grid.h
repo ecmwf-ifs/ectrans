@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,33 +9,33 @@
 !
 
 INTERFACE
-SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
+SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
-!**** *DIST_GRID_32* - Distribute global gridpoint array among processors
+!**** *GATH_GRID* - Gather global gridpoint array from processors
 
 !     Purpose.
 !     --------
-!        Interface routine for distributing gridpoint array
+!        Interface routine for gathering gripoint array
 
 !**   Interface.
 !     ----------
-!     CALL DIST_GRID_32(...)
+!     CALL GATH_GRID(...)
 
 !     Explicit arguments : 
 !     -------------------- 
-!     PGPG(:,:) - Global spectral array
-!     KFDISTG     - Global number of fields to be distributed
-!     KPROMA      - required blocking factor for gridpoint input
-!     KFROM(:)    - Processor resposible for distributing each field
+!     PGPG(:,:)   - Global gridpoint array
+!     KFGATHG     - Global number of fields to be gathered
+!     KPROMA      - blocking factor for gridpoint input
+!     KTO(:)      - Processor responsible for gathering each field
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PGP(:,:)  - Local spectral array
+!     PGP(:,:,:)  - Local spectral array
 !
 !     Method.
 !     -------
 
-!     Externals.  SET_RESOL      - set resolution
-!     ----------  DIST_GRID_32_CTL  - control routine
+!     Externals.  SET_RESOL   - set resolution
+!     ----------  GATH_GRID_CTL -  control routine
 
 !     Author.
 !     -------
@@ -47,23 +47,23 @@ SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB ,JPRM
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRM)    ,OPTIONAL, INTENT(IN)  :: PGPG(:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
+INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL(KIND=JPRM)             , INTENT(OUT) :: PGP(:,:,:)
+REAL(KIND=JPRB)             , INTENT(IN)  :: PGP(:,:,:)
 
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE DIST_GRID_32
+END SUBROUTINE GATH_GRID
 
 END INTERFACE

@@ -1,5 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
-! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2013- Meteo-France.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -9,34 +9,33 @@
 !
 
 INTERFACE
-SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
- & LDIM1_IS_FLD,KSMAX,KSORT)
+SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP,KSORT)
 
-!**** *DIST_SPEC* - Distribute global spectral array among processors
+!**** *DIST_GRID* - Distribute global gridpoint array among processors
 
 !     Purpose.
 !     --------
-!        Interface routine for distributing spectral array
+!        Interface routine for distributing gridpoint array
 
 !**   Interface.
 !     ----------
-!     CALL DIST__SPEC(...)
+!     CALL DIST_GRID(...)
 
 !     Explicit arguments : 
 !     -------------------- 
-!     PSPECG(:,:) - Global spectral array
+!     PGPG(:,:) - Global spectral array
 !     KFDISTG     - Global number of fields to be distributed
+!     KPROMA      - required blocking factor for gridpoint input
 !     KFROM(:)    - Processor resposible for distributing each field
-!     KVSET(:)    - "B-Set" for each field
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PSPEC(:,:)  - Local spectral array
+!     PGP(:,:)  - Local spectral array
 !
 !     Method.
 !     -------
 
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  DIST_SPEC_CONTROL - control routine
+!     Externals.  SET_RESOL      - set resolution
+!     ----------  DIST_GRID_CTL  - control routine
 
 !     Author.
 !     -------
@@ -55,19 +54,17 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPECG(:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PGPG(:,:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSET(:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PSPEC(:,:)
-LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDIM1_IS_FLD
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSMAX
+REAL(KIND=JPRB)             , INTENT(OUT) :: PGP(:,:,:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KSORT (:)
 
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE DIST_SPEC
+END SUBROUTINE DIST_GRID
 
 END INTERFACE

@@ -67,7 +67,7 @@ SUBROUTINE SET2PE(KPE,KPRGPNS,KPRGPEW,KPRTRW,KPRTRV)
 !     ------------------------------------------------------------------
 
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE EC_PARKIND  ,ONLY : JPIM
 
 USE TPM_DISTR       ,ONLY : LEQ_REGIONS, NPRGPEW, NPRGPNS, NPRTRV, NPRTRW
 USE EQ_REGIONS_MOD  ,ONLY : N_REGIONS, N_REGIONS_NS
@@ -78,7 +78,7 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN) :: KPRGPNS,KPRGPEW,KPRTRW,KPRTRV
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KPE
 
-INTEGER(KIND=JPIM) :: IPE,JA
+INTEGER(KIND=JPIM) :: JA
 !     ------------------------------------------------------------------
 
 !*       1.    Choose from input parameters
