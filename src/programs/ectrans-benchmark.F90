@@ -598,6 +598,9 @@ ztloop = timef()
 
 gstats_lstats = .false.
 
+write(nout,'(a,i5,a)') 'Running for ', iters, ' iterations with 2 extra warm-up iterations'
+write(nout,'(" ")')
+
 do jstep = 1, iters+2
   if (jstep == 3) gstats_lstats = .true.
 
