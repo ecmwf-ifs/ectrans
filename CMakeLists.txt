@@ -69,7 +69,7 @@ set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
 ecbuild_add_option( FEATURE MKL
                     DESCRIPTION "Use MKL for BLAS and/or FFTW"
-                    DEFAULT OFF
+                    DEFAULT ON
                     REQUIRED_PACKAGES "MKL QUIET" )
 
 if( NOT HAVE_MKL )
@@ -147,13 +147,13 @@ ecbuild_add_option( FEATURE CUTLASS
 # following also needs cuda arch sm80
 ecbuild_add_option( FEATURE 3XTF32
                     DEFAULT OFF
-		    CONDITION HAVE_CUTLASS
-		    DESCRIPTION "Support for 3xTF32 with Cutlass (>= 2.8)"
+                    CONDITION HAVE_CUTLASS
+                    DESCRIPTION "Support for 3xTF32 with Cutlass (>= 2.8)"
                     REQUIRED_PACKAGES "NvidiaCutlass" )
 
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
-                    DEFAULT OFF
+                    DEFAULT ON
                     CONDITION HAVE_GPU
                     REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
                     DESCRIPTION "Enable CUDA-aware MPI" )
