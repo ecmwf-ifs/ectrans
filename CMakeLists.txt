@@ -98,6 +98,10 @@ if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
   ectrans_find_hip() # sets "HAVE_HIP"
 
   if (NOT HAVE_HIP)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+      ecbuild_info("CMAKE_CUDA_ARCHITECTURES not defined, using 80")
+      set(CMAKE_CUDA_ARCHITECTURES 80)
+    endif()
     check_language(CUDA)
     if ( NOT CMAKE_CUDA_COMPILER )
       set( HAVE_CUDA OFF )
@@ -111,13 +115,9 @@ if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
       if( NOT TARGET CUDA::cufft )
         ecbuild_info("No target CUDA::cufft")
       endif()
-      if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 80)
-      endif()
-      ecbuild_info( "cublas                  : ${CMAKE_CUDA_ARCHITECTURES}" )
+      ecbuild_info( "cuda arch               : [${CMAKE_CUDA_ARCHITECTURES}]" )
       ecbuild_info( "cublas                  : [${CUDA_cublas_LIBRARY}]" )
       ecbuild_info( "cufft                   : [${CUDA_cufft_LIBRARY}]" )
-      ecbuild_info( "cuda arch               : [${CMAKE_CUDA_ARCHITECTURES}]" )
     endif()
   endif()
 endif()
@@ -137,20 +137,17 @@ if( HAVE_GPU )
   endif()
 endif()
 
-find_package( NvidiaCutlass CONFIG)
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
                     DESCRIPTION "Support for Cutlass BLAS operations"
-                    REQUIRED_PACKAGES "NvidiaCutlass" )
+                    REQUIRED_PACKAGES "NvidiaCutlass VERSION 2.11" )
 
-# following also needs cuda arch sm80
-ecbuild_add_option( FEATURE 3XTF32
-                    DEFAULT OFF
-                    CONDITION HAVE_CUTLASS
-                    DESCRIPTION "Support for 3xTF32 with Cutlass (>= 2.8)"
-                    REQUIRED_PACKAGES "NvidiaCutlass" )
-
+# following also needs cuda arch sm80 to be effective
+ecbuild_add_option( FEATURE CUTLASS_3XTF32
+                    DEFAULT ON
+                    CONDITION HAVE_SINGLE_PRECISION AND HAVE_CUTLASS
+                    DESCRIPTION "Support for 3xTF32 with Cutlass (>= 2.8) and CUDA_ARCHITECTURES >= 80" )
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON

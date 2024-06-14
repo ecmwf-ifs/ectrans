@@ -12,7 +12,7 @@
     }                                                                          \
   }
 
-#ifdef USE_3XTF32
+#ifdef USE_CUTLASS_3XTF32
 constexpr bool use_3xtf32 = true;
 #else
 constexpr bool use_3xtf32 = false;
