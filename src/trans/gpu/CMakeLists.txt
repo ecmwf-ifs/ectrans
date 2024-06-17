@@ -81,6 +81,7 @@ foreach( prec dp sp )
           PUBLIC_INCLUDES      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
+                               $<INSTALL_INTERFACE:include/ectrans/trans_gpu_${prec}>
                                $<INSTALL_INTERFACE:include/ectrans>
                                $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS          parkind_${prec}
@@ -125,5 +126,11 @@ foreach( prec dp sp )
                 $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS} -gpu=pinned> )
         endif()
 
+        ## Install trans_gpu_${prec} interface
+        file( GLOB trans_interface ${PROJECT_SOURCE_DIR}/src/trans/include/ectrans/* )
+        install(
+          FILES        ${trans_interface}
+          DESTINATION  include/ectrans/trans_gpu_${prec}
+        )
   endif()
 endforeach()

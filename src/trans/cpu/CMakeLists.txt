@@ -68,8 +68,8 @@ list( APPEND ectrans_common_src
   ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
 )
 list( APPEND ectrans_common_includes
-  include/ectrans/get_current.h
-  include/ectrans/setup_trans0.h
+  ectrans/get_current.h
+  ectrans/setup_trans0.h
 )
 
 ecbuild_add_library(
@@ -113,7 +113,7 @@ function(generate_file)
              sed -e "s/VARIANTDESIGNATOR/${backend}/g" |
              sed -e "s/TYPEDESIGNATOR_UPPER/${JPRB_${backend}}/g" |
              sed -e "s/TYPEDESIGNATOR_LOWER/${jprb_${backend}}/g" |
-             sed -rf - ${CMAKE_CURRENT_SOURCE_DIR}/${input} > ${output}
+             sed -rf - ${input} > ${output}
     DEPENDS  ${input} ${CMAKE_CURRENT_SOURCE_DIR}/sedrenames.txt
     COMMENT "Generating ${output}"
     VERBATIM
@@ -123,7 +123,7 @@ endfunction(generate_file)
 
 function(generate_backend_includes)
   set (options)
-  set (oneValueArgs BACKEND TARGET DESTINATION)
+  set (oneValueArgs BACKEND TARGET DESTINATION INCLUDE_DIRECTORY)
   set (multiValueArgs)
   cmake_parse_arguments(_PAR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -133,8 +133,12 @@ function(generate_backend_includes)
   file(MAKE_DIRECTORY ${destination})
   file(MAKE_DIRECTORY ${destination}/trans_${backend})
 
-  ecbuild_list_add_pattern( LIST files GLOB include/ectrans/*.h QUIET )
-
+  ecbuild_list_add_pattern( LIST absolute_files GLOB ectrans/*.h SOURCE_DIR ${_PAR_INCLUDE_DIRECTORY} QUIET )
+  set( files )
+  foreach(file_i ${absolute_files})
+    file(RELATIVE_PATH file_i ${_PAR_INCLUDE_DIRECTORY} ${file_i})
+    list(APPEND files ${file_i})
+  endforeach()
   set( outfiles )
   foreach(file_i ${files})
     get_filename_component(outfile_name    ${file_i} NAME)
@@ -142,11 +146,11 @@ function(generate_backend_includes)
     get_filename_component(outfile_ext     ${file_i} EXT)
     get_filename_component(outfile_dir     ${file_i} DIRECTORY)
     if (${file_i} IN_LIST ectrans_common_includes)
-      configure_file(${file_i} ${destination}/${outfile_name})
+      configure_file(${_PAR_INCLUDE_DIRECTORY}/${file_i} ${destination}/${outfile_name})
     else()
       set(outfile "${destination}/${outfile_name_we}_${backend}${outfile_ext}")
       ecbuild_debug("Generate ${outfile}")
-      generate_file(BACKEND ${backend} INPUT ${file_i} OUTPUT ${outfile})
+      generate_file(BACKEND ${backend} INPUT ${_PAR_INCLUDE_DIRECTORY}/${file_i} OUTPUT ${outfile})
       list(APPEND outfiles ${outfile})
       string(TOUPPER ${outfile_name_we} OUTFILE_NAME_WE )
       ecbuild_debug("Generate ${destination}/trans_${backend}/${outfile_name}")
@@ -204,7 +208,7 @@ function(generate_backend_sources)
       get_filename_component(outfile_dir     ${file_i} DIRECTORY)
       set(outfile "${destination}/${file_i}")
       ecbuild_debug("Generate ${outfile}")
-      generate_file(BACKEND ${backend} INPUT ${file_i} OUTPUT ${outfile})
+      generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
       list(APPEND outfiles ${outfile})
     endif()
   endforeach(file_i)
@@ -216,7 +220,7 @@ set( BUILD_INTERFACE_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include/ectrans )
 foreach( prec dp sp )
   if( HAVE_${prec} )
 
-    generate_backend_includes(BACKEND ${prec} TARGET ectrans_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} )
+    generate_backend_includes(BACKEND ${prec} TARGET ectrans_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/trans/include )
     generate_backend_sources( BACKEND ${prec} OUTPUT ectrans_${prec}_src  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_${prec})
     ecbuild_add_library(
       TARGET           ectrans_${prec}
