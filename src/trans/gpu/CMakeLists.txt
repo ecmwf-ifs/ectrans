@@ -35,9 +35,6 @@ ecbuild_list_add_pattern( LIST trans_src
                         )
 
 ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
-ecbuild_list_exclude_pattern( LIST trans_src            REGEX cuda_gemm_batched_mod.F90 )
-
-message( "trans_src list : ${trans_src}" )
 
 #if( NOT ${CMAKE_BUILD_TYPE_CAPS} STREQUAL DEBUG )
   set_source_files_properties( internal/ftinv_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
