@@ -198,7 +198,7 @@ WRITE(NOUT,'(A)') "GPU version, with following compile-time options : "
 #else
   WRITE(NOUT,'(A)') " - OpenMP-based offload"
 #endif
-#ifdef USE_CUDA_AWARE_MPI_FT
+#ifdef USE_GPU_AWARE_MPI
   WRITE(NOUT,'(A)') " - GPU-aware MPI"
 #endif
 #ifdef USE_GRAPHS_GEMM

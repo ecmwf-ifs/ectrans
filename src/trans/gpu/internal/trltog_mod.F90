@@ -692,7 +692,7 @@ CONTAINS
 
     IR=0
     !...Receive loop.........................................................
-#ifdef USE_CUDA_AWARE_MPI_FT
+#ifdef USE_GPU_AWARE_MPI
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
@@ -727,7 +727,7 @@ CONTAINS
       & CDSTRING='TRLTOG_CUDAAWARE: WAIT FOR SENDS AND RECEIVES')
     ENDIF
 
-#ifdef USE_CUDA_AWARE_MPI_FT
+#ifdef USE_GPU_AWARE_MPI
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
