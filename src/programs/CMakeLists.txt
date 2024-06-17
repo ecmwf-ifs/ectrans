@@ -6,30 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-if( HAVE_TOOLS )
-
-  if( HAVE_DOUBLE_PRECISION )
-    set( trans trans_dp )
-  else()
-    set( trans trans_sp )
-  endif()
-
-  ecbuild_warn_var( ECTRANS_TOOLS_RTABLE_PATH )
-
-  file( GLOB ectrans_programs *.F90 )
-  foreach( _program IN ITEMS ${ectrans_programs} )
-    get_filename_component( _program ${_program} NAME_WE )
-
-    ecbuild_add_executable(TARGET ${_program}
-      SOURCES ${_program}.F90
-      LIBS ${trans}
-      LINKER_LANGUAGE Fortran
-      DEFINITIONS ECTRANS_TOOLS_RTABLE_PATH="${ECTRANS_TOOLS_RTABLE_PATH}" )
-
-  endforeach()
-
-endif()
-
 #foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 foreach( program ectrans-benchmark )
 
