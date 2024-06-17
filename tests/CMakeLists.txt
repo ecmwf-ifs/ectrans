@@ -36,86 +36,85 @@ if( HAVE_TESTS )
 
   add_test( NAME ectrans_test_install
             COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-install.sh ${_test_args} )
-endif()
 
-
-if( HAVE_DOUBLE_PRECISION )
-  set( trans trans_dp )
-  set( parkind parkind_dp )
-else()
-  set( trans trans_sp )
-  set( parkind parkind_sp )
-endif()
-
-ecbuild_add_test(TARGET ectrans_test_adjoint
-  SOURCES trans/test_adjoint.F90
-  LIBS ${trans} ${parkind}
-  LINKER_LANGUAGE Fortran
-)
-if( TEST ectrans_test_adjoint AND HAVE_OMP )
-  target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
-endif()
-
-set( ntasks 0 )
-set( nthreads 1 )
-if( fiat_HAVE_MPI )
-  list( APPEND ntasks 1 2 )
-endif()
-if( HAVE_OMP )
-  list( APPEND nthreads 4 8 )
-endif()
-
-foreach( prec dp sp )
-  if( TARGET ectrans-benchmark-cpu-${prec} )
-    foreach( mpi ${ntasks} )
-      foreach( omp ${nthreads} )
-        set( t 47 )
-        set( grid O48 )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 --meminfo --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_scders
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --scders --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_uvders
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 2000 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16
-            COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100 --norms -v
-            MPI ${mpi}
-            OMP ${omp}
-        )
-      endforeach()
-    endforeach()
+  if( HAVE_DOUBLE_PRECISION )
+    set( trans trans_dp )
+    set( parkind parkind_dp )
+  else()
+    set( trans trans_sp )
+    set( parkind parkind_sp )
   endif()
-endforeach()
 
+  ecbuild_add_test(TARGET ectrans_test_adjoint
+    SOURCES trans/test_adjoint.F90
+    LIBS ${trans} ${parkind}
+    LINKER_LANGUAGE Fortran
+  )
+  if( TEST ectrans_test_adjoint AND HAVE_OMP )
+    target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
+  endif()
+
+  set( ntasks 0 )
+  set( nthreads 1 )
+  if( fiat_HAVE_MPI )
+    list( APPEND ntasks 1 2 )
+  endif()
+  if( HAVE_OMP )
+    list( APPEND nthreads 4 8 )
+  endif()
+
+  foreach( prec dp sp )
+    if( TARGET ectrans-benchmark-cpu-${prec} )
+      foreach( mpi ${ntasks} )
+        foreach( omp ${nthreads} )
+          set( t 47 )
+          set( grid O48 )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 --meminfo --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_scders
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --scders --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_uvders
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 2000 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16
+              COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+        endforeach()
+      endforeach()
+    endif()
+  endforeach()
+
+endif()
 
 if( HAVE_TRANSI )
 

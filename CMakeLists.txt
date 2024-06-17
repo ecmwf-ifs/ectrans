@@ -171,6 +171,12 @@ ecbuild_add_option( FEATURE GPU_STATIC
 
 ectrans_find_lapack()
 
+ecbuild_add_option( FEATURE TESTS
+                    DEFAULT ON
+                    DESCRIPTION "Enable unit testing"
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
+                    CONDITION HAVE_CPU )
+
 ### Add sources and tests
 include( ectrans_compile_options )
 add_subdirectory( src )
