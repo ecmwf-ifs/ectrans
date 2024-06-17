@@ -182,6 +182,8 @@ private:
 };
 } // namespace detail
 
+#ifndef USE_CUTLASS
+
 void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    int m, int *n, int *k, float alpha,
                                    const float *A, int lda, int *offsetsA,
@@ -208,6 +210,8 @@ void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
 #endif
 }
 
+#endif
+
 void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    int m, int *n, int *k,
                                    double alpha,
@@ -228,6 +232,7 @@ void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                   A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
                   batchCount, stream, blas_id);
 }
+
 } // namespace
 
 extern "C" {
