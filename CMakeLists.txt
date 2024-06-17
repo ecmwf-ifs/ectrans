@@ -92,32 +92,17 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION AND HAVE_CPU )
 
-# Search for available GPU runtimes, searching for HIP first and, if not found,
-# attempt to find NVIDIA
+# Search for available GPU runtimes, searching for CUDA first and, if not found,
+# attempt to find HIP
 if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
-  ectrans_find_hip() # sets "HAVE_HIP"
-
-  if (NOT HAVE_HIP)
-    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-      ecbuild_info("CMAKE_CUDA_ARCHITECTURES not defined, using 80")
-      set(CMAKE_CUDA_ARCHITECTURES 80)
-    endif()
-    check_language(CUDA)
-    if ( NOT CMAKE_CUDA_COMPILER )
-      set( HAVE_CUDA OFF )
+  set(HAVE_CUDA 0)
+  set(HAVE_HIP 0)
+  ectrans_find_cuda() # sets "HAVE_CUDA"
+  if( NOT HAVE_CUDA )
+    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+        ectrans_find_hip() # sets "HAVE_HIP"
     else()
-      enable_language(CUDA)
-      set( HAVE_CUDA ON )
-      find_package( CUDAToolkit )
-      if( NOT TARGET CUDA::cublas )
-        ecbuild_info("No target CUDA::cublas")
-      endif()
-      if( NOT TARGET CUDA::cufft )
-        ecbuild_info("No target CUDA::cufft")
-      endif()
-      ecbuild_info( "cuda arch               : [${CMAKE_CUDA_ARCHITECTURES}]" )
-      ecbuild_info( "cublas                  : [${CUDA_cublas_LIBRARY}]" )
-      ecbuild_info( "cufft                   : [${CUDA_cufft_LIBRARY}]" )
+        message("Cannot enable for HIP language, require CMake >= 3.24")
     endif()
   endif()
 endif()
