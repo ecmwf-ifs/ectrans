@@ -73,7 +73,7 @@ foreach( prec dp sp )
             set( GPU_LIBRARY_TYPE STATIC )
         endif()
 
-        ectrans_add_library(
+        ecbuild_add_library(
           TARGET               trans_gpu_${prec}
           TYPE                 ${GPU_LIBRARY_TYPE}
           SOURCES              ${trans_src}
