@@ -191,10 +191,24 @@ ENDIF
 WRITE(NOUT,'(A)')
 WRITE(NOUT,'(A)') "ecTrans at version: " // ECTRANS_VERSION_STR()
 WRITE(NOUT,'(A)') "commit: " // ECTRANS_GIT_SHA1()
-#ifdef USE_CUDA_AWARE_MPI_FT
-WRITE(NOUT,'(A)') "GPU version with GPU-aware MPI"
+WRITE(NOUT,'(A)')
+WRITE(NOUT,'(A)') "GPU version, with following compile-time options : "
+#ifdef ACCGPU
+  WRITE(NOUT,'(A)') " - OpenACC-based offload"
 #else
-WRITE(NOUT,'(A)') "GPU version"
+  WRITE(NOUT,'(A)') " - OpenMP-based offload"
+#endif
+#ifdef USE_CUDA_AWARE_MPI_FT
+  WRITE(NOUT,'(A)') " - GPU-aware MPI"
+#endif
+#ifdef USE_GRAPHS_GEMM
+  WRITE(NOUT,'(A)') " - graph-based GEMM scheduling"
+#endif
+#ifdef USE_CUTLASS
+  WRITE(NOUT,'(A)') " - Cutlass-based GEMM operations"
+#endif
+#ifdef USE_3XTF32
+  WRITE(NOUT,'(A)') " - tensor-core usage for 32b Cutlass operations"
 #endif
 WRITE(NOUT,'(A)')
 
