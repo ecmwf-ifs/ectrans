@@ -1,6 +1,6 @@
 ! (C) Copyright 1991- ECMWF.
 ! (C) Copyright 1991- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -102,8 +102,7 @@ I_DIV_OFFSET = 2 * KFIELD
 !$OMP& MAP(ALLOC:ZN) &
 !$OMP& MAP(TO:D_MYMS,D_NUMP,R_NTMAX) &
 !$OMP& MAP(TO:F_RN) &
-!$OMP& MAP(ALLOC:ZEPSNM) &
-!$OMP& SHARED(I_DIV_OFFSET)
+!$OMP& MAP(ALLOC:ZEPSNM,ZOA1,ZOA2)
 #endif
 
 #ifdef OMPGPU
@@ -126,7 +125,7 @@ ENDDO
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IN) DEFAULT(NONE) &
 !$ACC& COPYIN(KFIELD) &
-!$ACC& PRESENT(D_NUMP,D_MYMS,F_RN,R_NTMAX)
+!$ACC& PRESENT(D_NUMP,D_MYMS,F_RN,R_NTMAX,ZOA1)
 #endif
 DO KMLOC=1,D_NUMP
   DO J=1,2*KFIELD
@@ -142,7 +141,7 @@ ENDDO
 
 #ifdef OMPGPU
 !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM) DEFAULT(NONE) &
-!$OMP& SHARED(D_NUMP,R_NTMAX,KFIELD,D_MYMS,ZN,ZEPSNM)
+!$OMP& SHARED(D_NUMP,R_NTMAX,KFIELD,D_MYMS,ZN,ZEPSNM,I_DIV_OFFSET,ZOA1,ZOA2)
 #endif
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(IR,II,IN,KM,ZKM) DEFAULT(NONE) &
