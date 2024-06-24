@@ -12,7 +12,7 @@ MODULE TPM_DISTR
 
 ! Module for distributed memory environment.
 
-USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
+USE EC_PARKIND  ,ONLY : JPIM     ,JPRD, JPIB
 
 IMPLICIT NONE
 
@@ -97,7 +97,7 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPMG(:) ! Global version of NPMS
 INTEGER(KIND=JPIM) :: NDGL_FS ! Number of rows of latitudes for which this process is
                      ! performing Fourier Space calculations
 
-INTEGER(KIND=JPIM) ,ALLOCATABLE  :: NSTAGTF(:) ! Offset for specific latitude in 
+INTEGER(KIND=JPIB) ,ALLOCATABLE  :: NSTAGTF(:) ! Offset for specific latitude in 
                                   ! Fourier/gridpoint buffer
 INTEGER(KIND=JPIM) :: NLENGTF ! Second dimension of Fourier/gridpoint buffer 
                      ! (sum of (NLOEN+3) over local latitudes)
@@ -171,7 +171,7 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each
 REAL(KIND=JPRD) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
-INTEGER(KIND=JPIM), ALLOCATABLE :: OFFSETS_GEMM1(:), OFFSETS_GEMM2(:)
+INTEGER(KIND=JPIB), ALLOCATABLE :: OFFSETS_GEMM1(:), OFFSETS_GEMM2(:)
 
 END TYPE DISTR_TYPE
 
@@ -188,7 +188,7 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT1B(:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCL(:) ! Process responsible for each lat. (F.S)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB1(:,:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,ALLOCATABLE  :: D_NSTAGTF(:) ! Offset for specific latitude in 
+INTEGER(KIND=JPIB) ,ALLOCATABLE  :: D_NSTAGTF(:) ! Offset for specific latitude in 
 INTEGER(KIND=JPIM) :: D_NDGL_FS     ! Number of rows of latitudes for which this process is
                                   ! performing Fourier Space calculations
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MSTABF(:)
@@ -200,7 +200,7 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
 ! The offsets in the input and output arrays to the gemms.
 ! (1) are the offsets in the "inputs" of dirtrans ("outputs" invtrans)
 ! (2) are the offsets in the "outputs" of invtrans ("inputs" dirtrans)
-INTEGER(KIND=JPIM), POINTER :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
+INTEGER(KIND=JPIB), POINTER :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
 
 END MODULE TPM_DISTR
 

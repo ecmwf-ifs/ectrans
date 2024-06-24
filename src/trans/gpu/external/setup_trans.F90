@@ -98,7 +98,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE PARKIND1,        ONLY: JPIM, JPRB, JPRD
+USE PARKIND1,        ONLY: JPIM, JPRB, JPRD, JPIB
 USE PARKIND_ECTRANS, ONLY: JPRBT
 
 !ifndef INTERFACE
@@ -503,8 +503,8 @@ ALLOCATE(ZAA(ALIGN(R%NDGNH,8),ALIGN((R%NTMAX+2)/2,8),D%NUMP))
 ALLOCATE(ZAS(ALIGN(R%NDGNH,8),ALIGN((R%NTMAX+3)/2,8),D%NUMP))
 
 WRITE(NOUT,*)'setup_trans: sizes1 NUMP=',D%NUMP
-WRITE(NOUT,*)'ZAS:',size(ZAS)
-WRITE(NOUT,*)'ZAA:',size(ZAA)
+WRITE(NOUT,*)'ZAS:',SIZE(ZAS,KIND=JPIB)
+WRITE(NOUT,*)'ZAA:',SIZE(ZAA,KIND=JPIB)
 
 ZAA(:,:,:) = 0._JPRBT
 ZAS(:,:,:) = 0._JPRBT
