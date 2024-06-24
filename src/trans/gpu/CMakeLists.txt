@@ -91,7 +91,7 @@ foreach( prec dp sp )
                                $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
           PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
                                ${GPU_RUNTIME}GPU
-                               $<${HAVE_GPU_AWARE_MPI}:USE_CUDA_AWARE_MPI_FT>
+                               $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
