@@ -49,7 +49,7 @@ if( ${CMAKE_VERSION} VERSION_LESS "3.25" AND (NOT DEFINED ENABLE_ACC OR ENABLE_A
 endif()
 
 ecbuild_add_option( FEATURE ACC
-                    DEFAULT ON
+                    DEFAULT OFF
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
 
