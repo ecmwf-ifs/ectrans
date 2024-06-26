@@ -10,7 +10,7 @@
 
 MODULE FOURIER_OUTAD_MOD
 CONTAINS
-SUBROUTINE FOURIER_OUTAD(PREEL,KFIELDS,KGL)
+SUBROUTINE FOURIER_OUTAD(PREEL, KFIELDS, KGL)
 
 !**** *FOURIER_OUTAD* - Copy fourier data from local array to buffer - adjoint
 
@@ -24,6 +24,7 @@ SUBROUTINE FOURIER_OUTAD(PREEL,KFIELDS,KGL)
 
 !     Explicit arguments :  PREEL - local fourier/GP array
 !     --------------------  KFIELDS - number of fields
+!                           KGL - local index of latitude we are currently on
 !
 !     Externals.  None.
 !     ----------
@@ -38,31 +39,40 @@ SUBROUTINE FOURIER_OUTAD(PREEL,KFIELDS,KGL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-
-USE TPM_DISTR       ,ONLY : D, MYSETW
-USE TPM_TRANS       ,ONLY : FOUBUF_IN
-USE TPM_GEOMETRY    ,ONLY : G
-!
+USE PARKIND1,     ONLY : JPIM, JPRB
+USE TPM_DISTR,    ONLY : D, MYSETW
+USE TPM_TRANS,    ONLY : FOUBUF_IN
+USE TPM_GEOMETRY, ONLY : G
 
 IMPLICIT NONE
 
-REAL(KIND=JPRB),   INTENT(OUT) :: PREEL(:,:)
-INTEGER(KIND=JPIM),INTENT(IN) :: KFIELDS,KGL
+REAL(KIND=JPRB),    INTENT(OUT) :: PREEL(:,:)
+INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS
+INTEGER(KIND=JPIM), INTENT(IN) :: KGL
 
-INTEGER(KIND=JPIM) :: JM,JF,IGLG,IPROC,IR,II,ISTA
+INTEGER(KIND=JPIM) :: JM, JF, IGLG, IPROC, IR, II, ISTA
 
 !     ------------------------------------------------------------------
 
-IGLG = D%NPTRLS(MYSETW)+KGL-1
-DO JM=0,G%NMEN(IGLG)
+! Determine global latitude index corresponding to local latitude index KGL
+IGLG = D%NPTRLS(MYSETW) + KGL - 1
+
+! Loop over all zonal wavenumbers relevant for this latitude
+DO JM = 0, G%NMEN(IGLG)
+  ! Get the member of the W-set responsible for this zonal wavenumber in the "m" representation
   IPROC = D%NPROCM(JM)
-  IR    = 2*JM+1+D%NSTAGTF(KGL)
-  II    = 2*JM+2+D%NSTAGTF(KGL)
-  ISTA  = (D%NSTAGT1B(D%MSTABF(IPROC))+D%NPNTGTB0(JM,KGL))*2*KFIELDS
-  DO JF=1,KFIELDS
+
+  ! Compute offset in FFT work array PREEL corresponding to wavenumber JM and latitude KGL
+  IR = 2 * JM + 1 + D%NSTAGTF(KGL)
+  II = 2 * JM + 2 + D%NSTAGTF(KGL)
+
+  ! Compute offset for extraction of the fields from the l-to-m transposition buffer, FOUBUF, IN
+  ISTA = (D%NSTAGT1B(D%MSTABF(IPROC)) + D%NPNTGTB0(JM,KGL)) * 2 * KFIELDS
+
+  ! Copy all fields from l-to-m transposition buffer to FFT work array
+  DO JF = 1, KFIELDS
     PREEL(JF,IR) = FOUBUF_IN(ISTA+2*JF-1)
-    PREEL(JF,II) = FOUBUF_IN(ISTA+2*JF  )
+    PREEL(JF,II) = FOUBUF_IN(ISTA+2*JF)
   ENDDO
 ENDDO
 
@@ -70,4 +80,3 @@ ENDDO
 
 END SUBROUTINE FOURIER_OUTAD
 END MODULE FOURIER_OUTAD_MOD
-
