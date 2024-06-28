@@ -124,7 +124,6 @@ logical :: lsyncstats = .false.
 logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
-logical :: lfftw = .true. ! Use FFTW for Fourier transforms
 logical :: lvordiv = .false.
 logical :: lscders = .false.
 logical :: luvders = .false.
@@ -156,7 +155,6 @@ integer(kind=jpim) :: nprgpns ! Grid-point decomp
 integer(kind=jpim) :: nprgpew ! Grid-point decomp
 integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
 integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
-integer(kind=jpim) :: nspecresmin = 80 ! Minimum spectral resolution, for controlling nprtrw
 integer(kind=jpim) :: mysetv
 integer(kind=jpim) :: mysetw
 integer(kind=jpim) :: mp_type = 2 ! Message passing type
@@ -290,35 +288,26 @@ do ja = isqr, nproc
   endif
 enddo
 
-! From sumpini, although this should be specified in namelist
-if (nspecresmin == 0) nspecresmin = nproc
-
 ! Compute nprtrv and nprtrw if not provided on the command line
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
   if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
-  if (nprtrw > nspecresmin) call abor1('transform_test:nprtrw > nspecresmin')
 else
   do jprtrv = 4, nproc
     nprtrv = jprtrv
     nprtrw = nproc/nprtrv
     if (nprtrv*nprtrw /= nproc) cycle
     if (nprtrv > nprtrw) exit
-    if (nprtrw > nspecresmin) cycle
-    if (nprtrw <= nspecresmin/(2*oml_max_threads())) exit
   enddo
   ! Go for approx square partition for backup
-  if (nprtrv*nprtrw /= nproc .or. nprtrw > nspecresmin .or. nprtrv > nprtrw) then
+  if (nprtrv*nprtrw /= nproc .or. nprtrv > nprtrw) then
     isqr = int(sqrt(real(nproc,jprb)))
     do ja = isqr, nproc
       ib = nproc/ja
       if (ja*ib == nproc) then
         nprtrw = max(ja, ib)
         nprtrv = min(ja, ib)
-        if (nprtrw > nspecresmin ) then
-          call abor1('transform_test:nprtrw (approx square value) > nspecresmin')
-        endif
         exit
       endif
     enddo
@@ -396,7 +385,7 @@ call gstats(1, 1)
 
 call gstats(2, 0)
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
-  &                 ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
+  &                 lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
   &                 lduseflt=luseflt)
 call gstats(2, 1)
 
@@ -537,7 +526,9 @@ if (lprint_norms .or. ncheck > 0) then
 
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
-  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
+  if (nfld > 0) then
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
+  endif
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
   if (verbosity >= 1) then
@@ -708,7 +699,9 @@ do jstep = 1, iters
     call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+    if (nfld > 0) then
+      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
+    endif
 
     ! Surface pressure
     if (myproc == 1) then
@@ -756,7 +749,9 @@ write(nout,'(" ")')
 if (lprint_norms .or. ncheck > 0) then
   call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
-  call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  if (nfld > 0) then
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
+  endif
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
   if (myproc == 1) then
