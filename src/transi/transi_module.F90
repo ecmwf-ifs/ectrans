@@ -129,8 +129,6 @@ logical, SAVE :: USE_MPI   = .False.
 
 integer, private, parameter :: MAX_STR_LEN = 1024
 
-integer, parameter :: FFT992 = 1
-integer, parameter :: FFTW   = 2
 integer, parameter :: TRANS_SUCCESS          =  0
 integer, parameter :: TRANS_ERROR            = -1
 integer, parameter :: TRANS_NOTIMPL          = -2
@@ -580,7 +578,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   logical, parameter :: lkeeprpnm =.False.
   logical, parameter :: luserpnm  =.False. ! Don't use Belusov algorithm (uses twice the memory)
   logical :: ldlam ! output
-  logical :: lgridonly, lsplit, lusefftw !input
+  logical :: lgridonly, lsplit !input
   logical :: lspeconly ! only
   logical :: llatlon ! input
   logical :: llatlonshift ! input
@@ -593,8 +591,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 
   lsplit = .False.
   if( trans%lsplit /= 0 ) lsplit = .True.
-
-  if( trans%fft == FFTW )   lusefftw   = .True.
 
   llatlon = .False.
   llatlonshift = .False.
@@ -682,7 +678,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & CDIO_LEGPOL="readf", &
          & CDLEGPOLFNAME=readfp, &
@@ -700,7 +695,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & CDIO_LEGPOL="readf", &
          & CDLEGPOLFNAME=readfp )
@@ -719,7 +713,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & CDIO_LEGPOL="writef", &
          & CDLEGPOLFNAME=writefp, &
@@ -737,7 +730,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & CDIO_LEGPOL="writef", &
          & CDLEGPOLFNAME=writefp )
@@ -756,7 +748,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & CDIO_LEGPOL="membuf", &
          & KLEGPOLPTR=trans%cache, &
@@ -775,7 +766,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & CDIO_LEGPOL="membuf", &
          & KLEGPOLPTR=trans%cache, &
@@ -797,7 +787,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon, &
          & LDUSEFLT=luseflt )
 
@@ -813,7 +802,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KDLON=nlon )
 
      endif
@@ -838,7 +826,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, CDIO_LEGPOL="readf", &
          & CDLEGPOLFNAME=trim(readfp),&
          & LDUSEFLT=luseflt )
@@ -855,7 +842,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, CDIO_LEGPOL="readf", &
          & CDLEGPOLFNAME=trim(readfp) )
 
@@ -874,7 +860,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, &
          & CDIO_LEGPOL="writef", &
          & CDLEGPOLFNAME=trim(writefp), &
@@ -892,7 +877,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, &
          & CDIO_LEGPOL="writef", &
          & CDLEGPOLFNAME=trim(writefp) )
@@ -913,7 +897,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, &
          & CDIO_LEGPOL="membuf", &
          & KLEGPOLPTR=trans%cache, &
@@ -932,7 +915,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, &
          & CDIO_LEGPOL="membuf", &
          & KLEGPOLPTR=trans%cache, &
@@ -953,7 +935,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen, &
          & LDUSEFLT=luseflt )
 
@@ -969,7 +950,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDSPLIT=LSPLIT, &
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
-         & LDUSEFFTW=LUSEFFTW, &
          & KLOEN=nloen )
      endif
    endif

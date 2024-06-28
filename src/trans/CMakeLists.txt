@@ -190,10 +190,6 @@ function(generate_backend_sources)
           external/*
     QUIET
   )
-  if( NOT HAVE_FFTW )
-    ecbuild_list_exclude_pattern( LIST files REGEX tpm_fftw.F90 )
-  endif()
-
 
   set(outfiles)
   foreach(file_i ${files})
@@ -235,20 +231,19 @@ foreach( prec dp sp )
     )
     target_link_libraries( ectrans_${prec} PUBLIC fiat)
 
-    if( HAVE_FFTW )
-      set( FFTW_LINK PRIVATE )
-      if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
-          ecbuild_warn( "Danger: Both MKL and FFTW are linked in trans_${prec}. "
-                        "No guarantees on link order can be made for the final executable.")
-          set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
-      endif()
-      ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
-      target_link_libraries( ectrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
-      target_include_directories( ectrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-      target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFTW )
+    set( FFTW_LINK PRIVATE )
+    if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
+        ecbuild_warn( "Danger: Both MKL and FFTW are linked in trans_${prec}. "
+                      "No guarantees on link order can be made for the final executable.")
+        set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
     endif()
+    ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
+    target_link_libraries( ectrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+    target_include_directories( ectrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+    target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFTW )
     ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
     target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
+
     if( HAVE_OMP )
       ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
       target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
