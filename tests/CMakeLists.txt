@@ -49,7 +49,7 @@ endif()
 
 ecbuild_add_test(TARGET ectrans_test_adjoint
   SOURCES trans/test_adjoint.F90
-  LIBS ${trans} ${parkind}
+  LIBS ${trans} ${parkind} fftw3
   LINKER_LANGUAGE Fortran
 )
 if( TEST ectrans_test_adjoint AND HAVE_OMP )
