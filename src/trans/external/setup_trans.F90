@@ -53,7 +53,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomials only, not the FFTs.
-!     LDUSEFFTW    - Use FFTW for FFTs
+!     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL
 !                                 or KDGL+2 in the case that includes poles + equator
@@ -109,10 +109,7 @@ USE TPM_DIM         ,ONLY : R, DIM_RESOL
 USE TPM_DISTR       ,ONLY : D, DISTR_RESOL,NPROC
 USE TPM_GEOMETRY    ,ONLY : G, GEOM_RESOL
 USE TPM_FIELDS      ,ONLY : FIELDS_RESOL
-USE TPM_FFT         ,ONLY : FFT_RESOL, FFTB_RESOL
-#ifdef WITH_FFTW
-USE TPM_FFTW        ,ONLY : TW, FFTW_RESOL
-#endif
+USE TPM_FFTW        ,ONLY : TW, FFTW_RESOL, INIT_PLANS_FFTW
 USE TPM_FLT         ,ONLY : S, FLT_RESOL
 USE TPM_CTL         ,ONLY : C, CTL_RESOL
 
@@ -122,7 +119,6 @@ USE SUMP_TRANS_MOD  ,ONLY : SUMP_TRANS
 USE SUMP_TRANS_PRELEG_MOD ,ONLY : SUMP_TRANS_PRELEG
 USE SULEG_MOD       ,ONLY : SULEG
 USE PRE_SULEG_MOD   ,ONLY : PRE_SULEG
-USE SUFFT_MOD       ,ONLY : SUFFT
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE SHAREDMEM_MOD    ,ONLY : SHAREDMEM_CREATE
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
@@ -182,11 +178,7 @@ IF(.NOT. ALLOCATED(DIM_RESOL)) THEN
   ALLOCATE(FIELDS_RESOL(NMAX_RESOL))
   ALLOCATE(GEOM_RESOL(NMAX_RESOL))
   ALLOCATE(DISTR_RESOL(NMAX_RESOL))
-  ALLOCATE(FFT_RESOL(NMAX_RESOL))
-  ALLOCATE(FFTB_RESOL(NMAX_RESOL))
-#ifdef WITH_FFTW
   ALLOCATE(FFTW_RESOL(NMAX_RESOL))
-#endif
   ALLOCATE(FLT_RESOL(NMAX_RESOL))
   ALLOCATE(CTL_RESOL(NMAX_RESOL))
   GEOM_RESOL(:)%LAM=.FALSE.
@@ -227,9 +219,6 @@ D%LCPNMONLY=.FALSE.
 S%LUSE_BELUSOV=.TRUE. ! use Belusov algorithm to compute RPNM array instead of per m
 S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
-#ifdef WITH_FFTW
-TW%LFFTW=.FALSE. ! Use FFTW interface for FFTs
-#endif
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
 S%LSHIFTLL = .FALSE. ! shift output lat-lon by 0.5dx, 0.5dy
@@ -334,15 +323,10 @@ IF(PRESENT(LDPNMONLY)) THEN
   D%LCPNMONLY=LDPNMONLY
 ENDIF
 
-
-#ifdef WITH_FFTW
 IF(PRESENT(LDUSEFFTW)) THEN
-  TW%LFFTW=LDUSEFFTW
+  WRITE(NOUT,*) 'LDUSEFFTW option provided to SETUP_TRANS'
+  WRITE(NOUT,*) 'FFTW is now mandatory so this option is deprecated'
 ENDIF
-IF( LLSPSETUPONLY .OR. D%LGRIDONLY ) THEN
-  TW%LFFTW = .FALSE.
-ENDIF
-#endif
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
@@ -411,7 +395,9 @@ IF( .NOT.LLSPSETUPONLY ) THEN
   CALL GSTATS(1802,0)
 
 ! Initialize Fast Fourier Transform package
-  IF (.NOT.D%LCPNMONLY) CALL SUFFT
+  IF (.NOT. D%LCPNMONLY .AND. .NOT. D%LGRIDONLY) THEN
+    CALL INIT_PLANS_FFTW(R%NDLON)
+  ENDIF
   CALL GSTATS(1802,1)
 ELSE
   CALL PRE_SULEG

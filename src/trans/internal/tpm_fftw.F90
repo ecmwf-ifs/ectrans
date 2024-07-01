@@ -44,8 +44,7 @@ TYPE FFTW_TYPE
   INTEGER(KIND=JPIM),ALLOCATABLE :: N_PLANS(:)
   TYPE(FFTW_PLAN),POINTER :: FFTW_PLANS(:)
   INTEGER(KIND=JPIM) :: N_MAX=0         ! maximum number of latitudes
-  INTEGER(KIND=JPIM) :: N_MAX_PLANS=4   ! maximum number of plans for each active latitude
-  LOGICAL            :: LFFTW=.FALSE. 
+  INTEGER(KIND=JPIM) :: N_MAX_PLANS=4   ! maximum number of plans for each active latitudes
 END TYPE FFTW_TYPE
 
 
