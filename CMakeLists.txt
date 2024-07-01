@@ -57,6 +57,11 @@ endif()
 
 ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
 
+if( NOT HAVE_MKL )
+  set( fftw3 "fftw3" )
+  set( fftw3f "fftw3f" )
+endif()
+
 ecbuild_add_option( FEATURE TRANSI
                     DEFAULT ON
                     DESCRIPTION "Compile TransI C-interface to trans"
