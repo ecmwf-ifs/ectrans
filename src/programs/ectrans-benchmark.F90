@@ -849,21 +849,15 @@ endif
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
-
-call sort(ztstep,iters)
-ztstepmed = ztstep(iters/2)
+ztstepmed = get_median(ztstep)
 
 ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
-
-call sort(ztstep1, iters)
-ztstepmed1 = ztstep1(iters/2)
+ztstepmed1 = get_median(ztstep1)
 
 ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
-
-call sort(ztstep2,iters)
-ztstepmed2 = ztstep2(iters/2)
+ztstepmed2 = get_median(ztstep2)
 
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
@@ -1139,27 +1133,39 @@ end subroutine str2int
 
 !===================================================================================================
 
-subroutine sort(a, n)
+function get_median(vec) result(median)
 
-  integer(kind=jpim), intent(in) :: n
-  real(kind=jprd), intent(inout) :: a(n)
+  real(kind=jprd), intent(in) :: vec(:)
+  real(kind=jprd) :: median
 
+  real(kind=jprd) :: vec_sorted(size(vec))
   real(kind=jprd) :: x
 
-  integer :: i, j
+  integer :: i, j, n
 
+  n = size(vec)
+
+  ! Sort in ascending order
+  vec_sorted = vec
   do i = 2, n
-    x = a(i)
+    x = vec_sorted(i)
     j = i - 1
     do while (j >= 1)
-      if (a(j) <= x) exit
-        a(j + 1) = a(j)
-        j = j - 1
-      end do
-    a(j + 1) = x
+      if (vec_sorted(j) <= x) exit
+      vec_sorted(j + 1) = vec_sorted(j)
+      j = j - 1
+    end do
+    vec_sorted(j + 1) = x
   end do
 
-end subroutine sort
+  ! Calculate median according to if there is an even or odd number of elements
+  if (mod(n, 2) == 0) then
+    median = (vec_sorted(n/2) + vec_sorted(n/2+1))/2.0_jprd
+  else
+    median = vec_sorted((n+1)/2)
+  endif
+
+end function get_median
 
 !===================================================================================================
 
