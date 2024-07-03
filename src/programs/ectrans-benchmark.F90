@@ -790,7 +790,7 @@ if (lprint_norms .or. ncheck > 0) then
     enddo
 
     ! maximum error across all fields
-    zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
+    zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4))
 
     if (verbosity >= 1) write(nout,*)
     write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
