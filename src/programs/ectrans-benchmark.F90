@@ -9,7 +9,7 @@
 
 program ectrans_benchmark
 
-#ifdef USE_GPU
+#ifdef USE_PINNED
 #define PINNED_TAG , pinned
 #else
 #define PINNED_TAG

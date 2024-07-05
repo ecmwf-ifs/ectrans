@@ -36,8 +36,21 @@ foreach( program ectrans-benchmark )
                                   parkind_${prec}
                                   trans_gpu_${prec}
                                   OpenACC::OpenACC_Fortran
+				  #                                PRIVATE_DEFINITIONS
+				#				  VERSION="gpu"
+				#				  $<$<COMPILE_LANG_AND_ID:Fortran,NVHPC>:${USE_PINNED}>
        )
-       target_compile_definitions(${program}-gpu-${prec} PRIVATE VERSION="gpu" USE_GPU)
+       #target_compile_definitions(${program}-gpu-${prec} PRIVATE VERSION="gpu")
+       target_compile_definitions(${program}-gpu-${prec} PRIVATE 
+	       VERSION="gpu"
+	        $<$<COMPILE_LANG_AND_ID:Fortran,NVHPC>:USE_PINNED>
+		)
+       target_compile_options(${program}-gpu-${prec} PUBLIC
+	       $<$<COMPILE_LANG_AND_ID:Fortran,NVHPC>:-cuda>
+		)
+       target_link_options(${program}-gpu-${prec} PUBLIC
+	       $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:-cuda>
+		)
        endif()
     endforeach( prec )
   endif( HAVE_GPU )
