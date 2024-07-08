@@ -1,0 +1,10 @@
+site_name: ecTrans Documentation
+docs_dir: content
+nav:
+  - Home: index.md
+  - Introduction: introduction.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - Benchmarking: benchmarking.md
+  - API: api.md
+theme: readthedocs
