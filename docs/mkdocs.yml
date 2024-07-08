@@ -1,3 +1,5 @@
+markdown_extensions:
+- callouts
 site_name: ecTrans Documentation
 docs_dir: content
 nav:
