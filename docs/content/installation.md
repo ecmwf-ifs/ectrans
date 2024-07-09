@@ -13,7 +13,7 @@ ecTrans has the following requirements:
 
 - A [CMake](https://cmake.org/) with version >= 3.12
 - [ecBuild](https://github.com/ecmwf/ecbuild.git) (a collection of ECMWF-specific CMake macros)
-- A Fortran with OpenMP support and a C compiler. Officially we support:
+- A Fortran compiler with OpenMP support and a C compiler. Officially we support:
     - Classic Intel (i.e. ifort and icc)
     - GNU
     - NVHPC
@@ -23,19 +23,19 @@ ecTrans has the following requirements:
 - A library containing standard BLAS routines such as [LAPACK](https://www.netlib.org/lapack/)
 
 Note that you will also of course need a MPI library if you want to run ecTrans with distributed
-memory parallelism, butthis is not an explicit dependency of ecTrans. Instead MPI functionality is
+memory parallelism, but this is not an explicit dependency of ecTrans. Instead MPI functionality is
 provided through a wrapper library provided by FIAT. It is the latter that must be built with MPI
 support. In any case, ecTrans can still be tested without MPI with only shared memory parallelism
 support.
 
-For all of these except for FIAT we cannot give general instructions as it depends entirely on your
-system and software environment. Most modern high-performance computing systems should have these
-installed already, so we will assume this is the case for you as well.
+For all of these except for FIAT and ecBuild we cannot give general instructions as it depends
+entirely on your system and software environment. Most modern high-performance computing systems
+should have these installed already, so we will assume this is the case for you as well.
 
-ecBuild can simply by cloned from Github like so:
+ecBuild can simply be cloned from GitHub like so:
 
 ```bash
-git clone git@github.com:ecmwf/ecbuild.git --branch 3.8.2 --single-branch
+git clone https://github.com/ecmwf/ecbuild.git --branch 3.8.2 --single-branch
 ```
 
 It does not require a build or installation step. Simply export a variable `ecbuild_DIR` pointing to
@@ -44,7 +44,7 @@ the cloned repository.
 @note
 We are always willing to add other compilers to our list, so please
 [raise an issue](https://github.com/ecmwf-ifs/ectrans/issues) if you are encountering
-difficulties.
+difficulties with a particular compiler.
 @endnote
 
 ## (Optional) Prepare env and toolchain files
