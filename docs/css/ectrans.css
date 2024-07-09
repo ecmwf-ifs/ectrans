@@ -1,0 +1,7 @@
+div.codehilite {
+    border-radius: 5px;
+}
+
+div.codehilite > pre {
+    padding: 12px;
+}
