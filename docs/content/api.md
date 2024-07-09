@@ -1,3 +1,7 @@
+---
+title: API
+---
+
 # ecTrans API
 
 ## General notes
@@ -36,7 +40,7 @@ subroutines described here, only two must be considered:
 
 ### Signature
 
-```
+```f90
 SUBROUTINE SETUP_TRANS0(KOUT, KERR, KPRINTLEV, KMAX_RESOL, KPROMATR, KPRGPNS, KPRGPEW, &
   &                     KPRTRW, LDMPOFF, LDSYNC_TRANS, KTRANS_SYNC_LEVEL, LDEQ_REGIONS, &
   &                     K_REGIONS_NS, K_REGIONS_EW, K_REGIONS, PRAD, LDALLOPERM, &
@@ -100,7 +104,7 @@ called before any other ecTrans subroutines.
   Memory strategy for gridpoint transpositions (0: heap, 1: stack).  
   *Default*: `0`
 
-### `INTENT(OUT, OPTIONAL` arguments
+### `OPTIONAL, INTENT(OUT)` arguments
 
 - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: K_REGIONS(:)`  
   Number of regions returned by EQ_REGIONS algorithm.
@@ -113,7 +117,7 @@ called before any other ecTrans subroutines.
 
 ### Signature
 
-```
+```f90
 SUBROUTINE SETUP_TRANS(KSMAX, KDGL, KDLON, KLOEN, LDSPLIT, PSTRET, KTMAX, KRESOL, &
   &                    PWEIGHT, LDGRIDONLY, LDUSERPNM, LDKEEPRPNM, LDUSEFLT, &
   &                    LDSPSETUPONLY, LDPNMONLY, LDUSEFFTW, LDLL, LDSHIFTLL, &
@@ -149,7 +153,7 @@ must call `SETUP_TRANS0` before calling this subroutine for the first time.
   Split latitude in grid point space.  
   *Default*: `.FALSE.`
 - `REAL(KIND=JPRD), OPTIONAL, INTENT(IN) :: PSTRET`  
-  Stretching factor for when the Legendre polynomials are computed on the stretched sphere.
+  Stretching factor for when the Legendre polynomials are computed on the stretched sphere.  
   *Default*: `1.0`
 - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KTMAX`  
   Spectral truncation to be applied for tendencies.  
@@ -204,38 +208,145 @@ must call `SETUP_TRANS0` before calling this subroutine for the first time.
 
 ## `DIR_TRANS`
 
+### Signature
+
+```f90
+SUBROUTINE DIR_TRANS(PSPVOR, PSPDIV, PSPSCALAR, PSPSC3A, PSPSC3B, PSPSC2, LDLATLON, &
+  &                  KPROMA, KVSETUV, KVSETSC, KRESOL, KVSETSC3A, KVSETSC3B, KVSETSC2, &
+  &                  PGP, PGPUV, PGP3A, PGP3B, PGP2)
+```
+
+### Purpose
+
+### `OPTIONAL, INTENT(IN)` arguments
+
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMA`
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETUV(:)`
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC(:)`
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3A(:)`
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3B(:)`
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC2(:)`
+- `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`
+- `LOGICAL, OPTIONAL, INTENT(IN) :: LDLATLON`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PGP(:,:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PGPUV(:,:,:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PGP3A(:,:,:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PGP3B(:,:,:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PGP2(:,:,:)`
+
+### `OPTIONAL, INTENT(OUT)` arguments
+
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPVOR(:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPDIV(:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPSCALAR(:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPSC3A(:,:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPSC3B(:,:,:)`
+- `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPSC2(:,:)`
+
 ## `INV_TRANS`
+
+### Signature
+
+### Purpose
 
 ## `TRANS_RELEASE`
 
+### Signature
+
+### Purpose
+
 ## `TRANS_END`
+
+### Signature
+
+### Purpose
 
 ## `TRANS_INQ`
 
+### Signature
+
+### Purpose
+
 ## `SPECNORM`
+
+### Signature
+
+### Purpose
 
 ## `DIR_TRANSAD`
 
+### Signature
+
+### Purpose
+
 ## `INV_TRANSAD`
+
+### Signature
+
+### Purpose
 
 ## `DIST_GRID`
 
+### Signature
+
+### Purpose
+
 ## `DIST_GRID32`
+
+### Signature
+
+### Purpose
 
 ## `GATH_GRID`
 
+### Signature
+
+### Purpose
+
 ## `GATH_GRID_32`
+
+### Signature
+
+### Purpose
 
 ## `GATH_SPEC`
 
+### Signature
+
+### Purpose
+
 ## `GET_CURRENT`
+
+### Signature
+
+### Purpose
 
 ## `GPNORM_TRANS`
 
+### Signature
+
+### Purpose
+
 ## `INI_SPEC_DIST`
+
+### Signature
+
+### Purpose
 
 ## `SUGAWC`
 
+### Signature
+
+### Purpose
+
 ## `TRANS_PNM`
 
+### Signature
+
+### Purpose
+
 ## `VORDIV_TO_UV`
+
+### Signature
+
+### Purpose
