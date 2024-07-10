@@ -85,10 +85,10 @@ Optionally, tests can be run to check succesful compilation, when the feature TE
 Reporting Bugs
 ==============
 
-TODO
+Please report bugs using a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues). Support is given on a best-effort basis by package developers.
 
 Contributing
 ============
 
-TODO
+Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) with your contribution. All contributors to the pull request need to sign the [contributors license agreement (CLA)](https://claassistant.ecmwf.int/ecmwf-ifs/ectrans).
 
