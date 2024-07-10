@@ -1,6 +1,7 @@
 ---
 project: ecTrans
 src_dir: ../src
+exclude_dir: ../src/transi
 page_dir: content
 output_dir: site
 project_github: https://github.com/ecmwf-ifs/ectrans
