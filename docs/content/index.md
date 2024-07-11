@@ -7,6 +7,7 @@ ordered_subpage: benchmarking.md
 ordered_subpage: api.md
 ordered_subpage: transi.md
 ordered_subpage: license.md
+copy_subdir: img
 ---
 
 # ecTrans
