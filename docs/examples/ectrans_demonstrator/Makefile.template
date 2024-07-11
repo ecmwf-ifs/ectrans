@@ -1,0 +1,22 @@
+# (C) Copyright 2024- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+FC = <Fortran compiler>
+
+PARKIND1_INC = <path/to/fiat/build/module/parkind_sp>
+ECTRANS_INC = <path/to/ectrans/src/trans/include/ectrans>
+
+ectrans_demonstrator: ectrans_demonstrator.o
+	$(FC) $^ -o ectrans_demonstrator -Wl,-rpath,<path/to/ectrans/build/lib> \
+	-Wl,-rpath,<path/to/fiat/build/lib <path/to/ectrans/build/lib/libtrans_sp.so> \
+	<path/to/fiat/build/lib/libfiat.so  <path/to/fiat/build/lib/libparkind_sp.so
+
+ectrans_demonstrator.o: ectrans_demonstrator.F90
+
+%.o: %.F90
+	$(FC) -I$(ECTRANS_INC) -I$(PARKIND1_INC) -c $< -o $@ 
