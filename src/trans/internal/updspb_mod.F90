@@ -97,12 +97,12 @@ IASM0 = D%NASM0(KM)
 
 IF(KM == 0) THEN
   IF(PRESENT(KFLDPTR)) THEN
-    DO JFLD=1,KFIELD
-      IR = 2*JFLD-1
-      IFLD = KFLDPTR(JFLD)
-      DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
-        INM = IASM0+(ITMAX+2-JN)*2
-        PSPEC(IFLD,INM)   = POA(JN,IR)
+    DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+      INM = IASM0+(ITMAX+2-JN)*2
+      DO JFLD=1,KFIELD
+        IR = 2*JFLD-1
+        IFLD = KFLDPTR(JFLD)
+        PSPEC(IFLD,INM)   = POA(IR,JN)
         PSPEC(IFLD,INM+1) = 0.0_JPRB
       ENDDO
     ENDDO
@@ -113,7 +113,7 @@ IF(KM == 0) THEN
 !OCL NOVREC
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
-        PSPEC(JFLD,INM)   = POA(JN,IR)
+        PSPEC(JFLD,INM)   = POA(IR,JN)
         PSPEC(JFLD,INM+1) = 0.0_JPRB
       ENDDO
     ENDDO
@@ -123,14 +123,14 @@ IF(KM == 0) THEN
 
 ELSE
   IF(PRESENT(KFLDPTR)) THEN
-    DO JFLD=1,KFIELD
-      IR = 2*JFLD-1
-      II = IR+1
-      IFLD = KFLDPTR(JFLD)
-      DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
-        INM = IASM0+((ITMAX+2-JN)-KM)*2
-        PSPEC(IFLD,INM)   = POA(JN,IR)
-        PSPEC(IFLD,INM+1) = POA(JN,II)
+    DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+      INM = IASM0+((ITMAX+2-JN)-KM)*2
+      DO JFLD=1,KFIELD
+        IFLD = KFLDPTR(JFLD)
+        IR = 2*JFLD-1
+        II = IR+1
+        PSPEC(IFLD,INM)   = POA(IR,JN)
+        PSPEC(IFLD,INM+1) = POA(II,JN)
       ENDDO
     ENDDO
   ELSE
@@ -141,8 +141,8 @@ ELSE
       DO JFLD=1,KFIELD
         IR = 2*JFLD-1
         II = IR+1
-        PSPEC(JFLD,INM)   = POA(JN,IR)
-        PSPEC(JFLD,INM+1) = POA(JN,II)
+        PSPEC(JFLD,INM)   = POA(IR,JN)
+        PSPEC(JFLD,INM+1) = POA(II,JN)
       ENDDO
     ENDDO
   ENDIF
