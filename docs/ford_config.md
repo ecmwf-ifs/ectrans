@@ -2,7 +2,7 @@
 project: ecTrans
 src_dir: ../src
 exclude_dir: ../src/transi
-page_dir: content
+page_dir: content_processed
 output_dir: site
 project_github: https://github.com/ecmwf-ifs/ectrans
 css: css/ectrans.css

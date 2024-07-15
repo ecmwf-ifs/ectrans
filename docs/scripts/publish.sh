@@ -11,11 +11,7 @@ if [ -z "${ECTRANS_DOCS_TOKEN}" ]; then
     exit 1
 fi
 
-# Generate FORD-based documentation of main ecTrans source code
-ford ford_config.md
-
-# Generate Doxygen-based documentation of transi
-doxygen transi.doxygen
+./scripts/build.sh
 
 # source venv/bin/activate
 
