@@ -224,10 +224,6 @@ foreach( prec dp sp )
       PUBLIC_LIBS      ectrans_common ectrans_${prec}_includes
     )
 
-    if( COMPILER_HAS_CONTIG_ISSUES ) 
-      target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER) 
-    endif()
-
     ectrans_target_fortran_module_directory(
       TARGET            ectrans_${prec}
       MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_${prec}
@@ -247,6 +243,10 @@ foreach( prec dp sp )
     target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFTW )
     ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
     target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
+    if( ECTRANS_HAVE_CONTIGUOUS_ISSUE )
+      ecbuild_debug("target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)")
+      target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)
+    endif()
 
     if( HAVE_OMP )
       ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
