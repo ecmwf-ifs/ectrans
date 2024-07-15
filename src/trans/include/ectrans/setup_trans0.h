@@ -62,7 +62,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !   Splitting level in wave direction in spectral space.  
 !   *Default*: `1`
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KCOMBFLEN`  
-!   Size of communication buffer [1800000 (*8bytes) ]  
+!   Size of communication buffer [1800000 (8bytes) ]  
 !   **This argument is deprecated and will be removed in the next release**
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDMPOFF`  
 !   Switch off message passing.  
