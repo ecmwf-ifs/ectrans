@@ -35,7 +35,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     KPRGPNS - splitting level in N-S direction in grid-point space [1]
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
-!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ]
+!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ] (deprecated)
 !     LDMPOFF - switch off message passing [false]
 !     LDSYNC_TRANS - switch to activate barrier before transforms [false]
 !     KTRANS_SYNC_LEVEL - use of synchronization/blocking [0]
