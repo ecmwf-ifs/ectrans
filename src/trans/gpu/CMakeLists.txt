@@ -77,7 +77,6 @@ foreach( prec dp sp )
           LINKER_LANGUAGE      Fortran
           PUBLIC_INCLUDES      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
-                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/algor/interface>
                                $<INSTALL_INTERFACE:include/ectrans/trans_gpu_${prec}>
                                $<INSTALL_INTERFACE:include/ectrans>
                                $<INSTALL_INTERFACE:include>
