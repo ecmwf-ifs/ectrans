@@ -32,7 +32,6 @@ LOGICAL            :: LEQ_REGIONS ! TRUE - Use new eq_regions partitioning
 INTEGER(KIND=JPIM) :: MYPROC    ! My processor number
 INTEGER(KIND=JPIM) :: MYSETW    ! My set number in wave direction (spectral space) 
 INTEGER(KIND=JPIM) :: MYSETV    ! My set number in field direction(S.S and F.S)
-INTEGER(KIND=JPIM) :: NCOMBFLEN ! Size of communication buffer
 
 INTEGER(KIND=JPIM) :: MTAGLETR   ! Tag
 INTEGER(KIND=JPIM) :: MTAGML     ! Tag
