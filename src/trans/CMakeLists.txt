@@ -244,6 +244,8 @@ foreach( prec dp sp )
     ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
     target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
     if( ECTRANS_HAVE_CONTIGUOUS_ISSUE )
+      # See https://github.com/ecmwf-ifs/ectrans/pull/98
+      # There is a problem with CONTIGUOUS keyword in dist_spec_control_mod.F90
       ecbuild_debug("target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)")
       target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)
     endif()
