@@ -15,59 +15,87 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 &                       LDEQ_REGIONS,K_REGIONS_NS,K_REGIONS_EW,K_REGIONS,&
 &                       PRAD,LDALLOPERM,KOPT_MEMORY_TR)
 
-!**** *SETUP_TRANS0* - General setup routine for transform package
-
-!     Purpose.
-!     --------
-!     Resolution independent part of setup of transform package
-!     Has to be called BEFORE SETUP_TRANS
-
-!**   Interface.
-!     ----------
-!     CALL SETUP_TRANS0(...)
-
-!     Explicit arguments : All arguments are optional, [..] default value
-!     -------------------
-!     KOUT - Unit number for listing output [6]
-!     KERR - Unit number for error messages [0]
-!     KPRINTLEV - level of output to KOUT, 0->no output,1->normal,2->debug [0]
-!     KMAX_RESOL - maximum number of different resolutions for this run [1]
-!     KPRGPNS - splitting level in N-S direction in grid-point space [1]
-!     KPRGPEW - splitting level in E-W direction in grid-point space [1]
-!     KPRTRW  - splitting level in wave direction in spectral space [1]
-!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ] (deprecated)
-!     LDMPOFF - switch off message passing [false]
-!     LDSYNC_TRANS - switch to activate barrier before transforms [false]
-!     KTRANS_SYNC_LEVEL - use of synchronization/blocking [0]
-!     LDEQ_REGIONS - true if new eq_regions partitioning [false]
-!     K_REGIONS    - Number of regions (1D or 2D partitioning)
-!     K_REGIONS_NS - Maximum number of NS partitions
-!     K_REGIONS_EW - Maximum number of EW partitions
-!     PRAD         - Radius of the planet
-!     LDALLOPERM  - Allocate certain arrays permanently
-!     KOPT_MEMORY_TR - memory strategy (stack vs heap) in gripoint transpositions
-
-!     The total number of (MPI)-processors has to be equal to KPRGPNS*KPRGPEW
-
-!     Method.
-!     -------
-
-!     Externals.  SUMP_TRANS0 - initial setup routine
-!     ----------
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-!        R. El Khatib 03-01-24 LDMPOFF
-!        G. Mozdzynski 2006-09-13 LDEQ_REGIONS
-!        N. Wedi  2009-11-30 add radius
-!        R. El Khatib 09-Sep-2020 NSTACK_MEMORY_TR
-
-!     ------------------------------------------------------------------
+! begin_doc_block
+! ## `SETUP_TRANS0`
+!
+! ### Signature
+!
+! ```f90
+! SUBROUTINE SETUP_TRANS0(KOUT, KERR, KPRINTLEV, KMAX_RESOL, KPROMATR, KPRGPNS, KPRGPEW, &
+!   &                     KPRTRW, KCOMBFLEN, LDMPOFF, LDSYNC_TRANS, KTRANS_SYNC_LEVEL, &
+!   &                     LDEQ_REGIONS, K_REGIONS_NS, K_REGIONS_EW, K_REGIONS, PRAD, LDALLOPERM, &
+!   &                     KOPT_MEMORY_TR)
+! ```
+!
+! ### Purpose
+!
+! This subroutine initialises all resolution-agnostic aspects of the ecTrans library. It must be
+! called before any other ecTrans subroutines.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KOUT`  
+!   Fortran unit number for listing output.  
+!   *Default*: `6` (i.e. STDOUT)
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KERR`  
+!   Unit number for error messages.  
+!   *Default*: `0` (i.e. STDERR)
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPRINTLEV`  
+!   Verbosity of standard output (0: output disabled, 1: normal, 2: debug).  
+!   *Default*: `0`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KMAX_RESOL`  
+!   Maximum number of different resolutions for which spectral transforms will be performed. This is
+!   required in advance so ecTrans knows how to correctly size the work arrays.  
+!   *Default*: `1`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMATR`  
+!   Batch size for splitting of vertical field set. This allows one to transform one batch of vertical  
+!   levels at a time rather than transforming all in one go. A value of 0 disables this feature.  
+!   *Default*: `0`  
+!   **Potentially deprecatable**
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPRGPNS`  
+!   Splitting level in North-South direction in grid-point space.  
+!   *Default*: `1`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPRGPEW`  
+!   Splitting level in East-West direction in grid-point space.  
+!   *Default*: `1`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPRTRW`  
+!   Splitting level in wave direction in spectral space.  
+!   *Default*: `1`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KCOMBFLEN`  
+!   Size of communication buffer [1800000 (*8bytes) ]  
+!   **This argument is deprecated and will be removed in the next release**
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDMPOFF`  
+!   Switch off message passing.  
+!   *Default*: `.FALSE.`  
+!   **Potentially deprecatable**
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSYNC_TRANS`  
+!   Switch to activate barriers in M->L and L->M transposition routines.  
+!   *Default*: `.FALSE.`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KTRANS_SYNC_LEVEL`  
+!   Control parameter for synchronization and blocking in communication routines.  
+!   *Default*: `0`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDEQ_REGIONS`  
+!   Enable EQ_REGIONS partitioning mode.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDALLOPERM`  
+!   Allocate certain arrays permanently.  
+!   *Default*: `.FALSE.`
+! - `REAL(KIND=JPRD), OPTIONAL, INTENT(IN) :: PRAD`  
+!   Radius of the planet (Earth) in metres.  
+!   *Default*: `6371229.0`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KOPT_MEMORY_TR`  
+!   Memory strategy for gridpoint transpositions (0: heap, 1: stack).  
+!   *Default*: `0`
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: K_REGIONS(:)`  
+!   Number of regions returned by EQ_REGIONS algorithm.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: K_REGIONS_NS`  
+!   Maximum number of North-South partitions, as determined by EQ_REGIONS algorithm.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: K_REGIONS_EW`  
+!   Maximum number of East-West partitions, as determined by EQ_REGIONS algorithm.
+! end_doc_block
 
 USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
 

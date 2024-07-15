@@ -10,3 +10,4 @@ env.sh
 *.DS_Store
 *.py[co~]
 docs/site
+docs/content_processed
