@@ -124,7 +124,6 @@ logical :: lsyncstats = .false.
 logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
-logical :: lfftw = .true. ! Use FFTW for Fourier transforms
 logical :: lvordiv = .false.
 logical :: lscders = .false.
 logical :: luvders = .false.
@@ -148,7 +147,6 @@ real(kind=jprd) :: zra = 6371229._jprd
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
-integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
 
 integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
@@ -380,7 +378,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
+  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                    &
   &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
 call gstats(1, 1)
 
@@ -390,7 +388,7 @@ call set_ectrans_gpu_nflev(nflevl)
   ! We pass nflevl via environment variable in order not to change API
   ! In long run, ectrans should grow its internal buffers automatically
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
-  &              ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
+  &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
   &              lduseflt=luseflt)
 call gstats(2, 1)
 
@@ -545,10 +543,12 @@ if (lprint_norms .or. ncheck > 0) then
       write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
       write(nout,'("0x",Z16.16)') znormdiv1(ifld)
     enddo
-    do ifld = 1, nflevg
-      write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
-      write(nout,'("0x",Z16.16)') znormt1(ifld)
-    enddo
+    if (nfld > 0) then
+      do ifld = 1, nflevg
+        write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
+        write(nout,'("0x",Z16.16)') znormt1(ifld)
+      enddo
+    endif
     do ifld = 1, 1
       write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
       write(nout,'("0x",Z16.16)') znormsp1(ifld)
@@ -737,13 +737,19 @@ do jstep = 1, iters+2
         zmaxerr(3) = max(zmaxerr(3),zerr(3))
       enddo
       ! Temperature
-      do ifld = 1, nflevg
-        zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
-        zmaxerr(4) = max(zmaxerr(4), zerr(4))
-      enddo
-      write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                  & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-                  &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+      if (nfld > 0) then
+        do ifld = 1, nflevg
+          zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
+          zmaxerr(4) = max(zmaxerr(4), zerr(4))
+        enddo
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                    & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+                    &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+      else
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                    & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
+                    &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(1)
+      endif
     endif
     call gstats(6,1)
   else
@@ -786,14 +792,16 @@ if (lprint_norms .or. ncheck > 0) then
         write(nout,'("0x",Z16.16)') znormdiv(ifld)
       endif
     enddo
-    do ifld = 1, nflevg
-      zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
-      zmaxerr(4) = max(zmaxerr(4), zerr(4))
-      if (verbosity >= 1) then
-        write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt(ifld), zerr(4)
-        write(nout,'("0x",Z16.16)') znormt(ifld)
-      endif
-    enddo
+    if (nfld > 0) then
+      do ifld = 1, nflevg
+        zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
+        zmaxerr(4) = max(zmaxerr(4), zerr(4))
+        if (verbosity >= 1) then
+          write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt(ifld), zerr(4)
+          write(nout,'("0x",Z16.16)') znormt(ifld)
+        endif
+      enddo
+    endif
     do ifld = 1, 1
       zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
       zmaxerr(1) = max(zmaxerr(1), zerr(1))
@@ -804,12 +812,16 @@ if (lprint_norms .or. ncheck > 0) then
     enddo
 
     ! maximum error across all fields
-    zmaxerrg = max(max(zmaxerr(1),zmaxerr(2)), max(zmaxerr(2), zmaxerr(3)))
+    if (nfld > 0) then
+      zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4))
+    else
+      zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3))
+    endif
 
     if (verbosity >= 1) write(nout,*)
     write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
     write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
-    write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
+    if (nfld > 0) write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
     write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
     write(nout,*)
     write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
@@ -863,21 +875,15 @@ endif
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
-
-call sort(ztstep,iters)
-ztstepmed = ztstep(iters/2)
+ztstepmed = get_median(ztstep)
 
 ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
-
-call sort(ztstep1, iters)
-ztstepmed1 = ztstep1(iters/2)
+ztstepmed1 = get_median(ztstep1)
 
 ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
-
-call sort(ztstep2,iters)
-ztstepmed2 = ztstep2(iters/2)
+ztstepmed2 = get_median(ztstep2)
 
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
@@ -1157,27 +1163,39 @@ end subroutine str2int
 
 !===================================================================================================
 
-subroutine sort(a, n)
+function get_median(vec) result(median)
 
-  integer(kind=jpim), intent(in) :: n
-  real(kind=jprd), intent(inout) :: a(n)
+  real(kind=jprd), intent(in) :: vec(:)
+  real(kind=jprd) :: median
 
+  real(kind=jprd) :: vec_sorted(size(vec))
   real(kind=jprd) :: x
 
-  integer :: i, j
+  integer :: i, j, n
 
+  n = size(vec)
+
+  ! Sort in ascending order
+  vec_sorted = vec
   do i = 2, n
-    x = a(i)
+    x = vec_sorted(i)
     j = i - 1
     do while (j >= 1)
-      if (a(j) <= x) exit
-        a(j + 1) = a(j)
-        j = j - 1
-      end do
-    a(j + 1) = x
+      if (vec_sorted(j) <= x) exit
+      vec_sorted(j + 1) = vec_sorted(j)
+      j = j - 1
+    end do
+    vec_sorted(j + 1) = x
   end do
 
-end subroutine sort
+  ! Calculate median according to if there is an even or odd number of elements
+  if (mod(n, 2) == 0) then
+    median = (vec_sorted(n/2) + vec_sorted(n/2+1))/2.0_jprd
+  else
+    median = vec_sorted((n+1)/2)
+  endif
+
+end function get_median
 
 !===================================================================================================
 

@@ -76,11 +76,7 @@ if( NOT HAVE_MKL )
     option( FFTW_ENABLE_MKL OFF )
 endif()
 
-
-ecbuild_add_option( FEATURE FFTW
-                    DEFAULT ON
-                    DESCRIPTION "Support for fftw"
-                    REQUIRED_PACKAGES "FFTW COMPONENTS double ${single}" )
+ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
 
 ecbuild_add_option( FEATURE CPU
                     DEFAULT ON
