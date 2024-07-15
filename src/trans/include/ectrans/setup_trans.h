@@ -14,70 +14,100 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
 &LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
 
-!**** *SETUP_TRANS* - Setup transform package for specific resolution
-
-!     Purpose.
-!     --------
-!     To setup for making spectral transforms. Each call to this routine
-!     creates a new resolution up to a maximum of NMAX_RESOL set up in
-!     SETUP_TRANS0. You need to call SETUP_TRANS0 before this routine can
-!     be called.
-
-!**   Interface.
-!     ----------
-!     CALL SETUP_TRANS(...)
-
-!     Explicit arguments : KLOEN,LDSPLIT are optional arguments
-!     -------------------- 
-!     KSMAX - spectral truncation required
-!     KDGL  - number of Gaussian latitudes
-!     KDLON - number of points on each latitude [2*KDGL]
-!     KLOEN(:) - number of points on each Gaussian latitude [2*KDGL]
-!     LDSPLIT - true if split latitudes in grid-point space [false]
-!     KTMAX - truncation order for tendencies?
-!     KRESOL - the resolution identifier
-!     PWEIGHT - the weight per grid-point (for a weighted distribution);
-!               Note, only seems to be used from within enkf
-!     LDGRIDONLY - true if only grid space is required
-
-!     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
-!     in spectral and grid-point space
-
-!     LDSPLIT describe the distribution among processors of grid-point data and
-!     has no relevance if you are using a single processor
-
-!     LDUSEFLT   - use Fast Legandre Transform (Butterfly algorithm)
-!     LDUSERPNM  - Use Belusov to compute legendre pol. (else new alg.)
-!     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
-!                  FLT, otherwise always kept)
-!     LDPNMONLY  - Compute the Legendre polynomialsonly, not the FFTs.
-!     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
-!     LDLL                 - Setup second set of input/output latitudes
-!                                 the number of input/output latitudes to transform is equal KDGL 
-!                                 or KDGL+2 in the case that includes poles + equator
-!                                 the number of input/output longitudes to transform is 2*KDGL
-!     LDSHIFTLL       - Shift output lon/lat data by 0.5*dx and 0.5*dy
- 
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  SETUP_DIMS  - setup distribution independent dimensions
-!                 SUMP_TRANS_PRELEG - first part of setup of distr. environment
-!                 SULEG - Compute Legandre polonomial and Gaussian 
-!                         Latitudes and Weights
-!                 SUMP_TRANS - Second part of setup of distributed environment
-!                 SUFFT - setup for FFT
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! begin_doc_block
+! ## `SETUP_TRANS`
+!
+! ### Signature
+!
+! ```f90
+! SUBROUTINE SETUP_TRANS(KSMAX, KDGL, KDLON, KLOEN, LDSPLIT, PSTRET, KTMAX, KRESOL, &
+!   &                    PWEIGHT, LDGRIDONLY, LDUSERPNM, LDKEEPRPNM, LDUSEFLT, &
+!   &                    LDSPSETUPONLY, LDPNMONLY, LDUSEFFTW, LDLL, LDSHIFTLL, &
+!   &                    CDIO_LEGPOL, CDLEGPOLFNAME, KLEGPOLPTR, KLEGPOLPTR_LEN)
+! ```
+!
+! ### Purpose
+!
+! This subroutine establishes the environment for performing a spectral transform. Each call to this
+! subroutine creates work arrays for a certain resolution. One can do this for `NMAX_RESOL` different
+! resolutions (internal parameter corresponding to `KMAX_RESOL` argument of `SETUP_TRANS0`). One
+! must call `SETUP_TRANS0` before calling this subroutine for the first time.
+!
+! ### `INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX`  
+!   Spectral truncation to perform the transform up to.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KDGL`  
+!   The number of Gaussian latitudes in grid point space.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KDLON`  
+!   Maximum number of points on any latitude (usually the latitude nearest to the Equator).  
+!   If not provided, it will take the value of `2 * KDGL`, unless `LDLL` is `.TRUE.` in which case  
+!   it will take the value of `2 * KDGL + 2`, unless `KLOEN` is provided in which case it will take  
+!   the value of `MAXVAL(KLOEN)`.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KLOEN(:)`  
+!   An array giving the number of points on each Gaussian latitude (dimension)  
+!   If this is not provided it will be assumed that a full Gaussian grid is used in grid point space,  
+!   for which every latitude will have `KDLON` points.
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSPLIT`  
+!   Split latitude in grid point space.  
+!   *Default*: `.FALSE.`
+! - `REAL(KIND=JPRD), OPTIONAL, INTENT(IN) :: PSTRET`  
+!   Stretching factor for when the Legendre polynomials are computed on the stretched sphere.  
+!   *Default*: `1.0`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KTMAX`  
+!   Spectral truncation to be applied for tendencies.  
+!   *Default*: `KSMAX`
+! - `REAL(KIND=JPRD), OPTIONAL, INTENT(IN) :: PWEIGHT(:)`  
+!   The weight per grid-point (for a weighted distribution).
+!   If this argument is not provided, a weighted distribution will not be used.
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDGRIDONLY`  
+!   Only provide grid point space results.  
+!   *Default*: `.FALSE.`  
+!   **Potentially deprecatable**
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUSEFLT`  
+!   Use the fast Legendre transform algorithm.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUSERPNM`  
+!   Use the Belusov algorithm to compute the Legendre polynomials.  
+!   *Default*: `.TRUE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDKEEPRPNM`  
+!   Store Legendre Polynomials instead of recomputing (only applicable when using the fast Legendre
+!   transform, otherwise these are always stored).  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSPSETUPONLY`  
+!   Only create distributed spectral setup.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDPNMONLY`  
+!   Compute the Legendre polynomials only, not the FFTs.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDLL`  
+!   Setup second set of input/output latitudes.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSHIFTLL`  
+!   Shift output lon/lat data by 0.5\*dx and 0.5\*dy.  
+!   *Default*: `.FALSE.`
+! - `CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: CDIO_LEGPOL`  
+!   String config argument to determine several options relating to I/O operations relevant to the
+!   Legendre polynomials. If `'readf'` is passed, Legendre polynomials will be read from the file
+!   given to `CDLEGPOLFNAME`. If `'writef'` is passed, Legendre polynomials will be written to the
+!   file given to `CDLEGPOLFNAME`. If `'membuf'` is passed, Legendre polynomials will be read from
+!   shared memory.
+! - `CHARACTER(LEN=*), OPTIONAL, INTENT(IN) :: CDLEGPOLFNAME`  
+!   Filename from which to read or to which to write the Legendre polynomials. See `CDIO_LEGPOL`.
+! - `TYPE(C_PTR), OPTIONAL, INTENT(IN) :: KLEGPOLPTR`  
+!   Pointer to memory segment containing Legendre polynomials. See `CDIO_LEGPOL`.
+! - `INTEGER(C_SIZE_T), OPTIONAL, INTENT(IN) :: KLEGPOLPTR_LEN`  
+!   Length of memory segment containing Legendre polynomials. See `CDIO_LEGPOL`.
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KRESOL`  
+!   A unique integer identifier to act as a handle for the work arrays corresponding to the provided
+!   transform resolution.
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRD
     USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
