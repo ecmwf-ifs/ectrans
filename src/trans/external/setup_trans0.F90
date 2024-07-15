@@ -34,7 +34,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     KPRGPNS - splitting level in N-S direction in grid-point space [1]
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
-!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ]
+!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ] (deprecated)
 !     LDMPOFF - switch off message passing [false]
 !     LDSYNC_TRANS - switch to activate barriers in trmtol trltom [false]
 !     KTRANS_SYNC_LEVEL - use of synchronization/blocking [0]
@@ -74,7 +74,7 @@ USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
 
 USE TPM_GEN             ,ONLY : NERR, NOUT, LMPOFF, LSYNC_TRANS, NTRANS_SYNC_LEVEL, MSETUP0, &
      &                          NMAX_RESOL, NPRINTLEV, NPROMATR, LALLOPERM, NSTACK_MEMORY_TR
-USE TPM_DISTR           ,ONLY : LEQ_REGIONS, NCOMBFLEN, NPRGPEW,NPRGPNS, NPRTRW
+USE TPM_DISTR           ,ONLY : LEQ_REGIONS, NPRGPEW, NPRGPNS, NPRTRW
 USE TPM_CONSTANTS       ,ONLY : RA
 
 USE SUMP_TRANS0_MOD     ,ONLY : SUMP_TRANS0
@@ -121,7 +121,6 @@ NPRTRW = 1
 N_REGIONS_NS=1
 N_REGIONS_EW=1
 NPROMATR = 0
-NCOMBFLEN = 1800000
 LMPOFF = .FALSE.
 LSYNC_TRANS=.FALSE.
 NTRANS_SYNC_LEVEL=0
@@ -171,7 +170,10 @@ IF(PRESENT(KPRTRW)) THEN
   NPRTRW = KPRTRW
 ENDIF
 IF(PRESENT(KCOMBFLEN)) THEN
-  NCOMBFLEN = KCOMBFLEN
+  WRITE(NOUT,'(A)')
+  WRITE(NOUT,'(A)') '*** WARNING ***'
+  WRITE(NOUT,'(A)') 'KCOMBFLEN argument passed to SETUP_TRANS0 is deprecated'
+  WRITE(NOUT,'(A)')
 ENDIF
 IF(PRESENT(LDMPOFF)) THEN
   LMPOFF = LDMPOFF
