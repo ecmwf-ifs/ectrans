@@ -224,6 +224,10 @@ foreach( prec dp sp )
       PUBLIC_LIBS      ectrans_common ectrans_${prec}_includes
     )
 
+    if( COMPILER_HAS_CONTIG_ISSUES ) 
+      target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER) 
+    endif()
+
     ectrans_target_fortran_module_directory(
       TARGET            ectrans_${prec}
       MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_${prec}

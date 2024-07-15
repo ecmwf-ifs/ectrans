@@ -62,6 +62,16 @@ ecbuild_add_option( FEATURE TRANSI
                     DESCRIPTION "Compile TransI C-interface to trans"
                     CONDITION HAVE_DOUBLE_PRECISION )
 
+if( CMAKE_Fortran_COMPILER_ID MATCHES "Intel"  )
+  if( CMAKE_Fortran_COMPILER_VERSION VERSION_LESS_EQUAL 19)
+    set( COMPILER_HAS_CONTIG_ISSUES True)
+  endif()
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"  )
+  if( CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "9.2" OR CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "12.2.0" )
+    set( COMPILER_HAS_CONTIG_ISSUES True)
+  endif()
+endif()
+
 ectrans_find_lapack()
 
 ### Add sources and tests
