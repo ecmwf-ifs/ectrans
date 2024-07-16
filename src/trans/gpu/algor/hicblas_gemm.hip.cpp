@@ -19,7 +19,7 @@
 #include "cutlass/gemm/device/gemm.h"
 #endif
 
-#include "../external/growing_allocator.h"
+#include "growing_allocator.h"
 
 
 bool hip_alreadyAllocated_sgemm=false;

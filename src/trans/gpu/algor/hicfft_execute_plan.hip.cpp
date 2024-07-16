@@ -1,6 +1,6 @@
 #include "hicfft.h"
 
-#include "../growing_allocator.h"
+#include "growing_allocator.h"
 
 #define fftSafeCall(err) __fftSafeCall(err, __FILE__, __LINE__)
 
