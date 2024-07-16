@@ -7,7 +7,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-module device_mod
+MODULE DEVICE_MOD
 
 #ifdef CUDAGPU
 #define hipDeviceSynchronize cudaDeviceSynchronize
@@ -18,66 +18,65 @@ module device_mod
 #define hipGetDeviceCount cudaGetDeviceCount
 #endif
 
-interface device_sync
+INTERFACE DEVICE_SYNC
 
-integer function device_synchronize() bind(C,name='hipDeviceSynchronize')
-use iso_c_binding
-end function device_synchronize
+INTEGER FUNCTION DEVICE_SYNCHRONIZE() BIND(C, NAME='hipDeviceSynchronize')
+END FUNCTION DEVICE_SYNCHRONIZE
 
-end interface device_sync
+END INTERFACE DEVICE_SYNC
 
-interface devicestreamsync
+INTERFACE DEVICESTREAMSYNC
 
-integer function device_stream_synchronize(stream) bind(C,name='hipStreamSynchronize')
-use iso_c_binding
-type(c_ptr) :: stream
-end function device_stream_synchronize
+INTEGER FUNCTION DEVICE_STREAM_SYNCHRONIZE(STREAM) BIND(C, NAME='hipStreamSynchronize')
+USE ISO_C_BINDING, ONLY: C_PTR
+TYPE(C_PTR) :: STREAM
+END FUNCTION DEVICE_STREAM_SYNCHRONIZE
 
-end interface devicestreamsync
+END INTERFACE DEVICESTREAMSYNC
 
-interface devicestreamdestroy
+INTERFACE DEVICESTREAMDESTROY
 
-integer function device_stream_destroy(stream) bind(C,name='hipStreamDestroy')
-use iso_c_binding
-type(c_ptr) :: stream
-end function device_stream_destroy
+INTEGER FUNCTION DEVICE_STREAM_DESTROY(STREAM) BIND(C, NAME='hipStreamDestroy')
+USE ISO_C_BINDING, ONLY: C_PTR
+TYPE(C_PTR) :: STREAM
+END FUNCTION DEVICE_STREAM_DESTROY
 
-end interface devicestreamdestroy
+END INTERFACE DEVICESTREAMDESTROY
 
-interface devicesetdevice
+INTERFACE DEVICESETDEVICE
 
-integer function device_SetDevice(devnum) bind(C,name='hipSetDevice')
-use iso_c_binding
-integer(c_int),value :: devnum
-end function device_SetDevice
+INTEGER FUNCTION DEVICE_SETDEVICE(DEVNUM) BIND(C, NAME='hipSetDevice')
+USE ISO_C_BINDING, ONLY: C_INT
+INTEGER(C_INT), VALUE :: DEVNUM
+END FUNCTION DEVICE_SETDEVICE
 
-end interface devicesetdevice
+END INTERFACE DEVICESETDEVICE
 
-interface devicegetdevice
+INTERFACE DEVICEGETDEVICE
 
-integer function device_GetDevice(devnum) bind(C,name='hipGetDevice')
-use iso_c_binding
-integer(c_int) :: devnum
-end function device_GetDevice
+INTEGER FUNCTION DEVICE_GETDEVICE(DEVNUM) BIND(C, NAME='hipGetDevice')
+USE ISO_C_BINDING, ONLY: C_INT
+INTEGER(C_INT) :: DEVNUM
+END FUNCTION DEVICE_GETDEVICE
 
-end interface devicegetdevice
+END INTERFACE DEVICEGETDEVICE
 
-interface devicegetdevicecount
+INTERFACE DEVICEGETDEVICECOUNT
 
-integer function device_GetDeviceCount(devnum) bind(C,name='hipGetDeviceCount')
-use iso_c_binding
-integer(c_int) :: devnum
-end function device_GetDeviceCount
+INTEGER FUNCTION DEVICE_GETDEVICECOUNT(DEVNUM) BIND(C, NAME='hipGetDeviceCount')
+USE ISO_C_BINDING, ONLY: C_INT
+INTEGER(C_INT) :: DEVNUM
+END FUNCTION DEVICE_GETDEVICECOUNT
 
-end interface devicegetdevicecount
+END INTERFACE DEVICEGETDEVICECOUNT
 
-interface devicegetmeminfo
+INTERFACE DEVICEGETMEMINFO
 
-integer function device_MemGetInfo(memfree_mb,memtotal_mb) bind(C,name='c_hipmemgetinfo')
-use iso_c_binding
-integer(c_int) :: memfree_mb, memtotal_mb
-end function device_MemGetInfo
+INTEGER FUNCTION DEVICE_MEMGETINFO(MEMFREE_MB, MEMTOTAL_MB) BIND(C, NAME='c_hipmemgetinfo')
+USE ISO_C_BINDING, ONLY: C_INT
+INTEGER(C_INT) :: MEMFREE_MB, MEMTOTAL_MB
+END FUNCTION DEVICE_MEMGETINFO
 
-end interface devicegetmeminfo
+END INTERFACE DEVICEGETMEMINFO
 
-end module device_mod
+END MODULE DEVICE_MOD
