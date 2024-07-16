@@ -56,7 +56,7 @@ if( HAVE_TESTS )
 
   set( ntasks 0 )
   set( nthreads 1 )
-  if( fiat_HAVE_MPI )
+  if( HAVE_MPI )
     list( APPEND ntasks 1 2 )
   endif()
   if( HAVE_OMP )
