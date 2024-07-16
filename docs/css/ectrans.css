@@ -5,3 +5,7 @@ div.codehilite {
 div.codehilite > pre {
     padding: 12px;
 }
+
+div.card-body {
+    margin: 20px;
+}
