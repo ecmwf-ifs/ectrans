@@ -18,9 +18,6 @@ include( ectrans_macros )
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(IFS_SHARED_LIBS "Build shared libraries (overrides BUILD_SHARED_LIBS)" ON)
-set(BUILD_SHARED_LIBS ${IFS_SHARED_LIBS})
-
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ### Find (optional) dependencies
