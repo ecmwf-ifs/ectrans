@@ -1084,7 +1084,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
 
-#ifdef USE_GPU
+#ifdef ACCGPU
   !$acc init
 #endif
 
