@@ -14,9 +14,33 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU" )
   if( NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 10 )
     ecbuild_add_fortran_flags("-fallow-argument-mismatch")
   endif()
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
+  ecbuild_add_fortran_flags("-Mlarge_arrays")
+
+  # should really be part of configuration, or ecbuild default?
+  ecbuild_add_fortran_flags("-traceback"      BUILD DEBUG )
+  ecbuild_add_fortran_flags("-fast"           BUILD RELEASE )
+  ecbuild_add_fortran_flags("-gopt -fast"     BUILD RELWITHDEBINFO )
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+  ecbuild_add_fortran_flags("-hnomessage=878")  # A module named ... has already been directly or indirectly use associated into this scope
+  ecbuild_add_fortran_flags("-hnomessage=867")  # Module ... has no public objects declared in the module, therefore nothing can be use associated from the module.
+  ecbuild_add_fortran_flags("-M7256")           # An OpenMP parallel construct in a target region is limited to a single thread.
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
   ecbuild_add_fortran_flags("-march=core-avx2 -no-fma" BUILD BIT)
   ecbuild_add_fortran_flags("-fast-transcendentals -fp-model precise -fp-speculation=safe")
+endif()
+
+if( NOT DEFINED ECTRANS_HAVE_CONTIGUOUS_ISSUE )
+  if( CMAKE_Fortran_COMPILER_ID MATCHES "Intel"  )
+    if( CMAKE_Fortran_COMPILER_VERSION VERSION_LESS_EQUAL 19)
+      set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
+    endif()
+  elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"  )
+    if( CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "9.2"
+     OR CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "12.2.0" )
+      set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
+    endif()
+  endif()
 endif()
 
 macro( ectrans_add_compile_options )
