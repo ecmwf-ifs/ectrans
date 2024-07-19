@@ -51,7 +51,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !   Batch size for splitting of vertical field set. This allows one to transform one batch of vertical  
 !   levels at a time rather than transforming all in one go. A value of 0 disables this feature.  
 !   *Default*: `0`  
-!   **Potentially deprecatable**
+!   **Potentially deprecatable.**
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPRGPNS`  
 !   Splitting level in North-South direction in grid-point space.  
 !   *Default*: `1`
@@ -62,12 +62,12 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !   Splitting level in wave direction in spectral space.  
 !   *Default*: `1`
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KCOMBFLEN`  
-!   Size of communication buffer [1800000 (8bytes) ]  
-!   **This argument is deprecated and will be removed in the next release**
+!   Size of communication buffer [1800000 (8bytes) ].  
+!   **This argument is deprecated and will be removed in the next release.**
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDMPOFF`  
 !   Switch off message passing.  
 !   *Default*: `.FALSE.`  
-!   **Potentially deprecatable**
+!   **Potentially deprecatable.**
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSYNC_TRANS`  
 !   Switch to activate barriers in M->L and L->M transposition routines.  
 !   *Default*: `.FALSE.`
