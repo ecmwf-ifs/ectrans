@@ -67,7 +67,15 @@ USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN), CONTIGUOUS  :: PSPECG(:,:)
+! See https://github.com/ecmwf-ifs/ectrans/pull/98
+! There is a problem with CONTIGUOUS keyword
+#ifndef CONTIG_BUGGY_COMPILER
+#define CONTIG_STATUS ,CONTIGUOUS
+#else
+#define CONTIG_STATUS 
+#endif
+
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) CONTIG_STATUS :: PSPECG(:,:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KVSET(:)

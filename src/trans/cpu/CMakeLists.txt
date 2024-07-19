@@ -253,6 +253,13 @@ foreach( prec dp sp )
       target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 
+    if( ECTRANS_HAVE_CONTIGUOUS_ISSUE )
+      # See https://github.com/ecmwf-ifs/ectrans/pull/98
+      # There is a problem with CONTIGUOUS keyword in dist_spec_control_mod.F90
+      ecbuild_debug("target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)")
+      target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)
+    endif()
+
     # This interface library is for backward compatibility, and provides the older includes
     ecbuild_add_library( TARGET trans_${prec} TYPE INTERFACE )
     target_include_directories( trans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/trans_${prec}> )
