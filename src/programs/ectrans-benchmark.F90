@@ -7,7 +7,7 @@
 ! nor does it submit to any jurisdiction.
 !
 
-program transform_test
+program ectrans_benchmark
 
 !
 ! Spectral transform test
@@ -43,7 +43,7 @@ program transform_test
 use parkind1, only: jpim, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use mpl_module
-use yomgstats, only: jpmaxstat
+use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
 
 implicit none
@@ -291,7 +291,7 @@ enddo
 if (nprtrv > 0 .or. nprtrw > 0) then
   if (nprtrv == 0) nprtrv = nproc/nprtrw
   if (nprtrw == 0) nprtrw = nproc/nprtrv
-  if (nprtrw*nprtrv /= nproc) call abor1('transform_test:nprtrw*nprtrv /= nproc')
+  if (nprtrw*nprtrv /= nproc) call abor1('ectrans_benchmark:nprtrw*nprtrv /= nproc')
 else
   do jprtrv = 4, nproc
     nprtrv = jprtrv
@@ -328,7 +328,7 @@ else
   iprtrv = mod(myproc - 1, nprtrv) + 1
   iprtrw = (myproc - 1)/nprtrv + 1
   if (iprtrv /= mysetv .or. iprtrw /= mysetw) then
-    call abor1('transform_test:inconsistency when computing mysetw and mysetv')
+    call abor1('ectrans_benchmark:inconsistency when computing mysetw and mysetv')
   endif
 endif
 
@@ -383,9 +383,13 @@ call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),  
 call gstats(1, 1)
 
 call gstats(2, 0)
-call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,          &
-  &                 lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &                 lduseflt=luseflt)
+! IFS spectral fields are dimensioned NFLEVL, Nils !!
+call set_ectrans_gpu_nflev(nflevl)
+  ! We pass nflevl via environment variable in order not to change API
+  ! In long run, ectrans should grow its internal buffers automatically
+call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
+  &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
+  &              lduseflt=luseflt)
 call gstats(2, 1)
 
 call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
@@ -402,7 +406,7 @@ ngpblks = (ngptot - 1)/nproma+1
 !===================================================================================================
 
 ! Print configuration details
-if (verbosity >= 0) then
+if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
@@ -530,7 +534,7 @@ if (lprint_norms .or. ncheck > 0) then
   endif
   call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
-  if (verbosity >= 1) then
+  if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
       write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
       write(nout,'("0x",Z16.16)') znormvor1(ifld)
@@ -558,18 +562,18 @@ endif
 
 ztinit = (timef() - ztinit)/1000.0_jprd
 
-if (verbosity >= 0) then
+if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'(a,i6,a,f9.2,a)') "transform_test initialisation, on",nproc,&
+  write(nout,'(a,i6,a,f9.2,a)') "ectrans_benchmark initialisation, on",nproc,&
                                 & " tasks, took",ztinit," sec"
   write(nout,'(" ")')
 endif
 
-if (iters <= 0) call abor1('transform_test:iters <= 0')
+if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
 
-allocate(ztstep(iters))
-allocate(ztstep1(iters))
-allocate(ztstep2(iters))
+allocate(ztstep(iters+2))
+allocate(ztstep1(iters+2))
+allocate(ztstep2(iters+2))
 
 ztstepavg  = 0._jprd
 ztstepmax  = 0._jprd
@@ -581,8 +585,10 @@ ztstepavg2 = 0._jprd
 ztstepmax2 = 0._jprd
 ztstepmin2 = 9999999999999999._jprd
 
-write(nout,'(a)') '======= Start of spectral transforms  ======='
-write(nout,'(" ")')
+if (verbosity >= 1 .and. myproc == 1) then
+  write(nout,'(a)') '======= Start of spectral transforms  ======='
+  write(nout,'(" ")')
+endif
 
 ztloop = timef()
 
@@ -590,7 +596,14 @@ ztloop = timef()
 ! Do spectral transform loop
 !===================================================================================================
 
-do jstep = 1, iters
+gstats_lstats = .false.
+
+write(nout,'(a,i5,a)') 'Running for ', iters, ' iterations with 2 extra warm-up iterations'
+write(nout,'(" ")')
+
+do jstep = 1, iters+2
+  if (jstep == 3) gstats_lstats = .true.
+
   call gstats(3,0)
   ztstep(jstep) = timef()
 
@@ -911,11 +924,11 @@ if (lstack) then
          &"   1",11x,i10)
 
     do i = 2, nproc
-      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='transform_test:')
+      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='ectrans_benchmark:')
       print '(i4,11x,i10)', i, istack
     enddo
   else
-    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='transform_test:')
+    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='ectrans_benchmark:')
   endif
 endif
 
@@ -1071,6 +1084,10 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
 
+#ifdef ACCGPU
+  !$acc init
+#endif
+
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
@@ -1193,9 +1210,9 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
 
   if (jprb == jprd) then
-    write(nout, "(a)") "NAME    ectrans-benchmark-dp"
+    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-dp"
   else
-    write(nout, "(a)") "NAME    ectrans-benchmark-sp"
+    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-sp"
   end if
   write(nout, "(a)") ""
 
@@ -1211,9 +1228,9 @@ subroutine print_help(unit)
 
   write(nout, "(a)") "USAGE"
   if (jprb == jprd) then
-    write(nout, "(a)") "        ectrans-benchmark-dp [options]"
+    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-dp [options]"
   else
-    write(nout, "(a)") "        ectrans-benchmark-sp [options]"
+    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-sp [options]"
   end if
   write(nout, "(a)") ""
 
@@ -1348,11 +1365,12 @@ end subroutine dump_gridpoint_field
 !===================================================================================================
 
 function detect_mpirun() result(lmpi_required)
+  use ec_env_mod, only : ec_putenv
   logical :: lmpi_required
   integer :: ilen
-  integer, parameter :: nvars = 5
+  integer, parameter :: nvars = 4
   character(len=32), dimension(nvars) :: cmpirun_detect
-! character(len=4) :: clenv_dr_hook_assert_mpi_initialized
+  character(len=4) :: clenv
   integer :: ivar
 
   ! Environment variables that are set when mpirun, srun, aprun, ... are used
@@ -1360,7 +1378,6 @@ function detect_mpirun() result(lmpi_required)
   cmpirun_detect(2) = 'ALPS_APP_PE'           ! cray pe
   cmpirun_detect(3) = 'PMI_SIZE'              ! intel
   cmpirun_detect(4) = 'SLURM_NTASKS'          ! slurm
-  cmpirun_detect(5) = 'ECTRANS_USE_MPI'       ! forced
 
   lmpi_required = .false.
   do ivar = 1, nvars
@@ -1370,6 +1387,15 @@ function detect_mpirun() result(lmpi_required)
       exit ! break
     endif
   enddo
+
+  call get_environment_variable(name="ECTRANS_USE_MPI", value=clenv, length=ilen )
+  if (ilen > 0) then
+      lmpi_required = .true.
+      if( trim(clenv) == "0" .or. trim(clenv) == "OFF" .or. trim(CLENV) == "off" .or. trim(clenv) == "F" ) then
+        lmpi_required = .false.
+      endif
+      call ec_putenv("DR_HOOK_ASSERT_MPI_INITIALIZED=0", overwrite=.true.)
+  endif
 end function
 
 !===================================================================================================
@@ -1397,6 +1423,16 @@ subroutine gstats_labels
 
 end subroutine gstats_labels
 
-end program transform_test
+!===================================================================================================
+
+subroutine set_ectrans_gpu_nflev(kflev)
+  use ec_env_mod, only : ec_putenv
+  integer(kind=jpim), intent(in) :: kflev
+  character(len=32) :: ECTRANS_GPU_NFLEV
+  write(ECTRANS_GPU_NFLEV,'(A,I0)') "ECTRANS_GPU_NFLEV=",kflev
+  call ec_putenv(ECTRANS_GPU_NFLEV, overwrite=.true.)
+end subroutine
+
+end program ectrans_benchmark
 
 !===================================================================================================

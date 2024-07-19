@@ -5,14 +5,14 @@ Introduction
 ============
 
 ecTrans is the global spherical Harmonics transforms library, extracted from the IFS.
-It is using a hybrid of MPI and OpenMP parallelisation strategies.
-The package contains both single- and double precision Fortran libraries (trans_sp, trans_dp),
-as well as a C interface to the double-precision version (transi_dp)
+It contains both CPU and GPU (Nvidia) code-paths.
+The CPU version uses a hybrid of MPI and OpenMP parallelisation strategies, while the GPU version combines MPI and OpenACC.
+A default installation builds both CPU libraries (trans_sp, trans_dp) and various flavours of GPU libraries in (trans_gpu_{sp/dp} shared library, trans_gpu_static_{sp/dp} static library, trans_gpu_static_CA_{sp/dp} static library requiring CUDA-aware MPI implementation), as well as a C interface to the double-precision version (transi_dp). A simple benchmark driver is also built against each of these libraries, allowing simple testing of the transforms.
 
 License
 =======
 
-Trans is distributed under the Apache License Version 2.0.
+ecTrans is distributed under the Apache License Version 2.0.
 See `LICENSE` file for details.
 
 Installing ecTrans
@@ -26,6 +26,8 @@ Supported Platforms
 
 Other UNIX-like operating systems may work too out of the box.
 
+The GPU codepath has only been tested with NVHPC compilers on recent Nvidia GPUs.
+
 Requirements
 ------------
 - Fortran compiler with OpenMP support
@@ -37,6 +39,10 @@ Requirements
 
 Further optional recommended dependencies:
 - FFTW (http://www.fftw.org)
+
+For the GPU libraries :
+- Fortran compiler with OpenACC support
+- CUDA toolkit (compiler, and CUBLAS and CUFFT libraries)
 
 Building ecTrans
 ----------------
@@ -69,7 +75,20 @@ Extra options can be added to the `cmake` command to control the build:
  - `-DENABLE_DOUBLE_PRECISION=<ON|OFF>` default=ON
  - `-DENABLE_TRANSI=<ON|OFF>`           default=ON
  - `-DENABLE_MKL=<ON|OFF>`              default=ON
+ - `-DENABLE_FFTW=<ON|OFF>`             default=ON
+ - `-DENABLE_GPU=<ON|OFF>`              default=OFF
  - `-DCMAKE_INSTALL_PREFIX=<install-prefix>`
+
+Specific extra options exist for GPU installation:
+ - `-DENABLE_GPU_AWARE_MPI=<ON|OFF>`    default=OF
+ - `-DENABLE_GPU_GRAPHS_GEMM=<ON|OFF>`  default=ON
+ - `-DENABLE_CUTLASS=<ON|OFF>`          default=OFF
+ - `-DENABLE_3XTF32=<ON|OFF>`           default=OFF
+
+GPU-aware MPI allows buffers residing on GPU to be passed to MPI communication calls directly. This requires a compatible MPI installation.
+Graph work-flows allow a series of GPU operations to be scheduled in an efficient manner. 
+This is useful both for the batched FFTs and the batched GEMMs on which ecTrans relies, although for FFTs this is currently relied upon.
+Cutlass is an Nvidia library of templates for GEMM operations. 3xTF32 is a specific acceleration for single precision operations, enabled by Cutlass.
 
 More options to control compilation flags, only when defaults are not sufficient
 
@@ -81,6 +100,10 @@ Once this has finished successfully, run ``make`` and ``make install``.
 Optionally, tests can be run to check succesful compilation, when the feature TESTS is enabled (`-DENABLE_TESTS=ON`, default ON)
 
     $ ctest
+
+The benchmark drivers are found in the bin directory.
+A brief description of available command-line arguments can be obtained with e.g.
+ectrans-benchmark-cpu-sp --help
 
 Reporting Bugs
 ==============
