@@ -15,25 +15,6 @@ program ectrans_benchmark
 ! This test performs spectral to real and real to spectral transforms repeated in
 ! timed loop.
 !
-! 1) One "surface" field is always transformed:
-!      zspsc2(1,1:nspec2) <-> zgmvs(1:nproma,1:1,1:ngbplk)
-!
-! 2) A Multiple "3d" fields are transformed and can be disabled with "--nfld 0"
-!
-!      zspsc3a(1:nlev,1:nspec2,1:nfld) <-> zgp3a(1:nproma,1:nlev,1:nfld,1:ngpblk)
-!
-! 3) Optionally a "3d" vorticity/divergence field is transformed to uv (wind) and
-!   can be enabled with "--vordiv"
-!
-!      zspvor(1:nlev,1:nspec2) / zspdiv(1:nlev,1:nspec2) <-> zgpuv(1:nproma,1:nlev,1:2,1:ngpblk)
-!
-! 4) Optionally scalar derivatives can be computed for the fields described in 1) and 2)
-!    This must be enabled with "--scders"
-!
-! 5) Optionally uv East-West derivate can be computed from vorticity/divergence.
-!    This must be enabled with "--vordiv --uvders"
-!
-!
 ! Authors : George Mozdzynski
 !           Willem Deconinck
 !           Ioan Hadade
@@ -52,7 +33,7 @@ implicit none
 integer(kind=jpim), parameter :: min_octa_points = 20
 
 integer(kind=jpim) :: istack, getstackusage
-real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
+real(kind=jprd) :: zmaxerr(5)
 real(kind=jprd) :: zmaxerrg
 
 ! Output unit numbers
@@ -61,15 +42,14 @@ integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
 
 ! Default parameters
-integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of 3D scalar fields
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
 
-integer(kind=jpim) :: nflevg ! Total number of vertical levels
-integer(kind=jpim) :: ndgl ! Number of latitudes
-integer(kind=jpim) :: nspec2 ! Number of spectral coefficients (real and imaginary)
-integer(kind=jpim) :: ngptot ! Total number of grid points on this task
+integer(kind=jpim) :: nflevg  ! Total number of vertical levels
+
+integer(kind=jpim) :: nspec2  ! Number of spectral coefficients (real and imaginary)
+integer(kind=jpim) :: ngptot  ! Total number of grid points on this task
 integer(kind=jpim) :: ngptotg ! Total number of grid points across all tasks
 
 integer(kind=jpim) :: ifld
@@ -81,7 +61,7 @@ integer(kind=jpim) :: ja
 integer(kind=jpim) :: ib
 integer(kind=jpim) :: jprtrv
 
-integer(kind=jpim), allocatable :: nloen(:), nprcids(:)
+integer(kind=jpim), allocatable :: nprcids(:)
 integer(kind=jpim) :: myproc, jj
 integer :: jstep
 
@@ -110,13 +90,25 @@ real(kind=jprb), allocatable :: zgp3a(:,:,:,:)
 real(kind=jprb), allocatable :: zgp2(:,:,:)
 
 logical :: lstack = .false. ! Output stack info
-logical :: luserpnm = .false.
-logical :: lkeeprpnm = .false.
+
+! setup_trans options
+integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
+integer(kind=jpim) :: ndgl    ! Number of latitudes
+integer(kind=jpim), allocatable :: nloen(:) ! Number of points on each latitude
+logical :: luserpnm = .false. ! Use Belusov algorithm to compute RPNM array instead of per m
 logical :: luseflt = .false. ! Use fast legendre transforms
+
+! Extra inv_trans options
+logical :: lvordiv = .false. ! Compute vorticity and divergence in grid point space
+logical :: lscders = .false. ! Compute derivatives of scalar (North-South and East-West) in grid
+                             ! point space
+logical :: luvder = .false. ! Compute East-West derivatives of U and V wind in grid point space
+
+! GSTATS options
+logical :: lstats = .true. ! gstats statistics
 logical :: ltrace_stats = .false.
 logical :: lstats_omp = .false.
 logical :: lstats_comms = .false.
-logical :: lstats = .true. ! gstats statistics
 logical :: lbarrier_stats = .false.
 logical :: lbarrier_stats2 = .false.
 logical :: ldetailed_stats = .false.
@@ -125,15 +117,12 @@ logical :: lsyncstats = .false.
 logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
-logical :: lvordiv = .false.
-logical :: lscders = .false.
-logical :: luvder = .false.
-logical :: lprint_norms = .false. ! Calculate and print spectral norms
-logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
-
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
+
+logical :: lprint_norms = .false. ! Calculate and print spectral norms
+logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
 
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
@@ -143,11 +132,6 @@ logical :: lmpoff = .false. ! Message passing switch
 
 ! Verbosity level (0 or 1)
 integer :: verbosity = 0
-
-real(kind=jprd) :: zra = 6371229._jprd
-
-integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
-integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
 
 integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
@@ -169,7 +153,6 @@ integer(kind=jpim) :: nflevl
 integer(kind=jpim) :: isqr
 logical :: lsync_trans = .true. ! Activate barrier sync
 logical :: leq_regions = .true. ! Eq regions flag
-
 
 integer(kind=jpim) :: nproma = 0
 integer(kind=jpim) :: ngpblks
@@ -363,9 +346,8 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
 call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
-  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                    &
-  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+  &               kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw, ldsync_trans=lsync_trans,  &
+  &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi)
 call gstats(1, 1)
 
 call gstats(2, 0)
@@ -373,8 +355,7 @@ call gstats(2, 0)
 call set_ectrans_gpu_nflev(nflevl)
   ! We pass nflevl via environment variable in order not to change API
   ! In long run, ectrans should grow its internal buffers automatically
-call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
-  &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
+call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true., lduserpnm=luserpnm, &
   &              lduseflt=luseflt)
 call gstats(2, 1)
 
@@ -426,11 +407,13 @@ end if
 ! Allocate and initialize spectral arrays
 !===================================================================================================
 
+! Initialize vorticity and divergence - same for both call modes
 allocate(zspvor(nflevl,nspec2))
 allocate(zspdiv(nflevl,nspec2))
 call initialize_spectral_field(nsmax, zspvor)
 call initialize_spectral_field(nsmax, zspdiv)
 
+! Initialize spectral arrays differently depending on call mode
 if (icall_mode == 1) then
   allocate(zspscalar(nfld*nflevl+1,nspec2))
   call initialize_spectral_field(nsmax, zspscalar)
@@ -443,9 +426,8 @@ else
   call initialize_spectral_field(nsmax, zspsc2)
 endif
 
+! Compute spectral distribution variables
 allocate(ivset(nflevg))
-
-! Compute spectral distribution
 ilev = 0
 do jb = 1, nprtrv
   do jlev=1, numll(jb)
@@ -470,6 +452,7 @@ ivsetsc(nfld*nflevg+1) = 1
 ! Allocate gridpoint arrays
 !===================================================================================================
 
+! Determine start and end slice points for grid point arrays when they are passed back to dir_trans
 ipgp_start = 1
 ipgp_end = (2 + nfld) * nflevg + 1
 ipgpuv_start = 1
@@ -477,8 +460,9 @@ ipgpuv_end = 2
 
 ! Also enable vorticity divergence?
 if (lvordiv) then
-  inum_wind_fields = 4
-  ! If lvordiv, skip the vor and div elements when passing zgp
+  inum_wind_fields = 4 ! Four fields - U, V, vorticity, divergence
+  ! If lvordiv, skip the vorticity and divergence elements when passing zgp
+  ! These two come first when enabled
   ipgp_start = ipgp_start + 2 * nflevg
   ipgp_end = ipgp_end + 2 * nflevg
   ipgpuv_start = ipgpuv_start + 2
@@ -503,6 +487,7 @@ if (lscders) then
   inum_sc_2d_fields = inum_sc_2d_fields * 3
 endif
 
+! Finally, allocate grid point arrays
 if (icall_mode == 1) then
   itotal_fields = nflevg * (inum_wind_fields + inum_sc_3d_fields) + inum_sc_2d_fields
   allocate(zgp(nproma,itotal_fields,ngpblks))
