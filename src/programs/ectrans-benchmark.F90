@@ -188,7 +188,7 @@ character(len=16) :: cgrid = ''
 integer(kind=jpim) :: ierr
 integer :: icall_mode = 1
 integer :: inum_wind_fields, inum_sc_3d_fields, inum_sc_2d_fields, itotal_fields
-integer :: igp_start
+integer :: ipgp_start, ipgp_end, ipgpuv_start, ipgpuv_end
 
 !===================================================================================================
 
@@ -470,17 +470,25 @@ ivsetsc(nfld*nflevg+1) = 1
 ! Allocate gridpoint arrays
 !===================================================================================================
 
+ipgp_start = 1
+ipgp_end = (2 + nfld) * nflevg + 1
+ipgpuv_start = 1
+ipgpuv_end = 2
+
 ! Also enable vorticity divergence?
 if (lvordiv) then
   inum_wind_fields = 4
-  igp_start = 2 * nflevg + 1 ! If lvordiv, skip the vor and div elements when passing zgp
+  ! If lvordiv, skip the vor and div elements when passing zgp
+  ipgp_start = ipgp_start + 2 * nflevg
+  ipgp_end = ipgp_end + 2 * nflevg
+  ipgpuv_start = ipgpuv_start + 2
+  ipgpuv_end = ipgpuv_end + 2
 else
   ! Otherwise just U and V
   inum_wind_fields = 2
-  igp_start = 1
 endif
 
-! Also calculate East-West derivatives of winds?
+! Also make room for East-West derivatives of winds?
 if (luvder) inum_wind_fields = inum_wind_fields + 2
 
 ! We always have our nfld 3D scalar fields
@@ -489,10 +497,10 @@ inum_sc_3d_fields = nfld
 ! We always have one 2D scalar field
 inum_sc_2d_fields = 1
 
-! Also calculate North-South and East-West derivatives of scalar fields
+! Also make room for North-South and East-West derivatives of scalar fields
 if (lscders) then
-  inum_sc_3d_fields = inum_sc_3d_fields * 2
-  inum_sc_2d_fields = inum_sc_2d_fields * 2
+  inum_sc_3d_fields = inum_sc_3d_fields * 3
+  inum_sc_2d_fields = inum_sc_2d_fields * 3
 endif
 
 if (icall_mode == 1) then
@@ -646,11 +654,11 @@ do jstep = 1, iters+2
 
   call gstats(5,0)
   if (icall_mode == 1) then
-    call dir_trans(pgp=zgp(:,igp_start:,:), pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar,  &
-      &            kvsetuv=ivset, kvsetsc=ivsetsc, &
-      &            kproma=nproma)
+    call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
+      &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
   else
-    call dir_trans(pgpuv=zgpuv, pgp3a=zgp3a, pgp2=zgp2, &
+    call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
+      &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
       &            pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
   endif
