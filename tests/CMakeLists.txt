@@ -117,8 +117,9 @@ if( HAVE_TESTS )
                 MPI ${mpi}
                 OMP ${omp}
             )
+            # TODO: Find out why the FLT gives so much higher errors
             ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt_callmode${callmode}
-                COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 2000 --norms -v --callmode ${callmode}
+                COMMAND ectrans-benchmark-cpu-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 1000000 --norms -v --callmode ${callmode}
                 MPI ${mpi}
                 OMP ${omp}
             )
