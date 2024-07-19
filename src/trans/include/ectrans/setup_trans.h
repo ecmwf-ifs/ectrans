@@ -66,12 +66,12 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDGRIDONLY`  
 !   Only provide grid point space results.  
 !   *Default*: `.FALSE.`  
-!   **Potentially deprecatable**
+!   **Potentially deprecatable.**
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUSEFLT`  
 !   Use the fast Legendre transform algorithm.  
 !   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN):: LD_ALL_FFTW`  
-!   Fourier transform fields in one call of FFTW, rather than field by field.
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LD_ALL_FFTW`  
+!   Fourier transform fields in one call of FFTW, rather than field by field.  
 !   *Default*: `.FALSE.`
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUSERPNM`  
 !   Use the Belusov algorithm to compute the Legendre polynomials.  
