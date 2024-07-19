@@ -90,8 +90,10 @@ real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
 real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
 real(kind=jprd), allocatable :: ztstep(:), ztstep1(:), ztstep2(:)
 
-real(kind=jprb), allocatable :: znormsp(:), znormsp1(:), znormdiv(:), znormdiv1(:)
-real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
+real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormdiv(:), znormdiv1(:)
+real(kind=jprb), allocatable :: znormscalar(:), znormscalar1(:)
+real(kind=jprb), allocatable :: znormsc3a(:), znormsc3a1(:), znormsc2(:), znormsc21(:)
+
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Spectral space data structures
@@ -507,23 +509,25 @@ endif
 !===================================================================================================
 
 if (lprint_norms .or. ncheck > 0) then
-  allocate(znormsp(1))
-  allocate(znormsp1(1))
   allocate(znormvor(nflevg))
   allocate(znormvor1(nflevg))
   allocate(znormdiv(nflevg))
   allocate(znormdiv1(nflevg))
-  allocate(znormt(nflevg))
-  allocate(znormt1(nflevg))
 
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
+  call specnorm(pspec=zspvor(1:nflevl,:), pnorm=znormvor1, kvset=ivset)
+  call specnorm(pspec=zspdiv(1:nflevl,:), pnorm=znormdiv1, kvset=ivset)
 
-  if (icall_mode == 2) then
-    if (nfld > 0) then
-      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
-    endif
-    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc2)
+  if (icall_mode == 1) then
+    allocate(znormscalar(nfld*nflevg+1))
+    allocate(znormscalar1(nfld*nflevg+1))
+    call specnorm(pspec=zspscalar(:,:), pnorm=znormscalar1, kvset=ivsetsc)
+  else
+    allocate(znormsc3a(nflevg))
+    allocate(znormsc3a1(nflevg))
+    allocate(znormsc2(1))
+    allocate(znormsc21(1))
+    if (nfld > 0) call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormsc3a1, kvset=ivset)
+    call specnorm(pspec=zspsc2(1:1,:), pnorm=znormsc21, kvset=ivsetsc2)
   endif
 
   if (verbosity >= 1 .and. myproc == 1) then
@@ -535,17 +539,20 @@ if (lprint_norms .or. ncheck > 0) then
       write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
       write(nout,'("0x",Z16.16)') znormdiv1(ifld)
     enddo
-    if (icall_mode == 2) then
+    if (icall_mode == 1) then
+      do ifld = 1, nfld*nflevg+1
+        write(nout,'("norm zspscalar(",i4,",:,1) = ",f20.15)') ifld, znormscalar1(ifld)
+        write(nout,'("0x",Z16.16)') znormscalar1(ifld)
+      enddo
+    else
       if (nfld > 0) then
         do ifld = 1, nflevg
-          write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
-          write(nout,'("0x",Z16.16)') znormt1(ifld)
+          write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormsc3a1(ifld)
+          write(nout,'("0x",Z16.16)') znormsc3a1(ifld)
         enddo
       endif
-      do ifld = 1, 1
-        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
-        write(nout,'("0x",Z16.16)') znormsp1(ifld)
-      enddo
+      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') 1, znormsc21(1)
+      write(nout,'("0x",Z16.16)') znormsc21(1)
     endif
   endif
 endif
@@ -629,9 +636,6 @@ do jstep = 1, iters+2
   if (ldump_values) then
     ! dump a field to a binary file
     call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
   endif
 
   !=================================================================================================
@@ -677,48 +681,36 @@ do jstep = 1, iters+2
 
   if (lprint_norms) then
     call gstats(6,0)
-    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
-    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
+    call specnorm(pspec=zspvor(1:nflevl,:), pnorm=znormvor, kvset=ivset)
+    call specnorm(pspec=zspdiv(1:nflevl,:), pnorm=znormdiv, kvset=ivset)
 
-    if (icall_mode == 2) then
-      call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc2(1:1))
-      if (nfld > 0) then
-        call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
-      endif
+    if (icall_mode == 1) then
+      call specnorm(pspec=zspscalar(:,:), pnorm=znormscalar, kvset=ivsetsc)
+    else
+      if (nfld > 0) call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormsc3a, kvset=ivset)
+      call specnorm(pspec=zspsc2(1:1,:), pnorm=znormsc2, kvset=ivsetsc2)
     endif
 
     if (myproc == 1) then
-      zmaxerr(:) = -999.0
-      ! Vorticity
-      do ifld = 1, nflevg
-        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
-        zmaxerr(3) = max(zmaxerr(3),zerr(3))
-      enddo
-      ! Divergence
-      do ifld = 1, nflevg
-        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
-        zmaxerr(2) = max(zmaxerr(2), zerr(2))
-      enddo
-      if (nfld > 0) then
-        if (icall_mode == 2) then
-          ! Temperature
-          do ifld = 1, nflevg
-            zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
-            zmaxerr(4) = max(zmaxerr(4), zerr(4))
-          enddo
-          ! Surface pressure
-          do ifld = 1, 1
-            zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
-            zmaxerr(1) = max(zmaxerr(1), zerr(1))
-          enddo
-        endif
+      zmaxerr(1) = maxval(abs((znormvor1 / znormvor) - 1.0_jprb))
+      zmaxerr(2) = maxval(abs((znormdiv1 / znormdiv) - 1.0_jprb))
+      if (icall_mode == 1) then
+        zmaxerr(3) = maxval(abs((znormscalar1 / znormscalar) - 1.0_jprb))
         write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-                    &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
+        & " | zspdiv max err="e10.3," | zspscalar max err="e10.3)') &
+        &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3)
       else
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
-                    &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(1)
+        zmaxerr(4) = maxval(abs((znormsc21 / znormsc2) - 1.0_jprb))
+        if (nfld > 0) then
+          zmaxerr(3) = maxval(abs((znormsc3a1 / znormsc3a) - 1.0_jprb))
+          write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+          & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+          &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4)
+        else
+          write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
+                      & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
+                      &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(4)
+        endif
       endif
     endif
     call gstats(6,1)
@@ -737,66 +729,69 @@ write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
 if (lprint_norms .or. ncheck > 0) then
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
-  if (icall_mode == 2) then
-    if (nfld > 0) then
-      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
-    endif
-    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc2)
+  call specnorm(pspec=zspvor(1:nflevl,:), pnorm=znormvor, kvset=ivset)
+  call specnorm(pspec=zspdiv(1:nflevl,:), pnorm=znormdiv, kvset=ivset)
+
+  if (icall_mode == 1) then
+    call specnorm(pspec=zspscalar(:,:), pnorm=znormscalar, kvset=ivsetsc)
+  else
+    if (nfld > 0) call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormsc3a, kvset=ivset)
+    call specnorm(pspec=zspsc2(1:1,:), pnorm=znormsc2, kvset=ivsetsc2)
   endif
 
   if (myproc == 1) then
-    zmaxerr(:) = -999.0
-    do ifld = 1, nflevg
-      zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
-      zmaxerr(3) = max(zmaxerr(3), zerr(3))
-      if (verbosity >= 1) then
-        write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor(ifld), zerr(3)
+    zmaxerr = -99.0_jprd
+    zmaxerr(1) = maxval(abs((real(znormvor1,jprd) / (real(znormvor,jprd)) - 1.0_jprd)))
+    if (verbosity >= 1) then
+      do ifld = 1, nflevg
+        write(nout,'("norm zspvor( ",i4,")     = ",f20.15)') ifld, znormvor(ifld)
         write(nout,'("0x",Z16.16)') znormvor(ifld)
-      endif
-    enddo
-    do ifld = 1, nflevg
-      zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
-      zmaxerr(2) = max(zmaxerr(2),zerr(2))
-      if (verbosity >= 1) then
-        write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv(ifld), zerr(2)
+      enddo
+    endif
+    zmaxerr(2) = maxval(abs((real(znormdiv1,jprd) / (real(znormdiv,jprd)) - 1.0_jprd)))
+    if (verbosity >= 1) then
+      do ifld = 1, nflevg
+        write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv(ifld)
         write(nout,'("0x",Z16.16)') znormdiv(ifld)
-      endif
-    enddo
-    if (icall_mode == 2) then
-      if (nfld > 0) then
-        do ifld = 1, nflevg
-          zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
-          zmaxerr(4) = max(zmaxerr(4), zerr(4))
-          if (verbosity >= 1) then
-            write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt(ifld), zerr(4)
-            write(nout,'("0x",Z16.16)') znormt(ifld)
-          endif
+      enddo
+    endif
+    if (icall_mode == 1) then
+      zmaxerr(3) = maxval(abs((znormscalar1 / znormscalar) - 1.0_jprb))
+      if (verbosity >= 1) then
+        do ifld = 1, nfld*nflevg+1
+          write(nout,'("norm znormscalar( ",i4,",:)   = ",f20.15)') ifld, znormscalar(ifld)
+          write(nout,'("0x",Z16.16)') znormscalar(ifld)
         enddo
       endif
-      do ifld = 1, 1
-        zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
-        zmaxerr(1) = max(zmaxerr(1), zerr(1))
+    else
+      zmaxerr(4) = maxval(abs((znormsc21 / znormsc2) - 1.0_jprb))
+      if (verbosity >= 1) then
+        write(nout,'("norm znormsc2( ",i4,",:)   = ",f20.15)') 1, znormsc2(1)
+        write(nout,'("0x",Z16.16)') znormsc2(1)
+      endif
+      if (nfld > 0) then
+        zmaxerr(3) = maxval(abs((znormsc3a1 / znormsc3a) - 1.0_jprb))
         if (verbosity >= 1) then
-          write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp(ifld), zerr(1)
-          write(nout,'("0x",Z16.16)') znormsp(ifld)
+          do ifld = 1, nflevg
+            write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormsc3a(ifld)
+            write(nout,'("0x",Z16.16)') znormsc3a(ifld)
+          enddo
         endif
-      enddo
+      endif
     endif
 
     ! maximum error across all fields
-    if (nfld > 0) then
-      zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4))
-    else
-      zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3))
-    endif
+    zmaxerrg = maxval(zmaxerr)
 
     if (verbosity >= 1) write(nout,*)
-    write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
+    write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(1)
     write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
-    if (nfld > 0) write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
-    write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
+    if (icall_mode == 1) then
+      write(nout,'("max error zspscalar(1:nlev,:,1) = ",e10.3)') zmaxerr(3)
+    else
+      if (nfld > 0) write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(3)
+      write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(4)
+    endif
     write(nout,*)
     write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
     write(nout,*)
