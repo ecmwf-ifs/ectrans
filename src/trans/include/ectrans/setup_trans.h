@@ -66,7 +66,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDGRIDONLY`  
 !   Only provide grid point space results.  
 !   *Default*: `.FALSE.`  
-!   **Potentially deprecatable**
+!   **Potentially deprecatable.**
 ! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUSEFLT`  
 !   Use the fast Legendre transform algorithm.  
 !   *Default*: `.FALSE.`

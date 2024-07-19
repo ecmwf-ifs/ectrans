@@ -15,114 +15,140 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
  & PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
-!**** *INV_TRANS* - Inverse spectral transform.
-
-!     Purpose.
-!     --------
-!        Interface routine for the inverse spectral transform
-
-!**   Interface.
-!     ----------
-!     CALL INV_TRANS(...)
-
-!     Explicit arguments : All arguments are optional.
-!     -------------------- 
-!     PSPVOR(:,:) - spectral vorticity (input)
-!     PSPDIV(:,:) - spectral divergence (input)
-!     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
-!     PSPSC3A(:,:,:) - alternative to use of PSPSCALAR, see PGP3A below (input)
-!     PSPSC3B(:,:,:) - alternative to use of PSPSCALAR, see PGP3B below (input)
-!     PSPSC2(:,:)  - alternative to use of PSPSCALAR, see PGP2 below (input)
-!     FSPGL_PROC  - external procedure to be executed in fourier space
-!                   before transposition  
-!     LDSCDERS    - indicating if derivatives of scalar variables are req.
-!     LDVORGP     - indicating if grid-point vorticity is req.
-!     LDDIVGP     - indicating if grid-point divergence is req.
-!     LDUVDER     - indicating if E-W derivatives of u and v are req.
-!     LDLATLON   - indicating if regular lat-lon output requested
-!     KPROMA      - required blocking factor for gridpoint output
-!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
-!                   vor/div field. Equivalant to NBSETLEV in the IFS.
-!                   The length of KVSETUV should be the GLOBAL number
-!                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space. 
-!     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
-!                   scalar field. As for KVSETUV this argument is required
-!                   if the total number of processors is greater than
-!                   the number of processors used for distribution in
-!                   spectral wave space.
-!     KVSETSC3A(:) - as KVESETSC for PSPSC3A (distribution on first dimension)
-!     KVSETSC3B(:) - as KVESETSC for PSPSC3B (distribution on first dimension)
-!     KVSETSC2(:) - as KVESETSC for PSPSC2 (distribution on first dimension)
-!     KRESOL   - resolution tag  which is required ,default is the
-!                first defined resulution (input)
-!     PGP(:,:,:) - gridpoint fields (output)
-!                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
-!                  NPROMA is the blocking factor, IF_GP the total number
-!                  of output fields and NGPBLKS the number of NPROMA blocks.
-!                  The ordering of the output fields is as follows (all 
-!                  parts are optional depending on the input switches):
+! begin_doc_block
+! ## `INV_TRANS`
 !
-!       vorticity     : IF_UV_G fields (if psvor present and LDVORGP)
-!       divergence    : IF_UV_G fields (if psvor present and LDDIVGP)
-!       u             : IF_UV_G fields (if psvor present)
-!       v             : IF_UV_G fields (if psvor present)
-!       scalar fields : IF_SCALARS_G fields (if pspscalar present)
-!       N-S derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
-!                                         present and LDSCDERS)
-!       E-W derivative of u : IF_UV_G fields (if psvor present and and LDUVDER)
-!       E-W derivative of v : IF_UV_G fields (if psvor present and and LDUVDER)
-!       E-W derivative of scalar fields : IF_SCALARS_G fields (if pspscalar
-!                                         present and LDSCDERS)
-!   
-!       Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
-!       of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!       IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
-!       length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
-!       'b-set' split
-
-!     As an alternative to using PGP you can also use a combination of the
-!     following arrays. The reason for introducing these alternative ways
-!     of calling INV_TRANS is to avoid uneccessary copies where your data
-!     structures don't fit in to the 'PSPVOR,PSPDIV, PSPSCALAR, PGP' layout.
-!     The use of any of these precludes the use of PGP and vice versa.
-
-!     PGPUV(:,:,:,:) - the 'u-v' related grid-point variables in the order
-!                      described for PGP. The second dimension of PGPUV should
-!                      be the same as the "global" first dimension of 
-!                      PSPVOR,PSPDIV (in the IFS this is the number of levels)
-!                      PGPUV need to be dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (u,v,vor,div ...)
-!     PGP3A(:,:,:,:) - grid-point array directly connected with PSPSC3A
-!                      dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (the same as in
-!                      PSPSC3A if no derivatives, 3 times that with der.)
-!     PGP3B(:,:,:,:) - grid-point array directly connected with PSPSC3B
-!                      dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (the same as in
-!                      PSPSC3B if no derivatives, 3 times that with der.)
-!     PGP2(:,:,:)    - grid-point array directly connected with PSPSC2
-!                      dimensioned(NPROMA,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (the same as in
-!                      PSPSC2 if no derivatives, 3 times that with der.)
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  LTINV_CTL   - control of Legendre transform
-!                 FTINV_CTL   - control of Fourier transform
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-!        26-02-03 Mats Hamrud & Gabor Radnoti : modified condition for scalar fields
-!                                               and derivatives (IF_SCALARS_G)
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE INV_TRANS(PSPVOR, PSPDIV, PSPSCALAR, PSPSC3A, PSPSC3B, PSPSC2, &
+!   &                  FSPGL_PROC, LDSCDERS, LDVORGP, LDDIVGP, LDUVDER, LDLATLON, KPROMA, KVSETUV, &
+!   &                  KVSETSC, KRESOL, KVSETSC3A, KVSETSC3B, KVSETSC2, PGP, PGPUV, PGP3A, PGP3B, &
+!   &                  PGP2)
+! ```
+!
+! ### Purpose
+!
+! This subroutine performs an inverse spectral transform.
+! `INV_TRANS` supports two modes of passing arrays (which we call "call modes" below):
+!
+! 1. Pass in `PSPVOR`, `PSPDIV`, `PSPSCALAR`, receive `PGP`.
+! 2. Pass in `PSPVOR`, `PSPDIV`, `PSPSC3A`, `PSPSC3B`, `PSPSC2`, receive `PGPUV`, `PGP3A`,  `PGP3B`, `PGP2`
+!
+! Although call mode 1 is simpler, it can often entail having to create array copies in order to
+! subsequently operate on the different elements of `PGP`. Hence, with call mode 2, the output
+! arrays are already categorized according to whether they are wind related, 3D scalar, or 2D
+! scalar.
+!
+! Note that `PSPSC3A`/`PGP3A` and `PSPSC3B`/`PGP3B` are essentially identical in type and size.
+! There are cases where it is useful to have the ability to pass two sets of scalar fields to be
+! transformed independently.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPVOR(:,:)`  
+!   Spectral space vorticity.  
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPDIV(:,:)`  
+!   Spectral space divergence.  
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSCALAR(:,:)`  
+!   Spectral space scalar fields (call mode 1).  
+!   Dimensions: (total number of 2D scalar fields, spectral coefficients).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSC3A(:,:,:)`  
+!   Spectral space 3D scalar fields (call mode 2) corresponding to `PGP3A`.  
+!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSC3B(:,:,:)`  
+!   Spectral space 3D scalar fields (call mode 2) corresponding to `PGP3B`.  
+!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSC2(:,:)`  
+!   Spectral space 2D scalar fields (call mode 2) corresponding to `PGP2`.  
+!   Dimensions: (number of 2D scalar fields, spectral coefficients).
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSCDERS`  
+!   Indicates if derivatives of scalar variables are required.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDVORGP`  
+!   Indicates if grid point space vorticity is required.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDDIVGP`  
+!   Indicates if grid point space divergence is required.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUVDER`  
+!   Indicates of East-West derivatives of U and V are required.  
+!   *Default*: `.FALSE.`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDLATLON`  
+!   Indicates if regular latitude-longitude output is required.  
+!   *Default*: `.FALSE.`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMA`  
+!   Required blocking factor for grid point output.  
+!   *Default*: `D%NGPTOT`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETUV(:)`  
+!   Array which maps each vertical level of the input vorticity/divergence to its corresponding  
+!   member of the V-set.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC(:)`  
+!   Array which maps each of the input scalar fields to its corresponding member  of the V-set  
+!   (call mode 1).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3A(:)`  
+!   Array which maps each vertical level of the input 3D scalar fields to its corresponding  
+!   member of the V-set (call mode 2).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3B(:)`  
+!   Array which maps each vertical level of the input 3D scalar fields to its corresponding  
+!   member of the V-set (call mode 2).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC2(:)`  
+!   Array which maps each 2D scalar field to its corresponding member of the V-set (call mode 2).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.
+!
+! ### `OPTIONAL, EXTERNAL` arguments
+! - `OPTIONAL, EXTERNAL :: FSPGL_PROC`  
+!   External procedure to be executed in Fourier space before transposition.
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP(:,:,:)`  
+!   Array containing all grid point fields (call mode 1).  
+!   Dimensions: (NPROMA, number of grid point fields, number of NPROMA blocks).  
+!   The ordering of grid point fields in this array is as follows:  
+!     1. vorticity (if `PSPVOR` is present and `LDVORGP`)
+!     2. divergence (if `PSPDIV` is present and `LDDIVGP`)
+!     3. U wind (if `PSPVOR` and `PSPDIV` are present)
+!     4. V wind (if `PSPVOR` and `PSPDIV` are present)
+!     5. scalar fields (if `PSPSCALAR` is present)
+!     6. North-South derivative of scalar fields (if `PSPSCALAR` is present and `LDSCDERS`)
+!     7. East-West derivative of U wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
+!     8. East-West derivative of V wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
+!     9. East-West derivative of scalar fields (if `PSPSCALAR` is present and `LDSCDERS`)
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGPUV(:,:,:,:)`  
+!   Array containing grid point fields relating to wind (call mode 2).  
+!   Dimensions: (NPROMA, vertical levels, number of wind-related fields, number of NPROMA blocks).  
+!   The ordering of grid point fields in this array is as follows:  
+!     1. vorticity (if `PSPVOR` is present and `LDVORGP`)
+!     2. divergence (if `PSPDIV` is present and `LDDIVGP`)
+!     3. U wind (if `PSPVOR` and `PSPDIV` are present)
+!     4. V wind (if `PSPVOR` and `PSPDIV` are present)
+!     5. East-West derivative of U wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
+!     6. East-West derivative of V wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP3A(:,:,:,:)`  
+!   Array containing 3D scalar grid point fields corresponding to `PSPSC3A`.  
+!   Dimensions: (NPROMA, vertical levels, number of 3D scalar fields, number of NPROMA blocks).  
+!   The ordering of grid point fields in this array is as follows:  
+!     1. scalar fields
+!     2. North-South derivatives of scalar fields (if `LDSCDERS`)
+!     3. East-West derivatives of scalar fields (if `LDSCDERS`)
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP3B(:,:,:,:)`  
+!   Array containing 3D scalar grid point fields corresponding to `PSPSC3B`.  
+!   Dimensions: (NPROMA, vertical levels, number of 3D scalar fields, number of NPROMA blocks).  
+!   The ordering of grid point fields in this array is as follows:  
+!     1. scalar fields
+!     2. North-South derivatives of scalar fields (if `LDSCDERS`)
+!     3. East-West derivatives of scalar fields (if `LDSCDERS`)
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP2(:,:,:)`  
+!   Array containing 2D scalar grid point fields corresponding to `PSPSC2`.  
+!   Dimensions: (NPROMA, number of 2D scalar fields, number of NPROMA blocks).  
+!   The ordering of grid point fields in this array is as follows:  
+!     1. scalar fields
+!     2. North-South derivatives of scalar fields (if `LDSCDERS`)
+!     3. East-West derivatives of scalar fields (if `LDSCDERS`)
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
