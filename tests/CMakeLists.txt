@@ -68,48 +68,50 @@ endif()
 foreach( prec dp sp )
   foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
+      foreach( callmode 1 2 )
         set( t 47 )
         set( grid O48 )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 --meminfo --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld0_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 0 --meminfo --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --meminfo --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_scders
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --scders --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_scders_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --scders --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_uvders
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_uvders_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 1000 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_flt_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --flt --check 1000 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
-        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16
-            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100 --norms -v
+        ecbuild_add_test( TARGET ectrans_test_benchmark_${prec}_T${t}_${grid}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16_callmode${callmode}
+            COMMAND ectrans-benchmark-${prec} ARGS --truncation ${t} --grid ${grid} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100 --norms -v --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
+      endforeach()
     endforeach()
   endforeach()
 endforeach()
