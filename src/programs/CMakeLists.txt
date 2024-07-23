@@ -6,42 +6,42 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-if( HAVE_TOOLS )
+#foreach( program ectrans-benchmark ectrans-benchmark-ifs )
+foreach( program ectrans-benchmark )
 
-  if( HAVE_DOUBLE_PRECISION )
-    set( trans trans_dp )
-  else()
-    set( trans trans_sp )
+  if ( HAVE_CPU )
+    foreach( prec dp sp )
+      if( HAVE_${prec} )
+        ecbuild_add_executable( TARGET  ${program}-cpu-${prec}
+                                SOURCES ${program}.F90
+                                LINKER_LANGUAGE Fortran
+                                LIBS
+                                  fiat
+                                  parkind_${prec}
+                                  trans_${prec}
+        )
+        target_compile_definitions(${program}-cpu-${prec} PRIVATE VERSION="cpu")
+      endif()
+    endforeach( prec)
   endif()
 
-  ecbuild_warn_var( ECTRANS_TOOLS_RTABLE_PATH )
-
-  file( GLOB ectrans_programs *.F90 )
-  foreach( _program IN ITEMS ${ectrans_programs} )
-    get_filename_component( _program ${_program} NAME_WE )
-
-    ecbuild_add_executable(TARGET ${_program}
-      SOURCES ${_program}.F90
-      LIBS ${trans}
-      LINKER_LANGUAGE Fortran
-      DEFINITIONS ECTRANS_TOOLS_RTABLE_PATH="${ECTRANS_TOOLS_RTABLE_PATH}" )
-
-  endforeach()
-
-endif()
-
-foreach( prec sp dp )
-  if( HAVE_${prec} )
-    ecbuild_add_executable(TARGET  ectrans-benchmark-${prec}
-                           SOURCES ectrans-benchmark.F90
-                           LINKER_LANGUAGE Fortran
-                           LIBS
-                             fiat
-                             parkind_${prec}
-                             trans_${prec}
-                          )
-  endif()
-endforeach()
+  if( HAVE_GPU )
+    foreach( prec dp sp )
+      if( HAVE_${prec} )
+        ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
+                                SOURCES ${program}.F90
+                                LINKER_LANGUAGE Fortran
+                                LIBS
+                                  fiat
+                                  parkind_${prec}
+                                  trans_gpu_${prec}
+                                  OpenACC::OpenACC_Fortran
+       )
+       target_compile_definitions(${program}-gpu-${prec} PRIVATE VERSION="gpu")
+       endif()
+    endforeach( prec )
+  endif( HAVE_GPU )
+endforeach( program )
 
 # ectrans information tool
 
@@ -65,4 +65,3 @@ install( FILES
   PERMISSIONS
   OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
 )
-

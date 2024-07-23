@@ -36,7 +36,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
-!     PWEIGHT - the weight per grid-point (for a weighted distribution)
+!     PWEIGHT - the weight per grid-point (for a weighted distribution);
+!               Note, only seems to be used from within enkf
 !     LDGRIDONLY - true if only grid space is required
 
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
@@ -50,7 +51,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomialsonly, not the FFTs.
-!     LDUSEFFTW   - Use FFTW for FFTs
+!     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL 
 !                                 or KDGL+2 in the case that includes poles + equator
@@ -78,7 +79,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPIM     ,JPRD
     USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
 
 
@@ -92,8 +93,8 @@ INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KLOEN(:)
 LOGICAL   ,OPTIONAL,INTENT(IN) :: LDSPLIT
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN) :: KTMAX
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT):: KRESOL
-REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
-REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN) :: PSTRET
+REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
+REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM

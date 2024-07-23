@@ -35,7 +35,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     KPRGPNS - splitting level in N-S direction in grid-point space [1]
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
-!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ]
+!     KCOMBFLEN - Size of communication buffer [1800000 (*8bytes) ] (deprecated)
 !     LDMPOFF - switch off message passing [false]
 !     LDSYNC_TRANS - switch to activate barrier before transforms [false]
 !     KTRANS_SYNC_LEVEL - use of synchronization/blocking [0]
@@ -69,7 +69,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
 
 IMPLICIT NONE
 
@@ -80,7 +80,7 @@ LOGICAL            ,OPTIONAL,INTENT(IN)  :: LDSYNC_TRANS
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN)  :: KTRANS_SYNC_LEVEL
 LOGICAL            ,OPTIONAL,INTENT(IN)  :: LDEQ_REGIONS
 LOGICAL            ,OPTIONAL,INTENT(IN)  :: LDALLOPERM
-REAL(KIND=JPRB)    ,OPTIONAL,INTENT(IN)  :: PRAD
+REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN)  :: PRAD
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(IN)  :: KOPT_MEMORY_TR
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS(:)
 INTEGER(KIND=JPIM) ,OPTIONAL,INTENT(OUT) :: K_REGIONS_NS

@@ -1,0 +1,47 @@
+! (C) Copyright 2023- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
+MODULE ECTRANS_VERSION_MOD
+
+IMPLICIT NONE
+
+CONTAINS
+
+  FUNCTION ECTRANS_VERSION_STR()
+
+    !**** *ECTRANS_VERSION_STR* - Return ecTrans version as a string
+
+    CHARACTER(LEN=LEN("@ectrans_VERSION_STR@")) :: ECTRANS_VERSION_STR
+
+    ECTRANS_VERSION_STR = "@ectrans_VERSION_STR@"
+  END FUNCTION ECTRANS_VERSION_STR
+
+  FUNCTION ECTRANS_VERSION_INT()
+
+    !**** *ECTRANS_VERSION_INT* - Return ecTrans version as an integer
+
+    USE EC_PARKIND ,ONLY : JPIM
+
+    INTEGER(KIND=JPIM) :: ECTRANS_VERSION_INT
+
+    ECTRANS_VERSION_INT = 10000_JPIM * @ectrans_VERSION_MAJOR@ &
+        &                 + 100_JPIM * @ectrans_VERSION_MINOR@ &
+        &                 +  10_JPIM * @ectrans_VERSION_PATCH@
+  END FUNCTION ECTRANS_VERSION_INT
+
+  FUNCTION ECTRANS_GIT_SHA1()
+
+    !**** *ECTRANS_GIT_SHA1* - Return the SHA-1 hash of the latest Git commit
+
+    CHARACTER(LEN=LEN("@ectrans_GIT_SHA1@")) :: ECTRANS_GIT_SHA1
+
+    ECTRANS_GIT_SHA1 = "@ectrans_GIT_SHA1@"
+  END FUNCTION ECTRANS_GIT_SHA1
+
+END MODULE ECTRANS_VERSION_MOD
