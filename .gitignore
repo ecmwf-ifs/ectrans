@@ -8,4 +8,5 @@ build/*
 install/*
 env.sh
 *.DS_Store
-
+docs/site
+docs/content_processed
