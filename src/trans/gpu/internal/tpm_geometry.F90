@@ -13,7 +13,7 @@ MODULE TPM_GEOMETRY
 
 ! Module containing data describing Gaussian grid.
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
 
 IMPLICIT NONE
 

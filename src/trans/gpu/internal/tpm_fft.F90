@@ -9,7 +9,7 @@
 !
 
 MODULE TPM_FFT
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
 
 ! Module for Fourier transforms.
 

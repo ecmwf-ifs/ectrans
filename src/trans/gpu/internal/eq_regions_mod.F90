@@ -70,7 +70,7 @@ MODULE eq_regions_mod
 !
 !--------------------------------------------------------------------------------
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
+USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
 
 IMPLICIT NONE
 
@@ -144,7 +144,6 @@ subroutine eq_regions(N)
 ! eq_regions uses the zonal equal area sphere partitioning algorithm to partition
 ! the surface of a sphere into N regions of equal area and small diameter.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 integer(kind=jpim) :: n_collars,j
@@ -223,7 +222,6 @@ function num_collars(N,c_polar,a_ideal) result(num_c)
 ! Given N, an ideal angle, and c_polar,
 ! determine n_collars, the number of collars between the polar caps.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=JPRBT),intent(in) :: a_ideal,c_polar
@@ -251,7 +249,6 @@ subroutine ideal_region_list(N,c_polar,n_collars,r_regions)
 ! r_regions[n_collars+2] is 1.
 ! The sum of r_regions is N.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N,n_collars
 real(kind=JPRBT),intent(in) :: c_polar
@@ -285,7 +282,6 @@ function ideal_collar_angle(N) result(ideal)
 ! IDEAL_COLLAR_ANGLE(N) sets ANGLE to the ideal angle for the
 ! spherical collars of an EQ partition of the unit sphere S^2 into N regions.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=JPRBT) :: ideal
@@ -305,7 +301,6 @@ subroutine round_to_naturals(N,n_collars,r_regions)
 ! n_regions[n_collars+2] is 1.
 ! The sum of n_regions is N.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N,n_collars
 real(kind=JPRBT),intent(in) :: r_regions(n_collars+2)
@@ -324,7 +319,6 @@ function polar_colat(N) result(polar_c)
 !
 ! Given N, determine the colatitude of the North polar spherical cap.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=JPRBT) :: area
@@ -343,7 +337,6 @@ function area_of_ideal_region(N) result(area)
 ! AREA_OF_IDEAL_REGION(N) sets AREA to be the area of one of N equal
 ! area regions on S^2, that is 1/N times AREA_OF_SPHERE.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=JPRBT) :: area_of_sphere
@@ -358,7 +351,6 @@ function sradius_of_cap(area) result(sradius)
 ! SRADIUS_OF_CAP(AREA) returns the spherical radius of
 ! an S^2 spherical cap of area AREA.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 real(kind=JPRBT),intent(in) :: area
 real(kind=JPRBT) :: sradius
@@ -374,7 +366,6 @@ function area_of_collar(a_top, a_bot) result(area)
 ! collar specified by A_TOP, A_BOT, where A_TOP is top (smaller) spherical radius,
 ! A_BOT is bottom (larger) spherical radius.
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 real(kind=JPRBT),intent(in) :: a_top,a_bot
 real(kind=JPRBT) area
@@ -397,7 +388,6 @@ end function area_of_cap
 
 function gamma(x) result(gamma_res)
 !
-USE PARKIND_ECTRANS  ,ONLY : JPIM,   JPRBT
 IMPLICIT NONE
 real(kind=JPRBT),intent(in) :: x
 real(kind=JPRBT) :: gamma_res

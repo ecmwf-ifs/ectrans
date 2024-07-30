@@ -12,7 +12,7 @@ MODULE PARKIND_ECTRANS
 ! Re-export precision-related symbols defined in fiat / parkind1, 
 ! and add ECTRANS-internal precision-related symbols
 
-USE PARKIND1 
+USE PARKIND1 ! Import everything from PARKIND1
 !
 IMPLICIT NONE
 SAVE

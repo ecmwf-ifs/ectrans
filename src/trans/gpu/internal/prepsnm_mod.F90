@@ -50,12 +50,10 @@ MODULE PREPSNM_MOD
   
   !     ------------------------------------------------------------------
  
-  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
- 
-  USE TPM_DIM         ,ONLY : R
-  USE TPM_FIELDS      ,ONLY : F, ZEPSNM
-  USE TPM_DISTR       ,ONLY : D
-  USE TPM_GEN         ,ONLY : NOUT
+  USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
+  USE TPM_DIM,         ONLY: R
+  USE TPM_FIELDS,      ONLY: F, ZEPSNM
+  USE TPM_DISTR,       ONLY: D
   !
  
   IMPLICIT NONE

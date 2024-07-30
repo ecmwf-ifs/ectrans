@@ -62,8 +62,8 @@ SUBROUTINE SUPOL(KNSMAX,PDDMU,PFN,PDDPOL)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND ,ONLY : JPRD, JPIM
-USE TPM_POL    ,ONLY : DDI, DDA, DDH, DDE, DDC, DDD
+USE EC_PARKIND, ONLY: JPRD, JPIM
+USE TPM_POL,    ONLY: DDI, DDA, DDH, DDE, DDC, DDD
 
 IMPLICIT NONE
 

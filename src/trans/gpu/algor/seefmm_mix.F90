@@ -38,9 +38,9 @@ module seefmm_mix
 !     ------------------------------------------------------------------
 
 
-use parkind_ectrans,only : jpim     ,JPRBT, jprd
-use ecsort_mix
-use wts500_mod
+use parkind_ectrans, only: jpim, jprbt, jprd
+use ecsort_mix,      only: keysort
+use wts500_mod,      only: wts500
 
 integer(kind=jpim) :: nfmm_lim=200 ! Appr. break-even limit for FMM
 integer(kind=jpim),parameter :: nquadEm14=28 ! Quadrature size for eps~=1.e-14
