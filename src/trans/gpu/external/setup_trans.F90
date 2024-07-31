@@ -118,9 +118,6 @@ USE TPM_FIELDS,                  ONLY: FIELDS_RESOL, F, F_RW, F_RN, F_RLAPIN, F_
   &                                    ZAA, ZAS, ZAA0, ZAS0, KMLOC0
 USE TPM_FFT,                     ONLY: T, FFT_RESOL
 USE TPM_HICFFT,                  ONLY: HICT, HICFFT_RESOL
-#ifdef WITH_FFTW
-USE TPM_FFTW,                    ONLY: TW, FFTW_RESOL
-#endif
 USE TPM_FLT,                     ONLY: FLT_RESOL, S
 USE TPM_CTL,                     ONLY: CTL_RESOL, C
 USE SET_RESOL_MOD,               ONLY: SET_RESOL
