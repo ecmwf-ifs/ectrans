@@ -87,6 +87,7 @@ CONTAINS
     USE TRLTOM_PACK_UNPACK,     ONLY: TRLTOM_PACK_HANDLE, TRLTOM_UNPACK_HANDLE, &
       &                               PREPARE_TRLTOM_PACK, PREPARE_TRLTOM_UNPACK, TRLTOM_PACK, &
       &                               TRLTOM_UNPACK
+    USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
 
     IMPLICIT NONE
 
@@ -138,9 +139,8 @@ CONTAINS
     TYPE(TRLTOM_UNPACK_HANDLE) :: HTRLTOM_UNPACK
     TYPE(LTDIR_HANDLE) :: HLTDIR
 
-    IF(NPROMATR > 0) THEN
-        PRINT *, "ERROR, not implemented right now (NPROMATR > 0)"
-        STOP 4
+    IF (NPROMATR > 0) THEN
+      CALL ABORT_TRANS("NPROMATR > 0 not supported for GPU")
     ENDIF
 
     ! Prepare everything

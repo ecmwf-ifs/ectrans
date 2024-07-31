@@ -94,7 +94,7 @@ CONTAINS
     !      F. Vana  05-Mar-2015  Support for single precision
     !     ------------------------------------------------------------------
 
-    USE TPM_GEN,                     ONLY: LSYNC_TRANS
+    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NOUT
     USE YOMHOOK,                     ONLY: LHOOK,   DR_HOOK, JPHOOK
     USE TPM_DIM,                     ONLY: R_NDGNH,R_NSMAX,R_NTMAX,R_NDGL
     USE TPM_GEOMETRY,                ONLY: G_NDGLU
@@ -156,7 +156,7 @@ CONTAINS
 
     ! anti-symmetric
     IF(KMLOC0 > 0) THEN
-      PRINT*,'computing m=0 in double precision'
+      WRITE(NOUT,*) 'computing m=0 in double precision'
     ENDIF
 
     IF (LSYNC_TRANS) THEN

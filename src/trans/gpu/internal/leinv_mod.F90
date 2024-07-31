@@ -93,7 +93,7 @@ CONTAINS
     !      F. Vana  05-Mar-2015  Support for single precision
     !     ------------------------------------------------------------------
 
-    USE TPM_GEN,                     ONLY: LSYNC_TRANS
+    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NOUT
     USE YOMHOOK,                     ONLY: LHOOK, DR_HOOK, JPHOOK
     USE TPM_DIM,                     ONLY: R_NDGNH, R_NSMAX, R_NDGL
     USE TPM_GEOMETRY,                ONLY: G_NDGLU
@@ -153,7 +153,7 @@ CONTAINS
 #endif
 
     IF (KMLOC0 > 0) THEN
-      print*,'computing m=0 in double precision'
+      WRITE(NOUT,*) 'computing m=0 in double precision'
     ENDIF
 
     ! READ 2:NSMAX+3

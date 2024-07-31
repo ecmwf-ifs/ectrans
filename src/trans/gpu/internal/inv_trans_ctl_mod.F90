@@ -157,9 +157,8 @@ CONTAINS
 
     !     ------------------------------------------------------------------
 
-    IF(NPROMATR > 0) THEN
-      print *, "This is currently not supported and/or tested (NPROMATR > 0j"
-      stop 24
+    IF (NPROMATR > 0) THEN
+      CALL ABORT_TRANS("NPROMATR > 0 not supported for GPU")
     ENDIF
 
     ! Compute Vertical domain decomposition
