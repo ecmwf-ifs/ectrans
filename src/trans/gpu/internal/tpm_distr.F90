@@ -13,7 +13,7 @@ MODULE TPM_DISTR
 
 ! Module for distributed memory environment.
 
-USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRBT
+USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
 
 IMPLICIT NONE
 

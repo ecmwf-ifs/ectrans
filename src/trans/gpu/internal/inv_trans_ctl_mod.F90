@@ -85,20 +85,21 @@ CONTAINS
     !     ------------------------------------------------------------------
 
 
-    USE PARKIND_ECTRANS  ,ONLY : JPIM     ,JPRB,   JPRBT, JPRD
-    USE ISO_C_BINDING, ONLY: C_INT8_T
-
-    USE TPM_GEN         ,ONLY : NPROMATR, NOUT
-    USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP, GROWING_ALLOCATION
-    USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-    USE BUFFERED_ALLOCATOR_MOD
-
-    USE TRMTOL_MOD
-    USE LTINV_MOD
-    USE TRMTOL_PACK_UNPACK
-    USE FSC_MOD
-    USE FTINV_MOD
-    USE TRLTOG_MOD
+    USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT, JPRD
+    USE ISO_C_BINDING,          ONLY: C_INT8_T
+    USE TPM_GEN,                ONLY: NPROMATR, NOUT
+    USE TPM_TRANS,              ONLY: LDIVGP, LSCDERS, LUVDER, LVORGP, GROWING_ALLOCATION
+    USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
+    USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, MAKE_BUFFERED_ALLOCATOR, &
+      &                               INSTANTIATE_ALLOCATOR
+    USE TRMTOL_MOD,             ONLY: PREPARE_TRMTOL, TRMTOL_HANDLE, TRMTOL
+    USE LTINV_MOD,              ONLY: PREPARE_LTINV, LTINV_HANDLE, LTINV
+    USE TRMTOL_PACK_UNPACK,     ONLY: TRMTOL_PACK_HANDLE, TRMTOL_UNPACK_HANDLE, &
+      &                               PREPARE_TRMTOL_PACK, PREPARE_TRMTOL_UNPACK, TRMTOL_PACK, &
+      &                               TRMTOL_UNPACK
+    USE FSC_MOD,                ONLY: FSC_HANDLE, PREPARE_FSC, FSC
+    USE FTINV_MOD,              ONLY: FTINV_HANDLE, PREPARE_FTINV, FTINV
+    USE TRLTOG_MOD,             ONLY: TRLTOG_HANDLE, PREPARE_TRLTOG, TRLTOG
 
     IMPLICIT NONE
 
@@ -156,9 +157,8 @@ CONTAINS
 
     !     ------------------------------------------------------------------
 
-    IF(NPROMATR > 0) THEN
-      print *, "This is currently not supported and/or tested (NPROMATR > 0j"
-      stop 24
+    IF (NPROMATR > 0) THEN
+      CALL ABORT_TRANS("NPROMATR > 0 not supported for GPU")
     ENDIF
 
     ! Compute Vertical domain decomposition

@@ -68,7 +68,7 @@ SUBROUTINE SUWAVEDI(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
 !        K.YESSAD : 97-02-18 - Add KTMAX, bug correction for KSPOLEGL.
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND  ,ONLY : JPIM
+USE EC_PARKIND, ONLY: JPIM
 
 IMPLICIT NONE
 

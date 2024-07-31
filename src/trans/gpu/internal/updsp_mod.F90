@@ -61,12 +61,10 @@ SUBROUTINE UPDSP(KF_UV,KF_SCALARS,POA1, &
 !        MPP Group: 95-10-01 Support for Distributed Memory version
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
-
-USE TPM_TRANS       ,ONLY : NF_SC2, NF_SC3A, NF_SC3B
-USE TPM_DISTR       ,ONLY : D
-
-USE UPDSPB_MOD      ,ONLY : UPDSPB
+USE PARKIND_ECTRANS, ONLY: JPIM ,JPRB, JPRBT
+USE TPM_TRANS,       ONLY: NF_SC2, NF_SC3A, NF_SC3B
+USE TPM_DISTR,       ONLY: D
+USE UPDSPB_MOD,      ONLY: UPDSPB
 
 IMPLICIT NONE
 

@@ -46,11 +46,11 @@ SUBROUTINE SUGAWC(KDGLG,PMU,PW)
 
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND  ,ONLY : JPRD, JPIM
+USE EC_PARKIND, ONLY: JPRD, JPIM
 
 !ifndef INTERFACE
 
-USE SUGAW_MOD, ONLY : SUGAW
+USE SUGAW_MOD, ONLY: SUGAW
 
 !endif INTERFACE
 

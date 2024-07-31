@@ -6,7 +6,7 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 module openacc_ext_type
-  use iso_c_binding
+  use iso_c_binding, only: c_size_t
   implicit none
   private
   public :: ext_acc_arr_desc
@@ -17,10 +17,9 @@ module openacc_ext_type
   end type
 end module
 module openacc_ext
-  use iso_c_binding
-  use iso_fortran_env
-  use openacc, only : acc_create, acc_copyin, acc_handle_kind
-  use openacc_ext_type
+  use iso_c_binding, only: c_ptr, c_size_t, c_loc
+  use openacc, only: acc_create, acc_copyin, acc_handle_kind
+  use openacc_ext_type, only: ext_acc_arr_desc
   implicit none
 
   private
@@ -248,7 +247,8 @@ contains
     enddo
   end function
   subroutine ext_acc_create(ptrs, stream)
-    use openacc, only : acc_create, acc_async_sync
+    use openacc, only: acc_create, acc_async_sync
+    use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -274,7 +274,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
-    use openacc
+    use openacc, only: acc_async_sync
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -301,7 +301,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_copyout(ptrs, stream)
-    use openacc
+    use openacc, only: acc_async_sync, acc_copyout
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -328,7 +328,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
-    use openacc
+    use openacc, only: acc_async_sync
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream

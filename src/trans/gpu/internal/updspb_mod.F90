@@ -56,11 +56,9 @@ MODULE UPDSPB_MOD
   !        L. Isaksen : 95-06-06 Reordering of spectral arrays
   !     ------------------------------------------------------------------
   
-USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRB,  JPRBT
-  
-  USE TPM_DIM       ,ONLY : R_NTMAX
-  !USE TPM_FIELDS
-  USE TPM_DISTR     ,ONLY : D_NUMP,D_MYMS,D_NASM0
+  USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
+  USE TPM_DIM,         ONLY: R_NTMAX
+  USE TPM_DISTR,       ONLY: D_NUMP, D_MYMS, D_NASM0
   !
   
   IMPLICIT NONE

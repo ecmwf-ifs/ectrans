@@ -41,12 +41,12 @@ SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM
+USE PARKIND1, ONLY: JPIM
 
 !ifndef INTERFACE
 
-USE TPM_GEN
-USE TPM_GEOMETRY
+USE TPM_GEN,      ONLY: NCUR_RESOL
+USE TPM_GEOMETRY, ONLY: G
 
 !endif INTERFACE
 

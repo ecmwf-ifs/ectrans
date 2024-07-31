@@ -63,7 +63,7 @@ SUBROUTINE CPLEDN(KN,KODD,PFN,PX,KFLAG,PW,PXN,PXMOD)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND  ,ONLY : JPRD, JPIM
+USE EC_PARKIND, ONLY: JPRD, JPIM
 
 !     ------------------------------------------------------------------
 

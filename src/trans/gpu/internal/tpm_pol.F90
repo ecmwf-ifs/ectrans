@@ -15,7 +15,7 @@ MODULE TPM_POL
 !      R. El Khatib 17-Feb-2016 Optional allocation/computation of DDC/DDD/DDE
 !      since they are (big and) not used in supolf.
 
-USE EC_PARKIND  ,ONLY : JPRD, JPIM
+USE EC_PARKIND, ONLY: JPRD, JPIM
 
 IMPLICIT NONE
 
