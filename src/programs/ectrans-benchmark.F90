@@ -347,7 +347,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw, ldsync_trans=lsync_trans,  &
-  &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+  &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi, kpromatr=20)
 call gstats(1, 1)
 
 call gstats(2, 0)

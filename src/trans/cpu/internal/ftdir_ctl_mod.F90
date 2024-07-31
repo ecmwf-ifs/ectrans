@@ -9,65 +9,26 @@
 !
 
 MODULE FTDIR_CTL_MOD
+
+USE PARKIND1, ONLY: JPRB
+
+IMPLICIT NONE
+
+REAL(KIND=JPRB), ALLOCATABLE :: ZGTF(:,:)
+
 CONTAINS
-SUBROUTINE FTDIR_CTL(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
+SUBROUTINE FTDIR_CTL_COMM_SEND(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
  & KVSETUV,KVSETSC,KPTRGP,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
  & PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
-
-!**** *FTDIR_CTL - Direct Fourier transform control
-
-!     Purpose. Control routine for Grid-point to Fourier transform
-!     --------
-
-!**   Interface.
-!     ----------
-!     CALL FTDIR_CTL(..)
-
-!     Explicit arguments :
-!     --------------------
-!     KF_UV_G      - global number of spectral u-v fields
-!     KF_SCALARS_G - global number of scalar spectral fields
-!     KF_GP        - total number of output gridpoint fields
-!     KF_FS        - total number of fields in fourier space
-!     PGP     -  gridpoint array
-!     KVSETUV - "B" set in spectral/fourier space for
-!                u and v variables
-!     KVSETSC - "B" set in spectral/fourier space for
-!                scalar variables
-!     KPTRGP  -  pointer array to fields in gridpoint space
-
-!     Method.
-!     -------
-
-!     Externals.  TRGTOL      - transposition routine
-!     ----------  FOURIER_OUT - copy fourier data to Fourier buffer
-!                 FTDIR       - fourier transform
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-!        R. El Khatib 09-Sep-2020 NSTACK_MEMORY_TR
-!      R. El Khatib 01-Jun-2022 contiguous pointer
-!     ------------------------------------------------------------------
-
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
-
 USE TPM_GEN   ,ONLY : NSTACK_MEMORY_TR
 USE TPM_TRANS       ,ONLY : FOUBUF_IN
 USE TPM_DISTR       ,ONLY : D, MYPROC, NPROC
-
 USE TRGTOL_MOD      ,ONLY : TRGTOL
 USE FOURIER_OUT_MOD ,ONLY : FOURIER_OUT
 USE FTDIR_MOD       ,ONLY : FTDIR
-!
-
-IMPLICIT NONE
 
 ! Dummy arguments
 
@@ -84,12 +45,7 @@ REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    , INTENT(IN) :: PGP2(:,:,:)
 
-! Local variables
-REAL(KIND=JPRB),TARGET  :: ZGTF_STACK(KF_FS*MIN(1,MAX(0,NSTACK_MEMORY_TR)),D%NLENGTF)
-REAL(KIND=JPRB),TARGET, ALLOCATABLE :: ZGTF_HEAP(:,:)
-REAL(KIND=JPRB),POINTER, CONTIGUOUS :: ZGTF(:,:)
-
-INTEGER(KIND=JPIM) :: IST,JGL,IBLEN
+INTEGER(KIND=JPIM) :: IST
 INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)
 INTEGER(KIND=JPIM) :: IVSETSC(KF_SCALARS_G)
 INTEGER(KIND=JPIM) :: IVSET(KF_GP)
@@ -142,17 +98,12 @@ IF(KF_SCALARS_G > 0) THEN
   IST = IST+KF_SCALARS_G
 ENDIF
 
-IF (NSTACK_MEMORY_TR == 1) THEN
-  ZGTF => ZGTF_STACK(:,:)
-ELSE
-  ALLOCATE(ZGTF_HEAP(KF_FS,D%NLENGTF))
+ALLOCATE(ZGTF(KF_FS,D%NLENGTF))
 ! Now, force the OS to allocate this shared array right now, not when it starts
 ! to be used which is an OPEN-MP loop, that would cause a threads
 ! synchronization lock :
-  IF (KF_FS > 0 .AND. D%NLENGTF > 0) THEN
-    ZGTF_HEAP(1,1)=HUGE(1._JPRB)
-  ENDIF
-  ZGTF => ZGTF_HEAP(:,:)
+IF (KF_FS > 0 .AND. D%NLENGTF > 0) THEN
+  ZGTF(1,1)=HUGE(1._JPRB)
 ENDIF
 
 ! Transposition
@@ -162,6 +113,24 @@ CALL TRGTOL(ZGTF,KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
  &PGP,PGPUV,PGP3A,PGP3B,PGP2)
 CALL GSTATS(158,1)
 CALL GSTATS(106,0)
+
+END SUBROUTINE FTDIR_CTL_COMM_SEND
+
+SUBROUTINE FTDIR_CTL_COMP(KF_FS)
+
+USE PARKIND1,        ONLY: JPIM, JPRB
+USE TPM_TRANS,       ONLY: FOUBUF_IN
+USE FOURIER_OUT_MOD, ONLY: FOURIER_OUT
+USE FTDIR_MOD,       ONLY: FTDIR
+USE TPM_DISTR,       ONLY: D
+
+! Dummy arguments
+
+INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
+
+INTEGER(KIND=JPIM) :: JGL, IBLEN
+
+!     ------------------------------------------------------------------
 
 ! Fourier transform
 
@@ -193,9 +162,12 @@ CALL GSTATS(1640, 1)
 
 CALL GSTATS(106,1)
 
+DEALLOCATE(ZGTF)
+
 !     ------------------------------------------------------------------
 
-END SUBROUTINE FTDIR_CTL
+END SUBROUTINE FTDIR_CTL_COMP
+
 END MODULE FTDIR_CTL_MOD
 
 
