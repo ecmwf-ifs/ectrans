@@ -9,13 +9,15 @@
 !
 
 INTERFACE
-SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
+SUBROUTINE DIST_GRID_32(PGPG, KPROMA, KFDISTG, KFROM, KRESOL, PGP)
 
-!**** *DIST_GRID_32* - Distribute global gridpoint array among processors
+!**** *DIST_GRID_32* - Distribute global gridpoint array among processors with 32-bit arguments
 
 !     Purpose.
 !     --------
-!        Interface routine for distributing gridpoint array
+!        Interface routine for distributing gridpoint array, accepting 32-bit (single-precision)
+!        arguments
+!        Deprecated
 
 !**   Interface.
 !     ----------
@@ -30,12 +32,6 @@ SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
 !     PGP(:,:)  - Local spectral array
-!
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL      - set resolution
-!     ----------  DIST_GRID_32_CTL  - control routine
 
 !     Author.
 !     -------
@@ -47,20 +43,18 @@ SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB ,JPRM
-
+USE PARKIND1, ONLY: JPIM, JPRM
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRM)    ,OPTIONAL, INTENT(IN)  :: PGPG(:,:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL(KIND=JPRM)             , INTENT(OUT) :: PGP(:,:,:)
-
+REAL(KIND=JPRM),    OPTIONAL, INTENT(IN)  :: PGPG(:,:)
+INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN)  :: KPROMA
+INTEGER(KIND=JPIM),           INTENT(IN)  :: KFDISTG
+INTEGER(KIND=JPIM),           INTENT(IN)  :: KFROM(:)
+INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRM),              INTENT(OUT) :: PGP(:,:,:)
 
 !     ------------------------------------------------------------------
 

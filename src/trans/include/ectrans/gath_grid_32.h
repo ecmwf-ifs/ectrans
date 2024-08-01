@@ -9,13 +9,15 @@
 !
 
 INTERFACE
-SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
+SUBROUTINE GATH_GRID_32(PGPG, KPROMA, KFGATHG, KTO, KRESOL, PGP)
 
-!**** *GATH_GRID_32* - Gather global gridpoint array from processors
+!**** *GATH_GRID_32* - Gather global gridpoint array from processors with 32-bit arguments
 
 !     Purpose.
 !     --------
-!        Interface routine for gathering gripoint array
+!        Interface routine for gathering gripoint array, accepting 32-bit (single-precision)
+!        arguments
+!        Deprecated
 
 !**   Interface.
 !     ----------
@@ -30,12 +32,6 @@ SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
 !     PGP(:,:,:)  - Local spectral array
-!
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  GATH_GRID_32_CTL -  control routine
 
 !     Author.
 !     -------
@@ -47,20 +43,18 @@ SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRM
-
+USE PARKIND1, ONLY: JPIM, JPRM
 
 IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRM)    ,OPTIONAL, INTENT(OUT) :: PGPG(:,:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KPROMA
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFGATHG
-INTEGER(KIND=JPIM)          , INTENT(IN)  :: KTO(:)
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KRESOL
-REAL(KIND=JPRM)             , INTENT(IN)  :: PGP(:,:,:)
-
+REAL(KIND=JPRM),    OPTIONAL, INTENT(OUT) :: PGPG(:,:)
+INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN)  :: KPROMA
+INTEGER(KIND=JPIM),           INTENT(IN)  :: KFGATHG
+INTEGER(KIND=JPIM),           INTENT(IN)  :: KTO(:)
+INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN)  :: KRESOL
+REAL(KIND=JPRM),              INTENT(IN)  :: PGP(:,:,:)
 
 !     ------------------------------------------------------------------
 
