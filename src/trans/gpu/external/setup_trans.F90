@@ -132,7 +132,8 @@ USE SHAREDMEM_MOD,               ONLY: SHAREDMEM_CREATE
 USE YOMHOOK,                     ONLY: LHOOK, DR_HOOK, JPHOOK
 USE PREPSNM_MOD,                 ONLY: PREPSNM
 #ifdef ACCGPU
-USE OPENACC,                     ONLY: ACC_DEVICE_KIND
+USE OPENACC,                     ONLY: ACC_DEVICE_KIND, ACC_GET_DEVICE_TYPE, ACC_GET_NUM_DEVICES, &
+  &                                    ACC_SET_DEVICE_NUM, ACC_GET_DEVICE_NUM
 #endif
 #ifdef OMPGPU
 ! TODO: add OMP equivalents to ACC library routines
