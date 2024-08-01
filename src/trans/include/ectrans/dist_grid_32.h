@@ -11,41 +11,13 @@
 INTERFACE
 SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 
-!**** *DIST_GRID_32* - Distribute global gridpoint array among processors
-
-!     Purpose.
-!     --------
-!        Interface routine for distributing gridpoint array
-
-!**   Interface.
-!     ----------
-!     CALL DIST_GRID_32(...)
-
-!     Explicit arguments : 
-!     -------------------- 
-!     PGPG(:,:) - Global spectral array
-!     KFDISTG     - Global number of fields to be distributed
-!     KPROMA      - required blocking factor for gridpoint input
-!     KFROM(:)    - Processor resposible for distributing each field
-!     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
-!     PGP(:,:)  - Local spectral array
+! begin_doc_block
+! ## `DIST_GRID_32`
 !
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL      - set resolution
-!     ----------  DIST_GRID_32_CTL  - control routine
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! @note
+! This subroutine is deprecated and will be removed in a future release.
+! @endnote
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB ,JPRM
 
