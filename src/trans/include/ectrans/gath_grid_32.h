@@ -11,41 +11,13 @@
 INTERFACE
 SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
-!**** *GATH_GRID_32* - Gather global gridpoint array from processors
-
-!     Purpose.
-!     --------
-!        Interface routine for gathering gripoint array
-
-!**   Interface.
-!     ----------
-!     CALL GATH_GRID_32(...)
-
-!     Explicit arguments : 
-!     -------------------- 
-!     PGPG(:,:)   - Global gridpoint array
-!     KFGATHG     - Global number of fields to be gathered
-!     KPROMA      - blocking factor for gridpoint input
-!     KTO(:)      - Processor responsible for gathering each field
-!     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
-!     PGP(:,:,:)  - Local spectral array
+! begin_doc_block
+! ## `GATH_GRID_32`
 !
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  GATH_GRID_32_CTL -  control routine
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! @note
+! This subroutine is deprecated and will be removed in a future release.
+! @endnote
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRM
 
