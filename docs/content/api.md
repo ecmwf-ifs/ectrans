@@ -10,10 +10,12 @@ Page under construction.
 
 ## General notes
 
-NOTE: ecTrans is a legacy code with an accumulated 30 years of history. Over this time certain
+@note
+ecTrans is a legacy code with an accumulated 30 years of history. Over this time certain
 features enabled through optional arguments will have fallen out of use. We are currently reviewing
 all options to identify those that can be safely deleted, but this takes time. In the mean time, we
 have tagged below all options we deem to be "potentially deprecatable".
+@endnote
 
 ### Variable names
 
