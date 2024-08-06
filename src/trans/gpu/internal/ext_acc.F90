@@ -274,7 +274,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
-    use openacc
+    use openacc, only: acc_async_sync
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -301,7 +301,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_copyout(ptrs, stream)
-    use openacc
+    use openacc, only: acc_async_sync, acc_copyout
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -328,7 +328,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
-    use openacc
+    use openacc, only: acc_async_sync, acc_delete
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
