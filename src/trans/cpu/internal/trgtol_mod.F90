@@ -12,103 +12,11 @@ MODULE TRGTOL_MOD
 
 USE PARKIND1,  ONLY: JPIM
 
-PUBLIC TRGTOL, TRGTOL_PROLOG
-PRIVATE TRGTOL_COMM, TRGTOL_COMM_SEND, TRGTOL_COMM_RECV
+PUBLIC TRGTOL_PROLOG, TRGTOL_COMM_SEND, TRGTOL_COMM_RECV
 
 INTEGER(KIND=JPIM), ALLOCATABLE :: IREQ_RECV(:)
 
 CONTAINS
-
-SUBROUTINE TRGTOL(PGLAT, KF_FS, KF_GP, KF_SCALARS_G, KVSET, KSENDCOUNT, KRECVCOUNT, KNSEND, &
-  &               KNRECV, KSENDTOT, KRECVTOT, KSEND, KRECV, KINDEX, KNDOFF, KGPTRSEND, PCOMBUFS, &
-  &               PCOMBUFR, KPTRGP, PGP, PGPUV, PGP3A, PGP3B, PGP2)
-
-!**** *TRGTOL * - head routine for transposition of grid point data from column
-!                 structure to latitudinal. Reorganize data between
-!                 grid point calculations and direct Fourier Transform
-
-!**   Interface.
-!     ----------
-!        *call* *trgtol_prolog(...)
-
-!        Explicit arguments :
-!        --------------------
-
-!        Implicit arguments :
-!        --------------------
-
-!     Method.
-!     -------
-!        See documentation
-
-!     Externals.
-!     ----------
-
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
-
-!     Author.
-!     -------
-!        R. El Khatib *Meteo-France*
-
-!     Modifications.
-!     --------------
-!        Original  : 18-Aug-2014 from trgtol
-!        R. El Khatib 09-Sep-2020 NSTACK_MEMORY_TR
-!     ------------------------------------------------------------------
-
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-
-USE TPM_GEN         ,ONLY : NSTACK_MEMORY_TR
-USE TPM_DISTR       ,ONLY : D, NPRTRNS, NPROC
-USE TPM_TRANS       ,ONLY : NGPBLKS
-
-IMPLICIT NONE
-
-INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP
-REAL(KIND=JPRB), CONTIGUOUS, INTENT(OUT)   :: PGLAT(:,:)
-INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(KF_GP)
-INTEGER(KIND=JPIM),INTENT(IN) :: KF_SCALARS_G
-INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
-REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP(:,:,:)
-REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGPUV(:,:,:,:)
-REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP3A(:,:,:,:)
-REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP3B(:,:,:,:)
-REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP2(:,:,:)
-INTEGER(KIND=JPIM), INTENT(IN) :: KSENDCOUNT
-INTEGER(KIND=JPIM), INTENT(IN) :: KRECVCOUNT
-INTEGER(KIND=JPIM), INTENT(IN) :: KNSEND
-INTEGER(KIND=JPIM), INTENT(IN) :: KNRECV
-INTEGER(KIND=JPIM), INTENT(IN) :: KSENDTOT (NPROC)
-INTEGER(KIND=JPIM), INTENT(IN) :: KRECVTOT (NPROC)
-INTEGER(KIND=JPIM), INTENT(IN) :: KSEND    (NPROC)
-INTEGER(KIND=JPIM), INTENT(IN) :: KRECV    (NPROC)
-INTEGER(KIND=JPIM), INTENT(IN) :: KINDEX(D%NLENGTF)
-INTEGER(KIND=JPIM), INTENT(IN) :: KNDOFF(NPROC)
-INTEGER(KIND=JPIM), INTENT(IN) :: KGPTRSEND(2,NGPBLKS,NPRTRNS)
-REAL(KIND=JPRB), INTENT(INOUT) :: PCOMBUFS(:,:)
-REAL(KIND=JPRB), INTENT(INOUT) :: PCOMBUFR(:,:)
-
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-
-!     ------------------------------------------------------------------
-
-IF (LHOOK) CALL DR_HOOK('TRGTOL',0,ZHOOK_HANDLE)
-
-CALL TRGTOL_COMM_SEND(PGLAT, KF_FS, KF_GP, KF_SCALARS_G, KVSET, KSENDCOUNT, KRECVCOUNT, KNSEND, &
-  &                   KNRECV, KSENDTOT, KRECVTOT, KSEND, KRECV, KINDEX, KNDOFF, KGPTRSEND, &
-  &                   PCOMBUFS, PCOMBUFR, KPTRGP, PGP, PGPUV, PGP3A, PGP3B, PGP2)
-
-CALL TRGTOL_COMM_RECV(PGLAT, KF_FS, KRECVCOUNT, KNRECV, KRECVTOT, KRECV, KINDEX, KNDOFF, &
-  &                   PCOMBUFR)
-
-IF (LHOOK) CALL DR_HOOK('TRGTOL',1,ZHOOK_HANDLE)
-
-!     ------------------------------------------------------------------
-
-END SUBROUTINE TRGTOL
 
 SUBROUTINE TRGTOL_PROLOG(KF_FS,KF_GP,KVSET,&
  & KSENDCOUNT,KRECVCOUNT,KNSEND,KNRECV,KSENDTOT,KRECVTOT,KSEND,KRECV,KINDEX,KNDOFF,KGPTRSEND)
