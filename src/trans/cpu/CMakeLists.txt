@@ -226,6 +226,7 @@ foreach( prec dp sp )
                        $<INSTALL_INTERFACE:include>
                        $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}>
       PUBLIC_LIBS      ectrans_common ectrans_${prec}_includes
+      PRIVATE_LIBS     $<${HAVE_MPI}:MPI::MPI_Fortran>
     )
 
     ectrans_target_fortran_module_directory(
