@@ -98,20 +98,23 @@ commit: 023f5e320846f7a2ef538166366f68ce2046efa1
 ## Building our program without CMake
 
 It is still possibly to build ecTrans without CMake by manually writing a Makefile. As with any
-library, we have to ensure all header files are on the include path and the ecTrans library is
-included at the link time of the program. That looks like this:
+library, we have to ensure all header and module files referenced are on the include path and the
+ecTrans library is included at the link time of the program. That looks like this:
 
 ```Makefile
 FC = <your compiler>
+ECTRANS_INC = /path/to/ectrans/build/include/ectrans
+FIAT_MOD = /path/to/fiat/build/module/fiat
+ECTRANS_LIB = /path/to/ectrans/build/lib
 
 ectrans_demonstrator: ectrans_demonstrator.o
-	$(FC) $^ -o ectrans_demonstrator
+        $(FC) $^ -o ectrans_demonstrator -L$(ECTRANS_LIB) -lectrans_sp -lectrans_common
 
 ectrans_demonstrator.o: ectrans_demonstrator.F90
-
-%.o: %.f90
-	$(FC) -c $< -o $@
+        $(FC) -c ectrans_demonstrator.F90 -o ectrans_demonstrator.o -I$(FIAT_MOD) -I$(ECTRANS_INC)
 ```
+
+As when building with CMake, we link against the single-precision version of the ecTrans library.
 
 ## Setting up ecTrans
 
