@@ -328,7 +328,7 @@ contains
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
-    use openacc, only: acc_async_sync
+    use openacc, only: acc_async_sync, acc_delete
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
