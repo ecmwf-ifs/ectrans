@@ -65,14 +65,15 @@ CONTAINS
     ! Batch methods
     ! -----------------------------------------------------------------------------
 
-    FUNCTION BATCH_CONSTRUCTOR(KBLK, KF_GP, KF_SCALARS_G, KF_UV_G, KVSETUV, KVSETSC) RESULT(THIS)
+    FUNCTION BATCH_CONSTRUCTOR(KBLK, KF_GP, KF_SCALARS_G, KF_UV_G, KVSETUV, KVSETSC,NPTRFS) RESULT(THIS)
         USE SHUFFLE_MOD,     ONLY: SHUFFLE
         USE FIELD_SPLIT_MOD, ONLY: FIELD_SPLIT
         USE TPM_GEN,         ONLY: NPROMATR, NOUT
         USE TPM_DISTR,       ONLY: D, NPRTRNS, NPROC
         USE TPM_TRANS,       ONLY: NGPBLKS
         USE TRGTOL_MOD,      ONLY: TRGTOL_PROLOG
-
+!        USE COMMON_MOD
+        
         INTEGER(KIND=JPIM), INTENT(IN) :: KBLK
         INTEGER(KIND=JPIM), INTENT(IN) :: KF_GP
         INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCALARS_G
@@ -80,6 +81,7 @@ CONTAINS
         ! Not actually optional!
         INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN)  :: KVSETUV(:)
         INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN)  :: KVSETSC(:)
+        INTEGER(KIND=JPIM), ALLOCATABLE :: NPTRFS(:)
 
         INTEGER :: JFLD, IST
         
@@ -122,7 +124,12 @@ CONTAINS
         ENDDO
 
         ! Compute this batch's offset into PGTF
-        THIS%IOFFGTF = (THIS%NBLK - 1) * NPROMATR + 1
+!        THIS%IOFFGTF = (THIS%NBLK - 1) * NPROMATR + 1
+        IF(KBLK .EQ. 1) THEN
+           NPTRFS(1) = 1
+        ENDIF
+        NPTRFS(KBLK+1) = NPTRFS(KBLK) + THIS%NF_FS
+        THIS%IOFFGTF = NPTRFS(KBLK)
 
         ALLOCATE(THIS%NVSET(THIS%NF_GP))
         IST = 1
@@ -161,10 +168,14 @@ CONTAINS
 
     SUBROUTINE START_COMM(THIS, PGP, PGTF)
         USE TRGTOL_MOD, ONLY: TRGTOL_COMM_SEND
-
+        USE TPM_GEN, ONLY: NOUT
+        
         CLASS(BATCH),              INTENT(INOUT) :: THIS
         REAL(KIND=JPRB), OPTIONAL, INTENT(IN)    :: PGP(:,:,:)
         REAL(KIND=JPRB),           INTENT(OUT)   :: PGTF(:,:)
+
+        WRITE(NOUT,*) "DEBUG", THIS%IOFFGTF, THIS%NF_FS
+        FLUSH(NOUT)
 
         CALL TRGTOL_COMM_SEND(PGTF(THIS%IOFFGTF:THIS%IOFFGTF+THIS%NF_FS-1,:), THIS%NF_FS, &
           &                   THIS%NF_GP, THIS%NF_SCALARS_G, THIS%NVSET, THIS%NSENDCOUNT, &
