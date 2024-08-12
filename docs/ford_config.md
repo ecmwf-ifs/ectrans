@@ -11,7 +11,7 @@ website: https://www.ecmwf.int
 favicon: img/favicon.ico
 privacy_policy_url: https://www.ecmwf.int/en/privacy
 terms_of_service_url: https://www.ecmwf.int/en/terms-use
-version: 1.4.0-prerelease
+version: 1.4.0
 ---
 
 ## Efficient and _scalable_ spectral transforms.
