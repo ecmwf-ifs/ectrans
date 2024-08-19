@@ -121,7 +121,7 @@ CONTAINS
     USE ISO_C_BINDING,          ONLY: C_SIZE_T
     USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_CREATE, &
       &                               EXT_ACC_DELETE
-    USE OPENACC,                ONLY: ACC_IS_PRESENT
+    USE OPENACC,                ONLY: ACC_HANDLE_KIND, ACC_IS_PRESENT
 
     IMPLICIT NONE
 
