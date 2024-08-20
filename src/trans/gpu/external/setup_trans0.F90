@@ -210,7 +210,7 @@ WRITE(NOUT,'(A)') "GPU version, with following compile-time options : "
 #ifdef USE_CUTLASS
   WRITE(NOUT,'(A)') " - Cutlass-based GEMM operations"
 #endif
-#ifdef USE_3XTF32
+#ifdef USE_CUTLASS_3XTF32
   WRITE(NOUT,'(A)') " - tensor-core usage for 32b Cutlass operations"
 #endif
 WRITE(NOUT,'(A)')
