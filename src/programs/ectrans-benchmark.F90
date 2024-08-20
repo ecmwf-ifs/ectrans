@@ -133,6 +133,7 @@ logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
+integer(kind=jpim) :: nopt_mem_tr = 0
 
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
@@ -220,7 +221,7 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
+  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -376,10 +377,11 @@ endif
 if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
 call gstats(1, 0)
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
-  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                    &
-  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                 &
+  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew,  &
+  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                     &
+  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi,&
+  &               kopt_memory_tr=nopt_mem_tr)
 call gstats(1, 1)
 
 call gstats(2, 0)
@@ -410,27 +412,28 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
-  write(nout,'("nsmax     ",i0)') nsmax
-  write(nout,'("grid      ",a)') trim(cgrid)
-  write(nout,'("ndgl      ",i0)') ndgl
-  write(nout,'("nproc     ",i0)') nproc
-  write(nout,'("nthread   ",i0)') nthread
-  write(nout,'("nprgpns   ",i0)') nprgpns
-  write(nout,'("nprgpew   ",i0)') nprgpew
-  write(nout,'("nprtrw    ",i0)') nprtrw
-  write(nout,'("nprtrv    ",i0)') nprtrv
-  write(nout,'("ngptot    ",i0)') ngptot
-  write(nout,'("ngptotg   ",i0)') ngptotg
-  write(nout,'("nfld      ",i0)') nfld
-  write(nout,'("nlev      ",i0)') nlev
-  write(nout,'("nproma    ",i0)') nproma
-  write(nout,'("ngpblks   ",i0)') ngpblks
-  write(nout,'("nspec2    ",i0)') nspec2
-  write(nout,'("nspec2g   ",i0)') nspec2g
-  write(nout,'("luseflt   ",l1)') luseflt
-  write(nout,'("lvordiv   ",l1)') lvordiv
-  write(nout,'("lscders   ",l1)') lscders
-  write(nout,'("luvders   ",l1)') luvders
+  write(nout,'("nsmax      ",i0)') nsmax
+  write(nout,'("grid       ",a)') trim(cgrid)
+  write(nout,'("ndgl       ",i0)') ndgl
+  write(nout,'("nproc      ",i0)') nproc
+  write(nout,'("nthread    ",i0)') nthread
+  write(nout,'("nprgpns    ",i0)') nprgpns
+  write(nout,'("nprgpew    ",i0)') nprgpew
+  write(nout,'("nprtrw     ",i0)') nprtrw
+  write(nout,'("nprtrv     ",i0)') nprtrv
+  write(nout,'("ngptot     ",i0)') ngptot
+  write(nout,'("ngptotg    ",i0)') ngptotg
+  write(nout,'("nfld       ",i0)') nfld
+  write(nout,'("nlev       ",i0)') nlev
+  write(nout,'("nproma     ",i0)') nproma
+  write(nout,'("ngpblks    ",i0)') ngpblks
+  write(nout,'("nspec2     ",i0)') nspec2
+  write(nout,'("nspec2g    ",i0)') nspec2g
+  write(nout,'("luseflt    ",l1)') luseflt
+  write(nout,'("nopt_mem_tr",i0)') nopt_mem_tr
+  write(nout,'("lvordiv    ",l1)') lvordiv
+  write(nout,'("lscders    ",l1)') lscders
+  write(nout,'("luvders    ",l1)') luvders
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -1058,7 +1061,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
+  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
@@ -1070,6 +1073,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
+  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
@@ -1120,6 +1124,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
       case('--flt'); luseflt = .True.
+      case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
