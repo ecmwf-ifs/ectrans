@@ -1073,7 +1073,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
-  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays
+  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
