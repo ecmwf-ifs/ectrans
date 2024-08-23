@@ -39,6 +39,15 @@ foreach( prec sp dp )
                              parkind_${prec}
                              trans_${prec}
                           )
+    if ( HAVE_ETRANS )
+		ecbuild_add_executable(TARGET  ectrans-lam-benchmark-${prec}
+                           SOURCES ectrans-lam-benchmark.F90
+                           LIBS
+                             fiat
+                             parkind_${prec}
+                             trans_${prec}
+                          )
+    endif()
   endif()
 endforeach()
 
