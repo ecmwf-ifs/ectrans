@@ -205,9 +205,10 @@ CONTAINS
     ! Note we have either
     ! - KVSETUV and KVSETSC (with PGP, which has u, v, and scalar fields), or
     ! - KVSETUV, KVSETSC2, KVSETSC3A KVSETSC3B (with PGPUV, GP3A, PGP3B and PGP2)
-    ! KVSETs are optionals. Their sizes canalso be inferred from KV_UV_G/KV_SCALARS_G (which
+    ! KVSETs are optionals. Their sizes can also be inferred from KV_UV_G/KV_SCALARS_G (which
     ! should match PSPXXX and PGPXXX arrays)
     IOFF=0
+    IVSET(:) = -1
     IF(PRESENT(KVSETUV)) THEN
       IVSET(IOFF+1:IOFF+KF_UV_G) = KVSETUV(:)
       IOFF=IOFF+KF_UV_G
@@ -241,9 +242,6 @@ CONTAINS
       ENDIF
     ENDIF
 
-    IF (IOFF /= 2*KF_UV_G+KF_SCALARS_G) THEN
-      CALL ABORT_TRANS("TRGTOL: ERROR in IVSET computation")
-    ENDIF
 
     IF (LHOOK) CALL DR_HOOK('TRGTOL',0,ZHOOK_HANDLE)
 
