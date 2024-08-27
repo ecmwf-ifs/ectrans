@@ -70,6 +70,7 @@
 #define _hipGetErrorEnum _cudaGetErrorEnum
 #define hipFree cudaFree
 #define hipMalloc cudaMalloc
+#define hipGetLastError cudaGetLastError
 
 inline static const char * _fftGetErrorEnum(cufftResult error)
 {
