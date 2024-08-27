@@ -154,11 +154,29 @@ if( HAVE_TRANSI )
   )
   target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
 
+  if( HAVE_GPU )
+    ecbuild_add_library( TARGET ectrans_test_gpu
+      SOURCES     transi/transi_test.h transi/transi_test.c
+      PUBLIC_LIBS transi_gpu_dp
+      NOINSTALL
+    )
+    target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
+  endif()
+
   ecbuild_add_test( TARGET ectrans_test_transi_program
     SOURCES   transi/transi_test_program.c
     LIBS      ectrans_test
     LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  if( HAVE_GPU )
+    ecbuild_add_test( TARGET ectrans_test_transi_program_gpu
+      SOURCES   transi/transi_test_program.c
+      LIBS      ectrans_test_gpu
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      ENVIRONMENT TRANS_USE_MPI=0 )
+  endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_timings
     SOURCES   transi/transi_test_timings.c

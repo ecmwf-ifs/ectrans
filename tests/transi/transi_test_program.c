@@ -19,6 +19,12 @@ void read_grid(struct Trans_t*);
 
 int main ( int arc, char **argv )
 {
+#ifdef GPU_VERSION
+  fprintf(stderr, "transi_test_program GPU VERSION\n");
+#else
+  fprintf(stderr, "transi_test_program CPU VERSION\n");
+#endif
+
   trans_use_mpi( test_use_mpi() );
 
   printf("ectrans version int = %d\n",ectrans_version_int());
