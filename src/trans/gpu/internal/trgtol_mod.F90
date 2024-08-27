@@ -113,7 +113,9 @@ CONTAINS
     USE PE2SET_MOD,             ONLY: PE2SET
     USE MPL_DATA_MODULE,        ONLY: MPL_COMM_OML
     USE OML_MOD,                ONLY: OML_MY_THREAD
+#if ECTRANS_HAVE_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REQUEST, MPI_FLOAT, MPI_DOUBLE
+#endif
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE TPM_TRANS,              ONLY: NPROMA
     USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_FLOAT, C_DOUBLE, C_INT8_T
@@ -176,15 +178,20 @@ CONTAINS
     TYPE(EXT_ACC_ARR_DESC) :: ACC_POINTERS(5) ! at most 5 copyins...
     INTEGER(KIND=JPIM) :: ACC_POINTERS_CNT = 0
 
+#if ECTRANS_HAVE_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
     TYPE(MPI_REQUEST) :: IREQUEST(2*NPROC)
+#endif
 
 #ifdef PARKINDTRANS_SINGLE
 #define TRGTOL_DTYPE MPI_FLOAT
 #else
 #define TRGTOL_DTYPE MPI_DOUBLE
 #endif
+
+#if ECTRANS_HAVE_MPI
     LOCAL_COMM%MPI_VAL = MPL_COMM_OML( OML_MY_THREAD() )
+#endif
 
     !     ------------------------------------------------------------------
 
@@ -580,18 +587,26 @@ CONTAINS
     DO INR=1,IRECV_COUNTS
       IR=IR+1
       IPROC=IRECV_TO_PROC(INR)
+#if ECTRANS_HAVE_MPI
       CALL MPI_IRECV(ZCOMBUFR(ICOMBUFR_OFFSET(INR)+1:ICOMBUFR_OFFSET(INR+1)),IRECVTOT(IPROC), &
         & TRGTOL_DTYPE,NPRCIDS(IPROC)-1,MTAGLG,LOCAL_COMM,IREQUEST(IR),IERROR)
       IREQ(IR) = IREQUEST(IR)%MPI_VAL
+#else
+      CALL ABORT_TRANS("Should not be here: MPI is disabled")
+#endif
     ENDDO
 
     !....Send loop.........................................................
     DO INS=1,ISEND_COUNTS
       IR=IR+1
       ISEND=ISEND_TO_PROC(INS)
+#if ECTRANS_HAVE_MPI
       CALL MPI_ISEND(ZCOMBUFS(ICOMBUFS_OFFSET(INS)+1:ICOMBUFS_OFFSET(INS+1)),ISENDTOT(ISEND), &
        & TRGTOL_DTYPE,NPRCIDS(ISEND)-1,MTAGLG,LOCAL_COMM,IREQUEST(IR),IERROR)
       IREQ(IR) = IREQUEST(IR)%MPI_VAL
+#else
+      CALL ABORT_TRANS("Should not be here: MPI is disabled")
+#endif
     ENDDO
 
     ! Copy local contribution

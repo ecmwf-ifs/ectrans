@@ -114,7 +114,9 @@ CONTAINS
     USE MPL_DATA_MODULE,        ONLY: MPL_COMM_OML
     USE OML_MOD,                ONLY: OML_MY_THREAD
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
+#if ECTRANS_HAVE_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REQUEST, MPI_FLOAT, MPI_DOUBLE
+#endif
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE TPM_TRANS,              ONLY: LDIVGP, LSCDERS, LUVDER, LVORGP, NPROMA
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
@@ -188,16 +190,19 @@ CONTAINS
     TYPE(EXT_ACC_ARR_DESC) :: ACC_POINTERS(5) ! at most 5 copyins...
     INTEGER(KIND=JPIM) :: ACC_POINTERS_CNT = 0
 
+#if ECTRANS_HAVE_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
     TYPE(MPI_REQUEST) :: IREQUEST(NPROC*2)
+#endif
 
 #ifdef PARKINDTRANS_SINGLE
 #define TRLTOG_DTYPE MPI_FLOAT
 #else
 #define TRLTOG_DTYPE MPI_DOUBLE
 #endif
+#if ECTRANS_HAVE_MPI
     LOCAL_COMM%MPI_VAL = MPL_COMM_OML( OML_MY_THREAD() )
-
+#endif
     !     ------------------------------------------------------------------
 
     !*       0.    Some initializations
@@ -707,21 +712,29 @@ CONTAINS
     DO INR=1,IRECV_COUNTS
       IR=IR+1
       IRECV=IRECV_TO_PROC(INR)
+#if ECTRANS_HAVE_MPI
       CALL MPI_IRECV(ZCOMBUFR(ICOMBUFR_OFFSET(INR)+1:ICOMBUFR_OFFSET(INR+1)), &
         & IRECVTOT(IRECV), &
         & TRLTOG_DTYPE,NPRCIDS(IRECV)-1, &
         & MTAGLG, LOCAL_COMM, IREQUEST(IR), &
         & IERROR )
       IREQ(IR) = IREQUEST(IR)%MPI_VAL
+#else
+      CALL ABORT_TRANS("Should not be here: MPI is disabled")
+#endif
     ENDDO
 
     !...Send loop.........................................................
     DO INS=1,ISEND_COUNTS
       IR=IR+1
       ISEND=ISEND_TO_PROC(INS)
+#if ECTRANS_HAVE_MPI
       CALL MPI_ISEND(ZCOMBUFS(ICOMBUFS_OFFSET(INS)+1:ICOMBUFS_OFFSET(INS+1)),ISENDTOT(ISEND), &
         & TRLTOG_DTYPE, NPRCIDS(ISEND)-1,MTAGLG,LOCAL_COMM,IREQUEST(IR),IERROR)
       IREQ(IR) = IREQUEST(IR)%MPI_VAL
+#else
+        CALL ABORT_TRANS("Should not be here: MPI is disabled")
+#endif
     ENDDO
 
     IF(IR > 0) THEN
