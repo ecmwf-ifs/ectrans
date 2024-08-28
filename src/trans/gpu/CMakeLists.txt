@@ -6,18 +6,13 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-# Preprocess module file containing version information
-configure_file( internal/ectrans_version_mod.F90.in internal/ectrans_version_mod.F90 )
-
 ## Assemble sources
 
 ecbuild_list_add_pattern( LIST trans_src
                           GLOB
-                                sharedmem/*
                                 algor/*
                                 internal/*
                                 external/*
-                                ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
                           QUIET
                         )
 
@@ -69,6 +64,7 @@ foreach( prec dp sp )
                                $<INSTALL_INTERFACE:include>
           PUBLIC_LIBS          parkind_${prec}
                                fiat
+                               ectrans_common
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                ${LAPACK_LIBRARIES} # we still have symbols in some files
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>

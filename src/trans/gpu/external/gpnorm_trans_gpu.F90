@@ -459,17 +459,17 @@ IF( MYSETV == 1 )THEN
           ENDDO
           IF(.NOT.LDAVE_ONLY)THEN
             IND=IND+1
-            ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+            ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),JPRBT))
             IND=IND+1
-            ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+            ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),JPRBT))
           ENDIF
         ENDDO
         IF(LDAVE_ONLY)THEN
           DO JF=1,KFIELDS
             IND=IND+1
-            ZMING(JF)=MIN(ZMING(JF),ZRCV(IND))
+            ZMING(JF)=MIN(ZMING(JF),REAL(ZRCV(IND),JPRBT))
             IND=IND+1
-            ZMAXG(JF)=MAX(ZMAXG(JF),ZRCV(IND))
+            ZMAXG(JF)=MAX(ZMAXG(JF),REAL(ZRCV(IND),JPRBT))
           ENDDO
         ENDIF
         DEALLOCATE(ZRCV)
