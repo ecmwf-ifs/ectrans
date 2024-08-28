@@ -45,6 +45,22 @@ if( HAVE_TESTS )
     set( parkind parkind_sp )
   endif()
 
+  ecbuild_add_executable(
+      TARGET  ectrans_test_setup_trans0
+      SOURCES trans/test_setup_trans0.F90
+      LIBS    ectrans_common
+      NOINSTALL)
+  set( ntasks 0 )
+  if( HAVE_MPI )
+    list( APPEND ntasks 1 2 )
+  endif()
+  foreach( mpi ${ntasks} )
+      ecbuild_add_test( TARGET ectrans_test_setup_trans0_mpi${mpi}
+          COMMAND ectrans_test_setup_trans0
+          MPI ${mpi}
+      )
+  endforeach()
+
   ecbuild_add_test(TARGET ectrans_test_adjoint
     SOURCES trans/test_adjoint.F90
     LIBS ${trans} ${parkind}
@@ -54,17 +70,17 @@ if( HAVE_TESTS )
     target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
   endif()
 
-  set( ntasks 0 )
-  set( nthreads 1 )
-  if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
-  endif()
-  if( HAVE_OMP )
-    list( APPEND nthreads 4 8 )
-  endif()
 
   foreach( prec dp sp )
     if( TARGET ectrans-benchmark-cpu-${prec} )
+      set( ntasks 0 )
+      set( nthreads 1 )
+      if( HAVE_MPI )
+        list( APPEND ntasks 1 2 )
+      endif()
+      if( HAVE_OMP )
+        list( APPEND nthreads 4 8 )
+      endif()
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
           set( t 47 )
