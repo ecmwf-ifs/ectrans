@@ -90,6 +90,7 @@ foreach( prec dp sp )
                                $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
           PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
                                ${GPU_RUNTIME}GPU
+                               ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>

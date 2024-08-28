@@ -104,8 +104,8 @@ endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
-                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) AND HAVE_MPI )
+                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
+                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
 
 if( HAVE_GPU )
   if( HAVE_ACC )

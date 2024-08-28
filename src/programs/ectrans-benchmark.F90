@@ -236,6 +236,7 @@ else
   nproc = 1
   myproc = 1
   mpl_comm = -1
+  lsync_trans = .false.
 endif
 nthread = oml_max_threads()
 
