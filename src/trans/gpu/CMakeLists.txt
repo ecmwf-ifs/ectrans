@@ -83,8 +83,13 @@ ecbuild_list_add_pattern( LIST trans_src
   ecbuild_info("warn: special compile flags ftdir_mod.F90")
 #endif()
 
+set( BUILD_INTERFACE_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include/ectrans )
+
 foreach( prec dp sp )
   if( HAVE_${prec} )
+
+        generate_backend_includes(BACKEND gpu_${prec} TARGET ectrans_gpu_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/trans/include )
+
         ecbuild_add_library(
           TARGET               trans_gpu_${prec}
           TYPE                 ${GPU_LIBRARY_TYPE}
