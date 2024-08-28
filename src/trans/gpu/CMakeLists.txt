@@ -8,15 +8,73 @@
 
 ## Assemble sources
 
+list( APPEND trans_gpu_common_src
+  algor/ext_acc.F90
+  algor/c_hipmemgetinfo.cpp
+  algor/buffered_allocator_mod.F90
+  algor/device_mod.F90
+  algor/growing_allocator_mod.F90
+  algor/hicblas_mod.F90
+)
+if( HAVE_HIP )
+  set( GPU_RUNTIME "HIP" )
+  ectrans_declare_hip_sources( SOURCES_GLOB
+    algor/*.hip.cpp
+  )
+  list( APPEND trans_gpu_common_src
+    algor/hicblas_gemm.hip.cpp
+    algor/hicfft.hip.cpp
+  )
+elseif( HAVE_CUDA )
+  set( GPU_RUNTIME "CUDA" )
+  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
+  list( APPEND trans_gpu_common_src
+    algor/hicblas_gemm.cuda.cu
+    algor/hicfft.cuda.cu
+  )
+else()
+  ecbuild_info("warn: HIP and CUDA not found")
+endif()
+
+
+set( GPU_LIBRARY_TYPE SHARED )
+if( HAVE_GPU_STATIC )
+    set( GPU_LIBRARY_TYPE STATIC )
+endif()
+
+ecbuild_add_library(
+  TARGET               trans_gpu_common
+  TYPE                 ${GPU_LIBRARY_TYPE}
+  SOURCES              ${trans_gpu_common_src}
+  LINKER_LANGUAGE      Fortran
+  PUBLIC_INCLUDES      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
+                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
+                       $<INSTALL_INTERFACE:include/ectrans>
+                       $<INSTALL_INTERFACE:include>
+  PUBLIC_LIBS          fiat ectrans_common
+  PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
+                       $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
+                       $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
+  PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU
+                       $<${HAVE_CUTLASS}:USE_CUTLASS>
+                       $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
+                       $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
+)
+
+ectrans_target_fortran_module_directory(
+  TARGET            trans_gpu_common
+  MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/ectrans
+  INSTALL_DIRECTORY module/ectrans
+)
+
+
+
 ecbuild_list_add_pattern( LIST trans_src
                           GLOB
-                                algor/*
                                 internal/*
                                 external/*
                           QUIET
                         )
-
-ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90 )
 
 #if( NOT ${CMAKE_BUILD_TYPE_CAPS} STREQUAL DEBUG )
   set_source_files_properties( internal/ftinv_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
@@ -25,37 +83,14 @@ ecbuild_list_exclude_pattern( LIST trans_src            REGEX dilatation_mod.F90
   ecbuild_info("warn: special compile flags ftdir_mod.F90")
 #endif()
 
-# Filter source list according to available GPU runtime
-if( HAVE_HIP )
-  set( GPU_RUNTIME "HIP" )
-  ectrans_declare_hip_sources( SOURCES_GLOB
-    sharedmem/*.hip.cpp
-    algor/*.hip.cpp
-    internal/*.hip.cpp
-    external/*.hip.cpp
-  )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX \.cu$ )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX cuda_device_mod.F90 )
-elseif( HAVE_CUDA )
-  set( GPU_RUNTIME "CUDA" )
-  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX \.hip\.cpp )
-  ecbuild_list_exclude_pattern( LIST trans_src  REGEX hip_device_mod.F90 )
-else()
-  ecbuild_info("warn: HIP and CUDA not found")
-endif()
-
 foreach( prec dp sp )
   if( HAVE_${prec} )
-        set( GPU_LIBRARY_TYPE SHARED )
-        if( HAVE_GPU_STATIC )
-            set( GPU_LIBRARY_TYPE STATIC )
-        endif()
-
         ecbuild_add_library(
           TARGET               trans_gpu_${prec}
           TYPE                 ${GPU_LIBRARY_TYPE}
           SOURCES              ${trans_src}
+                               algor/seefmm_mix.F90
+                               algor/wts500_mod.F90
           LINKER_LANGUAGE      Fortran
           PUBLIC_INCLUDES      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
@@ -65,19 +100,14 @@ foreach( prec dp sp )
           PUBLIC_LIBS          parkind_${prec}
                                fiat
                                ectrans_common
-          PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
-                               ${LAPACK_LIBRARIES} # we still have symbols in some files
+          PRIVATE_LIBS         trans_gpu_common
+                               ${ECTRANS_GPU_HIP_LIBRARIES}
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${HAVE_MPI}:MPI::MPI_Fortran>
-                               $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
           PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
-                               ${GPU_RUNTIME}GPU
                                ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
-                               $<${HAVE_CUTLASS}:USE_CUTLASS>
-                               $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
-                               $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
         )
 
         ectrans_target_fortran_module_directory(
