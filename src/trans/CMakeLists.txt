@@ -6,6 +6,8 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+add_subdirectory( common )
+
 if( HAVE_CPU)
   add_subdirectory( cpu )
 endif()

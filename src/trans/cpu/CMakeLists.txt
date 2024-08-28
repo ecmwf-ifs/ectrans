@@ -6,9 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-# Preprocess module file containing version information
-configure_file( internal/ectrans_version_mod.F90.in internal/ectrans_version_mod.F90 )
-
 ## Apply workarounds for some known compilers
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Cray")
@@ -31,66 +28,6 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
         FLAGS   "-check nopointers")
   endif()
 endif()
-
-## Sources which are precision independent can go into a common library
-list( APPEND ectrans_common_src
-  algor/ectrans_blas_mod.F90
-  sharedmem/sharedmem_mod.F90
-  sharedmem/sharedmem.c
-  internal/abort_trans_mod.F90
-  internal/cpledn_mod.F90
-  internal/gawl_mod.F90
-  internal/sugaw_mod.F90
-  internal/supol_mod.F90
-  internal/supolf_mod.F90
-  internal/tpm_constants.F90
-  internal/tpm_ctl.F90
-  internal/tpm_dim.F90
-  internal/tpm_gen.F90
-  internal/tpm_geometry.F90
-  internal/tpm_pol.F90
-  internal/tpm_distr.F90
-  internal/pe2set_mod.F90
-  internal/set2pe_mod.F90
-  internal/eq_regions_mod.F90
-  internal/sump_trans0_mod.F90
-  internal/sustaonl_mod.F90
-  internal/sumplat_mod.F90
-  internal/sumplatb_mod.F90
-  internal/sumplatbeq_mod.F90
-  internal/sumplatf_mod.F90
-  internal/mysendset_mod.F90
-  internal/myrecvset_mod.F90
-  internal/suwavedi_mod.F90
-  internal/sump_trans_preleg_mod.F90
-  external/get_current.F90
-  external/setup_trans0.F90
-  ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
-)
-list( APPEND ectrans_common_includes
-  ectrans/get_current.h
-  ectrans/setup_trans0.h
-)
-
-ecbuild_add_library(
-  TARGET           ectrans_common
-  LINKER_LANGUAGE  Fortran
-  SOURCES          ${ectrans_common_src}
-  PUBLIC_LIBS      fiat
-  PRIVATE_LIBS     ${LAPACK_LIBRARIES}
-)
-ectrans_target_fortran_module_directory(
-  TARGET            ectrans_common
-  MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
-  INSTALL_DIRECTORY module/ectrans
-)
-
-if( HAVE_OMP )
-  ecbuild_debug("target_link_libraries( trans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-  target_link_libraries( ectrans_common PRIVATE OpenMP::OpenMP_Fortran )
-endif()
-
-
 
 function(generate_file)
   set (options)
@@ -197,16 +134,14 @@ function(generate_backend_sources)
 
   set(outfiles)
   foreach(file_i ${files})
-    if(NOT (${file_i} IN_LIST ectrans_common_src))
-      get_filename_component(outfile_name    ${file_i} NAME)
-      get_filename_component(outfile_name_we ${file_i} NAME_WE)
-      get_filename_component(outfile_ext     ${file_i} EXT)
-      get_filename_component(outfile_dir     ${file_i} DIRECTORY)
-      set(outfile "${destination}/${file_i}")
-      ecbuild_debug("Generate ${outfile}")
-      generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
-      list(APPEND outfiles ${outfile})
-    endif()
+    get_filename_component(outfile_name    ${file_i} NAME)
+    get_filename_component(outfile_name_we ${file_i} NAME_WE)
+    get_filename_component(outfile_ext     ${file_i} EXT)
+    get_filename_component(outfile_dir     ${file_i} DIRECTORY)
+    set(outfile "${destination}/${file_i}")
+    ecbuild_debug("Generate ${outfile}")
+    generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
+    list(APPEND outfiles ${outfile})
   endforeach(file_i)
   set(${_PAR_OUTPUT} ${outfiles} PARENT_SCOPE)
 endfunction(generate_backend_sources)
