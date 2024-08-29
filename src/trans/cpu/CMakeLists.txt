@@ -83,8 +83,8 @@ foreach( prec dp sp )
 
     ectrans_target_fortran_module_directory(
       TARGET            ectrans_${prec}
-      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_${prec}
-      INSTALL_DIRECTORY module/ectrans_${prec}
+      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
+      INSTALL_DIRECTORY module/ectrans
     )
 
     set( FFTW_LINK PRIVATE )

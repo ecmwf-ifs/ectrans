@@ -151,8 +151,8 @@ foreach( prec dp sp )
 
         ectrans_target_fortran_module_directory(
           TARGET            ectrans_gpu_${prec}
-          MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/ectrans_gpu_${prec}
-          INSTALL_DIRECTORY module/ectrans_gpu_${prec}
+          MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
+          INSTALL_DIRECTORY module/ectrans
         )
 
         if( prec STREQUAL sp )
