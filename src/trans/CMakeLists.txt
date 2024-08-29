@@ -21,6 +21,10 @@ function(generate_file)
   set( jprb_dp jprd )
   set( JPRB_sp JPRM )
   set( jprb_sp jprm )
+  set( JPRB_gpu_dp JPRD )
+  set( jprb_gpu_dp jprd )
+  set( JPRB_gpu_sp JPRM )
+  set( jprb_gpu_sp jprm )
 
   add_custom_command(
     OUTPUT  ${output}
