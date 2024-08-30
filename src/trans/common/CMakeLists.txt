@@ -43,11 +43,13 @@ list( APPEND ectrans_common_src
   internal/sump_trans_preleg_mod.F90
   external/get_current.F90
   external/setup_trans0.F90
+  external/ini_spec_dist.F90
   ${CMAKE_CURRENT_BINARY_DIR}/internal/ectrans_version_mod.F90
 )
 list( APPEND ectrans_common_includes
   ectrans/get_current.h
   ectrans/setup_trans0.h
+  ectrans/ini_spec_dist.h
 )
 
 ecbuild_add_library(
