@@ -38,38 +38,6 @@ __global__ void debugFloat(int varId, int N, HIP_DATA_TYPE_REAL *x) {
     }
 }
 
-extern "C"
-void
-hicfft_execute_plan_(int ISIGNp, int N, DATA_TYPE *data_in_host, DATA_TYPE *data_out_host, long *iplan)
-{
-    HIP_DATA_TYPE_COMPLEX *data_in = reinterpret_cast<HIP_DATA_TYPE_COMPLEX*>(data_in_host);
-    HIP_DATA_TYPE_COMPLEX *data_out = reinterpret_cast<HIP_DATA_TYPE_COMPLEX*>(data_out_host);
-    hipfftHandle* PLANp = reinterpret_cast<hipfftHandle*>(iplan);
-    hipfftHandle plan = *PLANp;
-    int ISIGN = ISIGNp;
-
-    /*if (hipDeviceSynchronize() != hipSuccess){
-        fprintf(stderr, "GPU runtime error: Failed to synchronize\n");
-        return;
-    }*/
-
-    if( ISIGN== -1 ){
-        fftSafeCall(fftExecDir(plan, (HIP_DATA_TYPE_REAL*)data_in, data_out));
-    }
-    else if( ISIGN== 1){
-        fftSafeCall(fftExecInv(plan, data_in, (HIP_DATA_TYPE_REAL*)data_out));
-    }
-    else {
-        abort();
-    }
-
-    if (hipDeviceSynchronize() != hipSuccess){
-        fprintf(stderr, "GPU runtime error: Failed to synchronize\n");
-        return;
-    }
-
-}
-
 namespace {
 struct Double {
   using real = double;
