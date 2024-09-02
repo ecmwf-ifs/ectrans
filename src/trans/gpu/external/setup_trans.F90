@@ -196,7 +196,33 @@ IF(MSETUP0 == 0) THEN
 ENDIF
 LLP1 = NPRINTLEV>0
 LLP2 = NPRINTLEV>1
-IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SETUP_TRANS (GPU) ==='
+IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SETUP_TRANS ==='
+IF(LLP1) THEN
+  IF (JPRBT == JPRD) THEN
+    WRITE(NOUT,'(A)') "GPU double precision version, with following compile-time options : "
+  ELSE
+    WRITE(NOUT,'(A)') "GPU single precision version, with following compile-time options : "
+  ENDIF
+#ifdef ACCGPU
+  WRITE(NOUT,'(A)') " - OpenACC-based offload"
+#else
+  WRITE(NOUT,'(A)') " - OpenMP-based offload"
+#endif
+#ifdef USE_GPU_AWARE_MPI
+  WRITE(NOUT,'(A)') " - GPU-aware MPI"
+#endif
+#ifdef USE_GRAPHS_GEMM
+  WRITE(NOUT,'(A)') " - graph-based GEMM scheduling"
+#endif
+#ifdef USE_CUTLASS
+  WRITE(NOUT,'(A)') " - Cutlass-based GEMM operations"
+#endif
+#ifdef USE_3XTF32
+  WRITE(NOUT,'(A)') " - tensor-core usage for 32b Cutlass operations"
+#endif
+  WRITE(NOUT,'(A)')
+ENDIF
+
 
 ! Allocate resolution dependent structures
 IF(.NOT. ALLOCATED(DIM_RESOL)) THEN

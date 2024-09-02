@@ -98,7 +98,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
+USE PARKIND1,                    ONLY: JPIM, JPRD, JPRB
+        ! only use of JPRB is for diagnostic print of backend precision
 USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_INT,C_ASSOCIATED,C_SIZE_T
 
 !ifndef INTERFACE
@@ -169,7 +170,15 @@ IF(MSETUP0 == 0) THEN
 ENDIF
 LLP1 = NPRINTLEV>0
 LLP2 = NPRINTLEV>1
-IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SETUP_TRANS (CPU) ==='
+IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SETUP_TRANS ==='
+IF(LLP1) THEN
+  IF (JPRB == JPRD) THEN
+    WRITE(NOUT,'(A)') "CPU double precision version"
+  ELSE
+    WRITE(NOUT,'(A)') "CPU single precision version"
+  ENDIF
+  WRITE(NOUT,'(A)')
+ENDIF
 
 ! Allocate resolution dependent structures
 IF(.NOT. ALLOCATED(DIM_RESOL)) THEN
