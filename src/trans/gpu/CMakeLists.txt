@@ -9,19 +9,6 @@
 # Preprocess module file containing version information
 configure_file( internal/ectrans_version_mod.F90.in internal/ectrans_version_mod.F90 )
 
-## Apply workarounds for some known compilers
-
-if(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
-
-  # Compile setup_trans with pinned memory to improve data movement performance.
-  ectrans_add_compile_options(
-      SOURCES external/setup_trans.F90
-      #FLAGS   "-gpu=pinned,deepcopy,fastmath,nordc")
-      FLAGS   "-gpu=pinned,fastmath")
-  # TODO: check if it is sufficient to only set "-gpu=pinned" which appends rather than overwrites
-
-endif()
-
 ## Assemble sources
 
 ecbuild_list_add_pattern( LIST trans_src
