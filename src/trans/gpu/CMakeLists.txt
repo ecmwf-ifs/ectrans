@@ -56,7 +56,7 @@ ecbuild_add_library(
   PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                        $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                        $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
-  PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU
+  PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
                        $<${HAVE_CUTLASS}:USE_CUTLASS>
                        $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
@@ -144,7 +144,7 @@ foreach( prec dp sp )
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${HAVE_MPI}:MPI::MPI_Fortran>
-          PRIVATE_DEFINITIONS  ${GPU_OFFLOAD}GPU
+          PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
                                ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
         )
