@@ -16,6 +16,7 @@ list( APPEND trans_gpu_common_src
   algor/growing_allocator_mod.F90
   algor/hicblas_mod.F90
   internal/tpm_stats.F90
+  internal/tpm_hicfft.F90
 )
 if( HAVE_HIP )
   set( GPU_RUNTIME "HIP" )
@@ -95,6 +96,7 @@ function(generate_backend_sources)
   ecbuild_list_exclude_pattern( LIST files REGEX
           parkind_ectrans.F90
           tpm_stats.F90
+          tpm_hicfft.F90
   )
 
   set(outfiles)
