@@ -4,7 +4,6 @@ ecbuild_list_add_pattern( LIST etrans_src
 					  GLOB
 							${CMAKE_CURRENT_SOURCE_DIR}/biper/internal/*
 							${CMAKE_CURRENT_SOURCE_DIR}/biper/external/*
-							${CMAKE_CURRENT_SOURCE_DIR}/etrans/aux/*
 							${CMAKE_CURRENT_SOURCE_DIR}/etrans/internal/*
 							${CMAKE_CURRENT_SOURCE_DIR}/etrans/external/*
 					  QUIET
