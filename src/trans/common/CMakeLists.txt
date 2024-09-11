@@ -31,6 +31,7 @@ list( APPEND ectrans_common_src
   internal/pe2set_mod.F90
   internal/set2pe_mod.F90
   internal/eq_regions_mod.F90
+  internal/shuffle_mod.F90
   internal/sump_trans0_mod.F90
   internal/sustaonl_mod.F90
   internal/sumplat_mod.F90
