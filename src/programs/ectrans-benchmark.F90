@@ -1286,6 +1286,8 @@ subroutine initialize_spectral_field(nsmax, field)
 
 end subroutine initialize_spectral_field
 
+!===================================================================================================
+
 subroutine initialize_2d_spectral_field(nsmax, field)
 
   integer,         intent(in)    :: nsmax    ! Spectral truncation
