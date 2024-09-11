@@ -331,7 +331,8 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA COPYIN(IRECV_BUFR_TO_OUT,PGP_INDICES) PRESENT(PREEL_REAL) ASYNC(1)
+    !$ACC DATA COPYIN(IRECV_BUFR_TO_OUT) PRESENT(PREEL_REAL) IF (KF_FS > 0) ASYNC(1)
+    !$ACC DATA COPYIN(PGP_INDICES) ASYNC(1)
 #endif
 
     CALL GSTATS(1805,1)
@@ -568,7 +569,7 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA IF(IRECV_COUNTS > 0) PRESENT(ZCOMBUFR)
+    !$ACC DATA IF(IRECV_COUNTS > 0) PRESENT(ZCOMBUFR) ASYNC(1)
 #endif
 
     IR=0
@@ -581,7 +582,7 @@ CONTAINS
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
-    !$ACC UPDATE HOST(ZCOMBUFS)
+    !$ACC UPDATE HOST(ZCOMBUFS) IF(ISEND_COUNT > 0)
 #endif
     !  Receive loop.........................................................
     DO INR=1,IRECV_COUNTS
@@ -711,7 +712,7 @@ CONTAINS
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
-    !$ACC UPDATE DEVICE(ZCOMBUFR)
+    !$ACC UPDATE DEVICE(ZCOMBUFR) IF(IRECV_COUNTS > 0)
 #endif
     IF (LSYNC_TRANS) THEN
       CALL GSTATS(431,0)
@@ -751,7 +752,8 @@ CONTAINS
 #endif
 #ifdef ACCGPU
     !$ACC END DATA ! ZCOMBUFR
-    !$ACC END DATA ! IRECV_BUFR_TO_OUT,PGPINDICES
+    !$ACC END DATA ! IRECV_BUFR_TO_OUT
+    !$ACC END DATA ! PGPINDICES
     !$ACC END DATA !ZCOMBUFS (present)
     !$ACC END DATA !PGP3B
     !$ACC END DATA !PGP3A

@@ -488,7 +488,7 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA COPYIN(IIN_TO_SEND_BUFR,IGP_OFFSETS) ASYNC(1)
+    !$ACC DATA COPYIN(IGP_OFFSETS) ASYNC(1)
 #endif
 
     ACC_POINTERS_CNT = 0
@@ -523,7 +523,7 @@ CONTAINS
     !$ACC DATA IF(PRESENT(PGP3B)) PRESENT(PGP3B) ASYNC(1)
 
     ! Present until self contribution and packing are done
-    !$ACC DATA PRESENT(PREEL_REAL)
+    !$ACC DATA COPYIN(IIN_TO_SEND_BUFR) PRESENT(PREEL_REAL) IF(KF_FS > 0) ASYNC(1)
 #endif
 #ifdef OMPGPU
 #endif
@@ -655,7 +655,7 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA PRESENT(ZCOMBUFS)
+    !$ACC DATA PRESENT(ZCOMBUFS) IF(ISEND_COUNTS > 0) ASYNC(1)
 #endif
     CALL GSTATS(1605,0)
     DO INS=1,ISEND_COUNTS
@@ -707,7 +707,7 @@ CONTAINS
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
-    !$ACC UPDATE HOST(ZCOMBUFS)
+    !$ACC UPDATE HOST(ZCOMBUFS) IF(ISEND_COUNTS > 0)
 #endif
     DO INR=1,IRECV_COUNTS
       IR=IR+1
@@ -750,7 +750,7 @@ CONTAINS
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
-    !$ACC UPDATE DEVICE(ZCOMBUFR)
+    !$ACC UPDATE DEVICE(ZCOMBUFR) IF(IRECV_COUNTS > 0)
 #endif
 
     IF (LSYNC_TRANS) THEN
@@ -763,7 +763,7 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-    !$ACC DATA PRESENT(ZCOMBUFR)
+    !$ACC DATA PRESENT(ZCOMBUFR) IF(IRECV_COUNTS > 0) ASYNC(1)
 #endif
     CALL GSTATS(805,1)
 
