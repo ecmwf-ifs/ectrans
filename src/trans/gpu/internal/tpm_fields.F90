@@ -36,7 +36,6 @@ END TYPE FIELDS_TYPE
 
 !flat copies of the above
 REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RW(:)     ! Weights of the Gaussian quadrature
-REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RN(:)     ! n (to avoid integer to real conversion)
 REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RLAPIN(:) ! eigen-values of the inverse Laplace operator
 REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RACTHE(:) ! eigen-values of the inverse Laplace operator
 
