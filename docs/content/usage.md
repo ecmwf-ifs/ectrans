@@ -2,8 +2,6 @@
 title: Usage
 ---
 
-# Usage
-
 Here we describe how to construct from scratch a minimal working program that uses ecTrans. The
 instructions here assume you have already installed FIAT and ecTrans according to
 [our instructions](installation.html). Therefore, in the current directory you should see fiat/build
