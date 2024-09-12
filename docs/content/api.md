@@ -1,12 +1,10 @@
 ---
-title: API
+title: ecTrans API
 ---
 
 @warning
 Page under construction.
 @endwarning
-
-# ecTrans API
 
 ## General notes
 
