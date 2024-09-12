@@ -324,30 +324,3 @@ void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 growing_allocator);
 }
 }
-
-extern "C" void hipblasSgemmBatched_finalize ()
-{
-
-#ifdef FALSE
-  if (hip_alreadyAllocated_sgemm){
-
-    hipFree(Aarray_sgemm_hip);
-    hipFree(Barray_sgemm_hip);
-    hipFree(Carray_sgemm_hip);
-
-    hipFree(d_Aarray_sgemm_hip);
-    hipFree(d_Barray_sgemm_hip);
-    hipFree(d_Carray_sgemm_hip);
-
-  }
-#endif
-
-  if (hip_alreadyAllocated_sgemm_handle){
-    hipblasDestroy(handle_hip_sgemm);
-  }
-  if (hip_alreadyAllocated_dgemm_handle){
-    hipblasDestroy(handle_hip_dgemm);
-  }
-
-}
-
