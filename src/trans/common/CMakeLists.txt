@@ -44,6 +44,7 @@ list( APPEND ectrans_common_src
   internal/myrecvset_mod.F90
   internal/suwavedi_mod.F90
   internal/sump_trans_preleg_mod.F90
+  internal/wts500_mod.F90
   external/get_current.F90
   external/setup_trans0.F90
   external/ini_spec_dist.F90
