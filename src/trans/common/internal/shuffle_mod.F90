@@ -11,7 +11,7 @@
 MODULE SHUFFLE_MOD
 CONTAINS
 SUBROUTINE SHUFFLE(KF_UV_G,KF_SCALARS_G,KSHFUV_G,KIVSETUV,KSHFSC_G,KIVSETSC,&
- & KVSETUV,KVSETSC)
+ &                 KVSETUV,KVSETSC)
 
 !**** *SHUFFLE* - Re-shuffle fields for load balancing
 
@@ -55,9 +55,8 @@ SUBROUTINE SHUFFLE(KF_UV_G,KF_SCALARS_G,KSHFUV_G,KIVSETUV,KSHFSC_G,KIVSETSC,&
 !        Original : 01-01-03
 
 !     ------------------------------------------------------------------
-USE PARKIND1  ,ONLY : JPIM
-
-USE TPM_DISTR       ,ONLY : NPRTRV
+USE EC_PARKIND, ONLY: JPIM
+USE TPM_DISTR,  ONLY: NPRTRV
 !
 
 IMPLICIT NONE
@@ -130,6 +129,6 @@ ELSE
 ENDIF
 
 !     ------------------------------------------------------------------
-  
+ 
 END SUBROUTINE SHUFFLE
 END MODULE SHUFFLE_MOD

@@ -1,5 +1,6 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,7 +13,7 @@ MODULE TPM_DIM
 
 ! Module for dimensions.
 
-USE EC_PARKIND  ,ONLY : JPIM
+USE EC_PARKIND, ONLY: JPIM
 
 IMPLICIT NONE
 
@@ -47,5 +48,11 @@ END TYPE DIM_TYPE
 
 TYPE(DIM_TYPE),ALLOCATABLE,TARGET :: DIM_RESOL(:)
 TYPE(DIM_TYPE),POINTER     :: R
+
+! flat copies of above
+INTEGER(KIND=JPIM) :: R_NSMAX      ! Truncation order
+INTEGER(KIND=JPIM) :: R_NTMAX      ! Truncation order for tendencies
+INTEGER(KIND=JPIM) :: R_NDGNH      ! Number of rows in northern hemisphere
+INTEGER(KIND=JPIM) :: R_NDGL       ! Number of rows of latitudes
 
 END MODULE TPM_DIM

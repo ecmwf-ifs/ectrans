@@ -1,6 +1,5 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
-! (C) Copyright 2022- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,7 +12,7 @@ MODULE TPM_DISTR
 
 ! Module for distributed memory environment.
 
-USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
+USE EC_PARKIND  ,ONLY : JPIM     ,JPRD
 
 IMPLICIT NONE
 
@@ -107,18 +106,30 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NULTPP(:) ! No of lats. for each wave_set  (F
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCL(:) ! Process responsible for each lat. (F.S)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPTRLS(:) ! Pointer to first lat. (F.S)
 
-! NSTAGT0B to NLENGT1B: help arrays for spectral to fourier space transposition
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT0B(:) ! Start adresses for segments within buffer
-                                  ! (according to processors to whom data 
-                                  ! is going to be sent) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT1B(:) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB0(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB1(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSFTB(:)  
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSGTB(:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: MSTABF(:)
-INTEGER(KIND=JPIM) :: NLENGT0B  ! dimension
-INTEGER(KIND=JPIM) :: NLENGT1B  ! dimension
+! NSTAGT0B to NLENGT0B: help arrays for spectral to fourier space transposition
+
+! For index I, offset from which to take data from send buffer of TRMTOL to be sent to processor I
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT0B(:) ! (1:NPRTRW+1)
+! For index I, offset at which to put data in receive buffer of TRLTOM for sending processor I
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NSTAGT1B(:) ! (1:NPRTRW+1)
+! For wavenumber JM (first dimension) and latitude KGL (second dimension), this gives the offset
+! into the TRLTOM/TRMTOL send/receive buffers (FOUBUF, FOUBUF_IN) for JM and KGL, starting from the
+! offset for the processor (i.e. this must be used in combination with NSTAGT0B)
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB0(:,:) ! (0:R%NSMAX,D%NDGL_FS)
+
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPNTGTB1(:,:) ! (D%NUMP,R%NDGL)
+! For index I, this tells you how many values will be transferred from this processor to processor I
+! in TRMTOL and from processor I to this processor in TRLTOM
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSFTB(:) ! (1:NPRTRW+1)
+! For index I, this tells you how many values will be transferred from this processor to processor I
+! in TRLTOM and from processor I to this processor in TRMTOL
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTSGTB(:) ! (1:NPRTRW+1)
+! For index I, this tells you from where in the TRLTOM send buffer to take the data to send to
+! processor I
+INTEGER(KIND=JPIM) ,ALLOCATABLE :: MSTABF(:) ! (1:NPRTRW+1)
+! Size of FOUBUF_IN, FOUBUF, except for the fields (i.e. this will be multiplied by 2 * KFIELD)
+INTEGER(KIND=JPIM) :: NLENGT0B
+INTEGER(KIND=JPIM) :: NLENGT1B  ! (only used in GPU code path)
 
 ! GRIDPOINT SPACE
 
@@ -157,12 +168,15 @@ INTEGER(KIND=JPIM) :: NGPTOTG  ! Total number of grid columns on the Globe
 INTEGER(KIND=JPIM) :: NGPTOTMX ! Maximum number of grid columns on any of the PEs
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NGPTOTL(:,:) ! Number of grid columns on each PE.
 
-REAL(KIND=JPRBT) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
+REAL(KIND=JPRD) ,ALLOCATABLE :: RWEIGHT(:) ! Weight per grid-point (if weighted distribution)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NPROCA_GP(:) ! Number of grid-points per a-set
 
 INTEGER(KIND=JPIM), ALLOCATABLE :: OFFSETS_GEMM1(:), OFFSETS_GEMM2(:)
 
 END TYPE DISTR_TYPE
+
+TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
+TYPE(DISTR_TYPE),POINTER     :: D
 
 !flat versions of the above
 INTEGER(KIND=JPIM) :: D_NUMP      ! No. of spectral waves handled by this processor
@@ -187,9 +201,6 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
 ! (1) are the offsets in the "inputs" of dirtrans ("outputs" invtrans)
 ! (2) are the offsets in the "outputs" of invtrans ("inputs" dirtrans)
 INTEGER(KIND=JPIM), POINTER :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
-
-TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
-TYPE(DISTR_TYPE),POINTER     :: D
 
 END MODULE TPM_DISTR
 
