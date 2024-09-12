@@ -246,8 +246,8 @@ CONTAINS
             PAIS = FOUBUF(OFFSET1+JF)+FOUBUF(OFFSET2+JF)
             IF (JF <= 4*KF_UV) THEN
                 ! Multiply in case of velocity
-              PAIA = PAIA*F_RACTHE(JGL)
-              PAIS = PAIS*F_RACTHE(JGL)
+              PAIA = PAIA*REAL(F_RACTHE(JGL),JPRBT)
+              PAIS = PAIS*REAL(F_RACTHE(JGL),JPRBT)
             ENDIF
             IF (KM /= 0) THEN
               ZINPA(JF+(JGL-ISL)*IIN_STRIDES0+IIN_STRIDES0*D_OFFSETS_GEMM1(KMLOC))=PAIA*REAL(F_RW(JGL),JPRBT)

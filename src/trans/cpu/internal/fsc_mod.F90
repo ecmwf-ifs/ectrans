@@ -73,15 +73,15 @@ INTEGER(KIND=JPIM) :: JLON,JF,IGLG,II,IR,JM
 !     ------------------------------------------------------------------
 
 IGLG    = D%NPTRLS(MYSETW)+KGL-1
-ZACHTE  = F%RACTHE(IGLG)
+ZACHTE  = REAL(F%RACTHE(IGLG),JPRB)
 IMEN    = G%NMEN(IGLG)
 ISTAGTF = D%NSTAGTF(KGL)
-ZACHTE2  = F%RACTHE(IGLG)
+ZACHTE2 = REAL(F%RACTHE(IGLG),JPRB)
 
 IF( LATLON.AND.S%LDLL ) THEN
   ZPI = 2.0_JPRB*ASIN(1.0_JPRB)
   ZACHTE2 = 1._JPRB
-  ZACHTE  = F%RACTHE2(IGLG)
+  ZACHTE  = REAL(F%RACTHE2(IGLG),JPRB)
   
   ! apply shift for (even) lat-lon output grid
   IF( S%LSHIFTLL ) THEN
