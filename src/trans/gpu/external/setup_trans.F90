@@ -114,7 +114,8 @@ USE TPM_DISTR,                   ONLY: D, DISTR_RESOL, NPROC, NPRTRV, D_NUMP, D_
   &                                    MYPROC, D_OFFSETS_GEMM1, D_OFFSETS_GEMM2
 USE TPM_GEOMETRY,                ONLY: G, GEOM_RESOL, G_NDGLU, G_NMEN, G_NMEN_MAX, G_NLOEN, &
   &                                    G_NLOEN_MAX
-USE TPM_FIELDS,                  ONLY: FIELDS_RESOL, F, F_RW, F_RLAPIN, F_RACTHE, ZEPSNM, &
+USE TPM_FIELDS,                  ONLY: FIELDS_RESOL, F
+USE TPM_FIELDS_FLAT,             ONLY: F_RW, F_RLAPIN, F_RACTHE, ZEPSNM, &
   &                                    ZAA, ZAS, ZAA0, ZAS0, KMLOC0
 USE TPM_FLT,                     ONLY: FLT_RESOL, S
 USE TPM_CTL,                     ONLY: CTL_RESOL, C

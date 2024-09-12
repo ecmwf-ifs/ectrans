@@ -11,8 +11,7 @@
 
 MODULE TPM_FIELDS
 
-USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT, JPRD
-USE ISO_C_BINDING
+USE EC_PARKIND, ONLY: JPIM, JPRD
 
 IMPLICIT NONE
 
@@ -34,24 +33,7 @@ REAL(KIND=JPRD)    ,ALLOCATABLE :: RMU2(:)   ! sin(theta) for dual input/output 
 REAL(KIND=JPRD)    ,ALLOCATABLE :: RACTHE2(:)! 1./SQRT(R1MU2), 1/(cos(theta)) dual input/output latitudes
 END TYPE FIELDS_TYPE
 
-!flat copies of the above
-REAL(KIND=JPRD)  ,ALLOCATABLE :: F_RW(:)     ! Weights of the Gaussian quadrature
-REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RLAPIN(:) ! eigen-values of the inverse Laplace operator
-REAL(KIND=JPRD)  ,ALLOCATABLE :: F_RACTHE(:) ! eigen-values of the inverse Laplace operator
-
 TYPE(FIELDS_TYPE),ALLOCATABLE,TARGET :: FIELDS_RESOL(:)
 TYPE(FIELDS_TYPE),POINTER     :: F
-
-! scratch arrays for ltinv and ltdir and associated dimension variables
-
-REAL(KIND=JPRBT),ALLOCATABLE :: ZAA(:,:,:)  !! JPRL for 1/2
-REAL(KIND=JPRBT),ALLOCATABLE :: ZAS(:,:,:)  !! JPRL for 1/2
-
-! for m=0 in ledir_mod:
-REAL(KIND=JPRD),ALLOCATABLE :: ZAA0(:,:)
-REAL(KIND=JPRD),ALLOCATABLE :: ZAS0(:,:)
-INTEGER(KIND=JPIM) :: KMLOC0
-
-REAL(KIND=JPRBT),ALLOCATABLE :: ZEPSNM(:,:)
 
 END MODULE TPM_FIELDS
