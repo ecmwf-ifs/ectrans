@@ -21,7 +21,7 @@ SAVE
 TYPE FIELDS_TYPE
 REAL(KIND=JPRD)    ,ALLOCATABLE :: RPNM(:,:) ! Legendre polynomials
 REAL(KIND=JPRD)    ,ALLOCATABLE :: RMU(:)    ! sin(theta) for Gaussian latitudes
-REAL(KIND=JPRBT)   ,ALLOCATABLE :: RW(:)     ! Weights of the Gaussian quadrature
+REAL(KIND=JPRD)    ,ALLOCATABLE :: RW(:)     ! Weights of the Gaussian quadrature
 REAL(KIND=JPRBT)   ,ALLOCATABLE :: R1MU2(:)  ! 1.-MU*MU, cos(theta)**2
 REAL(KIND=JPRBT)   ,ALLOCATABLE :: RACTHE(:) ! 1./SQRT(R1MU2), 1/(cos(theta))
 
@@ -35,7 +35,7 @@ REAL(KIND=JPRBT)   ,ALLOCATABLE :: RACTHE2(:)! 1./SQRT(R1MU2), 1/(cos(theta)) du
 END TYPE FIELDS_TYPE
 
 !flat copies of the above
-REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RW(:)     ! Weights of the Gaussian quadrature
+REAL(KIND=JPRD)  ,ALLOCATABLE :: F_RW(:)     ! Weights of the Gaussian quadrature
 REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RLAPIN(:) ! eigen-values of the inverse Laplace operator
 REAL(KIND=JPRBT) ,ALLOCATABLE :: F_RACTHE(:) ! eigen-values of the inverse Laplace operator
 
