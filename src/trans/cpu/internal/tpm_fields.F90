@@ -23,7 +23,7 @@ REAL(KIND=JPRD) ,ALLOCATABLE :: RW(:)     ! Weights of the Gaussian quadrature
 REAL(KIND=JPRD) ,ALLOCATABLE :: R1MU2(:)  ! 1.-MU*MU, cos(theta)**2
 REAL(KIND=JPRD) ,ALLOCATABLE :: RACTHE(:) ! 1./SQRT(R1MU2), 1/(cos(theta))
 
-REAL(KIND=JPRB) ,ALLOCATABLE :: REPSNM(:) ! eps(n,m) used in the Legendre transforms
+REAL(KIND=JPRD) ,ALLOCATABLE :: REPSNM(:) ! eps(n,m) used in the Legendre transforms
 REAL(KIND=JPRB) ,ALLOCATABLE :: RN(:)     ! n (to avoid integer to real conversion)
 REAL(KIND=JPRB) ,ALLOCATABLE :: RLAPIN(:) ! eigen-values of the inverse Laplace operator
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTN(:) ! R%NTMAX+2-JN

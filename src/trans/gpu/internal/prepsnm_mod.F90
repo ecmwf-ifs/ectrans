@@ -89,7 +89,7 @@ MODULE PREPSNM_MOD
      ENDIF
  
      DO JN=KM,R%NTMAX+2
-        ZEPSNM(KMLOC,JN) = F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN)
+        ZEPSNM(KMLOC,JN) =REAL(F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN),JPRBT)
      ENDDO
      ! end loop over wavenumber
   ENDDO

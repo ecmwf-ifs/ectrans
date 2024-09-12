@@ -76,7 +76,7 @@ IF (KM > 0) THEN
 ENDIF
 
 DO JN=KM,R%NTMAX+2
-  PEPSNM(JN) = F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN)
+  PEPSNM(JN) = REAL(F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN),JPRB)
 ENDDO
 
 !     ------------------------------------------------------------------
