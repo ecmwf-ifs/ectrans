@@ -81,7 +81,7 @@ implicit none
 integer(kind=jpim),intent(in)  :: kx    
 real(kind=jprd)   ,intent(in)  :: px(:)
 integer(kind=jpim),intent(in)  :: ky
-real(kind=JPRBT)   ,intent(in)  :: py(:)
+real(kind=jprd)   ,intent(in)  :: py(:)
 type(fmm_type)    ,intent(out) :: ydfmm
 real(kind=JPRBT),optional,intent(in)  :: pdiff(:,:)
 
@@ -456,9 +456,9 @@ implicit none
 
 integer(kind=jpim), intent(in)  :: kx,ky
 real(kind=jprd),    intent(in)  :: px(:)
-real(kind=JPRBT),    intent(in)  :: py(:)
+real(kind=jprd),    intent(in)  :: py(:)
 integer(kind=jpim), intent(in)  :: kxy
-real(kind=JPRBT),    intent(out) :: pxy(:)
+real(kind=JPRBT),   intent(out) :: pxy(:)
 integer(kind=jpim), intent(out) :: kindex(:)
 integer(kind=jpim) :: jxy,ix,iy,iret
 

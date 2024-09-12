@@ -28,7 +28,7 @@ REAL(KIND=JPRB) ,ALLOCATABLE :: RN(:)     ! n (to avoid integer to real conversi
 REAL(KIND=JPRB) ,ALLOCATABLE :: RLAPIN(:) ! eigen-values of the inverse Laplace operator
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NLTN(:) ! R%NTMAX+2-JN
 
-REAL(KIND=JPRB) ,ALLOCATABLE :: RMU2(:)    ! sin(theta) for dual input/output latitudes
+REAL(KIND=JPRD) ,ALLOCATABLE :: RMU2(:)    ! sin(theta) for dual input/output latitudes
 REAL(KIND=JPRD) ,ALLOCATABLE :: RACTHE2(:) ! 1./SQRT(R1MU2), 1/(cos(theta)) dual input/output latitudes
 END TYPE FIELDS_TYPE
 
