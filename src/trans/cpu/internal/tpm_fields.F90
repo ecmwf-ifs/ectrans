@@ -20,7 +20,7 @@ TYPE FIELDS_TYPE
 REAL(KIND=JPRD) ,ALLOCATABLE :: RPNM(:,:) ! Legendre polynomials
 REAL(KIND=JPRD) ,ALLOCATABLE :: RMU(:)    ! sin(theta) for Gaussian latitudes
 REAL(KIND=JPRD) ,ALLOCATABLE :: RW(:)     ! Weights of the Gaussian quadrature
-REAL(KIND=JPRB) ,ALLOCATABLE :: R1MU2(:)  ! 1.-MU*MU, cos(theta)**2
+REAL(KIND=JPRD) ,ALLOCATABLE :: R1MU2(:)  ! 1.-MU*MU, cos(theta)**2
 REAL(KIND=JPRB) ,ALLOCATABLE :: RACTHE(:) ! 1./SQRT(R1MU2), 1/(cos(theta))
 
 REAL(KIND=JPRB) ,ALLOCATABLE :: REPSNM(:) ! eps(n,m) used in the Legendre transforms
