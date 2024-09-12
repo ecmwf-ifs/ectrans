@@ -876,16 +876,16 @@ if (luse_mpi) then
   call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
 endif
 
-ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
+ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters+2,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
 ztstepmed = get_median(ztstep)
 
-ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
+ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters+2,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
 ztstepmed1 = get_median(ztstep1)
 
-ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
+ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters+2,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 ztstepmed2 = get_median(ztstep2)
 
