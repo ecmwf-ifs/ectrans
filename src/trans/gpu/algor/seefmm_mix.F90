@@ -42,6 +42,8 @@ use parkind_ectrans, only: jpim, jprbt, jprd
 use ecsort_mix,      only: keysort
 use wts500_mod,      only: wts500
 
+private
+
 integer(kind=jpim) :: nfmm_lim=200 ! Appr. break-even limit for FMM
 integer(kind=jpim),parameter :: nquadEm14=28 ! Quadrature size for eps~=1.e-14
 integer(kind=jpim),parameter :: nquadEm10=20!  Quadrature size for eps~=1.e-10
@@ -59,6 +61,8 @@ integer(kind=jpim), pointer :: nclose(:)   ! No of "close" points
 real(kind=JPRBT)   , pointer :: cik(:)      ! Correction term (142 in [1])
 
 end type fmm_type
+
+public :: fmm_type, setup_seefmm, free_seefmm, seefmm_mulm
 
 contains
 recursive subroutine setup_seefmm(kx,px,ky,py,ydfmm,pdiff)
@@ -83,10 +87,11 @@ real(kind=jprd)   ,intent(in)  :: px(:)
 integer(kind=jpim),intent(in)  :: ky
 real(kind=jprd)   ,intent(in)  :: py(:)
 type(fmm_type)    ,intent(out) :: ydfmm
-real(kind=JPRBT),optional,intent(in)  :: pdiff(:,:)
+real(kind=jprd),optional,intent(in)  :: pdiff(:,:)
 
-real(kind=JPRBT) :: zxy(kx+ky),zrt(56),zcik((kx+ky)*(kx+ky))
-real(kind=JPRBT) :: zr
+real(kind=jprd) :: zxy(kx+ky), zcik((kx+ky)*(kx+ky))
+real(kind=jprd) :: zr, zrt(56), zrw(56)
+real(kind=jprd), allocatable :: zrdexp(:,:)
 integer(kind=jpim) :: ixy
 !---------------------------------------------------------------------------
 ydfmm%nx=kx
@@ -98,16 +103,19 @@ ydfmm%nquad=nquadEm07 !Set precicion to 1.E-07
 ! Combine px and py to form xxy, compute ascending index for xxy
 call comb_xy(kx,px,ky,py,ixy,zxy,ydfmm%index)
 ! Setup quadrature, scale (see 3.1.1 in [1])
-call suquad(ixy,zxy(ydfmm%index(1))-zxy(ydfmm%index(ixy)),&
- & ydfmm%nquad,ydfmm%rw,zrt,zr)
-allocate(ydfmm%rdexp(ydfmm%nquad,ixy))
+call suquad(ixy,zxy(ydfmm%index(1))-zxy(ydfmm%index(ixy)),ydfmm%nquad,&
+  & zrw,zrt,zr)
+allocate(zrdexp(ydfmm%nquad,ixy))
 allocate(ydfmm%nclose(ixy))
 ! Main pre-computation
-call prepotf(kx,ixy,ydfmm%nquad,ydfmm%rw,zrt,zr,zxy,ydfmm%index,&
- & ydfmm%rdexp,ydfmm%nclose,zcik,ydfmm%ncik,pdiff)
-! Needed as size of cik unknown beforehand
+call prepotf(kx,ixy,ydfmm%nquad,zrw,zrt,zr,zxy,ydfmm%index,&
+ & zrdexp,ydfmm%nclose,zcik,ydfmm%ncik,pdiff)
+
+allocate(ydfmm%rdexp(ydfmm%nquad,ixy))
 allocate(ydfmm%cik(ydfmm%ncik))
-ydfmm%cik(:)=zcik(1:ydfmm%ncik)
+ydfmm%rw(:)      = real(zrw(:),JPRBT)
+ydfmm%rdexp(:,:) = real(zrdexp(:,:),JPRBT)
+ydfmm%cik(:)     = real(zcik(1:ydfmm%ncik),JPRBT)
 
 end subroutine setup_seefmm
 !==========================================================================
@@ -428,18 +436,18 @@ recursive subroutine suquad(kn,prange,kquad,prw,prt,pr)
 implicit none
 
 integer(kind=jpim)        ,intent(in)  :: kn
-real(kind=JPRBT),intent(in)  :: prange
+real(kind=jprd),intent(in)  :: prange
 integer(kind=jpim)        ,intent(in) :: kquad
-real(kind=JPRBT),intent(out) :: prw(:)
-real(kind=JPRBT),intent(out) :: prt(:)
-real(kind=JPRBT),intent(out) :: pr
+real(kind=jprd),intent(out) :: prw(:)
+real(kind=jprd),intent(out) :: prt(:)
+real(kind=jprd),intent(out) :: pr
 
-real(kind=JPRBT) :: za,zb,zs
+real(kind=jprd) :: za,zb,zs
 integer(kind=jpim) :: jm
 !-------------------------------------------------------------------------
 
-za=1.0
-zb=500.0
+za=1.0_jprd
+zb=500.0_jprd
 zs=zb/prange
 pr=za/zs
 call wts500(prt,prw,kquad)
@@ -458,20 +466,15 @@ integer(kind=jpim), intent(in)  :: kx,ky
 real(kind=jprd),    intent(in)  :: px(:)
 real(kind=jprd),    intent(in)  :: py(:)
 integer(kind=jpim), intent(in)  :: kxy
-real(kind=JPRBT),   intent(out) :: pxy(:)
+real(kind=jprd),    intent(out) :: pxy(:)
 integer(kind=jpim), intent(out) :: kindex(:)
-integer(kind=jpim) :: jxy,ix,iy,iret
+integer(kind=jpim) :: iret
 
 !-------------------------------------------------------------------------
 
 pxy(1:kx)=px(1:kx)
 pxy(kx+1:kx+ky)=py(1:ky)
-!call m01daf(pxy,1,kxy,'D',irank,ifail)
 call keysort(iret,pxy,kxy,descending=.true.,index=kindex,init=.true.)
-!!$do jxy=1,kxy
-!!$  kindex(irank(jxy))=jxy
-!!$enddo
-
 end subroutine comb_xy
 !==========================================================================
 recursive subroutine prepotf(kx,kxy,kquad,prw,prt,pr,pxy,kindex,prdexp,&
@@ -482,20 +485,20 @@ implicit none
 integer(kind=jpim), intent(in)  :: kx
 integer(kind=jpim), intent(in)  :: kxy
 integer(kind=jpim), intent(in)  :: kquad
-real(kind=JPRBT),    intent(in)  :: pxy(:)
-real(kind=JPRBT),    intent(in)  :: prw(:)
-real(kind=JPRBT),    intent(in)  :: pr
-real(kind=JPRBT),    intent(in)  :: prt(:)
+real(kind=jprd),    intent(in)  :: pxy(:)
+real(kind=jprd),    intent(in)  :: prw(:)
+real(kind=jprd),    intent(in)  :: pr
+real(kind=jprd),    intent(in)  :: prt(:)
 integer(kind=jpim), intent(in)  :: kindex(:)
-real(kind=JPRBT),    intent(out) :: prdexp(:,:)
+real(kind=jprd),    intent(out) :: prdexp(:,:)
 integer(kind=jpim), intent(out) :: kclosel(:)
-real(kind=JPRBT),    intent(out) :: pcik(:)
+real(kind=jprd),    intent(out) :: pcik(:)
 integer(kind=jpim), intent(out) :: knocik
-real(kind=JPRBT),optional, intent(in)  :: pdiff(:,:)
+real(kind=jprd),optional, intent(in)  :: pdiff(:,:)
 
-real(kind=JPRBT) :: zdx
-real(kind=JPRBT) :: zsum
-real(kind=JPRBT) :: zdiff(kxy,kxy)
+real(kind=jprd) :: zdx
+real(kind=jprd) :: zsum
+real(kind=jprd) :: zdiff(kxy,kxy)
 integer(kind=jpim)  :: jxy,jq,isize,jdist,ixy,ixym1,i1,i1pd,j1,j2
 logical :: llexit
 !-------------------------------------------------------------------------
@@ -529,11 +532,11 @@ do jxy=1,kxy-1
       kclosel(jxy)=kclosel(jxy)+1
       if((i1 > kx .and. i1pd <= kx) .or. (i1pd > kx .and.  i1 <= kx)) then
         knocik=knocik+1
-        zsum=0.0_JPRBT
+        zsum=0.0_jprd
         do jq=1,kquad
           zsum=zsum+prw(jq)*exp(-zdx*prt(jq))
         enddo
-        pcik(knocik)=1.0_JPRBT/zdx-zsum
+        pcik(knocik)=1.0_jprd/zdx-zsum
       endif
     else
       exit
