@@ -18,6 +18,7 @@ list( APPEND ectrans_common_src
   internal/cpledn_mod.F90
   internal/field_split_mod.F90
   internal/gawl_mod.F90
+  internal/interpol_decomp_mod.F90
   internal/sugaw_mod.F90
   internal/supol_mod.F90
   internal/supolf_mod.F90
