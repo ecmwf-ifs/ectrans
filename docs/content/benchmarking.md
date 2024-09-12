@@ -6,8 +6,6 @@ title: Benchmarking ecTrans
 Page under construction.
 @endwarning
 
-# Benchmarking ecTrans
-
 A ["benchmark driver" program](https://sites.ecmwf.int/docs/ectrans/sourcefile/ectrans-benchmark.
 f90.html) is bundled with ecTrans. This program performs a loop of inverse and
 direct spectral transforms over and over a specified number of times and collects timing statistics
