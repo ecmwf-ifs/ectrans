@@ -8,8 +8,6 @@
 !
 
 #if defined CUDAGPU
-#define hipblasSgemm 'cublasSgemm'
-#define hipblasDgemm 'cublasDgemm'
 #define ACC_GET_HIP_STREAM ACC_GET_CUDA_STREAM
 #define OPENACC_LIB OPENACC
 #endif
@@ -21,44 +19,6 @@ USE GROWING_ALLOCATOR_MOD, ONLY: GROWING_ALLOCATION_TYPE
 USE OPENACC_LIB, ONLY: ACC_GET_HIP_STREAM
 
 IMPLICIT NONE
-
-
-!
-! Define the interfaces to HIP/CUDA C code via a common wrapper interface
-!
-interface hip_gemm
-!
-! void hipblasSgemm (char transa, char transb, int m, int n,
-! int k, float alpha, const float *A, int lda,
-! const float *B, int ldb, float beta, float *C, int ldc)
-!
-SUBROUTINE HIP_SGEMM(CTA, CTB, M, N, K,&
-ALPHA, A, LDA, B, LDB, BETA, C, LDC) BIND(C,NAME='hipblasSgemm')
-USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_FLOAT
-CHARACTER(1,C_CHAR),VALUE :: CTA, CTB
-INTEGER(C_INT),     VALUE :: M,N,K,LDA,LDB,LDC
-REAL(C_FLOAT),      VALUE :: ALPHA,BETA
-REAL(C_FLOAT), DIMENSION(LDA,*) :: A
-REAL(C_FLOAT), DIMENSION(LDB,*) :: B
-REAL(C_FLOAT), DIMENSION(LDC,*) :: C
-END SUBROUTINE HIP_SGEMM
-
-!
-! void hipblasDgemm (char transa, char transb, int m, int n,
-! int k, double alpha, const double *A, int lda,
-! const double *B, int ldb, double beta, double *C, int ldc)
-!
-SUBROUTINE HIP_DGEMM(CTA, CTB, M, N, K,&
-ALPHA, A, LDA, B, LDB, BETA, C, LDC) BIND(C,NAME='hipblasDgemm')
-USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_DOUBLE
-CHARACTER(1,C_CHAR),VALUE :: CTA, CTB
-INTEGER(C_INT),     VALUE :: M,N,K,LDA,LDB,LDC
-REAL(C_DOUBLE),     VALUE :: ALPHA,BETA
-REAL(C_DOUBLE), DIMENSION(LDA,*) :: A
-REAL(C_DOUBLE), DIMENSION(LDB,*) :: B
-REAL(C_DOUBLE), DIMENSION(LDC,*) :: C
-END SUBROUTINE HIP_DGEMM
-END INTERFACE
 
 INTERFACE
     SUBROUTINE HIP_DGEMM_BATCHED(   &
@@ -84,29 +44,6 @@ INTERFACE
 END INTERFACE
 
 INTERFACE
-    SUBROUTINE HIP_DGEMM_STRIDED_BATCHED(&
-        & CTA, CTB,               &
-        & M, N, K,                &
-        & ALPHA,                  &
-        & A, LDA, TDA,            &
-        & B, LDB, TDB,            &
-        & BETA,                   &
-        & C, LDC, TDC,            &
-        & BATCHCOUNT, STREAM      &
-    &) BIND(C, NAME='hipblasDgemmStridedBatched_wrapper')
-        USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_DOUBLE, C_SIZE_T
-        CHARACTER(1,C_CHAR),  VALUE            :: CTA, CTB
-        INTEGER(C_INT),       VALUE            :: M, N, K, LDA, LDB, LDC, BATCHCOUNT
-        INTEGER(C_INT),       VALUE            :: TDA,TDB,TDC
-        REAL(C_DOUBLE),       VALUE            :: ALPHA, BETA
-        REAL(C_DOUBLE),       DIMENSION(LDA,*) :: A
-        REAL(C_DOUBLE),       DIMENSION(LDB,*) :: B
-        REAL(C_DOUBLE),       DIMENSION(LDC,*) :: C
-        INTEGER(KIND=C_SIZE_T) :: STREAM
-    END SUBROUTINE HIP_DGEMM_STRIDED_BATCHED
-END INTERFACE
-
-INTERFACE
     SUBROUTINE HIP_SGEMM_BATCHED(   &
         & CTA, CTB,                 &
         & M, N, K,                  &
@@ -127,29 +64,6 @@ INTERFACE
         INTEGER(KIND=C_SIZE_T) :: STREAM
         TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
     END SUBROUTINE HIP_SGEMM_BATCHED
-END INTERFACE
-
-INTERFACE
-    SUBROUTINE HIP_SGEMM_STRIDED_BATCHED(&
-        & CTA, CTB,               &
-        & M, N, K,                &
-        & ALPHA,                  &
-        & A, LDA, TDA,            &
-        & B, LDB, TDB,            &
-        & BETA,                   &
-        & C, LDC, TDC,            &
-        & BATCHCOUNT, STREAM      &
-    &) BIND(C, NAME='hipblasSgemmStridedBatched_wrapper')
-        USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_FLOAT, C_SIZE_T
-        CHARACTER(1,C_CHAR),  VALUE            :: CTA, CTB
-        INTEGER(C_INT),       VALUE            :: M, N, K, LDA, LDB, LDC, BATCHCOUNT
-        INTEGER(C_INT),       VALUE            :: TDA,TDB,TDC
-        REAL(C_FLOAT),        VALUE            :: ALPHA, BETA
-        REAL(C_FLOAT),        DIMENSION(LDA,*) :: A
-        REAL(C_FLOAT),        DIMENSION(LDB,*) :: B
-        REAL(C_FLOAT),        DIMENSION(LDC,*) :: C
-        INTEGER(KIND=C_SIZE_T) :: STREAM
-    END SUBROUTINE HIP_SGEMM_STRIDED_BATCHED
 END INTERFACE
 
 INTERFACE
