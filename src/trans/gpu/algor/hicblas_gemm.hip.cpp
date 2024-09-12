@@ -290,7 +290,7 @@ void hipblas_sgemm_wrapper (char transa, char transb,
 
 }
 
-void blas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
+void hipblas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 int m, int *n, int *k, float alpha,
                                 const float *A, int lda, int *offsetsA,
                                 const float *B, int ldb, int *offsetsB, float beta,
@@ -311,7 +311,7 @@ void blas_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
 #endif
 }
 
-void blas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
+void hipblas_dgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                 int m, int *n, int *k, double alpha,
                                 const double *A, int lda, int *offsetsA,
                                 const double *B, int ldb, int *offsetsB, double beta,

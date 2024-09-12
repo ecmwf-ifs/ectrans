@@ -172,7 +172,7 @@ SUBROUTINE HIP_DGEMM_GROUPED(   &
     & BETA,                     &
     & C, LDC, OFFSETC,          &
     & BATCHCOUNT, STREAM, ALLOC &
-&) BIND(C, NAME='blas_dgemm_wrapper_grouped')
+&) BIND(C, NAME='hipblas_dgemm_wrapper_grouped')
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_DOUBLE, C_SIZE_T, C_PTR
     CHARACTER(1,C_CHAR), VALUE :: CTA, CTB
     INTEGER(C_INT), VALUE  :: BLAS_ID, M, LDA, LDB, LDC, BATCHCOUNT
@@ -191,7 +191,7 @@ SUBROUTINE HIP_SGEMM_GROUPED(   &
     & BETA,                     &
     & C, LDC, OFFSETC,          &
     & BATCHCOUNT, STREAM, ALLOC &
-&) BIND(C, NAME='blas_sgemm_wrapper_grouped')
+&) BIND(C, NAME='hipblas_sgemm_wrapper_grouped')
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_FLOAT, C_SIZE_T, C_PTR
     CHARACTER(1,C_CHAR), VALUE :: CTA, CTB
     INTEGER(C_INT), VALUE :: BLAS_ID, M, LDA, LDB, LDC, BATCHCOUNT
