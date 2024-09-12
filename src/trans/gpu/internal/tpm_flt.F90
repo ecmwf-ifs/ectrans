@@ -33,11 +33,6 @@ REAL(KIND=JPRBT) :: RCA
 REAL(KIND=JPRBT) ,POINTER :: RPNMWI(:,:) ! special weights
 REAL(KIND=JPRBT) ,POINTER :: RPNMWO(:,:) ! special weights
 INTEGER(KIND=JPIM) :: ISLD ! starting latitude dual
-
-! Butterfly
-
-INTEGER(KIND=JPIM) :: MAXCOLS
-
 END TYPE FLT_TYPE
 
 TYPE FLT_TYPE_WRAP
