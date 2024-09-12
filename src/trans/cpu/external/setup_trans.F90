@@ -337,11 +337,15 @@ IF(PRESENT(LDUSEFFTW)) THEN
   WRITE(NOUT,*) 'FFTW is now mandatory so this option is deprecated'
 ENDIF
 
+! Setup distribution independent dimensions
+CALL SETUP_DIMS
+
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
   IF (ABS(PSTRET-1.0_JPRD)>100._JPRD*EPSILON(1._JPRD)) THEN
     G%RSTRET=PSTRET
     S%LSOUTHPNM=.TRUE.
+    R%NLEI3=2*R%NLEI3 ! double
   ENDIF
 ENDIF
 
@@ -387,9 +391,6 @@ IF(PRESENT(LDKEEPRPNM)) THEN
 ENDIF
 !     Setup resolution dependent structures
 !     -------------------------------------
-
-! Setup distribution independent dimensions
-CALL SETUP_DIMS
 
 ! First part of setup of distributed environment
 CALL SUMP_TRANS_PRELEG

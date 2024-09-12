@@ -374,12 +374,15 @@ IF(PRESENT(LDPNMONLY)) THEN
   D%LCPNMONLY=LDPNMONLY
 ENDIF
 
+! Setup distribution independent dimensions
+CALL SETUP_DIMS
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
   IF (ABS(PSTRET-1.0_JPRBT)>100._JPRBT*EPSILON(1._JPRBT)) THEN
     G%RSTRET=PSTRET
     S%LSOUTHPNM=.TRUE.
+    R%NLEI3=2*R%NLEI3 ! double
   ENDIF
 ENDIF
 
@@ -421,9 +424,6 @@ IF(PRESENT(LDKEEPRPNM)) THEN
 ENDIF
 !     Setup resolution dependent structures
 !     -------------------------------------
-
-! Setup distribution independent dimensions
-CALL SETUP_DIMS
 
 ! First part of setup of distributed environment
 CALL SUMP_TRANS_PRELEG
