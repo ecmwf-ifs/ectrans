@@ -24,6 +24,7 @@ list( APPEND ectrans_common_src
   internal/tpm_constants.F90
   internal/tpm_ctl.F90
   internal/tpm_dim.F90
+  internal/tpm_fields.F90
   internal/tpm_gen.F90
   internal/tpm_geometry.F90
   internal/tpm_pol.F90
