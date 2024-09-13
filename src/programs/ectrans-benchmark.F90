@@ -51,6 +51,9 @@ implicit none
 ! Number of points in top/bottom latitudes
 integer(kind=jpim), parameter :: min_octa_points = 20
 
+! Number of warm up steps (for which timing statistics should be ignored)
+integer(kind=jpim), parameter :: n_warm_up = 2
+
 integer(kind=jpim) :: istack, getstackusage
 real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
 real(kind=jprd) :: zmaxerrg
@@ -575,26 +578,16 @@ endif
 
 if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
 
-allocate(ztstep(iters+2))
-allocate(ztstep1(iters+2))
-allocate(ztstep2(iters+2))
-
-ztstepavg  = 0._jprd
-ztstepmax  = 0._jprd
-ztstepmin  = 9999999999999999._jprd
-ztstepavg1 = 0._jprd
-ztstepmax1 = 0._jprd
-ztstepmin1 = 9999999999999999._jprd
-ztstepavg2 = 0._jprd
-ztstepmax2 = 0._jprd
-ztstepmin2 = 9999999999999999._jprd
+allocate(ztstep(iters+n_warm_up))
+allocate(ztstep1(iters+n_warm_up))
+allocate(ztstep2(iters+n_warm_up))
 
 if (verbosity >= 1 .and. myproc == 1) then
   write(nout,'(a)') '======= Start of spectral transforms  ======='
   write(nout,'(" ")')
 endif
 
-ztloop = timef()
+
 
 !===================================================================================================
 ! Do spectral transform loop
@@ -602,11 +595,15 @@ ztloop = timef()
 
 gstats_lstats = .false.
 
-write(nout,'(a,i5,a)') 'Running for ', iters, ' iterations with 2 extra warm-up iterations'
+write(nout,'(a,i5,a,i5,a)') 'Running for ', iters, ' iterations with', n_warm_up, &
+  & 'extra warm-up iterations'
 write(nout,'(" ")')
 
-do jstep = 1, iters+2
-  if (jstep == 3) gstats_lstats = .true.
+do jstep = 1, iters+n_warm_up
+  if (jstep == n_warm_up + 1) then
+    gstats_lstats = .true.
+    ztloop = timef()
+  endif
 
   call gstats(3,0)
   ztstep(jstep) = timef()
@@ -690,23 +687,7 @@ do jstep = 1, iters+2
   call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
 
-  !=================================================================================================
-  ! Calculate timings
-  !=================================================================================================
-
   ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
-
-  ztstepavg = ztstepavg + ztstep(jstep)
-  ztstepmin = min(ztstep(jstep), ztstepmin)
-  ztstepmax = max(ztstep(jstep), ztstepmax)
-
-  ztstepavg1 = ztstepavg1 + ztstep1(jstep)
-  ztstepmin1 = min(ztstep1(jstep), ztstepmin1)
-  ztstepmax1 = max(ztstep1(jstep), ztstepmax1)
-
-  ztstepavg2 = ztstepavg2 + ztstep2(jstep)
-  ztstepmin2 = min(ztstep2(jstep), ztstepmin2)
-  ztstepmax2 = max(ztstep2(jstep), ztstepmax2)
 
   !=================================================================================================
   ! Print norms
@@ -858,6 +839,20 @@ if (lprint_norms .or. ncheck > 0) then
   endif
 endif
 
+!===================================================================================================
+! Calculate timings
+!===================================================================================================
+
+ztstepavg = sum(ztstep(n_warm_up+1:))
+ztstepmin = minval(ztstep(n_warm_up+1:))
+ztstepmax = maxval(ztstep(n_warm_up+1:))
+ztstepavg1 = sum(ztstep1(n_warm_up+1:))
+ztstepmin1 = minval(ztstep1(n_warm_up+1:))
+ztstepmax1 = maxval(ztstep1(n_warm_up+1:))
+ztstepavg2 = sum(ztstep2(n_warm_up+1:))
+ztstepmin2 = minval(ztstep2(n_warm_up+1:))
+ztstepmax2 = maxval(ztstep2(n_warm_up+1:))
+
 if (luse_mpi) then
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
   call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
@@ -879,15 +874,15 @@ endif
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
-ztstepmed = get_median(ztstep)
+ztstepmed = get_median(ztstep(n_warm_up+1:))
 
 ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
-ztstepmed1 = get_median(ztstep1)
+ztstepmed1 = get_median(ztstep1(n_warm_up+1:))
 
 ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
-ztstepmed2 = get_median(ztstep2)
+ztstepmed2 = get_median(ztstep2(n_warm_up+1:))
 
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
