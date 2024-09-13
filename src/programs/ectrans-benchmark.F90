@@ -65,7 +65,7 @@ integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
-integer(kind=jpim) :: iters_warmup = 2 ! Number of warm up steps (for which timing statistics should be ignored)
+integer(kind=jpim) :: iters_warmup = 3 ! Number of warm up steps (for which timing statistics should be ignored)
 
 integer(kind=jpim) :: nflevg
 integer(kind=jpim) :: ndgl ! Number of latitudes
@@ -1248,7 +1248,7 @@ subroutine print_help(unit)
   write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
     & iterations (default = 10)"
   write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
-    & for which timing statistics should be ignored (default = 2)"
+    & for which timing statistics should be ignored (default = 3)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
