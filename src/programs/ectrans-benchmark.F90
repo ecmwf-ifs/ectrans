@@ -51,9 +51,6 @@ implicit none
 ! Number of points in top/bottom latitudes
 integer(kind=jpim), parameter :: min_octa_points = 20
 
-! Number of warm up steps (for which timing statistics should be ignored)
-integer(kind=jpim), parameter :: n_warm_up = 2
-
 integer(kind=jpim) :: istack, getstackusage
 real(kind=jprd), dimension(1) :: zmaxerr(5), zerr(5)
 real(kind=jprd) :: zmaxerrg
@@ -68,6 +65,7 @@ integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
+integer(kind=jpim) :: iters_warmup = 3 ! Number of warm up steps (for which timing statistics should be ignored)
 
 integer(kind=jpim) :: nflevg
 integer(kind=jpim) :: ndgl ! Number of latitudes
@@ -223,7 +221,7 @@ integer(kind=jpim) :: ierr
 luse_mpi = detect_mpirun()
 
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
+call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
   & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
@@ -571,16 +569,16 @@ ztinit = (timef() - ztinit)/1000.0_jprd
 
 if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'(a,i6,a,f9.2,a)') "ectrans_benchmark initialisation, on",nproc,&
+  write(nout,'(a,i0,a,f9.2,a)') "ectrans_benchmark initialisation, on ",nproc,&
                                 & " tasks, took",ztinit," sec"
   write(nout,'(" ")')
 endif
 
 if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
 
-allocate(ztstep(iters+n_warm_up))
-allocate(ztstep1(iters+n_warm_up))
-allocate(ztstep2(iters+n_warm_up))
+allocate(ztstep(iters+iters_warmup))
+allocate(ztstep1(iters+iters_warmup))
+allocate(ztstep2(iters+iters_warmup))
 
 if (verbosity >= 1 .and. myproc == 1) then
   write(nout,'(a)') '======= Start of spectral transforms  ======='
@@ -595,12 +593,12 @@ endif
 
 gstats_lstats = .false.
 
-write(nout,'(a,i5,a,i5,a)') 'Running for ', iters, ' iterations with', n_warm_up, &
-  & 'extra warm-up iterations'
+write(nout,'(a,i0,a,i0,a)') 'Running for ', iters, ' iterations with ', iters_warmup, &
+  & ' extra warm-up iterations'
 write(nout,'(" ")')
 
-do jstep = 1, iters+n_warm_up
-  if (jstep == n_warm_up + 1) then
+do jstep = 1, iters+iters_warmup
+  if (jstep == iters_warmup + 1) then
     gstats_lstats = .true.
     ztloop = timef()
   endif
@@ -706,8 +704,6 @@ do jstep = 1, iters+n_warm_up
     if (myproc == 1) then
       zmaxerr(:) = -999.0
       do ifld = 1, 1
-        write(nout,*) "znormsp", znormsp
-        flush(nout)
         zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
         zmaxerr(1) = max(zmaxerr(1), zerr(1))
       enddo
@@ -843,15 +839,15 @@ endif
 ! Calculate timings
 !===================================================================================================
 
-ztstepavg = sum(ztstep(n_warm_up+1:))
-ztstepmin = minval(ztstep(n_warm_up+1:))
-ztstepmax = maxval(ztstep(n_warm_up+1:))
-ztstepavg1 = sum(ztstep1(n_warm_up+1:))
-ztstepmin1 = minval(ztstep1(n_warm_up+1:))
-ztstepmax1 = maxval(ztstep1(n_warm_up+1:))
-ztstepavg2 = sum(ztstep2(n_warm_up+1:))
-ztstepmin2 = minval(ztstep2(n_warm_up+1:))
-ztstepmax2 = maxval(ztstep2(n_warm_up+1:))
+ztstepavg = sum(ztstep(iters_warmup+1:))
+ztstepmin = minval(ztstep(iters_warmup+1:))
+ztstepmax = maxval(ztstep(iters_warmup+1:))
+ztstepavg1 = sum(ztstep1(iters_warmup+1:))
+ztstepmin1 = minval(ztstep1(iters_warmup+1:))
+ztstepmax1 = maxval(ztstep1(iters_warmup+1:))
+ztstepavg2 = sum(ztstep2(iters_warmup+1:))
+ztstepmin2 = minval(ztstep2(iters_warmup+1:))
+ztstepmax2 = maxval(ztstep2(iters_warmup+1:))
 
 if (luse_mpi) then
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
@@ -874,15 +870,15 @@ endif
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
-ztstepmed = get_median(ztstep(n_warm_up+1:))
+ztstepmed = get_median(ztstep(iters_warmup+1:))
 
 ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
-ztstepmed1 = get_median(ztstep1(n_warm_up+1:))
+ztstepmed1 = get_median(ztstep1(iters_warmup+1:))
 
 ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
-ztstepmed2 = get_median(ztstep2(n_warm_up+1:))
+ztstepmed2 = get_median(ztstep2(iters_warmup+1:))
 
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
@@ -1056,13 +1052,14 @@ end subroutine
 
 !===================================================================================================
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
+subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
   integer, intent(inout) :: iters           ! Number of iterations for transform test
+  integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
   integer, intent(inout) :: nfld            ! Number of scalar fields
   integer, intent(inout) :: nlev            ! Number of vertical levels
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
@@ -1106,6 +1103,11 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
         iters = get_int_value('-n', iarg)
         if (iters < 1) then
           call parsing_failed("Invalid argument for -n: must be > 0")
+        end if
+      case('--niter-warmup')
+        iters_warmup = get_int_value('--niter-warmup', iarg)
+        if (iters_warmup < 0) then
+          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
         end if
       ! Parse spectral truncation argument
       case('-t', '--truncation')
@@ -1245,6 +1247,8 @@ subroutine print_help(unit)
     & (cubic relation)"
   write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
     & iterations (default = 10)"
+  write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
+    & for which timing statistics should be ignored (default = 3)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
