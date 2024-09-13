@@ -152,10 +152,6 @@ CONTAINS
     !$ACC&     PRESENT(R_NSMAX,G_NDGLU,D_OFFSETS_GEMM2)
 #endif
 
-    IF (KMLOC0 > 0) THEN
-      WRITE(NOUT,*) 'computing m=0 in double precision'
-    ENDIF
-
     ! READ 2:NSMAX+3
 
     !IF KM=0 and NSMAX is 6:

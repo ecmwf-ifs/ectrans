@@ -154,11 +154,6 @@ CONTAINS
     !$ACC& PRESENT(ZAA,ZAS,POA1,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2)
 #endif
 
-    ! anti-symmetric
-    IF(KMLOC0 > 0) THEN
-      WRITE(NOUT,*) 'computing m=0 in double precision'
-    ENDIF
-
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
       !$ACC WAIT(1)
