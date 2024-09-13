@@ -579,7 +579,7 @@ ztinit = (timef() - ztinit)/1000.0_jprd
 if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a,i0,a,f9.2,a)') "ectrans_benchmark initialisation, on ",nproc,&
-                                & " tasks, took",ztinit," sec"
+                                & " tasks, took ",ztinit," sec"
   write(nout,'(" ")')
 endif
 
