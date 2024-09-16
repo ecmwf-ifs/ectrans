@@ -147,8 +147,11 @@ foreach( prec dp sp )
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${HAVE_MPI}:MPI::MPI_Fortran>
           PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
-                               ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+                               $<${HAVE_CUTLASS}:USE_CUTLASS>
+                               $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
+                               $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
+                               ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
         )
 
         ectrans_target_fortran_module_directory(
