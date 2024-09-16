@@ -82,6 +82,7 @@ Extra options can be added to the `cmake` command to control the build:
 Specific extra options exist for GPU installation:
  - `-DENABLE_GPU_AWARE_MPI=<ON|OFF>`    default=OF
  - `-DENABLE_GPU_GRAPHS_GEMM=<ON|OFF>`  default=ON
+ - `-DENABLE_GPU_GRAPHS_FFT=<ON|OFF>`   default=ON
  - `-DENABLE_CUTLASS=<ON|OFF>`          default=OFF
  - `-DENABLE_3XTF32=<ON|OFF>`           default=OFF
 
