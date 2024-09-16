@@ -51,7 +51,7 @@ public:
     else if constexpr (Direction == HIPFFT_Z2D)
       fftSafeCall(hipfftExecZ2D(handle, data_complex_l, data_real_l));
   }
-  void set_stream(cudaStream_t stream) {
+  void set_stream(hipStream_t stream) {
     fftSafeCall(hipfftSetStream(handle, stream));
   }
   hicfft_plan(hipfftHandle handle_, int offset_)
