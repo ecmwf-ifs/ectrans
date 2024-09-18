@@ -16,7 +16,7 @@
 #pragma clang diagnostic ignored "-W#pragma-messages"
 #endif
 #include <hip/hip_runtime.h>
-#include "hipfft.h"
+#include "hipfft/hipfft.h"
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif

@@ -11,7 +11,7 @@
 #pragma clang diagnostic ignored "-W#pragma-messages"
 #endif
 #include "hip/hip_runtime_api.h"
-#include "rocblas.h"
+#include "rocblas/rocblas.h"
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
