@@ -27,6 +27,7 @@ if( HAVE_HIP )
     algor/hicblas_gemm.hip.cpp
     algor/hicfft.hip.cpp
   )
+  ecbuild_info("warn: IN_PLACE_FFT not defined for hipFFT")
 elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
@@ -34,6 +35,7 @@ elseif( HAVE_CUDA )
     algor/hicblas_gemm.cuda.cu
     algor/hicfft.cuda.cu
   )
+  ecbuild_info("warn: IN_PLACE_FFT defined for cuFFT")
 else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
@@ -164,6 +166,11 @@ foreach( prec dp sp )
 
         if( prec STREQUAL sp )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
+        endif()
+
+        # cuFFT can do in-place FFT, hipFFT cannot
+        if( HAVE_CUDA )
+          target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
 
         if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
