@@ -61,7 +61,7 @@ ecbuild_add_library(
                        $<${HAVE_CUTLASS}:USE_CUTLASS>
                        $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
-		       $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
+                       $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
 )
 
 ectrans_target_fortran_module_directory(
@@ -151,7 +151,7 @@ foreach( prec dp sp )
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
-			       $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
+                               $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
         )
