@@ -582,7 +582,7 @@ CONTAINS
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
-    !$ACC UPDATE HOST(ZCOMBUFS) IF(ISEND_COUNT > 0)
+    !$ACC UPDATE HOST(ZCOMBUFS) IF(ISEND_COUNTS > 0)
 #endif
     !  Receive loop.........................................................
     DO INR=1,IRECV_COUNTS
