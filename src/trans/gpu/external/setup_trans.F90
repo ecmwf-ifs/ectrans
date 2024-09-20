@@ -211,6 +211,9 @@ IF(LLP1) THEN
 #ifdef USE_GPU_AWARE_MPI
   WRITE(NOUT,'(A)') " - GPU-aware MPI"
 #endif
+#ifdef USE_GRAPHS_FFT
+  WRITE(NOUT,'(A)') " - graph-based FFT scheduling"
+#endif
 #ifdef USE_GRAPHS_GEMM
   WRITE(NOUT,'(A)') " - graph-based GEMM scheduling"
 #endif

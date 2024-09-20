@@ -140,6 +140,11 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )
 
+	    ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
+                    DEFAULT ON
+                    CONDITION HAVE_GPU
+		    DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
+
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
 else()
