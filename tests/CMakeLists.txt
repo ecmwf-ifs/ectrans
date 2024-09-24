@@ -32,7 +32,7 @@ if( HAVE_TESTS )
   endif()
   if( NOT HAVE_DOUBLE_PRECISION )
     list( APPEND _test_args "-DCOMPONENTS=single" )
-  endif() 
+  endif()
 
   add_test( NAME ectrans_test_install
             COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-install.sh ${_test_args} )
@@ -46,10 +46,11 @@ if( HAVE_TESTS )
   endif()
 
   ecbuild_add_executable(
-      TARGET  ectrans_test_setup_trans0
-      SOURCES trans/test_setup_trans0.F90
-      LIBS    ectrans_common
-      NOINSTALL)
+    TARGET  ectrans_test_setup_trans0
+    SOURCES trans/test_setup_trans0.F90
+    LIBS    ectrans_common
+    LINKER_LANGUAGE Fortran
+    NOINSTALL)
   set( ntasks 0 )
   if( HAVE_MPI )
     list( APPEND ntasks 1 2 )
