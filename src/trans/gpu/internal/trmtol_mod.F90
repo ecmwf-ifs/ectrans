@@ -158,7 +158,11 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
+#ifdef __HIP_PLATFORM_AMD__  # Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
+          !$ACC KERNELS DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN) COPYIN(FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
+#else
           !$ACC KERNELS ASYNC(1) DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN) COPYIN(FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
+#endif
 #endif
           PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
 #ifdef OMPGPU
@@ -213,7 +217,9 @@ CONTAINS
       CALL GSTATS(421,1)
 
 #ifdef ACCGPU
+#ifndef __HIP_PLATFORM_AMD__  # Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
       !$ACC WAIT(1)
+#endif
 #endif
       CALL GSTATS(807,1)
     ELSE
