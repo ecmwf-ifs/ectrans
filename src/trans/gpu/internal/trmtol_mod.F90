@@ -95,6 +95,7 @@ CONTAINS
     USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR
 #if ECTRANS_HAVE_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_FLOAT, MPI_DOUBLE
+    ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
@@ -158,7 +159,8 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-#ifdef __HIP_PLATFORM_AMD__  # Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
+#ifdef __HIP_PLATFORM_AMD__
+          ! Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
           !$ACC KERNELS DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN) COPYIN(FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
 #else
           !$ACC KERNELS ASYNC(1) DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN) COPYIN(FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
@@ -217,7 +219,8 @@ CONTAINS
       CALL GSTATS(421,1)
 
 #ifdef ACCGPU
-#ifndef __HIP_PLATFORM_AMD__  # Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
+#ifndef __HIP_PLATFORM_AMD__
+      ! Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
       !$ACC WAIT(1)
 #endif
 #endif

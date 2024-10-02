@@ -115,6 +115,7 @@ CONTAINS
     USE OML_MOD,                ONLY: OML_MY_THREAD
 #if ECTRANS_HAVE_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REQUEST, MPI_FLOAT, MPI_DOUBLE
+    ! Missing: MPI_ISEND, MPI_IRECV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE TPM_TRANS,              ONLY: NPROMA
