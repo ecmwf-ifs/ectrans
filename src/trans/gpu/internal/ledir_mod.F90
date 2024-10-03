@@ -220,7 +220,7 @@ CONTAINS
     !$ACC HOST_DATA USE_DEVICE(ZAA,ZINPA,ZOUT)
 #endif
     CALL HIP_GEMM( &
-      & 21, & ! unique identifier
+      & NCUR_RESOL, 21, & ! unique identifier
       & 'N', 'N', &
       & 2*KF_FS, NS(:), KS(:), &
       & 1.0_JPRBT, &
@@ -335,7 +335,7 @@ CONTAINS
     !$ACC HOST_DATA USE_DEVICE(ZAS,ZINPS,ZOUT)
 #endif
     CALL HIP_GEMM( &
-      & 22, & ! unique identifier
+      & NCUR_RESOL, 22, & ! unique identifier
       & 'N', 'N', &
       & 2*KF_FS, NS(:), KS(:), &
       & 1.0_JPRBT, &
