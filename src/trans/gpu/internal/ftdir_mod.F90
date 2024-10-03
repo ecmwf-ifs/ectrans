@@ -73,11 +73,10 @@ CONTAINS
     !        G. Mozdzynski (Jun 2015): Support alternative FFTs to FFTW
     !     ------------------------------------------------------------------
 
-    USE TPM_GEN,                ONLY: LSYNC_TRANS
+    USE TPM_GEN,                ONLY: LSYNC_TRANS, NCUR_RESOL
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT
-    USE TPM_DISTR,              ONLY: MYSETW, MYPROC, NPROC, D_NSTAGT0B, D_NSTAGTF,D_NPTRLS, &
-      &                               D_NPNTGTB0, D_NPROCM, D_NDGL_FS, D
-    USE TPM_GEOMETRY,           ONLY: G_NMEN, G_NLOEN
+    USE TPM_DISTR,              ONLY: MYSETW, MYPROC, NPROC, D
+    USE TPM_GEOMETRY,           ONLY: G
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
     USE TPM_HICFFT,             ONLY: EXECUTE_DIR_FFT
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
@@ -100,6 +99,10 @@ CONTAINS
     CALL ASSIGN_PTR(PREEL_COMPLEX, GET_ALLOCATION(ALLOCATOR, HFTDIR%HREEL_COMPLEX),&
       & 1_C_SIZE_T, INT(KFIELD*D%NLENGTF,KIND=C_SIZE_T)*C_SIZEOF(PREEL_COMPLEX(1)))
 #endif
+
+    ASSOCIATE(D_NDGL_FS=>D%NDGL_FS, D_NSTAGT0B=>D%NSTAGT0B, D_NSTAGTF=>D%NSTAGTF, &
+            & D_NPTRLS=>D%NPTRLS, D_NPNTGTB0=>D%NPNTGTB0, D_NPROCM=>D%NPROCM, &
+            & G_NMEN=>G%NMEN, G_NLOEN=>G%NLOEN)
 
 #ifdef ACCGPU
     !$ACC DATA PRESENT(PREEL_REAL, PREEL_COMPLEX, &
@@ -134,6 +137,7 @@ CONTAINS
 #endif
 
     NULLIFY(PREEL_REAL)
+    END ASSOCIATE
 
     !     ------------------------------------------------------------------
   END SUBROUTINE FTDIR

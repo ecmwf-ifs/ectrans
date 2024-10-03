@@ -57,8 +57,8 @@ MODULE UPDSPB_MOD
   !     ------------------------------------------------------------------
   
   USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
-  USE TPM_DIM,         ONLY: R_NTMAX
-  USE TPM_DISTR,       ONLY: D_NUMP, D_MYMS, D_NASM0
+  USE TPM_DIM,         ONLY: R
+  USE TPM_DISTR,       ONLY: D
   !
   
   IMPLICIT NONE
@@ -85,6 +85,7 @@ MODULE UPDSPB_MOD
   ! and nn=NTMAX+2-n from NTMAX+2-m to NTMAX+2-NSMAX.
   ! NLTN(m)=NTMAX+2-m : n=NLTN(nn),nn=NLTN(n)
   ! nn is the loop index.
+    ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NTMAX=>R%NTMAX)
   
     IF(PRESENT(KFLDPTR)) THEN
        stop 'Error: code path not (yet) supported in GPU version'
@@ -135,6 +136,7 @@ MODULE UPDSPB_MOD
   !$ACC END DATA
 #endif
  
+END ASSOCIATE
   !     ------------------------------------------------------------------
  
   END SUBROUTINE UPDSPB

@@ -14,8 +14,8 @@ MODULE PRFI1B_MOD
   SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
   USE PARKIND1,        ONLY: JPIM, JPRB
-  USE TPM_DIM,         ONLY: R, R_NSMAX
-  USE TPM_DISTR,       ONLY: D, D_NUMP, D_MYMS, D_NASM0
+  USE TPM_DIM,         ONLY: R
+  USE TPM_DISTR,       ONLY: D
   USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
   
   !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
@@ -77,6 +77,7 @@ MODULE PRFI1B_MOD
   
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
+  ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NSMAX=>R%NSMAX)
 
 #ifdef ACCGPU
   !$ACC DATA &
@@ -188,6 +189,7 @@ ENDIF
 #endif
 
   !     ------------------------------------------------------------------
+    END ASSOCIATE
  
   END SUBROUTINE PRFI1B
 END MODULE PRFI1B_MOD
