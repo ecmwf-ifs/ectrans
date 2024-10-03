@@ -15,7 +15,8 @@ SUBROUTINE VDTUV(KFIELD,PEPSNM,PVOR,PDIV,PU,PV)
 
 USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
 USE TPM_DIM,         ONLY: R, R_NTMAX
-USE TPM_FIELDS,      ONLY: F, F_RLAPIN, F_RN
+USE TPM_FIELDS,      ONLY: F
+USE TPM_FIELDS_FLAT, ONLY: F_RLAPIN
 USE TPM_DISTR,       ONLY: D, D_NUMP, D_MYMS
 
 !**** *VDTUV* - Compute U,V in  spectral space
@@ -87,14 +88,14 @@ REAL(KIND=JPRBT) :: ZKM
 
 #ifdef ACCGPU
 !$ACC DATA                                                       &
-!$ACC&      PRESENT(R_NTMAX,D_MYMS,D_NUMP,F_RLAPIN,F_RN) &
+!$ACC&      PRESENT(R_NTMAX,D_MYMS,D_NUMP,F_RLAPIN) &
 !$ACC&      PRESENT(PEPSNM, PVOR, PDIV)                          &
 !$ACC&      PRESENT(PU, PV)
 #endif
 #ifdef OMPGPU
 !$OMP TARGET DATA                              &
 !$OMP&      MAP (PRESENT,ALLOC:ZEPSNM, ZN, ZLAPIN)     &
-!$OMP&      MAP (TO:R_NSMAX, D_MYMS,D_NUMP,F_RLAPIN,F_RN)  &
+!$OMP&      MAP (TO:R_NSMAX, D_MYMS,D_NUMP,F_RLAPIN)  &
 !$OMP&      MAP(PRESENT,ALLOC:ZEPSNM, PVOR, PDIV)      &
 !$OMP&      MAP(PRESENT,ALLOC:PU, PV)
 #endif

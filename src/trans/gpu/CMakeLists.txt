@@ -92,7 +92,6 @@ function(generate_backend_sources)
   )
   list( APPEND files
           algor/seefmm_mix.F90
-          algor/wts500_mod.F90
   )
   ecbuild_list_exclude_pattern( LIST files REGEX
           parkind_ectrans.F90

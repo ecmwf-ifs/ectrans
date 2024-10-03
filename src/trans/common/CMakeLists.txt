@@ -18,12 +18,14 @@ list( APPEND ectrans_common_src
   internal/cpledn_mod.F90
   internal/field_split_mod.F90
   internal/gawl_mod.F90
+  internal/interpol_decomp_mod.F90
   internal/sugaw_mod.F90
   internal/supol_mod.F90
   internal/supolf_mod.F90
   internal/tpm_constants.F90
   internal/tpm_ctl.F90
   internal/tpm_dim.F90
+  internal/tpm_fields.F90
   internal/tpm_gen.F90
   internal/tpm_geometry.F90
   internal/tpm_pol.F90
@@ -31,6 +33,9 @@ list( APPEND ectrans_common_src
   internal/pe2set_mod.F90
   internal/set2pe_mod.F90
   internal/eq_regions_mod.F90
+  internal/pre_suleg_mod.F90
+  internal/setup_dims_mod.F90
+  internal/setup_geom_mod.F90
   internal/shuffle_mod.F90
   internal/sump_trans0_mod.F90
   internal/sustaonl_mod.F90
@@ -42,6 +47,7 @@ list( APPEND ectrans_common_src
   internal/myrecvset_mod.F90
   internal/suwavedi_mod.F90
   internal/sump_trans_preleg_mod.F90
+  internal/wts500_mod.F90
   external/get_current.F90
   external/setup_trans0.F90
   external/ini_spec_dist.F90
