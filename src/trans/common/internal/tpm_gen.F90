@@ -37,12 +37,12 @@ LOGICAL   :: LSYNC_TRANS     ! true: activate barriers in trmtol and trltom
 ! 0 = Post IRECVs up-front, use ISENDs, use WAITANY to recv data (default)
 ! 1 = Use ISENDs, use blocking RECVs, add barrier at the end of each cycle
 ! 2 = Use buffered SENDs, use blocking RECVs, add barrier at the end of each cycle
-INTEGER(KIND=JPIM) :: NTRANS_SYNC_LEVEL = 0
+INTEGER(KIND=JPIM) :: NTRANS_SYNC_LEVEL
 
 ! NSTACK_MEMORY_TR : optional memory strategy in gridpoint transpositions
 ! = 0 : prefer heap (slower but less memory consuming)
 ! > 0 : prefer stack (faster but more memory consuming)
-INTEGER(KIND=JPIM) :: NSTACK_MEMORY_TR = 0
+INTEGER(KIND=JPIM) :: NSTACK_MEMORY_TR
 
 LOGICAL, ALLOCATABLE :: LENABLED(:)   ! true: the resolution is enabled (it has been
                                       ! initialised and has not been released afterward) 
