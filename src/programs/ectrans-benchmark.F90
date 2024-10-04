@@ -9,6 +9,12 @@
 
 program ectrans_benchmark
 
+#ifdef USE_PINNED
+#define PINNED_TAG , pinned
+#else
+#define PINNED_TAG
+#endif
+
 !
 ! Spectral transform test
 !
@@ -95,18 +101,18 @@ real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
-real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
+real(kind=jprb), allocatable, target PINNED_TAG :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable, target PINNED_TAG :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
 real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
 
 ! Spectral space data structures
-real(kind=jprb), allocatable, target :: sp3d(:,:,:)
+real(kind=jprb), allocatable, target PINNED_TAG :: sp3d(:,:,:)
 real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
-real(kind=jprb), allocatable :: zspsc2(:,:)
+real(kind=jprb), allocatable PINNED_TAG :: zspsc2(:,:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
