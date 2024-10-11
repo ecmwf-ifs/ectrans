@@ -94,7 +94,8 @@ CONTAINS
     USE TPM_DISTR,              ONLY: D, NPRTRW, NPROC, MYPROC, MYSETW
     USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR
 #if ECTRANS_HAVE_MPI
-    USE MPI_F08,                ONLY: MPI_COMM, MPI_FLOAT, MPI_DOUBLE, MPI_ALLTOALLV
+    USE MPI_F08,                ONLY: MPI_COMM, MPI_FLOAT, MPI_DOUBLE
+    ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
