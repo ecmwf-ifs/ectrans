@@ -50,12 +50,11 @@ MODULE PREPSNM_MOD
   
   !     ------------------------------------------------------------------
  
-  USE PARKIND_ECTRANS ,ONLY : JPIM     ,JPRBT
- 
-  USE TPM_DIM         ,ONLY : R
-  USE TPM_FIELDS      ,ONLY : F, ZEPSNM
-  USE TPM_DISTR       ,ONLY : D
-  USE TPM_GEN         ,ONLY : NOUT
+  USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
+  USE TPM_DIM,         ONLY: R
+  USE TPM_FIELDS,      ONLY: F
+  USE TPM_FIELDS_FLAT, ONLY: ZEPSNM
+  USE TPM_DISTR,       ONLY: D
   !
  
   IMPLICIT NONE
@@ -91,7 +90,7 @@ MODULE PREPSNM_MOD
      ENDIF
  
      DO JN=KM,R%NTMAX+2
-        ZEPSNM(KMLOC,JN) = F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN)
+        ZEPSNM(KMLOC,JN) =REAL(F%REPSNM(D%NPMT(KM)+KMLOC-KM+JN),JPRBT)
      ENDDO
      ! end loop over wavenumber
   ENDDO

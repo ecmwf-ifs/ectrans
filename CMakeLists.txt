@@ -34,14 +34,16 @@ ecbuild_add_option( FEATURE OMP
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
-if( ${CMAKE_VERSION} VERSION_LESS "3.25" AND (NOT DEFINED ENABLE_ACC OR ENABLE_ACC ) )
-  # See https://gitlab.kitware.com/cmake/cmake/-/issues/23691, fixed in CMake 3.25
-  # (TL;DR: FindOpenACC sets OpenACC_<LANG>_FOUND correctly but does not set
-  #  OpenACC_FOUND unless all three C, CXX, and Fortran have been found - even if
-  #  only one language has been requested via COMPONENTS)
-  find_package( OpenACC COMPONENTS Fortran )
-  if( OpenACC_Fortran_FOUND )
-    set( OpenACC_FOUND ON )
+if( ${CMAKE_VERSION} VERSION_LESS "3.25" )
+  if ( ECTRANS_ENABLE_ACC OR (NOT DEFINED ECTRANS_ENABLE_ACC AND ENABLE_ACC) )
+    # See https://gitlab.kitware.com/cmake/cmake/-/issues/23691, fixed in CMake 3.25
+    # (TL;DR: FindOpenACC sets OpenACC_<LANG>_FOUND correctly but does not set
+    #  OpenACC_FOUND unless all three C, CXX, and Fortran have been found - even if
+    #  only one language has been requested via COMPONENTS)
+    find_package( OpenACC COMPONENTS Fortran )
+    if( OpenACC_Fortran_FOUND )
+      set( OpenACC_FOUND ON )
+    endif()
   endif()
 endif()
 
@@ -104,8 +106,8 @@ endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
-                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support and MPI)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) AND HAVE_MPI )
+                    DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
+                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
 
 if( HAVE_GPU )
   if( HAVE_ACC )
@@ -139,6 +141,11 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     DEFAULT ON
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )
+
+	    ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
+                    DEFAULT ON
+                    CONDITION HAVE_GPU
+		    DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )

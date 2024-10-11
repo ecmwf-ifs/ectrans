@@ -72,7 +72,7 @@ INTEGER(KIND=JPIM) :: JLON,JF,IGLG,II,IR,JM
 !     ------------------------------------------------------------------
 
 IGLG = D%NPTRLS(MYSETW)+KGL-1
-ZACHTE  = F%RACTHE(IGLG)
+ZACHTE  = REAL(F%RACTHE(IGLG),JPRB)
 IMEN    = G%NMEN(IGLG)
 ISTAGTF = D%NSTAGTF(KGL)
 

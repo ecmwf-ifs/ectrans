@@ -13,12 +13,10 @@ MODULE PRFI1B_MOD
   CONTAINS
   SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
-  USE PARKIND1  ,ONLY : JPIM     ,JPRB
-  
-  USE TPM_GEN   ,ONLY : NOUT
-  USE TPM_DIM   ,ONLY : R,R_NSMAX
-  USE TPM_DISTR ,ONLY : D,D_NUMP,D_MYMS,D_NASM0
-  USE IEEE_ARITHMETIC
+  USE PARKIND1,        ONLY: JPIM, JPRB
+  USE TPM_DIM,         ONLY: R, R_NSMAX
+  USE TPM_DISTR,       ONLY: D, D_NUMP, D_MYMS, D_NASM0
+  USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
   
   !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
   
@@ -99,8 +97,7 @@ MODULE PRFI1B_MOD
  
   IF(PRESENT(KFLDPTR)) THEN
  
-   PRINT *, "Not implemented"
-   STOP 4
+   CALL ABORT_TRANS("PRFI1B not implemented for GPU")
  
    !loop over wavenumber
 #ifdef OMPGPU

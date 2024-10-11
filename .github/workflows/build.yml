@@ -124,6 +124,25 @@ jobs:
         path: ${{ env.DEPS_DIR }}
         key: deps-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ env.CACHE_SUFFIX }}
 
+    # Free up disk space for nvhpc
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      if: contains( matrix.compiler, 'nvhpc' )
+      continue-on-error: true
+      with:
+        # this might remove tools that are actually needed,
+        # if set to "true" but frees about 6 GB
+        tool-cache: false
+
+        # all of these default to true, but feel free to set to
+        # "false" if necessary for your workflow
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+
     - name: Install NVHPC compiler
       if: contains( matrix.compiler, 'nvhpc' )
       shell: bash -eux {0}
@@ -171,13 +190,9 @@ jobs:
         recreate_cache: ${{ matrix.caching == false }}
         dependencies: |
           ecmwf/ecbuild
-          ecmwf/eckit
-          ecmwf/fckit
           ecmwf-ifs/fiat
         dependency_branch: develop
         dependency_cmake_options: |
-          ecmwf/eckit:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_ECKIT_CMD=OFF -DENABLE_ECKIT_SQL=OFF -DENABLE_MPI=ON -DENABLE_OMP=OFF"
-          ecmwf/fckit:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF"
           ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
         cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON"
         ctest_options: "${{ matrix.ctest_options }}"

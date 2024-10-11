@@ -11,8 +11,8 @@
 !
 
 MODULE LEINV_MOD
-  USE PARKIND_ECTRANS  ,ONLY : JPIM
-  USE BUFFERED_ALLOCATOR_MOD
+  USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT, JPRD
+  USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR
   IMPLICIT NONE
 
   PRIVATE
@@ -23,9 +23,8 @@ MODULE LEINV_MOD
 CONTAINS
   SUBROUTINE LEINV_STRIDES(KF_LEG,IOUT_STRIDES0,IOUT_SIZE,IIN_STRIDES0,IIN_SIZE,&
                            IOUT0_STRIDES0,IOUT0_SIZE,IIN0_STRIDES0,IIN0_SIZE)
-    USE PARKIND_ECTRANS  ,ONLY : JPIM, JPRBT, JPRD
-    USE TPM_DIM         ,ONLY : R
-    USE TPM_DISTR, ONLY: D,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2
+    USE TPM_DIM,   ONLY: R
+    USE TPM_DISTR, ONLY: D, D_OFFSETS_GEMM1, D_OFFSETS_GEMM2
 
     IMPLICIT NONE
 
@@ -94,24 +93,22 @@ CONTAINS
     !      F. Vana  05-Mar-2015  Support for single precision
     !     ------------------------------------------------------------------
 
-    USE TPM_GEN         ,ONLY : LSYNC_TRANS
-    USE PARKIND_ECTRANS  ,ONLY : JPIM,JPRB,  JPRBT, JPRD
-    USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-    USE TPM_DIM         ,ONLY : R_NDGNH,R_NSMAX, R_NDGL
-    USE TPM_GEOMETRY    ,ONLY : G_NDGLU
-    USE TPM_FIELDS      ,ONLY : ZAA,ZAS,ZAA0,ZAS0,KMLOC0
-    USE TPM_DISTR       ,ONLY : D_NUMP,D_MYMS,MYPROC,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2
-    USE HICBLAS_MOD     ,ONLY : HIP_GEMM_BATCHED, HIP_DGEMM_BATCHED_OVERLOAD, &
- &                              HIP_DGEMM_GROUPED_OVERLOAD, HIP_SGEMM_GROUPED_OVERLOAD
+    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NOUT
+    USE YOMHOOK,                     ONLY: LHOOK, DR_HOOK, JPHOOK
+    USE TPM_DIM,                     ONLY: R_NDGNH, R_NSMAX, R_NDGL
+    USE TPM_GEOMETRY,                ONLY: G_NDGLU
+    USE TPM_FIELDS_FLAT,             ONLY: ZAA, ZAS, ZAA0, ZAS0, KMLOC0
+    USE TPM_DISTR,                   ONLY: D_NUMP, D_MYMS, MYPROC, D_OFFSETS_GEMM1, D_OFFSETS_GEMM2
+    USE HICBLAS_MOD,                 ONLY: HIP_DGEMM_BATCHED_OVERLOAD, &
+      &                                    HIP_DGEMM_GROUPED_OVERLOAD, HIP_SGEMM_GROUPED_OVERLOAD
+    USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
+    USE MPL_MODULE,                  ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
+    USE TPM_STATS,                   ONLY: GSTATS => GSTATS_NVTX
 #ifdef TRANS_SINGLE
 #define HIP_GEMM HIP_SGEMM_GROUPED_OVERLOAD
 #else
 #define HIP_GEMM HIP_DGEMM_GROUPED_OVERLOAD
 #endif
-
-    USE, INTRINSIC :: ISO_C_BINDING
-    USE MPL_MODULE      ,ONLY : MPL_BARRIER
-    USE TPM_STATS, ONLY : GSTATS => GSTATS_NVTX
 
     IMPLICIT NONE
 
@@ -155,10 +152,6 @@ CONTAINS
     !$ACC&     PRESENT(R_NSMAX,G_NDGLU,D_OFFSETS_GEMM2)
 #endif
 
-    IF (KMLOC0 > 0) THEN
-      print*,'computing m=0 in double precision'
-    ENDIF
-
     ! READ 2:NSMAX+3
 
     !IF KM=0 and NSMAX is 6:
@@ -188,6 +181,13 @@ CONTAINS
           DO J=1,(R_NSMAX-KM+2)/2
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IA+1+(J-1)*2,KMLOC)
           ENDDO
+          ! those are only needed with tensor cores (zinp might contain NaNs!)
+#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+          !$ACC LOOP SEQ
+          DO J=(R_NSMAX-KM+2)/2+1,ALIGN((R_NSMAX-KM+2)/2,A)
+            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
+          ENDDO
+#endif
         ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
           ! every other field is sufficient because Im(KM=0) == 0
 #ifdef OMPGPU
@@ -198,6 +198,13 @@ CONTAINS
           DO J=1,(R_NSMAX+2)/2
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
           ENDDO
+          ! those are only needed with tensor cores (zinp might contain NaNs!)
+#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+          !$ACC LOOP SEQ
+          DO J=(R_NSMAX+2)/2+1,ALIGN((R_NSMAX+2)/2,A)
+            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
+          ENDDO
+#endif
         ENDIF
       ENDDO
     ENDDO
@@ -208,7 +215,7 @@ CONTAINS
       !$ACC WAIT(1)
 #endif
       CALL GSTATS(440,0)
-      CALL MPL_BARRIER(CDSTRING='')
+      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(440,1)
     ENDIF
     CALL GSTATS(424,0)
@@ -280,7 +287,7 @@ CONTAINS
       !$ACC WAIT(1)
 #endif
       CALL GSTATS(444,0)
-      CALL MPL_BARRIER(CDSTRING='')
+      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(444,1)
     ENDIF
     CALL GSTATS(424,1)
@@ -313,6 +320,13 @@ CONTAINS
           DO J=1,(R_NSMAX-KM+3)/2
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IS+1+(J-1)*2,KMLOC)
           ENDDO
+#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+          ! those are only needed with tensor cores (zinp might contain NaNs!)
+          !$ACC LOOP SEQ
+          DO J=(R_NSMAX-KM+3)/2+1,ALIGN((R_NSMAX-KM+3)/2,A)
+            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
+          ENDDO
+#endif
         ELSEIF (MOD((JK-1),2) == 0) THEN
 #ifdef OMPGPU
 #endif
@@ -322,6 +336,13 @@ CONTAINS
           DO J=1,(R_NSMAX+3)/2
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
           ENDDO
+          ! those are only needed with tensor cores (zinp might contain NaNs!)
+#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+          !$ACC LOOP SEQ
+          DO J=(R_NSMAX+3)/2+1,ALIGN((R_NSMAX+3)/2,A)
+            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
+          ENDDO
+#endif
         ENDIF
       ENDDO
     ENDDO
@@ -331,7 +352,7 @@ CONTAINS
       !$ACC WAIT(1)
 #endif
       CALL GSTATS(440,0)
-      CALL MPL_BARRIER(CDSTRING='')
+      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(440,1)
     ENDIF
     CALL GSTATS(424,0)
@@ -399,7 +420,7 @@ CONTAINS
       !$ACC WAIT(1)
 #endif
       CALL GSTATS(444,0)
-      CALL MPL_BARRIER(CDSTRING='')
+      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(444,1)
     ENDIF
     CALL GSTATS(424,1)

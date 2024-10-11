@@ -9,6 +9,12 @@
 
 program ectrans_benchmark
 
+#ifdef USE_PINNED
+#define PINNED_TAG , pinned
+#else
+#define PINNED_TAG
+#endif
+
 !
 ! Spectral transform test
 !
@@ -65,6 +71,7 @@ integer(kind=jpim) :: nsmax   = 79  ! Spectral truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
+integer(kind=jpim) :: iters_warmup = 3 ! Number of warm up steps (for which timing statistics should be ignored)
 
 integer(kind=jpim) :: nflevg
 integer(kind=jpim) :: ndgl ! Number of latitudes
@@ -94,18 +101,18 @@ real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
-real(kind=jprb), allocatable, target :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
+real(kind=jprb), allocatable, target PINNED_TAG :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable, target PINNED_TAG :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
 real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
 
 ! Spectral space data structures
-real(kind=jprb), allocatable, target :: sp3d(:,:,:)
+real(kind=jprb), allocatable, target PINNED_TAG :: sp3d(:,:,:)
 real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
-real(kind=jprb), allocatable :: zspsc2(:,:)
+real(kind=jprb), allocatable PINNED_TAG :: zspsc2(:,:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -133,6 +140,7 @@ logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
+integer(kind=jpim) :: nopt_mem_tr = 0
 
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
@@ -219,8 +227,8 @@ integer(kind=jpim) :: ierr
 luse_mpi = detect_mpirun()
 
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
+call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
+  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -235,6 +243,7 @@ else
   nproc = 1
   myproc = 1
   mpl_comm = -1
+  lsync_trans = .false.
 endif
 nthread = oml_max_threads()
 
@@ -376,10 +385,11 @@ endif
 if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
 call gstats(1, 0)
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
-  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                    &
-  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi)
+call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                 &
+  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew,  &
+  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                     &
+  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi,&
+  &               kopt_memory_tr=nopt_mem_tr)
 call gstats(1, 1)
 
 call gstats(2, 0)
@@ -410,27 +420,28 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
-  write(nout,'("nsmax     ",i0)') nsmax
-  write(nout,'("grid      ",a)') trim(cgrid)
-  write(nout,'("ndgl      ",i0)') ndgl
-  write(nout,'("nproc     ",i0)') nproc
-  write(nout,'("nthread   ",i0)') nthread
-  write(nout,'("nprgpns   ",i0)') nprgpns
-  write(nout,'("nprgpew   ",i0)') nprgpew
-  write(nout,'("nprtrw    ",i0)') nprtrw
-  write(nout,'("nprtrv    ",i0)') nprtrv
-  write(nout,'("ngptot    ",i0)') ngptot
-  write(nout,'("ngptotg   ",i0)') ngptotg
-  write(nout,'("nfld      ",i0)') nfld
-  write(nout,'("nlev      ",i0)') nlev
-  write(nout,'("nproma    ",i0)') nproma
-  write(nout,'("ngpblks   ",i0)') ngpblks
-  write(nout,'("nspec2    ",i0)') nspec2
-  write(nout,'("nspec2g   ",i0)') nspec2g
-  write(nout,'("luseflt   ",l1)') luseflt
-  write(nout,'("lvordiv   ",l1)') lvordiv
-  write(nout,'("lscders   ",l1)') lscders
-  write(nout,'("luvders   ",l1)') luvders
+  write(nout,'("nsmax      ",i0)') nsmax
+  write(nout,'("grid       ",a)') trim(cgrid)
+  write(nout,'("ndgl       ",i0)') ndgl
+  write(nout,'("nproc      ",i0)') nproc
+  write(nout,'("nthread    ",i0)') nthread
+  write(nout,'("nprgpns    ",i0)') nprgpns
+  write(nout,'("nprgpew    ",i0)') nprgpew
+  write(nout,'("nprtrw     ",i0)') nprtrw
+  write(nout,'("nprtrv     ",i0)') nprtrv
+  write(nout,'("ngptot     ",i0)') ngptot
+  write(nout,'("ngptotg    ",i0)') ngptotg
+  write(nout,'("nfld       ",i0)') nfld
+  write(nout,'("nlev       ",i0)') nlev
+  write(nout,'("nproma     ",i0)') nproma
+  write(nout,'("ngpblks    ",i0)') ngpblks
+  write(nout,'("nspec2     ",i0)') nspec2
+  write(nout,'("nspec2g    ",i0)') nspec2g
+  write(nout,'("luseflt    ",l1)') luseflt
+  write(nout,'("nopt_mem_tr",i0)') nopt_mem_tr
+  write(nout,'("lvordiv    ",l1)') lvordiv
+  write(nout,'("lscders    ",l1)') lscders
+  write(nout,'("luvders    ",l1)') luvders
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -564,33 +575,23 @@ ztinit = (timef() - ztinit)/1000.0_jprd
 
 if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
-  write(nout,'(a,i6,a,f9.2,a)') "ectrans_benchmark initialisation, on",nproc,&
+  write(nout,'(a,i0,a,f9.2,a)') "ectrans_benchmark initialisation, on ",nproc,&
                                 & " tasks, took",ztinit," sec"
   write(nout,'(" ")')
 endif
 
 if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
 
-allocate(ztstep(iters+2))
-allocate(ztstep1(iters+2))
-allocate(ztstep2(iters+2))
-
-ztstepavg  = 0._jprd
-ztstepmax  = 0._jprd
-ztstepmin  = 9999999999999999._jprd
-ztstepavg1 = 0._jprd
-ztstepmax1 = 0._jprd
-ztstepmin1 = 9999999999999999._jprd
-ztstepavg2 = 0._jprd
-ztstepmax2 = 0._jprd
-ztstepmin2 = 9999999999999999._jprd
+allocate(ztstep(iters+iters_warmup))
+allocate(ztstep1(iters+iters_warmup))
+allocate(ztstep2(iters+iters_warmup))
 
 if (verbosity >= 1 .and. myproc == 1) then
   write(nout,'(a)') '======= Start of spectral transforms  ======='
   write(nout,'(" ")')
 endif
 
-ztloop = timef()
+
 
 !===================================================================================================
 ! Do spectral transform loop
@@ -598,11 +599,15 @@ ztloop = timef()
 
 gstats_lstats = .false.
 
-write(nout,'(a,i5,a)') 'Running for ', iters, ' iterations with 2 extra warm-up iterations'
+write(nout,'(a,i0,a,i0,a)') 'Running for ', iters, ' iterations with ', iters_warmup, &
+  & ' extra warm-up iterations'
 write(nout,'(" ")')
 
-do jstep = 1, iters+2
-  if (jstep == 3) gstats_lstats = .true.
+do jstep = 1, iters+iters_warmup
+  if (jstep == iters_warmup + 1) then
+    gstats_lstats = .true.
+    ztloop = timef()
+  endif
 
   call gstats(3,0)
   ztstep(jstep) = timef()
@@ -686,23 +691,7 @@ do jstep = 1, iters+2
   call gstats(5,1)
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
 
-  !=================================================================================================
-  ! Calculate timings
-  !=================================================================================================
-
   ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
-
-  ztstepavg = ztstepavg + ztstep(jstep)
-  ztstepmin = min(ztstep(jstep), ztstepmin)
-  ztstepmax = max(ztstep(jstep), ztstepmax)
-
-  ztstepavg1 = ztstepavg1 + ztstep1(jstep)
-  ztstepmin1 = min(ztstep1(jstep), ztstepmin1)
-  ztstepmax1 = max(ztstep1(jstep), ztstepmax1)
-
-  ztstepavg2 = ztstepavg2 + ztstep2(jstep)
-  ztstepmin2 = min(ztstep2(jstep), ztstepmin2)
-  ztstepmax2 = max(ztstep2(jstep), ztstepmax2)
 
   !=================================================================================================
   ! Print norms
@@ -721,8 +710,6 @@ do jstep = 1, iters+2
     if (myproc == 1) then
       zmaxerr(:) = -999.0
       do ifld = 1, 1
-        write(nout,*) "znormsp", znormsp
-        flush(nout)
         zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
         zmaxerr(1) = max(zmaxerr(1), zerr(1))
       enddo
@@ -854,6 +841,20 @@ if (lprint_norms .or. ncheck > 0) then
   endif
 endif
 
+!===================================================================================================
+! Calculate timings
+!===================================================================================================
+
+ztstepavg = sum(ztstep(iters_warmup+1:))
+ztstepmin = minval(ztstep(iters_warmup+1:))
+ztstepmax = maxval(ztstep(iters_warmup+1:))
+ztstepavg1 = sum(ztstep1(iters_warmup+1:))
+ztstepmin1 = minval(ztstep1(iters_warmup+1:))
+ztstepmax1 = maxval(ztstep1(iters_warmup+1:))
+ztstepavg2 = sum(ztstep2(iters_warmup+1:))
+ztstepmin2 = minval(ztstep2(iters_warmup+1:))
+ztstepmax2 = maxval(ztstep2(iters_warmup+1:))
+
 if (luse_mpi) then
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
   call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
@@ -875,15 +876,15 @@ endif
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
-ztstepmed = get_median(ztstep)
+ztstepmed = get_median(ztstep(iters_warmup+1:))
 
 ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
-ztstepmed1 = get_median(ztstep1)
+ztstepmed1 = get_median(ztstep1(iters_warmup+1:))
 
 ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
-ztstepmed2 = get_median(ztstep2)
+ztstepmed2 = get_median(ztstep2(iters_warmup+1:))
 
 write(nout,'(a)') '======= Start of time step stats ======='
 write(nout,'(" ")')
@@ -1057,19 +1058,21 @@ end subroutine
 
 !===================================================================================================
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nproma, verbosity, ldump_values, lprint_norms, &
+subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
+  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck)
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
   integer, intent(inout) :: iters           ! Number of iterations for transform test
+  integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
   integer, intent(inout) :: nfld            ! Number of scalar fields
   integer, intent(inout) :: nlev            ! Number of vertical levels
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
+  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
@@ -1107,6 +1110,11 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
         if (iters < 1) then
           call parsing_failed("Invalid argument for -n: must be > 0")
         end if
+      case('--niter-warmup')
+        iters_warmup = get_int_value('--niter-warmup', iarg)
+        if (iters_warmup < 0) then
+          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
+        end if
       ! Parse spectral truncation argument
       case('-t', '--truncation')
         nsmax = get_int_value('-t', iarg)
@@ -1120,6 +1128,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
       case('--scders'); lscders = .True.
       case('--uvders'); luvders = .True.
       case('--flt'); luseflt = .True.
+      case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
       case('--norms'); lprint_norms = .true.
@@ -1244,6 +1253,8 @@ subroutine print_help(unit)
     & (cubic relation)"
   write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
     & iterations (default = 10)"
+  write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
+    & for which timing statistics should be ignored (default = 3)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"

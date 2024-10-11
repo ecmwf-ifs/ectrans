@@ -56,7 +56,7 @@ REAL(KIND=JPRB) :: ZAVEAVE(0:200)
 #include "gath_grid.h"
 #include "gstats_setup.intfb.h"
 
-! ======== PARAMTERS WHICH MAY BE MODIFIED, ORIGINALLY COMING FROM NAMELSIT ===========
+! ======== PARAMETERS WHICH MAY BE MODIFIED, ORIGINALLY COMING FROM NAMELIST ===========
 NDGL = 32
 NFLEVG = 9
 NPROMA = 8

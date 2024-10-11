@@ -67,6 +67,8 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_3xtf32, TransA, TransB> {
       true,                                                         //
       MyOp                                                          //
       >;
+  // Note that when setting this alignment > 1 the inputs must be properly
+  // zero padded, otherwise NaNs might propagate.
   static constexpr int sz_align = 8;
 
 public:
@@ -122,6 +124,8 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_fp32, TransA, TransB> {
       true,                                                         //
       MyOp                                                          //
       >;
+  // Note that when setting this alignment > 1 the inputs must be properly
+  // zero padded, otherwise NaNs might propagate.
   static constexpr int sz_align = 1;
 
 public:
