@@ -13,99 +13,101 @@ SUBROUTINE DIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 & KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
 & PGP,PGPUV,PGP3A,PGP3B,PGP2)
 
-
-!**** *DIR_TRANSAD* - Direct spectral transform - adjoint.
-
-!     Purpose.
-!     --------
-!        Interface routine for the direct spectral transform - adjoint
-
-!**   Interface.
-!     ----------
-!     CALL DIR_TRANSAD(...)
-
-!     Explicit arguments : All arguments except from PGP are optional.
-!     -------------------- 
-!     PSPVOR(:,:) - spectral vorticity (output)
-!     PSPDIV(:,:) - spectral divergence (output)
-!     PSPSCALAR(:,:) - spectral scalarvalued fields (output)
-!     PSPSC3A(:,:,:) - alternative to use of PSPSCALAR, see PGP3A below (input)
-!     PSPSC3B(:,:,:) - alternative to use of PSPSCALAR, see PGP3B below (input)
-!     PSPSC2(:,:)  - alternative to use of PSPSCALAR, see PGP2 below (input)
-!     KPROMA      - required blocking factor for gridpoint output
-!     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a 
-!                   vor/div field. Equivalant to NBSETLEV in the IFS.
-!                   The length of KVSETUV should be the GLOBAL number
-!                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space. 
-!     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
-!                   scalar field. As for KVSETUV this argument is required
-!                   if the total number of processors is greater than
-!                   the number of processors used for distribution in
-!                   spectral wave space.  
-!     KVSETSC3A(:) - as KVESETSC for PSPSC3A (distribution on first dimension)
-!     KVSETSC3B(:) - as KVESETSC for PSPSC3B (distribution on first dimension)
-!     KVSETSC2(:) - as KVESETSC for PSPSC2 (distribution on first dimension)
-!     KRESOL   - resolution tag  which is required ,default is the
-!                first defined resulution (input)
-!     PGP(:,:,:) - gridpoint fields (input)
-!                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
-!                  NPROMA is the blocking factor, IF_GP the total number
-!                  of output fields and NGPBLKS the number of NPROMA blocks.
-!                  The ordering of the output fields is as follows (all 
-!                  parts are optional depending on the input switches):
+! begin_doc_block
+! ## `DIR_TRANSAD`
 !
-!     u             : IF_UV_G fields (if psvor present)
-!     v             : IF_UV_G fields (if psvor present)
-!     scalar fields : IF_SCALARS_G fields (if pspscalar present)
-!   
-!     Here IF_UV_G is the GLOBAL number of u/v fields as given by the length
-!     of KVSETUV (or by PSPVOR if no split in spectral 'b-set' direction
-!     IF_SCALARS_G is the GLOBAL number of scalar fields as giben by the 
-!     length of KVESETSC (or by number of fields in PSPSCALAR if no spectral
-!     'b-set' split
-! 
-!     As an alternative to using PGP you can also use a combination of the
-!     following arrays. The reason for introducing these alternative ways
-!     of calling DIR_TRANS is to avoid uneccessary copies where your data
-!     structures don't fit in to the 'PSPVOR,PSPDIV, PSPSCALAR, PGP' layout.
-!     The use of any of these precludes the use of PGP and vice versa.
-
-!     PGPUV(:,:,:,:) - the 'u-v' related grid-point variables in the order
-!                      described for PGP. The second dimension of PGPUV should
-!                      be the same as the "global" first dimension of 
-!                      PSPVOR,PSPDIV (in the IFS this is the number of levels)
-!                      PGPUV need to be dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (u,v)
-!     PGP3A(:,:,:,:) - grid-point array directly connected with PSPSC3A
-!                      dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (the same as in
-!                      PSPSC3A )
-!     PGP3B(:,:,:,:) - grid-point array directly connected with PSPSC3B
-!                      dimensioned(NPROMA,ILEVS,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (the same as in
-!                      PSPSC3B)
-!     PGP2(:,:,:)    - grid-point array directly connected with PSPSC2
-!                      dimensioned(NPROMA,IFLDS,NGPBLKS)
-!                      IFLDS is the number of 'variables' (the same as in
-!                      PSPSC2 )
-! 
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  DIR_TRANS_CTLAD - control routine
-!                 
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE DIR_TRANSAD(PSPVOR, PSPDIV, PSPSCALAR, PSPSC3A, PSPSC3B, PSPSC2, KPROMA, KVSETUV, &
+!   &                    KVSETSC, KRESOL, KVSETSC3A, KVSETSC3B, KVSETSC2, PGP, PGPUV, PGP3A, &
+!   &                    PGP3B, PGP2)
+! ```
+!
+! ### Purpose
+!
+! This is the adjoint version of the subroutine for performing a direct spectral transform.
+! Like `DIR_TRANS`, `DIR_TRANSAD` supports two modes of passing arrays (which we call "call modes"
+! below):
+!
+! 1. Pass in `PGP`, receive `PSPVOR`, `PSPDIV`, `PSPSCALAR`.
+! 2. Pass in `PGPUV`, `PGP3A`,  `PGP3B`, `PGP2`, receive `PSPVOR`, `PSPDIV`, `PSPSC3A`, `PSPSC3B`, `PSPSC2`.
+!
+! Although call mode 1 is simpler, it can often entail having to create array copies in order to
+! prepare the different elements of `PGP`. Hence, with call mode 2, the input and output arrays are
+! categorized according to whether they are wind related, 3D scalar, or 2D scalar.
+!
+! Note that `PSPSC3A`/`PGP3A` and `PSPSC3B`/`PGP3B` are essentially identical in type and size.
+! There are cases where it is useful to have the ability to pass two sets of scalar fields to be
+! transformed independently.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMA`  
+!   Required blocking factor for grid point output.  
+!   *Default*: `D%NGPTOT`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETUV(:)`  
+!   Array which maps each vertical level of the output vorticity/divergence to its corresponding  
+!   member of the V-set.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC(:)`  
+!   Array which maps each of the output scalar fields to its corresponding member of the V-set  
+!   (call mode 1).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3A(:)`  
+!   Array which maps each vertical level of the output 3D scalar fields to its corresponding  
+!   member of the V-set (call mode 2).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3B(:)`  
+!   Array which maps each vertical level of the output 3D scalar fields to its corresponding  
+!   member of the V-set (call mode 2).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC2(:)`  
+!   Array which maps each output 2D scalar field to its corresponding member of the V-set  
+!   (call mode 2).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP(:,:,:)`  
+!   Array containing all grid point fields (call mode 1).  
+!   Dimensions: (NPROMA, number of grid point fields, number of NPROMA blocks).  
+!   The ordering of grid point fields in this array is as follows:
+!     1. U wind
+!     2. V wind
+!     3. scalar fields 
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGPUV(:,:,:,:)`  
+!   Array containing wind-related grid point fields (call mode 2).  
+!   Dimensions: (NPROMA, vertical levels, number of wind fields, number of NPROMA blocks).  
+!   `DIR_TRANS` only operates on U/V winds, not vorticity/divergence. Hence, the third dimension  
+!   of `PGPUV` must be equal to `2` (one for U and one for V).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP3A(:,:,:,:)`  
+!   Array containing 3D scalar grid point fields, corresponding to `PSPSC3A`.  
+!   Dimensions: (NPROMA, vertical levels, number of scalar fields, number of NPROMA blocks).  
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP3B(:,:,:,:)`  
+!   Array containing 3D scalar grid point fields, corresponding to `PSPSC3B`.  
+!   Dimensions: (NPROMA, vertical levels, number of scalar fields, number of NPROMA blocks).  
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP2(:,:,:)`  
+!   Array containing 2D scalar grid point fields, corresponding to `PSPSC2`.  
+!   Dimensions: (NPROMA, number of scalar fields, number of NPROMA blocks).
+!
+! ### `OPTIONAL, INTENT(INOUT)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPVOR(:,:)`  
+!   Spectral space vorticity.
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPDIV(:,:)`  
+!   Spectral space divergence.
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPSCALAR(:,:)`  
+!   Spectral space scalar fields (call mode 1).  
+!   Dimensions: (total number of 2D scalar fields, spectral coefficients).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPSC3A(:,:,:)`  
+!   Spectral space 3D scalar fields (call mode 2) corresponding to `PGP3A`.  
+!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPSC3B(:,:,:)`  
+!   Spectral space 3D scalar fields (call mode 2) corresponding to `PGP3B`.  
+!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPSC2(:,:)`  
+!   Spectral space 2D scalar fields (call mode 2) corresponding to `PGP2`.
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
