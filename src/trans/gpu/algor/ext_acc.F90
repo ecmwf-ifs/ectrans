@@ -17,7 +17,7 @@ module openacc_ext_type
   end type
 end module
 module openacc_ext
-  use iso_c_binding, only: c_ptr, c_size_t, c_loc
+  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
   use openacc, only: acc_create, acc_copyin, acc_handle_kind
   use openacc_ext_type, only: ext_acc_arr_desc
   implicit none
@@ -268,7 +268,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
       !!call acc_create_async(pp, common_ptrs(i)%sz, async=stream_act)
       call acc_create(pp, int(common_ptrs(i)%sz))
     enddo
@@ -295,7 +295,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
       !!call acc_copyin_async(pp, common_ptrs(i)%sz, async=stream_act)
       call acc_copyin(pp, int(common_ptrs(i)%sz))
     enddo
@@ -322,7 +322,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
       !!call acc_copyout_async(pp, common_ptrs(i)%sz, async=stream_act)
       call acc_copyout(pp, int(common_ptrs(i)%sz))
     enddo
@@ -349,7 +349,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
       !!call acc_delete_async(pp, common_ptrs(i)%sz, async=stream_act)
       call acc_delete(pp, int(common_ptrs(i)%sz))
     enddo
