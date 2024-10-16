@@ -17,7 +17,7 @@ module openacc_ext_type
   end type
 end module
 module openacc_ext
-  use iso_c_binding, only: c_ptr, c_size_t, c_loc
+  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
   use openacc, only: acc_create, acc_copyin, acc_handle_kind
   use openacc_ext_type, only: ext_acc_arr_desc
   implicit none
