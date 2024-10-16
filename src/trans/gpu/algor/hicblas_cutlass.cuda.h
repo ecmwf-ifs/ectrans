@@ -151,7 +151,7 @@ public:
 template <cublasOperation_t TransA, cublasOperation_t TransB>
 void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
                                       float alpha, const float *A, int lda,
-                                      int *offsetsA, const float *B, int ldb,
+                                      int *offsetsA, const float *B, int *ldb,
                                       int *offsetsB, float beta, float *C,
                                       int ldc, int *offsetsC, int batchCount,
                                       cudaStream_t stream,
@@ -179,7 +179,7 @@ void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
 void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
                                    int m, int *n, int *k, float alpha,
                                    const float *A, int lda, int *offsetsA,
-                                   const float *B, int ldb, int *offsetsB, float beta,
+                                   const float *B, int *ldb, int *offsetsB, float beta,
                                    float *C, int ldc, int *offsetsC,
                                    int batchCount, cudaStream_t stream,
                                    void *growing_allocator) {
