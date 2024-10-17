@@ -59,9 +59,9 @@ SUBROUTINE UVTVD(KF_UV,PU,PV,PVOR,PDIV)
 !     ------------------------------------------------------------------
 
 USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT
-USE TPM_DIM,         ONLY: R, R_NTMAX
-USE TPM_DISTR,       ONLY: D, D_NUMP, D_MYMS
-USE TPM_FIELDS_FLAT, ONLY: ZEPSNM
+USE TPM_DIM,         ONLY: R
+USE TPM_DISTR,       ONLY: D
+USE TPM_FIELDS_GPU,  ONLY: FG
 !
 
 IMPLICIT NONE
@@ -79,6 +79,7 @@ INTEGER(KIND=JPIM) :: II, IN, IR, J, JN, ITMAX
 REAL(KIND=JPRBT) :: ZKM,ZJN
 
 !     ------------------------------------------------------------------
+ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX, D_MYMS=>D%MYMS, ZEPSNM=>FG%ZEPSNM)
 
 !*       1.    COMPUTE U V FROM VORTICITY AND DIVERGENCE.
 !              ------------------------------------------
@@ -170,6 +171,7 @@ ENDDO
 !$ACC END DATA
 #endif
 !     ------------------------------------------------------------------
+END ASSOCIATE
 
 END SUBROUTINE UVTVD
 END MODULE UVTVD_MOD

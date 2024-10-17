@@ -178,29 +178,5 @@ END TYPE DISTR_TYPE
 TYPE(DISTR_TYPE),ALLOCATABLE,TARGET :: DISTR_RESOL(:)
 TYPE(DISTR_TYPE),POINTER     :: D
 
-!flat versions of the above
-INTEGER(KIND=JPIM) :: D_NUMP      ! No. of spectral waves handled by this processor
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MYMS(:)    ! Wave numbers handled by this PE
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT0B(:) ! Start adresses for segments within buffer
-                                  ! (according to processors to whom data 
-                                  ! is going to be sent) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NSTAGT1B(:) 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCL(:) ! Process responsible for each lat. (F.S)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB1(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,ALLOCATABLE  :: D_NSTAGTF(:) ! Offset for specific latitude in 
-INTEGER(KIND=JPIM) :: D_NDGL_FS     ! Number of rows of latitudes for which this process is
-                                  ! performing Fourier Space calculations
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_MSTABF(:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPNTGTB0(:,:)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPROCM(:)  ! Process that does the calc. for certain 
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: D_NPTRLS(:) ! Pointer to first lat. (F.S)
-
-
-! The offsets in the input and output arrays to the gemms.
-! (1) are the offsets in the "inputs" of dirtrans ("outputs" invtrans)
-! (2) are the offsets in the "outputs" of invtrans ("inputs" dirtrans)
-INTEGER(KIND=JPIM), POINTER :: D_OFFSETS_GEMM1(:), D_OFFSETS_GEMM2(:)
-
 END MODULE TPM_DISTR
 
