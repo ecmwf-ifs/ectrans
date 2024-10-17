@@ -91,13 +91,6 @@ ELSE
 #ifdef OMPGPU
 #endif
 
-  ! Empty all fields (none of them has pointers; allocatable arrays implicitly deallocate)
-  D = D_
-  F = F_
-  FG = FG_
-  R = R_
-  G = G_
-
   ! TPM_FLD is more complex because it has pointers
   IF( ALLOCATED(S%FA) ) THEN
     DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
@@ -122,6 +115,13 @@ ELSE
     IF(ASSOCIATED(S%FMM_INTI)) DEALLOCATE(S%FMM_INTI)
   ENDIF
   S = S_
+
+  ! Empty all fields (none of them has pointers; allocatable arrays implicitly deallocate)
+  D = D_
+  F = F_
+  FG = FG_
+  R = R_
+  G = G_
 
   CALL CLEAN_FFT(KRESOL)
   CALL CLEAN_GEMM(KRESOL)
