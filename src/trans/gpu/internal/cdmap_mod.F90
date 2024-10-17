@@ -81,7 +81,7 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
-CALL MPL_ABORT("this routine is not supported right now")
+CALL MPL_ABORT("CDMAP not yet supported in ecTrans GPU version")
 
 !*       1.       PERFORM LEGENDRE TRANFORM.
 !                 --------------------------
