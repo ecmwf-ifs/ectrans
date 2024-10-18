@@ -210,6 +210,8 @@ character(len=16) :: cgrid = ''
 
 integer(kind=jpim) :: ierr
 
+real(kind=jprb), allocatable :: global_field(:,:)
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -217,6 +219,7 @@ integer(kind=jpim) :: ierr
 #include "inv_trans.h"
 #include "dir_trans.h"
 #include "trans_inq.h"
+#include "gath_grid.h"
 #include "specnorm.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
@@ -652,12 +655,17 @@ do jstep = 1, iters+iters_warmup
   ! While in grid point space, dump the values to disk, for debugging only
   !=================================================================================================
 
-  if (ldump_values) then
-    ! dump a field to a binary file
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
+  if (ldump_values .and. mod(jstep,10) == 1) then
+    if (myproc == 1) then
+      allocate(global_field(ngptotg,1))
+    endif
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp2(:,1:1,:), 's', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,1,:), 'u', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,2,:), 'v', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp3a(:,nflevg:nflevg,1,:), 't', noutdump)
+    if (myproc == 1) then
+      deallocate(global_field)
+    endif
   endif
 
   !=================================================================================================
@@ -1349,27 +1357,32 @@ end subroutine initialize_2d_spectral_field
 
 !===================================================================================================
 
-subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, noutdump)
+subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutdump)
 
   ! Dump a 2d field to a binary file.
 
   integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
   integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
   integer(kind=jpim), intent(in) :: nproma ! Size of nproma
-  integer(kind=jpim), intent(in) :: ngpblks ! Number of nproma blocks
-  real(kind=jprb)   , intent(in) :: fld(nproma,ngpblks) ! 2D field
+  real(kind=jprb)   , intent(inout) :: gfld(:,:) ! 2d global field
+  real(kind=jprb)   , intent(in) :: fld(:,:,:) ! 3d local field
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
 
-  character(len=14) :: filename = "x.xxx.xxxx.dat"
+  character(len=10) :: filename = "x.xxxx.dat"
 
-  write(filename(1:1),'(a1)') fldchar
-  write(filename(3:5),'(i3.3)') jstep
-  write(filename(7:10),'(i4.4)') myproc
-
-  open(noutdump, file=filename, form="unformatted")
-  write(noutdump) reshape(fld, (/ nproma*ngpblks /))
-  close(noutdump)
+  if (myproc == 1) then
+    write(filename(1:1),'(a1)') fldchar
+    write(filename(3:6),'(i4.4)') jstep
+    open(noutdump,file=filename,form='unformatted')
+  endif
+  do ilev=1,size(fld,2)
+    call gath_grid(gfld(:,:),nproma,1,(/1/),1,fld(:,ilev:ilev,:))
+    if (myproc == 1) write(unit=noutdump) gfld(:,1)
+  enddo
+  if (myproc == 1) then
+    close(noutdump)
+  endif
 
 end subroutine dump_gridpoint_field
 
