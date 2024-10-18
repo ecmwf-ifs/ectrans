@@ -98,7 +98,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE PARKIND1,        ONLY: JPIM, JPRB, JPRD
+USE PARKIND1,        ONLY: JPIM, JPRB, JPRD, JPIB
 USE PARKIND_ECTRANS, ONLY: JPRBT
 
 !ifndef INTERFACE

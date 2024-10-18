@@ -1,3 +1,6 @@
+// (C) Copyright 2000- ECMWF.
+// (C) Copyright 2024- NVIDIA.
+
 #ifdef USE_CUTLASS
 //#include "hicblas.h"
 #include "cutlass/gemm/device/gemm.h"
@@ -153,9 +156,9 @@ public:
 template <cublasOperation_t TransA, cublasOperation_t TransB>
 void cutlass_sgemm_wrapper_grouped_op(int resol_id, int blas_id, int m, int *n, int *k,
                                       float alpha, const float *A, int lda,
-                                      int *offsetsA, const float *B, int ldb,
-                                      int *offsetsB, float beta, float *C,
-                                      int ldc, int *offsetsC, int batchCount,
+                                      int64_t *offsetsA, const float *B, int ldb,
+                                      int64_t *offsetsB, float beta, float *C,
+                                      int ldc, int64_t *offsetsC, int batchCount,
                                       cudaStream_t stream,
                                       void *growing_allocator) {
   using namespace detail;
@@ -180,9 +183,9 @@ void cutlass_sgemm_wrapper_grouped_op(int resol_id, int blas_id, int m, int *n, 
 
 void cutlass_sgemm_wrapper_grouped(int resol_id, int blas_id, char transa, char transb,
                                    int m, int *n, int *k, float alpha,
-                                   const float *A, int lda, int *offsetsA,
-                                   const float *B, int ldb, int *offsetsB, float beta,
-                                   float *C, int ldc, int *offsetsC,
+                                   const float *A, int lda, int64_t *offsetsA,
+                                   const float *B, int ldb, int64_t *offsetsB, float beta,
+                                   float *C, int ldc, int64_t *offsetsC,
                                    int batchCount, cudaStream_t stream,
                                    void *growing_allocator) {
 

@@ -57,7 +57,7 @@ public:
   void set_stream(hipStream_t stream) {
     fftSafeCall(hipfftSetStream(*handle_ptr, stream));
   }
-  hicfft_plan(hipfftHandle handle_, int offset_)
+  hicfft_plan(hipfftHandle handle_, int64_t offset_)
       : handle_ptr(new hipfftHandle{handle_},
                    [](auto ptr) {
                      fftSafeCall(cufftDestroy(*ptr));
@@ -67,7 +67,7 @@ public:
 
 private:
   std::shared_ptr<hipfftHandle> handle_ptr;
-  int offset;
+  int64_t offset;
 };
 
 struct cache_key {
@@ -134,8 +134,8 @@ void erase_from_caches(int resol_id) {
 }
 
 template <class Type, hipfftType Direction>
-std::vector<hicfft_plan<Type, Direction>>
-plan_all(int resol_id, int kfield, int *loens, int nfft, int *offsets) {
+std::vector<hicfft_plan<Type, Direction>> plan_all(int resol_id, int kfield, int *loens,
+                                                   int nfft, int64_t *offsets) {
   static constexpr bool is_forward =
       Direction == HIPFFT_R2C || Direction == HIPFFT_D2Z;
 
@@ -164,9 +164,8 @@ plan_all(int resol_id, int kfield, int *loens, int nfft, int *offsets) {
 
 template <class Type, hipfftType Direction>
 void run_group_graph(typename Type::real *data_real,
-                     typename Type::cmplx *data_complex, int resol_id,
-                     int kfield, int *loens, int *offsets, int nfft,
-                     void *growing_allocator) {
+                     typename Type::cmplx *data_complex, int resol_id, int kfield, int *loens,
+                     int64_t *offsets, int nfft, void *growing_allocator) {
 
   growing_allocator_register_free_c(growing_allocator,
                                     free_fft_graph_cache<Type, Direction>);
@@ -232,10 +231,9 @@ void run_group_graph(typename Type::real *data_real,
 
 template <class Type, hipfftType Direction>
 void run_group(typename Type::real *data_real,
-               typename Type::cmplx *data_complex, int resol_id, int kfield,
-               int *loens, int *offsets, int nfft, void *growing_allocator) {
-  auto plans =
-      plan_all<Type, Direction>(resol_id, kfield, loens, nfft, offsets);
+               typename Type::cmplx *data_complex, int resol_id, int kfield, int *loens,
+               int64_t *offsets, int nfft, void *growing_allocator) {
+  auto plans = plan_all<Type, Direction>(resol_id, kfield, loens, nfft, offsets);
 
   for (auto &plan : plans)
     plan.exec(data_real, data_complex);
@@ -250,30 +248,29 @@ extern "C" {
 #define RUN run_group
 #endif
 void execute_dir_fft_float(float *data_real, hipfftComplex *data_complex,
-                           int resol_id, int kfield, int *loens, int *offsets,
-                           int nfft, void *growing_allocator) {
-  RUN<Float, HIPFFT_R2C>(data_real, data_complex, resol_id, kfield, loens,
-                         offsets, nfft, growing_allocator);
+                           int resol_id, int kfield, int *loens, int64_t *offsets, int nfft,
+                           void *growing_allocator) {
+  RUN<Float, HIPFFT_R2C>(data_real, data_complex, resol_id, kfield, loens, offsets, nfft,
+                         growing_allocator);
 }
 void execute_inv_fft_float(hipfftComplex *data_complex, float *data_real,
-                           int resol_id, int kfield, int *loens, int *offsets,
-                           int nfft, void *growing_allocator) {
-  RUN<Float, HIPFFT_C2R>(data_real, data_complex, resol_id, kfield, loens,
-                         offsets, nfft, growing_allocator);
+                           int resol_id, int kfield, int *loens, int64_t *offsets, int nfft,
+                           void *growing_allocator) {
+  RUN<Float, HIPFFT_C2R>(data_real, data_complex, resol_id, kfield, loens, offsets, nfft,
+                         growing_allocator);
 }
 void execute_dir_fft_double(double *data_real,
-                            hipfftDoubleComplex *data_complex, int resol_id,
-                            int kfield, int *loens, int *offsets, int nfft,
+                            hipfftDoubleComplex *data_complex, int resol_id, int kfield,
+                            int *loens, int64_t *offsets, int nfft,
                             void *growing_allocator) {
   RUN<Double, HIPFFT_D2Z>(data_real, data_complex, resol_id, kfield, loens,
                           offsets, nfft, growing_allocator);
 }
 void execute_inv_fft_double(hipfftDoubleComplex *data_complex,
-                            double *data_real, int resol_id, int kfield,
-                            int *loens, int *offsets, int nfft,
-                            void *growing_allocator) {
-  RUN<Double, HIPFFT_Z2D>(data_real, data_complex, resol_id, kfield, loens,
-                          offsets, nfft, growing_allocator);
+                            double *data_real, int resol_id, int kfield, int *loens,
+                            int64_t *offsets, int nfft, void *growing_allocator) {
+  RUN<Double, HIPFFT_Z2D>(data_real, data_complex, resol_id, kfield, loens, offsets, nfft,
+                          growing_allocator);
 }
 #undef RUN
 
