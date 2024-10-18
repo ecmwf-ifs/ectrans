@@ -660,9 +660,9 @@ do jstep = 1, iters+iters_warmup
       allocate(global_field(ngptotg,1))
     endif
     call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp2(:,1:1,:), 's', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,1:nflevg,1,:), 'u', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,1:nflevg,2,:), 'v', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp3a(:,1:nflevg,1,:), 't', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,1,:), 'u', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,2,:), 'v', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp3a(:,nflevg:nflevg,1,:), 't', noutdump)
     if (myproc == 1) then
       deallocate(global_field)
     endif
