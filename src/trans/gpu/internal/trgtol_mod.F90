@@ -106,7 +106,7 @@ CONTAINS
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT
     USE YOMHOOK,                ONLY: LHOOK, DR_HOOK, JPHOOK
     USE MPL_MODULE,             ONLY: MPL_WAIT, MPL_BARRIER
-    USE TPM_GEN,                ONLY: LSYNC_TRANS
+    USE TPM_GEN,                ONLY: LSYNC_TRANS, LMPOFF
     USE EQ_REGIONS_MOD,         ONLY: MY_REGION_EW, MY_REGION_NS
     USE TPM_DISTR,              ONLY: D, MYSETV, MYSETW, MTAGLG, NPRCIDS, MYPROC, NPROC, NPRTRW, &
       &                               NPRTRV
@@ -184,6 +184,8 @@ CONTAINS
     TYPE(MPI_REQUEST) :: IREQUEST(2*NPROC)
 #endif
 
+
+
 #ifdef PARKINDTRANS_SINGLE
 #define TRGTOL_DTYPE MPI_FLOAT
 #else
@@ -191,7 +193,9 @@ CONTAINS
 #endif
 
 #if ECTRANS_HAVE_MPI
-    LOCAL_COMM%MPI_VAL = MPL_COMM_OML( OML_MY_THREAD() )
+    IF(.NOT. LMPOFF) THEN
+      LOCAL_COMM%MPI_VAL = MPL_COMM_OML( OML_MY_THREAD() )
+    ENDIF
 #endif
 
     !     ------------------------------------------------------------------
