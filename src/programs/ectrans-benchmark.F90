@@ -1087,7 +1087,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
 
-#ifdef ACCGPU
+#ifdef _OPENACC
   !$acc init
 #endif
 
