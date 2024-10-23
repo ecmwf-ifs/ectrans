@@ -159,6 +159,7 @@ int main ( int arc, char **argv )
     }
   }
 
+#ifndef GPU_VERSION
   // Allocate fields for u*cos(theta) and v*cos(theta)
   double* rspu    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
   double* rspv    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
@@ -175,6 +176,7 @@ int main ( int arc, char **argv )
     vordiv_to_UV.nsmax  = trans.nsmax;
   trans_vordiv_to_UV(&vordiv_to_UV);
   fprintf(stderr,"Converting spectral vorticity-divergence to u*cos(lat)-v*cos(lat)...done\n");
+#endif
 
   // Gather spectral field (for fun)
   int* nto = malloc( sizeof(int) * nscalar );
@@ -240,6 +242,7 @@ int main ( int arc, char **argv )
     gathspec.nto    = nto;
   trans_gathspec(&gathspec);
 
+#ifndef GPU_VERSION
   // Allocate fields for u*cos(theta) and v*cos(theta)
   double* rspug    = malloc( sizeof(double) * nvordiv*trans.nspec2g );
   double* rspvg    = malloc( sizeof(double) * nvordiv*trans.nspec2g );
@@ -256,6 +259,7 @@ int main ( int arc, char **argv )
     vordiv_to_UV_g.nsmax  = trans.nsmax;
   trans_vordiv_to_UV(&vordiv_to_UV_g);
   fprintf(stderr,"Converting spectral vorticity-divergence to U-V globally...done\n");
+#endif
 
   // Distribute spectral field (for fun)
   struct DistSpec_t distspec = new_distspec(&trans);
@@ -317,10 +321,12 @@ int main ( int arc, char **argv )
   free(rspvorg);
   free(rspdiv);
   free(rspdivg);
+#ifndef GPU_VERSION
   free(rspu);
   free(rspv);
   free(rspug);
   free(rspvg);
+#endif
   free(nfrom);
   free(nto);
 
