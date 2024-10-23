@@ -330,10 +330,14 @@ int main ( int arc, char **argv )
   free(nfrom);
   free(nto);
 
+#ifndef GPU_VERSION
+// This can be enabled again for GPU_VERSION once PR #151
+// (https://github.com/ecmwf-ifs/ectrans/pull/151) is merged!
   fprintf(stderr,"cleanup");
   trans_delete(&trans);
 
   trans_finalize();
+#endif
 
   //fprintf(stderr,"transi finished\n");
   return 0;
