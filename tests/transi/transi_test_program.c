@@ -19,22 +19,35 @@ void read_grid(struct Trans_t*);
 
 int main ( int arc, char **argv )
 {
+#ifdef GPU_VERSION
+  fprintf(stderr, "transi_test_program GPU VERSION\n");
+#else
+  fprintf(stderr, "transi_test_program CPU VERSION\n");
+#endif
+
+  fprintf(stderr,"start\n");
+  fprintf(stderr,"ectrans version int = %d\n",ectrans_version_int());
+  fprintf(stderr,"ectrans version = %s\n",ectrans_version());
+  fprintf(stderr,"ectrans version str = %s\n",ectrans_version_str());
+  fprintf(stderr,"ectrans git sha1 [0:7] = %s\n",ectrans_git_sha1_abbrev(7));
+  fprintf(stderr,"ectrans git sha1 [0:12] = %s\n",ectrans_git_sha1_abbrev(12));
+  fprintf(stderr,"ectrans git sha1 = %s\n",ectrans_git_sha1());
+
+  fprintf(stderr,"Using MPI: %d\n", test_use_mpi());
+
   trans_use_mpi( test_use_mpi() );
 
-  printf("ectrans version int = %d\n",ectrans_version_int());
-  printf("ectrans version = %s\n",ectrans_version());
-  printf("ectrans version str = %s\n",ectrans_version_str());
-  printf("ectrans git sha1 [0:7] = %s\n",ectrans_git_sha1_abbrev(7));
-  printf("ectrans git sha1 [0:12] = %s\n",ectrans_git_sha1_abbrev(12));
-  printf("ectrans git sha1 = %s\n",ectrans_git_sha1());
-
-  //printf("transi started\n");
+  fprintf(stderr,"trans_new\n");
   int nout = 3;
   struct Trans_t trans;
   trans_new(&trans);
+  fprintf(stderr,"trans_new done\n");
 
   read_grid(&trans);
+  fprintf(stderr,"trans_setup\n");
   trans_setup(&trans);
+  fprintf(stderr,"trans_setup done\n");
+
   trans_inquire(&trans,"numpp,ngptotl,nmyms,nasm0,npossp,nptrms,nallms,ndim0g,nvalue");
   trans_inquire(&trans,"nfrstlat,nlstlat,nptrlat,nptrfrstlat,nptrlstlat,nsta,nonl,ldsplitlat");
   trans_inquire(&trans,"nultpp,nptrls,nnmeng");
@@ -43,7 +56,7 @@ int main ( int arc, char **argv )
   //Check values of numpp
   if( trans.myproc == 1 )
   {
-    printf("nprtrw = %d\n",trans.nprtrw);
+    fprintf(stderr,"nprtrw = %d\n",trans.nprtrw);
     int i;
     for( i=0; i<trans.nprtrw; ++i)
       printf("%d : %d\n",i,trans.numpp[i]);
@@ -86,12 +99,14 @@ int main ( int arc, char **argv )
   nfrom[2] = 1; // scalar 1
   nfrom[3] = 1; // scalar 2
 
+  fprintf(stderr,"distgrid\n");
   struct DistGrid_t distgrid = new_distgrid(&trans);
     distgrid.nfrom = nfrom;
     distgrid.rgpg  = rgpg;
     distgrid.rgp   = rgp;
     distgrid.nfld  = nfld;
   trans_distgrid(&distgrid);
+  fprintf(stderr,"distgrid done\n");
 
   if( trans.myproc == 1 )
   {
@@ -100,12 +115,12 @@ int main ( int arc, char **argv )
     {
       for( i=0; i<nout; ++i )
       {
-        printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
+        fprintf(stderr,"rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
       }
       for( i=0; i<trans.ngptot; ++i )
       {
         if( fabs(rgp[j*trans.ngptot+i]-(j+1)) > 1.e-5)
-          printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
+          fprintf(stderr,"rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
       }
 
     }
@@ -118,6 +133,7 @@ int main ( int arc, char **argv )
   double* rspdiv    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
 
   // Direct Transform
+  fprintf(stderr,"dirtrans\n");
   struct DirTrans_t dirtrans = new_dirtrans(&trans);
     dirtrans.nscalar   = nscalar;
     dirtrans.nvordiv   = nvordiv;
@@ -126,6 +142,7 @@ int main ( int arc, char **argv )
     dirtrans.rspvor    = rspvor;
     dirtrans.rspdiv    = rspdiv;
   trans_dirtrans(&dirtrans);
+  fprintf(stderr,"dirtrans done\n");
 
   if( trans.myproc == 1 )
   {
@@ -133,21 +150,22 @@ int main ( int arc, char **argv )
     for( j=0; j<nscalar; ++j)
     {
       for( i=0; i<nout; ++i )
-        printf("rspscalar[%d][%d] : %f\n",j,i,rspscalar[i*nscalar+j]);
+        fprintf(stderr,"rspscalar[%d][%d] : %f\n",j,i,rspscalar[i*nscalar+j]);
       for( i=0; i<trans.nspec2; ++i )
       {
         if( fabs(rspscalar[i*nscalar+j]) > 1.e-5)
-          printf("rspscalar[%d][%d] : %f\n",j,i,rspscalar[i*nscalar+j]);
+          fprintf(stderr,"rspscalar[%d][%d] : %f\n",j,i,rspscalar[i*nscalar+j]);
       }
     }
   }
 
+#ifndef GPU_VERSION
   // Allocate fields for u*cos(theta) and v*cos(theta)
   double* rspu    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
   double* rspv    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
 
   // Convert vorticity & divergence to u*cos(theta) & v*cos(theta)
-  printf("Converting spectral vorticity-divergence to u*cos(lat)-v*cos(lat)...\n");
+  fprintf(stderr,"Converting spectral vorticity-divergence to u*cos(lat)-v*cos(lat)...\n");
   struct VorDivToUV_t vordiv_to_UV = new_vordiv_to_UV();
     vordiv_to_UV.rspvor = rspvor;
     vordiv_to_UV.rspdiv = rspdiv;
@@ -157,8 +175,8 @@ int main ( int arc, char **argv )
     vordiv_to_UV.ncoeff = trans.nspec2;
     vordiv_to_UV.nsmax  = trans.nsmax;
   trans_vordiv_to_UV(&vordiv_to_UV);
-  printf("Converting spectral vorticity-divergence to u*cos(lat)-v*cos(lat)...done\n");
-
+  fprintf(stderr,"Converting spectral vorticity-divergence to u*cos(lat)-v*cos(lat)...done\n");
+#endif
 
   // Gather spectral field (for fun)
   int* nto = malloc( sizeof(int) * nscalar );
@@ -182,11 +200,11 @@ int main ( int arc, char **argv )
     for( j=0; j<nscalar; ++j)
     {
       for( i=0; i<nout; ++i )
-        printf("rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
+        fprintf(stderr,"rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
       for( i=0; i<trans.nspec2g; ++i )
       {
         if( fabs(rspscalarg[i*nscalar+j]) > 1.e-5 && i > 0)
-          printf("rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
+          fprintf(stderr,"rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
       }
     }
   }
@@ -197,11 +215,11 @@ int main ( int arc, char **argv )
     for( j=0; j<nscalar; ++j)
     {
       for( i=0; i<nout; ++i )
-        printf("rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
+        fprintf(stderr,"rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
       for( i=0; i<trans.nspec2g; ++i )
       {
         if( fabs(rspscalarg[i*nscalar+j]) > 1.e-5 && i > 0)
-          printf("rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
+          fprintf(stderr,"rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
       }
     }
   }
@@ -224,12 +242,13 @@ int main ( int arc, char **argv )
     gathspec.nto    = nto;
   trans_gathspec(&gathspec);
 
+#ifndef GPU_VERSION
   // Allocate fields for u*cos(theta) and v*cos(theta)
   double* rspug    = malloc( sizeof(double) * nvordiv*trans.nspec2g );
   double* rspvg    = malloc( sizeof(double) * nvordiv*trans.nspec2g );
 
   // Convert vorticity & divergence to u*cos(theta) & v*cos(theta)
-  printf("Converting spectral vorticity-divergence to U-V globally...\n");
+  fprintf(stderr,"Converting spectral vorticity-divergence to U-V globally...\n");
   struct VorDivToUV_t vordiv_to_UV_g = new_vordiv_to_UV();
     vordiv_to_UV_g.rspvor = rspvorg;
     vordiv_to_UV_g.rspdiv = rspdivg;
@@ -239,8 +258,8 @@ int main ( int arc, char **argv )
     vordiv_to_UV_g.ncoeff = trans.nspec2g;
     vordiv_to_UV_g.nsmax  = trans.nsmax;
   trans_vordiv_to_UV(&vordiv_to_UV_g);
-  printf("Converting spectral vorticity-divergence to U-V globally...done\n");
-
+  fprintf(stderr,"Converting spectral vorticity-divergence to U-V globally...done\n");
+#endif
 
   // Distribute spectral field (for fun)
   struct DistSpec_t distspec = new_distspec(&trans);
@@ -267,7 +286,7 @@ int main ( int arc, char **argv )
     {
       for( i=0; i<nout; ++i )
       {
-        printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
+        fprintf(stderr,"rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
       }
     }
   }
@@ -288,7 +307,7 @@ int main ( int arc, char **argv )
     {
       for( i=0; i<nout; ++i )
       {
-        printf("rgpg[%d][%d] : %f\n",j,i,rgpg[j*trans.ngptotg+i]);
+        fprintf(stderr,"rgpg[%d][%d] : %f\n",j,i,rgpg[j*trans.ngptotg+i]);
       }
     }
   }
@@ -302,19 +321,25 @@ int main ( int arc, char **argv )
   free(rspvorg);
   free(rspdiv);
   free(rspdivg);
+#ifndef GPU_VERSION
   free(rspu);
-  free(rspug);
   free(rspv);
+  free(rspug);
   free(rspvg);
+#endif
   free(nfrom);
   free(nto);
 
-  printf("cleanup");
+#ifndef GPU_VERSION
+// This can be enabled again for GPU_VERSION once PR #151
+// (https://github.com/ecmwf-ifs/ectrans/pull/151) is merged!
+  fprintf(stderr,"cleanup");
   trans_delete(&trans);
 
   trans_finalize();
+#endif
 
-  //printf("transi finished\n");
+  //fprintf(stderr,"transi finished\n");
   return 0;
 }
 
