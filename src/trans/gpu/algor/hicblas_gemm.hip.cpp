@@ -274,7 +274,7 @@ void hipblas_dgemm_wrapper(char transa, char transb, int m, int n, int k,
     op_t2 = HIPBLAS_OP_T;
 
   if (!hip_alreadyAllocated_dgemm_handle) {
-    hipblasCreate(&handle_hip_dgemm);
+    HICBLAS_CHECK(hipblasCreate(&handle_hip_dgemm));
     hip_alreadyAllocated_dgemm_handle = true;
   }
   hipblasHandle_t handle = get_hipblas_handle();
@@ -299,7 +299,7 @@ void hipblas_sgemm_wrapper(char transa, char transb, int m, int n, int k,
     op_t2 = HIPBLAS_OP_T;
 
   if (!hip_alreadyAllocated_sgemm_handle) {
-    hipblasCreate(&handle_hip_sgemm);
+    HICBLAS_CHECK(hipblasCreate(&handle_hip_sgemm));
     hip_alreadyAllocated_sgemm_handle = true;
   }
   HICBLAS_CHECK(hipblasSgemmStridedBatched(
