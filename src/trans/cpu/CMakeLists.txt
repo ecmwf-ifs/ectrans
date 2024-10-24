@@ -44,9 +44,9 @@ function(generate_backend_sources)
 
   ecbuild_list_add_pattern( LIST files
     GLOB
-          algor/*
-          internal/*
-          external/*
+          algor/*.F90
+          internal/*.F90
+          external/*.F90
     QUIET
   )
 
