@@ -14,9 +14,8 @@ CONTAINS
 SUBROUTINE SPNSDE(KF_SCALARS,PEPSNM,PF,PNSD)
 
 USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
-USE TPM_DIM,         ONLY: R, R_NTMAX
-USE TPM_DISTR,       ONLY: D, D_MYMS, D_NUMP
-USE TPM_FIELDS_FLAT, ONLY: ZEPSNM
+USE TPM_DIM,         ONLY: R
+USE TPM_DISTR,       ONLY: D
 
 !**** *SPNSDE* - Compute North-South derivative in spectral space
 
@@ -82,6 +81,8 @@ REAL(KIND=JPRB),    INTENT(OUT) :: PNSD(:,:,:)
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
 
+ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX, D_MYMS=>D%MYMS)
+
 #ifdef ACCGPU
 !$ACC DATA                                  &
 !$ACC&      PRESENT (R_NTMAX, D_MYMS)       &
@@ -89,7 +90,7 @@ INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
 #endif
 #ifdef OMPGPU
 !$OMP TARGET DATA               &
-!$OMP&      MAP(PRESENT,ALLOC:ZN)
+!$OMP&      MAP(PRESENT,PEPSNM,ALLOC:ZN)
 #endif
 
 !     ------------------------------------------------------------------
@@ -103,7 +104,7 @@ INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
 #ifdef OMPGPU
   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO
   !! DEFAULT(NONE) PRIVATE(IJ) &
-  !!$OMP&   SHARED(KM,F,ZN,ZEPSNM,KMLOC)
+  !!$OMP&   SHARED(KM,ZN,KMLOC)
 #endif
 #ifdef ACCGPU
   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,IR,II,JI) &
@@ -142,6 +143,7 @@ END DO
 #endif
 
 !     ------------------------------------------------------------------
+END ASSOCIATE
 
 END SUBROUTINE SPNSDE
 END MODULE SPNSDE_MOD
