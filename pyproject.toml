@@ -2,3 +2,10 @@
 requires = ["setuptools", "wheel", "scikit-build"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "ectrans4py"
+dynamic = ["version"]
+dependencies=["numpy", "ctypesForFortran<2.0.0"]
+
+[tool.setuptools.dynamic]
+version = {attr = "ectrans4py.__version__"}
