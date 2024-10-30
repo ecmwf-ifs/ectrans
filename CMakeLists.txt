@@ -64,7 +64,10 @@ ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
 
-	   
+ecbuild_add_option( FEATURE PROGRAMS
+                    DEFAULT ON
+                    DESCRIPTION "Build src/programs" )
+
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
 		    CONDITION HAVE_ETRANS

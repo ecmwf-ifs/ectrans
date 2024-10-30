@@ -7,7 +7,9 @@
 # nor does it submit to any jurisdiction.
 
 add_subdirectory( trans )
-add_subdirectory( programs )
+if(HAVE_PROGRAMS)
+  add_subdirectory( programs )
+endif()
 if( HAVE_TRANSI )
   add_subdirectory(transi)
 endif()
