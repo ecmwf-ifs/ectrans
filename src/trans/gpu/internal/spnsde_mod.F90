@@ -85,7 +85,7 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX, D_MYMS=>D%MYMS)
 
 #ifdef ACCGPU
 !$ACC DATA                                  &
-!$ACC&      PRESENT (R_NTMAX, D_MYMS)       &
+!$ACC&      PRESENT (R,R_NTMAX, D,D_MYMS)       &
 !$ACC&      PRESENT (D_NUMP,PEPSNM, PF, PNSD) ASYNC(1)
 #endif
 #ifdef OMPGPU

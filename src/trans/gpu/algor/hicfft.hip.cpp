@@ -60,7 +60,7 @@ public:
   hicfft_plan(hipfftHandle handle_, int offset_)
       : handle_ptr(new hipfftHandle{handle_},
                    [](auto ptr) {
-                     fftSafeCall(cufftDestroy(*ptr));
+                     fftSafeCall(hipfftDestroy(*ptr));
                      delete ptr;
                    }),
         offset(offset_) {}

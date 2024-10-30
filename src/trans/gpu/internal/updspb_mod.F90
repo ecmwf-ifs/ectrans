@@ -96,7 +96,7 @@ MODULE UPDSPB_MOD
 
       !loop over wavenumber
 #ifdef ACCGPU
-  !$ACC DATA PRESENT(PSPEC,POA,R_NTMAX,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
+  !$ACC DATA PRESENT(PSPEC,POA,R,R_NTMAX,D,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
 #endif
 #ifdef OMPGPU
 !WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
