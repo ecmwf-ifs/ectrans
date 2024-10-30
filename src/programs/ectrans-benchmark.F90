@@ -1069,6 +1069,9 @@ end subroutine
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck)
+#ifdef _OPENACC
+  use openacc
+#endif
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
   character(len=16), intent(inout) :: cgrid ! Spectral truncation
@@ -1096,7 +1099,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer            :: iarg = 1      ! Argument index
 
 #ifdef _OPENACC
-  !$acc init
+  call acc_init(acc_get_device_type())
 #endif
 
   do while (iarg <= command_argument_count())
