@@ -1,74 +1,65 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# Copyright (c) Météo France (2014-)
-# This software is governed by the CeCILL-C license under French law.
-# http://www.cecill.info
 """
-ialsptrans4py:
+ectrans4py:
 
-Contains the interface to spectral transforms from the IAL/ecTrans.
-Note that this is temporary between the former package arpifs4py and a direct python interface to ecTrans.
-
-Actual .so library should be in one of the preinstalled paths or in a directory specified via LD_LIBRARY_PATH
+A Python interface to spectral transforms from ecTrans, using cTypesForFortran for the Fortran/Python binding.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 import os
+import resource
 import numpy as np
 import ctypesForFortran
 from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT
 
 
+__version__ = "1.2.0"
 
-__version__ = "2.0.1"
 
 # Shared objects library
 ########################
-shared_objects_library = os.environ.get('IALSPTRANS4PY_SO', None)
-if shared_objects_library is None or not os.path.exists(shared_objects_library):
-    # not specified or path does not exist : find in known locations
-    so_basename = "libtrans_dp.so"  # local name in the directory
-    LD_LIBRARY_PATH = [p for p in os.environ.get('LD_LIBRARY_PATH', '').split(':') if p != '']
-    potential_locations = LD_LIBRARY_PATH + [
-            os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'),   # FIXEME : but requiere changes in CMakeLists.txt
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib64'),     # force one libdir directory name ! 
-#        "/home/common/epygram/public/EPyGrAM/libs4py",  # CNRM
-#        "/home/gmap/mrpe/mary/public/EPyGrAM/libs4py",  # belenos/taranis
-#        "/home/acrd/public/EPyGrAM/libs4py",  # ECMWF's Atos aa-ad
+so_basename = "libtrans_dp.so"  # local name of library in the directory
+LD_LIBRARY_PATH = [p for p in os.environ.get('LD_LIBRARY_PATH', '').split(':') if p != '']
+lpath = LD_LIBRARY_PATH + [
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'),
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib64'),
         ]
-    for _libs4py_dir in potential_locations:
-        shared_objects_library = os.path.join(_libs4py_dir, so_basename)
-        if os.path.exists(shared_objects_library):
-            break
-        else:
-            shared_objects_library = None
-    if shared_objects_library is None:
-        msg = ' '.join(["'{}' was not found in any of potential locations: {}.",
-                        "You can specify a different location using env var LD_LIBRARY_PATH",
-                        "or specify a precise full path using env var IALSPTRANS4PY_SO."]).format(
-                                so_filename, str(potential_locations))
-        raise FileNotFoundError(msg)
-else:
-    so_basename = os.path.basename(shared_objects_library)
+for d in lpath:
+    shared_objects_library = os.path.join(d, so_basename)
+    if os.path.exists(shared_objects_library):
+        break
+    else:
+        shared_objects_library = None
+if shared_objects_library is None:
+    msg = ' '.join(["'{}' was not found in any of potential locations: {}.",
+                    "You can specify a different location using env var LD_LIBRARY_PATH"])
+    msg = msg.format(so_basename, str(lpath))
+    raise FileNotFoundError(msg)
 ctypesFF, handle = ctypesForFortran.ctypesForFortranFactory(shared_objects_library)
 
 # Initialization
 ################
 
 def init_env(omp_num_threads=None,
-             no_mpi=False):
+             no_mpi=True,
+             unlimited_stack=True,
+             ):
     """
     Set adequate environment for the inner libraries.
 
     :param int omp_num_threads: sets OMP_NUM_THREADS
     :param bool no_mpi: environment variable DR_HOOK_NOT_MPI set to 1
+    :param unlimited_stack: equivalent to 'ulimit -s unlimited'
     """
     # because arpifs library is compiled with MPI & openMP
     if omp_num_threads is not None:
         os.environ['OMP_NUM_THREADS'] = str(omp_num_threads)
     if no_mpi:
         os.environ['DR_HOOK_NOT_MPI'] = '1'
+    if unlimited_stack:
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
 # Transforms interfaces
 #######################
