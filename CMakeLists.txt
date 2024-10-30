@@ -80,7 +80,6 @@ ecbuild_add_option( FEATURE SINGLE_PRECISION
                     DEFAULT ON
                     DESCRIPTION "Support for Single Precision" )
 
-
 if( HAVE_SINGLE_PRECISION )
   set( single "single" )
 endif()
