@@ -15,6 +15,7 @@ setup(
         '-DENABLE_ETRANS=ON',
         '-DENABLE_ECTRANS4PY=ON',
         '-DENABLE_SINGLE_PRECISION=OFF',
+        '-DENABLE_PROGRAMS=OFF',
         '-DENABLE_OMP=OFF',
     ],
     package_dir={"": "src"},
