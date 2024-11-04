@@ -1015,6 +1015,17 @@ end subroutine
 
 !===================================================================================================
 
+subroutine str2int(str, int, stat)
+
+  character(len=*), intent(in) :: str
+  integer, intent(out) :: int
+  integer, intent(out) :: stat
+  read(str, *, iostat=stat) int
+
+end subroutine str2int
+
+!===================================================================================================
+
 function get_int_value(cname, iarg) result(value)
 
   integer :: value
@@ -1048,6 +1059,80 @@ function get_str_value(cname, iarg) result(value)
   end if
 
 end function
+
+!===================================================================================================
+
+subroutine print_help(unit)
+
+  integer, optional :: unit
+  integer :: nout = 6
+  if (present(unit)) then
+    nout = unit
+  endif
+
+  write(nout, "(a)") ""
+
+  if (jprb == jprd) then
+    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-dp"
+  else
+    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-sp"
+  end if
+  write(nout, "(a)") ""
+
+  write(nout, "(a)") "DESCRIPTION"
+  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
+    & between spectral "
+  if (jprb == jprd) then
+    write(nout, "(a)") "        space and grid-point space (double-precision version)"
+  else
+    write(nout, "(a)") "        space and grid-point space (single-precision version)"
+  end if
+  write(nout, "(a)") ""
+
+  write(nout, "(a)") "USAGE"
+  if (jprb == jprd) then
+    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-dp [options]"
+  else
+    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-sp [options]"
+  end if
+  write(nout, "(a)") ""
+
+  write(nout, "(a)") "OPTIONS"
+  write(nout, "(a)") "    -h, --help          Print this message"
+  write(nout, "(a)") "    -v                  Run with verbose output"
+  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation&
+    & (default = 79)"
+  write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
+  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1&
+    & (cubic relation)"
+  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
+    & iterations (default = 10)"
+  write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
+    & for which timing statistics should be ignored (default = 3)"
+  write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
+  write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
+  write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
+  write(nout, "(a)") "    --scders            Compute scalar derivatives (default off)"
+  write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
+    & when also --vordiv is given"
+  write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
+  write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
+  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed&
+    & fields"
+  write(nout, "(a)") "                        The computation of spectral norms will skew overall&
+    & timings"
+  write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
+    & subroutine on memory usage, thread-binding etc."
+  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
+  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
+  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
+   & tolerance for correctness checking"
+  write(nout, "(a)") ""
+  write(nout, "(a)") "DEBUGGING"
+  write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
+  write(nout, "(a)") ""
+
+end subroutine print_help
 
 !===================================================================================================
 
@@ -1167,16 +1252,6 @@ function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
 
 end function
 
-!===================================================================================================
-
-subroutine str2int(str, int, stat)
-
-  character(len=*), intent(in) :: str
-  integer, intent(out) :: int
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) int
-
-end subroutine str2int
 
 !===================================================================================================
 
@@ -1213,80 +1288,6 @@ function get_median(vec) result(median)
   endif
 
 end function get_median
-
-!===================================================================================================
-
-subroutine print_help(unit)
-
-  integer, optional :: unit
-  integer :: nout = 6
-  if (present(unit)) then
-    nout = unit
-  endif
-
-  write(nout, "(a)") ""
-
-  if (jprb == jprd) then
-    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-dp"
-  else
-    write(nout, "(a)") "NAME    ectrans-benchmark-" // VERSION // "-sp"
-  end if
-  write(nout, "(a)") ""
-
-  write(nout, "(a)") "DESCRIPTION"
-  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
-    & between spectral "
-  if (jprb == jprd) then
-    write(nout, "(a)") "        space and grid-point space (double-precision version)"
-  else
-    write(nout, "(a)") "        space and grid-point space (single-precision version)"
-  end if
-  write(nout, "(a)") ""
-
-  write(nout, "(a)") "USAGE"
-  if (jprb == jprd) then
-    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-dp [options]"
-  else
-    write(nout, "(a)") "        ectrans-benchmark-" // VERSION // "-sp [options]"
-  end if
-  write(nout, "(a)") ""
-
-  write(nout, "(a)") "OPTIONS"
-  write(nout, "(a)") "    -h, --help          Print this message"
-  write(nout, "(a)") "    -v                  Run with verbose output"
-  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation&
-    & (default = 79)"
-  write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
-  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1&
-    & (cubic relation)"
-  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
-    & iterations (default = 10)"
-  write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
-    & for which timing statistics should be ignored (default = 3)"
-  write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
-  write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
-  write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
-  write(nout, "(a)") "    --scders            Compute scalar derivatives (default off)"
-  write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
-    & when also --vordiv is given"
-  write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
-  write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
-  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed&
-    & fields"
-  write(nout, "(a)") "                        The computation of spectral norms will skew overall&
-    & timings"
-  write(nout, "(a)") "    --meminfo           Show diagnostic information from FIAT's ec_meminfo&
-    & subroutine on memory usage, thread-binding etc."
-  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
-  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
-  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
-   & tolerance for correctness checking"
-  write(nout, "(a)") ""
-  write(nout, "(a)") "DEBUGGING"
-  write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
-  write(nout, "(a)") ""
-
-end subroutine print_help
 
 !===================================================================================================
 
