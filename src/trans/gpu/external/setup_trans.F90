@@ -130,8 +130,7 @@ USE OPENACC,                     ONLY: ACC_DEVICE_KIND, ACC_GET_DEVICE_TYPE, ACC
   &                                    ACC_SET_DEVICE_NUM, ACC_GET_DEVICE_NUM
 #endif
 #ifdef OMPGPU
-! TODO: add OMP equivalents to ACC library routines
-!USE OMP_LIB
+USE OMP_LIB
 #endif
 
 !endif INTERFACE
