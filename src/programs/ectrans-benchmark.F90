@@ -1015,6 +1015,17 @@ end subroutine
 
 !===================================================================================================
 
+subroutine str2int(str, int, stat)
+
+  character(len=*), intent(in) :: str
+  integer, intent(out) :: int
+  integer, intent(out) :: stat
+  read(str, *, iostat=stat) int
+
+end subroutine str2int
+
+!===================================================================================================
+
 function get_int_value(cname, iarg) result(value)
 
   integer :: value
@@ -1048,171 +1059,6 @@ function get_str_value(cname, iarg) result(value)
   end if
 
 end function
-
-!===================================================================================================
-
-subroutine parsing_failed(message)
-
-  character(len=*), intent(in) :: message
-  if (luse_mpi) call mpl_init(ldinfo=.false.)
-  if (ec_mpirank() == 0) then
-    write(nerr,"(a)") trim(message)
-    call print_help(unit=nerr)
-  endif
-  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-  stop
-
-end subroutine
-
-!===================================================================================================
-
-subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
-
-  integer, intent(inout) :: nsmax           ! Spectral truncation
-  character(len=16), intent(inout) :: cgrid ! Spectral truncation
-  integer, intent(inout) :: iters           ! Number of iterations for transform test
-  integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
-  integer, intent(inout) :: nfld            ! Number of scalar fields
-  integer, intent(inout) :: nlev            ! Number of vertical levels
-  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
-  logical, intent(inout) :: lscders         ! Compute scalar derivatives
-  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
-  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
-  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
-  integer, intent(inout) :: nproma          ! NPROMA
-  integer, intent(inout) :: verbosity       ! Level of verbosity
-  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
-  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
-  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
-                                            ! end
-  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
-  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
-  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
-                                            ! tolerance for correctness checking
-
-  character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
-
-#ifdef _OPENACC
-  !$acc init
-#endif
-
-  do while (iarg <= command_argument_count())
-    call get_command_argument(iarg, carg)
-
-    select case(carg)
-      ! Parse help argument
-      case('-h', '--help')
-        if (luse_mpi) call mpl_init(ldinfo=.false.)
-        if (ec_mpirank()==0) call print_help()
-        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-        stop
-      ! Parse verbosity argument
-      case('-v')
-        verbosity = 1
-      ! Parse number of iterations argument
-      case('-n', '--niter')
-        iters = get_int_value('-n', iarg)
-        if (iters < 1) then
-          call parsing_failed("Invalid argument for -n: must be > 0")
-        end if
-      case('--niter-warmup')
-        iters_warmup = get_int_value('--niter-warmup', iarg)
-        if (iters_warmup < 0) then
-          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
-        end if
-      ! Parse spectral truncation argument
-      case('-t', '--truncation')
-        nsmax = get_int_value('-t', iarg)
-        if (nsmax < 1) then
-          call parsing_failed("Invalid argument for -t: must be > 0")
-        end if
-      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
-      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
-      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
-      case('--vordiv'); lvordiv = .True.
-      case('--scders'); lscders = .True.
-      case('--uvders'); luvders = .True.
-      case('--flt'); luseflt = .True.
-      case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
-      case('--nproma'); nproma = get_int_value('--nproma', iarg)
-      case('--dump-values'); ldump_values = .true.
-      case('--norms'); lprint_norms = .true.
-      case('--meminfo'); lmeminfo = .true.
-      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
-      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
-      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
-      case default
-        call parsing_failed("Unrecognised argument: " // trim(carg))
-
-    end select
-    iarg = iarg + 1
-  end do
-
-  if (.not. lvordiv) then
-    luvders = .false.
-  endif
-
-end subroutine get_command_line_arguments
-
-!===================================================================================================
-
-function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
-
-  character(len=16) :: cgrid
-  integer, intent(in) :: nsmax
-  write(cgrid,'(a,i0)') 'O',nsmax+1
-
-end function
-
-!===================================================================================================
-
-subroutine str2int(str, int, stat)
-
-  character(len=*), intent(in) :: str
-  integer, intent(out) :: int
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) int
-
-end subroutine str2int
-
-!===================================================================================================
-
-function get_median(vec) result(median)
-
-  real(kind=jprd), intent(in) :: vec(:)
-  real(kind=jprd) :: median
-
-  real(kind=jprd) :: vec_sorted(size(vec))
-  real(kind=jprd) :: x
-
-  integer :: i, j, n
-
-  n = size(vec)
-
-  ! Sort in ascending order
-  vec_sorted = vec
-  do i = 2, n
-    x = vec_sorted(i)
-    j = i - 1
-    do while (j >= 1)
-      if (vec_sorted(j) <= x) exit
-      vec_sorted(j + 1) = vec_sorted(j)
-      j = j - 1
-    end do
-    vec_sorted(j + 1) = x
-  end do
-
-  ! Calculate median according to if there is an even or odd number of elements
-  if (mod(n, 2) == 0) then
-    median = (vec_sorted(n/2) + vec_sorted(n/2+1))/2.0_jprd
-  else
-    median = vec_sorted((n+1)/2)
-  endif
-
-end function get_median
 
 !===================================================================================================
 
@@ -1287,6 +1133,165 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
 
 end subroutine print_help
+
+!===================================================================================================
+
+subroutine parsing_failed(message)
+
+  character(len=*), intent(in) :: message
+  if (luse_mpi) call mpl_init(ldinfo=.false.)
+  if (ec_mpirank() == 0) then
+    write(nerr,"(a)") trim(message)
+    call print_help(unit=nerr)
+  endif
+  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
+  stop
+
+end subroutine
+
+!===================================================================================================
+
+subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
+  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
+
+#ifdef _OPENACC
+  use openacc, only: acc_init, acc_get_device_type
+#endif
+
+  integer, intent(inout) :: nsmax           ! Spectral truncation
+  character(len=16), intent(inout) :: cgrid ! Spectral truncation
+  integer, intent(inout) :: iters           ! Number of iterations for transform test
+  integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
+  integer, intent(inout) :: nfld            ! Number of scalar fields
+  integer, intent(inout) :: nlev            ! Number of vertical levels
+  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
+  logical, intent(inout) :: lscders         ! Compute scalar derivatives
+  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
+  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
+  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
+  integer, intent(inout) :: nproma          ! NPROMA
+  integer, intent(inout) :: verbosity       ! Level of verbosity
+  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
+  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
+  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
+                                            ! end
+  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
+  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
+  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
+                                            ! tolerance for correctness checking
+
+  character(len=128) :: carg          ! Storage variable for command line arguments
+  integer            :: iarg = 1      ! Argument index
+
+#ifdef _OPENACC
+  call acc_init(acc_get_device_type())
+#endif
+
+  do while (iarg <= command_argument_count())
+    call get_command_argument(iarg, carg)
+
+    select case(carg)
+      ! Parse help argument
+      case('-h', '--help')
+        if (luse_mpi) call mpl_init(ldinfo=.false.)
+        if (ec_mpirank()==0) call print_help()
+        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
+        stop
+      ! Parse verbosity argument
+      case('-v')
+        verbosity = 1
+      ! Parse number of iterations argument
+      case('-n', '--niter')
+        iters = get_int_value('-n', iarg)
+        if (iters < 1) then
+          call parsing_failed("Invalid argument for -n: must be > 0")
+        end if
+      case('--niter-warmup')
+        iters_warmup = get_int_value('--niter-warmup', iarg)
+        if (iters_warmup < 0) then
+          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
+        end if
+      ! Parse spectral truncation argument
+      case('-t', '--truncation')
+        nsmax = get_int_value('-t', iarg)
+        if (nsmax < 1) then
+          call parsing_failed("Invalid argument for -t: must be > 0")
+        end if
+      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
+      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
+      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
+      case('--vordiv'); lvordiv = .True.
+      case('--scders'); lscders = .True.
+      case('--uvders'); luvders = .True.
+      case('--flt'); luseflt = .True.
+      case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
+      case('--nproma'); nproma = get_int_value('--nproma', iarg)
+      case('--dump-values'); ldump_values = .true.
+      case('--norms'); lprint_norms = .true.
+      case('--meminfo'); lmeminfo = .true.
+      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
+      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
+      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
+      case default
+        call parsing_failed("Unrecognised argument: " // trim(carg))
+
+    end select
+    iarg = iarg + 1
+  end do
+
+  if (.not. lvordiv) then
+    luvders = .false.
+  endif
+
+end subroutine get_command_line_arguments
+
+!===================================================================================================
+
+function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
+
+  character(len=16) :: cgrid
+  integer, intent(in) :: nsmax
+  write(cgrid,'(a,i0)') 'O',nsmax+1
+
+end function
+
+
+!===================================================================================================
+
+function get_median(vec) result(median)
+
+  real(kind=jprd), intent(in) :: vec(:)
+  real(kind=jprd) :: median
+
+  real(kind=jprd) :: vec_sorted(size(vec))
+  real(kind=jprd) :: x
+
+  integer :: i, j, n
+
+  n = size(vec)
+
+  ! Sort in ascending order
+  vec_sorted = vec
+  do i = 2, n
+    x = vec_sorted(i)
+    j = i - 1
+    do while (j >= 1)
+      if (vec_sorted(j) <= x) exit
+      vec_sorted(j + 1) = vec_sorted(j)
+      j = j - 1
+    end do
+    vec_sorted(j + 1) = x
+  end do
+
+  ! Calculate median according to if there is an even or odd number of elements
+  if (mod(n, 2) == 0) then
+    median = (vec_sorted(n/2) + vec_sorted(n/2+1))/2.0_jprd
+  else
+    median = vec_sorted((n+1)/2)
+  endif
+
+end function get_median
 
 !===================================================================================================
 
