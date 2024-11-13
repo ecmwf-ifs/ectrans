@@ -156,6 +156,20 @@ ecbuild_add_option( FEATURE GPU_STATIC
                     DEFAULT ${GPU_STATIC_DEFAULT}
                     DESCRIPTION "Compile GPU library as static library")
 
+ecbuild_add_option( FEATURE ETRANS
+                    DEFAULT OFF
+                    DESCRIPTION "Include Limited-Area-Model Transforms" )
+
+ecbuild_add_option( FEATURE PROGRAMS
+                    DEFAULT ON
+                    DESCRIPTION "Build src/programs" )
+
+ecbuild_add_option( FEATURE ECTRANS4PY
+                    DEFAULT OFF
+		    CONDITION HAVE_ETRANS
+                    DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
+
+
 ectrans_find_lapack()
 
 ecbuild_add_option( FEATURE TESTS

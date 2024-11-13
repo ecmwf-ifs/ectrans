@@ -7,7 +7,15 @@
 # nor does it submit to any jurisdiction.
 
 add_subdirectory( trans )
-add_subdirectory( programs )
+if(HAVE_PROGRAMS)
+  add_subdirectory( programs )
+endif()
 if( HAVE_TRANSI )
   add_subdirectory(transi)
+endif()
+if( HAVE_ETRANS )
+  add_subdirectory(etrans)
+endif()
+if(HAVE_ECTRANS4PY)
+  add_subdirectory(ectrans4py)
 endif()
