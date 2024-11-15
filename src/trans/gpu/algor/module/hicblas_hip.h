@@ -15,7 +15,13 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#pragma-messages"
 #endif
-#include "hipblas/hipblas.h"
+
+#ifdef ROCM6
+    #include <hipblas/hipblas.h>
+#else
+    #include "hipblas.h"
+#endif
+
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif

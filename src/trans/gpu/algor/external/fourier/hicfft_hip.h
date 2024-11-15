@@ -15,8 +15,14 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#pragma-messages"
 #endif
+
 #include <hip/hip_runtime.h>
-#include "hipfft/hipfft.h"
+#ifdef ROCM6
+    #include <hipfft/hipfft.h>
+#else
+    #include "hipfft.h"
+#endif
+
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif

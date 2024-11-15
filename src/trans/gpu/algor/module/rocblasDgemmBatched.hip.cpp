@@ -10,8 +10,15 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-W#pragma-messages"
 #endif
+
 #include "hip/hip_runtime_api.h"
-#include "rocblas/rocblas.h"
+
+#ifdef ROCM6
+  #include <rocblas/rocblas.h>
+#else
+  #include "rocblas.h"
+#endif
+
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
