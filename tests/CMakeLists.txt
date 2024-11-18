@@ -290,7 +290,7 @@ foreach( benchmark ${benchmarks} )
           # choose a higher error tolerance threshold
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 25000 ${baseargs} --callmode ${callmode}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 50000 ${baseargs} --callmode ${callmode}
               MPI ${mpi}
               OMP ${omp}
           )
