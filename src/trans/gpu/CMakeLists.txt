@@ -88,8 +88,8 @@ function(generate_backend_sources)
 
   ecbuild_list_add_pattern( LIST files
     GLOB
-          internal/*
-          external/*
+          internal/*.F90
+          external/*.F90
     QUIET
   )
   list( APPEND files
