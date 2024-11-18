@@ -1239,7 +1239,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--callmode')
           icall_mode = get_int_value('--callmode', iarg)
           if (icall_mode /= 1 .and. icall_mode /= 2) then
-            call parsing_failed("Invalid argument for --calmode: must be 1 or 2")
+            call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
