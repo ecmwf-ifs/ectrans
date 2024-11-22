@@ -3,10 +3,11 @@ name: build-hpc
 # Controls when the action will run
 on:
 
-  # Trigger the workflow on all pushes, except on tag creation
+  # Trigger the workflow on all pushes to main and develop, except on tag creation
   push:
     branches:
-    - '**'
+    - main
+    - develop
     tags-ignore:
     - '**'
 
