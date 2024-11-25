@@ -166,13 +166,16 @@ ectrans_find_lapack()
 ecbuild_add_option( FEATURE TESTS
                     DEFAULT ON
                     DESCRIPTION "Enable unit testing"
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
-                    CONDITION HAVE_CPU )
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran" )
 
-### Add sources and tests
+### Add sources
 include( ectrans_compile_options )
 add_subdirectory( src )
-add_subdirectory( tests )
+
+### Add tests
+if( HAVE_TESTS )
+  add_subdirectory( tests )
+endif()
 
 ### Export
 if( BUILD_SHARED_LIBS )
