@@ -60,7 +60,7 @@ jobs:
               - ninja
               - ecbuild
               - prgenv/nvidia
-              - hpcx-openmpi
+              - hpcx-openmpi/2.14.0-cuda
               - fftw
             cmake_options:
               - -DENABLE_MPI=ON
