@@ -58,7 +58,7 @@ function ext_acc_pass_2d_r4(arr) result(ret)
   ret%ptr = ptr1_v
   ret%sz = (ptr2_v - ptr1_v) * (size(arr, 2) - 1)
 
-  ! for the last slice, take the actual offset, otherwise we imght go OOB
+  ! for the last slice, take the actual offset, otherwise we might go OOB
   ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2)))
   ptr2 = c_loc(arr(lbound(arr,1)+1, lbound(arr,2)))
   ptr1_v= transfer(ptr1, ptr1_v)
@@ -82,7 +82,7 @@ function ext_acc_pass_3d_r4(arr) result(ret)
   ret%ptr = ptr1_v
   ret%sz = (ptr2_v - ptr1_v) * (size(arr, 3) - 1)
 
-  ! for the last slice, take the actual offset, otherwise we imght go OOB
+  ! for the last slice, take the actual offset, otherwise we might go OOB
   ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr,3)))
   ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2)+1, lbound(arr,3)))
   ptr1_v= transfer(ptr1, ptr1_v)
@@ -178,7 +178,7 @@ function ext_acc_pass_4d_r8(arr) result(ret)
   ret%ptr = ptr1_v
   ret%sz = (ptr2_v - ptr1_v) * (size(arr, 4) - 1)
 
-  ! for the last slice, take the actual offset, otherwise we imght go OOB
+  ! for the last slice, take the actual offset, otherwise we might go OOB
   ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr, 3), lbound(arr,4)))
   ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr, 3)+1, lbound(arr,4)))
   ptr1_v= transfer(ptr1, ptr1_v)
