@@ -8,7 +8,9 @@
 
 module openacc_ext_type
   use iso_c_binding, only: c_size_t
+
   implicit none
+
   private
   public :: ext_acc_arr_desc
 
@@ -22,6 +24,7 @@ module openacc_ext
   use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
   use openacc, only: acc_create, acc_copyin, acc_handle_kind
   use openacc_ext_type, only: ext_acc_arr_desc
+
   implicit none
 
   private
@@ -40,7 +43,6 @@ module openacc_ext
 contains
 
 function ext_acc_pass_2d_r4(arr) result(ret)
-  implicit none
   type(ext_acc_arr_desc) :: ret
   real(4), intent(in) :: arr(:,:)
 
@@ -65,7 +67,6 @@ function ext_acc_pass_2d_r4(arr) result(ret)
 end function
 
 function ext_acc_pass_3d_r4(arr) result(ret)
-  implicit none
   type(ext_acc_arr_desc) :: ret
   real(4), intent(in) :: arr(:,:,:)
 
@@ -90,7 +91,6 @@ function ext_acc_pass_3d_r4(arr) result(ret)
 end function
 
 function ext_acc_pass_4d_r4(arr) result(ret)
-  implicit none
   type(ext_acc_arr_desc) :: ret
   real(4), intent(in) :: arr(:,:,:,:)
 
@@ -115,7 +115,6 @@ function ext_acc_pass_4d_r4(arr) result(ret)
 end function
 
 function ext_acc_pass_2d_r8(arr) result(ret)
-  implicit none
   type(ext_acc_arr_desc) :: ret
   real(8), intent(in) :: arr(:,:)
 
@@ -140,7 +139,6 @@ function ext_acc_pass_2d_r8(arr) result(ret)
 end function
 
 function ext_acc_pass_3d_r8(arr) result(ret)
-  implicit none
   type(ext_acc_arr_desc) :: ret
   real(8), intent(in) :: arr(:,:,:)
 
@@ -165,7 +163,6 @@ function ext_acc_pass_3d_r8(arr) result(ret)
 end function
 
 function ext_acc_pass_4d_r8(arr) result(ret)
-  implicit none
   type(ext_acc_arr_desc) :: ret
   real(8), intent(in) :: arr(:,:,:,:)
 
@@ -190,7 +187,6 @@ function ext_acc_pass_4d_r8(arr) result(ret)
 end function
 
 function get_common_pointers(in_ptrs, out_ptrs) result(num_ranges)
-  implicit none
   type(ext_acc_arr_desc), intent(in) :: in_ptrs(:)
   type(common_pointer_descr), intent(out) :: out_ptrs(:)
 
@@ -259,7 +255,7 @@ end function
 subroutine ext_acc_create(ptrs, stream)
   use openacc, only: acc_create, acc_async_sync
   use iso_fortran_env, only: int32
-  implicit none
+
   type(ext_acc_arr_desc), intent(in) :: ptrs(:)
   integer(acc_handle_kind), optional :: stream
 
@@ -286,7 +282,7 @@ end subroutine
 
 subroutine ext_acc_copyin(ptrs, stream)
   use openacc, only: acc_async_sync
-  implicit none
+
   type(ext_acc_arr_desc), intent(in) :: ptrs(:)
   integer(acc_handle_kind), optional :: stream
 
@@ -314,7 +310,7 @@ end subroutine
 
 subroutine ext_acc_copyout(ptrs, stream)
   use openacc, only: acc_async_sync, acc_copyout
-  implicit none
+
   type(ext_acc_arr_desc), intent(in) :: ptrs(:)
   integer(acc_handle_kind), optional :: stream
 
@@ -342,7 +338,7 @@ end subroutine
 
 subroutine ext_acc_delete(ptrs, stream)
   use openacc, only: acc_async_sync, acc_delete
-  implicit none
+
   type(ext_acc_arr_desc), intent(in) :: ptrs(:)
   integer(acc_handle_kind), optional :: stream
 
