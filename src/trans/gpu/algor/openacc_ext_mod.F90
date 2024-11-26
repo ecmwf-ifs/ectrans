@@ -6,24 +6,11 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 
-module openacc_ext_type
-  use iso_c_binding, only: c_size_t
-
-  implicit none
-
-  private
-  public :: ext_acc_arr_desc
-
-  ! to my knowledge, this cannot be part of openacc_ext
-  type ext_acc_arr_desc
-    integer(c_size_t) :: ptr, sz
-  end type
-end module
-
-module openacc_ext
+module openacc_ext_mod
   use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
   use openacc, only: acc_create, acc_copyin, acc_handle_kind
-  use openacc_ext_type, only: ext_acc_arr_desc
+  use openacc_ext_type_mod, only: ext_acc_arr_desc
+  use parkind_ectrans, only: jprb
 
   implicit none
 
@@ -37,14 +24,14 @@ module openacc_ext
   end type
 
   interface ext_acc_pass
-    module procedure ext_acc_pass_2d_r4, ext_acc_pass_3d_r4, ext_acc_pass_4d_r4, ext_acc_pass_2d_r8, ext_acc_pass_3d_r8, ext_acc_pass_4d_r8
+    module procedure ext_acc_pass_2d, ext_acc_pass_3d, ext_acc_pass_4d
   end interface
 
 contains
 
-function ext_acc_pass_2d_r4(arr) result(ret)
+function ext_acc_pass_2d(arr) result(ret)
   type(ext_acc_arr_desc) :: ret
-  real(4), intent(in) :: arr(:,:)
+  real(jprb), intent(in) :: arr(:,:)
 
   type(c_ptr) :: ptr1, ptr2
   integer(c_size_t) :: ptr1_v, ptr2_v
@@ -66,9 +53,9 @@ function ext_acc_pass_2d_r4(arr) result(ret)
   ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 1)
 end function
 
-function ext_acc_pass_3d_r4(arr) result(ret)
+function ext_acc_pass_3d(arr) result(ret)
   type(ext_acc_arr_desc) :: ret
-  real(4), intent(in) :: arr(:,:,:)
+  real(jprb), intent(in) :: arr(:,:,:)
 
   type(c_ptr) :: ptr1, ptr2
   integer(c_size_t) :: ptr1_v, ptr2_v
@@ -90,81 +77,9 @@ function ext_acc_pass_3d_r4(arr) result(ret)
   ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 2)
 end function
 
-function ext_acc_pass_4d_r4(arr) result(ret)
+function ext_acc_pass_4d(arr) result(ret)
   type(ext_acc_arr_desc) :: ret
-  real(4), intent(in) :: arr(:,:,:,:)
-
-  type(c_ptr) :: ptr1, ptr2
-  integer(c_size_t) :: ptr1_v, ptr2_v
-
-  ! get full slices for all but the last slice
-  ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr, 3), lbound(arr,4)))
-  ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr, 3), lbound(arr,4)+1))
-  ptr1_v= transfer(ptr1, ptr1_v)
-  ptr2_v= transfer(ptr2, ptr2_v)
-
-  ret%ptr = ptr1_v
-  ret%sz = (ptr2_v - ptr1_v) * (size(arr, 4) - 1)
-
-  ! for the last slice, take the actual offset, otherwise we imght go OOB
-  ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr, 3), lbound(arr,4)))
-  ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr, 3)+1, lbound(arr,4)))
-  ptr1_v= transfer(ptr1, ptr1_v)
-  ptr2_v= transfer(ptr2, ptr2_v)
-  ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 3)
-end function
-
-function ext_acc_pass_2d_r8(arr) result(ret)
-  type(ext_acc_arr_desc) :: ret
-  real(8), intent(in) :: arr(:,:)
-
-  type(c_ptr) :: ptr1, ptr2
-  integer(c_size_t) :: ptr1_v, ptr2_v
-
-  ! get full slices for all but the last slice
-  ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2)))
-  ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2)+1))
-  ptr1_v= transfer(ptr1, ptr1_v)
-  ptr2_v= transfer(ptr2, ptr2_v)
-
-  ret%ptr = ptr1_v
-  ret%sz = (ptr2_v - ptr1_v) * (size(arr, 2) - 1)
-
-  ! for the last slice, take the actual offset, otherwise we imght go OOB
-  ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2)))
-  ptr2 = c_loc(arr(lbound(arr,1)+1, lbound(arr,2)))
-  ptr1_v= transfer(ptr1, ptr1_v)
-  ptr2_v= transfer(ptr2, ptr2_v)
-  ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 1)
-end function
-
-function ext_acc_pass_3d_r8(arr) result(ret)
-  type(ext_acc_arr_desc) :: ret
-  real(8), intent(in) :: arr(:,:,:)
-
-  type(c_ptr) :: ptr1, ptr2
-  integer(c_size_t) :: ptr1_v, ptr2_v
-
-  ! get full slices for all but the last slice
-  ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr,3)))
-  ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr,3)+1))
-  ptr1_v= transfer(ptr1, ptr1_v)
-  ptr2_v= transfer(ptr2, ptr2_v)
-
-  ret%ptr = ptr1_v
-  ret%sz = (ptr2_v - ptr1_v) * (size(arr, 3) - 1)
-
-  ! for the last slice, take the actual offset, otherwise we imght go OOB
-  ptr1 = c_loc(arr(lbound(arr,1), lbound(arr,2), lbound(arr,3)))
-  ptr2 = c_loc(arr(lbound(arr,1), lbound(arr,2)+1, lbound(arr,3)))
-  ptr1_v= transfer(ptr1, ptr1_v)
-  ptr2_v= transfer(ptr2, ptr2_v)
-  ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 2)
-end function
-
-function ext_acc_pass_4d_r8(arr) result(ret)
-  type(ext_acc_arr_desc) :: ret
-  real(8), intent(in) :: arr(:,:,:,:)
+  real(jprb), intent(in) :: arr(:,:,:,:)
 
   type(c_ptr) :: ptr1, ptr2
   integer(c_size_t) :: ptr1_v, ptr2_v
@@ -364,4 +279,4 @@ subroutine ext_acc_delete(ptrs, stream)
   enddo
 end subroutine
 
-end module
+end module openacc_ext_mod

@@ -9,7 +9,7 @@
 ## Assemble sources
 
 list( APPEND trans_gpu_common_src
-  algor/ext_acc.F90
+  algor/openacc_ext_type_mod.F90
   algor/c_hipmemgetinfo.cpp
   algor/buffered_allocator_mod.F90
   algor/device_mod.F90
@@ -100,6 +100,7 @@ function(generate_backend_sources)
   )
   list( APPEND files
           algor/seefmm_mix.F90
+          algor/openacc_ext_mod.F90
   )
   ecbuild_list_exclude_pattern( LIST files REGEX
           parkind_ectrans.F90
