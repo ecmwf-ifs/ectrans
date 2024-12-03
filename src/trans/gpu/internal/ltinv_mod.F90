@@ -113,8 +113,7 @@ CONTAINS
     USE SPNSDE_MOD,             ONLY: SPNSDE
     USE LEINV_MOD,              ONLY: LEINV_STRIDES, LEINV
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
-    USE TPM_FIELDS,             ONLY: F
-    USE TPM_FIELDS_FLAT,        ONLY: ZEPSNM
+    USE TPM_FIELDS_GPU,         ONLY: FG
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
     USE TPM_GEN,                ONLY: LSYNC_TRANS
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
@@ -203,6 +202,8 @@ CONTAINS
 
     REAL(KIND=JPRBT), POINTER :: ZINP(:)
     REAL(KIND=JPRD), POINTER :: ZINP0(:)
+
+    ASSOCIATE(ZEPSNM=>FG%ZEPSNM)
 
     !     ------------------------------------------------------------------
 
@@ -402,6 +403,7 @@ CONTAINS
     CALL LEINV(ALLOCATOR,PIA(2*(IF_READIN-IF_LEG)+1:IF_READIN,:,:),ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,IF_LEG)
 
     IF (LHOOK) CALL DR_HOOK('LTINV_MOD',1,ZHOOK_HANDLE)
+    END ASSOCIATE
     !     ------------------------------------------------------------------
   END SUBROUTINE LTINV
 END MODULE LTINV_MOD

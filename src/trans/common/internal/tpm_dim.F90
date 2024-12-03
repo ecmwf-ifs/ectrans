@@ -49,10 +49,4 @@ END TYPE DIM_TYPE
 TYPE(DIM_TYPE),ALLOCATABLE,TARGET :: DIM_RESOL(:)
 TYPE(DIM_TYPE),POINTER     :: R
 
-! flat copies of above
-INTEGER(KIND=JPIM) :: R_NSMAX      ! Truncation order
-INTEGER(KIND=JPIM) :: R_NTMAX      ! Truncation order for tendencies
-INTEGER(KIND=JPIM) :: R_NDGNH      ! Number of rows in northern hemisphere
-INTEGER(KIND=JPIM) :: R_NDGL       ! Number of rows of latitudes
-
 END MODULE TPM_DIM

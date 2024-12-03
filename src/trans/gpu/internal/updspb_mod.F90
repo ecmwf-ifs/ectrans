@@ -57,8 +57,8 @@ MODULE UPDSPB_MOD
   !     ------------------------------------------------------------------
   
   USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
-  USE TPM_DIM,         ONLY: R_NTMAX
-  USE TPM_DISTR,       ONLY: D_NUMP, D_MYMS, D_NASM0
+  USE TPM_DIM,         ONLY: R
+  USE TPM_DISTR,       ONLY: D
   !
   
   IMPLICIT NONE
@@ -85,6 +85,7 @@ MODULE UPDSPB_MOD
   ! and nn=NTMAX+2-n from NTMAX+2-m to NTMAX+2-NSMAX.
   ! NLTN(m)=NTMAX+2-m : n=NLTN(nn),nn=NLTN(n)
   ! nn is the loop index.
+    ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NTMAX=>R%NTMAX)
   
     IF(PRESENT(KFLDPTR)) THEN
        stop 'Error: code path not (yet) supported in GPU version'
@@ -95,7 +96,7 @@ MODULE UPDSPB_MOD
 
       !loop over wavenumber
 #ifdef ACCGPU
-  !$ACC DATA PRESENT(PSPEC,POA,R_NTMAX,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
+  !$ACC DATA PRESENT(PSPEC,POA,R,R_NTMAX,D,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
 #endif
 #ifdef OMPGPU
 !WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
@@ -105,8 +106,12 @@ MODULE UPDSPB_MOD
   !$OMP& SHARED(R_NTMAX,D_NUMP,D_MYMS,D_NASM0,PSPEC,KFIELD,POA)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE) &
-  !$ACC& FIRSTPRIVATE(KFIELD) ASYNC(1)
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE) FIRSTPRIVATE(KFIELD) &
+#ifndef _CRAYFTN
+  !$ACC& ASYNC(1)
+#else
+  !$ACC&
+#endif
 #endif
   DO KMLOC=1,D_NUMP
     DO JN=3,R_NTMAX+3
@@ -135,6 +140,7 @@ MODULE UPDSPB_MOD
   !$ACC END DATA
 #endif
  
+END ASSOCIATE
   !     ------------------------------------------------------------------
  
   END SUBROUTINE UPDSPB
