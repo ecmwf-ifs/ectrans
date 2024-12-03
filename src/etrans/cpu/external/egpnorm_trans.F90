@@ -69,7 +69,7 @@ INTEGER(KIND=JPIM),OPTIONAL, INTENT(IN)  :: KRESOL
 
 ! Local variables
 INTEGER(KIND=JPIM) :: JGL
-REAL(KIND=JPRB) :: ZW(R%NDGL)
+REAL(KIND=JPRD) :: ZW(R%NDGL)
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 !     ------------------------------------------------------------------

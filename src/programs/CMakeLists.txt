@@ -61,6 +61,8 @@ if( HAVE_ETRANS )
                                 fiat
                                 parkind_${prec}
                                 trans_${prec}
+                                etrans_${prec}
+                                OpenMP::OpenMP_Fortran
                             )
     endif()
   endforeach()
