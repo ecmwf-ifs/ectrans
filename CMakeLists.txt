@@ -109,6 +109,11 @@ ecbuild_add_option( FEATURE GPU
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
                     CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
 
+# Check CPU or GPU is enabled, and if not, abort
+if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
+  ecbuild_critical("Please enable one or both of the CPU and GPU features")
+endif()
+
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
@@ -142,10 +147,10 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )
 
-	    ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
+ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     DEFAULT ON
                     CONDITION HAVE_GPU
-		    DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
+                    DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
@@ -161,13 +166,16 @@ ectrans_find_lapack()
 ecbuild_add_option( FEATURE TESTS
                     DEFAULT ON
                     DESCRIPTION "Enable unit testing"
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
-                    CONDITION HAVE_CPU )
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran" )
 
-### Add sources and tests
+### Add sources
 include( ectrans_compile_options )
 add_subdirectory( src )
-add_subdirectory( tests )
+
+### Add tests
+if( HAVE_TESTS )
+  add_subdirectory( tests )
+endif()
 
 ### Export
 if( BUILD_SHARED_LIBS )
