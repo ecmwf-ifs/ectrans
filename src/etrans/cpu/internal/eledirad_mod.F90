@@ -1,16 +1,16 @@
-MODULE ELEDIR_MOD
+MODULE ELEDIRAD_MOD
 CONTAINS
-SUBROUTINE ELEDIR(KM,KFC,KLED2,PFFT)
+SUBROUTINE ELEDIRAD(KM,KFC,KLED2,PFFT)
 
-!**** *ELEDIR* - Direct meridional transform.
+!**** *ELEDIRAD* - Direct Legendre transform.
 
 !     Purpose.
 !     --------
-!        Direct meridional tranform of state variables.
+!        Direct Legendre tranform of state variables.
 
 !**   Interface.
 !     ----------
-!        CALL ELEDIR(...)
+!        CALL ELEDIRAD(...)
 
 !        Explicit arguments :  KM - zonal wavenumber
 !        --------------------  KFC - number of field to transform
@@ -48,19 +48,19 @@ SUBROUTINE ELEDIR(KM,KFC,KLED2,PFFT)
 !        Modified : 04/06/99 D.Salmond : change order of AIA and SIA
 !        M.Hamrud      01-Oct-2003 CY28 Cleaning
 !        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
-!        R. El Khatib 01-Sep-2015 support for FFTW transforms
+!        R. El Khatib : fix missing support for FFTW
 !        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRB
-USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DIM         ,ONLY : R
 !USE TPM_GEOMETRY
 !USE TPM_TRANS
+USE TPM_FFTW     ,ONLY : TW,  EXEC_EFFTW
+#ifdef WITH_FFT992
 USE TPMALD_FFT      ,ONLY : TALD
-#ifdef WITH_FFTW
-USE TPM_FFTW     ,ONLY : TW, EXEC_EFFTW
 #endif
 USE TPMALD_DIM      ,ONLY : RALD
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
@@ -68,32 +68,51 @@ USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM), INTENT(IN)  :: KM,KFC,KLED2
-REAL(KIND=JPRB) ,   INTENT(INOUT)  :: PFFT(:,:)
+INTEGER(KIND=JPIM), INTENT(IN)  :: KM
+INTEGER(KIND=JPIM), INTENT(IN)  :: KFC
+INTEGER(KIND=JPIM), INTENT(IN)  :: KLED2
+
+REAL(KIND=JPRB),   INTENT(INOUT)  :: PFFT(:,:)
 
 INTEGER(KIND=JPIM) :: IRLEN, ICLEN, IOFF, ITYPE
+INTEGER(KIND=JPIM) :: JF, JJ
+REAL(KIND=JPRB) :: ZNORM
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+
 !     ------------------------------------------------------------------
 
-!*       1.       PERFORM FOURIER TRANFORM.
-!                 --------------------------
+IF (LHOOK) CALL DR_HOOK('ELEDIRAD_MOD:ELEDIRAD',0,ZHOOK_HANDLE)
 
 IF (KFC>0) THEN
-  ITYPE=-1
+  DO JJ=1,1
+    DO JF=1,KFC
+      PFFT(JJ,JF) = 2.0_JPRB * PFFT(JJ,JF)
+    ENDDO
+  ENDDO
+  ITYPE=1
   IRLEN=R%NDGL+R%NNOEXTZG
   ICLEN=RALD%NDGLSUR+R%NNOEXTZG
+#ifdef WITH_FFT992
   IF( TALD%LFFT992 )THEN
-    CALL FFT992(PFFT,TALD%TRIGSE,TALD%NFAXE,1,ICLEN,IRLEN,KFC,ITYPE)
-#ifdef WITH_FFTW
-  ELSEIF( TW%LFFTW )THEN
+    CALL FFT992(PFFT,TALD%TRIGSE,TALD%NFAXE,1,RALD%NDGLSUR+R%NNOEXTZG,IRLEN,KFC,ITYPE)
+  ELSEIF ( ASSOCIATED(TW) )THEN
+#endif
     IOFF=1
     CALL EXEC_EFFTW(ITYPE,IRLEN,ICLEN,IOFF,KFC,TW%LALL_FFTW,PFFT)
-#endif
-  ELSE
-    CALL ABORT_TRANS('ELEDIR_MOD:ELEDIR: NO FFT PACKAGE SELECTED')
+#ifdef WITH_FFT992
   ENDIF
+#endif
+  ZNORM=1.0_JPRB/(2.0_JPRB*REAL(R%NDGL+R%NNOEXTZG,JPRB))
+  DO JJ=1,R%NDGL+R%NNOEXTZG
+    DO JF=1,KFC
+      PFFT(JJ,JF) = ZNORM * PFFT(JJ,JF)
+    ENDDO
+  ENDDO
 ENDIF
+
+IF (LHOOK) CALL DR_HOOK('ELEDIRAD_MOD:ELEDIRAD',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
-END SUBROUTINE ELEDIR
-END MODULE ELEDIR_MOD
+END SUBROUTINE ELEDIRAD
+END MODULE ELEDIRAD_MOD
