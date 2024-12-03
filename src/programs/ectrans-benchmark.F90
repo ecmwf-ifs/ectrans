@@ -200,7 +200,6 @@ integer(kind=jpim) :: jbegin_uder_EW = 0
 integer(kind=jpim) :: jend_uder_EW = 0
 integer(kind=jpim) :: jbegin_vder_EW = 0
 integer(kind=jpim) :: jend_vder_EW = 0
-integer(kind=jpim) :: nresol1, nresol2
 
 logical :: ldump_values = .false.
 
@@ -219,8 +218,6 @@ real(kind=jprb), allocatable :: global_field(:,:)
 #include "setup_trans.h"
 #include "inv_trans.h"
 #include "dir_trans.h"
-#include "trans_release.h"
-#include "trans_end.h"
 #include "trans_inq.h"
 #include "gath_grid.h"
 #include "specnorm.h"
@@ -403,15 +400,12 @@ call gstats(2, 0)
 call set_ectrans_gpu_nflev(nflevl)
   ! We pass nflevl via environment variable in order not to change API
   ! In long run, ectrans should grow its internal buffers automatically
-call setup_trans(ksmax=24, kdgl=38, kloen=nloen, ldsplit=.true.,       &
-  &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &              lduseflt=luseflt,kresol=nresol2)
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
   &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &              lduseflt=luseflt,kresol=nresol1)
+  &              lduseflt=luseflt)
 call gstats(2, 1)
 
-call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg,kresol=nresol1)
+call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
 
 if (nproma == 0) then ! no blocking (default when not specified)
   nproma = ngptot
@@ -547,590 +541,12 @@ if (lprint_norms .or. ncheck > 0) then
   allocate(znormt(nflevg))
   allocate(znormt1(nflevg))
 
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg), kresol=nresol1)
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg), kresol=nresol1)
+  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg))
+  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg))
   if (nfld > 0) then
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg), kresol=nresol1)
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg))
   endif
-  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc, kresol=nresol1)
-
-  if (verbosity >= 1 .and. myproc == 1) then
-    do ifld = 1, nflevg
-      write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
-      write(nout,'("0x",Z16.16)') znormvor1(ifld)
-    enddo
-    do ifld = 1, nflevg
-      write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
-      write(nout,'("0x",Z16.16)') znormdiv1(ifld)
-    enddo
-    if (nfld > 0) then
-      do ifld = 1, nflevg
-        write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormt1(ifld)
-        write(nout,'("0x",Z16.16)') znormt1(ifld)
-      enddo
-    endif
-    do ifld = 1, 1
-      write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') ifld, znormsp1(ifld)
-      write(nout,'("0x",Z16.16)') znormsp1(ifld)
-    enddo
-  endif
-endif
-
-!===================================================================================================
-! Setup timers
-!===================================================================================================
-
-ztinit = (timef() - ztinit)/1000.0_jprd
-
-if (verbosity >= 0 .and. myproc == 1) then
-  write(nout,'(" ")')
-  write(nout,'(a,i6,a,f9.2,a)') "ectrans_benchmark initialisation, on",nproc,&
-                                & " tasks, took",ztinit," sec"
-  write(nout,'(" ")')
-endif
-
-if (iters <= 0) call abor1('ectrans_benchmark:iters <= 0')
-
-allocate(ztstep(iters+2))
-allocate(ztstep1(iters+2))
-allocate(ztstep2(iters+2))
-
-ztstepavg  = 0._jprd
-ztstepmax  = 0._jprd
-ztstepmin  = 9999999999999999._jprd
-ztstepavg1 = 0._jprd
-ztstepmax1 = 0._jprd
-ztstepmin1 = 9999999999999999._jprd
-ztstepavg2 = 0._jprd
-ztstepmax2 = 0._jprd
-ztstepmin2 = 9999999999999999._jprd
-
-if (verbosity >= 1 .and. myproc == 1) then
-  write(nout,'(a)') '======= Start of spectral transforms  ======='
-  write(nout,'(" ")')
-endif
-
-ztloop = timef()
-
-!===================================================================================================
-! Do spectral transform loop
-!===================================================================================================
-
-gstats_lstats = .false.
-
-write(nout,'(a,i5,a)') 'Running for ', iters, ' iterations with 2 extra warm-up iterations'
-write(nout,'(" ")')
-
-do jstep = 1, iters+2
-  if (jstep == 3) gstats_lstats = .true.
-
-  call gstats(3,0)
-  ztstep(jstep) = timef()
-
-  !=================================================================================================
-  ! Do inverse transform
-  !=================================================================================================
-
-  ztstep1(jstep) = timef()
-  call gstats(4,0)
-  if (lvordiv) then
-    call inv_trans(kresol=nresol1, kproma=nproma, &
-       & pspsc2=zspsc2,                     & ! spectral surface pressure
-       & pspvor=zspvor,                     & ! spectral vorticity
-       & pspdiv=zspdiv,                     & ! spectral divergence
-       & pspsc3a=zspsc3a,                   & ! spectral scalars
-       & ldscders=lscders,                  &
-       & ldvorgp=.false.,                   & ! no gridpoint vorticity
-       & lddivgp=.false.,                   & ! no gridpoint divergence
-       & lduvder=luvders,                   &
-       & kvsetuv=ivset,                     &
-       & kvsetsc2=ivsetsc,                  &
-       & kvsetsc3a=ivset,                   &
-       & pgp2=zgp2,                         &
-       & pgpuv=zgpuv,                       &
-       & pgp3a=zgp3a)
-  else
-    call inv_trans(kresol=nresol1, kproma=nproma, &
-       & pspsc2=zspsc2,                     & ! spectral surface pressure
-       & pspsc3a=zspsc3a,                   & ! spectral scalars
-       & ldscders=lscders,                  & ! scalar derivatives
-       & kvsetsc2=ivsetsc,                  &
-       & kvsetsc3a=ivset,                   &
-       & pgp2=zgp2,                         &
-       & pgp3a=zgp3a)
-  endif
-  call gstats(4,1)
-
-  ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
-
-  !=================================================================================================
-  ! While in grid point space, dump the values to disk, for debugging only
-  !=================================================================================================
-
-  !=================================================================================================
-  ! Do direct transform
-  !=================================================================================================
-
-  ztstep2(jstep) = timef()
-
-  call gstats(5,0)
-  if (lvordiv) then
-    call dir_trans(kresol=nresol1, kproma=nproma, &
-      & pgp2=zgmvs(:,1:1,:),                &
-      & pgpuv=zgpuv(:,:,1:2,:),             &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
-      & pspvor=zspvor,                      &
-      & pspdiv=zspdiv,                      &
-      & pspsc2=zspsc2,                      &
-      & pspsc3a=zspsc3a,                    &
-      & kvsetuv=ivset,                      &
-      & kvsetsc2=ivsetsc,                   &
-      & kvsetsc3a=ivset)
-  else
-    call dir_trans(kresol=nresol1, kproma=nproma, &
-      & pgp2=zgmvs(:,1:1,:),                &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
-      & pspsc2=zspsc2,                      &
-      & pspsc3a=zspsc3a,                    &
-      & kvsetsc2=ivsetsc,                   &
-      & kvsetsc3a=ivset)
-  endif
-  call gstats(5,1)
-  ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
-
-  !=================================================================================================
-  ! Calculate timings
-  !=================================================================================================
-
-  ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
-
-  ztstepavg = ztstepavg + ztstep(jstep)
-  ztstepmin = min(ztstep(jstep), ztstepmin)
-  ztstepmax = max(ztstep(jstep), ztstepmax)
-
-  ztstepavg1 = ztstepavg1 + ztstep1(jstep)
-  ztstepmin1 = min(ztstep1(jstep), ztstepmin1)
-  ztstepmax1 = max(ztstep1(jstep), ztstepmax1)
-
-  ztstepavg2 = ztstepavg2 + ztstep2(jstep)
-  ztstepmin2 = min(ztstep2(jstep), ztstepmin2)
-  ztstepmax2 = max(ztstep2(jstep), ztstepmax2)
-
-  !=================================================================================================
-  ! Print norms
-  !=================================================================================================
-
-  if (lprint_norms) then
-    call gstats(6,0)
-    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1), kresol=nresol1)
-    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg), kresol=nresol1)
-    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg), kresol=nresol1)
-    if (nfld > 0) then
-      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg), kresol=nresol1)
-    endif
-
-    ! Surface pressure
-    if (myproc == 1) then
-      zmaxerr(:) = -999.0
-      do ifld = 1, 1
-        write(nout,*) "znormsp", znormsp
-        flush(nout)
-        zerr(1) = abs(znormsp1(ifld)/znormsp(ifld) - 1.0_jprb)
-        zmaxerr(1) = max(zmaxerr(1), zerr(1))
-      enddo
-      ! Divergence
-      do ifld = 1, nflevg
-        zerr(2) = abs(znormdiv1(ifld)/znormdiv(ifld) - 1.0_jprb)
-        zmaxerr(2) = max(zmaxerr(2), zerr(2))
-      enddo
-      ! Vorticity
-      do ifld = 1, nflevg
-        zerr(3) = abs(znormvor1(ifld)/znormvor(ifld) - 1.0_jprb)
-        zmaxerr(3) = max(zmaxerr(3),zerr(3))
-      enddo
-      ! Temperature
-      if (nfld > 0) then
-        do ifld = 1, nflevg
-          zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
-          zmaxerr(4) = max(zmaxerr(4), zerr(4))
-        enddo
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
-                    &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
-      else
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
-                    &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(1)
-      endif
-    endif
-    call gstats(6,1)
-  else
-    write(nout,'("Time step ",i6," took", f8.4)') jstep, ztstep(jstep)
-  endif
-  call gstats(3,1)
-enddo
-
-!===================================================================================================
-
-ztloop = (timef() - ztloop)/1000.0_jprd
-
-write(nout,'(" ")')
-write(nout,'(a)') '======= End of spectral transforms  ======='
-write(nout,'(" ")')
-
-if (lprint_norms .or. ncheck > 0) then
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset, kresol=nresol1)
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset, kresol=nresol1)
-  if (nfld > 0) then
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset, kresol=nresol1)
-  endif
-  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc, kresol=nresol1)
-
-  if (myproc == 1) then
-    zmaxerr(:) = -999.0
-    do ifld = 1, nflevg
-      zerr(3) = abs(real(znormvor1(ifld),kind=jprd)/real(znormvor(ifld),kind=jprd) - 1.0_jprd)
-      zmaxerr(3) = max(zmaxerr(3), zerr(3))
-      if (verbosity >= 1) then
-        write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor(ifld), zerr(3)
-        write(nout,'("0x",Z16.16)') znormvor(ifld)
-      endif
-    enddo
-    do ifld = 1, nflevg
-      zerr(2) = abs(real(znormdiv1(ifld),kind=jprd)/real(znormdiv(ifld),kind=jprd) - 1.0d0)
-      zmaxerr(2) = max(zmaxerr(2),zerr(2))
-      if (verbosity >= 1) then
-        write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv(ifld), zerr(2)
-        write(nout,'("0x",Z16.16)') znormdiv(ifld)
-      endif
-    enddo
-    if (nfld > 0) then
-      do ifld = 1, nflevg
-        zerr(4) = abs(real(znormt1(ifld),kind=jprd)/real(znormt(ifld),kind=jprd) - 1.0d0)
-        zmaxerr(4) = max(zmaxerr(4), zerr(4))
-        if (verbosity >= 1) then
-          write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt(ifld), zerr(4)
-          write(nout,'("0x",Z16.16)') znormt(ifld)
-        endif
-      enddo
-    endif
-    do ifld = 1, 1
-      zerr(1) = abs(real(znormsp1(ifld),kind=jprd)/real(znormsp(ifld),kind=jprd) - 1.0d0)
-      zmaxerr(1) = max(zmaxerr(1), zerr(1))
-      if (verbosity >= 1) then
-        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp(ifld), zerr(1)
-        write(nout,'("0x",Z16.16)') znormsp(ifld)
-      endif
-    enddo
-
-    ! maximum error across all fields
-    if (nfld > 0) then
-      zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3), zmaxerr(4))
-    else
-      zmaxerrg = max(zmaxerr(1), zmaxerr(2), zmaxerr(3))
-    endif
-
-    if (verbosity >= 1) write(nout,*)
-    write(nout,'("max error zspvor(1:nlev,:)    = ",e10.3)') zmaxerr(3)
-    write(nout,'("max error zspdiv(1:nlev,:)    = ",e10.3)') zmaxerr(2)
-    if (nfld > 0) write(nout,'("max error zspsc3a(1:nlev,:,1) = ",e10.3)') zmaxerr(4)
-    write(nout,'("max error zspsc2(1:1,:)       = ",e10.3)') zmaxerr(1)
-    write(nout,*)
-    write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
-    write(nout,*)
-  endif
-  if (ncheck > 0) then
-    ierr = 0
-    if (myproc == 1) then
-      ! If the maximum spectral norm error across all fields is greater than 100 times the machine
-      ! epsilon, fail the test
-      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
-        write(nout, '(a)') '*******************************'
-        write(nout, '(a)') 'Correctness test failed'
-        write(nout, '(a,1e9.2)') 'Maximum spectral norm error = ', zmaxerrg
-        write(nout, '(a,1e9.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
-        write(nout, '(a)') '*******************************'
-        ierr = 1
-      endif
-    endif
-
-    ! Root rank broadcasts the correctness checker result to the other ranks
-    if (luse_mpi) then
-      call mpl_broadcast(ierr,kroot=1,ktag=1)
-    endif
-
-    ! Halt if correctness checker failed
-    if (ierr == 1) then
-      error stop
-    endif
-  endif
-endif
-
-if (luse_mpi) then
-  call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstep,     'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstepavg,  'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstepmax,  'max', ldreprod=.false.)
-  call mpl_allreduce(ztstepmin,  'min', ldreprod=.false.)
-
-  call mpl_allreduce(ztstep1,    'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstepavg1, 'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstepmax1, 'max', ldreprod=.false.)
-  call mpl_allreduce(ztstepmin1, 'min', ldreprod=.false.)
-
-  call mpl_allreduce(ztstep2,    'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstepavg2, 'sum', ldreprod=.false.)
-  call mpl_allreduce(ztstepmax2, 'max', ldreprod=.false.)
-  call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
-endif
-
-ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
-ztloop = ztloop/real(nproc,jprd)
-ztstep(:) = ztstep(:)/real(nproc,jprd)
-ztstepmed = get_median(ztstep)
-
-ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
-ztstep1(:) = ztstep1(:)/real(nproc,jprd)
-ztstepmed1 = get_median(ztstep1)
-
-ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
-ztstep2(:) = ztstep2(:)/real(nproc,jprd)
-ztstepmed2 = get_median(ztstep2)
-
-write(nout,'(a)') '======= Start of time step stats ======='
-write(nout,'(" ")')
-write(nout,'("Inverse transforms")')
-write(nout,'("------------------")')
-write(nout,'("avg  (s): ",f8.4)') ztstepavg1
-write(nout,'("min  (s): ",f8.4)') ztstepmin1
-write(nout,'("max  (s): ",f8.4)') ztstepmax1
-write(nout,'("med  (s): ",f8.4)') ztstepmed1
-write(nout,'(" ")')
-write(nout,'("Direct transforms")')
-write(nout,'("-----------------")')
-write(nout,'("avg  (s): ",f8.4)') ztstepavg2
-write(nout,'("min  (s): ",f8.4)') ztstepmin2
-write(nout,'("max  (s): ",f8.4)') ztstepmax2
-write(nout,'("med  (s): ",f8.4)') ztstepmed2
-write(nout,'(" ")')
-write(nout,'("Inverse-direct transforms")')
-write(nout,'("-------------------------")')
-write(nout,'("avg  (s): ",f8.4)') ztstepavg
-write(nout,'("min  (s): ",f8.4)') ztstepmin
-write(nout,'("max  (s): ",f8.4)') ztstepmax
-write(nout,'("med  (s): ",f8.4)') ztstepmed
-write(nout,'("loop (s): ",f8.4)') ztloop
-write(nout,'(" ")')
-write(nout,'(a)') '======= End of time step stats ======='
-write(nout,'(" ")')
-
-if (lstack) then
-  ! Gather stack usage statistics
-  istack = getstackusage()
-  if (myproc == 1) then
-    print 9001, istack
-    9001 format("Stack utilisation information",/,&
-         &"=============================",//,&
-         &"Task           size(bytes)",/,&
-         &"====           ===========",//,&
-         &"   1",11x,i10)
-
-    do i = 2, nproc
-      call mpl_recv(istack, ksource=nprcids(i), ktag=i, cdstring='ectrans_benchmark:')
-      print '(i4,11x,i10)', i, istack
-    enddo
-  else
-    call mpl_send(istack, kdest=nprcids(1), ktag=myproc, cdstring='ectrans_benchmark:')
-  endif
-endif
-
-
-!===================================================================================================
-! Cleanup
-!===================================================================================================
-
-deallocate(zgmv)
-deallocate(zgmvs)
-deallocate(sp3d)
-deallocate(zspsc2)
-deallocate(ivset)
-if (lprint_norms .or. ncheck > 0) then
-  deallocate(znormsp)
-  deallocate(znormsp1)
-  deallocate(znormvor)
-  deallocate(znormvor1)
-  deallocate(znormdiv)
-  deallocate(znormdiv1)
-  deallocate(znormt)
-  deallocate(znormt1)
-endif
-deallocate(ztstep)
-deallocate(ztstep1)
-deallocate(ztstep2)
-deallocate(nloen)
-
-!===================================================================================================
-
-call trans_release(nresol1)
-call trans_release(nresol2)
-call acc_present_dump
-
-call trans_end
-
-call acc_present_dump
-cgrid = 'O40'
-call parse_grid(cgrid, ndgl, nloen)
-nsmax = 39
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                 &
-  &               kmax_resol=nmax_resol, kpromatr=npromatr, kprgpns=nprgpns, kprgpew=nprgpew,  &
-  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,                                     &
-  &               ldeq_regions=leq_regions, prad=zra, ldalloperm=.true., ldmpoff=.not.luse_mpi,&
-  &               kopt_memory_tr=nopt_mem_tr)
-call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
-  &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &              lduseflt=luseflt,kresol=nresol1)
-call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg,kresol=nresol1)
-
-if (nproma == 0) then ! no blocking (default when not specified)
-  nproma = ngptot
-endif
-
-! Calculate number of NPROMA blocks
-ngpblks = (ngptot - 1)/nproma+1
-
-!===================================================================================================
-! Print information before starting
-!===================================================================================================
-
-! Print configuration details
-if (verbosity >= 0 .and. myproc == 1) then
-  write(nout,'(" ")')
-  write(nout,'(a)')'======= Start of runtime parameters ======='
-  write(nout,'(" ")')
-  write(nout,'("nsmax      ",i0)') nsmax
-  write(nout,'("grid       ",a)') trim(cgrid)
-  write(nout,'("ndgl       ",i0)') ndgl
-  write(nout,'("nproc      ",i0)') nproc
-  write(nout,'("nthread    ",i0)') nthread
-  write(nout,'("nprgpns    ",i0)') nprgpns
-  write(nout,'("nprgpew    ",i0)') nprgpew
-  write(nout,'("nprtrw     ",i0)') nprtrw
-  write(nout,'("nprtrv     ",i0)') nprtrv
-  write(nout,'("ngptot     ",i0)') ngptot
-  write(nout,'("ngptotg    ",i0)') ngptotg
-  write(nout,'("nfld       ",i0)') nfld
-  write(nout,'("nlev       ",i0)') nlev
-  write(nout,'("nproma     ",i0)') nproma
-  write(nout,'("ngpblks    ",i0)') ngpblks
-  write(nout,'("nspec2     ",i0)') nspec2
-  write(nout,'("nspec2g    ",i0)') nspec2g
-  write(nout,'("luseflt    ",l1)') luseflt
-  write(nout,'("nopt_mem_tr",i0)') nopt_mem_tr
-  write(nout,'("lvordiv    ",l1)') lvordiv
-  write(nout,'("lscders    ",l1)') lscders
-  write(nout,'("luvders    ",l1)') luvders
-  write(nout,'(" ")')
-  write(nout,'(a)') '======= End of runtime parameters ======='
-  write(nout,'(" ")')
-end if
-
-!===================================================================================================
-! Allocate and Initialize spectral arrays
-!===================================================================================================
-
-! Allocate spectral arrays
-! Try to mimick IFS layout as much as possible
-nullify(zspvor)
-nullify(zspdiv)
-nullify(zspsc3a)
-allocate(sp3d(nflevl,nspec2,2+nfld))
-allocate(zspsc2(1,nspec2))
-
-call initialize_spectral_arrays(nsmax, zspsc2, sp3d)
-
-! Point convenience variables to storage variable sp3d
-zspvor  => sp3d(:,:,1)
-zspdiv  => sp3d(:,:,2)
-zspsc3a => sp3d(:,:,3:3+(nfld-1))
-
-!===================================================================================================
-! Allocate gridpoint arrays
-!===================================================================================================
-
-allocate(ivset(nflevg))
-
-! Compute spectral distribution
-ilev = 0
-do jb = 1, nprtrv
-  do jlev=1, numll(jb)
-    ilev = ilev + 1
-    ivset(ilev) = jb
-  enddo
-enddo
-
-! Allocate grid-point arrays
-if (lvordiv) then
-  jbegin_uv = 1
-  jend_uv = 2
-endif
-if (luvders) then
-  jbegin_uder_EW  = jend_uv + 1
-  jend_uder_EW    = jbegin_uder_EW + 1
-  jbegin_vder_EW  = jend_uder_EW + 1
-  jend_vder_EW    = jbegin_vder_EW + 1
-else
-  jbegin_uder_EW = jend_uv
-  jend_uder_EW   = jend_uv
-  jbegin_vder_EW = jend_uv
-  jend_vder_EW   = jend_uv
-endif
-
-jbegin_sc = jend_vder_EW + 1
-jend_sc   = jend_vder_EW + nfld
-
-if (lscders) then
-  ndimgmvs = 3
-  jbegin_scder_NS = jend_sc + 1
-  jend_scder_NS   = jend_sc + nfld
-  jbegin_scder_EW = jend_scder_NS + 1
-  jend_scder_EW   = jend_scder_NS + nfld
-else
-  ndimgmvs = 1
-  jbegin_scder_NS = jend_sc
-  jend_scder_NS   = jend_sc
-  jbegin_scder_EW = jend_sc
-  jend_scder_EW   = jend_sc
-endif
-
-ndimgmv = jend_scder_EW
-
-allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
-allocate(zgmvs(nproma,ndimgmvs,ngpblks))
-
-zgpuv => zgmv(:,:,1:jend_vder_EW,:)
-zgp3a => zgmv(:,:,jbegin_sc:jend_scder_EW,:)
-zgp2  => zgmvs(:,:,:)
-
-!===================================================================================================
-! Allocate norm arrays
-!===================================================================================================
-
-if (lprint_norms .or. ncheck > 0) then
-  allocate(znormsp(1))
-  allocate(znormsp1(1))
-  allocate(znormvor(nflevg))
-  allocate(znormvor1(nflevg))
-  allocate(znormdiv(nflevg))
-  allocate(znormdiv1(nflevg))
-  allocate(znormt(nflevg))
-  allocate(znormt1(nflevg))
-
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor1, kvset=ivset(1:nflevg), kresol=nresol1)
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv1, kvset=ivset(1:nflevg), kresol=nresol1)
-  if (nfld > 0) then
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt1,   kvset=ivset(1:nflevg), kresol=nresol1)
-  endif
-  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc, kresol=nresol1)
+  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp1,  kvset=ivsetsc)
 
   if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
@@ -1206,7 +622,7 @@ do jstep = 1, iters+iters_warmup
   ztstep1(jstep) = timef()
   call gstats(4,0)
   if (lvordiv) then
-    call inv_trans(kresol=nresol1, kproma=nproma, &
+    call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspvor=zspvor,                     & ! spectral vorticity
        & pspdiv=zspdiv,                     & ! spectral divergence
@@ -1222,7 +638,7 @@ do jstep = 1, iters+iters_warmup
        & pgpuv=zgpuv,                       &
        & pgp3a=zgp3a)
   else
-    call inv_trans(kresol=nresol1, kproma=nproma, &
+    call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
        & pspsc3a=zspsc3a,                   & ! spectral scalars
        & ldscders=lscders,                  & ! scalar derivatives
@@ -1260,7 +676,7 @@ do jstep = 1, iters+iters_warmup
 
   call gstats(5,0)
   if (lvordiv) then
-    call dir_trans(kresol=nresol1, kproma=nproma, &
+    call dir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgmvs(:,1:1,:),                &
       & pgpuv=zgpuv(:,:,1:2,:),             &
       & pgp3a=zgp3a(:,:,1:nfld,:),          &
@@ -1272,7 +688,7 @@ do jstep = 1, iters+iters_warmup
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   else
-    call dir_trans(kresol=nresol1, kproma=nproma, &
+    call dir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgmvs(:,1:1,:),                &
       & pgp3a=zgp3a(:,:,1:nfld,:),          &
       & pspsc2=zspsc2,                      &
@@ -1291,11 +707,11 @@ do jstep = 1, iters+iters_warmup
 
   if (lprint_norms) then
     call gstats(6,0)
-    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1), kresol=nresol1)
-    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg), kresol=nresol1)
-    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg), kresol=nresol1)
+    call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
+    call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
+    call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     if (nfld > 0) then
-      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg), kresol=nresol1)
+      call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
     endif
 
     ! Surface pressure
@@ -1346,12 +762,12 @@ write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
 if (lprint_norms .or. ncheck > 0) then
-  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset, kresol=nresol1)
-  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset, kresol=nresol1)
+  call specnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
+  call specnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   if (nfld > 0) then
-    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset, kresol=nresol1)
+    call specnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   endif
-  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc, kresol=nresol1)
+  call specnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
 
   if (myproc == 1) then
     zmaxerr(:) = -999.0
@@ -1545,12 +961,6 @@ if (lmeminfo) then
   call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
       & kcall=1)
 endif
-
-call trans_release(nresol1)
-call trans_release(nresol2)
-
-call trans_end
-
 
 !===================================================================================================
 ! Finalize MPI
@@ -1929,15 +1339,15 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   field(:) = 0.0
 
   ! Get zonal wavenumbers this rank is responsible for
-  call trans_inq(knump=num_my_zon_wns,kresol=nresol1)
+  call trans_inq(knump=num_my_zon_wns)
   allocate(my_zon_wns(num_my_zon_wns))
-  call trans_inq(kmyms=my_zon_wns,kresol=nresol1)
+  call trans_inq(kmyms=my_zon_wns)
 
   ! If rank is responsible for the chosen zonal wavenumber...
   if (any(my_zon_wns == m_num) ) then
     ! Get array of spectral array addresses (this maps (m, n=m) to array index)
     allocate(nasm0(0:nsmax))
-    call trans_inq(kasm0=nasm0,kresol=nresol1)
+    call trans_inq(kasm0=nasm0)
 
     ! Find out local array index of chosen spherical harmonic
     index = nasm0(m_num) + 2 * (l_num - m_num) + 1
