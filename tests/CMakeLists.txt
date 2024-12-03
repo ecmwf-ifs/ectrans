@@ -215,6 +215,67 @@ foreach( benchmark ${benchmarks} )
 endforeach()
 
 # --------------------------------------------------------------------------------------------------
+# Add tests for etrans
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_ETRANS )
+  foreach( prec dp sp )
+    if( TARGET ectrans-lam-benchmark-cpu-${prec} )
+      set( ntasks 0 )
+      set( nthreads 1 )
+      if( HAVE_MPI )
+        list( APPEND ntasks 1 2 )
+      endif()
+      if( HAVE_OMP )
+        list( APPEND nthreads 4 8 )
+      endif()
+      foreach( mpi ${ntasks} )
+        foreach( omp ${nthreads} )
+          set( nlon 48 )
+          set( nlat 40 )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld0
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 0 --meminfo --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld10
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 10 --meminfo --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld10_nlev20
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 10 --nlev 20 --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld10_nlev20_scders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 10 --nlev 20 --scders --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 10 --nlev 20 --vordiv --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld10_nlev20_vordiv_uvders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 10 --nlev 20 --vordiv --uvders --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}_nfld10_nlev20_nproma16
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS --nlon ${nlon} --nlat ${nlat} --niter 2 --nfld 10 --nlev 20 --nproma 16 --check 100 --norms -v
+              MPI ${mpi}
+              OMP ${omp}
+          )
+        endforeach()
+      endforeach()
+    endif()
+  endforeach()
+
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
 

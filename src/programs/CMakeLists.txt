@@ -55,7 +55,7 @@ endforeach( program )
 if( HAVE_ETRANS )
   foreach( prec sp dp )
     if( HAVE_${prec} )
-      ecbuild_add_executable( TARGET  ectrans-lam-benchmark-${prec}
+      ecbuild_add_executable( TARGET  ectrans-lam-benchmark-cpu-${prec}
                               SOURCES ectrans-lam-benchmark.F90
                               LIBS
                                 fiat

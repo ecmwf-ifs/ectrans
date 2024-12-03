@@ -138,7 +138,6 @@ integer :: verbosity = 0
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
-integer(kind=jpim) :: ncombflen = 1800000 ! Size of comm buffer
 
 integer(kind=jpim) :: nproc ! Number of procs
 integer(kind=jpim) :: nthread
@@ -332,7 +331,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 if( lstats ) call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=0, kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, kcombflen=ncombflen, ldsync_trans=lsync_trans,               &
+  &               kprtrw=nprtrw, ldsync_trans=lsync_trans,               &
   &               ldalloperm=.true., ldmpoff=.not.luse_mpi)
   if( lstats ) call gstats(1, 1)
 
