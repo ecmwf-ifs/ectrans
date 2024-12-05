@@ -14,10 +14,9 @@ CONTAINS
 SUBROUTINE VDTUV(KFIELD,PEPSNM,PVOR,PDIV,PU,PV)
 
 USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
-USE TPM_DIM,         ONLY: R, R_NTMAX
+USE TPM_DIM,         ONLY: R
 USE TPM_FIELDS,      ONLY: F
-USE TPM_FIELDS_FLAT, ONLY: F_RLAPIN
-USE TPM_DISTR,       ONLY: D, D_NUMP, D_MYMS
+USE TPM_DISTR,       ONLY: D
 
 !**** *VDTUV* - Compute U,V in  spectral space
 
@@ -85,6 +84,8 @@ INTEGER(KIND=JPIM) :: II, IJ, IR, J, JN, JI
 
 !     LOCAL REAL SCALARS
 REAL(KIND=JPRBT) :: ZKM
+
+ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NTMAX=>R%NTMAX, F_RLAPIN=>F%RLAPIN)
 
 #ifdef ACCGPU
 !$ACC DATA                                                       &
@@ -157,6 +158,7 @@ ENDDO
 !$ACC END DATA
 #endif
 !     ------------------------------------------------------------------
+END ASSOCIATE
 
 END SUBROUTINE VDTUV
 END MODULE VDTUV_MOD

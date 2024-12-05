@@ -75,6 +75,7 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_3xtf32, TransA, TransB> {
   static constexpr int sz_align = 8;
 
 public:
+  using real_type = float;
   void operator()(cudaStream_t stream, int m, int n, int k, float alpha,
                   const float *A, int lda, const float *B, int ldb, float beta,
                   float *C, int ldc) const {
@@ -132,6 +133,7 @@ class cutlass_sgemm_grouped<CutlassType::cutlass_fp32, TransA, TransB> {
   static constexpr int sz_align = 1;
 
 public:
+  using real_type = float;
   void operator()(cudaStream_t stream, int m, int n, int k, float alpha,
                   const float *A, int lda, const float *B, int ldb, float beta,
                   float *C, int ldc) const {
@@ -152,7 +154,7 @@ public:
 
 } // namespace detail
 template <cublasOperation_t TransA, cublasOperation_t TransB>
-void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
+void cutlass_sgemm_wrapper_grouped_op(int resol_id, int blas_id, int m, int *n, int *k,
                                       float alpha, const float *A, int lda,
                                       int64_t *offsetsA, const float *B, int ldb,
                                       int64_t *offsetsB, float beta, float *C,
@@ -168,18 +170,18 @@ void cutlass_sgemm_wrapper_grouped_op(int blas_id, int m, int *n, int *k,
   if (capability_major >= 8 && use_3xtf32)
     run_group_graph(cutlass_sgemm_grouped<detail::CutlassType::cutlass_3xtf32,
                                           TransA, TransB>(),
-                    m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
+                    resol_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
                     ldc, offsetsC, batchCount, stream, blas_id,
                     growing_allocator);
   else
     run_group_graph(cutlass_sgemm_grouped<detail::CutlassType::cutlass_fp32,
                                           TransA, TransB>(),
-                    m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
+                    resol_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
                     ldc, offsetsC, batchCount, stream, blas_id,
                     growing_allocator);
 }
 
-void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
+void cutlass_sgemm_wrapper_grouped(int resol_id, int blas_id, char transa, char transb,
                                    int m, int *n, int *k, float alpha,
                                    const float *A, int lda, int64_t *offsetsA,
                                    const float *B, int ldb, int64_t *offsetsB, float beta,
@@ -189,19 +191,19 @@ void cutlass_sgemm_wrapper_grouped(int blas_id, char transa, char transb,
 
   if (transa == 'N' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_N, CUBLAS_OP_N>(
-        blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
+        resol_id, blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
         ldc, offsetsC, batchCount, stream, growing_allocator);
   else if (transa == 'N' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_N, CUBLAS_OP_T>(
-        blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
+        resol_id, blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
         ldc, offsetsC, batchCount, stream, growing_allocator);
   else if (transa == 'T' && transb == 'N')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_T, CUBLAS_OP_N>(
-        blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
+        resol_id, blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
         ldc, offsetsC, batchCount, stream, growing_allocator);
   else if (transa == 'T' && transb == 'T')
     cutlass_sgemm_wrapper_grouped_op<CUBLAS_OP_T, CUBLAS_OP_T>(
-        blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
+        resol_id, blas_id, m, n, k, alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C,
         ldc, offsetsC, batchCount, stream, growing_allocator);
   else
     assert(false);
