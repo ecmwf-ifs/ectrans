@@ -92,7 +92,7 @@ CONTAINS
     USE YOMHOOK,                ONLY: LHOOK, DR_HOOK, JPHOOK
     USE MPL_MODULE,             ONLY: MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK
     USE TPM_DISTR,              ONLY: D, NPRTRW, NPROC, MYPROC, MYSETW
-    USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR
+    USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR, LMPOFF
 #if ECTRANS_HAVE_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_FLOAT, MPI_DOUBLE
     ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
@@ -127,7 +127,9 @@ CONTAINS
 #endif
 
 #if ECTRANS_HAVE_MPI
-    LOCAL_COMM%MPI_VAL = MPL_ALL_MS_COMM
+    IF(.NOT. LMPOFF) THEN
+      LOCAL_COMM%MPI_VAL = MPL_ALL_MS_COMM
+    ENDIF
 #endif
 
     IF (LHOOK) CALL DR_HOOK('TRMTOL',0,ZHOOK_HANDLE)

@@ -1,0 +1,110 @@
+name: build-hpc
+
+# Controls when the action will run
+on:
+
+  # Trigger the workflow on all pushes to main and develop, except on tag creation
+  push:
+    branches:
+    - main
+    - develop
+    tags-ignore:
+    - '**'
+
+  # Trigger the workflow on all pull requests
+  pull_request: ~
+
+  # Allow workflow to be dispatched on demand
+  workflow_dispatch: ~
+
+env:
+  ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
+  CTEST_PARALLEL_LEVEL: 1
+  CACHE_SUFFIX: v1        # Increase to force new cache to be created
+
+jobs:
+  ci-hpc:
+    name: ci-hpc
+
+    strategy:
+      fail-fast: false    # false: try to complete all jobs
+
+      matrix:
+        name:
+          - ac-gpu nvhpc
+
+        include:
+          - name: ac-gpu nvhpc
+            site: ac-batch
+            sbatch_options: |
+              #SBATCH --time=00:20:00
+              #SBATCH --nodes=1
+              #SBATCH --ntasks=2
+              #SBATCH --cpus-per-task=32
+              #SBATCH --gpus-per-task=1
+              #SBATCH --mem=200G
+              #SBATCH --qos=dg
+
+    runs-on: [self-hosted, linux, hpc]
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        with:
+          site: ${{ matrix.site }}
+          troika_user: ${{ secrets.HPC_CI_SSH_USER }}
+          sbatch_options: ${{ matrix.sbatch_options }}
+          template_data: |
+            modules:
+              - cmake
+              - ninja
+              - ecbuild
+              - prgenv/nvidia
+              - hpcx-openmpi/2.14.0-cuda
+              - fftw
+            cmake_options:
+              - -DENABLE_MPI=ON
+              - -DENABLE_ACC=ON
+              - -DENABLE_GPU=ON
+            dependencies:
+              ecmwf-ifs/fiat:
+                version: develop
+                cmake_options:
+                  - -DENABLE_MPI=ON
+          template: |
+            {% for module in modules %}
+              module load {{module}}
+            {% endfor %}
+
+            {% for name, options in dependencies.items() %}
+                mkdir -p {{name}}
+                pushd {{name}}
+
+                git init
+                git remote add origin ${{ github.server_url }}/{{name}}
+                git fetch origin {{options['version']}}
+                git reset --hard FETCH_HEAD
+
+                cmake -G Ninja -S . -B build {{ options['cmake_options']|join(' ') }}
+                cmake --build build
+                cmake --install build --prefix install
+                popd
+            {% endfor %}
+
+            mkdir -p ${{ github.repository }}
+            pushd ${{ github.repository }}
+            git init
+            git remote add origin ${{ github.server_url }}/${{ github.repository }}
+            git fetch origin ${{ github.sha }}
+            git reset --hard FETCH_HEAD
+            popd
+
+            cmake -G Ninja -S ${{ github.repository }} -B build \
+              {% for name in dependencies %}
+                {% set org, proj = name.split('/') %}
+                -D{{proj}}_ROOT=$PWD/{{name}}/install \
+              {% endfor %}
+              {{ cmake_options|join(' ') }}
+
+            cmake --build build
+            ctest --test-dir build
