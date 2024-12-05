@@ -106,7 +106,7 @@ CONTAINS
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT, JPIB
     USE YOMHOOK,                ONLY: LHOOK, DR_HOOK, JPHOOK
     USE MPL_MODULE,             ONLY: MPL_WAIT, MPL_BARRIER, MPL_ABORT
-    USE TPM_GEN,                ONLY: LSYNC_TRANS
+    USE TPM_GEN,                ONLY: LSYNC_TRANS, LMPOFF
     USE EQ_REGIONS_MOD,         ONLY: MY_REGION_EW, MY_REGION_NS
     USE TPM_DISTR,              ONLY: D, MYSETV, MYSETW, MTAGLG, NPRCIDS, MYPROC, NPROC, NPRTRW, &
       &                               NPRTRV
@@ -189,6 +189,8 @@ CONTAINS
     TYPE(MPI_REQUEST) :: IREQUEST(2*NPROC)
 #endif
 
+
+
 #ifdef PARKINDTRANS_SINGLE
 #define TRGTOL_DTYPE MPI_FLOAT
 #else
@@ -196,7 +198,9 @@ CONTAINS
 #endif
 
 #if ECTRANS_HAVE_MPI
-    LOCAL_COMM%MPI_VAL = MPL_COMM_OML( OML_MY_THREAD() )
+    IF(.NOT. LMPOFF) THEN
+      LOCAL_COMM%MPI_VAL = MPL_COMM_OML( OML_MY_THREAD() )
+    ENDIF
 #endif
 
     !     ------------------------------------------------------------------
@@ -206,9 +210,10 @@ CONTAINS
     ! Note we have either
     ! - KVSETUV and KVSETSC (with PGP, which has u, v, and scalar fields), or
     ! - KVSETUV, KVSETSC2, KVSETSC3A KVSETSC3B (with PGPUV, GP3A, PGP3B and PGP2)
-    ! KVSETs are optionals. Their sizes canalso be inferred from KV_UV_G/KV_SCALARS_G (which
+    ! KVSETs are optionals. Their sizes can also be inferred from KV_UV_G/KV_SCALARS_G (which
     ! should match PSPXXX and PGPXXX arrays)
     IOFF=0
+    IVSET(:) = -1
     IF(PRESENT(KVSETUV)) THEN
       IVSET(IOFF+1:IOFF+KF_UV_G) = KVSETUV(:)
       IOFF=IOFF+KF_UV_G
@@ -242,9 +247,6 @@ CONTAINS
       ENDIF
     ENDIF
 
-    IF (IOFF /= 2*KF_UV_G+KF_SCALARS_G) THEN
-      CALL ABORT_TRANS("TRGTOL: ERROR in IVSET computation")
-    ENDIF
 
     IF (LHOOK) CALL DR_HOOK('TRGTOL',0,ZHOOK_HANDLE)
 

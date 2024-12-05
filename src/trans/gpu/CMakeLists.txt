@@ -66,6 +66,12 @@ ecbuild_add_library(
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
 )
 
+# The ecTrans libraries may be linked against an executable with the -cuda flag
+# In that case we must link with -cuda here to ensure compatibility
+target_link_options(ectrans_gpu_common PUBLIC
+  $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:-cuda>
+)
+
 ectrans_target_fortran_module_directory(
   TARGET            ectrans_gpu_common
   MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/ectrans
@@ -88,8 +94,8 @@ function(generate_backend_sources)
 
   ecbuild_list_add_pattern( LIST files
     GLOB
-          internal/*
-          external/*
+          internal/*.F90
+          external/*.F90
     QUIET
   )
   list( APPEND files
@@ -155,6 +161,12 @@ foreach( prec dp sp )
                                $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+        )
+
+        # The ecTrans libraries may be linked against an executable with the -cuda flag
+        # In that case we must link with -cuda here to ensure compatibility
+        target_link_options(ectrans_gpu_${prec} PUBLIC
+          $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:-cuda>
         )
 
         ectrans_target_fortran_module_directory(
