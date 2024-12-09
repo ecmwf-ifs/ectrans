@@ -115,7 +115,7 @@ CONTAINS
     USE OML_MOD,                ONLY: OML_MY_THREAD
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
 #if ECTRANS_HAVE_MPI
-    USE MPI_F08,                ONLY: MPI_COMM, MPI_REQUEST, MPI_FLOAT, MPI_DOUBLE
+    USE MPI_F08,                ONLY: MPI_COMM, MPI_REQUEST, MPI_REAL4, MPI_REAL8
     ! Missing: MPI_ISEND, MPI_IRECV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
@@ -197,9 +197,9 @@ CONTAINS
 #endif
 
 #ifdef PARKINDTRANS_SINGLE
-#define TRLTOG_DTYPE MPI_FLOAT
+#define TRLTOG_DTYPE MPI_REAL4
 #else
-#define TRLTOG_DTYPE MPI_DOUBLE
+#define TRLTOG_DTYPE MPI_REAL8
 #endif
 #if ECTRANS_HAVE_MPI
     IF(.NOT. LMPOFF) THEN
