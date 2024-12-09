@@ -1,5 +1,6 @@
 #define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
-! (C) Copyright 1995- ECMWF.,KMLOC,KM  ! (C) Copyright 1995- Meteo-France.
+! (C) Copyright 1995- ECMWF.
+! (C) Copyright 1995- Meteo-France.
 ! (C) Copyright 2022- NVIDIA.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
@@ -717,6 +718,7 @@ CONTAINS
 #ifdef ACCGPU
       !$ACC END DATA
 #endif
+
     ENDIF
 
 

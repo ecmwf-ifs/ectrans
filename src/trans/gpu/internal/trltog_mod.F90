@@ -620,6 +620,7 @@ CONTAINS
 #ifdef ACCGPU
       !$ACC END DATA
 #endif
+
     ENDIF
 
     ! Figure out processes that send or recv something
