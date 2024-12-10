@@ -71,130 +71,70 @@ MODULE PRFI1B_MOD
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
-  INTEGER(KIND=JPIM) :: II, INM, IR, JN, JFLD, ILCM, IASM0, IFLD
+  INTEGER(KIND=JPIM) :: II, INM, IR, JN, JFLD, IASM0
   
   !     ------------------------------------------------------------------
   
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
+
   ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NSMAX=>R%NSMAX)
 
 #ifdef ACCGPU
-  !$ACC DATA &
-  !$ACC&      PRESENT(D,D_NUMP,R,R_NSMAX,D_MYMS,D_NASM0) &
-  !$ACC&      PRESENT(PIA) &
-  !$ACC&      PRESENT(PSPEC) ASYNC(1)
+  !$ACC DATA PRESENT(D,D_NUMP,R,R_NSMAX,D_MYMS,D_NASM0,PIA,PSPEC) ASYNC(1)
 #endif
-#ifdef OMPGPU
-  !$OMP TARGET DATA MAP(PRESENT,ALLOC:D_NUMP,R_NSMAX,D_MYMS,D_NASM0,PSPEC)
-#endif
-
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-  !$ACC DATA IF(PRESENT(KFLDPTR)) PRESENT(KFLDPTR) ASYNC(1)
-#endif
-
  
   IF(PRESENT(KFLDPTR)) THEN
  
-   CALL ABORT_TRANS("PRFI1B not implemented for GPU")
- 
-   !loop over wavenumber
-#ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,ILCM,IFLD,IASM0,IR,II,INM) &
-   !$OMP& FIRSTPRIVATE(KFIELDS)
-#endif
-#ifdef ACCGPU
-   !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,ILCM,IFLD,IASM0,IR,II,INM) &
-   !$ACC& FIRSTPRIVATE(KFIELDS) ASYNC(1)
-#endif
-   DO KMLOC=1,D_NUMP
-      DO JN=1,R_NSMAX+1
-         DO JFLD=1,KFIELDS
-            KM = D_MYMS(KMLOC)
-            ILCM = R_NSMAX+1-KM
-            IFLD = KFLDPTR(JFLD)
-            IF (JN .LE. ILCM) THEN
-               IASM0 = D_NASM0(KM)
-               INM = IASM0+(ILCM-JN)*2
-               IR = 2*(JFLD-1)+1
-               II = IR+1
-               PIA(IR,JN+2,KMLOC) = PSPEC(IFLD,INM  )
-               PIA(II,JN+2,KMLOC) = PSPEC(IFLD,INM+1)
-            END IF
-         ENDDO
-      ENDDO
- 
-      ! end loop over wavenumber
-   ENDDO
-
-#ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM) FIRSTPRIVATE(KFIELDS)
-#endif
-#ifdef ACCGPU
-   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ILCM) FIRSTPRIVATE(KFIELDS) ASYNC(1)
-#endif
-   DO KMLOC=1,D_NUMP
-      DO JFLD=1,2*KFIELDS
-         KM = D_MYMS(KMLOC) 
-         ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRB
-         PIA(JFLD,2,KMLOC) = 0.0_JPRB
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
-      ENDDO 
-      ! end loop over wavenumber
-   ENDDO
+    CALL ABORT_TRANS("KFLDPTR not implemented for GPU")
 
   ELSE
 
-   !loop over wavenumber
+    !loop over wavenumber
 
 #ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,IASM0,INM) &
-   !$OMP& FIRSTPRIVATE(KFIELDS,KDIM)
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) DEFAULT(NONE) &
+    !$OMP& PRIVATE(KM,IASM0,INM) SHARED(KFIELDS,KDIM,D,R,PIA,PSPEC) MAP(TO:KFIELDS)
 #endif
 #ifdef ACCGPU
-   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,IASM0,INM) FIRSTPRIVATE(KFIELDS,KDIM) &
+    !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,IASM0,INM) &
+    !$ACC FIRSTPRIVATE(KFIELDS,KDIM) &
 #ifndef _CRAYFTN
-   !$ACC& ASYNC(1)
+    !$ACC& ASYNC(1)
 #else
-   !$ACC&
+    !$ACC&
 #endif
 #endif
-  DO KMLOC=1,D_NUMP
-    DO JN=0,R_NSMAX+3
-      DO JFLD=1,KFIELDS
-        KM = D_MYMS(KMLOC)
+    DO KMLOC=1,D_NUMP
+      DO JN=0,R_NSMAX+3
+        DO JFLD=1,KFIELDS
+          KM = D_MYMS(KMLOC)
 
-        IF (JN <= 1) THEN
-          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
-          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
-        ELSEIF (JN <= R_NSMAX+2-KM) THEN
-          IASM0 = D_NASM0(KM)
-          INM = IASM0+((R_NSMAX+2-JN)-KM)*2
-          PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
-          PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
-        ELSEIF (JN <= R_NSMAX+3-KM) THEN
-          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
-          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
-        ENDIF
-      ENDDO
+          IF (JN <= 1) THEN
+              PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+              PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+          ELSEIF (JN <= R_NSMAX+2-KM) THEN
+              IASM0 = D_NASM0(KM)
+              INM = IASM0+((R_NSMAX+2-JN)-KM)*2
+              PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
+              PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
+          ELSEIF (JN <= R_NSMAX+3-KM) THEN
+              PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+              PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+          ENDIF
+          ENDDO
+        ENDDO
     ENDDO
-  ENDDO
 
-ENDIF
+  ENDIF
 
 #ifdef ACCGPU
-!$ACC END DATA
-!$ACC END DATA
+  !$ACC END DATA
 #endif
-#ifdef OMPGPU
-!$OMP END TARGET DATA
-#endif
+
+  END ASSOCIATE
 
   !     ------------------------------------------------------------------
-    END ASSOCIATE
- 
+
   END SUBROUTINE PRFI1B
 END MODULE PRFI1B_MOD
