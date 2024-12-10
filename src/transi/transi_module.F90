@@ -1254,6 +1254,10 @@ function trans_delete(trans) bind(C,name="trans_delete")
   use, intrinsic :: iso_c_binding
   integer(c_int) :: trans_delete
   type(Trans_t), intent(inout) :: trans
+  trans_delete = TRANS_SUCCESS
+  if (trans%handle == 0) then
+    return
+  endif
   call free_ptr( trans%nloen       )
   call free_ptr( trans%readfp      )
   call free_ptr( trans%writefp     )
@@ -1285,7 +1289,6 @@ function trans_delete(trans) bind(C,name="trans_delete")
   call free_ptr( trans%rlapin      )
   call free_ptr( trans%ndglu       )
   call trans_release( trans%handle )
-  trans_delete = TRANS_SUCCESS
 end function trans_delete
 
 function trans_finalize() bind(C,name="trans_finalize")

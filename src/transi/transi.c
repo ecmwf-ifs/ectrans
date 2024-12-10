@@ -58,6 +58,7 @@ const char* trans_error_msg(int errcode)
 
 int trans_new( struct Trans_t* trans )
 {
+  trans->handle = 0; // not initialized
   trans->llatlon = 0;
   trans->lsplit = true;
   trans->flt = -1;
