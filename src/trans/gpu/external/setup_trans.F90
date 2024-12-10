@@ -313,6 +313,8 @@ ENDIF
 IF(PRESENT(LDLL)) THEN
   S%LDLL=LDLL
   IF( LDLL ) THEN
+    CALL ABORT_TRANS ('SETUP_TRANS: LDLL=.TRUE. is not yet supported with GPU backend')
+
     S%NDLON=R%NDLON
     ! account for pole + equator
     R%NDGL=R%NDGL+2
