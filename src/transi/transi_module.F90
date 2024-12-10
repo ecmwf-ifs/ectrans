@@ -410,6 +410,8 @@ interface
     use, intrinsic :: iso_c_binding, only: c_ptr
     type(c_ptr), intent(in) :: ptr
   end subroutine transi_free
+  subroutine transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() bind(C,name="transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED")
+  end subroutine
 end interface
 
 
@@ -551,6 +553,7 @@ function trans_init() bind(C,name="trans_init") result(iret)
     NPRGPNS = MPL_NPROC()
     NPRTRW = MPL_NPROC()/NPRTRV;
   else
+    call transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED()
     allocate( I_REGIONS(1) )
     NPRGPNS = 1
     NPRTRW = 1;

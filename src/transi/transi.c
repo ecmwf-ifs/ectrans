@@ -283,3 +283,7 @@ struct SpecNorm_t new_specnorm(struct Trans_t* trans)
   specnorm.count = 0;
   return specnorm;
 }
+
+void transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() {
+  setenv("DR_HOOK_ASSERT_MPI_INITIALIZED","0",1);
+}
