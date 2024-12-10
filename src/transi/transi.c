@@ -44,7 +44,7 @@ const char* trans_error_msg(int errcode)
     case TRANS_ERROR:
   return "Trans: Error";
     case TRANS_NOTIMPL:
-  return "Trans: Not (yet) implemented";
+  return "Trans: Not implemented";
     case TRANS_MISSING_ARG:
   return "Trans: Required member of the argument structure is missing or not allocated";
     case TRANS_UNRECOGNIZED_ARG:
