@@ -290,6 +290,7 @@ contains
       !$acc enter data create(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target enter data map(alloc:pp)
 #endif
     enddo
   end subroutine
@@ -327,6 +328,7 @@ contains
       !$acc enter data copyin(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target enter data map(to:pp)
 #endif
     enddo
   end subroutine
@@ -363,6 +365,7 @@ contains
       !$acc exit data copyout(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target exit data map(from:pp)
 #endif
     enddo
   end subroutine
@@ -399,6 +402,7 @@ contains
       !$acc exit data delete(pp) async(stream_act)
 #endif
 #ifdef OMPGPU
+      !$omp target exit data map(delete:pp)
 #endif
     enddo
   end subroutine
