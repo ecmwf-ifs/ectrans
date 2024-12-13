@@ -85,28 +85,30 @@ MODULE UPDSPB_MOD
   ! and nn=NTMAX+2-n from NTMAX+2-m to NTMAX+2-NSMAX.
   ! NLTN(m)=NTMAX+2-m : n=NLTN(nn),nn=NLTN(n)
   ! nn is the loop index.
-    ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NTMAX=>R%NTMAX)
-  
-    IF(PRESENT(KFLDPTR)) THEN
-       stop 'Error: code path not (yet) supported in GPU version'
-    ENDIF
+  ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NTMAX=>R%NTMAX)
+
+  IF(PRESENT(KFLDPTR)) THEN
+      stop 'Error: code path not (yet) supported in GPU version'
+  ENDIF
   
   !*       1.    UPDATE SPECTRAL FIELDS.
   !              -----------------------
 
-      !loop over wavenumber
+#ifdef OMPGPU
+  !$OMP TARGET DATA MAP(TO:KFIELD)
+#endif
 #ifdef ACCGPU
   !$ACC DATA PRESENT(PSPEC,POA,R,R_NTMAX,D,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
 #endif
+
+! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
+! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
 #ifdef OMPGPU
-!WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
-  !$OMP TARGET DATA MAP(ALLOC:PSPEC,POA) &
-  !$OMP&    MAP(TO:R_NTMAX,D_NUMP,D_MYMS,D_NASM0)
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
-  !$OMP& SHARED(R_NTMAX,D_NUMP,D_MYMS,D_NASM0,PSPEC,KFIELD,POA)
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO PRIVATE(KM,IASM0,INM) &
+  !$OMP& SHARED(KFIELD)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE) FIRSTPRIVATE(KFIELD) &
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE) COPYIN(KFIELD) &
 #ifndef _CRAYFTN
   !$ACC& ASYNC(1)
 #else
@@ -133,14 +135,15 @@ MODULE UPDSPB_MOD
       ENDDO
     ENDDO
   ENDDO
-#ifdef OMPGPU
-  !$OMP END TARGET DATA
-#endif
+
 #ifdef ACCGPU
   !$ACC END DATA
 #endif
+#ifdef OMPGPU
+  !$OMP END TARGET DATA
+#endif
  
-END ASSOCIATE
+  END ASSOCIATE
   !     ------------------------------------------------------------------
  
   END SUBROUTINE UPDSPB
