@@ -18,7 +18,7 @@ module openacc_ext_type
 end module
 module openacc_ext
   use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
-  use openacc, only: acc_create, acc_copyin, acc_handle_kind
+  use openacc, only: acc_handle_kind
   use openacc_ext_type, only: ext_acc_arr_desc
   implicit none
 
@@ -247,7 +247,7 @@ contains
     enddo
   end function
   subroutine ext_acc_create(ptrs, stream)
-    use openacc, only: acc_create, acc_async_sync
+    use openacc, only: acc_async_sync
     use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
@@ -269,8 +269,7 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
-      !!call acc_create_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_create(pp, int(common_ptrs(i)%sz))
+      !$acc enter data create(pp) async(stream_act)
     enddo
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
@@ -296,12 +295,11 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
-      !!call acc_copyin_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_copyin(pp, int(common_ptrs(i)%sz))
+      !$acc enter data copyin(pp) async(stream_act)
     enddo
   end subroutine
   subroutine ext_acc_copyout(ptrs, stream)
-    use openacc, only: acc_async_sync, acc_copyout
+    use openacc, only: acc_async_sync
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -323,12 +321,11 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
-      !!call acc_copyout_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_copyout(pp, int(common_ptrs(i)%sz))
+      !$acc exit data copyout(pp) async(stream_act)
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
-    use openacc, only: acc_async_sync, acc_delete
+    use openacc, only: acc_async_sync
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
     integer(acc_handle_kind), optional :: stream
@@ -350,8 +347,7 @@ contains
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
-      !!call acc_delete_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_delete(pp, int(common_ptrs(i)%sz))
+      !$acc exit data delete(pp) async(stream_act)
     enddo
   end subroutine
 end module
