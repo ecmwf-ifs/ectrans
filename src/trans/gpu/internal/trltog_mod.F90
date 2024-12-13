@@ -777,8 +777,6 @@ CONTAINS
           ELSE
             IFLDAR(IFLDS,INR)=JFLD
           ENDIF
-        ELSE
-          IFLDAR(JFLD,INR) = IFLDA(JFLD)
         ENDIF
       ENDDO
     ENDDO

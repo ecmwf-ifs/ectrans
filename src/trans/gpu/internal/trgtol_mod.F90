@@ -493,8 +493,6 @@ CONTAINS
           ELSE
             IFLDAS(IFLDS,INS)=JFLD
           ENDIF
-        ELSE
-          IFLDAS(JFLD,INS)=IFLDA(JFLD)
         ENDIF
       ENDDO
     ENDDO
