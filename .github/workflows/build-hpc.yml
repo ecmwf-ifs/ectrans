@@ -26,6 +26,8 @@ jobs:
   ci-hpc:
     name: ci-hpc
 
+    secrets: inherit
+
     strategy:
       fail-fast: false    # false: try to complete all jobs
 
