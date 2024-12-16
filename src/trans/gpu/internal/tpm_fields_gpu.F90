@@ -19,8 +19,8 @@ SAVE
 
 TYPE FIELDS_GPU_TYPE
 ! scratch arrays for ltinv and ltdir and associated dimension variables
-REAL(KIND=JPRBT),ALLOCATABLE :: ZAA(:,:,:)  !! JPRL for 1/2
-REAL(KIND=JPRBT),ALLOCATABLE :: ZAS(:,:,:)  !! JPRL for 1/2
+REAL(KIND=JPRBT),ALLOCATABLE :: ZAA(:)  !! JPRL for 1/2
+REAL(KIND=JPRBT),ALLOCATABLE :: ZAS(:)  !! JPRL for 1/2
 
 ! for m=0 in ledir_mod:
 REAL(KIND=JPRD),ALLOCATABLE :: ZAA0(:,:)
