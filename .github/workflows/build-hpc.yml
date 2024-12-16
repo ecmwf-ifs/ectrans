@@ -26,8 +26,6 @@ jobs:
   ci-hpc:
     name: ci-hpc
 
-    secrets: inherit
-
     strategy:
       fail-fast: false    # false: try to complete all jobs
 
@@ -52,6 +50,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        secrets: inherit
         with:
           site: ${{ matrix.site }}
           troika_user: ${{ secrets.HPC_CI_SSH_USER }}
