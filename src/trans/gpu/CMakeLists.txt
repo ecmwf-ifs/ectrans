@@ -11,6 +11,7 @@
 list( APPEND trans_gpu_common_src
   algor/ext_acc.F90
   algor/c_hipmemgetinfo.cpp
+  algor/hip_allocator_mod.F90
   algor/buffered_allocator_mod.F90
   algor/device_mod.F90
   algor/growing_allocator_mod.F90
