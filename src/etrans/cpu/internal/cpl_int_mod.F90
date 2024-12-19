@@ -1,0 +1,44 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+! 
+
+
+MODULE CPL_INT_MOD
+CONTAINS
+SUBROUTINE CPL_INT(PGTF,KENDROWL,KFIELDS,KFFIELDS,KLEN,KSTA,CPL_PROC,KPTRGP)
+
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+
+IMPLICIT NONE
+INTEGER(KIND=JPIM), INTENT(IN) :: KENDROWL 
+INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS
+INTEGER(KIND=JPIM), INTENT(IN) :: KFFIELDS
+INTEGER(KIND=JPIM), INTENT(IN) :: KLEN
+INTEGER(KIND=JPIM), INTENT(IN) :: KSTA(KENDROWL)
+INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPTRGP(:)
+REAL(KIND=JPRB), INTENT(INOUT) :: PGTF(KFIELDS,KLEN)
+EXTERNAL  CPL_PROC
+
+INTEGER(KIND=JPIM) :: IPTRGP(KFIELDS)
+INTEGER(KIND=JPIM) :: J
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+!--------------------------------------------------------------
+IF (LHOOK) CALL DR_HOOK('CPL_INT_MOD:CPL_INT',0,ZHOOK_HANDLE)
+IF(PRESENT(KPTRGP)) THEN
+  IPTRGP(:)=KPTRGP(1:KFIELDS)
+ELSE
+  DO J=1,KFIELDS
+    IPTRGP(J)=J
+  ENDDO
+ENDIF
+CALL CPL_PROC(PGTF,KENDROWL,KFIELDS,KFFIELDS,KLEN,KSTA,IPTRGP)
+IF (LHOOK) CALL DR_HOOK('CPL_INT_MOD:CPL_INT',1,ZHOOK_HANDLE)
+END SUBROUTINE CPL_INT
+END MODULE CPL_INT_MOD
