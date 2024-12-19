@@ -59,6 +59,8 @@ MODULE UPDSPB_MOD
   USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
   USE TPM_DIM,         ONLY: R
   USE TPM_DISTR,       ONLY: D
+  USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
+
   !
   
   IMPLICIT NONE
@@ -88,7 +90,7 @@ MODULE UPDSPB_MOD
     ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NTMAX=>R%NTMAX)
   
     IF(PRESENT(KFLDPTR)) THEN
-       stop 'Error: code path not (yet) supported in GPU version'
+       CALL ABORT_TRANS('UPDSPB: Code path not (yet) supported in GPU version')
     ENDIF
   
   !*       1.    UPDATE SPECTRAL FIELDS.

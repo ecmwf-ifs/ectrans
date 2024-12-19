@@ -44,7 +44,7 @@ const char* trans_error_msg(int errcode)
     case TRANS_ERROR:
   return "Trans: Error";
     case TRANS_NOTIMPL:
-  return "Trans: Not (yet) implemented";
+  return "Trans: Not implemented";
     case TRANS_MISSING_ARG:
   return "Trans: Required member of the argument structure is missing or not allocated";
     case TRANS_UNRECOGNIZED_ARG:
@@ -58,6 +58,7 @@ const char* trans_error_msg(int errcode)
 
 int trans_new( struct Trans_t* trans )
 {
+  trans->handle = 0; // not initialized
   trans->llatlon = 0;
   trans->lsplit = true;
   trans->flt = -1;
@@ -282,4 +283,8 @@ struct SpecNorm_t new_specnorm(struct Trans_t* trans)
   specnorm.trans = trans;
   specnorm.count = 0;
   return specnorm;
+}
+
+void transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() {
+  setenv("DR_HOOK_ASSERT_MPI_INITIALIZED","0",1);
 }
