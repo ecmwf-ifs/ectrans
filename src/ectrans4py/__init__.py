@@ -15,7 +15,7 @@ import ctypesForFortran
 from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT
 
 
-__version__ = "1.2.50"
+__version__ = "1.2.51"
 
 
 # Shared objects library

@@ -1,11 +1,23 @@
-[build-system]
-requires = ["setuptools", "wheel", "scikit-build"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "ectrans4py"
 dynamic = ["version"]
+description = "ECTRANS interface for Python"
+readme = "README.md"
+requires-python = ">=3.10"
 dependencies=["numpy", "ctypesForFortran<2.0.0"]
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Intended Audience :: Science/Research',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Operating System :: Unix',
+]
+
+[build-system]
+requires = ["setuptools", "wheel", "scikit-build"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
 version = {attr = "ectrans4py.__version__"}
