@@ -32,10 +32,12 @@ jobs:
       matrix:
         name:
           - ac-gpu nvhpc
+          - lumi-g cce
 
         include:
           - name: ac-gpu nvhpc
             site: ac-batch
+            troika_user_secret: HPC_CI_SSH_USER
             sbatch_options: |
               #SBATCH --time=00:20:00
               #SBATCH --nodes=1
@@ -44,6 +46,32 @@ jobs:
               #SBATCH --gpus-per-task=1
               #SBATCH --mem=200G
               #SBATCH --qos=dg
+            modules:
+              - cmake
+              - ninja
+              - prgenv/nvidia
+              - hpcx-openmpi/2.14.0-cuda
+              - fftw
+            workdir: "$TMPDIR"
+
+          - name: lumi-g cce
+            site: lumi
+            troika_user_secret: LUMI_CI_SSH_USER
+            sbatch_options: |
+              #SBATCH --time=00:20:00
+              #SBATCH --nodes=1
+              #SBATCH --ntasks-per-node=8
+              #SBATCH --gpus-per-task=1
+              #SBATCH --partition=small-g
+            modules:
+              - CrayEnv
+              - PrgEnv-cray
+              - cce/17.0.1
+              - craype-accel-amd-gfx90a
+              - rocm/6.0.3
+              - cray-fftw
+              - buildtools
+            workdir: /tmp
 
     runs-on: [self-hosted, linux, hpc]
     env:
@@ -52,45 +80,44 @@ jobs:
       - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
         with:
           site: ${{ matrix.site }}
-          troika_user: ${{ secrets.HPC_CI_SSH_USER }}
+          troika_user: ${{ secrets[matrix.troika_user_secret] }}
           sbatch_options: ${{ matrix.sbatch_options }}
+          workdir: ${{ matrix.workdir }}
+          output_dir: .
           template_data: |
-            modules:
-              - cmake
-              - ninja
-              - ecbuild
-              - prgenv/nvidia
-              - hpcx-openmpi/2.14.0-cuda
-              - fftw
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_ACC=ON
               - -DENABLE_GPU=ON
             dependencies:
+              ecmwf/ecbuild:
+                version: develop
               ecmwf-ifs/fiat:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
           template: |
-            {% for module in modules %}
+            {% for module in "${{ join(matrix.modules, ',') }}".split(',') %}
               module load {{module}}
             {% endfor %}
-
+            BASEDIR=$PWD
             {% for name, options in dependencies.items() %}
                 mkdir -p {{name}}
                 pushd {{name}}
-
                 git init
                 git remote add origin ${{ github.server_url }}/{{name}}
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
-
-                cmake -G Ninja -S . -B build {{ options['cmake_options']|join(' ') }}
+                cmake -G Ninja -S . -B build \
+                  {% for name in dependencies %}
+                    {% set org, proj = name.split('/') %}
+                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                  {% endfor %}
+                  {{ options['cmake_options']|join(' ') }}
                 cmake --build build
-                cmake --install build --prefix install
+                cmake --install build --prefix installation
                 popd
             {% endfor %}
-
             mkdir -p ${{ github.repository }}
             pushd ${{ github.repository }}
             git init
@@ -98,13 +125,11 @@ jobs:
             git fetch origin ${{ github.sha }}
             git reset --hard FETCH_HEAD
             popd
-
             cmake -G Ninja -S ${{ github.repository }} -B build \
               {% for name in dependencies %}
                 {% set org, proj = name.split('/') %}
-                -D{{proj}}_ROOT=$PWD/{{name}}/install \
+                -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
               {% endfor %}
               {{ cmake_options|join(' ') }}
-
             cmake --build build
             ctest --test-dir build
