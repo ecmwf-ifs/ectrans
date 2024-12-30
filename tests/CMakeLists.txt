@@ -87,6 +87,12 @@ endif()
 # This tests CPU and/or GPU versions, depending on which are enabled
 # --------------------------------------------------------------------------------------------------
 
+macro(ectrans_set_test_properties target)
+  if( "${target}" MATCHES "gpu" )
+    set_tests_properties(${target} PROPERTIES LABELS "gpu;Fortran")
+  endif()
+endmacro()
+
 # Determine which benchmarks are available
 set( benchmarks "" )
 if( TARGET ectrans-benchmark-cpu-dp )
@@ -137,6 +143,7 @@ foreach( benchmark ${benchmarks} )
             MPI ${mpi}
             OMP ${omp}
         )
+        ectrans_set_test_properties( ${base_title}_nfld0 )
       endif()
 
       # Check it works with 10 3D scalar fields
@@ -146,6 +153,7 @@ foreach( benchmark ${benchmarks} )
           MPI ${mpi}
           OMP ${omp}
       )
+      ectrans_set_test_properties( ${base_title}_nfld10 )
 
       # Check it works with 10 3D scalar fields and 20 levels
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
@@ -154,6 +162,7 @@ foreach( benchmark ${benchmarks} )
           MPI ${mpi}
           OMP ${omp}
       )
+      ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
 
       # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
@@ -162,6 +171,7 @@ foreach( benchmark ${benchmarks} )
           MPI ${mpi}
           OMP ${omp}
       )
+      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_scders )
 
       # Check it works with 10 3D scalar fields, 20 levels, and wind transforms
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
@@ -170,6 +180,7 @@ foreach( benchmark ${benchmarks} )
           MPI ${mpi}
           OMP ${omp}
       )
+      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
 
       # Check it works with 10 3D scalar fields, 20 levels, wind transforms, and wind derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
@@ -178,6 +189,7 @@ foreach( benchmark ${benchmarks} )
           MPI ${mpi}
           OMP ${omp}
       )
+      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv_uvders )
 
       # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
@@ -186,6 +198,7 @@ foreach( benchmark ${benchmarks} )
           MPI ${mpi}
           OMP ${omp}
       )
+      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
 
       if( ${benchmark} MATCHES "cpu" )
         # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
@@ -195,6 +208,7 @@ foreach( benchmark ${benchmarks} )
             MPI ${mpi}
             OMP ${omp}
         )
+        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_flt )
       endif()
     endforeach()
   endforeach()
@@ -245,6 +259,7 @@ if( HAVE_TRANSI )
       LINKER_LANGUAGE C
       DEFINITIONS GPU_VERSION
       ENVIRONMENT TRANS_USE_MPI=0 )
+    set_tests_properties(ectrans_test_transi_program_gpu PROPERTIES LABELS gpu)
   endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_timings

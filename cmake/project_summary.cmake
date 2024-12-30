@@ -35,6 +35,9 @@ ecbuild_info( "    LAPACK_LIBRARIES         : [${LAPACK_LIBRARIES}]" )
     endif()
 ecbuild_info( "FFTW" )
 ecbuild_info( "    FFTW_LIBRARIES           : [${FFTW_LIBRARIES}]" )
+  if( CMAKE_TEST_LAUNCHER )
+ecbuild_info( "CMAKE_TEST_LAUNCHER          : [${CMAKE_TEST_LAUNCHER}]" )
+  endif()
 ecbuild_info( "---------------------------------------------------------" )
 
 
