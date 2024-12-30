@@ -35,7 +35,8 @@ foreach( program ectrans-benchmark )
                                   fiat
                                   parkind_${prec}
                                   trans_gpu_${prec}
-                                  OpenACC::OpenACC_Fortran
+                                  $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
+                                  $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                 DEFINITIONS
                                   VERSION="gpu"
                                   $<$<COMPILE_LANG_AND_ID:Fortran,NVHPC>:USE_PINNED>
