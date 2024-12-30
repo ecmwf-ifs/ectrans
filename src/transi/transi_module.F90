@@ -410,6 +410,8 @@ interface
     use, intrinsic :: iso_c_binding, only: c_ptr
     type(c_ptr), intent(in) :: ptr
   end subroutine transi_free
+  subroutine transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() bind(C,name="transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED")
+  end subroutine
 end interface
 
 
@@ -551,6 +553,7 @@ function trans_init() bind(C,name="trans_init") result(iret)
     NPRGPNS = MPL_NPROC()
     NPRTRW = MPL_NPROC()/NPRTRV;
   else
+    call transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED()
     allocate( I_REGIONS(1) )
     NPRGPNS = 1
     NPRTRW = 1;
@@ -596,6 +599,15 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   llatlonshift = .False.
   if( trans%llatlon /= 0 ) llatlon = .True.
   if( trans%llatlon == 2 ) llatlonshift = .True.
+
+#ifdef ECTRANS_GPU_VERSION
+  if (llatlon) then
+    call transi_error("trans_setup: lonlat grid input not (yet) implemented for GPU")
+    trans%handle = 0 ! Not created!
+    iret = TRANS_NOTIMPL
+    return
+  endif
+#endif
 
   if ( .not. is_init ) then
     err = trans_init()
@@ -1251,6 +1263,10 @@ function trans_delete(trans) bind(C,name="trans_delete")
   use, intrinsic :: iso_c_binding
   integer(c_int) :: trans_delete
   type(Trans_t), intent(inout) :: trans
+  trans_delete = TRANS_SUCCESS
+  if (trans%handle == 0) then
+    return
+  endif
   call free_ptr( trans%nloen       )
   call free_ptr( trans%readfp      )
   call free_ptr( trans%writefp     )
@@ -1282,7 +1298,6 @@ function trans_delete(trans) bind(C,name="trans_delete")
   call free_ptr( trans%rlapin      )
   call free_ptr( trans%ndglu       )
   call trans_release( trans%handle )
-  trans_delete = TRANS_SUCCESS
 end function trans_delete
 
 function trans_finalize() bind(C,name="trans_finalize")
@@ -1615,6 +1630,12 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
     RGPM => RGP
   endif
 
+#ifdef ECTRANS_GPU_VERSION
+  call transi_error("trans_dirtrans_adj: ERROR: Not implemented for GPU")
+  iret = TRANS_NOTIMPL
+  return
+#endif
+
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
     call DIR_TRANSAD( KRESOL=trans%handle, &
       &               KPROMA=args%nproma, &
@@ -1854,6 +1875,13 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
     call C_F_POINTER( args%rgp, RGP, (/args%nproma,nfld_gp,args%ngpblks/) )
     RGPM => RGP
   endif
+
+#ifdef ECTRANS_GPU_VERSION
+  call transi_error("trans_invtrans_adj: ERROR: Not implemented for GPU")
+  iret = TRANS_NOTIMPL
+  return
+#endif
+
 
   ! Note that llatlon is not an option in INV_TRANSAD unlile INV_TRANS and DIR_TRANS
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
@@ -2287,6 +2315,11 @@ function trans_vordiv_to_UV(args) bind(C,name="trans_vordiv_to_UV") result(iret)
   endif
   call C_F_POINTER( args%rspv, RSPV, (/args%nfld,args%ncoeff/) )
 
+#ifdef ECTRANS_GPU_VERSION
+  call transi_error("trans_vordiv_to_UV: ERROR: Not implemented for GPU")
+  iret = TRANS_NOTIMPL
+  return
+#endif
 
   if ( .not. is_init ) then
     err = trans_init()

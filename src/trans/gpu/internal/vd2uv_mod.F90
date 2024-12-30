@@ -20,6 +20,7 @@ USE TPM_DISTR,       ONLY: D
 USE PREPSNM_MOD,     ONLY: PREPSNM
 USE PRFI1B_MOD,      ONLY: PRFI1B
 USE VDTUV_MOD,       ONLY: VDTUV
+USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
 
 
 !**** *VD2UV* - U and V from Vor/div
@@ -101,7 +102,8 @@ IF (LHOOK) CALL DR_HOOK('VD2UV_MOD',0,ZHOOK_HANDLE)
 !*       1.    PREPARE ZEPSNM.
 !              ---------------
 
-stop 'Error: code path not (yet) supported in GPU version'
+CALL ABORT_TRANS('VD2UV: Code path not (yet) supported in GPU version')
+
 !CALL PREPSNM(KM,KMLOC,ZEPSNM)
 
 !     ------------------------------------------------------------------
@@ -122,7 +124,6 @@ IF (KF_UV > 0) THEN
   IUU   = 6*KF_UV
   IVL   = 6*KF_UV+1
   IVU   = 8*KF_UV
-  stop 'Error: code path not (yet) supported in GPU version'
   !CALL PRFI1B(KM,ZIA(:,IVORL:IVORU),PSPVOR,KF_UV)
   !CALL PRFI1B(KM,ZIA(:,IDIVL:IDIVU),PSPDIV,KF_UV)
 
