@@ -7,7 +7,8 @@
 # nor does it submit to any jurisdiction.
 
 #foreach( program ectrans-benchmark ectrans-benchmark-ifs )
-foreach( program ectrans-benchmark )
+#foreach( program ectrans-benchmark )
+foreach( program test_program )
 
   if ( HAVE_CPU )
     foreach( prec dp sp )
