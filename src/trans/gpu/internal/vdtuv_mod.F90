@@ -93,6 +93,12 @@ ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NTMAX=>R%NTMAX, F_RLAPIN=>F%RLAPIN)
 !$ACC&      PRESENT(PEPSNM, PVOR, PDIV)                          &
 !$ACC&      PRESENT(PU, PV)
 #endif
+#ifdef OMPGPU
+!$OMP TARGET DATA                                                   &
+!$OMP&      MAP(PRESENT,ALLOC:R,R_NTMAX,D,D_MYMS,D_NUMP,F,F_RLAPIN) &
+!$OMP&      MAP(PRESENT,ALLOC:PEPSNM, PVOR, PDIV)                   &
+!$OMP&      MAP(PRESENT,ALLOC:PU, PV)
+#endif
 
 !     ------------------------------------------------------------------
 
@@ -100,9 +106,15 @@ ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NTMAX=>R%NTMAX, F_RLAPIN=>F%RLAPIN)
 !              ------------------------------------------
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) DEFAULT(NONE) &
-!$OMP& PRIVATE(IR,II,KM,ZKM,JI) SHARED(D,R,F,PEPSNM,PVOR,PDIV,PU,PV,KFIELD) &
-!$OMP& MAP(TO:KFIELD)
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(IR,II,KM,ZKM,JI) &
+!$OMP& FIRSTPRIVATE(KFIELD,KMLOC)
+#ifndef _CRAYFTN
+!!TODO: Think about async for OMP
+!!$OMP& NOWAIT
+!$OMP&
+#else
+!$OMP&
+#endif
 #endif
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) PRIVATE(IR,II,KM,ZKM,JI) FIRSTPRIVATE(KFIELD,KMLOC) &
@@ -153,6 +165,9 @@ ENDDO
 
 #ifdef ACCGPU
 !$ACC END DATA
+#endif
+#ifdef OMPGPU
+!$OMP END TARGET DATA
 #endif
 !     ------------------------------------------------------------------
 END ASSOCIATE
