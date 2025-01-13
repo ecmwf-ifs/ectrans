@@ -160,11 +160,7 @@ CONTAINS
           FROM_RECV = IOFFR(IRANK) + 1
           TO_RECV = FROM_RECV + ILENR(IRANK) - 1
 #ifdef OMPGPU
-          !$OMP TARGET TEAMS DEFAULT(NONE) &
-          !$OMP& SHARED(PFBUF,PFBUF_IN,FROM_RECV,TO_RECV,FROM_SEND,TO_SEND) &
-          !$OMP& MAP(TO:FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
-          !$OMP PARALLEL
-          !$OMP WORKSHARE
+          !$OMP TARGET TEAMS MAP(PRESENT,ALLOC:PFBUF,PFBUF_IN) MAP(TO:FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
 #endif
 #ifdef ACCGPU
 #ifdef __HIP_PLATFORM_AMD__
@@ -176,8 +172,6 @@ CONTAINS
 #endif
           PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
 #ifdef OMPGPU
-          !$OMP END WORKSHARE
-          !$OMP END PARALLEL
           !$OMP END TARGET TEAMS
 #endif
 #ifdef ACCGPU
@@ -241,6 +235,12 @@ CONTAINS
       ENDIF
       CALL GSTATS(421,1)
 
+#ifdef OMPGPU
+#ifndef __HIP_PLATFORM_AMD__
+      ! Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
+      !$OMP TASKWAIT
+#endif
+#endif
 #ifdef ACCGPU
 #ifndef __HIP_PLATFORM_AMD__
       ! Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
