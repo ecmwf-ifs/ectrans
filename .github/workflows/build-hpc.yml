@@ -76,6 +76,9 @@ jobs:
               module load {{module}}
             {% endfor %}
 
+            export CMAKE_TEST_LAUNCHER="srun;-n;1"
+            export DR_HOOK_ASSERT_MPI_INITIALIZED=0
+
             {% for name, options in dependencies.items() %}
                 mkdir -p {{name}}
                 pushd {{name}}
@@ -107,4 +110,4 @@ jobs:
               {{ cmake_options|join(' ') }}
 
             cmake --build build
-            ctest --test-dir build
+            ctest --test-dir build --output-on-failure
