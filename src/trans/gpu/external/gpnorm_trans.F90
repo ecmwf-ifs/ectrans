@@ -266,7 +266,7 @@ IF( IF_FS > 0 )THEN
   !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
-  !$ACC end data
+  !$ACC END DATA
 #endif
 
 ENDIF
