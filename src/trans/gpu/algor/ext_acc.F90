@@ -18,13 +18,22 @@ module openacc_ext_type
 end module
 module openacc_ext
   use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
+#ifdef ACCGPU
   use openacc, only: acc_handle_kind
+#endif
+#ifdef OMPGPU
+#endif
   use openacc_ext_type, only: ext_acc_arr_desc
   implicit none
 
   private
   public :: ext_acc_pass, ext_acc_create, ext_acc_copyin, ext_acc_copyout, &
-    & ext_acc_delete, ext_acc_arr_desc, acc_handle_kind
+       & ext_acc_delete, ext_acc_arr_desc, &
+#ifdef ACCGPU
+       acc_handle_kind
+#endif
+#ifdef OMPGPU
+#endif
 
   type common_pointer_descr
     type(c_ptr) :: ptr
@@ -247,107 +256,150 @@ contains
     enddo
   end function
   subroutine ext_acc_create(ptrs, stream)
+#ifdef ACCGPU
     use openacc, only: acc_async_sync
+#endif
     use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
+#endif
+#ifdef OMPGPU
+    integer(4), optional :: stream
+#endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(kind=int32), pointer :: pp(:)
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
-
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
     endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
       !$acc enter data create(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+#endif
     enddo
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
+#ifdef ACCGPU
     use openacc, only: acc_async_sync
+#endif
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
+#endif
+#ifdef OMPGPU
+    integer(4), optional :: stream
+#endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(4), pointer :: pp(:)
-
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
-
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
     endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
       !$acc enter data copyin(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+#endif
     enddo
   end subroutine
   subroutine ext_acc_copyout(ptrs, stream)
+#ifdef ACCGPU
     use openacc, only: acc_async_sync
+#endif
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-
+#endif
+#ifdef OMPGPU
+    integer(4), optional :: stream
+#endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(4), pointer :: pp(:)
-
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
-
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
-    endif
+   endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
       !$acc exit data copyout(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+#endif
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
+#ifdef ACCGPU
     use openacc, only: acc_async_sync
+#endif
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-
+#else
+    integer(4), optional :: stream
+#endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(4), pointer :: pp(:)
-
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
 
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
-    endif
+   endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
       call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
       !$acc exit data delete(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+#endif
     enddo
   end subroutine
 end module
