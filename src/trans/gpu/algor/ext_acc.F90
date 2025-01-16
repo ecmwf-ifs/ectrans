@@ -268,7 +268,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
       !$acc enter data create(pp) async(stream_act)
     enddo
   end subroutine
@@ -294,7 +294,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
       !$acc enter data copyin(pp) async(stream_act)
     enddo
   end subroutine
@@ -320,7 +320,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
       !$acc exit data copyout(pp) async(stream_act)
     enddo
   end subroutine
@@ -346,7 +346,7 @@ contains
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/c_sizeof(pp(1))])
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
       !$acc exit data delete(pp) async(stream_act)
     enddo
   end subroutine
