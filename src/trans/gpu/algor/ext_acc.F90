@@ -28,11 +28,11 @@ module openacc_ext
 
   private
   public :: ext_acc_pass, ext_acc_create, ext_acc_copyin, ext_acc_copyout, &
-       & ext_acc_delete, ext_acc_arr_desc, &
 #ifdef ACCGPU
-       acc_handle_kind
+       & ext_acc_delete, ext_acc_arr_desc, acc_handle_kind
 #endif
 #ifdef OMPGPU
+       & ext_acc_delete, ext_acc_arr_desc
 #endif
 
   type common_pointer_descr
