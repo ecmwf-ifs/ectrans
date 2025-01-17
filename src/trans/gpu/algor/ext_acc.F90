@@ -388,7 +388,7 @@ contains
       stream_act = stream
     else
       stream_act = acc_async_sync
-   endif
+    endif
 #endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
