@@ -44,6 +44,12 @@ jobs:
               #SBATCH --gpus-per-task=1
               #SBATCH --mem=200G
               #SBATCH --qos=dg
+            modules:
+              - cmake
+              - ninja
+              - prgenv/nvidia
+              - hpcx-openmpi/2.14.0-cuda
+              - fftw
 
     runs-on: [self-hosted, linux, hpc]
     env:
@@ -55,45 +61,42 @@ jobs:
           troika_user: ${{ secrets.HPC_CI_SSH_USER }}
           sbatch_options: ${{ matrix.sbatch_options }}
           template_data: |
-            modules:
-              - cmake
-              - ninja
-              - ecbuild
-              - prgenv/nvidia
-              - hpcx-openmpi/2.14.0-cuda
-              - fftw
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_ACC=ON
               - -DENABLE_GPU=ON
             dependencies:
+              ecmwf/ecbuild:
+                version: develop
               ecmwf-ifs/fiat:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
           template: |
-            {% for module in modules %}
+            {% for module in "${{ join(matrix.modules, ',') }}".split(',') %}
               module load {{module}}
             {% endfor %}
 
             export CMAKE_TEST_LAUNCHER="srun;-n;1"
             export DR_HOOK_ASSERT_MPI_INITIALIZED=0
-
+            BASEDIR=$PWD
             {% for name, options in dependencies.items() %}
                 mkdir -p {{name}}
                 pushd {{name}}
-
                 git init
                 git remote add origin ${{ github.server_url }}/{{name}}
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
-
-                cmake -G Ninja -S . -B build {{ options['cmake_options']|join(' ') }}
+                cmake -G Ninja -S . -B build \
+                  {% for name in dependencies %}
+                    {% set org, proj = name.split('/') %}
+                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                  {% endfor %}
+                  {{ options['cmake_options']|join(' ') }}
                 cmake --build build
-                cmake --install build --prefix install
+                cmake --install build --prefix installation
                 popd
             {% endfor %}
-
             mkdir -p ${{ github.repository }}
             pushd ${{ github.repository }}
             git init
@@ -101,13 +104,11 @@ jobs:
             git fetch origin ${{ github.sha }}
             git reset --hard FETCH_HEAD
             popd
-
             cmake -G Ninja -S ${{ github.repository }} -B build \
               {% for name in dependencies %}
                 {% set org, proj = name.split('/') %}
-                -D{{proj}}_ROOT=$PWD/{{name}}/install \
+                -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
               {% endfor %}
               {{ cmake_options|join(' ') }}
-
             cmake --build build
             ctest --test-dir build --output-on-failure
