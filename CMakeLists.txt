@@ -16,6 +16,26 @@ find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUR
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
 
+# CMake 3.29 adds CMAKE_TEST_LAUNCHER defined either as CMake variable or environment.
+# This launcher is a semi-colon-separted list of arguments that is used to launch serial tasks,
+# and can be defined during the CMake configuration.
+# This is e.g. required for GPU tests that need access to slurm resources:
+#    export CMAKE_TEST_LAUNCHER="srun;-n;1"
+# To run the tests then:
+#    salloc -q <queue> --gpus-per-task=1 -n <nproc>    ctest <ctest-args>
+# Before cmake 3.29 this could only be achieved with CMAKE_CROSSCOMPILING_EMULATOR.
+# This next snippet ensures forward compatibility
+if( ${CMAKE_VERSION} VERSION_LESS "3.29" )
+  if( DEFINED CMAKE_TEST_LAUNCHER )
+    set(CMAKE_CROSSCOMPILING_EMULATOR ${CMAKE_TEST_LAUNCHER})
+  elseif(DEFINED ENV{CMAKE_TEST_LAUNCHER})
+    set(CMAKE_CROSSCOMPILING_EMULATOR $ENV{CMAKE_TEST_LAUNCHER})
+  endif()
+endif()
+if( CMAKE_CROSSCOMPILING_EMULATOR )
+  set( CMAKE_TEST_LAUNCHER ${CMAKE_CROSSCOMPILING_EMULATOR} )
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )

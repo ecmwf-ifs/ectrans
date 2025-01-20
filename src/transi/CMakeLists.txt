@@ -39,7 +39,7 @@ if( HAVE_GPU )
     PUBLIC_INCLUDES     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                         $<INSTALL_INTERFACE:include>
     PRIVATE_LIBS        trans_gpu_dp
-    PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+    PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI} ECTRANS_GPU_VERSION
   )
   if( HAVE_ACC AND CMAKE_Fortran_COMPILER_ID MATCHES NVHPC )
     # Propagate flags as link options for downstream targets. Only required for NVHPC
