@@ -92,6 +92,7 @@ jobs:
               - -DENABLE_MPI=ON
               - -DENABLE_ACC=ON
               - -DENABLE_GPU=ON
+              - ${{ matrix.cmake_options || '' }}
             dependencies:
               ecmwf/ecbuild:
                 version: develop
@@ -99,6 +100,7 @@ jobs:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
+                  - ${{ matrix.cmake_options || '' }}
           template: |
             {% for module in "${{ join(matrix.modules, ',') }}".split(',') %}
               module load {{module}}
