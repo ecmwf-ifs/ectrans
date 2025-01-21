@@ -12,7 +12,9 @@ MODULE BUFFERED_ALLOCATOR_MOD
   USE ABORT_TRANS_MOD,       ONLY: ABORT_TRANS
   USE ISO_C_BINDING,         ONLY: C_INT8_T, C_SIZE_T, C_LOC, C_F_POINTER
   USE GROWING_ALLOCATOR_MOD, ONLY: GROWING_ALLOCATION_TYPE
+#ifdef ACCGPU
   USE OPENACC,               ONLY: ACC_ASYNC_SYNC
+#endif
 
   IMPLICIT NONE
 
@@ -142,16 +144,28 @@ CONTAINS
     IF (PRESENT(SET_STREAM)) THEN
         SET_STREAM_EFF = SET_STREAM
     ELSE
+#ifdef ACCGPU
         SET_STREAM_EFF = ACC_ASYNC_SYNC
+#endif
+#ifdef OMPGPU
+#endif
     ENDIF
     IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
       ! setting all bits to 1 (meaning NaN in floating point)
+#ifdef ACCGPU
       !$ACC PARALLEL PRESENT(SRC) ASYNC(SET_STREAM_EFF)
+#endif
+#ifdef OMPGPU
+#endif
       DO J=1_C_SIZE_T,LENGTH_IN_BYTES
         SRC(J) = -1
       ENDDO
+#ifdef ACCGPU
       !$ACC END PARALLEL
+#endif
+#ifdef OMPGPU
+#endif
     ENDIF
     CALL C_F_POINTER(C_LOC(SRC(START_IN_BYTES:START_IN_BYTES+LENGTH_IN_BYTES-1)), DST, &
         & [C_SIZEOF(SRC(START_IN_BYTES:START_IN_BYTES+LENGTH_IN_BYTES-1))/C_SIZEOF(DST(0))])
@@ -180,17 +194,29 @@ CONTAINS
     IF (PRESENT(SET_STREAM)) THEN
         SET_STREAM_EFF = SET_STREAM
     ELSE
+#ifdef ACCGPU
         SET_STREAM_EFF = ACC_ASYNC_SYNC
+#endif
+#ifdef OMPGPU
+#endif
     ENDIF
     IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
       ! setting all bits to 1 (meaning NaN in floating point)
       END_IN_BYTES=START_IN_BYTES+LENGTH_IN_BYTES-1
+#ifdef ACCGPU
       !$ACC PARALLEL PRESENT(SRC) ASYNC(SET_STREAM_EFF)
+#endif
+#ifdef OMPGPU
+#endif
       DO J=1_C_SIZE_T,LENGTH_IN_BYTES
         SRC(J) = -1
       ENDDO
+#ifdef ACCGPU
       !$ACC END PARALLEL
+#endif
+#ifdef OMPGPU
+#endif
     ENDIF
     CALL C_F_POINTER(C_LOC(SRC(START_IN_BYTES:START_IN_BYTES+LENGTH_IN_BYTES-1)), DST, &
         & [C_SIZEOF(SRC(START_IN_BYTES:START_IN_BYTES+LENGTH_IN_BYTES-1))/C_SIZEOF(DST(0))])
