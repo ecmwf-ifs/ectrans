@@ -71,6 +71,10 @@ jobs:
               - rocm/6.0.3
               - cray-fftw
               - buildtools
+            output_dir: /scratch/project_465000527
+            workdir: /scratch/project_465000527
+            cmake_options: -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
+
 
     runs-on: [self-hosted, linux, hpc]
     env:
@@ -81,6 +85,8 @@ jobs:
           site: ${{ matrix.site }}
           troika_user: ${{ secrets[matrix.troika_user_secret] }}
           sbatch_options: ${{ matrix.sbatch_options }}
+          output_dir: ${{ matrix.output_dir || '' }}
+          workdir: ${{ matrix.workdir || '' }}
           template_data: |
             cmake_options:
               - -DENABLE_MPI=ON
