@@ -125,14 +125,11 @@ CONTAINS
     USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_SIZEOF
     USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_CREATE, &
       &                               EXT_ACC_DELETE
+#ifdef ACCGPU
     USE OPENACC,                ONLY: ACC_HANDLE_KIND
-
-    IMPLICIT NONE
-
-#ifdef OMPGPU
-  include 'mpif.h'
 #endif
 
+    IMPLICIT NONE
 
     REAL(KIND=JPRBT),  INTENT(INOUT), POINTER  :: PREEL_REAL(:)
     INTEGER(KIND=JPIM),INTENT(IN)  :: KF_FS,KF_GP
@@ -522,7 +519,15 @@ CONTAINS
       ACC_POINTERS_CNT = ACC_POINTERS_CNT + 1
       ACC_POINTERS(ACC_POINTERS_CNT) = EXT_ACC_PASS(PGP3B)
     ENDIF
-    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_CREATE(ACC_POINTERS(1:ACC_POINTERS_CNT),STREAM=1_ACC_HANDLE_KIND)
+
+    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_CREATE(ACC_POINTERS(1:ACC_POINTERS_CNT), &
+#ifdef ACCGPU
+         & STREAM=1_ACC_HANDLE_KIND)
+#endif
+#ifdef OMPGPU
+         & STREAM=1)
+#endif
+
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
@@ -716,8 +721,12 @@ CONTAINS
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
 #endif
 #else
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !! this is safe-but-slow fallback for running without GPU-aware MPI
     !$ACC UPDATE HOST(ZCOMBUFS) IF(ISEND_COUNTS > 0)
+#endif
 #endif
 
     ! Skip the own contribution because this is ok to overflow
@@ -771,8 +780,12 @@ CONTAINS
     !$ACC END HOST_DATA
 #endif
 #else
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !! this is safe-but-slow fallback for running without GPU-aware MPI
     !$ACC UPDATE DEVICE(ZCOMBUFR) IF(IRECV_COUNTS > 0)
+#endif
 #endif
 
     IF (LSYNC_TRANS) THEN
@@ -927,7 +940,14 @@ CONTAINS
       !$ACC UPDATE HOST(PGP3B) ASYNC(1)
 #endif
     ENDIF
-    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_DELETE(ACC_POINTERS(1:ACC_POINTERS_CNT),STREAM=1_ACC_HANDLE_KIND)
+    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_DELETE(ACC_POINTERS(1:ACC_POINTERS_CNT), &
+#ifdef ACCGPU
+         & STREAM=1_ACC_HANDLE_KIND)
+#endif
+#ifdef OMPGPU
+         & STREAM=1)
+#endif
+
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
       !$ACC WAIT(1)
