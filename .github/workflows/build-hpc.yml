@@ -36,6 +36,7 @@ jobs:
         include:
           - name: ac-gpu nvhpc
             site: ac-batch
+            troika_user_secret: HPC_CI_SSH_USER
             sbatch_options: |
               #SBATCH --time=00:20:00
               #SBATCH --nodes=1
@@ -58,7 +59,7 @@ jobs:
       - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
         with:
           site: ${{ matrix.site }}
-          troika_user: ${{ secrets.HPC_CI_SSH_USER }}
+          troika_user: ${{ secrets[matrix.troika_user_secret] }}
           sbatch_options: ${{ matrix.sbatch_options }}
           template_data: |
             cmake_options:
