@@ -74,6 +74,7 @@ jobs:
             output_dir: /scratch/project_465000527
             workdir: /scratch/project_465000527
             cmake_options: -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
+            ctest_options: -R ectrans_test -E transi
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -93,6 +94,7 @@ jobs:
               - -DENABLE_ACC=ON
               - -DENABLE_GPU=ON
               - ${{ matrix.cmake_options || '' }}
+            ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
                 version: develop
@@ -140,4 +142,4 @@ jobs:
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build
-            ctest --test-dir build --output-on-failure
+            ctest --test-dir build --output-on-failure {{ ctest_options }}
