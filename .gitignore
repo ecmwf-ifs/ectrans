@@ -8,4 +8,4 @@ build/*
 install/*
 env.sh
 *.DS_Store
-
+*.py[co~]
