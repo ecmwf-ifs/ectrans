@@ -143,3 +143,10 @@ jobs:
               {{ cmake_options|join(' ') }}
             cmake --build build
             ctest --test-dir build --output-on-failure {{ ctest_options }}
+
+            {% for name in dependencies.keys() %}
+              rm -r {{name}}
+            {% endfor %}
+
+            rm -r ${{ github.repository }}
+            rm -r build
