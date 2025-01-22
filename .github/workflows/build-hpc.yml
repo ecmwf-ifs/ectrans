@@ -74,7 +74,7 @@ jobs:
             output_dir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
             workdir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
             cmake_options: -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
-            ctest_options: -R ectrans_test -E transi
+            ctest_options: -E gpu
 
 
     runs-on: [self-hosted, linux, hpc]
