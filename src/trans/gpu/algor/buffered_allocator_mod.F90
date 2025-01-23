@@ -147,8 +147,6 @@ CONTAINS
 #ifdef ACCGPU
         SET_STREAM_EFF = ACC_ASYNC_SYNC
 #endif
-#ifdef OMPGPU
-#endif
     ENDIF
     IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
@@ -157,14 +155,13 @@ CONTAINS
       !$ACC PARALLEL PRESENT(SRC) ASYNC(SET_STREAM_EFF)
 #endif
 #ifdef OMPGPU
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(LENGTH_IN_BYTES,SRC)
 #endif
       DO J=1_C_SIZE_T,LENGTH_IN_BYTES
         SRC(J) = -1
       ENDDO
 #ifdef ACCGPU
       !$ACC END PARALLEL
-#endif
-#ifdef OMPGPU
 #endif
     ENDIF
     CALL C_F_POINTER(C_LOC(SRC(START_IN_BYTES:START_IN_BYTES+LENGTH_IN_BYTES-1)), DST, &
@@ -197,8 +194,6 @@ CONTAINS
 #ifdef ACCGPU
         SET_STREAM_EFF = ACC_ASYNC_SYNC
 #endif
-#ifdef OMPGPU
-#endif
     ENDIF
     IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
@@ -208,14 +203,13 @@ CONTAINS
       !$ACC PARALLEL PRESENT(SRC) ASYNC(SET_STREAM_EFF)
 #endif
 #ifdef OMPGPU
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(LENGTH_IN_BYTES,SRC)
 #endif
       DO J=1_C_SIZE_T,LENGTH_IN_BYTES
         SRC(J) = -1
       ENDDO
 #ifdef ACCGPU
       !$ACC END PARALLEL
-#endif
-#ifdef OMPGPU
 #endif
     ENDIF
     CALL C_F_POINTER(C_LOC(SRC(START_IN_BYTES:START_IN_BYTES+LENGTH_IN_BYTES-1)), DST, &
