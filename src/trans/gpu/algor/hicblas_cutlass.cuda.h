@@ -154,11 +154,11 @@ public:
 
 } // namespace detail
 template <cublasOperation_t TransA, cublasOperation_t TransB>
-void cutlass_sgemm_wrapper_grouped_op(int resol_id, int blas_id, int m, int *n, int *k,
+void cutlass_sgemm_wrapper_grouped_op(int resol_id, int blas_id, int m, const int *n, const int *k,
                                       float alpha, const float *A, int lda,
-                                      int64_t *offsetsA, const float *B, int ldb,
-                                      int64_t *offsetsB, float beta, float *C,
-                                      int ldc, int64_t *offsetsC, int batchCount,
+                                      const int64_t *offsetsA, const float *B, const int *ldb,
+                                      const int64_t *offsetsB, float beta, float *C,
+                                      int ldc, const int64_t *offsetsC, int batchCount,
                                       cudaStream_t stream,
                                       void *growing_allocator) {
   using namespace detail;
@@ -182,10 +182,10 @@ void cutlass_sgemm_wrapper_grouped_op(int resol_id, int blas_id, int m, int *n, 
 }
 
 void cutlass_sgemm_wrapper_grouped(int resol_id, int blas_id, char transa, char transb,
-                                   int m, int *n, int *k, float alpha,
-                                   const float *A, int lda, int64_t *offsetsA,
-                                   const float *B, int ldb, int64_t *offsetsB, float beta,
-                                   float *C, int ldc, int64_t *offsetsC,
+                                   int m, const int *n, const int *k, float alpha,
+                                   const float *A, int lda, const int64_t *offsetsA,
+                                   const float *B, const int *ldb, const int64_t *offsetsB, float beta,
+                                   float *C, int ldc, const int64_t *offsetsC,
                                    int batchCount, cudaStream_t stream,
                                    void *growing_allocator) {
 
