@@ -61,7 +61,7 @@ template <typename Gemm> auto &get_graph_cache() {
 template <typename Gemm> auto &get_ptr_cache() {
   using real_t = typename Gemm::real_type;
   static std::unordered_map<
-      cache_key, std::tuple<real_t const *, real_t const *, real_t const *>>
+      cache_key, std::tuple<const real_t *, const real_t *, const real_t *>>
       ptrCache;
   return ptrCache;
 }
@@ -246,7 +246,7 @@ void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
                                    char transb, int m, const int *n,
                                    const int *k, double alpha, const double *A,
                                    int lda, const int64_t *offsetsA,
-                                   double const *B, const int *ldb,
+                                   const double *B, const int *ldb,
                                    const int64_t *offsetsB, double beta,
                                    double *C, int ldc, const int64_t *offsetsC,
                                    int batchCount, hipStream_t stream, void *) {
@@ -334,9 +334,9 @@ void hipblas_sgemm_wrapper_grouped(
 
 void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
                                    char transb, int m, const int *n,
-                                   const int *k, double alpha, double const *A,
+                                   const int *k, double alpha, const double *A,
                                    int lda, const int64_t *offsetsA,
-                                   double const *B, const int *ldb,
+                                   const double *B, const int *ldb,
                                    const int64_t *offsetsB, double beta,
                                    double *C, int ldc, const int64_t *offsetsC,
                                    int batchCount, size_t stream,
