@@ -106,6 +106,28 @@ The benchmark drivers are found in the bin directory.
 A brief description of available command-line arguments can be obtained with e.g.
 ectrans-benchmark-cpu-sp --help
 
+Building `ectrans4py`
+---------------------
+
+The python wheel can be built from the root of the project, assuming above-mentioned variables are defined (`fiat_ROOT` etc...):
+```
+python -m build --wheel
+```
+and then:
+```
+python -m auditwheel
+```
+The built python wheel is then to be found in directory `wheelhouse/` and can be locally installed by pip:
+```
+pip install wheelhouse/ectrans4py-<x.y.z>(...).whl
+```
+The `_skbuild` and `dist` directories can be deleted.
+
+Tests can be run from `tests/test_ectrans4py/`:
+```
+python -m pytest
+```
+
 Reporting Bugs
 ==============
 
