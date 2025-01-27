@@ -98,7 +98,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
 !     ------------------------------------------------------------------
 
-USE PARKIND1,        ONLY: JPIM, JPRB, JPRD
+USE PARKIND1,        ONLY: JPIM, JPRB, JPRD, JPIB
 USE PARKIND_ECTRANS, ONLY: JPRBT
 
 !ifndef INTERFACE
@@ -525,11 +525,14 @@ IF( .NOT.D%LGRIDONLY ) THEN
 #ifdef OMPGPU
   WRITE(NOUT,*) 'Using OpenMP offloading'
 #endif
-  WRITE(NOUT,'(A10,":",I11,"B")') 'FG%ZAS', C_SIZEOF(FG%ZAS(1))*SIZE(FG%ZAS)
-  WRITE(NOUT,'(A10,":",I11,"B")') 'FG%ZAA', C_SIZEOF(FG%ZAA(1))*SIZE(FG%ZAA)
-  WRITE(NOUT,'(A10,":",I11,"B")') 'FG%ZAS0', C_SIZEOF(FG%ZAS0(1,1))*SIZE(FG%ZAS0)
-  WRITE(NOUT,'(A10,":",I11,"B")') 'FG%ZAA0', C_SIZEOF(FG%ZAA0(1,1))*SIZE(FG%ZAA0)
-  WRITE(NOUT,'(A10,":",I11,"B")') 'FG%ZEPSNM', C_SIZEOF(FG%ZEPSNM(1,1))*SIZE(FG%ZEPSNM)
+
+  ! Print sizes of Legendre polynomial work arrays (these numbers can be BIG so we need to use a
+  ! nice and wide integer type like JPIB)
+  WRITE(NOUT,'(A10,":",I13,"B")') 'FG%ZAS', C_SIZEOF(FG%ZAS(1))*SIZE(FG%ZAS,KIND=JPIB)
+  WRITE(NOUT,'(A10,":",I13,"B")') 'FG%ZAA', C_SIZEOF(FG%ZAA(1))*SIZE(FG%ZAA,KIND=JPIB)
+  WRITE(NOUT,'(A10,":",I13,"B")') 'FG%ZAS0', C_SIZEOF(FG%ZAS0(1,1))*SIZE(FG%ZAS0,KIND=JPIB)
+  WRITE(NOUT,'(A10,":",I13,"B")') 'FG%ZAA0', C_SIZEOF(FG%ZAA0(1,1))*SIZE(FG%ZAA0,KIND=JPIB)
+  WRITE(NOUT,'(A10,":",I13,"B")') 'FG%ZEPSNM', C_SIZEOF(FG%ZEPSNM(1,1))*SIZE(FG%ZEPSNM,KIND=JPIB)
 
   IF (ANY(D%MYMS == 0)) THEN
 #ifdef ACCGPU
