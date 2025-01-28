@@ -182,7 +182,7 @@ ecbuild_add_option( FEATURE GPU_STATIC
                     DESCRIPTION "Compile GPU library as static library")
 
 ecbuild_add_option( FEATURE ETRANS
-                    DEFAULT OFF
+                    DEFAULT ON
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
 
 ectrans_find_lapack()
