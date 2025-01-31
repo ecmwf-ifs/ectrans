@@ -9,15 +9,15 @@
 ! nor does it submit to any jurisdiction.
 !
 
-MODULE SPNSDE_MOD
+MODULE SPNSDEAD_MOD
 CONTAINS
-SUBROUTINE SPNSDE(KF_SCALARS,PEPSNM,PF,PNSD)
+SUBROUTINE SPNSDEAD(KF_SCALARS,PEPSNM,PF,PNSD)
 
 USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
 USE TPM_DIM,         ONLY: R
 USE TPM_DISTR,       ONLY: D
 
-!**** *SPNSDE* - Compute North-South derivative in spectral space
+!**** *SPNSDEAD* - Adjoint of "Compute North-South derivative in spectral space"
 
 !     Purpose.
 !     --------
@@ -25,7 +25,7 @@ USE TPM_DISTR,       ONLY: D
 
 !**   Interface.
 !     ----------
-!        CALL SPNSDE(...)
+!        CALL SPNSDEAD(...)
 
 !        Explicit arguments :
 !        --------------------
@@ -75,8 +75,8 @@ INTEGER(KIND=JPIM)  :: KM, KMLOC
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_SCALARS
 !REAL(KIND=JPRBT),    INTENT(IN)  :: PEPSNM(0:R%NTMAX+2)
 REAL(KIND=JPRBT),    INTENT(IN)  :: PEPSNM(1:D%NUMP,0:R%NTMAX+2)
-REAL(KIND=JPRB),    INTENT(IN)  :: PF(:,:,:)
-REAL(KIND=JPRB),    INTENT(OUT) :: PNSD(:,:,:)
+REAL(KIND=JPRB),    INTENT(INOUT)  :: PF(:,:,:)
+REAL(KIND=JPRB),    INTENT(IN) :: PNSD(:,:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IJ, ISKIP, J, JN, JI, IR, II
@@ -119,16 +119,15 @@ DO KMLOC=1,D_NUMP
       IF(KM /= 0 .AND. JN >= KM) THEN
         ! (DO JN=KN,R_NTMAX+1)
         JI = R_NTMAX+3-JN
-        PNSD(IR,JI,KMLOC) = -(JN-1)*PEPSNM(KMLOC,JN)*PF(IR,JI+1,KMLOC)+&
-         &(JN+2)*PEPSNM(KMLOC,JN+1)*PF(IR,JI-1,KMLOC)
-        PNSD(II,JI,KMLOC) = -(JN-1)*PEPSNM(KMLOC,JN)*PF(II,JI+1,KMLOC)+&
-         &(JN+2)*PEPSNM(KMLOC,JN+1)*PF(II,JI-1,KMLOC)
-
+        PF(IR,JI+1,KMLOC) = PF(IR,JI+1,KMLOC) - (JN-1)*PEPSNM(KMLOC,JN)*PNSD(IR,JI,KMLOC)
+        PF(IR,JI-1,KMLOC) = PF(IR,JI-1,KMLOC) + (JN+2)*PEPSNM(KMLOC,JN+1)*PNSD(IR,JI,KMLOC)
+        PF(II,JI+1,KMLOC) = PF(II,JI+1,KMLOC) - (JN-1)*PEPSNM(KMLOC,JN)*PNSD(II,JI,KMLOC)
+        PF(II,JI-1,KMLOC) = PF(II,JI-1,KMLOC) + (JN+2)*PEPSNM(KMLOC,JN+1)*PNSD(II,JI,KMLOC) 
       ELSEIF(KM == 0) THEN
         ! (DO JN=0,R_NTMAX+1)
         JI = R_NTMAX+3-JN
-        PNSD(IR,JI,KMLOC) = -(JN-1)*PEPSNM(KMLOC,JN)*PF(IR,JI+1,KMLOC)+&
-         &(JN+2)*PEPSNM(KMLOC,JN+1)*PF(IR,JI-1,KMLOC)
+        PF(IR,JI+1,KMLOC) = PF(IR,JI+1,KMLOC) - (JN-1)*PEPSNM(KMLOC,JN)*PNSD(IR,JI,KMLOC)
+        PF(IR,JI-1,KMLOC) = PF(IR,JI-1,KMLOC) + (JN+2)*PEPSNM(KMLOC,JN+1)*PNSD(IR,JI,KMLOC)
       ENDIF
     ENDDO
   ENDDO
@@ -141,5 +140,5 @@ END DO
 !     ------------------------------------------------------------------
 END ASSOCIATE
 
-END SUBROUTINE SPNSDE
-END MODULE SPNSDE_MOD
+END SUBROUTINE SPNSDEAD
+END MODULE SPNSDEAD_MOD
