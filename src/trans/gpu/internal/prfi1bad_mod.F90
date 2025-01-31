@@ -9,9 +9,9 @@
 ! nor does it submit to any jurisdiction.
 !
 
-MODULE PRFI1B_MOD
+MODULE PRFI1BAD_MOD
   CONTAINS
-  SUBROUTINE PRFI1B(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
+  SUBROUTINE PRFI1BAD(PIA,PSPEC,KFIELDS,KDIM,KFLDPTR)
   
   USE PARKIND1,        ONLY: JPIM, JPRB
   USE TPM_DIM,         ONLY: R
@@ -65,8 +65,8 @@ MODULE PRFI1B_MOD
   
   INTEGER(KIND=JPIM),INTENT(IN)   :: KFIELDS
   INTEGER(KIND=JPIM) :: KM,KMLOC
-  REAL(KIND=JPRB)   ,INTENT(IN)   :: PSPEC(:,:)
-  REAL(KIND=JPRB)   ,INTENT(INOUT)  :: PIA(:,:,:)
+  REAL(KIND=JPRB)   ,INTENT(INOUT)   :: PSPEC(:,:)
+  REAL(KIND=JPRB)   ,INTENT(IN)  :: PIA(:,:,:)
   INTEGER(KIND=JPIM),INTENT(IN) :: KDIM
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
@@ -120,29 +120,12 @@ MODULE PRFI1B_MOD
                INM = IASM0+(ILCM-JN)*2
                IR = 2*(JFLD-1)+1
                II = IR+1
-               PIA(IR,JN+2,KMLOC) = PSPEC(IFLD,INM  )
-               PIA(II,JN+2,KMLOC) = PSPEC(IFLD,INM+1)
+               PSPEC(IFLD,INM  ) = PSPEC(IFLD,INM  ) + PIA(IR,JN+2,KMLOC)
+               PSPEC(IFLD,INM+1) = PSPEC(IFLD,INM+1) + PIA(II,JN+2,KMLOC)
             END IF
          ENDDO
       ENDDO
  
-      ! end loop over wavenumber
-   ENDDO
-
-#ifdef OMPGPU
-   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,ILCM) FIRSTPRIVATE(KFIELDS)
-#endif
-#ifdef ACCGPU
-   !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(2) PRIVATE(KM,ILCM) FIRSTPRIVATE(KFIELDS) ASYNC(1)
-#endif
-   DO KMLOC=1,D_NUMP
-      DO JFLD=1,2*KFIELDS
-         KM = D_MYMS(KMLOC) 
-         ILCM = R_NSMAX+1-KM
-         PIA(JFLD,1,KMLOC) = 0.0_JPRB
-         PIA(JFLD,2,KMLOC) = 0.0_JPRB
-         PIA(JFLD,ILCM+3,KMLOC) = 0.0_JPRB
-      ENDDO 
       ! end loop over wavenumber
    ENDDO
 
@@ -167,17 +150,11 @@ MODULE PRFI1B_MOD
       DO JFLD=1,KFIELDS
         KM = D_MYMS(KMLOC)
 
-        IF (JN <= 1) THEN
-          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
-          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
-        ELSEIF (JN <= R_NSMAX+2-KM) THEN
+        IF (JN <= R_NSMAX+2-KM) THEN
           IASM0 = D_NASM0(KM)
           INM = IASM0+((R_NSMAX+2-JN)-KM)*2
-          PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
-          PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
-        ELSEIF (JN <= R_NSMAX+3-KM) THEN
-          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
-          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+          PSPEC(JFLD,INM  ) = PSPEC(JFLD,INM  ) + PIA(2*JFLD-1,JN+1,KMLOC)
+          PSPEC(JFLD,INM+1) = PSPEC(JFLD,INM+1) + PIA(2*JFLD  ,JN+1,KMLOC)
         ENDIF
       ENDDO
     ENDDO
@@ -196,5 +173,5 @@ ENDIF
   !     ------------------------------------------------------------------
     END ASSOCIATE
  
-  END SUBROUTINE PRFI1B
-END MODULE PRFI1B_MOD
+  END SUBROUTINE PRFI1BAD
+END MODULE PRFI1BAD_MOD
