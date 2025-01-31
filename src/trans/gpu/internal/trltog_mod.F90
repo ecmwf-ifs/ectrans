@@ -174,13 +174,12 @@ CONTAINS
     INTEGER(KIND=JPIM), PARAMETER :: IGP_OFFSETS_UV=1, IGP_OFFSETS_GP2=2, IGP_OFFSETS_GP3A=3, IGP_OFFSETS_GP3B=4
     INTEGER(KIND=JPIM) :: IUVPAR,IGP2PAR,IGP3ALEV,IGP3APAR,IGP3BLEV,IGP3BPAR,IPAROFF,IOFF
 
-    INTEGER(KIND=JPIM) :: IFLDA(KF_GP)
     INTEGER(KIND=JPIB) :: IIN_TO_SEND_BUFR(D%NLENGTF,2)
     INTEGER(KIND=JPIM) :: IIN_TO_SEND_BUFR_OFFSET(NPROC), IIN_TO_SEND_BUFR_V
     INTEGER(KIND=JPIM) :: IRECV_FIELD_COUNT(NPRTRV),IRECV_FIELD_COUNT_V
     INTEGER(KIND=JPIM) :: IRECV_WSET_SIZE(NPRTRW),IRECV_WSET_SIZE_V
     INTEGER(KIND=JPIM) :: IRECV_WSET_OFFSET(NPRTRW+1), IRECV_WSET_OFFSET_V
-    INTEGER(KIND=JPIB), ALLOCATABLE :: ICOMBUFS_OFFSET(:),ICOMBUFR_OFFSET(:)
+    INTEGER(KIND=JPIB), ALLOCATABLE :: ICOMBUFS_OFFSET(:),ICOMBUFR_OFFSET(:), IFLDA(:,:)
     INTEGER(KIND=JPIB) :: ICOMBUFS_OFFSET_V, ICOMBUFR_OFFSET_V
 
     INTEGER(KIND=JPIM) :: IVSETUV(KF_UV_G)
@@ -544,6 +543,28 @@ CONTAINS
 #endif
 
     CALL GSTATS(1806,1)
+    
+    ! Figure out processes that send or recv something
+    ISEND_COUNTS   = 0
+    IRECV_COUNTS   = 0
+    DO JROC=1,NPROC
+      IF( JROC /= MYPROC) THEN
+        IF(IRECVTOT(JROC) > 0) THEN
+          ! I have to recv something, so let me store that
+          IRECV_COUNTS = IRECV_COUNTS + 1
+          IRECV_TO_PROC(IRECV_COUNTS)=JROC
+        ENDIF
+        IF(ISENDTOT(JROC) > 0) THEN
+          ! I have to send something, so let me store that
+          ISEND_COUNTS = ISEND_COUNTS+1
+          ISEND_TO_PROC(ISEND_COUNTS)=JROC
+        ENDIF
+      ENDIF
+    ENDDO
+
+    ! ... build this data structure now during the MPI communication
+    ! Allocate this buffer now. Add 1 for self contribution
+    ALLOCATE(IFLDA(KF_GP,1+IRECV_COUNTS))
 
     ! Copy local contribution
     IF(LLOCAL_CONTRIBUTION) THEN
@@ -555,18 +576,38 @@ CONTAINS
         IF(IVSET(JFLD) == MYSETV .OR. IVSET(JFLD) == -1) THEN
           IFLDS = IFLDS+1
           IF(PRESENT(KPTRGP)) THEN
-            IFLDA(IFLDS) = KPTRGP(JFLD)
+            IFLDA(IFLDS,1) = KPTRGP(JFLD)
           ELSE
-            IFLDA(IFLDS) = JFLD
+            IFLDA(IFLDS,1) = JFLD
           ENDIF
         ENDIF
       ENDDO
+    ENDIF
 
+    DO INR=1,IRECV_COUNTS
+      IRECV=IRECV_TO_PROC(INR)
+      CALL PE2SET(IRECV,ISETA,ISETB,ISETW,ISETV)
+      IFLDS = 0
+      DO JFLD=1,KF_GP
+        IF(IVSET(JFLD) == ISETV .OR. IVSET(JFLD) == -1 ) THEN
+          IFLDS = IFLDS+1
+          IF(PRESENT(KPTRGP)) THEN
+            IFLDA(IFLDS,1+INR)=KPTRGP(JFLD)
+          ELSE
+            IFLDA(IFLDS,1+INR)=JFLD
+          ENDIF
+        ENDIF
+      ENDDO
+    ENDDO
+   
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-      !$ACC DATA COPYIN(IFLDA(1:IFLDS)) ASYNC(1)
+    !$ACC DATA COPYIN(IFLDA) ASYNC(1)
 #endif
+
+    ! Copy local contribution
+    IF(LLOCAL_CONTRIBUTION) THEN
 
       CALL GSTATS(1604,0)
 
@@ -585,7 +626,7 @@ CONTAINS
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
             JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-            IFLD = IFLDA(JFLD)
+            IFLD = IFLDA(JFLD,1)
             IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
                 & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
             PGP(JK,IFLD,JBLK) = PREEL_REAL(IPOS)
@@ -603,7 +644,7 @@ CONTAINS
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
             JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-            IFLD = IFLDA(JFLD)
+            IFLD = IFLDA(JFLD,1)
             IPOS = IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,1)+ &
                 & (JFLD-1)*IIN_TO_SEND_BUFR(IIN_TO_SEND_BUFR_V+JL,2)+1
             IF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_UV) THEN
@@ -619,32 +660,7 @@ CONTAINS
         ENDDO
       ENDIF
       CALL GSTATS(1604,1)
-
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-      !$ACC END DATA
-#endif
-
     ENDIF
-
-    ! Figure out processes that send or recv something
-    ISEND_COUNTS   = 0
-    IRECV_COUNTS   = 0
-    DO JROC=1,NPROC
-      IF( JROC /= MYPROC) THEN
-        IF(IRECVTOT(JROC) > 0) THEN
-          ! I have to recv something, so let me store that
-          IRECV_COUNTS = IRECV_COUNTS + 1
-          IRECV_TO_PROC(IRECV_COUNTS)=JROC
-        ENDIF
-        IF(ISENDTOT(JROC) > 0) THEN
-          ! I have to send something, so let me store that
-          ISEND_COUNTS = ISEND_COUNTS+1
-          ISEND_TO_PROC(ISEND_COUNTS)=JROC
-        ENDIF
-      ENDIF
-    ENDDO
 
     ALLOCATE(ICOMBUFS_OFFSET(ISEND_COUNTS+1))
     ICOMBUFS_OFFSET(1) = 0
@@ -697,8 +713,6 @@ CONTAINS
 #endif
 #ifdef ACCGPU
     !$ACC END DATA ! ZCOMBUFS
-
-    !$ACC END DATA ! PREEL_REAL
 
     !$ACC WAIT(1)
 #endif
@@ -812,24 +826,6 @@ CONTAINS
       IRECV_FIELD_COUNT_V = IRECV_FIELD_COUNT(ISETV)
       ICOMBUFR_OFFSET_V = ICOMBUFR_OFFSET(INR)
 
-      IFLDS = 0
-      DO JFLD=1,KF_GP
-        IF(IVSET(JFLD) == ISETV .OR. IVSET(JFLD) == -1 ) THEN
-          IFLDS = IFLDS+1
-          IF(PRESENT(KPTRGP)) THEN
-            IFLDA(IFLDS)=KPTRGP(JFLD)
-          ELSE
-            IFLDA(IFLDS)=JFLD
-          ENDIF
-        ENDIF
-      ENDDO
-
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-      !$ACC DATA COPYIN(IFLDA(1:IRECV_FIELD_COUNT_V)) ASYNC(1)
-#endif
-
       IRECV_WSET_OFFSET_V = IRECV_WSET_OFFSET(ISETW)
       IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(ISETW)
       IF (PRESENT(PGP)) THEN
@@ -837,14 +833,14 @@ CONTAINS
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) &
-        !$ACC&              FIRSTPRIVATE(IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V,&
+        !$ACC&              FIRSTPRIVATE(INR,IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V,&
         !$ACC&              IRECV_WSET_OFFSET_V,NPROMA,ICOMBUFR_OFFSET_V) ASYNC(1)
 #endif
         DO JFLD=1,IRECV_FIELD_COUNT_V
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
             JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-            IFLD=IFLDA(JFLD)
+            IFLD=IFLDA(JFLD,1+INR)
             JI = ICOMBUFR_OFFSET_V+(JFLD-1)*IRECV_WSET_SIZE_V+JL
             PGP(JK,IFLD,JBLK) = ZCOMBUFR(JI)
           ENDDO
@@ -854,14 +850,14 @@ CONTAINS
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) &
-        !$ACC&              FIRSTPRIVATE(IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V, &
+        !$ACC&              FIRSTPRIVATE(INR,IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V, &
         !$ACC&              IRECV_WSET_OFFSET_V,NPROMA,ICOMBUFR_OFFSET_V) ASYNC(1)
 #endif
         DO JFLD=1,IRECV_FIELD_COUNT_V
           DO JL=1,IRECV_WSET_SIZE_V
             JK = MOD(IRECV_WSET_OFFSET_V+JL-1,NPROMA)+1
             JBLK = (IRECV_WSET_OFFSET_V+JL-1)/NPROMA+1
-            IFLD=IFLDA(JFLD)
+            IFLD=IFLDA(JFLD,1+INR)
             JI = ICOMBUFR_OFFSET_V+(JFLD-1)*IRECV_WSET_SIZE_V+JL
             IF(IGP_OFFSETS(IFLD,1) == IGP_OFFSETS_UV) THEN
               PGPUV(JK,IGP_OFFSETS(IFLD,3),IGP_OFFSETS(IFLD,2),JBLK) = ZCOMBUFR(JI)
@@ -875,12 +871,12 @@ CONTAINS
           ENDDO
         ENDDO
       ENDIF
+    ENDDO
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
-      !$ACC END DATA
+    !$ACC WAIT(1)
 #endif
-    ENDDO
 
 #ifdef OMPGPU
 #endif
@@ -899,6 +895,8 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
+    !$ACC END DATA ! IFLDA
+    !$ACC END DATA ! PREEL_REAL
     !$ACC END DATA ! PGP3B
     !$ACC END DATA ! PGP3A
     !$ACC END DATA ! PGP2
@@ -966,6 +964,9 @@ CONTAINS
 #endif
 
     CALL GSTATS(1606,1)
+
+    ! Free this now
+    DEALLOCATE(IFLDA)
 
     IF (LHOOK) CALL DR_HOOK('TRLTOG',1,ZHOOK_HANDLE)
   END SUBROUTINE TRLTOG
