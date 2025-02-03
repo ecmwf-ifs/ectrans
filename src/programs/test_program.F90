@@ -21,6 +21,7 @@ INTEGER(KIND=JPIM) :: NGPTOT
 #include "setup_trans.h"
 #include "trans_inq.h"
 #include "inv_trans.h"
+#include "trans_end.h"
 
 CALL MPL_INIT(ldinfo=(verbosity>=1))
 
@@ -44,6 +45,11 @@ SPECTRAL_FIELD(:,:) = 0.0_JPRB
 
 ! Perform an inverse transform
 CALL INV_TRANS(PSPSCALAR=SPECTRAL_FIELD, PGP=GRID_POINT_FIELD)
+
+CALL TRANS_END
+
+WRITE(6,*) "GRID_POINT_FIELD = ", MINVAL(GRID_POINT_FIELD), MAXVAL(GRID_POINT_FIELD)
+FLUSH(6)
 
 CALL MPL_END(ldmeminfo=.false.)
 
