@@ -10,66 +10,29 @@
 ! nor does it submit to any jurisdiction.
 !
 
-MODULE LEINV_MOD
+MODULE LEINVAD_MOD
   USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT, JPRD, JPIB
   USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR
+  USE LEINV_MOD,              ONLY: LEINV_STRIDES
   IMPLICIT NONE
 
   PRIVATE
-  PUBLIC :: LEINV_STRIDES, LEINV
+  PUBLIC :: LEINVAD
 
   INTEGER(KIND=JPIM) :: A = 8 !Alignment
 
 CONTAINS
-  SUBROUTINE LEINV_STRIDES(KF_LEG,IOUT_STRIDES0,IOUT_SIZE,IIN_STRIDES0,IIN_SIZE,&
-                           IOUT0_STRIDES0,IOUT0_SIZE,IIN0_STRIDES0,IIN0_SIZE)
-    USE TPM_DIM,   ONLY: R
-    USE TPM_DISTR, ONLY: D
 
-    IMPLICIT NONE
-
-    INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
-
-    INTEGER(KIND=JPIM), OPTIONAL :: IOUT_STRIDES0
-    INTEGER(KIND=JPIB), OPTIONAL :: IOUT_SIZE
-    INTEGER(KIND=JPIM), OPTIONAL :: IIN_STRIDES0
-    INTEGER(KIND=JPIB), OPTIONAL :: IIN_SIZE
-    INTEGER(KIND=JPIM), OPTIONAL :: IOUT0_STRIDES0, IOUT0_SIZE
-    INTEGER(KIND=JPIM), OPTIONAL :: IIN0_STRIDES0, IIN0_SIZE
-
-    ASSOCIATE(D_OFFSETS_GEMM1=>D%OFFSETS_GEMM1, D_OFFSETS_GEMM2=>D%OFFSETS_GEMM2)
-
-
-    IF (PRESENT(IOUT_STRIDES0)) &
-      IOUT0_STRIDES0 = ALIGN(KF_LEG,A)
-    IF (PRESENT(IOUT0_SIZE)) &
-      IOUT0_SIZE = IOUT0_STRIDES0 * ALIGN(R%NDGNH,A)
-    IF (PRESENT(IIN_STRIDES0)) &
-      IIN_STRIDES0 = ALIGN(2*KF_LEG,A)
-    IF (PRESENT(IIN_SIZE)) &
-      IIN_SIZE = IIN_STRIDES0*D_OFFSETS_GEMM2(D%NUMP+1)
-    IF (PRESENT(IOUT0_STRIDES0)) &
-      IOUT_STRIDES0 = ALIGN(2*KF_LEG,A)
-    IF (PRESENT(IOUT_SIZE)) &
-      IOUT_SIZE = IOUT_STRIDES0*D_OFFSETS_GEMM1(D%NUMP+1)
-    IF (PRESENT(IIN0_STRIDES0)) &
-      IIN0_STRIDES0 = ALIGN(KF_LEG,A)
-    IF (PRESENT(IIN0_SIZE)) &
-      IIN0_SIZE = IIN0_STRIDES0 * ALIGN(MAX((R%NTMAX+2)/2,(R%NTMAX+3)/2),A)
-
-    END ASSOCIATE
-  END SUBROUTINE LEINV_STRIDES
-
-  SUBROUTINE LEINV(ALLOCATOR,PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,KF_LEG)
-    !**** *LEINV* - Inverse Legendre transform.
+  SUBROUTINE LEINVAD(ALLOCATOR,PIA,ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,KF_LEG)
+    !**** *LEINVAD* - Adjoint of inverse Legendre transform.
 
     !     Purpose.
     !     --------
-    !        Inverse Legendre tranform of all variables(kernel).
+    !        Adjoint of inverse Legendre tranform of all variables(kernel).
 
     !**   Interface.
     !     ----------
-    !        CALL LEINV(...)
+    !        CALL LEINVAD(...)
 
     !        Explicit arguments :  KM - zonal wavenumber (input-c)
     !        --------------------  KFC - number of fields to tranform (input-c)
@@ -118,10 +81,10 @@ CONTAINS
 
     IMPLICIT NONE
 
-    REAL(KIND=JPRB),    INTENT(IN)  :: PIA(:,:,:)
+    REAL(KIND=JPRB),    INTENT(INOUT)  :: PIA(:,:,:)
     INTEGER(KIND=JPIM), INTENT(IN)  :: KF_LEG
-    REAL(KIND=JPRBT), INTENT(OUT) :: ZINP(:), ZOUTS(:), ZOUTA(:)
-    REAL(KIND=JPRD), INTENT(OUT) :: ZINP0(:), ZOUTS0(:), ZOUTA0(:)
+    REAL(KIND=JPRBT), INTENT(IN) :: ZINP(:), ZOUTS(:), ZOUTA(:)
+    REAL(KIND=JPRD), INTENT(IN) :: ZINP0(:), ZOUTS0(:), ZOUTA0(:)
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
 
     !     LOCAL
@@ -142,7 +105,7 @@ CONTAINS
         ZAA=>FG%ZAA, ZAS=>FG%ZAS, ZAA0=>FG%ZAA0, ZAS0=>FG%ZAS0)
 
     !*       1.1      PREPARATIONS.
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
+    IF (LHOOK) CALL DR_HOOK('LEINVAD_DGEMM',0,ZHOOK_HANDLE)
 
     !     ------------------------------------------------------------------
 
@@ -166,6 +129,7 @@ CONTAINS
 
     ! READ 2:NSMAX+3
 
+    ! 1. +++++++++++++ anti-symmetric
     !IF KM=0 and NSMAX is 6:
     !    IA=1
     !    DO=1,6/2+1 ... 1..4
@@ -175,67 +139,6 @@ CONTAINS
     !    DO=1,7/2+1 ... 1..4
     !       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
 
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) &
-    !$ACC& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) DEFAULT(NONE) &
-#ifdef _CRAYFTN
-    !$ACC&
-#else
-    !$ACC& ASYNC(1)
-#endif
-#endif
-    DO KMLOC=1,D_NUMP
-      DO JK=1,2*KF_LEG
-        KM =  D_MYMS(KMLOC)
-        IA  = 1+MOD(R_NSMAX-KM+2,2)
-        IF(KM /= 0)THEN
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
-          DO J=1,(R_NSMAX-KM+2)/2
-            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IA+1+(J-1)*2,KMLOC)
-          ENDDO
-          ! those are only needed with tensor cores (zinp might contain NaNs!)
-#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          !$ACC LOOP SEQ
-          DO J=(R_NSMAX-KM+2)/2+1,ALIGN((R_NSMAX-KM+2)/2,A)
-            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
-          ENDDO
-#endif
-        ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
-          ! every other field is sufficient because Im(KM=0) == 0
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
-          DO J=1,(R_NSMAX+2)/2
-            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
-          ENDDO
-          ! those are only needed with tensor cores (zinp might contain NaNs!)
-#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          !$ACC LOOP SEQ
-          DO J=(R_NSMAX+2)/2+1,ALIGN((R_NSMAX+2)/2,A)
-            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
-          ENDDO
-#endif
-        ENDIF
-      ENDDO
-    ENDDO
-
-
-    IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
-      CALL GSTATS(440,0)
-      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
-      CALL GSTATS(440,1)
-    ENDIF
     CALL GSTATS(424,0)
 
     IMLOC0 = FINDLOC(D_MYMS,0)
@@ -248,13 +151,13 @@ CONTAINS
       !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUTA0)
 #endif
       CALL HIP_DGEMM_BATCHED_OVERLOAD( &
-        & 'N', 'T', &
-        & KF_LEG, G_NDGLU(0), (R_NSMAX+2)/2, &
+        & 'N', 'N', &
+        & KF_LEG, (R_NSMAX+2)/2, G_NDGLU(0), &
         & 1.0_JPRD, &
-        & ZINP0, IIN0_STRIDES0, 0, &
+        & ZOUTA0, IOUT0_STRIDES0, 0, &
         & ZAA0, SIZE(ZAA0,1), 0, &
         & 0.0_JPRD, &
-        & ZOUTA0, IOUT0_STRIDES0, 0, &
+        & ZINP0, IIN0_STRIDES0, 0, &
         & 1, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
 #ifdef OMPGPU
       !$OMP END TARGET DATA
@@ -286,13 +189,13 @@ CONTAINS
 #endif
     CALL HIP_GEMM( &
         & NCUR_RESOL, 11, & ! unique identifier
-        & 'N', 'T', &
-        & 2*KF_LEG, NS(:), KS(:), &
+        & 'N', 'N', &
+        & 2*KF_LEG, KS(:), NS(:), &
         & 1.0_JPRBT, &
-        & ZINP, IIN_STRIDES0, AOFFSETS, &
+        & ZOUTA, IOUT_STRIDES0, COFFSETS, &
         & ZAA, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
         & 0.0_JPRBT, &
-        & ZOUTA, IOUT_STRIDES0, COFFSETS, &
+        & ZINP, IIN_STRIDES0, AOFFSETS, &
         & D_NUMP, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
 #ifdef OMPGPU
       !$OMP END TARGET DATA
@@ -311,6 +214,69 @@ CONTAINS
     ENDIF
     CALL GSTATS(424,1)
 
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) &
+    !$ACC& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) DEFAULT(NONE) &
+#ifdef _CRAYFTN
+    !$ACC&
+#else
+    !$ACC& ASYNC(1)
+#endif
+#endif
+    DO KMLOC=1,D_NUMP
+      DO JK=1,2*KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IA  = 1+MOD(R_NSMAX-KM+2,2)
+        IF(KM /= 0)THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+          !$ACC LOOP SEQ
+#endif
+          DO J=1,(R_NSMAX-KM+2)/2
+            PIA(JK,IA+1+(J-1)*2,KMLOC) = ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)
+          ENDDO
+!           ! those are only needed with tensor cores (zinp might contain NaNs!)
+! #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+!           !$ACC LOOP SEQ
+!           DO J=(R_NSMAX-KM+2)/2+1,ALIGN((R_NSMAX-KM+2)/2,A)
+!             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
+!           ENDDO
+! #endif
+        ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
+          ! every other field is sufficient because Im(KM=0) == 0
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+          !$ACC LOOP SEQ
+#endif
+          DO J=1,(R_NSMAX+2)/2
+            PIA(JK,IA+1+(J-1)*2,KMLOC) = ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0)
+          ENDDO
+!           ! those are only needed with tensor cores (zinp might contain NaNs!)
+! #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+!           !$ACC LOOP SEQ
+!           DO J=(R_NSMAX+2)/2+1,ALIGN((R_NSMAX+2)/2,A)
+!             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
+!           ENDDO
+! #endif
+        ENDIF
+      ENDDO
+    ENDDO
+
+
+    IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
+      !$ACC WAIT(1)
+#endif
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+
+
     ! 2. +++++++++++++ symmetric
     !IF KM=0 and NSMAX is 6:
     !    IS=2
@@ -321,65 +287,6 @@ CONTAINS
     !    DO=1,5
     !       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
 
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) &
-    !$ACC& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) DEFAULT(NONE) &
-#ifndef _CRAYFTN
-    !$ACC& ASYNC(1)
-#else
-    !$ACC&
-#endif
-#endif
-    DO KMLOC=1,D_NUMP
-      DO JK=1,2*KF_LEG
-        KM =  D_MYMS(KMLOC)
-        IS  = 1+MOD(R_NSMAX-KM+1,2)
-        IF(KM /= 0) THEN
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
-          DO J=1,(R_NSMAX-KM+3)/2
-            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IS+1+(J-1)*2,KMLOC)
-          ENDDO
-#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          ! those are only needed with tensor cores (zinp might contain NaNs!)
-          !$ACC LOOP SEQ
-          DO J=(R_NSMAX-KM+3)/2+1,ALIGN((R_NSMAX-KM+3)/2,A)
-            ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
-          ENDDO
-#endif
-        ELSEIF (MOD((JK-1),2) == 0) THEN
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
-          DO J=1,(R_NSMAX+3)/2
-            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
-          ENDDO
-          ! those are only needed with tensor cores (zinp might contain NaNs!)
-#if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          !$ACC LOOP SEQ
-          DO J=(R_NSMAX+3)/2+1,ALIGN((R_NSMAX+3)/2,A)
-            ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
-          ENDDO
-#endif
-        ENDIF
-      ENDDO
-    ENDDO
-
-    IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
-      CALL GSTATS(440,0)
-      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
-      CALL GSTATS(440,1)
-    ENDIF
     CALL GSTATS(424,0)
 
     IF (IMLOC0(1) > 0) THEN
@@ -390,13 +297,13 @@ CONTAINS
       !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUTS0)
 #endif
       CALL HIP_DGEMM_BATCHED_OVERLOAD( &
-        & 'N', 'T', &
-        & KF_LEG, G_NDGLU(0), (R_NSMAX+3)/2, &
+        & 'N', 'N', &
+        & KF_LEG, (R_NSMAX+3)/2, G_NDGLU(0), &
         & 1.0_JPRD, &
-        & ZINP0, IIN0_STRIDES0, 0, &
+        & ZOUTS0, IOUT0_STRIDES0, 0, &
         & ZAS0, SIZE(ZAS0,1), 0, &
         & 0.0_JPRD, &
-        & ZOUTS0, IOUT0_STRIDES0, 0, &
+        & ZINP0, IIN0_STRIDES0, 0, &
         & 1, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
 #ifdef OMPGPU
       !$OMP END TARGET DATA
@@ -426,13 +333,13 @@ CONTAINS
 #endif
     CALL HIP_GEMM( &
       & NCUR_RESOL, 12, & ! unique identifier
-      & 'N', 'T', &
-      & 2*KF_LEG, NS(:), KS(:), &
+      & 'N', 'N', &
+      & 2*KF_LEG, KS(:), NS(:), &
       & 1.0_JPRBT, &
-      & ZINP, IIN_STRIDES0, AOFFSETS, &
+      & ZOUTS, IOUT_STRIDES0, COFFSETS, &
       & ZAS, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
       & 0.0_JPRBT, &
-      & ZOUTS, IOUT_STRIDES0, COFFSETS, &
+      & ZINP, IIN_STRIDES0, AOFFSETS, &
       & D_NUMP, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
 #ifdef OMPGPU
     !$OMP END TARGET DATA
@@ -453,13 +360,74 @@ CONTAINS
 #ifdef OMPGPU
 #endif
 #ifdef ACCGPU
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) &
+    !$ACC& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) DEFAULT(NONE) &
+#ifndef _CRAYFTN
+    !$ACC& ASYNC(1)
+#else
+    !$ACC&
+#endif
+#endif
+    DO KMLOC=1,D_NUMP
+      DO JK=1,2*KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IS  = 1+MOD(R_NSMAX-KM+1,2)
+        IF(KM /= 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+          !$ACC LOOP SEQ
+#endif
+          DO J=1,(R_NSMAX-KM+3)/2
+            PIA(JK,IS+1+(J-1)*2,KMLOC) = ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)
+          ENDDO
+!           ! those are only needed with tensor cores (zinp might contain NaNs!)
+! #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+!           !$ACC LOOP SEQ
+!           DO J=(R_NSMAX-KM+3)/2+1,ALIGN((R_NSMAX-KM+3)/2,A)
+!             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
+!           ENDDO
+! #endif
+        ELSEIF (MOD((JK-1),2) == 0) THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+          !$ACC LOOP SEQ
+#endif
+          DO J=1,(R_NSMAX+3)/2
+            PIA(JK,IS+1+(J-1)*2,KMLOC) = ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0)
+          ENDDO
+!           ! those are only needed with tensor cores (zinp might contain NaNs!)
+! #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
+!           !$ACC LOOP SEQ
+!           DO J=(R_NSMAX+3)/2+1,ALIGN((R_NSMAX+3)/2,A)
+!             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
+!           ENDDO
+! #endif
+        ENDIF
+      ENDDO
+    ENDDO
+
+    IF (LSYNC_TRANS) THEN
+#ifdef ACCGPU
+      !$ACC WAIT(1)
+#endif
+      CALL GSTATS(440,0)
+      CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
+      CALL GSTATS(440,1)
+    ENDIF
+
+
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
     !$ACC WAIT(1)
 
     !$ACC END DATA
 #endif
 
-    IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
+    IF (LHOOK) CALL DR_HOOK('LEINVAD_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------
     END ASSOCIATE
-  END SUBROUTINE LEINV
-END MODULE LEINV_MOD
+  END SUBROUTINE LEINVAD
+END MODULE LEINVAD_MOD
