@@ -107,7 +107,9 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX, D_MYMS=>D%MYMS)
 !$OMP& FIRSTPRIVATE(KF_SCALARS) &
 !$OMP& SHARED(D,R,PEPSNM,PF,PNSD) &
 #ifndef _CRAYFTN
-!$OMP& NOWAIT
+! TODO: Make this asynchronous (pending correctness)
+!!$OMP& NOWAIT
+!$OMP&
 #else
 !$OMP&
 #endif

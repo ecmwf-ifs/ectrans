@@ -141,7 +141,9 @@ CONTAINS
     !$OMP& FIRSTPRIVATE(KF_LEG,IOUT_STRIDES0,IOUT0_STRIDES0) &
     !$OMP& SHARED(D,G,R,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,FOUBUF_IN) &
 #ifndef _CRAYFTN
-    !$OMP& NOWAIT
+    ! TODO: Make this asynchronous (pending correctness)
+    !!$OMP& NOWAIT
+    !$OMP&
 #else
     !$OMP&
 #endif
@@ -288,7 +290,9 @@ ILOEN_MAX=MAXVAL(G_NLOEN)
 !$OMP& FIRSTPRIVATE(KF_CURRENT,KF_TOTAL,OFFSET_VAR,ILOEN_MAX) &
 !$OMP& SHARED(D,G,FOUBUF,PREEL_COMPLEX) &
 #ifndef _CRAYFTN
-!$OMP& NOWAIT
+! TODO: Make this asynchronous (pending correctness)
+!!$OMP& NOWAIT
+!$OMP&
 #else
 !$OMP&
 #endif

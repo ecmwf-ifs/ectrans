@@ -188,7 +188,9 @@ CONTAINS
 #ifdef _CRAYFTN
     !$OMP&
 #else
-    !$OMP& NOWAIT
+    ! TODO: Make this asynchronous (pending correctness)
+    !!$OMP& NOWAIT
+    !$OMP&
 #endif
 #endif
 #ifdef ACCGPU
@@ -349,7 +351,9 @@ CONTAINS
     !$OMP& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) &
     !$OMP& SHARED(D,R,ZINP,ZINP0,PIA) &
 #ifndef _CRAYFTN
-    !$OMP& NOWAIT
+    ! TODO: Make this asynchronous (pending correctness)
+    !!$OMP& NOWAIT
+    !$OMP&
 #else
     !$OMP&
 #endif

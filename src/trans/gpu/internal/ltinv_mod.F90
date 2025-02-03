@@ -386,7 +386,8 @@ CONTAINS
     ENDIF
 
 #ifdef OMPGPU
-    !$OMP TASKWAIT
+    ! TODO: Update with asynchronous execution (pending correctness)
+    !!$OMP TASKWAIT
     !$OMP END TARGET DATA
     !$OMP END TARGET DATA
     !$OMP END TARGET DATA
@@ -394,6 +395,7 @@ CONTAINS
     !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
+    ! NOTE: Where is the async behavior here? Why is ACC WAIT(1) here?
     !$ACC WAIT(1)
     !$ACC END DATA
     !$ACC END DATA

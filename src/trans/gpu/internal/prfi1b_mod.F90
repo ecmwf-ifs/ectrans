@@ -101,7 +101,9 @@ MODULE PRFI1B_MOD
    !$OMP& FIRSTPRIVATE(KFIELDS,KDIM) &
    !$OMP& SHARED(PIA,PSPEC,R,D) &
 #ifndef _CRAYFTN
-   !$OMP& NOWAIT
+   ! TODO: Make this asynchronous (pending correctness)
+   !!$OMP& NOWAIT
+   !$OMP&
 #else
    !$OMP&
 #endif

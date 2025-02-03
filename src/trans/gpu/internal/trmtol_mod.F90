@@ -166,8 +166,9 @@ CONTAINS
 #ifdef __HIP_PLATFORM_AMD__
           !$OMP&
 #else
-          ! TODO: Test this
-          !$OMP& NOWAIT
+          ! TODO: Make this asynchronous (pending correctness)
+          !!$OMP& NOWAIT
+          !$OMP&
 #endif
 #endif
 #ifdef ACCGPU
@@ -246,7 +247,8 @@ CONTAINS
 #ifdef OMPGPU
 #ifndef __HIP_PLATFORM_AMD__
       ! Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
-      !$OMP TASKWAIT
+      ! TODO: Update with async execution (pending correctness)
+      !!$OMP TASKWAIT
 #endif
 #endif
 #ifdef ACCGPU

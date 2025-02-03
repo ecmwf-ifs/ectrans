@@ -493,6 +493,7 @@ CONTAINS
     LLOCAL_CONTRIBUTION = ISENDTOT(MYPROC) > 0
 
 #ifdef OMPGPU
+    ! TODO: Make this asynchronous (pending correctness)
     !$OMP TARGET DATA MAP(TO:IGP_OFFSETS)
 #endif
 #ifdef ACCGPU
@@ -530,6 +531,7 @@ CONTAINS
 #endif
 
 #ifdef OMPGPU
+    ! TODO: Make this asynchronous (pending correctness)
     !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGP) IF(PRESENT(PGP))
     !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGPUV) IF(PRESENT(PGPUV))
     !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGP2) IF(PRESENT(PGP2))
@@ -569,7 +571,7 @@ CONTAINS
       ENDDO
 
 #ifdef OMPGPU
-      ! TODO: Make this asynchronous
+      ! TODO: Make this asynchronous (pending correctness)
       !$OMP TARGET DATA MAP(TO:IFLDA(1:IFLDS))
 #endif
 #ifdef ACCGPU
@@ -583,7 +585,7 @@ CONTAINS
       IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(MYPROC)
       IF (PRESENT(PGP)) THEN
 #ifdef OMPGPU
-        ! TODO: Make this asynchronous
+        ! TODO: Make this asynchronous (pending correctness)
         !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) &
         !$OMP&       PRIVATE(JK,JBLK,IFLD,IPOS) &
         !$OMP&       FIRSTPRIVATE(KF_FS,IRECV_WSET_SIZE_V,IRECV_WSET_OFFSET_V, &
@@ -607,7 +609,7 @@ CONTAINS
         ENDDO
       ELSE
 #ifdef OMPGPU
-        ! TODO: Make this asynchronous
+        ! TODO: Make this asynchronous (pending correctness)
         !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) &
         !$OMP&       PRIVATE(JK,JBLK,IFLD,IPOS) &
         !$OMP&       FIRSTPRIVATE(KF_FS,IRECV_WSET_SIZE_V,IRECV_WSET_OFFSET_V, &
@@ -690,6 +692,7 @@ CONTAINS
     ENDIF
 
 #ifdef OMPGPU
+    ! TODO: Make this asynchronous (pending correctness)
     !$OMP TARGET DATA MAP(PRESENT,ALLOC:ZCOMBUFS) IF(ISEND_COUNTS > 0)
 #endif
 #ifdef ACCGPU
@@ -702,7 +705,7 @@ CONTAINS
       IIN_TO_SEND_BUFR_V = IIN_TO_SEND_BUFR_OFFSET(IPROC)
       ICOMBUFS_OFFSET_V = ICOMBUFS_OFFSET(INS)
 #ifdef OMPGPU
-      ! TODO: Make this asynchronous
+      ! TODO: Make this asynchronous (pending correctness)
       !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) &
       !$OMP& PRIVATE(IPOS) &
       !$OMP& FIRSTPRIVATE(KF_FS,ILEN,IIN_TO_SEND_BUFR_V,ICOMBUFS_OFFSET_V) &
@@ -835,6 +838,7 @@ CONTAINS
     CALL GSTATS(421,1)
 
 #ifdef OMPGPU
+    ! TODO: Make this asynchronous (pending correctness)
     !$OMP TARGET DATA MAP(PRESENT,ALLOC:ZCOMBUFR) IF(IRECV_COUNTS > 0)
 #endif
 #ifdef ACCGPU
@@ -865,6 +869,7 @@ CONTAINS
       ENDDO
 
 #ifdef OMPGPU
+      ! TODO: Make this asynchronous (pending correctness)
       !$OMP TARGET DATA MAP(TO:IFLDA(1:IRECV_FIELD_COUNT_V))
 #endif
 #ifdef ACCGPU
@@ -875,7 +880,7 @@ CONTAINS
       IRECV_WSET_SIZE_V = IRECV_WSET_SIZE(ISETW)
       IF (PRESENT(PGP)) THEN
 #ifdef OMPGPU
-        ! TODO: Make this asynchronous
+        ! TODO: Make this asynchronous (pending correctness)
         !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) &
         !$OMP&       PRIVATE(JK,JBLK,IFLD,JI) &
         !$OMP&       FIRSTPRIVATE(IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V, &
@@ -898,7 +903,7 @@ CONTAINS
         ENDDO
       ELSE
 #ifdef OMPGPU
-        ! TODO: Make this asynchronous
+        ! TODO: Make this asynchronous (pending correctness)
         !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) &
         !$OMP&       PRIVATE(JK,JBLK,IFLD,JI) &
         !$OMP&       FIRSTPRIVATE(IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V, &
