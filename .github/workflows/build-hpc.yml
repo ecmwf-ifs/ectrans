@@ -133,14 +133,16 @@ jobs:
                 cmake --install build --prefix installation
                 popd
             {% endfor %}
-            mkdir -p ${{ github.repository }}
-            pushd ${{ github.repository }}
+            REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
+            SHA=${{ github.event.pull_request.head.sha || github.sha }}
+            mkdir -p $REPO
+            pushd $REPO
             git init
-            git remote add origin ${{ github.server_url }}/${{ github.repository }}
-            git fetch origin ${{ github.sha }}
+            git remote add origin ${{ github.server_url }}/$REPO
+            git fetch origin $SHA
             git reset --hard FETCH_HEAD
             popd
-            cmake -G Ninja -S ${{ github.repository }} -B build \
+            cmake -G Ninja -S $REPO -B build \
               {% for name in dependencies %}
                 {% set org, proj = name.split('/') %}
                 -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
@@ -153,5 +155,5 @@ jobs:
               rm -r {{name}}
             {% endfor %}
 
-            rm -r ${{ github.repository }}
+            rm -r $REPO
             rm -r build
