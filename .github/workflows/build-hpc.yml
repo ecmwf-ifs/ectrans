@@ -135,6 +135,10 @@ jobs:
             {% endfor %}
             mkdir -p ${{ github.repository }}
             pushd ${{ github.repository }}
+            echo "github.event_name = ${{ github.event_name }}"
+            echo "github.sha = ${{ github.sha }}"
+            echo "github.base_ref = ${{ github.base_ref }}"
+            echo "github.head_ref = ${{ github.head_ref }}"
             git init
             git remote add origin ${{ github.server_url }}/${{ github.repository }}
             git fetch origin ${{ github.sha }}
