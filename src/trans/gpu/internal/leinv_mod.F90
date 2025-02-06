@@ -1,4 +1,9 @@
 #define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
+#if defined CUDAGPU
+#define ACC_GET_HIP_STREAM ACC_GET_CUDA_STREAM
+#define OPENACC_LIB OPENACC
+#endif
+
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! (C) Copyright 2022- NVIDIA.
@@ -105,15 +110,18 @@ CONTAINS
     USE TPM_GEOMETRY,                ONLY: G
     USE TPM_FIELDS_GPU,              ONLY: FG
     USE TPM_DISTR,                   ONLY: D
-    USE HICBLAS_MOD,                 ONLY: HIP_DGEMM_BATCHED_OVERLOAD, &
-      &                                    HIP_DGEMM_GROUPED_OVERLOAD, HIP_SGEMM_GROUPED_OVERLOAD
-    USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT
+    USE HICBLAS_MOD,                 ONLY: HIP_DGEMM_BATCHED, &
+      &                                    HIP_DGEMM_GROUPED, HIP_SGEMM_GROUPED
+    USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT, C_LONG, C_LOC
     USE MPL_MODULE,                  ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
     USE TPM_STATS,                   ONLY: GSTATS => GSTATS_NVTX
+#ifdef ACCGPU
+    USE OPENACC_LIB, ONLY: ACC_GET_HIP_STREAM
+#endif
 #ifdef TRANS_SINGLE
-#define HIP_GEMM HIP_SGEMM_GROUPED_OVERLOAD
+#define HIP_GEMM HIP_SGEMM_GROUPED
 #else
-#define HIP_GEMM HIP_DGEMM_GROUPED_OVERLOAD
+#define HIP_GEMM HIP_DGEMM_GROUPED
 #endif
 
     IMPLICIT NONE
@@ -137,12 +145,21 @@ CONTAINS
 
     REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
+    INTEGER(KIND=C_LONG) :: HIP_STREAM
+
     ASSOCIATE(D_NUMP=>D%NUMP, R_NSMAX=>R%NSMAX, G_NDGLU=>G%NDGLU, D_MYMS=>D%MYMS, D_OFFSETS_GEMM1=>D%OFFSETS_GEMM1,&
         D_OFFSETS_GEMM2=>D%OFFSETS_GEMM2, &
         ZAA=>FG%ZAA, ZAS=>FG%ZAS, ZAA0=>FG%ZAA0, ZAS0=>FG%ZAS0)
 
     !*       1.1      PREPARATIONS.
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
+
+#ifdef ACCGPU
+    HIP_STREAM = INT(ACC_GET_HIP_STREAM(1_C_INT), C_LONG)
+#endif
+#ifdef OMPGPU
+    HIP_STREAM = 1_C_LONG
+#endif
 
     !     ------------------------------------------------------------------
 
@@ -253,7 +270,7 @@ CONTAINS
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUTA0)
 #endif
-      CALL HIP_DGEMM_BATCHED_OVERLOAD( &
+      CALL HIP_DGEMM_BATCHED( &
         & 'N', 'T', &
         & KF_LEG, G_NDGLU(0), (R_NSMAX+2)/2, &
         & 1.0_JPRD, &
@@ -261,7 +278,7 @@ CONTAINS
         & ZAA0, SIZE(ZAA0,1), 0, &
         & 0.0_JPRD, &
         & ZOUTA0, IOUT0_STRIDES0, 0, &
-        & 1, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
+        & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
@@ -297,7 +314,7 @@ CONTAINS
         & ZAA, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
         & 0.0_JPRBT, &
         & ZOUTA, IOUT_STRIDES0, COFFSETS, &
-        & D_NUMP, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
+        & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
@@ -394,7 +411,7 @@ CONTAINS
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUTS0)
 #endif
-      CALL HIP_DGEMM_BATCHED_OVERLOAD( &
+      CALL HIP_DGEMM_BATCHED( &
         & 'N', 'T', &
         & KF_LEG, G_NDGLU(0), (R_NSMAX+3)/2, &
         & 1.0_JPRD, &
@@ -402,7 +419,7 @@ CONTAINS
         & ZAS0, SIZE(ZAS0,1), 0, &
         & 0.0_JPRD, &
         & ZOUTS0, IOUT0_STRIDES0, 0, &
-        & 1, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
+        & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
@@ -438,8 +455,7 @@ CONTAINS
       & ZAS, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
       & 0.0_JPRBT, &
       & ZOUTS, IOUT_STRIDES0, COFFSETS, &
-      & D_NUMP, STREAM=1_C_INT, ALLOC=ALLOCATOR%PTR)
-
+      & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
     !$ACC END HOST_DATA
 #endif
