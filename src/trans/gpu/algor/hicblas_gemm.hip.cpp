@@ -199,8 +199,15 @@ public:
   void operator()(hipStream_t stream, int m, int n, int k, Real alpha,
                   const Real *A, int lda, const Real *B, int ldb, Real beta,
                   Real *C, int ldc) const {
+    // TODO: sort out this nonsense
+#ifdef OMPGPU
+    hipblasHandle_t handle;
+    HICBLAS_CHECK(hipblasCreate(&handle));
+#endif
+#ifdef ACCGPU
     hipblasHandle_t handle = get_hipblas_handle();
     HICBLAS_CHECK(hipblasSetStream(handle, stream));
+#endif
 
     if constexpr (std::is_same<Real, float>::value)
       HICBLAS_CHECK(hipblasSgemm(handle, transa_, transb_, m, n, k, &alpha, A,
@@ -208,6 +215,9 @@ public:
     if constexpr (std::is_same<Real, double>::value)
       HICBLAS_CHECK(hipblasDgemm(handle, transa_, transb_, m, n, k, &alpha, A,
                                  lda, B, ldb, &beta, C, ldc));
+#ifdef OMPGPU
+    HICBLAS_CHECK(hipblasDestroy(handle));
+#endif
   }
 
 private:
