@@ -176,8 +176,8 @@ CONTAINS
     ! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
     ! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
     !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) &
-    !$OMP& PRIVATE(KM,IA,J,IIN_STRIDES0,IIN0_STRIDES0) &
-    !$OMP& SHARED(D,R,KF_LEG,ZINP) MAP(TO:KF_LEG)
+    !$OMP& PRIVATE(KM,IA,J) &
+    !$OMP& SHARED(D,R,KF_LEG,ZINP,IIN_STRIDES0,IIN0_STRIDES0) MAP(TO:KF_LEG)
 #endif
 #ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) &
@@ -321,8 +321,8 @@ CONTAINS
     ! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
     ! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
     !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) &
-    !$OMP& PRIVATE(KM,IS,J,IIN_STRIDES0,IIN0_STRIDES0) &
-    !$OMP& SHARED(D,R,KF_LEG,ZINP) MAP(TO:KF_LEG)
+    !$OMP& PRIVATE(KM,IS,J) &
+    !$OMP& SHARED(D,R,KF_LEG,ZINP,IIN_STRIDES0,IIN0_STRIDES0) MAP(TO:KF_LEG)
 #endif
 #ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) &
