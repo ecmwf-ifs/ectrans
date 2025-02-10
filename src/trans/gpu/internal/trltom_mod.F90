@@ -138,6 +138,7 @@ CONTAINS
         & 1_JPIB, 2_JPIB*D%NLENGT1B*KF_FS*C_SIZEOF(PFBUF(1)))
 
 #ifdef OMPGPU
+    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PFBUF,PFBUF_IN)
 #endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(PFBUF,PFBUF_IN)
@@ -165,15 +166,17 @@ CONTAINS
           FROM_RECV = IOFFR(IRANK) + 1
           TO_RECV = FROM_RECV + ILENR(IRANK) - 1
 #ifdef OMPGPU
+          !$OMP TARGET TEAMS MAP(TO:FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
 #endif
 #ifdef ACCGPU
           !$ACC KERNELS ASYNC(1)
 #endif
           PFBUF(FROM_RECV:TO_RECV) = PFBUF_IN(FROM_SEND:TO_SEND)
-#ifdef OMPGPU
-#endif
 #ifdef ACCGPU
           !$ACC END KERNELS
+#endif
+#ifdef OMPGPU
+          !$OMP END TARGET TEAMS
 #endif
           ILENS(IRANK) = 0
           ILENR(IRANK) = 0
@@ -187,13 +190,19 @@ CONTAINS
       CALL GSTATS(411,0)
 #ifdef USE_GPU_AWARE_MPI
 #ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_PTR(PFBUF_IN,PFBUF)
 #endif
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
+#ifdef OMPGPU
+    !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
+#endif
+#ifdef ACCGPU
     !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
+#endif
 #endif
 #if ECTRANS_HAVE_MPI
       CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRLTOM_DTYPE,&
@@ -204,13 +213,19 @@ CONTAINS
 #endif
 #ifdef USE_GPU_AWARE_MPI
 #ifdef OMPGPU
+      !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
+#ifdef OMPGPU
+    !$OMP TARGET UPDATE TO(PFBUF)
+#endif
+#ifdef ACCGPU
     !$ACC UPDATE DEVICE(PFBUF)
+#endif
 #endif
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(431,0)
@@ -229,6 +244,7 @@ CONTAINS
       IEND = ISTA+ILEN-1
       CALL GSTATS(1607,0)
 #ifdef OMPGPU
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(IEND,ISTA,PFBUF_IN,PFBUF)
 #endif
 #ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) FIRSTPRIVATE(ISTA,IEND)
@@ -240,6 +256,7 @@ CONTAINS
     ENDIF
 
 #ifdef OMPGPU
+    !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
     !$ACC END DATA
