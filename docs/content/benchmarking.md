@@ -74,6 +74,7 @@ DEBUGGING
 Some of these options (e.g. `-nprtrv`) require a detailed understanding of how fields are
 distributed across MPI tasks, so we won't describe them in detail here. The most important arguments
 are the following:
+
 - `-t, --truncation T`: this sets the overall resolution of the benchmark. The truncation T refers  
   to the highest zonal and total wavenumber that can be kept in spectral space. By default, a  
   suitable grid point resolution (i.e. a suitable number of latitudes on the octahedral grid) will  
@@ -113,7 +114,7 @@ are the following:
 When inspecting the program, you will notice that it is significantly more complex than, say, the
 example program described in our [usage guide](usage.html). This additional complexity comes not
 just from the instrumentation code for the timings, but notably also from the infrastructure to
-permit transforms of distributed fields. As explained in the [introduction](introduction.html),
+permit transforms of distributed fields. As explained in the [Design](design.html) chapter,
 ecTrans can operate on fields distributed across MPI tasks, and the dimension across which fields
 are split is different for spectral space and grid point space. As such, the benchmark program
 includes infrastructure for specifying which elements of the relevant decomposed dimension belong

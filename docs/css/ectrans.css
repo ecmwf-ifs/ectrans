@@ -9,3 +9,15 @@ div.codehilite > pre {
 div.card-body {
     margin: 20px;
 }
+
+div.container > div.row > h1 {
+    margin-left: 20px;
+}
+
+div.container > div.row > div#text.col-9 {
+    margin-top: 20px;
+}
+
+div.container.p-2.mb-4.bg-light.border.rounded-3 {
+    display: none;
+}
