@@ -83,6 +83,8 @@ jobs:
               -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
               -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
               -DENABLE_OMP=ON
+            env_vars:
+              - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -151,7 +153,11 @@ jobs:
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build
-            export ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
+
+            {% for var in "${{ join(matrix.env_vars, ',') }}".split(',') %}
+              export {{var}}
+            {% endfor %}
+
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
             {% for name in dependencies.keys() %}
