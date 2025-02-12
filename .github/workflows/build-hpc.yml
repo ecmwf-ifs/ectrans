@@ -151,6 +151,7 @@ jobs:
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build
+            export ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
             {% for name in dependencies.keys() %}
