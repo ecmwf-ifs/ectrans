@@ -57,6 +57,7 @@ jobs:
               - prgenv/nvidia
               - hpcx-openmpi/2.14.0-cuda
               - fftw
+            cmake_options: -DENABLE_ACC=ON
 
           - name: lumi-g cce
             site: lumi
@@ -78,8 +79,10 @@ jobs:
               - buildtools
             output_dir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
             workdir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
-            cmake_options: -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
-            ctest_options: -E gpu
+            cmake_options: >
+              -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
+              -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
+              -DENABLE_OMP=ON
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -96,7 +99,6 @@ jobs:
           template_data: |
             cmake_options:
               - -DENABLE_MPI=ON
-              - -DENABLE_ACC=ON
               - -DENABLE_GPU=ON
               - -DENABLE_ETRANS=ON
               - ${{ matrix.cmake_options || '' }}
