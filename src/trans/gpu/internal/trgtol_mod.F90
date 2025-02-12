@@ -650,7 +650,7 @@ CONTAINS
 #endif
 #else
 #ifdef OMPGPU
-    !$OMP TARGET DATA UPDATE FROM(ZCOMBUFS) IF(ISEND_COUNTS > 0)
+    !$OMP TARGET UPDATE FROM(ZCOMBUFS) IF(ISEND_COUNTS > 0)
 #endif
 #ifdef ACCGPU
     !! this is safe-but-slow fallback for running without GPU-aware MPI
