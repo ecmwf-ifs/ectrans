@@ -101,6 +101,8 @@ jobs:
               - -DENABLE_MPI=ON
               - -DENABLE_GPU=ON
               - -DENABLE_ETRANS=ON
+              - -DENABLE_GPU_GRAPHS_GEMM=OFF
+              - -DENABLE_GPU_GRAPHS_FFT=OFF
               - ${{ matrix.cmake_options || '' }}
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
