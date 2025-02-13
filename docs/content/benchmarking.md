@@ -31,12 +31,14 @@ Here we assume you have only enabled the `CPU` feature of ecTrans (which is on b
 also enabled the `GPU` feature, you'll also see GPU versions of these two programs. We'll just focus
 on CPUs here.
 
+In this guide we will only benchmark the single-precision build of ecTrans.
+
 ## Using the benchmark program
 
 The benchmark program has many arguments for running ecTrans in different configurations. You can
 see the full set by running one of the benchmark programs with the `--help` option:
 
-```
+```text
 NAME    ectrans-benchmark-cpu-sp
 
 DESCRIPTION
@@ -102,22 +104,50 @@ are the following:
   end of the benchmark. The errors are computed in spectral space with respect to the initial  
   values of the fields. This is useful to get a good idea that the benchmark is numerically  
   correct.
+- `--meminfo`: this option enables so-called "meminfo" diagnostics, which are printed at the end of
+  the benchmark. These diagnostics include memory usage on a per-task basis. Thread binding
+  information is also printed which can be extremely useful when debugging performance issues when
+  running ecTrans multithreaded.
+
+Putting all of these together, we get the following invocation of the ecTrans benchmark program:
+
+```
+./ectrans-benchmark-cpu-sp --truncation 159 --niter 100 --nlev 137 --vordiv --scders --uvders --norms --meminfo
+```
+
+## Choosing a resolution
+
+As mentioned above, the single more important parameter for determining the problem size, and
+therefore computational cost, of a benchmark of ecTrans is the spectral truncation, controlled with
+the `-t, --truncation` argument. The computational complexity of an inverse or direct transform is
+essentially dominated by the matrix-matrix multiplications underpinning the Legendre transform. The
+floating-point operation count (FLOP) of this operation scales with the cube of the spectral
+truncation. That means that the computational work (measured in FLOPs) when the truncation is, e.g.,
+319 is about eight times higher than when it is 79.
+
+The following suite is an example of a weak scaling benchmark suite for ECMWF's HPC2020 system which
+is constructed by ensuring the work per task is approximately constant, following the cubic
+complexity argument above:
+
+- Truncation = 159 on 1 tasks (1 node)
+- Truncation = 319 on 8 tasks (1 node)
+- Truncation = 639 on 64 tasks (8 nodes)
+- Truncation = 1279 on 512 tasks (64 nodes)
+- Truncation = 2559 on 4096 tasks (512 nodes)
+- Truncation = 3999 on 15625 tasks (1953 nodes)
+
+Here we are allocating 16 of each node's 128 cores per task for multithreading (with no
+hyperthreading).
 
 
 
-
-
-
-
-
-
-When inspecting the program, you will notice that it is significantly more complex than, say, the
+<!-- When inspecting the program, you will notice that it is significantly more complex than, say, the
 example program described in our [usage guide](usage.html). This additional complexity comes not
 just from the instrumentation code for the timings, but notably also from the infrastructure to
 permit transforms of distributed fields. As explained in the [Design](design.html) chapter,
 ecTrans can operate on fields distributed across MPI tasks, and the dimension across which fields
 are split is different for spectral space and grid point space. As such, the benchmark program
 includes infrastructure for specifying which elements of the relevant decomposed dimension belong
-to which MPI task.
+to which MPI task. -->
 
 
