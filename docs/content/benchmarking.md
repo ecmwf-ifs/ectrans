@@ -2,10 +2,6 @@
 title: Benchmarking ecTrans
 ---
 
-@warning
-Page under construction.
-@endwarning
-
 A ["benchmark driver" program](https://sites.ecmwf.int/docs/ectrans/sourcefile/ectrans-benchmark.
 f90.html) is bundled with ecTrans. This program performs a loop of inverse and
 direct spectral transforms over and over a specified number of times and collects timing statistics
@@ -115,39 +111,42 @@ Putting all of these together, we get the following invocation of the ecTrans be
 ./ectrans-benchmark-cpu-sp --truncation 159 --niter 100 --nlev 137 --vordiv --scders --uvders --norms --meminfo
 ```
 
-## Choosing a resolution
+## Designing a scalability test
 
-As mentioned above, the single more important parameter for determining the problem size, and
+As mentioned above, the single most important parameter for determining the problem size, and
 therefore computational cost, of a benchmark of ecTrans is the spectral truncation, controlled with
-the `-t, --truncation` argument. The computational complexity of an inverse or direct transform is
-essentially dominated by the matrix-matrix multiplications underpinning the Legendre transform. The
-floating-point operation count (FLOP) of this operation scales with the cube of the spectral
-truncation. That means that the computational work (measured in FLOPs) when the truncation is, e.g.,
-319 is about eight times higher than when it is 79.
+the `-t, --truncation` argument. With this single parameter we can construct a scalability
+benchmark. Here we demonstrate an example scalability test carried out on the ECMWF high-performance
+computer ("HPC2020"). This will be a "strong-scaling" test, in which the allocation of computational
+resources is fixed and the problem size is increased. The tests will use 80 nodes and the problem
+size will be increased using the truncation parameter only. All other arguments to the benchmark
+program are as specified in the previous section.
 
-The following suite is an example of a weak scaling benchmark suite for ECMWF's HPC2020 system which
-is constructed by ensuring the work per task is approximately constant, following the cubic
-complexity argument above:
+![A strong scalability benchmark of ecTrans](img/ectrans_scalability.png)
 
-- Truncation = 159 on 1 tasks (1 node)
-- Truncation = 319 on 8 tasks (1 node)
-- Truncation = 639 on 64 tasks (8 nodes)
-- Truncation = 1279 on 512 tasks (64 nodes)
-- Truncation = 2559 on 4096 tasks (512 nodes)
-- Truncation = 3999 on 15625 tasks (1953 nodes)
+The figure above shows how the median time of a combined inverse-direct spectral transform scales
+with the truncation parameter. This number is printed at the end of the benchmark program under the
+`Inverse-direct transform` heading (look for `med  (s)`). Results are shown both for an ordinary
+configuration of ecTrans, and a special benchmarking case where communication is disabled. The
+latter case is set by replacing the call of the "transposition" communication routines subroutines
+`TRGTOL`, `TRLTOG`, `TRLTOM`, `TRMTOL` with logic to simply zero the communication buffer. (Note
+that the names of these subroutines are abbreviations for "transposition from G space to L space"
+etc., where G, L, and M refer to different decompositions employed by ecTrans at different stages of
+a transform.) This artificial configuration of course breaks the numerical validity of the
+transform, but it does permit us to measure the scalability of the computational aspects of ecTrans
+in isolation.
 
-Here we are allocating 16 of each node's 128 cores per task for multithreading (with no
-hyperthreading).
+Interestingly, the full benchmark (including communication) seems to show quadratic scalability
+while the benchmark without communication shows scalability with an exponential more like 2.4. There
+isn't a simple formula for the purely computational complexity of ecTrans as the total number of
+floating-point operations in both the Fourier and Legendre transforms is a complicated summation of
+fast Fourier transforms (usually \(n\log n\) complexity) and matrix-vector multiplications (usually
+\(n^3\) complexity) of different sizes. Nevertheless, we should expect a scaling exponent between
+2 and 3, with the exact value differing depending on whether the Fourier or Legendre transform
+dominates. As the truncation is increased, we can see that the computation becomes a larger
+proportion of overall wall time, and the two lines will likely converge around TCO10000. However,
+the exact nature of this convergence will depend sensitively on the number of nodes allocated.
 
-
-
-<!-- When inspecting the program, you will notice that it is significantly more complex than, say, the
-example program described in our [usage guide](usage.html). This additional complexity comes not
-just from the instrumentation code for the timings, but notably also from the infrastructure to
-permit transforms of distributed fields. As explained in the [Design](design.html) chapter,
-ecTrans can operate on fields distributed across MPI tasks, and the dimension across which fields
-are split is different for spectral space and grid point space. As such, the benchmark program
-includes infrastructure for specifying which elements of the relevant decomposed dimension belong
-to which MPI task. -->
-
-
+As demonstrated in this example, ecTrans is not only fascinating object for scalability studies,
+combining paradigms of computation and communication, but is an easy target thanks to the benchmark
+program which permits arbitrary scaling of the problem size.
