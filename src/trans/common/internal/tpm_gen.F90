@@ -32,6 +32,7 @@ INTEGER(KIND=JPIM) :: NPROMATR        ! Packet size for transform (in no of fiel
 LOGICAL   :: LALLOPERM       ! Allocate some shared data structures permanently
 LOGICAL   :: LMPOFF          ! true: switch off message passing
 LOGICAL   :: LSYNC_TRANS     ! true: activate barriers in trmtol and trltom
+LOGICAL   :: LSPOOF_COMMS    ! Skip all communications and fill all receive buffers with zeros
 
 ! Use of synchronization/blocking in Transpose (some networks do get flooded)
 ! 0 = Post IRECVs up-front, use ISENDs, use WAITANY to recv data (default)

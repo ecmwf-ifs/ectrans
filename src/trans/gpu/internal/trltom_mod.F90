@@ -92,7 +92,7 @@ CONTAINS
     USE YOMHOOK,                ONLY: LHOOK, DR_HOOK, JPHOOK
     USE MPL_MODULE,             ONLY: MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK, MPL_ALLTOALLV
     USE TPM_DISTR,              ONLY: D, NPRTRW, NPROC, MYSETW
-    USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR, LMPOFF
+    USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR, LMPOFF, LSPOOF_COMMS
 #ifdef USE_RAW_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REAL4, MPI_REAL8
     ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
@@ -187,47 +187,62 @@ CONTAINS
         CALL GSTATS(430,1)
       ENDIF
       CALL GSTATS(411,0)
+      IF (LSPOOF_COMMS) THEN
 #ifdef USE_GPU_AWARE_MPI
 #ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(PFBUF_IN,PFBUF)
+        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO
 #endif
 #ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
+        !$ACC PARALLEL LOOP
+#endif
+        DO J = 1, 2*D%NLENGT1B*KF_FS
+          PFBUF(J) = 0.0_JPRB
+        ENDDO
+#else
+        PFBUF(:) = 0.0_JPRB
+#endif
+      ELSE
+#ifdef USE_GPU_AWARE_MPI
+#ifdef OMPGPU
+        !$OMP TARGET DATA USE_DEVICE_ADDR(PFBUF_IN,PFBUF)
+#endif
+#ifdef ACCGPU
+        !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
 #endif
 #else
-    !! this is safe-but-slow fallback for running without GPU-aware MPI
+        !! this is safe-but-slow fallback for running without GPU-aware MPI
 #ifdef OMPGPU
-    !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
+        !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
 #endif
 #ifdef ACCGPU
-    !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
+        !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
 #endif
 #endif
 #ifdef USE_RAW_MPI
-      CALL MPI_ALLTOALLV(PFBUF_IN,ILENS,IOFFS,TRLTOM_DTYPE,&
-       & PFBUF,ILENR,IOFFR, TRLTOM_DTYPE, &
-       & LOCAL_COMM,IERROR)
+        CALL MPI_ALLTOALLV(PFBUF_IN, ILENS, IOFFS, TRLTOM_DTYPE, PFBUF, ILENR, IOFFR, &
+          &                TRLTOM_DTYPE, LOCAL_COMM, IERROR)
 #else
-      CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN, KSENDCOUNTS=ILENS, PRECVBUF=PFBUF, KRECVCOUNTS=ILENR, &
-        &                KSENDDISPL=IOFFS, KRECVDISPL=IOFFR, KCOMM=MPL_ALL_MS_COMM, &
-        &                CDSTRING='TRLTOM:')
+        CALL MPL_ALLTOALLV(PSENDBUF=PFBUF_IN, KSENDCOUNTS=ILENS, PRECVBUF=PFBUF, &
+          &                KRECVCOUNTS=ILENR, KSENDDISPL=IOFFS, KRECVDISPL=IOFFR, &
+          &                KCOMM=MPL_ALL_MS_COMM, CDSTRING='TRLTOM:')
 #endif
 #ifdef USE_GPU_AWARE_MPI
 #ifdef OMPGPU
-      !$OMP END TARGET DATA
+        !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
-      !$ACC END HOST_DATA
+        !$ACC END HOST_DATA
 #endif
 #else
-    !! this is safe-but-slow fallback for running without GPU-aware MPI
+        !! this is safe-but-slow fallback for running without GPU-aware MPI
 #ifdef OMPGPU
-    !$OMP TARGET UPDATE TO(PFBUF)
+        !$OMP TARGET UPDATE TO(PFBUF)
 #endif
 #ifdef ACCGPU
-    !$ACC UPDATE DEVICE(PFBUF)
+        !$ACC UPDATE DEVICE(PFBUF)
 #endif
 #endif
+      ENDIF
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(431,0)
         CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
