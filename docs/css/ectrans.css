@@ -21,3 +21,7 @@ div.container > div.row > div#text.col-9 {
 div.container.p-2.mb-4.bg-light.border.rounded-3 {
     display: none;
 }
+
+div.container p img {
+    max-width: 100%;
+}
