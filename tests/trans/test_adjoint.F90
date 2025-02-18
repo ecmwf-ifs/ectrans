@@ -39,7 +39,6 @@ REAL(KIND=JPRB) :: ZAVEAVE(0:200)
 #include "setup_trans0.h"
 #include "setup_trans.h"
 #include "trans_inq.h"
-#include "specnorm.h"
 #include "dir_trans.h"
 #include "inv_trans.h"
 #include "dir_transad.h"
@@ -47,7 +46,6 @@ REAL(KIND=JPRB) :: ZAVEAVE(0:200)
 #include "dist_grid.h"
 #include "gath_spec.h"
 #include "dist_spec.h"
-#include "gath_grid.h"
 
 ! ======== PARAMETERS WHICH MAY BE MODIFIED, ORIGINALLY COMING FROM NAMELIST ===========
 NDGL = 32
