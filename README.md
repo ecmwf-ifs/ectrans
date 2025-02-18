@@ -114,5 +114,5 @@ Please report bugs using a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/i
 Contributing
 ============
 
-Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) with your contribution. All contributors to the pull request need to sign the [contributors license agreement (CLA)](https://claassistant.ecmwf.int/ecmwf-ifs/ectrans).
+Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) with your contribution. All contributors to the pull request need to sign the [contributors license agreement (CLA)](https://bol-claassistant.ecmwf.int/ecmwf-ifs/ectrans).
 
