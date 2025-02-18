@@ -164,13 +164,16 @@ CALL SCALPRODSP(ZSPECX, ZSPECP, ZSC2, IVSET)
 ! Calculate relative error between <DIR_TRANS(INV_TRANS(X)), Y> and <X, INV_TRANSAD(DIR_TRANSAD(Y))>
 ZRELATIVE_ERROR = ABS(ZSC1 - ZSC2)/ABS(ZSC1)
 
+WRITE(NOUT, '(A,1E9.2)') '<Fx,y>  = ', ZSC1
+WRITE(NOUT, '(A,1E9.2)') '<x,F*y> = ', ZSC2
+WRITE(NOUT, '(A,1E9.2)') 'Relative error = ', ZRELATIVE_ERROR
+
 ! Abort if relative error is > 100 * machine epsilon
 IF (ZRELATIVE_ERROR > 100.0*EPSILON(1.0_JPRB)) THEN
   WRITE(NOUT, '(A)') '*******************************'
   WRITE(NOUT, '(A)') 'Adjoint test failed'
-  WRITE(NOUT, '(A,1E9.2)') '<Fx,y>  = ', ZSC1
-  WRITE(NOUT, '(A,1E9.2)') '<x,F*y> = ', ZSC2
-  WRITE(NOUT, '(A,1E9.2)') 'Relative error = ', ZRELATIVE_ERROR
+  WRITE(NOUT, '(A)') 'Relative error greater than 100 * machine epsilon'
+  WRITE(NOUT, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 100.0*EPSILON(1.0_JPRB)
   WRITE(NOUT, '(A)') '*******************************'
   ERROR STOP
 ENDIF
