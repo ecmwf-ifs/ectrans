@@ -158,7 +158,7 @@ CONTAINS
     HIP_STREAM = INT(ACC_GET_HIP_STREAM(1_C_INT), C_LONG)
 #endif
 #ifdef OMPGPU
-    HIP_STREAM = 1_C_LONG
+    HIP_STREAM = 0_C_LONG
 #endif
 
     !     ------------------------------------------------------------------
