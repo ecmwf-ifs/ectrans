@@ -39,8 +39,9 @@ if( NOT DEFINED ECTRANS_HAVE_CONTIGUOUS_ISSUE )
       set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
     endif()
   elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"  )
-    if( CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "9.2"
-     OR CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "12.2.0" )
+    # GCC versions 9.2, 11.2, 12.2, 13.3, 14.2 are all known to have an issue with `contiguous`
+    # Logic below is defensive and assumes future versions of gcc are likely to also have the issue
+    if( CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 9 )
       set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
     endif()
   endif()
