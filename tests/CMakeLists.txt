@@ -215,6 +215,77 @@ foreach( benchmark ${benchmarks} )
 endforeach()
 
 # --------------------------------------------------------------------------------------------------
+# Add tests for common call patterns of ecTrans LAM benchmark (i.e. etrans), using the benchmark
+# program
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_ETRANS )
+  # Set resolution
+  set( nlon 48 )
+  set( nlat 40 )
+
+  foreach( prec dp sp )
+    if( TARGET ectrans-lam-benchmark-cpu-${prec} )
+      set( ntasks 0 )
+      set( nthreads 1 )
+      if( HAVE_MPI )
+        list( APPEND ntasks 1 2 )
+      endif()
+      if( HAVE_OMP )
+        list( APPEND nthreads 4 8 )
+      endif()
+
+      # Base arguments -> nlat x nlon, 2 iterations, memory consumption/pinning information,
+      # spectral norms, and verbose output
+      set( base_args "--nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v" )
+
+      foreach( mpi ${ntasks} )
+        foreach( omp ${nthreads} )
+          set( base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
+
+          ecbuild_add_test( TARGET ${base_title}_nfld0
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ${base_title}_nfld10
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16
+              MPI ${mpi}
+              OMP ${omp}
+          )
+        endforeach()
+      endforeach()
+    endif()
+  endforeach()
+
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
 

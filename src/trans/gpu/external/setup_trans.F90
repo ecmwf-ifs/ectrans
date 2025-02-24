@@ -12,7 +12,7 @@
 
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
  &                     KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
- &                     LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
+ &                     LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,LD_ALL_FFTW,&
  &                     LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
@@ -37,7 +37,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDSPLIT - true if split latitudes in grid-point space [false]
 !     KTMAX - truncation order for tendencies?
 !     KRESOL - the resolution identifier
-!     PWEIGHT - the weight per grid-point (for a weighted distribution)
+!     PWEIGHT - the weight per grid-point (for a weighted distribution);
+!               Note, only seems to be used from within enkf
 !     LDGRIDONLY - true if only grid space is required
 
 !     KSMAX,KDGL,KTMAX and KLOEN are GLOBAL variables desribing the resolution
@@ -53,7 +54,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomials only, not the FFTs.
-!     LDUSEFFTW    - Use FFTW for FFTs
+!     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
+!     LD_ALL_FFTW : T to transform all fields in one call, F to transforms fields one after another
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL
 !                                 or KDGL+2 in the case that includes poles + equator
@@ -96,6 +98,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW
 !        M.Hamrud/W.Deconinck : July 2015 IO options for Legenndre polynomials
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
+!        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
 USE PARKIND1,        ONLY: JPIM, JPRB, JPRD, JPIB
@@ -145,6 +148,7 @@ REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
+LOGICAL   ,OPTIONAL,INTENT(IN):: LD_ALL_FFTW
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
@@ -393,6 +397,10 @@ ENDIF
 
 ! Setup distribution independent dimensions
 CALL SETUP_DIMS
+
+IF(PRESENT(LD_ALL_FFTW)) THEN
+  WRITE(NOUT,*) 'SETUP_TRANS: LD_ALL_FFTW option is not relevant for GPUs'
+ENDIF
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN
