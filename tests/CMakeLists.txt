@@ -71,14 +71,21 @@ if( HAVE_CPU )
     set( parkind parkind_sp )
   endif()
 
-  ecbuild_add_test(TARGET ectrans_test_adjoint
-    SOURCES trans/test_adjoint.F90
-    LIBS ${trans} ${parkind}
-    LINKER_LANGUAGE Fortran
-  )
-  if( TEST ectrans_test_adjoint AND HAVE_OMP )
-    target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
+  set( ntasks 0 )
+  if( HAVE_MPI )
+    list( APPEND ntasks 1 2 )
   endif()
+  foreach( mpi ${ntasks} )
+    ecbuild_add_test(TARGET ectrans_test_adjoint_mpi${mpi}
+      SOURCES trans/test_adjoint.F90
+      LIBS ${trans} ${parkind}
+      LINKER_LANGUAGE Fortran
+      MPI ${mpi}
+    )
+    if( TEST ectrans_test_adjoint_mpi${mpi} AND HAVE_OMP )
+      target_link_libraries( ectrans_test_adjoint_mpi${mpi} OpenMP::OpenMP_Fortran )
+    endif()
+  endforeach()
 endif()
 
 set( platforms )
