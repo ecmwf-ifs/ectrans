@@ -195,7 +195,6 @@ public:
   void operator()(hipStream_t stream, int m, int n, int k, Real alpha,
                   const Real *A, int lda, const Real *B, int ldb, Real beta,
                   Real *C, int ldc) const {
-    // TODO: sort out this nonsense
     hipblasHandle_t handle = get_hipblas_handle();
 #ifdef ACCGPU
     HICBLAS_CHECK(hipblasSetStream(handle, stream));
