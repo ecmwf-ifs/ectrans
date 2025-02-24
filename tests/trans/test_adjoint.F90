@@ -62,13 +62,19 @@ IF (LUSE_MPI) THEN
   CALL MPL_INIT
   MYPROC = MPL_MYRANK()
   NPROC = MPL_NPROC()
-  NOUT = 20
-  WRITE(CLNAME,'(A,I2.2)') 'OUT.',MYPROC
-  OPEN(NOUT,FILE=CLNAME)
 ELSE
-  NOUT   = 6
   MYPROC = 1
   NPROC  = 1
+ENDIF
+
+! Write to STDOUT
+NOUT = 6
+
+! Only output to stdout on first task
+IF (NPROC > 1) THEN
+  IF (MYPROC /= 1) THEN
+    OPEN(UNIT=NOUT, FILE='/dev/null')
+  ENDIF
 ENDIF
 
 ! Compute E-W and V-W set sizes
