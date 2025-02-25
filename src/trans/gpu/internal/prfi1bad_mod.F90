@@ -150,11 +150,11 @@ MODULE PRFI1BAD_MOD
       DO JFLD=1,KFIELDS
         KM = D_MYMS(KMLOC)
 
-        IF (JN <= R_NSMAX+2-KM) THEN
+        IF (JN > 1 .AND. JN <= R_NSMAX+2-KM) THEN
           IASM0 = D_NASM0(KM)
           INM = IASM0+((R_NSMAX+2-JN)-KM)*2
-          PSPEC(JFLD,INM  ) = PSPEC(JFLD,INM  ) + PIA(2*JFLD-1,JN+1,KMLOC)
-          PSPEC(JFLD,INM+1) = PSPEC(JFLD,INM+1) + PIA(2*JFLD  ,JN+1,KMLOC)
+          PSPEC(JFLD,INM  ) = PIA(2*JFLD-1,JN+1,KMLOC)
+          PSPEC(JFLD,INM+1) = PIA(2*JFLD  ,JN+1,KMLOC)
         ENDIF
       ENDDO
     ENDDO
