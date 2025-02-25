@@ -1876,11 +1876,6 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
     RGPM => RGP
   endif
 
-#ifdef ECTRANS_GPU_VERSION
-  call transi_error("trans_invtrans_adj: ERROR: Not implemented for GPU")
-  iret = TRANS_NOTIMPL
-  return
-#endif
 
 
   ! Note that llatlon is not an option in INV_TRANSAD unlile INV_TRANS and DIR_TRANS
