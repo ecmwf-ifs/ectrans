@@ -60,7 +60,7 @@ if( trans.myproc == 1 ) {
   rgpyg = calloc( nfld * trans.ngptotg, sizeof(double) );
 }
 
-// Create global spectral data on proc 1
+// Initialize global spectral data on proc 1
 if( trans.myproc == 1 )
 {
   int i;
@@ -73,7 +73,7 @@ if( trans.myproc == 1 )
   }
 }
 
-// Distribute gridpoint data from proc 1
+// Distribute gridpoint data from proc 1 to initialize local gridpoint data
 int* nfrom = malloc( sizeof(int) * nfld );
 nfrom[0] = 1; // U
 nfrom[1] = 1; // V
@@ -110,7 +110,7 @@ if( trans.myproc == 1 ) {
   rspdivyg = calloc( nvordiv * trans.nspec2g, sizeof(double) );
 }
 
-// Create global spectral data on proc 1
+// Initialize global spectral data on proc 1
 if( trans.myproc == 1 )
 {
   int i;
@@ -123,7 +123,7 @@ if( trans.myproc == 1 )
   }
 }
 
-// Distribute global spectral data from proc 1
+// Distribute global spectral data from proc 1 to initialize local spectral data
 int* nto = malloc( sizeof(int) * nscalar );
 nto[0] = 1; // scalar 1 / vor
 nto[1] = 1; // scalar 2 / div
@@ -314,7 +314,7 @@ int main ( int arc, char **argv )
 // nsmax = nlat - 1
 
   printf("-----------------------------\n");
-  test_invtrans_adjoint(8,4,3);
+  test_invtrans_adjoint(64,32,31);
 
   TRANS_CHECK( trans_finalize() );
 
