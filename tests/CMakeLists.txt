@@ -331,6 +331,14 @@ if( HAVE_TRANSI )
       DEFINITIONS GPU_VERSION
       ENVIRONMENT TRANS_USE_MPI=0 )
     set_tests_properties(ectrans_test_transi_program_gpu PROPERTIES LABELS gpu)
+    
+    ecbuild_add_test( TARGET ectrans_test_transi_invtrans_adjoint_gpu
+      SOURCES   transi/transi_test_invtrans_adjoint.c
+      LIBS      ectrans_test_gpu
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      ENVIRONMENT TRANS_USE_MPI=0 )
+    set_tests_properties(ectrans_test_transi_invtrans_adjoint_gpu PROPERTIES LABELS gpu)
   endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_timings
