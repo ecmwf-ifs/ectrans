@@ -119,7 +119,7 @@ CONTAINS
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
     USE TPM_GEN,                ONLY: LSYNC_TRANS
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
-    USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_LOC, C_SIZEOF
+    USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_LOC, C_SIZEOF, C_F_POINTER
 
     !**** *LTINV* - Inverse Legendre transform
     !
