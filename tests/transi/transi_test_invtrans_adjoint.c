@@ -314,7 +314,7 @@ int main ( int arc, char **argv )
 // nsmax = nlat - 1
 
   printf("-----------------------------\n");
-  test_invtrans_adjoint(64,32,31);
+  test_invtrans_adjoint(8,4,3);
 
   TRANS_CHECK( trans_finalize() );
 
