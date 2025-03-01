@@ -232,19 +232,6 @@ CONTAINS
     CALL C_F_POINTER(C_LOC(PIA_L), PIA, (/ 2*IF_READIN, R%NTMAX+3, D%NUMP /))
     IALLOC_POS = IALLOC_POS + IALLOC_SZ
 
-#ifdef OMPGPU
-#endif
-#ifdef ACCGPU
-    !$ACC DATA PRESENT(PIA)
-#endif
-  PIA = 0.0
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC WAIT(1)
-    !$ACC END DATA
-#endif
 
     ! ZINP
     IALLOC_SZ = ALIGN(IIN_SIZE*C_SIZEOF(ZINP(1)),128)
