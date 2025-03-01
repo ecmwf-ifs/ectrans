@@ -21,8 +21,6 @@ srand(seed);
 double adjoint_tol = 1.e-6;
 printf("test_invtrans_adjoint( nlon=%d, nlat=%d, nsmax=%d )\n",nlon,nlat,nsmax);
 
-int nout = 2;
-
 // ===== Set-up trans =====
 struct Trans_t trans;
 TRANS_CHECK( trans_new(&trans) );
@@ -190,9 +188,6 @@ if( trans.myproc == 1 )
 
   for( j=0; j<nscalar; ++j)
   {
-    for( i=0; i<nout; ++i )
-      printf("rspscalaryg[%d][%d] : %f\n",j,i,rspscalaryg[i*nscalar+j]);
-
     // The first 2*nlat terms are on m=0
     for( i=0; i<2*nlat; ++i )
       adj_value1 += rspscalaryg[i*nscalar+j] * rspscalarxg[i*nscalar+j];
@@ -200,17 +195,14 @@ if( trans.myproc == 1 )
     for( i=2*nlat; i<trans.nspec2g; ++i )
       adj_value1 += 2.0 * rspscalaryg[i*nscalar+j] * rspscalarxg[i*nscalar+j];
 
-    for( i=0; i<trans.nspec2g; ++i )
-      printf("error -> rspscalaryg[fld=%d][wave=%d] : %f\n",j,i,rspscalaryg[i*nscalar+j]);
+    for( i=0; i<trans.nspec2g; i+=2 ) {
+      printf("rspscalaryg[fld=%d][coeff=%d].real : %f\n",j,i/2,rspscalaryg[i*nscalar+j]);
+      printf("rspscalaryg[fld=%d][coeff=%d].imag : %f\n",j,i/2,rspscalaryg[(i+1)*nscalar+j]);
+    }
   }
   
   for( j=0; j<nvordiv; ++j)
   {
-    for( i=0; i<nout; ++i ) {
-      printf("rspvoryg[%d][%d] : %f\n",j,i,rspvoryg[i*nvordiv+j]);
-      printf("rspdivyg[%d][%d] : %f\n",j,i,rspdivyg[i*nvordiv+j]);
-    }
-    
     // The first 2*nlat terms are on m=0
     for( i=0; i<2*nlat; ++i ) {
       adj_value1 += rspvoryg[i*nvordiv+j] * rspvorxg[i*nvordiv+j];
@@ -222,9 +214,13 @@ if( trans.myproc == 1 )
       adj_value1 += 2.0 * rspdivyg[i*nvordiv+j] * rspdivxg[i*nvordiv+j];
     }
 
-    for( i=0; i<trans.nspec2g; ++i ) {
-      printf("error -> rspvoryg[fld=%d][wave=%d] : %f\n",j,i,rspvoryg[i*nvordiv+j]);
-      printf("error -> rspdivyg[fld=%d][wave=%d] : %f\n",j,i,rspdivyg[i*nvordiv+j]);
+    for( i=0; i<trans.nspec2g; i+=2 ) {
+      printf("rspvoryg[fld=%d][coeff=%d].real : %f\n",j,i/2,rspvoryg[i*nvordiv+j]);
+      printf("rspvoryg[fld=%d][coeff=%d].imag : %f\n",j,i/2,rspvoryg[(i+1)*nvordiv+j]);
+    }
+    for( i=0; i<trans.nspec2g; i+=2 ) {
+      printf("rspdivyg[fld=%d][coeff=%d].real : %f\n",j,i/2,rspdivyg[i*nvordiv+j]);
+      printf("rspdivyg[fld=%d][coeff=%d].imag : %f\n",j,i/2,rspdivyg[(i+1)*nvordiv+j]);
     }
   }
 }
@@ -257,14 +253,15 @@ if( trans.myproc == 1 )
 {
   int i,j;
   for( j=0; j<nfld; ++j)
-  {
-    for( i=0; i<nout; ++i )
-      printf("rgpyg[fld=%d][pt=%d] : %f\n",j,i,rgpyg[j*trans.ngptotg+i]);
-    
+  { 
     if( j>=0 )
     {
       for( i=0; i<trans.ngptotg; ++i )
         adj_value2 += rgpxg[j*trans.ngptotg+i] * rgpyg[j*trans.ngptotg+i];
+    }
+
+    for( i=0; i<trans.ngptotg; ++i ) {
+      printf("rgpyg[fld=%d][pt=%d] : %f\n",j,i,rgpyg[j*trans.ngptotg+i]);
     }
   }
 }
