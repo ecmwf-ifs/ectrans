@@ -90,7 +90,7 @@ CONTAINS
     !     LOCAL
     INTEGER(KIND=JPIM)  :: KS(D%NUMP), NS(D%NUMP)
     INTEGER(KIND=JPIB)  :: AOFFSETS(D%NUMP), BOFFSETS(D%NUMP), COFFSETS(D%NUMP)
-    INTEGER(KIND=JPIM)  :: KM, KMLOC, IA, IS, ISL, J1, JGL, JK, J, IMLOC0(1)
+    INTEGER(KIND=JPIM)  :: KM, KMLOC, IA, IS, ISL, J1, JGL, JK, JFLD, J, IMLOC0(1)
     INTEGER(KIND=JPIM)  :: IOUT_STRIDES0
     INTEGER(KIND=JPIB)  :: IOUT_SIZE
     INTEGER(KIND=JPIM)  :: IIN_STRIDES0
@@ -404,6 +404,35 @@ CONTAINS
 !             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
 !           ENDDO
 ! #endif
+        ENDIF
+      ENDDO
+    ENDDO
+
+    ! 3. +++++++++++++ set imaginary part of the zero wave number coefficients to zero
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KMLOC,KM,J) &
+    !$ACC& FIRSTPRIVATE(KF_LEG) DEFAULT(NONE) &
+#ifndef _CRAYFTN
+    !$ACC& ASYNC(1)
+#else
+    !$ACC&
+#endif
+#endif
+    DO KMLOC=1,D_NUMP
+      DO JK=1,KF_LEG
+        KM =  D_MYMS(KMLOC)
+        IF(KM .eq. 0)THEN
+          JFLD = 2*JK
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+          !$ACC LOOP SEQ
+#endif
+          DO J=1,SIZE(PIA,2)
+            PIA(JFLD,J,KMLOC) = 0.0_JPRB
+          ENDDO
         ENDIF
       ENDDO
     ENDDO
