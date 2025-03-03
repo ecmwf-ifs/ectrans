@@ -101,7 +101,7 @@ CONTAINS
     USE VDTUVAD_MOD,            ONLY: VDTUVAD
     USE SPNSDEAD_MOD,           ONLY: SPNSDEAD
     USE LEINV_MOD,              ONLY: LEINV_STRIDES
-    USE LEINVAD_MOD,            ONLY: LEINVAD
+    USE LEDIR_MOD,              ONLY: LEDIR
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
     USE TPM_FIELDS_GPU,         ONLY: FG
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
@@ -188,14 +188,16 @@ CONTAINS
     INTEGER(KIND=JPIM)  :: IIN_STRIDES0
     INTEGER(KIND=JPIB)  :: IIN_SIZE
     INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_SIZE
+    INTEGER(KIND=JPIM)  :: JK, J, KMLOC, KM
 
     INTEGER(KIND=JPIM) :: IF_READIN, IF_LEG
     INTEGER(KIND=JPIB) :: IALLOC_POS, IALLOC_SZ
 
     REAL(KIND=JPRBT), POINTER :: ZINP(:)
     REAL(KIND=JPRD), POINTER :: ZINP0(:)
+    REAL(KIND=JPRB), POINTER :: PIA_LEDIR(:,:,:)
 
-    ASSOCIATE(ZEPSNM=>FG%ZEPSNM)
+    ASSOCIATE(ZEPSNM=>FG%ZEPSNM, D_NUMP=>D%NUMP, D_MYMS=>D%MYMS)
 
     !     ------------------------------------------------------------------
 
@@ -282,7 +284,37 @@ CONTAINS
 
     ! Legendre transforms. When converting PIA into ZOUT, we ignore the first entries of LEINV.
     ! This is because vorticity and divergence is not necessarily converted to GP space.
-    CALL LEINVAD(ALLOCATOR,PIA(2*(IF_READIN-IF_LEG)+1:IF_READIN,:,:),ZINP,ZINP0,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,IF_LEG)
+    PIA_LEDIR => PIA(2*(IF_READIN-IF_LEG)+1:IF_READIN,:,:)
+    CALL LEDIR(ALLOCATOR,ZOUTS,ZOUTA,ZOUTS0,ZOUTA0,ZINP,ZINP0,PIA_LEDIR,IF_LEG)
+
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+    !$ACC DATA PRESENT(D_MYMS,D_NUMP,PIA_LEDIR)
+    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KMLOC,KM,J) &
+    !$ACC& FIRSTPRIVATE(IF_LEG) DEFAULT(NONE)
+#endif
+    DO KMLOC=1,D_NUMP
+      DO JK=1,IF_LEG
+        KM =  D_MYMS(KMLOC)
+        IF(KM .eq. 0)THEN
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+          !$ACC LOOP SEQ
+#endif
+          DO J=1,SIZE(PIA_LEDIR,2)
+            PIA_LEDIR(2*JK,J,KMLOC) = 0.0_JPRB
+          ENDDO
+        ENDIF
+      ENDDO
+    ENDDO
+#ifdef OMPGPU
+#endif
+#ifdef ACCGPU
+    !$ACC END DATA
+#endif
+
     !     ------------------------------------------------------------------
 
 
