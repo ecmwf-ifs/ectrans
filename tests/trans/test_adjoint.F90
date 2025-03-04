@@ -12,11 +12,10 @@ PROGRAM TEST_ADJOINT
 USE PARKIND1,        ONLY: JPIM, JPRB
 USE MPL_MODULE,      ONLY: MPL_INIT, MPL_MYRANK, MPL_NPROC, MPL_BARRIER, MPL_END
 USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
-
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM) :: NSMAX, NDGL, NPROC, NPRGPNS, NPRGPEW, NPRTRW, NPRTRV
-INTEGER(KIND=JPIM) :: NOUT, MYPROC, NSPECG, NSPEC2G
+INTEGER(KIND=JPIM) :: NOUT, NERR, MYPROC, NSPECG, NSPEC2G
 INTEGER(KIND=JPIM) :: NFLEV, NFLEVG
 INTEGER(KIND=JPIM) :: NSPEC2, NGPTOT, NPROMA, NGPBLKS, MYSETV, NUMP
 INTEGER(KIND=JPIM) :: IVSET(1000)
@@ -68,8 +67,9 @@ ELSE
   NPROC  = 1
 ENDIF
 
-! Write to STDOUT
+! STDOUT and STDERR
 NOUT = 6
+NERR = 0
 
 ! Only output to stdout on first task
 IF (NPROC > 1) THEN
@@ -98,8 +98,8 @@ ALLOCATE(ITO(NFLEVG))
 NLOEN(:) = 2*NDGL
 
 ! Initialise ecTrans
-CALL SETUP_TRANS0(KOUT=NOUT, KERR=0, KPRINTLEV=0, KMAX_RESOL=1, KPRGPNS=NPRGPNS, KPRGPEW=NPRGPEW, &
-  &               KPRTRW=NPRTRW, LDMPOFF=.NOT. LUSE_MPI)
+CALL SETUP_TRANS0(KOUT=NOUT, KERR=NERR, KPRINTLEV=0, KMAX_RESOL=1, KPRGPNS=NPRGPNS, &
+  &               KPRGPEW=NPRGPEW, KPRTRW=NPRTRW, LDMPOFF=.NOT. LUSE_MPI)
 CALL SETUP_TRANS(KSMAX=NSMAX, KDGL=NDGL, KLOEN=NLOEN, LDSPLIT=.TRUE.)
 
 CALL TRANS_INQ(KSPEC2=NSPEC2, KGPTOT=NGPTOT, KNUMP=NUMP)
@@ -177,12 +177,12 @@ WRITE(NOUT, '(A,1E9.2)') 'Relative error = ', ZRELATIVE_ERROR
 ! Abort if relative error is > 2000 * machine epsilon
 ! All tested compilers seem to be happy with a threshold of 2000, thought it is a bit arbitrary
 IF (ZRELATIVE_ERROR > 2000.0*EPSILON(1.0_JPRB)) THEN
-  WRITE(NOUT, '(A)') '*******************************'
-  WRITE(NOUT, '(A)') 'Adjoint test failed'
-  WRITE(NOUT, '(A)') 'Relative error greater than 2000 * machine epsilon'
-  WRITE(NOUT, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 2000.0*EPSILON(1.0_JPRB)
-  WRITE(NOUT, '(A)') '*******************************'
-  FLUSH(NOUT)
+  WRITE(NERR, '(A)') '*******************************'
+  WRITE(NERR, '(A)') 'Adjoint test failed'
+  WRITE(NERR, '(A)') 'Relative error greater than 2000 * machine epsilon'
+  WRITE(NERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 2000.0*EPSILON(1.0_JPRB)
+  WRITE(NERR, '(A)') '*******************************'
+  FLUSH(NERR)
   CALL ABORT_TRANS("Adjoint test failed")
 ENDIF
 
