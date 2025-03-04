@@ -40,7 +40,7 @@ jobs:
         include:
 
           - name: linux gnu-10
-            os: ubuntu-20.04
+            os: ubuntu-24.04
             compiler: gnu-10
             compiler_cc: gcc-10
             compiler_cxx: g++-10
@@ -49,7 +49,7 @@ jobs:
             caching: true
 
           - name: linux clang-12
-            os: ubuntu-20.04
+            os: ubuntu-24.04
             compiler: clang-12
             compiler_cc: clang-12
             compiler_cxx: clang++-12
@@ -59,7 +59,7 @@ jobs:
 
           - name: linux clang-12
             build_type: Release
-            os: ubuntu-20.04
+            os: ubuntu-24.04
             compiler: clang-12
             compiler_cc: clang-12
             compiler_cxx: clang++-12
@@ -68,7 +68,7 @@ jobs:
             caching: true
 
           - name: linux nvhpc-21.9
-            os: ubuntu-20.04
+            os: ubuntu-24.04
             compiler: nvhpc-21.9
             compiler_cc: nvc
             compiler_cxx: nvc++
@@ -78,7 +78,7 @@ jobs:
             caching: false
 
           - name : linux intel-classic
-            os: ubuntu-20.04
+            os: ubuntu-24.04
             compiler: intel-classic
             compiler_cc: icc
             compiler_cxx: icpc
