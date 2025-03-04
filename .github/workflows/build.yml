@@ -31,7 +31,7 @@ jobs:
       matrix:
         build_type: [Release,Debug]
         name:
-          - linux gnu-10
+          - linux gnu-13
           - linux clang-12
           - linux nvhpc-21.9
           - linux intel-classic
@@ -39,12 +39,12 @@ jobs:
 
         include:
 
-          - name: linux gnu-10
+          - name: linux gnu-13
             os: ubuntu-24.04
-            compiler: gnu-10
-            compiler_cc: gcc-10
-            compiler_cxx: g++-10
-            compiler_fc: gfortran-10
+            compiler: gnu-13
+            compiler_cc: gcc-13
+            compiler_cxx: g++-13
+            compiler_fc: gfortran-13
             ctest_options: -E memory
             caching: true
 
