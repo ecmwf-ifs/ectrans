@@ -32,7 +32,7 @@ jobs:
         build_type: [Release,Debug]
         name:
           - linux gnu-13
-          - linux clang-12
+          - linux clang-18
           - linux nvhpc-21.9
           - linux intel-classic
           - macos
@@ -48,22 +48,12 @@ jobs:
             ctest_options: -E memory
             caching: true
 
-          - name: linux clang-12
+          - name: linux clang-18
             os: ubuntu-24.04
-            compiler: clang-12
-            compiler_cc: clang-12
-            compiler_cxx: clang++-12
-            compiler_fc: gfortran-10
-            ctest_options: -E memory
-            caching: true
-
-          - name: linux clang-12
-            build_type: Release
-            os: ubuntu-24.04
-            compiler: clang-12
-            compiler_cc: clang-12
-            compiler_cxx: clang++-12
-            compiler_fc: gfortran-10
+            compiler: clang-18
+            compiler_cc: clang-18
+            compiler_cxx: clang++-18
+            compiler_fc: gfortran-14
             ctest_options: -E memory
             caching: true
 
