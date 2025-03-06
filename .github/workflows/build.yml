@@ -33,7 +33,7 @@ jobs:
         name:
           - linux gnu-13
           - linux clang-18
-          - linux nvhpc-21.9
+          - linux nvhpc-25.1
           - linux intel-classic
           - macos
 
@@ -57,9 +57,9 @@ jobs:
             ctest_options: -E memory
             caching: true
 
-          - name: linux nvhpc-21.9
+          - name: linux nvhpc-25.1
             os: ubuntu-24.04
-            compiler: nvhpc-21.9
+            compiler: nvhpc-25.1
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
