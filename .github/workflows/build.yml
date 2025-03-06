@@ -173,6 +173,10 @@ jobs:
         ${ECTRANS_TOOLS}/install-fftw.sh --version 3.3.10 --with-single --prefix ${DEPS_DIR}/fftw
         echo "FFTW_ROOT=${DEPS_DIR}/fftw" >> $GITHUB_ENV
 
+    - name: Install OpenBLAS
+      shell: bash -eux {0}
+      run: ${ECTRANS_TOOLS}/install-openblas.sh
+
     - name: Set Build & Test Environment
       run: |
 
