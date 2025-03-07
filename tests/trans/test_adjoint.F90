@@ -182,23 +182,26 @@ CALL INV_TRANSAD(PSPSCALAR=ZSPECP, PSPVOR=ZVORP, PSPDIV=ZDIVP, PGP=ZGX, &
 ! Calculate <X, INV_TRANSAD(DIR_TRANSAD(Y))>
 CALL SCALPRODSP(ZSPECX, ZSPECP, ZSC2, IVSET)
 
-! Calculate relative error between <DIR_TRANS(INV_TRANS(X)), Y> and <X, INV_TRANSAD(DIR_TRANSAD(Y))>
-ZRELATIVE_ERROR = ABS(ZSC1 - ZSC2)/ABS(ZSC1)
+! If I'm the first task, do the error check
+IF (MYPROC == 1) THEN
+  ! Calculate relative error between <DIR_TRANS(INV_TRANS(X)), Y> and <X, INV_TRANSAD(DIR_TRANSAD(Y))>
+  ZRELATIVE_ERROR = ABS(ZSC1 - ZSC2)/ABS(ZSC1)
 
-WRITE(NOUT, '(A,1E9.2)') '<Fx,y>  = ', ZSC1
-WRITE(NOUT, '(A,1E9.2)') '<x,F*y> = ', ZSC2
-WRITE(NOUT, '(A,1E9.2)') 'Relative error = ', ZRELATIVE_ERROR
+  WRITE(NOUT, '(A,1E9.2)') '<Fx,y>  = ', ZSC1
+  WRITE(NOUT, '(A,1E9.2)') '<x,F*y> = ', ZSC2
+  WRITE(NOUT, '(A,1E9.2)') 'Relative error = ', ZRELATIVE_ERROR
 
-! Abort if relative error is > 2000 * machine epsilon
-! All tested compilers seem to be happy with a threshold of 2000, thought it is a bit arbitrary
-IF (ZRELATIVE_ERROR > 2000.0*EPSILON(1.0_JPRB)) THEN
-  WRITE(NERR, '(A)') '*******************************'
-  WRITE(NERR, '(A)') 'Adjoint test failed'
-  WRITE(NERR, '(A)') 'Relative error greater than 2000 * machine epsilon'
-  WRITE(NERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 2000.0*EPSILON(1.0_JPRB)
-  WRITE(NERR, '(A)') '*******************************'
-  FLUSH(NERR)
-  CALL ABORT_TRANS("Adjoint test failed")
+  ! Abort if relative error is > 2000 * machine epsilon
+  ! All tested compilers seem to be happy with a threshold of 2000, though it is a bit arbitrary
+  IF (ZRELATIVE_ERROR > 2000.0*EPSILON(1.0_JPRB)) THEN
+    WRITE(NERR, '(A)') '*******************************'
+    WRITE(NERR, '(A)') 'Adjoint test failed'
+    WRITE(NERR, '(A)') 'Relative error greater than 2000 * machine epsilon'
+    WRITE(NERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 2000.0*EPSILON(1.0_JPRB)
+    WRITE(NERR, '(A)') '*******************************'
+    FLUSH(NERR)
+    CALL ABORT_TRANS("Adjoint test failed")
+  ENDIF
 ENDIF
 
 IF (LUSE_MPI) THEN
