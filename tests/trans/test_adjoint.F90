@@ -7,6 +7,22 @@
 ! nor does it submit to any jurisdiction.
 !
 
+! ==================================================================================================
+! Adjoint test
+! ==================================================================================================
+!
+! This program performs a rudimentary check of tangent-linear/adjoint correspondence of the inverse
+! and direct spectral transform.
+!
+! The program checks the correspondence of <DIR_TRANS(INV_TRANS(X)), Y> and
+! <X, INV_TRANSAD(DIR_TRANSAD(Y))>, which with infinite precision should match exactly. In practice
+! there is some divergence due to rounding errors. In this program we check whether the two
+! expressions are the same to within a tolerance of 2000 * machine epsilon.
+!
+! The check is only performed for scalar fields (PSPSCALAR). Wind fields are not checked.
+!
+! ==================================================================================================
+
 PROGRAM TEST_ADJOINT
 
 USE PARKIND1,        ONLY: JPIM, JPRB
@@ -44,11 +60,9 @@ LOGICAL :: LUSE_MPI
 
 LUSE_MPI = DETECT_MPIRUN()
 
-! ======== PARAMETERS WHICH MAY BE MODIFIED, ORIGINALLY COMING FROM NAMELIST ===========
 NDGL = 32 ! Number of latitudes from pole to equator
 NFLEVG = 9 ! Number of levels
 NPROMA = 8 ! Gridpoint block size
-! ======================================================================================
 
 ! Determine spectral space parameters
 NSMAX = (2 * NDGL - 1) / 3 ! Full Gaussian grid
