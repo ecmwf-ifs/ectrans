@@ -5,8 +5,6 @@ ecbuild_list_add_pattern(
     QUIET
 )
 
-if(HAVE_DOUBLE_PRECISION)
-    # Add sources
-    target_sources(trans_dp PRIVATE ${ectrans4py_src})
-endif()
+# Add sources
+target_sources(trans_dp PRIVATE ${ectrans4py_src})
 
