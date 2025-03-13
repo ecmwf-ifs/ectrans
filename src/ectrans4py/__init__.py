@@ -13,6 +13,7 @@ import resource
 import numpy as np
 import ctypesForFortran
 from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT
+import platform
 
 
 __version__ = "1.5.1"
@@ -20,14 +21,22 @@ __version__ = "1.5.1"
 
 # Shared objects library
 ########################
-so_basename = "libtrans_dp.so"  # local name of library in the directory
+system = platform.system()
+if system == "Linux":
+    platform_ext = "so"
+elif system == "Darwin":
+    platform_ext = "dylib"
+else:
+    raise NotImplementedError("ectrans4py does not support Windows")
+
+lib_basename = f"libectrans4py_dp.{platform_ext}"  # local name of library in the directory
 LD_LIBRARY_PATH = [p for p in os.environ.get('LD_LIBRARY_PATH', '').split(':') if p != '']
 lpath = LD_LIBRARY_PATH + [
     os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'),
     os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib64'),
         ]
 for d in lpath:
-    shared_objects_library = os.path.join(d, so_basename)
+    shared_objects_library = os.path.join(d, lib_basename)
     if os.path.exists(shared_objects_library):
         break
     else:
@@ -35,7 +44,7 @@ for d in lpath:
 if shared_objects_library is None:
     msg = ' '.join(["'{}' was not found in any of potential locations: {}.",
                     "You can specify a different location using env var LD_LIBRARY_PATH"])
-    msg = msg.format(so_basename, str(lpath))
+    msg = msg.format(lib_basename, str(lpath))
     raise FileNotFoundError(msg)
 ctypesFF, handle = ctypesForFortran.ctypesForFortranFactory(shared_objects_library)
 

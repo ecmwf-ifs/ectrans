@@ -5,6 +5,10 @@ ecbuild_list_add_pattern(
     QUIET
 )
 
-# Add sources
-target_sources(trans_dp PRIVATE ${ectrans4py_src})
-
+# Add ectrans4py library
+ecbuild_add_library(
+      TARGET           ectrans4py_dp
+      LINKER_LANGUAGE  Fortran
+      SOURCES          ${ectrans4py_src}
+      PUBLIC_LIBS      fiat trans_dp parkind_dp etrans_dp
+)
