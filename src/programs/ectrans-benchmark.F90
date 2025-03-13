@@ -224,6 +224,7 @@ real(kind=jprb), allocatable :: global_field(:,:)
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
+#include "trans_end.h"
 
 !===================================================================================================
 
@@ -961,6 +962,8 @@ if (lmeminfo) then
   call ec_meminfo(nout, "", mpl_comm, kbarr=1, kiotask=-1, &
       & kcall=1)
 endif
+
+call trans_end
 
 !===================================================================================================
 ! Finalize MPI
