@@ -17,7 +17,7 @@ module openacc_ext_type
   end type
 end module
 module openacc_ext
-  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof
+  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof, c_f_pointer
 #ifdef ACCGPU
   use openacc, only: acc_handle_kind
 #endif
