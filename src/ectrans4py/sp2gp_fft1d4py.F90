@@ -1,3 +1,6 @@
+! ===================================
+! NOTE: this subroutine is not tested
+! ===================================
 SUBROUTINE SP2GP_FFT1D4PY(KSIZES, KTRUNC, PSPEC, KSIZEG, PGPT)
 ! ** PURPOSE
 !    Transform spectral coefficients into grid-point values,
