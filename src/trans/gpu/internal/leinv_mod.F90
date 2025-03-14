@@ -158,7 +158,7 @@ CONTAINS
     HIP_STREAM = INT(ACC_GET_HIP_STREAM(1_C_INT), C_LONG)
 #endif
 #ifdef OMPGPU
-    HIP_STREAM = 1_C_LONG
+    HIP_STREAM = 0_C_LONG
 #endif
 
     !     ------------------------------------------------------------------
@@ -173,6 +173,11 @@ CONTAINS
 
 
 #ifdef OMPGPU
+    !$OMP TARGET DATA &
+    !$OMP&              MAP(PRESENT,ALLOC:D,D_MYMS,D_NUMP) &
+    !$OMP&              MAP(PRESENT,ALLOC:ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
+    !$OMP&              MAP(PRESENT,ALLOC:ZAA,ZAS,PIA) &
+    !$OMP&              MAP(PRESENT,ALLOC:R,R_NSMAX,D_OFFSETS_GEMM2)
 #endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(D,D_MYMS,D_NUMP) &
@@ -193,6 +198,11 @@ CONTAINS
     !       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
 
 #ifdef OMPGPU
+    ! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
+    ! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) &
+    !$OMP& PRIVATE(KM,IA,J) &
+    !$OMP& SHARED(D,R,KF_LEG,ZINP,IIN_STRIDES0,IIN0_STRIDES0) MAP(TO:KF_LEG)
 #endif
 #ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) &
@@ -208,8 +218,6 @@ CONTAINS
         KM =  D_MYMS(KMLOC)
         IA  = 1+MOD(R_NSMAX-KM+2,2)
         IF(KM /= 0)THEN
-#ifdef OMPGPU
-#endif
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
@@ -225,8 +233,6 @@ CONTAINS
 #endif
         ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
           ! every other field is sufficient because Im(KM=0) == 0
-#ifdef OMPGPU
-#endif
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
@@ -273,15 +279,13 @@ CONTAINS
         & 0.0_JPRD, &
         & ZOUTA0, IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
+#endif
    ENDIF
-
-
 
     DO KMLOC=1,D_NUMP
       KM = D_MYMS(KMLOC)
@@ -311,11 +315,11 @@ CONTAINS
         & 0.0_JPRBT, &
         & ZOUTA, IOUT_STRIDES0, COFFSETS, &
         & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
 #endif
 
     IF (LSYNC_TRANS) THEN
@@ -339,6 +343,11 @@ CONTAINS
     !       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
 
 #ifdef OMPGPU
+    ! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
+    ! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) &
+    !$OMP& PRIVATE(KM,IS,J) &
+    !$OMP& SHARED(D,R,KF_LEG,ZINP,IIN_STRIDES0,IIN0_STRIDES0) MAP(TO:KF_LEG)
 #endif
 #ifdef ACCGPU
     !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) &
@@ -354,8 +363,6 @@ CONTAINS
         KM =  D_MYMS(KMLOC)
         IS  = 1+MOD(R_NSMAX-KM+1,2)
         IF(KM /= 0) THEN
-#ifdef OMPGPU
-#endif
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
@@ -370,8 +377,6 @@ CONTAINS
           ENDDO
 #endif
         ELSEIF (MOD((JK-1),2) == 0) THEN
-#ifdef OMPGPU
-#endif
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
@@ -415,11 +420,11 @@ CONTAINS
         & 0.0_JPRD, &
         & ZOUTS0, IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
 #endif
     ENDIF
 
@@ -451,12 +456,13 @@ CONTAINS
       & 0.0_JPRBT, &
       & ZOUTS, IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
     !$ACC END HOST_DATA
 #endif
+#ifdef OMPGPU
+    !$OMP END TARGET DATA
+#endif
+
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
       !$ACC WAIT(1)
@@ -468,6 +474,7 @@ CONTAINS
     CALL GSTATS(424,1)
 
 #ifdef OMPGPU
+    !$OMP END TARGET DATA
 #endif
 #ifdef ACCGPU
     !$ACC WAIT(1)
