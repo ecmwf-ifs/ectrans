@@ -62,13 +62,14 @@ jobs:
           - name: lumi-g cce
             site: lumi
             troika_user_secret: LUMI_CI_SSH_USER
+            account_secret: LUMI_CI_PROJECT
             sbatch_options: |
               #SBATCH --time=00:20:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
               #SBATCH --gpus-per-task=1
               #SBATCH --partition=dev-g
-              #SBATCH --account=project_465000527
+              #SBATCH --account={0}
             modules:
               - CrayEnv
               - PrgEnv-cray
@@ -77,8 +78,8 @@ jobs:
               - rocm/6.0.3
               - cray-fftw
               - buildtools
-            output_dir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
-            workdir: /scratch/project_465000527/github-actions/ectrans/${{ github.run_id }}
+            output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}
+            workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}
             cmake_options: >
               -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
               -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
@@ -97,9 +98,9 @@ jobs:
         with:
           site: ${{ matrix.site }}
           troika_user: ${{ secrets[matrix.troika_user_secret] }}
-          sbatch_options: ${{ matrix.sbatch_options }}
-          output_dir: ${{ matrix.output_dir || '' }}
-          workdir: ${{ matrix.workdir || '' }}
+          sbatch_options: ${{ format(matrix.sbatch_options, secrets[matrix.account_secret]) }}
+          output_dir: ${{ format(matrix.output_dir, secrets[matrix.account_secret]) || '' }}
+          workdir: ${{ format(matrix.workdir, secrets[matrix.account_secret]) || '' }}
           template_data: |
             cmake_options:
               - -DENABLE_MPI=ON
