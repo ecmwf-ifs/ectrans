@@ -1,0 +1,336 @@
+! (C) Copyright 2008- ECMWF.
+! (C) Copyright 2013- Meteo-France.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
+MODULE GPNORM_TRANS_CTLAD_MOD
+CONTAINS
+SUBROUTINE GPNORM_TRANS_CTLAD(PGP,KFIELDS,KPROMA,PAVE,PW)
+
+
+!**** *GPNORM_TRANS_CTLAD* - calculate grid-point norms (Adjoint version)
+!     Note: This only does adjoint of the norm average 
+
+!     Purpose.
+!     --------
+!        calculate grid-point norms using a 2 stage (NPRTRV,NPRTRW) communication rather
+!        than an approach using a more expensive global gather collective communication
+
+!**   Interface.
+!     ----------
+!     CALL GPNORM_TRANS_CTLAD(...)
+
+!     Explicit arguments :
+!     --------------------
+!     PGP(:,:,:) - gridpoint fields (input)
+!                  PGP is  dimensioned (NPROMA,KFIELDS,NGPBLKS) where
+!                  NPROMA is the blocking factor, KFIELDS the total number
+!                  of fields and NGPBLKS the number of NPROMA blocks.
+!     KFIELDS     - number of fields (input)
+!                   (these do not have to be just levels)
+!     KPROMA      - required blocking factor (input)
+!     PAVE        - average (output)
+!
+
+!     Author.
+!     -------
+!        Filip Vana, after GPNORM_TRANS_CTL_MOD
+!        (c) ECMWF, 16-Aug-2024
+
+!     Modifications.
+!     --------------
+
+!     ------------------------------------------------------------------
+
+USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
+
+!ifndef INTERFACE
+
+USE TPM_GEN         ,ONLY : NOUT
+USE TPM_DIM         ,ONLY : R
+USE TPM_TRANS       ,ONLY : LGPNORM, NGPBLKS, NPROMA
+USE TPM_DISTR       ,ONLY : D, NPRCIDS, NPRTRV, NPRTRW, MYSETV, MYSETW
+USE TPM_GEOMETRY    ,ONLY : G
+USE TPM_FIELDS      ,ONLY : F
+USE SET_RESOL_MOD   ,ONLY : SET_RESOL
+USE TRLTOG_MOD      ,ONLY : TRLTOG
+USE SET2PE_MOD      ,ONLY : SET2PE
+USE MPL_MODULE      ,ONLY : MPL_RECV, MPL_SEND, JP_BLOCKING_STANDARD, &
+  &                         MPL_BROADCAST
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK,  JPHOOK
+
+!endif INTERFACE
+
+IMPLICIT NONE
+
+! Declaration of arguments
+
+REAL(KIND=JPRB)   ,INTENT(OUT)   :: PGP(:,:,:)
+REAL(KIND=JPRB)   ,INTENT(INOUT) :: PAVE(:)
+INTEGER(KIND=JPIM),INTENT(IN)    :: KFIELDS
+INTEGER(KIND=JPIM),INTENT(IN)    :: KPROMA
+REAL(KIND=JPRB)   ,INTENT(IN)    :: PW(R%NDGL)
+
+!ifndef INTERFACE
+
+! Local variables
+REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
+INTEGER(KIND=JPIM) :: IUBOUND(4)
+INTEGER(KIND=JPIM) :: IVSET(KFIELDS)
+INTEGER(KIND=JPIM),ALLOCATABLE :: IVSETS(:)
+INTEGER(KIND=JPIM),ALLOCATABLE :: IVSETG(:,:)
+REAL(KIND=JPRB),ALLOCATABLE :: ZGTF(:,:)
+REAL(KIND=JPRD),ALLOCATABLE :: ZAVE(:,:)
+REAL(KIND=JPRD),ALLOCATABLE :: ZAVEG(:,:)
+REAL(KIND=JPRD),ALLOCATABLE :: ZSND(:)
+REAL(KIND=JPRD),ALLOCATABLE :: ZRCV(:)
+INTEGER(KIND=JPIM) :: J,JGL,IGL,JL,JF,IF_GP,IF_SCALARS_G,IF_FS,JSETV,JSETW,IWLATS
+INTEGER(KIND=JPIM) :: IPROC,ITAG,ILEN,ILENR,IBEG,IEND,IND
+
+!     ------------------------------------------------------------------
+IF (LHOOK) CALL DR_HOOK('GPNORM_TRANS_CTLAD',0,ZHOOK_HANDLE)
+
+! Set defaults
+
+NPROMA = KPROMA
+NGPBLKS = (D%NGPTOT-1)/NPROMA+1
+
+! Consistency checks
+
+IUBOUND(1:3)=UBOUND(PGP)
+IF(IUBOUND(1) < NPROMA) THEN
+  WRITE(NOUT,*)'GPNORM_TRANS_CTLAD:FIRST DIM. OF PGP TOO SMALL ',IUBOUND(1),NPROMA
+  CALL ABORT_TRANS('GPNORM_TRANS_CTLAD:FIRST DIMENSION OF PGP TOO SMALL ')
+ENDIF
+IF(IUBOUND(2) < KFIELDS) THEN
+  WRITE(NOUT,*)'GPNORM_TRANS_CTLAD:SEC. DIM. OF PGP TOO SMALL ',IUBOUND(2),KFIELDS
+  CALL ABORT_TRANS('GPNORM_TRANS_CTLAD:SECOND DIMENSION OF PGP TOO SMALL ')
+ENDIF
+IF(IUBOUND(3) < NGPBLKS) THEN
+  WRITE(NOUT,*)'GPNORM_TRANS_CTLAD:THIRD DIM. OF PGP TOO SMALL ',IUBOUND(3),NGPBLKS
+  CALL ABORT_TRANS('GPNORM_TRANS_CTLAD:THIRD DIMENSION OF PGP TOO SMALL ')
+ENDIF
+
+
+IF_GP=KFIELDS
+IF_SCALARS_G=0
+
+IF_FS=0
+DO J=1,KFIELDS
+  IVSET(J)=MOD(J-1,NPRTRV)+1
+  IF(IVSET(J)==MYSETV)THEN
+    IF_FS=IF_FS+1
+  ENDIF
+ENDDO
+
+ALLOCATE(IVSETS(NPRTRV))
+IVSETS(:)=0
+DO J=1,KFIELDS
+  IVSETS(IVSET(J))=IVSETS(IVSET(J))+1
+ENDDO
+ALLOCATE(IVSETG(NPRTRV,MAXVAL(IVSETS(:))))
+IVSETG(:,:)=0
+IVSETS(:)=0
+DO J=1,KFIELDS
+  IVSETS(IVSET(J))=IVSETS(IVSET(J))+1
+  IVSETG(IVSET(J),IVSETS(IVSET(J)))=J
+ENDDO
+
+ALLOCATE(ZGTF(IF_FS,D%NLENGTF))
+IF (SIZE(ZGTF) > 0) ZGTF(:,:)=0._JPRB ! force allocation right here, not inside an omp region below
+
+IBEG=1
+IEND=D%NDGL_FS
+
+ALLOCATE(ZAVE(IF_FS,IBEG:IEND))
+ZAVE(1:IF_FS,IBEG:IEND)=0._JPRB
+
+! IT IS IMPORTANT THAT SUMS ARE NOW DONE IN LATITUDE ORDER
+ALLOCATE(ZAVEG(R%NDGL,KFIELDS))
+ZAVEG(:,:)=0.0_JPRB
+
+
+IF( MYSETW == 1 .AND. MYSETV == 1 )THEN
+
+  DO JGL=R%NDGL,1,-1
+    ZAVEG(JGL,:)=ZAVEG(JGL,:)+PAVE(:)
+  ENDDO
+  PAVE(:)=0.0_JPRB
+
+ENDIF
+
+! RECEIVE ABOVE FROM OTHER NPRTRV SETS FOR SAME LATS BUT DIFFERENT FIELDS
+ITAG=1231
+CALL GSTATS(815,0)
+
+! Following is targeted and thus more economic way replacing MPL_BROADCAST.
+! This implies the line bellow gives the same result but for higher cost:
+!  IF (NPRTRV*NPRTRW > 1) &
+!    &  CALL MPL_BROADCAST (ZAVEG,ITAG,1,CDSTRING='GPNORMAD_BRDCST')
+
+! FINALLY RECEIVE CONTRIBUTIONS FROM OTHER NPRTRW SETS
+
+IF( MYSETV == 1 )THEN
+
+  IF( MYSETW == 1 )THEN
+
+    DO JSETW=2,NPRTRW
+      IWLATS=D%NULTPP(JSETW)
+      ILEN=IWLATS*KFIELDS
+      IF(ILEN > 0 )THEN
+        CALL SET2PE(IPROC,0,0,JSETW,1)
+        ALLOCATE(ZSND(ILEN))
+        IND=0
+        DO JF=1,KFIELDS
+          DO JGL=IBEG,IWLATS
+            IGL = D%NPTRLS(JSETW) + JGL - 1
+            IND=IND+1
+            ZSND(IND)=ZAVEG(IGL,JF)
+          ENDDO
+        ENDDO
+        CALL MPL_SEND(ZSND(:),KDEST=NPRCIDS(IPROC),KTAG=ITAG,&
+          &KMP_TYPE=JP_BLOCKING_STANDARD,CDSTRING='GPNORM_TRANS_CTLAD:W')
+        DEALLOCATE(ZSND)
+      ENDIF
+    ENDDO
+
+  ELSE
+
+    IWLATS=D%NULTPP(MYSETW)
+    ILEN=IWLATS*KFIELDS
+    IF(ILEN > 0)THEN
+      CALL SET2PE(IPROC,0,0,1,1)
+      ALLOCATE(ZRCV(ILEN))
+      CALL MPL_RECV(ZRCV(:),KSOURCE=NPRCIDS(IPROC),KTAG=ITAG,&
+        & KMP_TYPE=JP_BLOCKING_STANDARD,KOUNT=ILENR,&
+        & CDSTRING='GPNORM_TRANS_CTLAD:W')
+      IF(ILENR /= ILEN)THEN
+        CALL ABOR1('GPNORM_TRANS_CTLAD:ILENR /= ILEN')
+      ENDIF
+      IND=0
+      DO JF=1,KFIELDS
+        DO JGL=IBEG,IWLATS
+          IGL = D%NPTRLS(MYSETW) + JGL - 1
+          IND=IND+1
+          ZAVEG(IGL,JF)=ZRCV(IND)
+        ENDDO
+      ENDDO
+      DEALLOCATE(ZRCV)
+    ENDIF
+
+  ENDIF
+
+ENDIF
+
+IF ( MYSETV == 1 ) THEN
+
+  DO JSETV=2,NPRTRV
+    ILEN=D%NDGL_FS*IVSETS(JSETV)
+    IF(ILEN > 0)THEN
+      ALLOCATE(ZSND(ILEN))
+      IND=0
+      DO JF=1,IVSETS(JSETV)
+        DO JGL=IBEG,IEND
+          IGL = D%NPTRLS(MYSETW) + JGL - 1
+          IND=IND+1
+          ZSND(IND) = ZAVEG(IGL,IVSETG(JSETV,JF))
+        ENDDO
+      ENDDO
+      CALL SET2PE(IPROC,0,0,MYSETW,JSETV)
+      CALL MPL_SEND(ZSND(:),KDEST=NPRCIDS(IPROC),KTAG=ITAG,&
+        &KMP_TYPE=JP_BLOCKING_STANDARD,CDSTRING='GPNORM_TRANS_CTLAD:V')
+      DEALLOCATE(ZSND)
+    ENDIF
+  ENDDO
+
+ELSE
+
+  ILEN=D%NDGL_FS*IVSETS(MYSETV)
+  IF(ILEN > 0)THEN
+    CALL SET2PE(IPROC,0,0,MYSETW,1)
+    ALLOCATE(ZRCV(ILEN))
+    CALL MPL_RECV(ZRCV(:),KSOURCE=NPRCIDS(IPROC),KTAG=ITAG,&
+      & KMP_TYPE=JP_BLOCKING_STANDARD,KOUNT=ILENR, &
+      & CDSTRING='GPNORM_TRANS_CTLAD:V')
+    IF(ILENR /= ILEN)THEN
+      CALL ABOR1('GPNORM_TRANS_CTLAD:ILENR /= ILEN')
+    ENDIF
+    IND=0
+    DO JF=1,IF_FS
+      DO JGL=IBEG,IEND
+        IGL = D%NPTRLS(MYSETW) + JGL - 1
+        IND=IND+1
+        ZAVEG(IGL,IVSETG(MYSETV,JF))= ZRCV(IND)
+       ENDDO
+    ENDDO
+    DEALLOCATE(ZRCV)
+  ENDIF
+
+ENDIF
+
+CALL GSTATS(815,1)
+
+DO JF=IF_FS,1,-1
+  DO JGL=IEND,IBEG,-1
+    IGL = D%NPTRLS(MYSETW) + JGL - 1
+    ZAVE(JF,JGL)=ZAVE(JF,JGL)+ZAVEG(IGL,IVSETG(MYSETV,JF))
+  ENDDO
+ENDDO
+!ZAVEG(:,:)=0.0_JPRB
+
+
+IF( IF_FS > 0 )THEN
+
+  DO JGL=IBEG,IEND
+    IGL = D%NPTRLS(MYSETW) + JGL - 1
+    DO JF=1,IF_FS
+      ZAVE(JF,JGL)=ZAVE(JF,JGL)*PW(IGL)/G%NLOEN(IGL)
+    ENDDO
+  ENDDO
+
+! FIRST DO SUMS IN EACH FULL LATITUDE
+
+CALL GSTATS(1429,0)
+!$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JGL,IGL,JF,JL)
+  DO JGL=IEND,IBEG,-1
+    IGL = D%NPTRLS(MYSETW) + JGL - 1
+!CDIR NOLOOPCHG
+    DO JF=IF_FS,1,-1
+!DIR$ NEXTSCALAR
+      DO JL=G%NLOEN(IGL),1,-1
+        ZGTF(JF,D%NSTAGTF(JGL)+JL)= ZGTF(JF,D%NSTAGTF(JGL)+JL) &
+          & +ZAVE(JF,JGL)
+      ENDDO
+    ENDDO
+  ENDDO
+!$OMP END PARALLEL DO
+CALL GSTATS(1429,1)
+
+ENDIF
+
+LGPNORM=.TRUE.
+CALL TRLTOG(ZGTF,IF_FS,IF_GP,IF_SCALARS_G,IVSET,PGP=PGP)
+LGPNORM=.FALSE.
+
+
+DEALLOCATE(ZGTF)
+DEALLOCATE(ZAVE)
+DEALLOCATE(ZAVEG)
+DEALLOCATE(IVSETS)
+DEALLOCATE(IVSETG)
+
+IF (LHOOK) CALL DR_HOOK('GPNORM_TRANS_CTLAD',1,ZHOOK_HANDLE)
+
+!     ------------------------------------------------------------------
+
+!endif INTERFACE
+
+
+END SUBROUTINE GPNORM_TRANS_CTLAD
+END MODULE GPNORM_TRANS_CTLAD_MOD
