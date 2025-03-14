@@ -2,8 +2,15 @@ from unittest import main, TestCase
 import numpy
 from . import data
 import ectrans4py
+import platform
 
-ectrans4py.init_env()
+system = platform.system()
+if system == "Linux":
+    ectrans4py.init_env(unlimited_stack=True)
+elif system == "Darwin":
+    ectrans4py.init_env(unlimited_stack=False)
+else:
+    raise NotImplementedError("ectrans4py does not support Windows")
 
 KNUMMAXRESOL = 10
 EPSILON = 1e-13
