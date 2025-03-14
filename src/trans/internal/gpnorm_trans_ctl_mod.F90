@@ -49,6 +49,7 @@ SUBROUTINE GPNORM_TRANS_CTL(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,PW)
 !        R. El Khatib 07-08-2009 Optimisation directive for NEC
 !        R. El Khatib 16-Sep-2019 merge with LAM code
 !        R. El Khatib 02-Jun-2022 Optimization/Cleaning
+!        F. Vana      14-Nov-2024 bug fix in W gather
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
@@ -340,8 +341,6 @@ IF( MYSETV == 1 )THEN
 
     DO JSETW=2,NPRTRW
       IWLATS=D%NULTPP(JSETW)
-      IBEG=1
-      IEND=IWLATS
       IF(LDAVE_ONLY)THEN
         ILEN=IWLATS*KFIELDS+2*KFIELDS
       ELSE
@@ -357,7 +356,7 @@ IF( MYSETV == 1 )THEN
         ENDIF
         IND=0
         DO JF=1,KFIELDS
-          DO JGL=IBEG,IEND
+          DO JGL=IBEG,IWLATS
             IGL = D%NPTRLS(JSETW) + JGL - 1
             IND=IND+1
             ZAVEG(IGL,JF)=ZRCV(IND)
@@ -383,17 +382,18 @@ IF( MYSETV == 1 )THEN
 
   ELSE
 
+    IWLATS=D%NULTPP(MYSETW)
     IF(LDAVE_ONLY)THEN
-      ILEN=D%NDGL_FS*KFIELDS+2*KFIELDS
+      ILEN=IWLATS*KFIELDS+2*KFIELDS
     ELSE
-      ILEN=(D%NDGL_FS+2)*KFIELDS
+      ILEN=(IWLATS+2)*KFIELDS
     ENDIF
     IF(ILEN > 0)THEN
       CALL SET2PE(IPROC,0,0,1,1)
       ALLOCATE(ZSND(ILEN))
       IND=0
       DO JF=1,KFIELDS
-        DO JGL=IBEG,IEND
+        DO JGL=IBEG,IWLATS
           IGL = D%NPTRLS(MYSETW) + JGL - 1
           IND=IND+1
           ZSND(IND)=ZAVEG(IGL,JF)
@@ -414,7 +414,7 @@ IF( MYSETV == 1 )THEN
         ENDDO
       ENDIF
       CALL MPL_SEND(ZSND(:),KDEST=NPRCIDS(IPROC),KTAG=ITAG,&
-        &KMP_TYPE=JP_BLOCKING_STANDARD,CDSTRING='GPNORM_TRANS_CTL:V')
+        &KMP_TYPE=JP_BLOCKING_STANDARD,CDSTRING='GPNORM_TRANS_CTL:W')
       DEALLOCATE(ZSND)
     ENDIF
 
