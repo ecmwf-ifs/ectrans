@@ -18,6 +18,3 @@ classifiers = [
 [build-system]
 requires = ["setuptools", "wheel", "scikit-build"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools.dynamic]
-version = {attr = "ectrans4py.__version__"}

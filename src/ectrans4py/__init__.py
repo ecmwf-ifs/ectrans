@@ -16,7 +16,6 @@ from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT
 import platform
 
 
-__version__ = "1.5.1"
 
 
 # Shared objects library
@@ -72,6 +71,18 @@ def init_env(omp_num_threads=None,
 
 # Transforms interfaces
 #######################
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def ectrans_version():
+    """
+    Return the version string of ecTrans.
+
+    Returns:\n
+    1) CD_VERSION_STRING: version string of ecTrans (always 14 elements so must be trimmed)
+    """
+    return ([], [(str, (14,), OUT)], None)
 
 @treatReturnCode
 @ctypesFF()
@@ -387,3 +398,5 @@ def sp2gp_fft1d4py(KSIZES, KTRUNC, PSPEC, KSIZEG):
              (np.int64, None, IN),
              (np.float64, (KSIZEG,), OUT)],
             None)
+
+__version__ = ectrans_version().strip()
