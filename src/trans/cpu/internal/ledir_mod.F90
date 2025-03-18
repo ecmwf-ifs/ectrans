@@ -250,7 +250,11 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
       POA1(IS+(J-1)*2,JK) = ZCS(J,IFLD)
     ENDDO
   ENDDO
-  
+ELSE
+  ! This zonal wavenumber KM has no computation to be done (G%NDGLU(KM) = 0)
+  ! This is usuallyy because the wavenumber cannot be represented on the given grid, so we should
+  ! zero POA1
+  POA1(:,:) = 0.0_JPRB
 ENDIF
 
 !     ------------------------------------------------------------------
