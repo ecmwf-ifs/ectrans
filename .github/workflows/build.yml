@@ -68,7 +68,7 @@ jobs:
             caching: false
 
           - name : linux intel-classic
-            os: ubuntu-24.04
+            os: ubuntu-22.04
             compiler: intel-classic
             compiler_cc: icc
             compiler_cxx: icpc
