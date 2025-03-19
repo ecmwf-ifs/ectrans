@@ -17,9 +17,6 @@ on:
   # Allow workflow to be dispatched on demand
   workflow_dispatch: ~
 
-  # Trigger after public PR approved for CI
-  pull_request_target:
-    types: [labeled]
 
 env:
   ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
