@@ -73,18 +73,6 @@ jobs:
       with:
         path: ectrans
 
-    - name: Check ectrans4py version
-      run:  |
-        cd $GITHUB_WORKSPACE/ectrans
-        ectrans4py_version=`echo "$(grep __version__ src/ectrans4py/__init__.py); print(__version__)" | python`
-        ectrans_version=`cat VERSION`
-        if [ "$ectrans4py_version" != "$ectrans_version" ]; then
-          echo "ectrans4py and ectrans versions don't match"
-          echo "ectrans4py_version = $ectrans4py_version"
-          echo "ectrans_version = $ectrans_version"
-          exit 1
-        fi
-
     - name: Environment
       run:  |
         echo "DEPS_DIR=${{ runner.temp }}/deps" >> $GITHUB_ENV
@@ -124,6 +112,19 @@ jobs:
         pip install build
         python -m build --wheel ectrans -o $GITHUB_WORKSPACE
         pip install ectrans4py*
+
+    - name: Check ectrans4py version
+      run:  |
+        . venv/bin/activate
+        cd $GITHUB_WORKSPACE/ectrans
+        ectrans4py_version=`python -c "import ectrans4py; print(ectrans4py.__version__)"`
+        ectrans_version=`cat VERSION`
+        if [ "$ectrans4py_version" != "$ectrans_version" ]; then
+          echo "ectrans4py and ectrans versions don't match"
+          echo "ectrans4py_version = $ectrans4py_version"
+          echo "ectrans_version = $ectrans_version"
+          exit 1
+        fi
 
     - name: Test ectrans4py
       run:  |
