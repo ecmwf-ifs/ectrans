@@ -55,6 +55,38 @@ if( HAVE_OMP )
   list( APPEND nthreads 4 8 )
 endif()
 
+# --------------------------------------------------------------------------------------------------
+# Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD
+# --------------------------------------------------------------------------------------------------
+
+set( precisions "" )
+if( HAVE_DOUBLE_PRECISION )
+  list( APPEND precisions "dp" )
+endif()
+if( HAVE_SINGLE_PRECISION )
+  list( APPEND precisions "sp" )
+endif()
+
+set( ntasks 0 )
+if( HAVE_MPI )
+  list( APPEND ntasks 1 2 )
+endif()
+
+foreach( precision ${precisions} )
+  foreach( mpi ${ntasks} )
+    set( test_name ectrans_test_gpnorm_trans_adjoint_mpi${mpi}_${precision} )
+    ecbuild_add_test(TARGET ${test_name}
+      SOURCES trans/test_gpnorm_adjoint.F90
+      LIBS trans_${precision} parkind_${precision}
+      LINKER_LANGUAGE Fortran
+      MPI ${mpi}
+    )
+    if( TEST ${test_name} AND HAVE_OMP )
+      target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
+    endif()
+  endforeach()
+endforeach()
+
 foreach( prec dp sp )
   foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
