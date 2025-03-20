@@ -48,7 +48,7 @@ contains
   function ext_acc_pass_2d_r4(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in) :: arr(:,:)
+    real(4), intent(in), target :: arr(:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -72,7 +72,7 @@ contains
   function ext_acc_pass_3d_r4(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in) :: arr(:,:,:)
+    real(4), intent(in), target :: arr(:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -96,7 +96,7 @@ contains
   function ext_acc_pass_4d_r4(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in) :: arr(:,:,:,:)
+    real(4), intent(in), target :: arr(:,:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -120,7 +120,7 @@ contains
   function ext_acc_pass_2d_r8(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in) :: arr(:,:)
+    real(8), intent(in), target :: arr(:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -144,7 +144,7 @@ contains
   function ext_acc_pass_3d_r8(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in) :: arr(:,:,:)
+    real(8), intent(in), target :: arr(:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -168,7 +168,7 @@ contains
   function ext_acc_pass_4d_r8(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in) :: arr(:,:,:,:)
+    real(8), intent(in), target :: arr(:,:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
