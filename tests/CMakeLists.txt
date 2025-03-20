@@ -83,6 +83,40 @@ if( HAVE_CPU )
 endif()
 
 # --------------------------------------------------------------------------------------------------
+# Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD (CPU version only)
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_CPU )
+  set( precisions "" )
+  if( HAVE_DOUBLE_PRECISION )
+    list( APPEND precisions "dp" )
+  endif()
+  if( HAVE_SINGLE_PRECISION )
+    list( APPEND precisions "sp" )
+  endif()
+
+  set( ntasks 0 )
+  if( HAVE_MPI )
+    list( APPEND ntasks 1 2 )
+  endif()
+
+  foreach( precision ${precisions} )
+    foreach( mpi ${ntasks} )
+      set( test_name ectrans_test_gpnorm_trans_adjoint_mpi${mpi}_${precision} )
+      ecbuild_add_test(TARGET ${test_name}
+        SOURCES trans/test_gpnorm_adjoint.F90
+        LIBS trans_${precision} parkind_${precision}
+        LINKER_LANGUAGE Fortran
+        MPI ${mpi}
+      )
+      if( TEST ${test_name} AND HAVE_OMP )
+        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
+      endif()
+    endforeach()
+  endforeach()
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans, using the benchmark program
 # This tests CPU and/or GPU versions, depending on which are enabled
 # --------------------------------------------------------------------------------------------------
