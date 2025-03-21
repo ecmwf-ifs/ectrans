@@ -83,11 +83,6 @@ case "$os" in
           echo "Not taking any action."
           exit 0
         fi
-        if [ -n "${I_MPI_ROOT}" ]; then
-          echo "MPI is already installed at I_MPI_ROOT=${I_MPI_ROOT}."
-          echo "Not taking any action."
-          exit 0
-        fi
         case "$MPI" in
             mpich)
                 if [ -f ${PREFIX}/include/mpi.h ]; then
