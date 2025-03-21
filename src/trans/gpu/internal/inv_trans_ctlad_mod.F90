@@ -13,7 +13,7 @@ MODULE INV_TRANS_CTLAD_MOD
   CONTAINS
     SUBROUTINE INV_TRANS_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_OUT_LT,&
       & KF_UV,KF_SCALARS,KF_SCDERS,&
-      & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,FSPGL_PROC,&
+      & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,&
       & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
   
       !**** *INV_TRANS_CTLAD* - Control routine for adjoint of the inverse spectral transform.
@@ -49,8 +49,6 @@ MODULE INV_TRANS_CTLAD_MOD
       !                   if the total number of processors is greater than
       !                   the number of processors used for distribution in
       !                   spectral wave space.
-      !     FSPGL_PROC  - external procedure to be executed in fourier space
-      !                   before transposition
       !     PGP(:,:,:)  - gridpoint fields (output)
   
       !                  The ordering of the output fields is as follows (all
@@ -124,8 +122,6 @@ MODULE INV_TRANS_CTLAD_MOD
       INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC3B(:)
       INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETSC2(:)
       REAL(KIND=JPRB) ,OPTIONAL   ,INTENT(IN) :: PGP(:,:,:)
-      EXTERNAL  FSPGL_PROC
-      OPTIONAL  FSPGL_PROC
       REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGPUV(:,:,:,:)
       REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3A(:,:,:,:)
       REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3B(:,:,:,:)
