@@ -114,7 +114,7 @@ foreach( platform ${platforms} )
 
   set( ntasks 0 )
   if( HAVE_MPI )
-    list( APPEND ntasks 1 2 4 )
+    list( APPEND ntasks 1 2 )
   endif()
 
   foreach( mpi ${ntasks} )
