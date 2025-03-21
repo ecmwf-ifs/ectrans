@@ -58,7 +58,8 @@ foreach( mpi ${ntasks} )
 endforeach()
 
 # --------------------------------------------------------------------------------------------------
-# Add a test for tangent-linear/adjoint correspondence (CPU version only)
+# Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU
+# version only)
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
@@ -79,6 +80,10 @@ if( HAVE_CPU )
     target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
   endif()
 endif()
+
+# --------------------------------------------------------------------------------------------------
+# Add a test for tangent-linear/adjoint correspondence of INV_TRANS alone
+# --------------------------------------------------------------------------------------------------
 
 set( platforms )
 if( HAVE_CPU )
@@ -107,22 +112,16 @@ foreach( platform ${platforms} )
 
   set( ntasks 0 )
   if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
+    list( APPEND ntasks 1 2 4 )
   endif()
 
   foreach( mpi ${ntasks} )
-    
-    set( test_defintions )
-    if (${mpi} GREATER 0)
-      list( APPEND test_defintions USE_MPI )
-    endif()
-    
     ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}
       SOURCES trans/test_invtrans_adjoint.F90
       LIBS ${trans} ${parkind}
       LINKER_LANGUAGE Fortran
       MPI ${mpi}
-      DEFINITIONS ${test_defintions}
+      OMP 1
     )
     if( TEST ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} AND HAVE_OMP )
       target_link_libraries( ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} OpenMP::OpenMP_Fortran )
