@@ -9,11 +9,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
-MODULE UVTVD_MOD
+MODULE UVTVDAD_MOD
 CONTAINS
-SUBROUTINE UVTVD(KF_UV,PU,PV,PVOR,PDIV)
+SUBROUTINE UVTVDAD(KF_UV,PU,PV,PVOR,PDIV)
 
-!**** *UVTVD* - Compute vor/div from u and v in spectral space
+!**** *UVTVDAD* - Compute vor/div from u and v in spectral space
 
 !     Purpose.
 !     --------
@@ -23,7 +23,7 @@ SUBROUTINE UVTVD(KF_UV,PU,PV,PVOR,PDIV)
 
 !**   Interface.
 !     ----------
-!        CALL UVTVD(KM,KF_UV,PEPSNM,PU,PV,PVOR,PDIV)
+!        CALL UVTVDAD(KM,KF_UV,PEPSNM,PU,PV,PVOR,PDIV)
 
 !        Explicit arguments :  KM - zonal wave-number
 !        --------------------  KF_UV - number of fields (levels)
@@ -68,8 +68,8 @@ IMPLICIT NONE
 
 !     DUMMY INTEGER SCALARS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_UV
-REAL(KIND=JPRBT), INTENT(OUT)    :: PVOR(:,:,:),PDIV(:,:,:)
-REAL(KIND=JPRBT), INTENT(INOUT)  :: PU  (:,:,:),PV  (:,:,:)
+REAL(KIND=JPRBT), INTENT(INOUT)    :: PVOR(:,:,:),PDIV(:,:,:)
+REAL(KIND=JPRBT), INTENT(INOUT) :: PU  (:,:,:),PV  (:,:,:)
 INTEGER(KIND=JPIM)  :: KM, KMLOC
 
 !     LOCAL INTEGER SCALARS
@@ -90,28 +90,6 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX, D_MYMS=>D%MYMS, ZEPSNM=>FG%ZEPSNM)
 !$ACC& PRESENT(FG,ZEPSNM,PU,PV,PVOR,PDIV) ASYNC(1)
 #endif
 
-!*       1.1      SET N=KM-1 COMPONENT TO 0 FOR U AND V
-
-#ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM) SHARED(D,KF_UV,R,PU,PV) &
-!$OMP& MAP(TO:KF_UV) DEFAULT(NONE) 
-#endif
-#ifdef ACCGPU
-!$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM) FIRSTPRIVATE(KF_UV) DEFAULT(NONE) &
-#ifndef _CRAYFTN
-!$ACC& ASYNC(1)
-#else
-!$ACC&
-#endif
-#endif
-DO KMLOC=1,D_NUMP
-  DO J=1,2*KF_UV
-    KM = D_MYMS(KMLOC)
-    PU(J,R_NTMAX+4-KM,KMLOC) = 0.0_JPRBT
-    PV(J,R_NTMAX+4-KM,KMLOC) = 0.0_JPRBT
-  ENDDO
-ENDDO
-
 !*       1.2      COMPUTE VORTICITY AND DIVERGENCE.
 
 #ifdef OMPGPU
@@ -127,52 +105,69 @@ ENDDO
 #endif
 #endif
 DO KMLOC=1,D_NUMP
-  DO JN=0,R_NTMAX
+  DO JN=-1,R_NTMAX+1
     DO J=1,KF_UV
       IR = 2*J-1
       II = IR+1
       KM = D_MYMS(KMLOC)
       ZKM = REAL(KM,JPRBT)
 
-      IF(KM /= 0 .AND. JN >= KM) THEN
+      IF(KM /= 0 .AND. JN >= (KM-1)) THEN
         ! (DO JN=KN,R_NTMAX)
         IN = R_NTMAX+3-JN
         ZJN = JN
 
-        PVOR(IR,IN,KMLOC) = -ZKM*PV(II,IN,KMLOC)-&
-         &ZJN*ZEPSNM(KMLOC,JN+1)*PU(IR,IN-1,KMLOC)+&
-         &(ZJN+1)*ZEPSNM(KMLOC,JN)*PU(IR,IN+1,KMLOC)
-        PVOR(II,IN,KMLOC) = +ZKM*PV(IR,IN,KMLOC)-&
-         &ZJN*ZEPSNM(KMLOC,JN+1)*PU(II,IN-1,KMLOC)+&
-         &(ZJN+1)*ZEPSNM(KMLOC,JN)*PU(II,IN+1,KMLOC)
-        PDIV(IR,IN,KMLOC) = -ZKM*PU(II,IN,KMLOC)+&
-         &ZJN*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,KMLOC)-&
-         &(ZJN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,KMLOC)
-        PDIV(II,IN,KMLOC) = +ZKM*PU(IR,IN,KMLOC)+&
-         &ZJN*ZEPSNM(KMLOC,JN+1)*PV(II,IN-1,KMLOC)-&
-         &(ZJN+1)*ZEPSNM(KMLOC,JN)*PV(II,IN+1,KMLOC)
+        PU(IR,IN,KMLOC) = 0
+        PU(II,IN,KMLOC) = 0
+        PV(IR,IN,KMLOC) = 0
+        PV(II,IN,KMLOC) = 0
+
+        IF (2 <= IN .AND. IN <= R_NTMAX + 2) THEN
+          PU(IR,IN,KMLOC) = PU(IR,IN,KMLOC) - (ZJN-1)*ZEPSNM(KMLOC,JN)*PVOR(IR,IN+1,KMLOC)
+          PU(II,IN,KMLOC) = PU(II,IN,KMLOC) - (ZJN-1)*ZEPSNM(KMLOC,JN)*PVOR(II,IN+1,KMLOC)
+          PV(IR,IN,KMLOC) = PV(IR,IN,KMLOC) + (ZJN-1)*ZEPSNM(KMLOC,JN)*PDIV(IR,IN+1,KMLOC)
+          PV(II,IN,KMLOC) = PV(II,IN,KMLOC) + (ZJN-1)*ZEPSNM(KMLOC,JN)*PDIV(II,IN+1,KMLOC)
+        ENDIF
+        IF (3 <= IN .AND. IN <= R_NTMAX + 3) THEN
+          PU(IR,IN,KMLOC) = PU(IR,IN,KMLOC) + ZKM*PDIV(II,IN,KMLOC)
+          PU(II,IN,KMLOC) = PU(II,IN,KMLOC) - ZKM*PDIV(IR,IN,KMLOC)
+          PV(IR,IN,KMLOC) = PV(IR,IN,KMLOC) + ZKM*PVOR(II,IN,KMLOC)
+          PV(II,IN,KMLOC) = PV(II,IN,KMLOC) - ZKM*PVOR(IR,IN,KMLOC)
+        ENDIF
+        IF (4 <= IN .AND. IN <= R_NTMAX + 4) THEN
+          PU(IR,IN,KMLOC) = PU(IR,IN,KMLOC) + (ZJN+2)*ZEPSNM(KMLOC,JN+1)*PVOR(IR,IN-1,KMLOC)
+          PU(II,IN,KMLOC) = PU(II,IN,KMLOC) + (ZJN+2)*ZEPSNM(KMLOC,JN+1)*PVOR(II,IN-1,KMLOC)
+          PV(IR,IN,KMLOC) = PV(IR,IN,KMLOC) - (ZJN+2)*ZEPSNM(KMLOC,JN+1)*PDIV(IR,IN-1,KMLOC)
+          PV(II,IN,KMLOC) = PV(II,IN,KMLOC) - (ZJN+2)*ZEPSNM(KMLOC,JN+1)*PDIV(II,IN-1,KMLOC)
+        ENDIF
 
       ELSEIF(KM == 0) THEN
         ! (DO JN=0,R_NTMAX)
         IN = R_NTMAX+3-JN
         ZJN = JN
 
-        PVOR(IR,IN,KMLOC) = -&
-         &ZJN*ZEPSNM(KMLOC,JN+1)*PU(IR,IN-1,KMLOC)+&
-         &(ZJN+1)*ZEPSNM(KMLOC,JN)*PU(IR,IN+1,KMLOC)
-        PDIV(IR,IN,KMLOC) = &
-         &ZJN*ZEPSNM(KMLOC,JN+1)*PV(IR,IN-1,KMLOC)-&
-         &(ZJN+1)*ZEPSNM(KMLOC,JN)*PV(IR,IN+1,KMLOC)
+        PU(IR,IN,KMLOC) = 0
+        PU(II,IN,KMLOC) = 0
+        PV(IR,IN,KMLOC) = 0
+        PV(II,IN,KMLOC) = 0
+        
+        IF (2 <= IN .AND. IN <= R_NTMAX + 2) THEN
+          PU(IR,IN,KMLOC) = PU(IR,IN,KMLOC) - (ZJN-1)*ZEPSNM(KMLOC,JN)*PVOR(IR,IN+1,KMLOC)
+          PV(IR,IN,KMLOC) = PV(IR,IN,KMLOC) + (ZJN-1)*ZEPSNM(KMLOC,JN)*PDIV(IR,IN+1,KMLOC)
+        ENDIF
+        IF (4 <= IN .AND. IN <= R_NTMAX + 4) THEN
+          PU(IR,IN,KMLOC) = PU(IR,IN,KMLOC) + (ZJN+2)*ZEPSNM(KMLOC,JN+1)*PVOR(IR,IN-1,KMLOC)
+          PV(IR,IN,KMLOC) = PV(IR,IN,KMLOC) - (ZJN+2)*ZEPSNM(KMLOC,JN+1)*PDIV(IR,IN-1,KMLOC)
+        ENDIF
       ENDIF
     ENDDO
   ENDDO
 ENDDO
-
 #ifdef ACCGPU
 !$ACC END DATA
 #endif
 !     ------------------------------------------------------------------
 END ASSOCIATE
 
-END SUBROUTINE UVTVD
-END MODULE UVTVD_MOD
+END SUBROUTINE UVTVDAD
+END MODULE UVTVDAD_MOD
