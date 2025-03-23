@@ -186,7 +186,9 @@ CONTAINS
     INTEGER(KIND=JPIB)  :: IIN_SIZE
     INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_SIZE
 
-
+    INTEGER(KIND=JPIM)  :: KMLOC, JFLD, JN
+  
+    ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX)
 
     !     ------------------------------------------------------------------
     IF (LHOOK) CALL DR_HOOK('LTDIR_MOD',0,ZHOOK_HANDLE)
@@ -254,19 +256,38 @@ CONTAINS
         & IALLOC_POS, IALLOC_SZ)
     IALLOC_POS=IALLOC_POS+IALLOC_SZ
 
-    POA1 = 0
-    POA2 = 0
-    ZOUT = 0
-    ZOUT0 = 0
-    ZINPS = 0
-    ZINPA = 0
-    ZINPS0 = 0
-    ZINPA0 = 0
-
-    !$ACC DATA PRESENT(POA1,POA2,ZOUT,ZOUT0,ZINPS,ZINPA,ZINPS0,ZINPA0)
-    !$ACC UPDATE DEVICE(POA1,POA2,ZOUT,ZOUT0,ZINPS,ZINPA,ZINPS0,ZINPA0)
-    !$ACC WAIT(1)
+#ifdef ACCGPU
+    !$ACC DATA PRESENT(POA1,R_NTMAX,D_NUMP) 
+    !$ACC PARALLEL LOOP COLLAPSE(3) DEFAULT(NONE) COPYIN(KF_FS)
+#endif
+#ifdef OMPGPU
+    !$OMP TARGET DATA MAP(PRESENT,ALLOC:POA1,R_NTMAX,D_NUMP)
+    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) DEFAULT(NONE) MAP(TO:KF_FS)
+#endif
+    DO KMLOC=1,D_NUMP
+        DO JN=1,R_NTMAX+3
+          DO JFLD=1,2*KF_FS
+            POA1(JFLD,JN,KMLOC) = 0
+          END DO
+        END DO
+    END DO
+#ifdef ACCGPU
     !$ACC END DATA
+#endif
+#ifdef OMPGPU
+    !$OMP END TARGET DATA
+#endif
+
+    !     ------------------------------------------------------------------
+
+    !*       3.    PREPARE FOURIER ARRAYS.
+    !              ----------------------
+
+    !     ------------------------------------------------------------------
+
+    !*       4.    COPY WORK ARRAYS TO DEVICE.
+    !              ---------------------------
+
 
 #ifdef OMPGPU
     !$OMP TARGET DATA MAP(TO:PSPVOR,PSPDIV) IF(KF_UV > 0)
@@ -357,5 +378,8 @@ CONTAINS
     !     ------------------------------------------------------------------
 
     IF (LHOOK) CALL DR_HOOK('LTDIRAD_MOD',1,ZHOOK_HANDLE)
+
+    END ASSOCIATE
+
   END SUBROUTINE LTDIRAD
 END MODULE LTDIRAD_MOD
