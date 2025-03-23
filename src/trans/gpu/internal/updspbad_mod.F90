@@ -9,12 +9,12 @@
 ! nor does it submit to any jurisdiction.
 !
 
-MODULE UPDSPB_MOD
+MODULE UPDSPBAD_MOD
   CONTAINS
-  SUBROUTINE UPDSPB(KFIELD,POA,PSPEC,KFLDPTR)
+  SUBROUTINE UPDSPBAD(KFIELD,POA,PSPEC,KFLDPTR)
   
   
-  !**** *UPDSPB* - Update spectral arrays after direct Legendre transform
+  !**** *UPDSPBAD* - Update spectral arrays after direct Legendre transform
   
   !     Purpose.
   !     --------
@@ -23,7 +23,7 @@ MODULE UPDSPB_MOD
   
   !**   Interface.
   !     ----------
-  !        CALL UPDSPB(....)
+  !        CALL UPDSPBAD(....)
   
   !        Explicit arguments :  KM - zonal wavenumber
   !        --------------------  KFIELD  - number of fields
@@ -58,6 +58,7 @@ MODULE UPDSPB_MOD
   
   USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
   USE TPM_DIM,         ONLY: R
+  USE TPM_GEN,         ONLY: NERR
   USE TPM_DISTR,       ONLY: D
   USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
 
@@ -66,8 +67,8 @@ MODULE UPDSPB_MOD
   IMPLICIT NONE
   
   INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD
-  REAL(KIND=JPRBT)  ,INTENT(IN)  :: POA(:,:,:)
-  REAL(KIND=JPRB)   ,INTENT(OUT) :: PSPEC(:,:)
+  REAL(KIND=JPRBT)  ,INTENT(OUT) :: POA(:,:,:)
+  REAL(KIND=JPRB)   ,INTENT(IN)  :: PSPEC(:,:)
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
@@ -126,13 +127,13 @@ MODULE UPDSPB_MOD
         IF(KM /= 0 .AND. JN <= R_NTMAX+3-KM) THEN
         !(DO JN=3,R_NTMAX+3-KM)
           INM = IASM0+((R_NTMAX+3-JN)-KM)*2
-          PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
-          PSPEC(JFLD,INM+1) = POA(2*JFLD  ,JN,KMLOC)
+          POA(2*JFLD-1,JN,KMLOC) = PSPEC(JFLD,INM)  
+          POA(2*JFLD  ,JN,KMLOC) = PSPEC(JFLD,INM+1)
         ELSEIF (KM == 0) THEN
           !(DO JN=3,R_NTMAX+3)
           INM = IASM0+(R_NTMAX+3-JN)*2
-          PSPEC(JFLD,INM)   = POA(2*JFLD-1,JN,KMLOC)
-          PSPEC(JFLD,INM+1) = 0.0_JPRBT
+          POA(2*JFLD-1,JN,KMLOC) = PSPEC(JFLD,INM)
+          POA(2*JFLD,JN,KMLOC) = 0
         END IF
       ENDDO
     ENDDO
@@ -148,5 +149,5 @@ MODULE UPDSPB_MOD
   END ASSOCIATE
   !     ------------------------------------------------------------------
  
-  END SUBROUTINE UPDSPB
-END MODULE UPDSPB_MOD
+  END SUBROUTINE UPDSPBAD
+END MODULE UPDSPBAD_MOD
