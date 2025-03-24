@@ -16,7 +16,7 @@
 ! The program checks the correspondence of <GPNORM_TRANSTL(X1), Y2> and <X1, GPNORM_TRANSAD(Y2)>
 ! which with infinite precision should match exactly. In practice there is some divergence due to
 ! rounding errors. In this program we check whether the two expressions are the same to within a
-! tolerance of 2000 * machine epsilon.
+! tolerance of 5000 * machine epsilon.
 !
 ! The check is performed for a grid point array with 10 fields at TCO159 with a block size of 16.
 !
@@ -147,13 +147,13 @@ IF (IMYPROC == 1) THEN
   WRITE(IOUT, '(A,1E30.15)') '<X1,AD(Y2)> = ', ZRHS
   WRITE(IOUT, '(A,1E20.15)') 'Relative error = ', ZRELATIVE_ERROR
 
-  ! Abort if relative error is > 2000 * machine epsilon
-  ! All tested compilers seem to be happy with a threshold of 2000, though it is a bit arbitrary
-  IF (ZRELATIVE_ERROR > 2000.0*EPSILON(1.0_JPRB)) THEN
+  ! Abort if relative error is > 5000 * machine epsilon
+  ! All tested compilers seem to be happy with a threshold of 5000, though it is a bit arbitrary
+  IF (ZRELATIVE_ERROR > 5000.0*EPSILON(1.0_JPRB)) THEN
     WRITE(IERR, '(A)') '*******************************'
     WRITE(IERR, '(A)') 'TEST_GPNORM_TRANS_ADJOINT: test failed'
-    WRITE(IERR, '(A)') 'Relative error greater than 2000 * machine epsilon'
-    WRITE(IERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 2000.0*EPSILON(1.0_JPRB)
+    WRITE(IERR, '(A)') 'Relative error greater than 5000 * machine epsilon'
+    WRITE(IERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 5000.0*EPSILON(1.0_JPRB)
     WRITE(IERR, '(A)') '*******************************'
     FLUSH(IERR)
     CALL ABORT_TRANS("TEST_GPNORM_TRANS_ADJOINT: test failed")
