@@ -190,26 +190,29 @@ ADJ_VALUE_2 = SCALPRODSP(ZSPECX, ZSPECY)
 ADJ_VALUE_2 = ADJ_VALUE_2 + SCALPRODSP(ZVORX, ZVORY)
 ADJ_VALUE_2 = ADJ_VALUE_2 + SCALPRODSP(ZDIVX, ZDIVY)
 
-! ===== Compare inner products =====
-! i.e. <invtrans_adj(rgpx), (rspscalarx, rspvorx, rspdivx)> == <rgpx, invtrans(rspscalarx, rspvorx, rspdivx)>
+! Only task 1 should perform the correctness check
+IF (IMYPROC == 1) THEN
+  ! ===== Compare inner products =====
+  ! i.e. <invtrans_adj(rgpx), (rspscalarx, rspvorx, rspdivx)> == <rgpx, invtrans(rspscalarx, rspvorx, rspdivx)>
 
-ZRELATIVE_ERROR = ABS(ADJ_VALUE_1 - ADJ_VALUE_2) / ABS(ADJ_VALUE_1)
+  ZRELATIVE_ERROR = ABS(ADJ_VALUE_1 - ADJ_VALUE_2) / ABS(ADJ_VALUE_1)
 
-WRITE(IOUT, '(A,1E30.15)') '<Fx,y>  = ', ADJ_VALUE_1
-WRITE(IOUT, '(A,1E30.15)') '<x,F*y> = ', ADJ_VALUE_2
-WRITE(IOUT, '(A,1E20.15)') 'Relative error = ', ZRELATIVE_ERROR
+  WRITE(IOUT, '(A,1E30.15)') '<Fx,y>  = ', ADJ_VALUE_1
+  WRITE(IOUT, '(A,1E30.15)') '<x,F*y> = ', ADJ_VALUE_2
+  WRITE(IOUT, '(A,1E20.15)') 'Relative error = ', ZRELATIVE_ERROR
 
-! Abort if relative error is > 5000 * machine epsilon
-! All tested compilers seem to be happy with a threshold of 5000, thought it is a bit arbitrary
-IF (ZRELATIVE_ERROR > 5000.0*EPSILON(1.0_JPRB)) THEN
-  WRITE(IOUT, '(A)') '*******************************'
-  WRITE(IOUT, '(A)') 'Adjoint test failed'
-  WRITE(IOUT, '(A)') 'Relative error greater than 5000 * machine epsilon'
-  WRITE(IOUT, '(1E20.15,A3,1E20.15)') ZRELATIVE_ERROR, ' > ', 5000.0*EPSILON(1.0_JPRB)
-  WRITE(IOUT, '(A)') '*******************************'
-  FLUSH(IOUT)
-  CALL TRANS_END
-  CALL ABORT_TRANS("Adjoint test failed")
+  ! Abort if relative error is > 5000 * machine epsilon
+  ! All tested compilers seem to be happy with a threshold of 5000, though it is a bit arbitrary
+  IF (ZRELATIVE_ERROR > 5000.0*EPSILON(1.0_JPRB)) THEN
+    WRITE(IOUT, '(A)') '*******************************'
+    WRITE(IOUT, '(A)') 'Adjoint test failed'
+    WRITE(IOUT, '(A)') 'Relative error greater than 5000 * machine epsilon'
+    WRITE(IOUT, '(1E20.15,A3,1E20.15)') ZRELATIVE_ERROR, ' > ', 5000.0*EPSILON(1.0_JPRB)
+    WRITE(IOUT, '(A)') '*******************************'
+    FLUSH(IOUT)
+    CALL TRANS_END
+    CALL ABORT_TRANS("Adjoint test failed")
+  ENDIF
 ENDIF
 
 CALL TRANS_END
