@@ -36,6 +36,7 @@ jobs:
           - linux nvhpc-26.3
           - linux intel-classic
           - linux intel-modern
+          - linux amd-flang-6.0.0
           - macos
 
         include:
@@ -70,7 +71,7 @@ jobs:
             ctest_options: -E memory
             caching: false
 
-          - name : linux intel-classic
+          - name: linux intel-classic
             os: ubuntu-22.04
             compiler: intel-classic
             compiler_cc: icc
@@ -88,6 +89,13 @@ jobs:
             cmake_options: -DCMAKE_Fortran_FLAGS=-heap-arrays -DBLA_VENDOR=Generic
             python-version: '3.11'
             caching: true
+
+          - name: linux amd-flang-6.0.0
+            os: ubuntu-24.04
+            compiler: amd-flang-6.0.0
+            compiler_cc: amdclang
+            compiler_cxx: amdclang++
+            compiler_fc: amdflang-new
 
           - name: macos
             # Xcode compiler requires empty environment variables, so we pass null (~) here
@@ -203,6 +211,14 @@ jobs:
         printenv >> $GITHUB_ENV
         [ -z ${I_MPI_ROOT+x} ] || echo "MPI_HOME=${I_MPI_ROOT}" >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
+
+    - name: Install AMD flang compiler
+      if: contains( matrix.compiler, 'amd-flang' )
+      shell: bash -eux {0}
+      run: |
+        ${ECTRANS_TOOLS}/install-amd-flang.sh --prefix /opt/amd-flang
+        source /opt/amd-flang/env.sh
+        echo "${AMDFLANG_INSTALL_DIR}/bin"                   >> $GITHUB_PATH
 
     - name: Install MPI
       shell: bash -eux {0}
