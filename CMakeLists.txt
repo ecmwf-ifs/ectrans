@@ -176,8 +176,7 @@ ectrans_find_lapack()
 
 ecbuild_add_option( FEATURE TESTS
                     DEFAULT ON
-                    DESCRIPTION "Enable unit testing"
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran" )
+                    DESCRIPTION "Enable unit testing" )
 
 ### Add sources
 include( ectrans_compile_options )
