@@ -82,7 +82,7 @@ jobs:
             compiler_cc: amdclang
             compiler_cxx: amdclang++
             compiler_fc: amdflang-new
-            cmake_options: -DENABLE_MPI=OFF
+            cmake_options: -DCMAKE_Fortran_FLAGS_INIT=-fPIC -DCMAKE_CXX_FLAGS_INIT=-fPIC -DCMAKE_C_FLAGS_INIT=-fPIC -DENABLE_MPI=OFF
 
           - name: macos
             # Xcode compiler requires empty environment variables, so we pass null (~) here
