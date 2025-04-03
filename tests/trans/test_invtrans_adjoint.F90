@@ -180,6 +180,14 @@ ADJ_VALUE_1 = SCALPRODGP(ZGY, ZGX)
 ! ===== Compute adjoint invtrans and gather result on proc 1 =====
 ! i.e. invtrans_adj(rgpx) = (rspscalary, rspvory, rspdivy)
 
+! Zero output arrays
+! This shouldn't be necessary as these are passed to INTENT(OUT) arguments
+! However in PRFI1BAD we actually append to these arrays so we assume they
+! are initialised (rightly or wrongly...)
+ZSPECY(:,:) = 0.0_JPRB
+ZVORY(:,:) = 0.0_JPRB
+ZDIVY(:,:) = 0.0_JPRB
+
 CALL INV_TRANSAD(PSPSCALAR=ZSPECY, PSPVOR=ZVORY, PSPDIV=ZDIVY, PGP=ZGX, KPROMA=JPPROMA, &
   &              KVSETSC=IVSET, KVSETUV=IVSET)
 
