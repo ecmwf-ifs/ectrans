@@ -78,8 +78,8 @@ jobs:
               - rocm/6.0.3
               - cray-fftw
               - buildtools
-            output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}
-            workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}
+            output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
+            workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
             cmake_options: >
               -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
               -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
