@@ -1,5 +1,4 @@
-! (C) Copyright 2008- ECMWF.
-! (C) Copyright 2008- Meteo-France.
+! (C) Copyright 2024- ECMWF.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -8,10 +7,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
-SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
+SUBROUTINE GPNORM_TRANSAD(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
 
 
-!**** *GPNORM_TRANS* - calculate grid-point norms
+!**** *GPNORM_TRANSAD* - calculate grid-point norms
+!                          (adjoint version)
 
 !     Purpose.
 !     --------
@@ -19,7 +19,7 @@ SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 
 !**   Interface.
 !     ----------
-!     CALL GPNORM_TRANS(...)
+!     CALL GPNORM_TRANSAD(...)
 
 !     Explicit arguments :
 !     --------------------
@@ -31,33 +31,26 @@ SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 !                   (these do not have to be just levels)
 !     KPROMA      - required blocking factor (input)
 !     PAVE        - average (output)
-!     PMIN        - minimum (input/output)
-!     PMAX        - maximum (input/output)
-!     LDAVE_ONLY  - T : PMIN and PMAX already contain local MIN and MAX
 !     KRESOL      -  resolution tag (optional)
 !                    default assumes first defined resolution
 !
 
 !     Author.
 !     -------
-!        George Mozdzynski *ECMWF*
+!       Filip Vana
+!       (c) ECMWF  14-Aug-2024
 
 !     Modifications.
 !     --------------
-!        Original : 19th Sept 2008
-!        R. El Khatib 07-08-2009 Optimisation directive for NEC
-!        R. El Khatib 16-Sep-2019 merge with LAM code
+
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
-USE TPM_DIM         ,ONLY : R
-USE TPM_FIELDS      ,ONLY : F
-USE SET_RESOL_MOD   ,ONLY : SET_RESOL
 USE YOMHOOK         ,ONLY : LHOOK,   DR_HOOK,   JPHOOK
-USE GPNORM_TRANS_CTL_MOD, ONLY : GPNORM_TRANS_CTL
+USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
 
 !endif INTERFACE
 
@@ -65,13 +58,10 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PGP(:,:,:)
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PAVE(:)
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PMIN(:)
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PMAX(:)
+REAL(KIND=JPRB)   ,INTENT(OUT)   :: PGP(:,:,:)
+REAL(KIND=JPRB)   ,INTENT(INOUT) :: PAVE(:)
 INTEGER(KIND=JPIM),INTENT(IN)    :: KFIELDS
 INTEGER(KIND=JPIM),INTENT(IN)    :: KPROMA
-LOGICAL           ,INTENT(IN)    :: LDAVE_ONLY
 INTEGER(KIND=JPIM),OPTIONAL, INTENT(IN)  :: KRESOL
 
 !ifndef INTERFACE
@@ -80,18 +70,15 @@ INTEGER(KIND=JPIM),OPTIONAL, INTENT(IN)  :: KRESOL
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('GPNORM_TRANS',0,ZHOOK_HANDLE)
+IF (LHOOK) CALL DR_HOOK('GPNORM_TRANSAD',0,ZHOOK_HANDLE)
 
-! Set current resolution
-CALL SET_RESOL(KRESOL)
+CALL ABORT_TRANS("GPNORM_TRANSAD not implemented yet for GPUs")
 
-CALL GPNORM_TRANS_CTL(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,F%RW(1:R%NDGL))
-
-IF (LHOOK) CALL DR_HOOK('GPNORM_TRANS',1,ZHOOK_HANDLE)
+IF (LHOOK) CALL DR_HOOK('GPNORM_TRANSAD',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
 !endif INTERFACE
 
 
-END SUBROUTINE GPNORM_TRANS
+END SUBROUTINE GPNORM_TRANSAD
