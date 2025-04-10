@@ -12,11 +12,11 @@ SUBROUTINE GPNORM_TRANSTL(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
 
 
 !**** *GPNORM_TRANSTL* - calculate grid-point norms
+!                        reduced version for linear model
 
 !     Purpose.
 !     --------
-!        calculate grid-point norms using a 2 stage (NPRTRV,NPRTRW) communication rather
-!        than an approach using a more expensive global gather collective communication
+!        calculate grid-point norms
 
 !**   Interface.
 !     ----------
@@ -38,11 +38,11 @@ SUBROUTINE GPNORM_TRANSTL(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
 
 !     Author.
 !     -------
-!        George Mozdzynski *ECMWF*
+!        Filip Vana, (c) ECMWF
+!        9-Sep-2024
 
 !     Modifications.
 !     --------------
-!        Original : 19th Sept 2008
 
 !     ------------------------------------------------------------------
 
