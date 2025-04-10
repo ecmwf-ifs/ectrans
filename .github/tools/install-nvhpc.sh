@@ -12,7 +12,7 @@
 # See <https://creativecommons.org/publicdomain/zero/1.0/> for
 # details.
 
-version=21.9
+version=25.1
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
 export NVHPC_INSTALL_DIR=$(pwd)/nvhpc-install

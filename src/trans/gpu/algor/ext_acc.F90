@@ -17,14 +17,23 @@ module openacc_ext_type
   end type
 end module
 module openacc_ext
-  use iso_c_binding, only: c_ptr, c_size_t, c_loc
-  use openacc, only: acc_create, acc_copyin, acc_handle_kind
+  use iso_c_binding, only: c_ptr, c_size_t, c_loc, c_sizeof, c_f_pointer
+#ifdef ACCGPU
+  use openacc, only: acc_handle_kind
+#endif
+#ifdef OMPGPU
+#endif
   use openacc_ext_type, only: ext_acc_arr_desc
   implicit none
 
   private
   public :: ext_acc_pass, ext_acc_create, ext_acc_copyin, ext_acc_copyout, &
-    & ext_acc_delete, ext_acc_arr_desc, acc_handle_kind
+#ifdef ACCGPU
+       & ext_acc_delete, ext_acc_arr_desc, acc_handle_kind
+#endif
+#ifdef OMPGPU
+       & ext_acc_delete, ext_acc_arr_desc
+#endif
 
   type common_pointer_descr
     type(c_ptr) :: ptr
@@ -39,7 +48,7 @@ contains
   function ext_acc_pass_2d_r4(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in) :: arr(:,:)
+    real(4), intent(in), target :: arr(:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -63,7 +72,7 @@ contains
   function ext_acc_pass_3d_r4(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in) :: arr(:,:,:)
+    real(4), intent(in), target :: arr(:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -87,7 +96,7 @@ contains
   function ext_acc_pass_4d_r4(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in) :: arr(:,:,:,:)
+    real(4), intent(in), target :: arr(:,:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -111,7 +120,7 @@ contains
   function ext_acc_pass_2d_r8(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in) :: arr(:,:)
+    real(8), intent(in), target :: arr(:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -135,7 +144,7 @@ contains
   function ext_acc_pass_3d_r8(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in) :: arr(:,:,:)
+    real(8), intent(in), target :: arr(:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -159,7 +168,7 @@ contains
   function ext_acc_pass_4d_r8(arr) result(ret)
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in) :: arr(:,:,:,:)
+    real(8), intent(in), target :: arr(:,:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -247,97 +256,135 @@ contains
     enddo
   end function
   subroutine ext_acc_create(ptrs, stream)
-    use openacc, only: acc_create, acc_async_sync
+#ifdef ACCGPU
+    use openacc, only: acc_async_sync
+#endif
     use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
+#endif
+#ifdef OMPGPU
+    integer(4), optional :: stream
+#endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(kind=int32), pointer :: pp(:)
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
-
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
     endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      !!call acc_create_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_create(pp, int(common_ptrs(i)%sz))
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
+      !$acc enter data create(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+      !$omp target enter data map(alloc:pp)
+#endif
     enddo
   end subroutine
   subroutine ext_acc_copyin(ptrs, stream)
+#ifdef ACCGPU
     use openacc, only: acc_async_sync
+#endif
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
+#endif
+#ifdef OMPGPU
+    integer(4), optional :: stream
+#endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(4), pointer :: pp(:)
-
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
-
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
     endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      !!call acc_copyin_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_copyin(pp, int(common_ptrs(i)%sz))
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
+      !$acc enter data copyin(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+      !$omp target enter data map(to:pp)
+#endif
     enddo
   end subroutine
   subroutine ext_acc_copyout(ptrs, stream)
-    use openacc, only: acc_async_sync, acc_copyout
+#ifdef ACCGPU
+    use openacc, only: acc_async_sync
+#endif
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-
+#endif
+#ifdef OMPGPU
+    integer(4), optional :: stream
+#endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(4), pointer :: pp(:)
-
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
-
     if (present(stream)) then
       stream_act = stream
     else
       stream_act = acc_async_sync
     endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      !!call acc_copyout_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_copyout(pp, int(common_ptrs(i)%sz))
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
+      !$acc exit data copyout(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+      !$omp target exit data map(from:pp)
+#endif
     enddo
   end subroutine
   subroutine ext_acc_delete(ptrs, stream)
-    use openacc, only: acc_async_sync, acc_delete
+#ifdef ACCGPU
+    use openacc, only: acc_async_sync
+#endif
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
+#ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-
+#else
+    integer(4), optional :: stream
+#endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
     integer(4), pointer :: pp(:)
-
+#ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
 
     if (present(stream)) then
@@ -345,13 +392,18 @@ contains
     else
       stream_act = acc_async_sync
     endif
+#endif
     allocate(common_ptrs(size(ptrs)))
     num_ranges = get_common_pointers(ptrs, common_ptrs)
 
     do i = 1, num_ranges
-      call c_f_pointer(common_ptrs(i)%ptr, pp, shape=[common_ptrs(i)%sz/sizeof(pp(1))])
-      !!call acc_delete_async(pp, common_ptrs(i)%sz, async=stream_act)
-      call acc_delete(pp, int(common_ptrs(i)%sz))
+      call c_f_pointer(common_ptrs(i)%ptr, pp, [common_ptrs(i)%sz/c_sizeof(pp(1))])
+#ifdef ACCGPU
+      !$acc exit data delete(pp) async(stream_act)
+#endif
+#ifdef OMPGPU
+      !$omp target exit data map(delete:pp)
+#endif
     enddo
   end subroutine
 end module

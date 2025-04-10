@@ -57,8 +57,10 @@ MODULE UPDSPB_MOD
   !     ------------------------------------------------------------------
   
   USE PARKIND_ECTRANS, ONLY: JPIM, JPRB, JPRBT
-  USE TPM_DIM,         ONLY: R_NTMAX
-  USE TPM_DISTR,       ONLY: D_NUMP, D_MYMS, D_NASM0
+  USE TPM_DIM,         ONLY: R
+  USE TPM_DISTR,       ONLY: D
+  USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
+
   !
   
   IMPLICIT NONE
@@ -85,28 +87,35 @@ MODULE UPDSPB_MOD
   ! and nn=NTMAX+2-n from NTMAX+2-m to NTMAX+2-NSMAX.
   ! NLTN(m)=NTMAX+2-m : n=NLTN(nn),nn=NLTN(n)
   ! nn is the loop index.
-  
-    IF(PRESENT(KFLDPTR)) THEN
-       stop 'Error: code path not (yet) supported in GPU version'
-    ENDIF
+  ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, D_NASM0=>D%NASM0, R_NTMAX=>R%NTMAX)
+
+  IF(PRESENT(KFLDPTR)) THEN
+    CALL ABORT_TRANS('UPDSPB: Code path not (yet) supported in GPU version')
+  ENDIF
   
   !*       1.    UPDATE SPECTRAL FIELDS.
   !              -----------------------
 
-      !loop over wavenumber
-#ifdef ACCGPU
-  !$ACC DATA PRESENT(PSPEC,POA,R_NTMAX,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
-#endif
 #ifdef OMPGPU
-!WARNING: following line should be PRESENT,ALLOC but causes issues with AMD compiler!
-  !$OMP TARGET DATA MAP(ALLOC:PSPEC,POA) &
-  !$OMP&    MAP(TO:R_NTMAX,D_NUMP,D_MYMS,D_NASM0)
-  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) PRIVATE(KM,IASM0,INM,IR,II) DEFAULT(NONE) &
-  !$OMP& SHARED(R_NTMAX,D_NUMP,D_MYMS,D_NASM0,PSPEC,KFIELD,POA)
+  !$OMP TARGET DATA MAP(PRESENT,ALLOC:PSPEC,POA,R,R_NTMAX,D,D_NUMP,D_MYMS,D_NASM0)
 #endif
 #ifdef ACCGPU
-  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE) &
-  !$ACC& FIRSTPRIVATE(KFIELD) ASYNC(1)
+  !$ACC DATA PRESENT(PSPEC,POA,R,R_NTMAX,D,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)
+#endif
+
+! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
+! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
+#ifdef OMPGPU
+  !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) DEFAULT(NONE) PRIVATE(KM,IASM0,INM) &
+  !$OMP& SHARED(D,R,KFIELD,POA,PSPEC) MAP(TO:KFIELD)
+#endif
+#ifdef ACCGPU
+  !$ACC PARALLEL LOOP COLLAPSE(3) PRIVATE(KM,IASM0,INM) DEFAULT(NONE) COPYIN(KFIELD) &
+#ifndef _CRAYFTN
+  !$ACC& ASYNC(1)
+#else
+  !$ACC&
+#endif
 #endif
   DO KMLOC=1,D_NUMP
     DO JN=3,R_NTMAX+3
@@ -128,13 +137,15 @@ MODULE UPDSPB_MOD
       ENDDO
     ENDDO
   ENDDO
-#ifdef OMPGPU
-  !$OMP END TARGET DATA
-#endif
+
 #ifdef ACCGPU
   !$ACC END DATA
 #endif
+#ifdef OMPGPU
+  !$OMP END TARGET DATA
+#endif
  
+  END ASSOCIATE
   !     ------------------------------------------------------------------
  
   END SUBROUTINE UPDSPB

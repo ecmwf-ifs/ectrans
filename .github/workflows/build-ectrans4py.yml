@@ -1,0 +1,134 @@
+name: build-ectrans4py
+
+# Controls when the action will run
+on:
+
+  # Trigger the workflow on all pushes, except on tag creation
+  push:
+    branches:
+    - '**'
+    tags-ignore:
+    - '**'
+
+  # Trigger the workflow on all pull requests
+  pull_request: ~
+
+  # Allow workflow to be dispatched on demand
+  workflow_dispatch: ~
+
+env:
+  ECTRANS_TOOLS: ${{ github.workspace }}/ectrans/.github/tools
+  CTEST_PARALLEL_LEVEL: 1
+  CACHE_SUFFIX: v1        # Increase to force new cache to be created
+
+jobs:
+  ci:
+    name: ci
+
+    strategy:
+      fail-fast: false    # false: try to complete all jobs
+
+      matrix:
+        build_type: [Release,Debug]
+        name:
+          - linux gnu-13
+          - macos
+
+        include:
+
+          - name: linux gnu-13
+            os: ubuntu-24.04
+            compiler: gnu-13
+            compiler_cc: gcc-13
+            compiler_cxx: g++-13
+            compiler_fc: gfortran-13
+            ctest_options: -E memory
+            caching: true
+
+          - name: macos
+            # Xcode compiler requires empty environment variables, so we pass null (~) here
+            os: macos-13
+            compiler: clang-14
+            compiler_cc: ~
+            compiler_cxx: ~
+            compiler_fc: gfortran-13
+            caching: true
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout ecBuild
+      uses: actions/checkout@v4
+      with:
+        repository: ecmwf/ecbuild
+        path: ecbuild
+
+    - name: Checkout FIAT
+      uses: actions/checkout@v4
+      with:
+        repository: ecmwf-ifs/fiat
+        path: fiat
+
+    - name: Checkout ecTrans
+      uses: actions/checkout@v4
+      with:
+        path: ectrans
+
+    - name: Environment
+      run:  |
+        echo "DEPS_DIR=${{ runner.temp }}/deps" >> $GITHUB_ENV
+        echo "CC=${{ matrix.compiler_cc }}"     >> $GITHUB_ENV
+        echo "CXX=${{ matrix.compiler_cxx }}"   >> $GITHUB_ENV
+        echo "FC=${{ matrix.compiler_fc }}"     >> $GITHUB_ENV
+
+        if [[ "${{ matrix.os }}" =~ macos ]]; then
+          brew install ninja
+        else
+          sudo apt-get update
+          sudo apt-get install ninja-build
+        fi
+
+        printenv
+
+    - name: Install FIAT
+      run:  |
+        cmake -B $GITHUB_WORKSPACE/fiat/build -S $GITHUB_WORKSPACE/fiat
+        cmake --build $GITHUB_WORKSPACE/fiat/build
+        echo "fiat_ROOT=$GITHUB_WORKSPACE/fiat/build" >> $GITHUB_ENV
+
+    - name: Install FFTW
+      shell: bash -eux {0}
+      run: |
+        ${ECTRANS_TOOLS}/install-fftw.sh --version 3.3.10 --with-single --prefix ${DEPS_DIR}/fftw
+        echo "FFTW_ROOT=${DEPS_DIR}/fftw" >> $GITHUB_ENV
+
+    - name: Install OpenBLAS
+      shell: bash -eux {0}
+      run: ${ECTRANS_TOOLS}/install-openblas.sh
+
+    - name: Build ectrans4py
+      run:  |
+        python3 -m venv venv
+        . venv/bin/activate
+        pip install build
+        python -m build --wheel ectrans -o $GITHUB_WORKSPACE
+        pip install ectrans4py*
+
+    - name: Check ectrans4py version
+      run:  |
+        . venv/bin/activate
+        cd $GITHUB_WORKSPACE/ectrans
+        ectrans4py_version=`python -c "import ectrans4py; print(ectrans4py.__version__)"`
+        ectrans_version=`cat VERSION`
+        if [ "$ectrans4py_version" != "$ectrans_version" ]; then
+          echo "ectrans4py and ectrans versions don't match"
+          echo "ectrans4py_version = $ectrans4py_version"
+          echo "ectrans_version = $ectrans_version"
+          exit 1
+        fi
+
+    - name: Test ectrans4py
+      run:  |
+        . venv/bin/activate
+        cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
+        pip install pytest
+        python -m pytest

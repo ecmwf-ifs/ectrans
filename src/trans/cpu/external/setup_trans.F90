@@ -10,7 +10,7 @@
 
 SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 &KTMAX,KRESOL,PWEIGHT,LDGRIDONLY,LDUSERPNM,LDKEEPRPNM,LDUSEFLT,&
-&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,&
+&LDSPSETUPONLY,LDPNMONLY,LDUSEFFTW,LD_ALL_FFTW,&
 &LDLL,LDSHIFTLL,CDIO_LEGPOL,CDLEGPOLFNAME,KLEGPOLPTR,KLEGPOLPTR_LEN)
 
 !**** *SETUP_TRANS* - Setup transform package for specific resolution
@@ -54,6 +54,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomials only, not the FFTs.
 !     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
+!     LD_ALL_FFTW : T to transform all fields in one call, F to transforms fields one after another
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL
 !                                 or KDGL+2 in the case that includes poles + equator
@@ -96,6 +97,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        G. Mozdzynski : Jun 2015 Support alternative FFTs to FFTW
 !        M.Hamrud/W.Deconinck : July 2015 IO options for Legenndre polynomials
 !        R. El Khatib 07-Mar-2016 Better flexibility for Legendre polynomials computation in stretched mode
+!        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
 USE PARKIND1,                    ONLY: JPIM, JPRD, JPRB
@@ -140,6 +142,7 @@ REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PWEIGHT(:)
 REAL(KIND=JPRD)    ,OPTIONAL,INTENT(IN) :: PSTRET
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDGRIDONLY
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSEFLT
+LOGICAL   ,OPTIONAL,INTENT(IN):: LD_ALL_FFTW
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDUSERPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDKEEPRPNM
 LOGICAL   ,OPTIONAL,INTENT(IN):: LDSPSETUPONLY
@@ -228,6 +231,7 @@ D%LCPNMONLY=.FALSE.
 S%LUSE_BELUSOV=.TRUE. ! use Belusov algorithm to compute RPNM array instead of per m
 S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
+TW%LALL_FFTW=.FALSE. ! transform fields one at a time
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
 S%LSHIFTLL = .FALSE. ! shift output lat-lon by 0.5dx, 0.5dy
@@ -339,6 +343,10 @@ ENDIF
 
 ! Setup distribution independent dimensions
 CALL SETUP_DIMS
+
+IF(PRESENT(LD_ALL_FFTW)) THEN
+  TW%LALL_FFTW=LD_ALL_FFTW
+ENDIF
 
 S%LSOUTHPNM=.FALSE.
 IF(PRESENT(PSTRET)) THEN

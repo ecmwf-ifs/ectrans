@@ -16,6 +16,26 @@ find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CUR
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
 
+# CMake 3.29 adds CMAKE_TEST_LAUNCHER defined either as CMake variable or environment.
+# This launcher is a semi-colon-separted list of arguments that is used to launch serial tasks,
+# and can be defined during the CMake configuration.
+# This is e.g. required for GPU tests that need access to slurm resources:
+#    export CMAKE_TEST_LAUNCHER="srun;-n;1"
+# To run the tests then:
+#    salloc -q <queue> --gpus-per-task=1 -n <nproc>    ctest <ctest-args>
+# Before cmake 3.29 this could only be achieved with CMAKE_CROSSCOMPILING_EMULATOR.
+# This next snippet ensures forward compatibility
+if( ${CMAKE_VERSION} VERSION_LESS "3.29" )
+  if( DEFINED CMAKE_TEST_LAUNCHER )
+    set(CMAKE_CROSSCOMPILING_EMULATOR ${CMAKE_TEST_LAUNCHER})
+  elseif(DEFINED ENV{CMAKE_TEST_LAUNCHER})
+    set(CMAKE_CROSSCOMPILING_EMULATOR $ENV{CMAKE_TEST_LAUNCHER})
+  endif()
+endif()
+if( CMAKE_CROSSCOMPILING_EMULATOR )
+  set( CMAKE_TEST_LAUNCHER ${CMAKE_CROSSCOMPILING_EMULATOR} )
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 
 ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
@@ -109,6 +129,11 @@ ecbuild_add_option( FEATURE GPU
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
                     CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
 
+# Check CPU or GPU is enabled, and if not, abort
+if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
+  ecbuild_critical("Please enable one or both of the CPU and GPU features")
+endif()
+
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
@@ -142,10 +167,10 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )
 
-	    ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
+ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     DEFAULT ON
                     CONDITION HAVE_GPU
-		    DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
+                    DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
@@ -156,18 +181,32 @@ ecbuild_add_option( FEATURE GPU_STATIC
                     DEFAULT ${GPU_STATIC_DEFAULT}
                     DESCRIPTION "Compile GPU library as static library")
 
+ecbuild_add_option( FEATURE ETRANS
+                    DEFAULT OFF
+                    DESCRIPTION "Include Limited-Area-Model Transforms" )
+
+	   
+ecbuild_add_option( FEATURE ECTRANS4PY
+                    DEFAULT OFF
+		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
+                    DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
+
+
 ectrans_find_lapack()
 
 ecbuild_add_option( FEATURE TESTS
                     DEFAULT ON
                     DESCRIPTION "Enable unit testing"
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
-                    CONDITION HAVE_CPU )
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran" )
 
-### Add sources and tests
+### Add sources
 include( ectrans_compile_options )
 add_subdirectory( src )
-add_subdirectory( tests )
+
+### Add tests
+if( HAVE_TESTS )
+  add_subdirectory( tests )
+endif()
 
 ### Export
 if( BUILD_SHARED_LIBS )

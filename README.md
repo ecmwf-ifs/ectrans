@@ -106,6 +106,28 @@ The benchmark drivers are found in the bin directory.
 A brief description of available command-line arguments can be obtained with e.g.
 ectrans-benchmark-cpu-sp --help
 
+Building `ectrans4py`
+---------------------
+
+The python wheel can be built from the root of the project, assuming above-mentioned variables are defined (`fiat_ROOT` etc...):
+```
+python -m build --wheel
+```
+and then:
+```
+python -m auditwheel
+```
+The built python wheel is then to be found in directory `wheelhouse/` and can be locally installed by pip:
+```
+pip install wheelhouse/ectrans4py-<x.y.z>(...).whl
+```
+The `_skbuild` and `dist` directories can be deleted.
+
+Tests can be run from `tests/test_ectrans4py/`:
+```
+python -m pytest
+```
+
 Reporting Bugs
 ==============
 
@@ -114,5 +136,5 @@ Please report bugs using a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/i
 Contributing
 ============
 
-Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) with your contribution. All contributors to the pull request need to sign the [contributors license agreement (CLA)](https://claassistant.ecmwf.int/ecmwf-ifs/ectrans).
+Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) with your contribution. All contributors to the pull request need to sign the [contributors license agreement (CLA)](https://bol-claassistant.ecmwf.int/ecmwf-ifs/ectrans).
 

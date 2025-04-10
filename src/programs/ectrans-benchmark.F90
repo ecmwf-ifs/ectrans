@@ -210,6 +210,8 @@ character(len=16) :: cgrid = ''
 
 integer(kind=jpim) :: ierr
 
+real(kind=jprb), allocatable :: global_field(:,:)
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -217,10 +219,12 @@ integer(kind=jpim) :: ierr
 #include "inv_trans.h"
 #include "dir_trans.h"
 #include "trans_inq.h"
+#include "gath_grid.h"
 #include "specnorm.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
 #include "ec_meminfo.intfb.h"
+#include "trans_end.h"
 
 !===================================================================================================
 
@@ -576,7 +580,7 @@ ztinit = (timef() - ztinit)/1000.0_jprd
 if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a,i0,a,f9.2,a)') "ectrans_benchmark initialisation, on ",nproc,&
-                                & " tasks, took",ztinit," sec"
+                                & " tasks, took ",ztinit," sec"
   write(nout,'(" ")')
 endif
 
@@ -652,12 +656,17 @@ do jstep = 1, iters+iters_warmup
   ! While in grid point space, dump the values to disk, for debugging only
   !=================================================================================================
 
-  if (ldump_values) then
-    ! dump a field to a binary file
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp2(:,1,:),         'S', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,1,:), 'U', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgpuv(:,nflevg,2,:), 'V', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
+  if (ldump_values .and. mod(jstep,10) == 1) then
+    if (myproc == 1) then
+      allocate(global_field(ngptotg,1))
+    endif
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp2(:,1:1,:), 's', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,1,:), 'u', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,2,:), 'v', noutdump)
+    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp3a(:,nflevg:nflevg,1,:), 't', noutdump)
+    if (myproc == 1) then
+      deallocate(global_field)
+    endif
   endif
 
   !=================================================================================================
@@ -729,12 +738,12 @@ do jstep = 1, iters+iters_warmup
           zerr(4) = abs(znormt1(ifld)/znormt(ifld) - 1.0_jprb)
           zmaxerr(4) = max(zmaxerr(4), zerr(4))
         enddo
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+                    & " | zspdiv max err=",e10.3," | zspsc3a max err=",e10.3," | zspsc2 max err=",e10.3)') &
                     &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
       else
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                    & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+                    & " | zspdiv max err=",e10.3," | zspsc2 max err=",e10.3)') &
                     &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(1)
       endif
     endif
@@ -954,6 +963,8 @@ if (lmeminfo) then
       & kcall=1)
 endif
 
+call trans_end
+
 !===================================================================================================
 ! Finalize MPI
 !===================================================================================================
@@ -1007,6 +1018,17 @@ end subroutine
 
 !===================================================================================================
 
+subroutine str2int(str, int, stat)
+
+  character(len=*), intent(in) :: str
+  integer, intent(out) :: int
+  integer, intent(out) :: stat
+  read(str, *, iostat=stat) int
+
+end subroutine str2int
+
+!===================================================================================================
+
 function get_int_value(cname, iarg) result(value)
 
   integer :: value
@@ -1040,171 +1062,6 @@ function get_str_value(cname, iarg) result(value)
   end if
 
 end function
-
-!===================================================================================================
-
-subroutine parsing_failed(message)
-
-  character(len=*), intent(in) :: message
-  if (luse_mpi) call mpl_init(ldinfo=.false.)
-  if (ec_mpirank() == 0) then
-    write(nerr,"(a)") trim(message)
-    call print_help(unit=nerr)
-  endif
-  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-  stop
-
-end subroutine
-
-!===================================================================================================
-
-subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
-
-  integer, intent(inout) :: nsmax           ! Spectral truncation
-  character(len=16), intent(inout) :: cgrid ! Spectral truncation
-  integer, intent(inout) :: iters           ! Number of iterations for transform test
-  integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
-  integer, intent(inout) :: nfld            ! Number of scalar fields
-  integer, intent(inout) :: nlev            ! Number of vertical levels
-  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
-  logical, intent(inout) :: lscders         ! Compute scalar derivatives
-  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
-  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
-  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
-  integer, intent(inout) :: nproma          ! NPROMA
-  integer, intent(inout) :: verbosity       ! Level of verbosity
-  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
-  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
-  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
-                                            ! end
-  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
-  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
-  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
-                                            ! tolerance for correctness checking
-
-  character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
-
-#ifdef ACCGPU
-  !$acc init
-#endif
-
-  do while (iarg <= command_argument_count())
-    call get_command_argument(iarg, carg)
-
-    select case(carg)
-      ! Parse help argument
-      case('-h', '--help')
-        if (luse_mpi) call mpl_init(ldinfo=.false.)
-        if (ec_mpirank()==0) call print_help()
-        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-        stop
-      ! Parse verbosity argument
-      case('-v')
-        verbosity = 1
-      ! Parse number of iterations argument
-      case('-n', '--niter')
-        iters = get_int_value('-n', iarg)
-        if (iters < 1) then
-          call parsing_failed("Invalid argument for -n: must be > 0")
-        end if
-      case('--niter-warmup')
-        iters_warmup = get_int_value('--niter-warmup', iarg)
-        if (iters_warmup < 0) then
-          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
-        end if
-      ! Parse spectral truncation argument
-      case('-t', '--truncation')
-        nsmax = get_int_value('-t', iarg)
-        if (nsmax < 1) then
-          call parsing_failed("Invalid argument for -t: must be > 0")
-        end if
-      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
-      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
-      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
-      case('--vordiv'); lvordiv = .True.
-      case('--scders'); lscders = .True.
-      case('--uvders'); luvders = .True.
-      case('--flt'); luseflt = .True.
-      case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
-      case('--nproma'); nproma = get_int_value('--nproma', iarg)
-      case('--dump-values'); ldump_values = .true.
-      case('--norms'); lprint_norms = .true.
-      case('--meminfo'); lmeminfo = .true.
-      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
-      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
-      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
-      case default
-        call parsing_failed("Unrecognised argument: " // trim(carg))
-
-    end select
-    iarg = iarg + 1
-  end do
-
-  if (.not. lvordiv) then
-    luvders = .false.
-  endif
-
-end subroutine get_command_line_arguments
-
-!===================================================================================================
-
-function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
-
-  character(len=16) :: cgrid
-  integer, intent(in) :: nsmax
-  write(cgrid,'(a,i0)') 'O',nsmax+1
-
-end function
-
-!===================================================================================================
-
-subroutine str2int(str, int, stat)
-
-  character(len=*), intent(in) :: str
-  integer, intent(out) :: int
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) int
-
-end subroutine str2int
-
-!===================================================================================================
-
-function get_median(vec) result(median)
-
-  real(kind=jprd), intent(in) :: vec(:)
-  real(kind=jprd) :: median
-
-  real(kind=jprd) :: vec_sorted(size(vec))
-  real(kind=jprd) :: x
-
-  integer :: i, j, n
-
-  n = size(vec)
-
-  ! Sort in ascending order
-  vec_sorted = vec
-  do i = 2, n
-    x = vec_sorted(i)
-    j = i - 1
-    do while (j >= 1)
-      if (vec_sorted(j) <= x) exit
-      vec_sorted(j + 1) = vec_sorted(j)
-      j = j - 1
-    end do
-    vec_sorted(j + 1) = x
-  end do
-
-  ! Calculate median according to if there is an even or odd number of elements
-  if (mod(n, 2) == 0) then
-    median = (vec_sorted(n/2) + vec_sorted(n/2+1))/2.0_jprd
-  else
-    median = vec_sorted((n+1)/2)
-  endif
-
-end function get_median
 
 !===================================================================================================
 
@@ -1282,6 +1139,165 @@ end subroutine print_help
 
 !===================================================================================================
 
+subroutine parsing_failed(message)
+
+  character(len=*), intent(in) :: message
+  if (luse_mpi) call mpl_init(ldinfo=.false.)
+  if (ec_mpirank() == 0) then
+    write(nerr,"(a)") trim(message)
+    call print_help(unit=nerr)
+  endif
+  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
+  stop
+
+end subroutine
+
+!===================================================================================================
+
+subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
+  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
+
+#ifdef _OPENACC
+  use openacc, only: acc_init, acc_get_device_type
+#endif
+
+  integer, intent(inout) :: nsmax           ! Spectral truncation
+  character(len=16), intent(inout) :: cgrid ! Spectral truncation
+  integer, intent(inout) :: iters           ! Number of iterations for transform test
+  integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
+  integer, intent(inout) :: nfld            ! Number of scalar fields
+  integer, intent(inout) :: nlev            ! Number of vertical levels
+  logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
+  logical, intent(inout) :: lscders         ! Compute scalar derivatives
+  logical, intent(inout) :: luvders         ! Compute uv East-West derivatives
+  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
+  integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
+  integer, intent(inout) :: nproma          ! NPROMA
+  integer, intent(inout) :: verbosity       ! Level of verbosity
+  logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
+  logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
+  logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
+                                            ! end
+  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
+  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
+  integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
+                                            ! tolerance for correctness checking
+
+  character(len=128) :: carg          ! Storage variable for command line arguments
+  integer            :: iarg = 1      ! Argument index
+
+#ifdef _OPENACC
+  call acc_init(acc_get_device_type())
+#endif
+
+  do while (iarg <= command_argument_count())
+    call get_command_argument(iarg, carg)
+
+    select case(carg)
+      ! Parse help argument
+      case('-h', '--help')
+        if (luse_mpi) call mpl_init(ldinfo=.false.)
+        if (ec_mpirank()==0) call print_help()
+        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
+        stop
+      ! Parse verbosity argument
+      case('-v')
+        verbosity = 1
+      ! Parse number of iterations argument
+      case('-n', '--niter')
+        iters = get_int_value('-n', iarg)
+        if (iters < 1) then
+          call parsing_failed("Invalid argument for -n: must be > 0")
+        end if
+      case('--niter-warmup')
+        iters_warmup = get_int_value('--niter-warmup', iarg)
+        if (iters_warmup < 0) then
+          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
+        end if
+      ! Parse spectral truncation argument
+      case('-t', '--truncation')
+        nsmax = get_int_value('-t', iarg)
+        if (nsmax < 1) then
+          call parsing_failed("Invalid argument for -t: must be > 0")
+        end if
+      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
+      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
+      case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
+      case('--vordiv'); lvordiv = .True.
+      case('--scders'); lscders = .True.
+      case('--uvders'); luvders = .True.
+      case('--flt'); luseflt = .True.
+      case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
+      case('--nproma'); nproma = get_int_value('--nproma', iarg)
+      case('--dump-values'); ldump_values = .true.
+      case('--norms'); lprint_norms = .true.
+      case('--meminfo'); lmeminfo = .true.
+      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
+      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
+      case('-c', '--check'); ncheck = get_int_value('-c', iarg)
+      case default
+        call parsing_failed("Unrecognised argument: " // trim(carg))
+
+    end select
+    iarg = iarg + 1
+  end do
+
+  if (.not. lvordiv) then
+    luvders = .false.
+  endif
+
+end subroutine get_command_line_arguments
+
+!===================================================================================================
+
+function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
+
+  character(len=16) :: cgrid
+  integer, intent(in) :: nsmax
+  write(cgrid,'(a,i0)') 'O',nsmax+1
+
+end function
+
+
+!===================================================================================================
+
+function get_median(vec) result(median)
+
+  real(kind=jprd), intent(in) :: vec(:)
+  real(kind=jprd) :: median
+
+  real(kind=jprd) :: vec_sorted(size(vec))
+  real(kind=jprd) :: x
+
+  integer :: i, j, n
+
+  n = size(vec)
+
+  ! Sort in ascending order
+  vec_sorted = vec
+  do i = 2, n
+    x = vec_sorted(i)
+    j = i - 1
+    do while (j >= 1)
+      if (vec_sorted(j) <= x) exit
+      vec_sorted(j + 1) = vec_sorted(j)
+      j = j - 1
+    end do
+    vec_sorted(j + 1) = x
+  end do
+
+  ! Calculate median according to if there is an even or odd number of elements
+  if (mod(n, 2) == 0) then
+    median = (vec_sorted(n/2) + vec_sorted(n/2+1))/2.0_jprd
+  else
+    median = vec_sorted((n+1)/2)
+  endif
+
+end function get_median
+
+!===================================================================================================
+
 subroutine initialize_spectral_arrays(nsmax, zsp, sp3d)
 
   integer,         intent(in)    :: nsmax       ! Spectral truncation
@@ -1349,27 +1365,32 @@ end subroutine initialize_2d_spectral_field
 
 !===================================================================================================
 
-subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, noutdump)
+subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutdump)
 
   ! Dump a 2d field to a binary file.
 
   integer(kind=jpim), intent(in) :: jstep ! Time step, used for naming file
   integer(kind=jpim), intent(in) :: myproc ! MPI rank, used for naming file
   integer(kind=jpim), intent(in) :: nproma ! Size of nproma
-  integer(kind=jpim), intent(in) :: ngpblks ! Number of nproma blocks
-  real(kind=jprb)   , intent(in) :: fld(nproma,ngpblks) ! 2D field
+  real(kind=jprb)   , intent(inout) :: gfld(:,:) ! 2d global field
+  real(kind=jprb)   , intent(in) :: fld(:,:,:) ! 3d local field
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
 
-  character(len=14) :: filename = "x.xxx.xxxx.dat"
+  character(len=10) :: filename = "x.xxxx.dat"
 
-  write(filename(1:1),'(a1)') fldchar
-  write(filename(3:5),'(i3.3)') jstep
-  write(filename(7:10),'(i4.4)') myproc
-
-  open(noutdump, file=filename, form="unformatted")
-  write(noutdump) reshape(fld, (/ nproma*ngpblks /))
-  close(noutdump)
+  if (myproc == 1) then
+    write(filename(1:1),'(a1)') fldchar
+    write(filename(3:6),'(i4.4)') jstep
+    open(noutdump,file=filename,form='unformatted')
+  endif
+  do ilev=1,size(fld,2)
+    call gath_grid(gfld(:,:),nproma,1,(/1/),1,fld(:,ilev:ilev,:))
+    if (myproc == 1) write(unit=noutdump) gfld(:,1)
+  enddo
+  if (myproc == 1) then
+    close(noutdump)
+  endif
 
 end subroutine dump_gridpoint_field
 

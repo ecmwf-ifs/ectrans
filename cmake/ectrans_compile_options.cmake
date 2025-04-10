@@ -25,6 +25,9 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
   ecbuild_add_fortran_flags("-hnomessage=878")  # A module named ... has already been directly or indirectly use associated into this scope
   ecbuild_add_fortran_flags("-hnomessage=867")  # Module ... has no public objects declared in the module, therefore nothing can be use associated from the module.
   ecbuild_add_fortran_flags("-M7256")           # An OpenMP parallel construct in a target region is limited to a single thread.
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM" )
+  ecbuild_add_fortran_flags("-march=core-avx2 -no-fma" BUILD BIT)
+  ecbuild_add_fortran_flags("-fp-model precise -fp-speculation=safe")
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
   ecbuild_add_fortran_flags("-march=core-avx2 -no-fma" BUILD BIT)
   ecbuild_add_fortran_flags("-fast-transcendentals -fp-model precise -fp-speculation=safe")
@@ -36,8 +39,9 @@ if( NOT DEFINED ECTRANS_HAVE_CONTIGUOUS_ISSUE )
       set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
     endif()
   elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU"  )
-    if( CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "9.2"
-     OR CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "12.2.0" )
+    # GCC versions 9.2, 11.2, 12.2, 13.3, 14.2 are all known to have an issue with `contiguous`
+    # Logic below is defensive and assumes future versions of gcc are likely to also have the issue
+    if( CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 9 )
       set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
     endif()
   endif()

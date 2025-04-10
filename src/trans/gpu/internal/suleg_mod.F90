@@ -9,9 +9,6 @@
 !
 
 MODULE SULEG_MOD
-#ifdef __NEC__
-#define SIZEOF(x) STORAGE_SIZE(x)/KIND(x)
-#endif
 CONTAINS
 SUBROUTINE SULEG
 !DEC$ OPTIMIZE:1
@@ -544,7 +541,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
         !$OMP END PARALLEL
         
-        stop 'Error: code path not (yet) supported in GPU version'
+        CALL ABORT_TRANS('SULEG: Code path not (yet) supported in GPU version')
         !CALL PREPSNM(IM,JMLOC,ZEPSNM)
         ALLOCATE(S%FA(JMLOC)%RPNMWI(2*IDGLU,1:2))
         DO JGL=1,2*IDGLU
