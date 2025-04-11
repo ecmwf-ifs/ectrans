@@ -49,6 +49,10 @@ cmake $SOURCE \
 
 make VERBOSE=1
 
+if [[ "@CMAKE_Fortran_COMPILER_ID@" = "LLVMFlang" ]]; then
+  ulimit -s unlimited
+fi
+
 if [ -f bin/main_dp ]; then
   bin/main_dp
 fi
