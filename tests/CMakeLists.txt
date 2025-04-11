@@ -6,8 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-find_package( MPI )
-
 # --------------------------------------------------------------------------------------------------
 # Add a test for installation of ecTrans
 # --------------------------------------------------------------------------------------------------
