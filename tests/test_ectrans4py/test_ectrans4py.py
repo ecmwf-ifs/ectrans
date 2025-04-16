@@ -96,7 +96,15 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             11175,
             data.zonal_wavenumbers)
     spdata = data.tl149_c24['sp']
-    gpdata = data.tl149_c24['sp2gp']
+    gpdata_latlon = data.tl149_c24['sp2gp']
+
+    # Pack latlon gridded data to reduced grid
+    gpdata = numpy.zeros((sum(gpdims['lon_number_by_lat'])))
+    offset = 0
+    for i in range(gpdims['lat_number']):
+        nlon = gpdims['lon_number_by_lat'][i]
+        gpdata[offset:offset+nlon] = gpdata_latlon[i,:nlon]
+        offset += nlon
 
     def test_trans_inq4py(self):
         spectral_data_sizes = ectrans4py.trans_inq4py(
