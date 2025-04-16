@@ -91,7 +91,7 @@ foreach( prec dp sp )
     ecbuild_add_library( TARGET etrans_${prec} TYPE INTERFACE )
     target_include_directories( etrans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_${prec}> )
     target_include_directories( etrans_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_${prec}> )
-    target_link_libraries( trans_${prec} INTERFACE fiat ectrans_${prec} ectrans_etrans_${prec} parkind_${prec})
+    target_link_libraries( trans_${prec} INTERFACE fiat etrans_${prec} ectrans_etrans_${prec} parkind_${prec})
   endif()
 endforeach()
 
