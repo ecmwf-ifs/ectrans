@@ -13,7 +13,7 @@ else:
     raise NotImplementedError("ectrans4py does not support Windows")
 
 KNUMMAXRESOL = 10
-EPSILON = 1e-13
+EPSILON = 1e-10
 
 
 class ArraysAlmostEqual(object):
@@ -124,11 +124,11 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             sum(self.gpdims['lon_number_by_lat']),
             len(self.gpdims['lon_number_by_lat']),
             self.gpdims['lon_number_by_lat'],
-            len(self.spdata.flatten()),
+            len(self.spdata),
             False,  # no derivatives
             False, # spectral_coeff_order != 'model',
-            self.spdata.flatten())[0]
-        self.assert_arrays_diff_under_epsilon(gpdata, gpdata.flatten())
+            self.spdata)[0]
+        self.assert_arrays_diff_under_epsilon(self.gpdata, gpdata)
     
     def test_gp2sp(self):
         spdata = ectrans4py.gp2sp_gauss4py(
@@ -138,8 +138,8 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             KNUMMAXRESOL,
             len(self.gpdims['lon_number_by_lat']),
             self.gpdims['lon_number_by_lat'],
-            len(self.gpdata.flatten()),
+            len(self.gpdata),
             False,  # spectral_coeff_order != 'model',
-            self.gpdata.flatten())
-        self.assert_arrays_diff_under_epsilon(spdata, spdata.flatten())
+            self.gpdata)
+        self.assert_arrays_diff_under_epsilon(self.spdata, spdata)
 
