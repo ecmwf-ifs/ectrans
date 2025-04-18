@@ -57,6 +57,7 @@ if( HAVE_ETRANS )
     if( HAVE_${prec} )
       ecbuild_add_executable( TARGET  ectrans-lam-benchmark-cpu-${prec}
                               SOURCES ectrans-lam-benchmark.F90
+                              LINKER_LANGUAGE Fortran
                               LIBS
                                 fiat
                                 parkind_${prec}
