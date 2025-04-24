@@ -35,6 +35,7 @@
 #define ASSERT( assertion ) do {\
   if( !(assertion) ) {\
     printf("ERROR: Assertion `%s' failed @%s:%d\n",#assertion,__FILE__,__LINE__);\
+    TRANS_CHECK( trans_delete(&trans) );\
     exit(1);\
   }\
 } while(0)
