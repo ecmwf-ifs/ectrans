@@ -146,16 +146,6 @@ distspec = new_distspec(&trans);
   distspec.nfrom  = nto;
 TRANS_CHECK( trans_distspec(&distspec) );
 
-// Zero output arrays
-// Even though the corresponding arguments to INV_TRANSAD are INTENT(OUT), they are treated
-// like INTENT(INOUT) (the result of the adjoint calculation is added with += to the input)
-for(int i=0; i<nvordiv*trans.nspec2; ++i)
-{
-    rspscalary[i] = 0.0;
-    rspvory[i]    = 0.0;
-    rspdivy[i]    = 0.0;
-}
-
 // ===== Compute adjoint invtrans and gather result on proc 1 =====
 // i.e. invtrans_adj(rgpx) = (rspscalary, rspvory, rspdivy)
 printf("trans_invtrans_adj()\n");
