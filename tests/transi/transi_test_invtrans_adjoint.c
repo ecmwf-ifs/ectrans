@@ -17,7 +17,6 @@
 void test_invtrans_adjoint(int nlon, int nlat, int nsmax)
 {
 const unsigned int seed = 123;
-srand(seed);
 double adjoint_tol = 1.e-12;
 printf("test_invtrans_adjoint( nlon=%d, nlat=%d, nsmax=%d )\n",nlon,nlat,nsmax);
 
@@ -59,6 +58,7 @@ if( trans.myproc == 1 ) {
 }
 
 // Initialize global spectral data on proc 1
+srand(seed);
 if( trans.myproc == 1 )
 {
   int i;
