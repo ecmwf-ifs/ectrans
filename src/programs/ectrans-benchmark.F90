@@ -9,12 +9,6 @@
 
 program ectrans_benchmark
 
-#ifdef USE_PINNED
-#define PINNED_TAG , pinned
-#else
-#define PINNED_TAG
-#endif
-
 !
 ! Spectral transform test
 !
@@ -51,6 +45,8 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
+
+use ectrans_memory, only : allocator
 
 implicit none
 
@@ -101,18 +97,18 @@ real(kind=jprb), allocatable :: znormvor(:), znormvor1(:), znormt(:), znormt1(:)
 real(kind=jprd) :: zaveave(0:jpmaxstat)
 
 ! Grid-point space data structures
-real(kind=jprb), allocatable, target PINNED_TAG :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
-real(kind=jprb), allocatable, target PINNED_TAG :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
+real(kind=jprb), pointer :: zgmv   (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), pointer :: zgmvs  (:,:,:)   ! Single level fields at t and t-dt
 real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
 
 ! Spectral space data structures
-real(kind=jprb), allocatable, target PINNED_TAG :: sp3d(:,:,:)
+real(kind=jprb), pointer :: sp3d(:,:,:)
 real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
-real(kind=jprb), allocatable PINNED_TAG :: zspsc2(:,:)
+real(kind=jprb), pointer :: zspsc2(:,:)
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -368,6 +364,17 @@ ivsetsc(1) = iprused
 ifld = 0
 
 !===================================================================================================
+! Setup allocation strategy
+!===================================================================================================
+if (verbosity >= 1 .and. myproc == 1) then
+  call allocator%set_logging(.true.)
+  call allocator%set_logging_output_unit(nout)
+endif
+if (VERSION == "gpu") then
+  call allocator%set_pinning(.true.)
+endif
+
+!===================================================================================================
 ! Setup gstats
 !===================================================================================================
 
@@ -460,8 +467,8 @@ end if
 nullify(zspvor)
 nullify(zspdiv)
 nullify(zspsc3a)
-allocate(sp3d(nflevl,nspec2,2+nfld))
-allocate(zspsc2(1,nspec2))
+call allocator%allocate('sp3d',   sp3d,   [nflevl,nspec2,2+nfld])
+call allocator%allocate('zspsc2', zspsc2, [1,nspec2])
 
 call initialize_spectral_arrays(nsmax, zspsc2, sp3d)
 
@@ -521,9 +528,8 @@ endif
 
 ndimgmv = jend_scder_EW
 
-allocate(zgmv(nproma,nflevg,ndimgmv,ngpblks))
-allocate(zgmvs(nproma,ndimgmvs,ngpblks))
-
+call allocator%allocate('zgmv',  zgmv,  [nproma,nflevg,ndimgmv,ngpblks])
+call allocator%allocate('zgmvs', zgmvs, [nproma,ndimgmvs,ngpblks])
 zgpuv => zgmv(:,:,1:jend_vder_EW,:)
 zgp3a => zgmv(:,:,jbegin_sc:jend_scder_EW,:)
 zgp2  => zgmvs(:,:,:)
@@ -947,8 +953,10 @@ endif
 ! Cleanup
 !===================================================================================================
 
-deallocate(zgmv)
-deallocate(zgmvs)
+call allocator%deallocate('zgmv',   zgmv)
+call allocator%deallocate('zgmvs',  zgmvs)
+call allocator%deallocate('sp3d',   sp3d)
+call allocator%deallocate('zspsc2', zspsc2)
 
 !===================================================================================================
 

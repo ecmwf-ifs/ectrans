@@ -9,27 +9,42 @@
 #foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 foreach( program ectrans-benchmark )
 
+  list( APPEND driver_src
+    driver/ectrans_memory.F90
+    driver/ectrans_memory.c
+  )
+
   if ( HAVE_CPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
         ecbuild_add_executable( TARGET  ${program}-cpu-${prec}
-                                SOURCES ${program}.F90
+                                SOURCES ${program}.F90 ${driver_src}
                                 LINKER_LANGUAGE Fortran
                                 LIBS
                                   fiat
                                   parkind_${prec}
                                   trans_${prec}
+                                DEFINITIONS
+                                  VERSION="cpu"
         )
-        target_compile_definitions(${program}-cpu-${prec} PRIVATE VERSION="cpu")
+        ectrans_target_fortran_module_directory(TARGET ${program}-cpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-cpu-${prec} )
       endif()
     endforeach( prec)
   endif()
 
   if( HAVE_GPU )
+    list( APPEND driver_PRIVATE_DEFINITIONS
+      $<${HAVE_CUDA}:CUDA>
+      $<${HAVE_HIP}:HIP>
+    )
+    list( APPEND driver_PRIVATE_LIBRARIES
+      $<${HAVE_CUDA}:CUDA::cudart>
+      $<${HAVE_HIP}:hip::host>
+    )
     foreach( prec dp sp )
       if( HAVE_${prec} )
         ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
-                                SOURCES ${program}.F90
+                                SOURCES ${program}.F90 ${driver_src}
                                 LINKER_LANGUAGE Fortran
                                 LIBS
                                   fiat
@@ -37,16 +52,12 @@ foreach( program ectrans-benchmark )
                                   trans_gpu_${prec}
                                   $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                   $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
+                                  ${driver_PRIVATE_LIBRARIES}
                                 DEFINITIONS
                                   VERSION="gpu"
-                                  $<$<COMPILE_LANG_AND_ID:Fortran,NVHPC>:USE_PINNED>
+                                  ${driver_PRIVATE_DEFINITIONS}
         )
-        target_compile_options(${program}-gpu-${prec} PUBLIC
-          $<$<COMPILE_LANG_AND_ID:Fortran,NVHPC>:-cuda>
-        )
-        target_link_options(${program}-gpu-${prec} PUBLIC
-          $<$<LINK_LANG_AND_ID:Fortran,NVHPC>:-cuda>
-        )
+        ectrans_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
       endif()
     endforeach( prec )
   endif( HAVE_GPU )
