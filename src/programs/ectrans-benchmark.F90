@@ -1141,6 +1141,8 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
   write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
    & tolerance for correctness checking"
+  write(nout, "(a)") "    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory) &
+   & to allocate fields for GPU version"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
