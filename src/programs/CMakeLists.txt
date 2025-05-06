@@ -9,16 +9,16 @@
 #foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 foreach( program ectrans-benchmark )
 
-  list( APPEND driver_src
-    driver/ectrans_memory.F90
-    driver/ectrans_memory.c
+  list( APPEND util_src
+    util/ectrans_memory.F90
+    util/ectrans_memory.c
   )
 
   if ( HAVE_CPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
         ecbuild_add_executable( TARGET  ${program}-cpu-${prec}
-                                SOURCES ${program}.F90 ${driver_src}
+                                SOURCES ${program}.F90 ${util_src}
                                 LINKER_LANGUAGE Fortran
                                 LIBS
                                   fiat
@@ -33,18 +33,18 @@ foreach( program ectrans-benchmark )
   endif()
 
   if( HAVE_GPU )
-    list( APPEND driver_PRIVATE_DEFINITIONS
+    list( APPEND util_PRIVATE_DEFINITIONS
       $<${HAVE_CUDA}:CUDA>
       $<${HAVE_HIP}:HIP>
     )
-    list( APPEND driver_PRIVATE_LIBRARIES
+    list( APPEND util_PRIVATE_LIBRARIES
       $<${HAVE_CUDA}:CUDA::cudart>
       $<${HAVE_HIP}:hip::host>
     )
     foreach( prec dp sp )
       if( HAVE_${prec} )
         ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
-                                SOURCES ${program}.F90 ${driver_src}
+                                SOURCES ${program}.F90 ${util_src}
                                 LINKER_LANGUAGE Fortran
                                 LIBS
                                   fiat
@@ -52,10 +52,10 @@ foreach( program ectrans-benchmark )
                                   trans_gpu_${prec}
                                   $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                   $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                                  ${driver_PRIVATE_LIBRARIES}
+                                  ${util_PRIVATE_LIBRARIES}
                                 DEFINITIONS
                                   VERSION="gpu"
-                                  ${driver_PRIVATE_DEFINITIONS}
+                                  ${util_PRIVATE_DEFINITIONS}
         )
         ectrans_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
       endif()
