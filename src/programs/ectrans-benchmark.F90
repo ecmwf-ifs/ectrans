@@ -198,6 +198,7 @@ integer(kind=jpim) :: jbegin_vder_EW = 0
 integer(kind=jpim) :: jend_vder_EW = 0
 
 logical :: ldump_values = .false.
+logical :: lpinning = .false.
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
@@ -225,10 +226,14 @@ real(kind=jprb), allocatable :: global_field(:,:)
 !===================================================================================================
 
 luse_mpi = detect_mpirun()
+if (VERSION == "gpu") then
+  lpinning = .true.
+endif
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck)
+  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
+  & lpinning)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -370,9 +375,7 @@ if (verbosity >= 1 .and. myproc == 1) then
   call allocator%set_logging(.true.)
   call allocator%set_logging_output_unit(nout)
 endif
-if (VERSION == "gpu") then
-  call allocator%set_pinning(.true.)
-endif
+call allocator%set_pinning(lpinning)
 
 !===================================================================================================
 ! Setup gstats
@@ -1164,7 +1167,7 @@ end subroutine
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck)
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1191,6 +1194,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
   integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
                                             ! tolerance for correctness checking
+  logical, intent(inout) :: lpinning        ! Use memory-pinning (a.k.a. page-locked memory) to allocate fields for GPU version
 
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
@@ -1244,6 +1248,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
       case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
       case('-c', '--check'); ncheck = get_int_value('-c', iarg)
+      case('--no-pinning'); lpinning = .False.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
