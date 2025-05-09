@@ -72,7 +72,9 @@ public :: VorDivToUV_t
 public :: trans_use_mpi
 public :: trans_set_handles_limit
 public :: trans_set_radius
+public :: trans_set_leq_regions
 public :: trans_set_nprtrv
+public :: trans_set_nprgpew
 public :: trans_init
 public :: trans_setup
 public :: trans_inquire
@@ -109,12 +111,27 @@ private
 #include "specnorm.h"
 #include "vordiv_to_uv.h"
 
+#if ECTRANS_HAVE_ETRANS
+#include "esetup_trans.h"
+#include "etrans_inq.h"
+#include "edir_trans.h"
+#include "einv_trans.h"
+#include "edist_grid.h"
+#include "egath_grid.h"
+#include "edist_spec.h"
+#include "egath_spec.h"
+#include "especnorm.h"
+#include "etrans_release.h"
+#endif
+
 integer, SAVE                      :: TRANS_MAX_HANDLES = 100
 integer, SAVE                      :: N_REGIONS_EW
 integer, SAVE                      :: N_REGIONS_NS
 integer, SAVE, allocatable, target :: N_REGIONS(:)
 integer(c_int), SAVE       :: NPRTRV = 1
+integer(c_int), SAVE       :: NPRGPEW = 1
 real(c_double), SAVE       :: RRAD = 6371.22e+03
+logical, SAVE              :: LEQ_REGIONS = .True.
 logical, SAVE              :: is_init = .False.
 
 integer, SAVE              :: trans_out
@@ -145,6 +162,7 @@ type, bind(C) :: Trans_t
                                 !    TYPE: INTEGER(1:NDGL)
   integer(c_int) :: nlon        ! -- Number of longitude points for all latitudes
   integer(c_int) :: nsmax       ! -- Spectral truncation wave number
+  BOOLEAN        :: llam        ! -- True if the corresponding resolution is LAM, false if it is global
   BOOLEAN        :: lsplit
   integer(c_int) :: llatlon
   integer(c_int) :: flt
@@ -162,7 +180,6 @@ type, bind(C) :: Trans_t
   ! MULTI-TRANSFORMS MANAGEMENT
   integer(c_int) :: handle       ! --  Resolution tag for which info is required ,default is the
                                  !     first defined resulution (input)
-  BOOLEAN        :: ldlam        ! --  True if the corresponding resolution is LAM, false if it is global
 
   ! SPECTRAL SPACE
   integer(c_int) :: nspec        ! --  Number of complex spectral coefficients on this PE
@@ -260,6 +277,15 @@ type, bind(C) :: Trans_t
                                  !     TYPE: REAL(-1:NSMAX+2)
   type(c_ptr)    :: ndglu        ! --  Number of active points in an hemisphere for a given wavenumber "m"
                                  !     TYPE: INTEGER(0:NSMAX)
+
+  ! LAM specific properties
+  real(c_double) :: pexwn         ! resolution in x
+  real(c_double) :: peywn         ! resolution in y
+  type(c_ptr)    :: pweight       ! weight for distribution
+  integer(c_int) :: ndgux         ! number of latitudes not in extension zone
+  integer(c_int) :: nmsmax        ! spectral truncation in x direction
+  type(c_ptr)    :: mvalue        ! wavenumbers in x direction
+
 end type Trans_t
 
 type, bind(C) :: DirTrans_t
@@ -267,6 +293,8 @@ type, bind(C) :: DirTrans_t
   type(c_ptr)    :: rspscalar
   type(c_ptr)    :: rspvor
   type(c_ptr)    :: rspdiv
+  type(c_ptr)    :: rmeanu
+  type(c_ptr)    :: rmeanv
   integer(c_int) :: nproma
   integer(c_int) :: nscalar
   integer(c_int) :: nvordiv
@@ -294,6 +322,8 @@ type, bind(C) :: InvTrans_t
   type(c_ptr)    :: rspscalar
   type(c_ptr)    :: rspvor
   type(c_ptr)    :: rspdiv
+  type(c_ptr)    :: rmeanu
+  type(c_ptr)    :: rmeanv
   type(c_ptr)    :: rgp
   integer(c_int) :: nproma
   integer(c_int) :: nscalar
@@ -439,6 +469,16 @@ end interface access_ptr
 
 contains
 
+function is_lam(trans)
+  logical :: is_lam
+  type(Trans_t), intent(in) :: trans
+  if (trans%llam == 0)  then
+    is_lam = .false.
+  else
+    is_lam = .true.
+  endif
+end function
+
 ! =============================================================================
 ! From fckit_c_interop module
 
@@ -501,11 +541,39 @@ function trans_set_radius(radius) bind(C,name="trans_set_radius")
   trans_set_radius = TRANS_SUCCESS
 end function
 
+function trans_set_leq_regions(ldeq_regions) bind(C,name="trans_set_leq_regions")
+  integer(c_int) :: trans_set_leq_regions
+  BOOLEAN, value, intent(in) :: ldeq_regions
+  if( ldeq_regions == 0) then
+    LEQ_REGIONS = .false.
+  else
+    LEQ_REGIONS = .true.
+  endif
+  trans_set_leq_regions = TRANS_SUCCESS
+end function
+
 function trans_set_nprtrv(kprtrv) bind(C,name="trans_set_nprtrv")
   integer(c_int) :: trans_set_nprtrv
   integer(c_int), value, intent(in) :: kprtrv
   NPRTRV = kprtrv
   trans_set_nprtrv = TRANS_SUCCESS
+end function
+
+function trans_set_nprgpew(kprgpew) bind(C,name="trans_set_nprgpew")
+  integer(c_int) :: trans_set_nprgpew
+  integer(c_int), value, intent(in) :: kprgpew
+  ! only possible before trans_init
+  if ( .not. is_init ) then
+    NPRGPEW = kprgpew
+  else
+    if(NPRGPEW /= KPRGPEW) then
+      write(error_unit,'(2A,I0,A)') "trans_set_nprgpew: Must be called before trans_init," ,&
+        & "and may not be modified later (nprgpew=",NPRGPEW,")"
+      trans_set_nprgpew = TRANS_ERROR
+      return
+    endif
+  endif
+  trans_set_nprgpew = TRANS_SUCCESS
 end function
 
 function trans_use_mpi(lmpi) bind(C,name="trans_use_mpi")
@@ -550,18 +618,19 @@ function trans_init() bind(C,name="trans_init") result(iret)
   if( USE_MPI ) then
     call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
     allocate( I_REGIONS(MPL_NPROC()) )
-    NPRGPNS = MPL_NPROC()
+    NPRGPNS = MPL_NPROC()/NPRGPEW
     NPRTRW = MPL_NPROC()/NPRTRV;
   else
     call transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED()
     allocate( I_REGIONS(1) )
     NPRGPNS = 1
-    NPRTRW = 1;
+    NPRGPEW = 1
+    NPRTRW = 1
   endif
 
-  call SETUP_TRANS0(KOUT=trans_out,KERR=error_unit,KPRINTLEV=0,KMAX_RESOL=TRANS_MAX_HANDLES,&
-    &               KPRTRW=NPRTRW,  LDEQ_REGIONS=.True.,KPRGPNS=NPRGPNS,KPRGPEW=1,&
-    &               PRAD=RRAD, K_REGIONS_NS=N_REGIONS_NS,K_REGIONS_EW=N_REGIONS_EW,K_REGIONS=I_REGIONS,&
+  call SETUP_TRANS0(KOUT=trans_out, KERR=error_unit, KPRINTLEV=0, KMAX_RESOL=TRANS_MAX_HANDLES,&
+    &               KPRTRW=NPRTRW, LDEQ_REGIONS=LEQ_REGIONS, KPRGPNS=NPRGPNS, KPRGPEW=NPRGPEW,&
+    &               PRAD=RRAD, K_REGIONS_NS=N_REGIONS_NS, K_REGIONS_EW=N_REGIONS_EW, K_REGIONS=I_REGIONS,&
     &               LDMPOFF=LMPOFF )
   allocate(N_REGIONS(1:N_REGIONS_NS))
   N_REGIONS(1:N_REGIONS_NS)=I_REGIONS(1:N_REGIONS_NS)
@@ -580,7 +649,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   integer(c_int), pointer :: n_regions_fptr(:)
   logical, parameter :: lkeeprpnm =.False.
   logical, parameter :: luserpnm  =.False. ! Don't use Belusov algorithm (uses twice the memory)
-  logical :: ldlam ! output
+  logical :: llam ! input
   logical :: lgridonly, lsplit !input
   logical :: lspeconly ! only
   logical :: llatlon ! input
@@ -589,11 +658,19 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   integer(c_int) :: err
   character(len=MAX_STR_LEN) :: readfp, writefp
   logical :: luseflt
+  BOOLEAN :: lleq_regions
+  integer :: jgl
+  real(c_double), pointer :: pweight(:)
+
+   ! resolution-dependent defaults
+  if (trans%ndgux<0) trans%ndgux=trans%ndgl
 
   iret = TRANS_SUCCESS
 
   lsplit = .False.
   if( trans%lsplit /= 0 ) lsplit = .True.
+
+  llam = is_lam(trans)
 
   llatlon = .False.
   llatlonshift = .False.
@@ -610,6 +687,11 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 #endif
 
   if ( .not. is_init ) then
+    ! default for lam is without leq_regions
+    if( llam ) then
+      lleq_regions = 0 ! .false.
+      err = trans_set_leq_regions(lleq_regions)
+    endif
     err = trans_init()
   endif
 
@@ -663,6 +745,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 
 #define LATLON_FLAGS LDLL=llatlon, LDSHIFTLL=llatlonshift,
 
+ if( .not. llam ) then
 ! if( trans%flt > 0 .and. trans%nsmax+1 > trans%ndgl ) then
 !   write(error_unit,'(A)') "trans_setup: WARNING: A bug in trans doesn't allow to use FLT with "&
 !     & //                  "truncation (nsmax+1) > nb_latitudes (ndgl). Continuing with FLT=OFF."
@@ -963,9 +1046,62 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
          & LDKEEPRPNM=LKEEPRPNM, &
          & LDUSERPNM=LUSERPNM, &
          & KLOEN=nloen )
-     endif
-   endif
- endif
+      endif
+    endif
+  endif
+
+  else ! llam
+#if ECTRANS_HAVE_ETRANS
+    if (trans%nmsmax < 0 .and. .not. lgridonly) then
+      call transi_error("transi: nmsmax < 0")
+      iret=TRANS_ERROR
+      return
+    endif
+
+    ! set resolution-dependent defaults
+    if (trans%ndgux<0) trans%ndgux=trans%ndgl
+
+    ! nloen is constant for lam
+    call allocate_ptr( trans%nloen, trans%ndgl, nloen )
+    nloen(:)=trans%nlon
+
+    if ( .not. c_associated( trans%pweight ) ) then
+      ! etrans setup without pweight
+      call ESETUP_TRANS( &
+        KMSMAX = trans%nmsmax, &
+        KSMAX  = trans%nsmax, &
+        KDGL   = trans%ndgl, &
+        KDGUX  = trans%ndgux, &
+        KLOEN  = nloen, &
+        LDSPLIT = lsplit, &
+        KRESOL = trans%handle, &
+        PEXWN  = trans%pexwn, &
+        PEYWN  = trans%peywn, &
+        LDGRIDONLY = lgridonly)
+    else
+      ! etrans setup with pweight
+      call c_f_pointer( trans%pweight, pweight, (/trans%ndgl*trans%nlon/) )
+
+      call ESETUP_TRANS( &
+        KMSMAX = trans%nmsmax, &
+        KSMAX  = trans%nsmax, &
+        KDGL   = trans%ndgl, &
+        KDGUX  = trans%ndgux, &
+        KLOEN  = nloen, &
+        LDSPLIT = lsplit, &
+        KRESOL = trans%handle, &
+        PEXWN  =  trans%pexwn, &
+        PEYWN  = trans%peywn, &
+        PWEIGHT = pweight, &
+        LDGRIDONLY = lgridonly)
+    endif
+#else
+    call transi_error("transi: llam = true requires etrans")
+    iret = TRANS_ERROR
+    return
+#endif
+  endif
+
 
   if( USE_MPI ) then
     trans%myproc = MPL_MYRANK()
@@ -977,30 +1113,46 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   trans%n_regions_NS = N_REGIONS_NS
   trans%n_regions_EW = N_REGIONS_EW
 
-  call TRANS_INQ( KRESOL    = trans%handle, &
-                  KMY_REGION_NS = trans%my_region_NS, &
-                  KMY_REGION_EW = trans%my_region_EW, &
-                  KSPEC     = trans%nspec, &
-                  KSPEC2    = trans%nspec2, &
-                  KSPEC2G   = trans%nspec2g, &
-                  KSPEC2MX  = trans%nspec2mx, &
-                  KNUMP     = trans%nump, &
-                  KGPTOT    = trans%ngptot, &
-                  KGPTOTG   = trans%ngptotg, &
-                  KGPTOTMX  = trans%ngptotmx, &
-                  KFRSTLOFF = trans%nfrstloff, &
-                  KPTRFLOFF = trans%nptrfloff, &
-                  KPRTRW    = trans%nprtrw, &
-                  KLEI3     = trans%nlei3, &
-                  KSPOLEGL  = trans%nspolegl, &
-                  LDLAM     = ldlam &
-                )
-
-
-  if( trans%llatlon == 1 ) trans%ngptotg = trans%ngptotg-nlon
-
-  trans%ldlam = 0
-  if( ldlam ) trans%ldlam = 1
+  if( .not. is_lam(trans) ) then
+    call TRANS_INQ( KRESOL    = trans%handle, &
+                    KMY_REGION_NS = trans%my_region_NS, &
+                    KMY_REGION_EW = trans%my_region_EW, &
+                    KSPEC     = trans%nspec, &
+                    KSPEC2    = trans%nspec2, &
+                    KSPEC2G   = trans%nspec2g, &
+                    KSPEC2MX  = trans%nspec2mx, &
+                    KNUMP     = trans%nump, &
+                    KGPTOT    = trans%ngptot, &
+                    KGPTOTG   = trans%ngptotg, &
+                    KGPTOTMX  = trans%ngptotmx, &
+                    KFRSTLOFF = trans%nfrstloff, &
+                    KPTRFLOFF = trans%nptrfloff, &
+                    KPRTRW    = trans%nprtrw, &
+                    KLEI3     = trans%nlei3, &
+                    KSPOLEGL  = trans%nspolegl, &
+                    LDLAM     = llam &
+                  )
+    if( trans%llatlon == 1 ) trans%ngptotg = trans%ngptotg-nlon
+#if ECTRANS_HAVE_ETRANS
+  else
+    call ETRANS_INQ( KRESOL        = trans%handle, &
+                    KSPEC         = trans%nspec, &
+                    KSPEC2        = trans%nspec2, &
+                    KSPEC2G       = trans%nspec2g, &
+                    KSPEC2MX      = trans%nspec2mx, &
+                    KNUMP         = trans%nump, &
+                    KGPTOT        = trans%ngptot, &
+                    KGPTOTG       = trans%ngptotg, &
+                    KGPTOTMX      = trans%ngptotmx, &
+                    KFRSTLOFF     = trans%nfrstloff, &
+                    KPTRFLOFF     = trans%nptrfloff, &
+                    KPRTRW        = trans%nprtrw, &
+                    KMY_REGION_NS = trans%my_region_NS, &
+                    KMY_REGION_EW = trans%my_region_EW, &
+                    KLEI3         = trans%nlei3, &
+                    KSPOLEGL      = trans%nspolegl)
+#endif
+  endif
 
   trans%nprtrns = trans%nprtrw
 
@@ -1030,6 +1182,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   trans%ndglu       = C_NULL_PTR
   trans%rlapin      = C_NULL_PTR
   trans%nvalue      = C_NULL_PTR
+  trans%mvalue      = C_NULL_PTR
   trans%ldsplitlat  = C_NULL_PTR
 
   call allocate_ptr( trans%n_regions,N_REGIONS_NS, n_regions_fptr )
@@ -1099,6 +1252,19 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
     elseif( var == "nvalue" ) then
       call allocate_ptr( trans%nvalue, trans%nspec2, int1 )
       call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
+      if( .not. is_lam(trans) ) then
+        call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
+#if ECTRANS_HAVE_ETRANS
+      else
+        call ETRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
+#endif
+      endif
+
+#if ECTRANS_HAVE_ETRANS
+    elseif( var == "mvalue" ) then
+      call allocate_ptr( trans%mvalue, trans%nspec2, int1 )
+      call ETRANS_INQ( KRESOL=trans%handle,  KMVALUE=int1 )
+#endif
 
     elseif( var == "nfrstlat" ) then
       call allocate_ptr( trans%nfrstlat, trans%n_regions_NS, int1 )
@@ -1177,7 +1343,7 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
         &   .and. var /= "nsmax"        &
         &   .and. var /= "myproc"       &
         &   .and. var /= "nproc"        &
-        &   .and. var /= "ldlam"        &
+        &   .and. var /= "llam"         &
         &   .and. var /= "nspec"        &
         &   .and. var /= "nspec2"       &
         &   .and. var /= "nspec2g"      &
@@ -1194,8 +1360,9 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
         &   .and. var /= "nptrfloff"    &
         &   .and. var /= "nprtrns"      &
         &   .and. var /= "nlei3"        &
-        &   .and. var /= "nspolegl"     ) then
-      write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
+        &   .and. var /= "nspolegl"     &
+        &   .and. var /= "nmsmax"       ) then
+            write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
       iret = TRANS_UNRECOGNIZED_ARG
       return
     endif
@@ -1297,7 +1464,14 @@ function trans_delete(trans) bind(C,name="trans_delete")
   call free_ptr( trans%npms        )
   call free_ptr( trans%rlapin      )
   call free_ptr( trans%ndglu       )
-  call trans_release( trans%handle )
+  call free_ptr( trans%mvalue      )
+  if( .not. is_lam(trans) ) then
+    call trans_release( trans%handle )
+#if ECTRANS_HAVE_ETRANS
+  else
+    call etrans_release( trans%handle )
+#endif
+  endif
 end function trans_delete
 
 function trans_finalize() bind(C,name="trans_finalize")
@@ -1472,6 +1646,8 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
   real(c_double), pointer :: RSPVOR(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPDIV(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPSCALAR(:,:) !(FIELD,WAVE)
+  real(c_double), pointer :: RMEANU(:)      !(FIELD)
+  real(c_double), pointer :: RMEANV(:)      !(FIELD)
   real(c_double), pointer :: RGP(:,:,:)     !(NPROMA,IF_GP,NGPBLKS)
   real(c_double), pointer :: RGPM(:,:,:)    !(NPROMA,FIELD,NGPBLKS)
   type(Trans_t), pointer :: trans
@@ -1510,6 +1686,20 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
     endif
     call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
     call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    if( is_lam(trans) ) then
+      if( .not. c_associated(args%rmeanu)    ) then
+        call transi_error( "Array RMEANU was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      if( .not. c_associated(args%rmeanv)    ) then
+        call transi_error( "Array RMEANV was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      call C_F_POINTER(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
+      call C_F_POINTER(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
+    endif
   endif
   if( args%nscalar > 0 ) then
     if( .not. c_associated(args%rspscalar) ) then
@@ -1533,23 +1723,50 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
   endif
 
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
-    call DIR_TRANS( KRESOL=trans%handle, &
-      &             KPROMA=args%nproma, &
-      &             LDLATLON=llatlon, &
-      &             PGP=RGPM, &
-      &             PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call DIR_TRANS( KRESOL=trans%handle, &
+        &             KPROMA=args%nproma, &
+        &             LDLATLON=llatlon, &
+        &             PGP=RGPM, &
+        &             PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIR_TRANS( KRESOL=trans%handle, &
+        &              KPROMA=args%nproma, &
+        &              PGP=RGP, &
+        &              PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR,PMEANU=RMEANU,PMEANV=RMEANV ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   elseif( args%nscalar > 0 ) then
-    call DIR_TRANS( KRESOL=trans%handle, &
-      &             KPROMA=args%nproma, &
-      &             LDLATLON=llatlon, &
-      &             PGP=RGPM, &
-      &             PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call DIR_TRANS( KRESOL=trans%handle, &
+        &             KPROMA=args%nproma, &
+        &             LDLATLON=llatlon, &
+        &             PGP=RGPM, &
+        &             PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIR_TRANS( KRESOL=trans%handle, &
+        &              KPROMA=args%nproma, &
+        &              PGP=RGP, &
+        &              PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   elseif( args%nvordiv > 0 ) then
-    call DIR_TRANS( KRESOL=trans%handle, &
-      &             KPROMA=args%nproma, &
-      &             LDLATLON=llatlon, &
-      &             PGP=RGPM, &
-      &             PSPVOR=RSPVOR,PSPDIV=RSPDIV ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call DIR_TRANS( KRESOL=trans%handle, &
+        &             KPROMA=args%nproma, &
+        &             LDLATLON=llatlon, &
+        &             PGP=RGPM, &
+        &             PSPVOR=RSPVOR,PSPDIV=RSPDIV ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIR_TRANS( KRESOL=trans%handle, &
+        &              KPROMA=args%nproma, &
+        &              PGP=RGP, &
+        &              PSPVOR=RSPVOR,PSPDIV=RSPDIV,PMEANU=RMEANU,PMEANV=RMEANV ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   endif
 
   if( args%lglobal == 1 ) then
@@ -1675,6 +1892,8 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
   real(c_double), pointer :: RSPVOR(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPDIV(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPSCALAR(:,:) !(FIELD,WAVE)
+  real(c_double), pointer :: RMEANU(:)      !(FIELD)
+  real(c_double), pointer :: RMEANV(:)      !(FIELD)
   real(c_double), pointer :: RGP(:,:,:)     !(NPROMA,FIELD,NGPBLKS)
   real(c_double), pointer :: RGPM(:,:,:)    !(NPROMA,FIELD,NGPBLKS)
 
@@ -1722,6 +1941,20 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
     endif
     call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
     call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    if( is_lam(trans) ) then
+      if( .not. c_associated(args%rmeanu)    ) then
+        call transi_error( "Array RMEANU was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      if( .not. c_associated(args%rmeanv)    ) then
+        call transi_error( "Array RMEANV was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      call C_F_POINTER(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
+      call C_F_POINTER(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
+    endif
   endif
   if( args%nscalar > 0 ) then
     if( .not. c_associated(args%rspscalar) ) then
@@ -1753,31 +1986,68 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
   endif
 
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
-    call INV_TRANS( KRESOL=trans%handle, &
-      &             KPROMA=args%nproma, &
-      &             LDLATLON=llatlon, &
-      &             LDSCDERS=lscalarders, &
-      &             LDVORGP=lvordivgp, &
-      &             LDDIVGP=lvordivgp, &
-      &             LDUVDER=luvder_EW, &
-      &             PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR, &
-      &             PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call INV_TRANS( KRESOL=trans%handle, &
+        &             KPROMA=args%nproma, &
+        &             LDLATLON=llatlon, &
+        &             LDSCDERS=lscalarders, &
+        &             LDVORGP=lvordivgp, &
+        &             LDDIVGP=lvordivgp, &
+        &             LDUVDER=luvder_EW, &
+        &             PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR, &
+        &             PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EINV_TRANS( KRESOL=trans%handle, &
+        &              KPROMA=args%nproma, &
+        &              LDSCDERS=lscalarders, &
+        &              LDVORGP=lvordivgp, &
+        &              LDDIVGP=lvordivgp, &
+        &              LDUVDER=luvder_EW, &
+        &              PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR, &
+        &              PMEANU=RMEANU,PMEANV=RMEANV, &
+        &              PGP=RGP ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   elseif( args%nscalar > 0 ) then
-    call INV_TRANS( KRESOL=trans%handle, &
-      &             KPROMA=args%nproma, &
-      &             LDLATLON=llatlon, &
-      &             LDSCDERS=lscalarders, &
-      &             PSPSCALAR=RSPSCALAR, &
-      &             PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call INV_TRANS( KRESOL=trans%handle, &
+        &             KPROMA=args%nproma, &
+        &             LDLATLON=llatlon, &
+        &             LDSCDERS=lscalarders, &
+        &             PSPSCALAR=RSPSCALAR, &
+        &             PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EINV_TRANS( KRESOL=trans%handle, &
+        &              KPROMA=args%nproma, &
+        &              LDSCDERS=lscalarders, &
+        &              PSPSCALAR=RSPSCALAR, &
+        &              PGP=RGP ) ! unused args: KVSETUV,KVSETSC
+#endif
+   endif
   elseif( args%nvordiv > 0 ) then
-    call INV_TRANS( KRESOL=trans%handle, &
-      &             KPROMA=args%nproma, &
-      &             LDLATLON=llatlon, &
-      &             LDVORGP=lvordivgp, &
-      &             LDDIVGP=lvordivgp, &
-      &             LDUVDER=luvder_EW, &
-      &             PSPVOR=RSPVOR,PSPDIV=RSPDIV, &
-      &             PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call INV_TRANS( KRESOL=trans%handle, &
+        &             KPROMA=args%nproma, &
+        &             LDLATLON=llatlon, &
+        &             LDVORGP=lvordivgp, &
+        &             LDDIVGP=lvordivgp, &
+        &             LDUVDER=luvder_EW, &
+        &             PSPVOR=RSPVOR,PSPDIV=RSPDIV, &
+        &             PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EINV_TRANS( KRESOL=trans%handle, &
+        &              KPROMA=args%nproma, &
+        &              LDVORGP=lvordivgp, &
+        &              LDDIVGP=lvordivgp, &
+        &              LDUVDER=luvder_EW, &
+        &              PSPVOR=RSPVOR,PSPDIV=RSPDIV, &
+        &              PMEANU=RMEANU,PMEANV=RMEANV, &
+        &              PGP=RGP ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   endif
 
   if( args%lglobal == 1 ) then
@@ -2011,13 +2281,26 @@ function trans_distgrid(args) bind(C,name="trans_distgrid") result(iret)
       call C_F_POINTER( args%rgpg, RGPG, (/trans%ngptotg,isend/) )
     endif ! llatlon
 
-    call DIST_GRID(PGPG=RGPG,KFDISTG=args%nfld,KFROM=NFROM,KPROMA=args%nproma,KRESOL=trans%handle,PGP=RGP)
+    if( .not. is_lam(trans) ) then
+      call DIST_GRID( PGPG=RGPG,KFDISTG=args%nfld,KFROM=NFROM,KPROMA=args%nproma,KRESOL=trans%handle,PGP=RGP)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIST_GRID(PGPG=RGPG,KFDISTG=args%nfld,KFROM=NFROM,KPROMA=args%nproma,KRESOL=trans%handle,PGP=RGP)
+#endif
+    endif
 
     if( trans%llatlon == 1 ) then
       deallocate( RGPG )
     endif
   else
-    call DIST_GRID(          KFDISTG=args%nfld,KFROM=NFROM,KPROMA=args%nproma,KRESOL=trans%handle,PGP=RGP)
+
+    if( .not. is_lam(trans) ) then
+      call DIST_GRID(          KFDISTG=args%nfld,KFROM=NFROM,KPROMA=args%nproma,KRESOL=trans%handle,PGP=RGP)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIST_GRID(         KFDISTG=args%nfld,KFROM=NFROM,KPROMA=args%nproma,KRESOL=trans%handle,PGP=RGP)
+#endif
+    endif
   endif
 
   iret = TRANS_SUCCESS
@@ -2093,7 +2376,14 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
     else
       call C_F_POINTER( args%rgpg, RGPG, (/trans%ngptotg,irecv/) )
     endif
-    call GATH_GRID(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,KPROMA=args%nproma,PGP=RGP,PGPG=RGPG)
+
+    if( .not. is_lam(trans) ) then
+      call GATH_GRID(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,KPROMA=args%nproma,PGP=RGP,PGPG=RGPG)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EGATH_GRID(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,KPROMA=args%nproma,PGP=RGP,PGPG=RGPG)
+#endif
+    endif
 
     if( trans%llatlon == 1 ) then
 
@@ -2120,7 +2410,13 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
       deallocate( RGPG )
     endif
   else
-    call GATH_GRID(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,KPROMA=args%nproma,PGP=RGP)
+    if( .not. is_lam(trans) ) then
+      call GATH_GRID(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,KPROMA=args%nproma,PGP=RGP)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EGATH_GRID(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,KPROMA=args%nproma,PGP=RGP)
+#endif
+    endif
   endif
 
   iret = TRANS_SUCCESS
@@ -2177,9 +2473,21 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
       call transi_error(  "Array RSPECG was not allocated" )
     endif
     call C_F_POINTER( args%rspecg, RSPECG, (/isend,trans%nspec2g/) )
-    call DIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC,PSPECG=RSPECG)
+    if( .not. is_lam(trans) ) then
+      call DIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC,PSPECG=RSPECG)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC,PSPECG=RSPECG)
+#endif
+    endif
   else
-    call DIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC)
+    if( .not. is_lam(trans) ) then
+      call DIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC)
+#endif
+    endif
   endif
 
   iret = TRANS_SUCCESS
@@ -2238,9 +2546,21 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
       return
     endif
     call C_F_POINTER( args%rspecg, RSPECG, (/irecv,trans%nspec2g/) )
-    call GATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC,PSPECG=RSPECG)
+    if( .not. is_lam(trans) ) then
+      call GATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC,PSPECG=RSPECG)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC,PSPECG=RSPECG)
+#endif
+    endif
   else
-    call GATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC)
+    if( .not. is_lam(trans) ) then
+      call GATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC)
+#endif
+    endif
   endif
 
   iret = TRANS_SUCCESS
@@ -2378,9 +2698,21 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
   endif
 
   if( .not. c_associated(args%rmet) ) then
-    call SPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM)
+    if( .not. is_lam(trans) ) then
+      call SPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call ESPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM)
+#endif
+    endif
   else
-    call SPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM,PMET=RMET)
+    if( .not. is_lam(trans) ) then
+      call SPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM,PMET=RMET)
+#if ECTRANS_HAVE_ETRANS
+    else
+      call ESPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM,PMET=RMET)
+#endif
+    endif
   endif
 
   iret = TRANS_SUCCESS
