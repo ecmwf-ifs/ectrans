@@ -71,6 +71,11 @@ int trans_new( struct Trans_t* trans )
   trans->writefp = NULL;
   trans->cache = NULL;
   trans->cachesize = 0;
+  trans->pweight=NULL;
+  trans->llam = false;
+  trans->ndgux=-1;
+  trans->pexwn=1.;
+  trans->peywn=1.;
   return TRANS_SUCCESS;
 }
 
