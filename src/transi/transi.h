@@ -144,6 +144,29 @@ int trans_set_radius(double radius);
 int trans_set_nprtrv(int nprtrv);
 
 /*!
+  @brief Set nprgpew for distribution of fields in gridpoint space
+
+  @note Advanced feature
+
+  Default value of nprgpew is 1, meaning that there is no
+  parallel distribution of the same latitude
+  This function needs to be called before trans_init() or trans_setup(), and
+  ONLY if the default value needs to be changed.
+ */
+int trans_set_nprgpew(int nprgpew);
+
+/*!
+  @brief Set leq_regions in trans
+
+  @note Advanced feature
+
+  Default value of leq_regions is true
+  This function needs to be called before trans_init() or trans_setup(), and
+  ONLY if the default value needs to be changed.
+*/
+int trans_set_leq_regions(_bool ldeq_regions);
+
+/*!
   @brief Use MPI in trans library.
 
   @note Advanced feature
@@ -683,6 +706,7 @@ struct Trans_t {
                      //!<         DIMENSIONS(1:NDGL)
   int    nlon;       //!< @brief  Number of longitude points for all latitudes \n
   int    nsmax;      //!< @brief  Spectral truncation wave number
+  _bool  llam;       //!< @brief  True if the corresponding resolution is LAM, false if it is global
 
   _bool  lsplit;         //!< @brief  If false, the distribution does not allow latitudes to be split
   int    llatlon;        //!< @brief  If true, the transforms compute extra coefficients for
@@ -706,7 +730,6 @@ struct Trans_t {
   /*! @{ @name MULTI-TRANSFORMS-MANAGEMENT */
   int   handle;      //!< @brief  Resolution tag for which info is required ,default is the
                      //!<         first defined resulution (input)
-  _bool ldlam;       //!< @brief  True if the corresponding resolution is LAM, false if it is global
   /*! @} */
 
   /*! @{ @name SPECTRAL SPACE */
@@ -812,6 +835,14 @@ struct Trans_t {
                      //!<         DIMENSIONS(0:NSMAX)
   /*! @} */
 
+  /*! @{ @name LAM  */
+  double    pexwn;         //!< @brief   resolution in x
+  double    peywn;         //!< @brief   resolution in y
+  double *  pweight;       //!< @brief   weight for distribution
+  int       ndgux;         //!< @brief   number of latitudes not in extension zone
+  int       nmsmax;        //!< @brief   spectral truncation in x direction
+  int *     mvalue;        //!< @brief   wavenumbers in x direction
+  /*! @} */
 };
 
 /*!
@@ -842,11 +873,27 @@ int trans_set_resol( struct Trans_t* trans, int ndgl, const int* nloen );
 int trans_set_resol_lonlat( struct Trans_t* trans, int nlon, int nlat );
 
 /*!
+   @brief Set gridpoint resolution for trans for LAM grids
+   @param  trans [in] Trans_t used to setup
+   @param  nx    [in] Number of grid points in x-direction
+   @param  ny    [in] Number of grid points in y-direction
+ */
+int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny );
+
+/*!
    @brief Set spectral truncation wave number for trans
    @param  trans [in] Trans_t used to setup
    @param  nsmax [in] Spectral truncation wave number
  */
 int trans_set_trunc( struct Trans_t* trans, int nsmax );
+
+/*!
+   @brief Set spectral truncation wave number for trans for LAM grids
+   @param  trans   [in] Trans_t used to setup
+   @param  trunc_x [in] Spectral truncation wave number in x-direction (a.k.a. nmsmax)
+   @param  trunc_y [in] Spectral truncation wave number in y-direction (a.k.a. nsmax)
+ */
+int trans_set_trunc_lam( struct Trans_t* trans, int trunc_x, int trunc_y );
 
 
 /*!
@@ -869,6 +916,10 @@ struct DirTrans_t
                          //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
   double* rspdiv;        //!< @brief  [output] spectral divergence
                          //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
+  const double* rmeanu;  //!<@brief   [input] mean value of u-wind (only for LAM)
+                         //!<         @details Dimensioning: rmeanu[#nvordiv]
+  const double* rmeanv;  //!<@brief   [input] mean value of v-wind (only for LAM)
+                         //!<         @details Dimensioning: rmeanv[#nvordiv]
   int nproma;            //!< @brief  [input,default=@link Trans_t::ngptot ngptot@endlink] Blocking factor for distributed gridpoint array
   int nscalar;           //!< @brief  [input,default=0] Number of scalar fields present in RGP
   int nvordiv;           //!< @brief  [input,default=0] Number of vorticity/divergence fields in RGP
@@ -934,6 +985,10 @@ struct InvTrans_t
                             //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
   const double* rspdiv;     //!< @brief  [input] spectral divergence
                             //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
+  const double* rmeanu;     //!<@brief   [input] mean value of u-wind (only for LAM)
+                            //!<         @details Dimensioning: rmeanu[#nvordiv]
+  const double* rmeanv;     //!<@brief   [input] mean value of v-wind (only for LAM)
+                            //!<         @details Dimensioning: rmeanv[#nvordiv]
   double* rgp;              //!< @brief  [output] gridpoint fields
                             //!<         @details Dimensioning:  rgp[#ngpblks][2*#nvordiv+#nscalar][#nproma]\n\n
                             //!<         The ordering of the output fields is as follows (all
