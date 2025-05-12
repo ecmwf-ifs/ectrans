@@ -422,26 +422,7 @@ end if
 ! Allocate and initialize spectral arrays
 !===================================================================================================
 
-! Initialize vorticity and divergence - same for both call modes
-allocate(zspvor(nflevl,nspec2))
-allocate(zspdiv(nflevl,nspec2))
-call initialize_spectral_field(nsmax, zspvor)
-call initialize_spectral_field(nsmax, zspdiv)
-
-! Initialize spectral arrays differently depending on call mode
-if (icall_mode == 1) then
-  allocate(zspscalar(nfld*nflevl+1,nspec2))
-  call initialize_spectral_field(nsmax, zspscalar)
-else
-  allocate(zspsc3a(nflevl,nspec2,nfld))
-  allocate(zspsc2(1,nspec2))
-  do i = 1, nfld
-    call initialize_spectral_field(nsmax, zspsc3a(:,:,i))
-  enddo
-  call initialize_spectral_field(nsmax, zspsc2)
-endif
-
-! Compute spectral distribution variables
+! Compute spectral distribution variables for 3D fields
 allocate(ivset(nflevg))
 ilev = 0
 do jb = 1, nprtrv
@@ -451,17 +432,37 @@ do jb = 1, nprtrv
   enddo
 enddo
 
-allocate(ivsetsc(nfld*nflevg+1))
-do i = 1, nfld
-  ilev = 0
-  do jb = 1, nprtrv
-    do jlev = 1, numll(jb)
-      ilev = ilev + 1
-      ivsetsc(ilev + (i - 1)*nflevg) = jb
+! Initialize vorticity and divergence - same for both call modes
+allocate(zspvor(nflevl,nspec2))
+allocate(zspdiv(nflevl,nspec2))
+call initialize_spectral_field(nsmax, zspvor)
+call initialize_spectral_field(nsmax, zspdiv)
+
+! Initialize spectral arrays differently depending on call mode
+if (icall_mode == 1) then
+  ! Compute spectral distribution variables for call mode 1's combined 2D/3D spectral array
+  allocate(ivsetsc(nfld*nflevg+1))
+  do i = 1, nfld
+    ilev = 0
+    do jb = 1, nprtrv
+      do jlev = 1, numll(jb)
+        ilev = ilev + 1
+        ivsetsc(ilev + (i - 1)*nflevg) = jb
+      enddo
     enddo
   enddo
-enddo
-ivsetsc(nfld*nflevg+1) = 1
+  ivsetsc(nfld*nflevg+1) = 1
+
+  allocate(zspscalar(count(ivsetsc == mysetv),nspec2))
+  call initialize_spectral_field(nsmax, zspscalar)
+else
+  allocate(zspsc3a(nflevl,nspec2,nfld))
+  allocate(zspsc2(1,nspec2))
+  do i = 1, nfld
+    call initialize_spectral_field(nsmax, zspsc3a(:,:,i))
+  enddo
+  call initialize_spectral_field(nsmax, zspsc2)
+endif
 
 !===================================================================================================
 ! Allocate gridpoint arrays
