@@ -572,7 +572,12 @@ function trans_set_nprgpew(kprgpew) bind(C,name="trans_set_nprgpew")
   if ( .not. is_init ) then
     NPRGPEW = kprgpew
   else
-    write(error_unit,'(A)') "trans_set_nprgpew: WARNING: has to be called before trans_init"
+    if(NPRGPEW /= KPRGPEW) then
+      write(error_unit,'(2A,I0,A)') "trans_set_nprgpew: Must be called before trans_init," ,&
+        & "and may not be modified later (nprgpew=",NPRGPEW,")"
+      trans_set_nprgpew = TRANS_ERROR
+      return
+    endif
   endif
   trans_set_nprgpew = TRANS_SUCCESS
 end function
@@ -625,11 +630,12 @@ function trans_init() bind(C,name="trans_init") result(iret)
     call transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED()
     allocate( I_REGIONS(1) )
     NPRGPNS = 1
-    NPRTRW = 1;
+    NPRGPEW = 1
+    NPRTRW = 1
   endif
 
   call SETUP_TRANS0(KOUT=trans_out, KERR=error_unit, KPRINTLEV=0, KMAX_RESOL=TRANS_MAX_HANDLES,&
-    &               KPRTRW=NPRTRW, LDEQ_REGIONS=LEQ_REGIONS, KPRGPNS=NPRGPNS, KPRGPEW=1,&
+    &               KPRTRW=NPRTRW, LDEQ_REGIONS=LEQ_REGIONS, KPRGPNS=NPRGPNS, KPRGPEW=NPRGPEW,&
     &               PRAD=RRAD, K_REGIONS_NS=N_REGIONS_NS, K_REGIONS_EW=N_REGIONS_EW, K_REGIONS=I_REGIONS,&
     &               LDMPOFF=LMPOFF )
   allocate(N_REGIONS(1:N_REGIONS_NS))
@@ -704,7 +710,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   nlon = trans%nlon
   if( nlon < 0 .and. trans%ndgl >= 0 ) then
     if( c_associated( trans%nloen ) ) then
-      call C_F_POINTER( trans%nloen, nloen, (/trans%ndgl/) )
+      call c_f_pointer( trans%nloen, nloen, (/trans%ndgl/) )
       nlon = nloen(1)
     else
       nlon = 2*trans%ndgl
@@ -905,7 +911,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 
  else ! we have nloen
 
-   call C_F_POINTER( trans%nloen, nloen, (/trans%ndgl/) )
+   call c_f_pointer( trans%nloen, nloen, (/trans%ndgl/) )
 
    if( len_trim(readfp) > 0 ) then
 
@@ -1052,7 +1058,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 
   else ! llam
 #if ECTRANS_HAVE_ETRANS
-    if (trans%nmsmax < 0 ) then
+    if (trans%nmsmax < 0 .and. .not. lgridonly) then
       call transi_error("trans_setup: ERROR: nmsmax < 0")
       iret=TRANS_ERROR
       return
@@ -1665,7 +1671,7 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%rgp) ) then
     call transi_error( "trans_dirtrans: ERROR: Array RGP was not allocated" )
@@ -1684,8 +1690,8 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
-    call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
     if( is_lam(trans) ) then
       if( .not. c_associated(args%rmeanu)    ) then
         call transi_error( "trans_dirtrans: ERROR: Array RMEANU was not allocated" )
@@ -1697,8 +1703,8 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
         iret = TRANS_MISSING_ARG
         return
       endif
-      call C_F_POINTER(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
-      call C_F_POINTER(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
+      call c_f_pointer(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
+      call c_f_pointer(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
     endif
   endif
   if( args%nscalar > 0 ) then
@@ -1707,18 +1713,18 @@ function trans_dirtrans(args) bind(C,name="trans_dirtrans") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
+    call c_f_pointer(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
   endif
 
   llatlon = .false.
   if( trans%llatlon /= 0 ) llatlon = .true.
 
   if( args%lglobal == 1 ) then
-    call C_F_POINTER( args%rgp, RGP, (/trans%ngptotg,args%nscalar+2*args%nvordiv,1/) )
+    call c_f_pointer( args%rgp, RGP, (/trans%ngptotg,args%nscalar+2*args%nvordiv,1/) )
     iret = prepare_global_gptosp_trans(trans,RGP,RGPM)
     if( iret /= TRANS_SUCCESS ) return
   else
-    call C_F_POINTER( args%rgp, RGP, (/args%nproma,args%nscalar+2*args%nvordiv,args%ngpblks/) )
+    call c_f_pointer( args%rgp, RGP, (/args%nproma,args%nscalar+2*args%nvordiv,args%ngpblks/) )
     RGPM => RGP
   endif
 
@@ -1806,7 +1812,7 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%rgp) ) then
     call transi_error( "trans_dirtrans_adj: ERROR: Array RGP was not allocated" )
@@ -1825,8 +1831,8 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
-    call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
     if( is_lam(trans) ) then
       if( .not. c_associated(args%rmeanu)    ) then
         call transi_error( "trans_dirtrans_adj: Array RMEANU was not allocated" )
@@ -1848,18 +1854,18 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
+    call c_f_pointer(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
   endif
 
   llatlon = .false.
   if( trans%llatlon /= 0 ) llatlon = .true.
 
   if( args%lglobal == 1 ) then
-    call C_F_POINTER( args%rgp, RGP, (/trans%ngptotg,args%nscalar+2*args%nvordiv,1/) )
+    call c_f_pointer( args%rgp, RGP, (/trans%ngptotg,args%nscalar+2*args%nvordiv,1/) )
     iret = prepare_global_invtrans(trans,RGP,RGPM)
     if( iret /= TRANS_SUCCESS ) return
   else
-    call C_F_POINTER( args%rgp, RGP, (/args%nproma,args%nscalar+2*args%nvordiv,args%ngpblks/) )
+    call c_f_pointer( args%rgp, RGP, (/args%nproma,args%nscalar+2*args%nvordiv,args%ngpblks/) )
     RGPM => RGP
   endif
 
@@ -1959,7 +1965,7 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%rgp) ) then
     call transi_error( "trans_invtrans: ERROR: Array RGP was not allocated" )
@@ -1982,8 +1988,8 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
-    call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
     if( is_lam(trans) ) then
       if( .not. c_associated(args%rmeanu)    ) then
         call transi_error( "trans_invtrans: ERROR: Array RMEANU was not allocated" )
@@ -1995,8 +2001,8 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
         iret = TRANS_MISSING_ARG
         return
       endif
-      call C_F_POINTER(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
-      call C_F_POINTER(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
+      call c_f_pointer(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
+      call c_f_pointer(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
     endif
   endif
   if( args%nscalar > 0 ) then
@@ -2005,7 +2011,7 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
+    call c_f_pointer(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
   endif
 
   llatlon = .false.
@@ -2020,11 +2026,11 @@ function trans_invtrans(args) bind(C,name="trans_invtrans") result(iret)
   if( lscalarders )  nfld_gp = nfld_gp + args%nscalar    ! scalars E-W derivatives
 
   if( args%lglobal == 1 ) then
-    call C_F_POINTER( args%rgp, RGP, (/trans%ngptotg,nfld_gp,1/) )
+    call c_f_pointer( args%rgp, RGP, (/trans%ngptotg,nfld_gp,1/) )
     iret = prepare_global_invtrans(trans,RGP,RGPM)
     if( iret /= TRANS_SUCCESS ) return
   else
-    call C_F_POINTER( args%rgp, RGP, (/args%nproma,nfld_gp,args%ngpblks/) )
+    call c_f_pointer( args%rgp, RGP, (/args%nproma,nfld_gp,args%ngpblks/) )
     RGPM => RGP
   endif
 
@@ -2136,7 +2142,7 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%rgp) ) then
     call transi_error( "trans_invtrans_adj:Array RGP was not allocated" )
@@ -2159,8 +2165,8 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
-    call C_F_POINTER(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
+    call c_f_pointer(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
     if( is_lam(trans) ) then
       if( .not. c_associated(args%rmeanu)    ) then
         call transi_error( "trans_invtrans_adj: ERROR: Array RMEANU was not allocated" )
@@ -2182,7 +2188,7 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
+    call c_f_pointer(args%rspscalar, RSPSCALAR, (/args%nscalar, trans%nspec2/)  )
   endif
 
   llatlon = .false.
@@ -2197,11 +2203,11 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
   if( lscalarders )  nfld_gp = nfld_gp + args%nscalar    ! scalars E-W derivatives
 
   if( args%lglobal == 1 ) then
-    call C_F_POINTER( args%rgp, RGP, (/trans%ngptotg,nfld_gp,1/) )
+    call c_f_pointer( args%rgp, RGP, (/trans%ngptotg,nfld_gp,1/) )
     iret = prepare_global_gptosp_trans(trans,RGP,RGPM)
     if( iret /= TRANS_SUCCESS ) return
   else
-    call C_F_POINTER( args%rgp, RGP, (/args%nproma,nfld_gp,args%ngpblks/) )
+    call c_f_pointer( args%rgp, RGP, (/args%nproma,nfld_gp,args%ngpblks/) )
     RGPM => RGP
   endif
 
@@ -2211,6 +2217,8 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
   return
 #endif
 
+
+  ! Note that llatlon is not an option in INV_TRANSAD unlile INV_TRANS and DIR_TRANS
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
     if( .not. is_lam(trans) ) then
       call INV_TRANSAD( KRESOL=trans%handle, &
@@ -2313,14 +2321,14 @@ function trans_distgrid(args) bind(C,name="trans_distgrid") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%nfrom) ) then
     call transi_error( "trans_distgrid: ERROR: Array NFROM was not allocated" )
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%nfrom, NFROM, (/args%nfld/) )
+  call c_f_pointer( args%nfrom, NFROM, (/args%nfld/) )
 
 
   isend = 0
@@ -2333,7 +2341,7 @@ function trans_distgrid(args) bind(C,name="trans_distgrid") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rgp, RGP, (/args%nproma,args%nfld,args%ngpblks/) )
+  call c_f_pointer( args%rgp, RGP, (/args%nproma,args%nfld,args%ngpblks/) )
 
   if( isend > 0 ) then
     if( .not. c_associated(args%rgpg) ) then
@@ -2348,14 +2356,14 @@ function trans_distgrid(args) bind(C,name="trans_distgrid") result(iret)
       nlon = trans%nlon
       if( nlon < 0 ) then
         if( c_associated( trans%nloen ) ) then
-          call C_F_POINTER( trans%nloen, nloen, (/trans%ndgl/) )
+          call c_f_pointer( trans%nloen, nloen, (/trans%ndgl/) )
           nlon = nloen(1)
         else
           nlon = 2*trans%ndgl
         endif
       endif
 
-      call C_F_POINTER( args%rgpg, LL_RGPG, (/trans%ngptotg,isend/) )
+      call c_f_pointer( args%rgpg, LL_RGPG, (/trans%ngptotg,isend/) )
       allocate( RGPG(trans%ngptotg+nlon,isend) ) ! 1 extra latitudes should be allocated
       do jsend=1,isend
         check = 0
@@ -2378,7 +2386,7 @@ function trans_distgrid(args) bind(C,name="trans_distgrid") result(iret)
         endif
       enddo ! jsend
     else
-      call C_F_POINTER( args%rgpg, RGPG, (/trans%ngptotg,isend/) )
+      call c_f_pointer( args%rgpg, RGPG, (/trans%ngptotg,isend/) )
     endif ! llatlon
 
     if( .not. is_lam(trans) ) then
@@ -2433,14 +2441,14 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%nto) ) then
     call transi_error( "trans_gathgrid: ERROR: trans_gath_grid: Array NTO was not allocated")
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%nto, NTO, (/args%nfld/) )
+  call c_f_pointer( args%nto, NTO, (/args%nfld/) )
 
 
   irecv = 0
@@ -2453,7 +2461,7 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rgp, RGP, (/args%nproma,args%nfld,args%ngpblks/) )
+  call c_f_pointer( args%rgp, RGP, (/args%nproma,args%nfld,args%ngpblks/) )
 
 
   if( irecv > 0 ) then
@@ -2466,7 +2474,7 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
       nlon = trans%nlon
       if( nlon < 0 ) then
         if( c_associated( trans%nloen ) ) then
-          call C_F_POINTER( trans%nloen, nloen, (/trans%ndgl/) )
+          call c_f_pointer( trans%nloen, nloen, (/trans%ndgl/) )
           nlon = nloen(1)
         else
           nlon = 2*trans%ndgl
@@ -2474,7 +2482,7 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
       endif
       allocate( RGPG(trans%ngptotg+nlon,irecv) ) ! 1 extra latitudes
     else
-      call C_F_POINTER( args%rgpg, RGPG, (/trans%ngptotg,irecv/) )
+      call c_f_pointer( args%rgpg, RGPG, (/trans%ngptotg,irecv/) )
     endif
 
     if( .not. is_lam(trans) ) then
@@ -2488,7 +2496,7 @@ function trans_gathgrid(args) bind(C,name="trans_gathgrid") result(iret)
     if( trans%llatlon == 1 ) then
 
       ! There is 1 too many latitude in RGPG
-      call C_F_POINTER( args%rgpg, LL_RGPG, (/trans%ngptotg,irecv/) )
+      call c_f_pointer( args%rgpg, LL_RGPG, (/trans%ngptotg,irecv/) )
 
       do jrecv=1,irecv
         icount = 0
@@ -2546,14 +2554,14 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%nfrom) ) then
     call transi_error( "trans_distspec: ERROR: Array NFROM was not allocated" )
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%nfrom, NFROM, (/args%nfld/) )
+  call c_f_pointer( args%nfrom, NFROM, (/args%nfld/) )
 
 
   isend = 0
@@ -2566,13 +2574,13 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
+  call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
 
   if( isend > 0 ) then
     if( .not. c_associated(args%rspecg) ) then
       call transi_error( "trans_distspec: ERROR: Array RSPECG was not allocated" )
     endif
-    call C_F_POINTER( args%rspecg, RSPECG, (/isend,trans%nspec2g/) )
+    call c_f_pointer( args%rspecg, RSPECG, (/isend,trans%nspec2g/) )
     if( .not. is_lam(trans) ) then
       call DIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC,PSPECG=RSPECG)
 #if ECTRANS_HAVE_ETRANS
@@ -2617,14 +2625,14 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( .not. c_associated(args%nto) ) then
     call transi_error( "trans_gathspec: ERROR: Array NTO was not allocated" )
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%nto, NTO, (/args%nfld/) )
+  call c_f_pointer( args%nto, NTO, (/args%nfld/) )
 
 
   irecv = 0
@@ -2637,7 +2645,7 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
+  call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
 
   if( irecv > 0 ) then
     if( .not. c_associated(args%rspecg) ) then
@@ -2645,7 +2653,7 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
       iret = TRANS_MISSING_ARG
       return
     endif
-    call C_F_POINTER( args%rspecg, RSPECG, (/irecv,trans%nspec2g/) )
+    call c_f_pointer( args%rspecg, RSPECG, (/irecv,trans%nspec2g/) )
     if( .not. is_lam(trans) ) then
       call GATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC,PSPECG=RSPECG)
 #if ECTRANS_HAVE_ETRANS
@@ -2704,7 +2712,7 @@ function trans_vordiv_to_UV(args) bind(C,name="trans_vordiv_to_UV") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspvor, RSPVOR, (/args%nfld,args%ncoeff/) )
+  call c_f_pointer( args%rspvor, RSPVOR, (/args%nfld,args%ncoeff/) )
 
   ! Set divergence
   if( .not. c_associated(args%rspdiv) ) then
@@ -2712,7 +2720,7 @@ function trans_vordiv_to_UV(args) bind(C,name="trans_vordiv_to_UV") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspdiv, RSPDIV, (/args%nfld,args%ncoeff/) )
+  call c_f_pointer( args%rspdiv, RSPDIV, (/args%nfld,args%ncoeff/) )
 
   ! Set U
   if( .not. c_associated(args%rspu) ) then
@@ -2720,7 +2728,7 @@ function trans_vordiv_to_UV(args) bind(C,name="trans_vordiv_to_UV") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspu, RSPU, (/args%nfld,args%ncoeff/) )
+  call c_f_pointer( args%rspu, RSPU, (/args%nfld,args%ncoeff/) )
 
   ! Set V
   if( .not. c_associated(args%rspv) ) then
@@ -2728,7 +2736,7 @@ function trans_vordiv_to_UV(args) bind(C,name="trans_vordiv_to_UV") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspv, RSPV, (/args%nfld,args%ncoeff/) )
+  call c_f_pointer( args%rspv, RSPV, (/args%nfld,args%ncoeff/) )
 
 #ifdef ECTRANS_GPU_VERSION
   call transi_error("trans_vordiv_to_UV: ERROR: Not implemented for GPU")
@@ -2771,7 +2779,7 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%trans, trans )
+  call c_f_pointer( args%trans, trans )
 
   if( args%nfld == 0 ) then
     iret = TRANS_SUCCESS
@@ -2783,17 +2791,17 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
+  call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
 
   if( .not. c_associated(args%rnorm) ) then
     call transi_error( "trans_specnorm: ERROR: Array RNORM was not allocated" )
     iret = TRANS_MISSING_ARG
     return
   endif
-  call C_F_POINTER( args%rnorm, RNORM, (/args%nfld/) )
+  call c_f_pointer( args%rnorm, RNORM, (/args%nfld/) )
 
   if( c_associated(args%rmet) ) then
-    call C_F_POINTER( args%rmet, RMET, (/trans%nsmax+1/) )
+    call c_f_pointer( args%rmet, RMET, (/trans%nsmax+1/) )
     RMET(0:) => RMET(:)
   endif
 

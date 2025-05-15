@@ -4,31 +4,35 @@
 #include "ectrans/transi.h"
 #include "transi_test.h"
 
-void read_grid(struct Trans_t*);
+#define print(...) fprintf(stderr, __VA_ARGS__)
 
-int main ( int arc, char **argv )
-{
-  fprintf(stderr,"ectrans version = %s\n",ectrans_version());
+void print_gp(const char* name, double* array, int nfld, int ngp, int nout);
+void print_sp(const char* name, double* array, int nfld, int nspec2, int nout);
 
-  fprintf(stderr,"Using MPI: %d\n", test_use_mpi());
+int main ( int arc, char **argv ) {
 
+  print("ectrans version = %s\n",ectrans_version());
+  print("Using MPI: %d\n", test_use_mpi());
+
+  // Must be done before first trans_setup or trans_init
   trans_use_mpi( test_use_mpi() );
-
-  // must be done before trans_new
   trans_set_leq_regions(false);
-  //trans_set_nprgpew(1);
+  trans_set_nprgpew(transi_test_nprgpew());
 
   //printf("transi started\n");
-  int nout = 3;
+  int nout_gp = 3;
+  int nout_sp = 3;
   struct Trans_t trans;
   trans_new(&trans);
-  read_grid(&trans);
+  // lam grid of 20x18
+  trans_set_resol_lam(&trans, 20, 18);
+  trans_set_trunc_lam(&trans, 8, 9);
   trans_setup(&trans);
 
   if( trans.myproc == 1 ) {
-    fprintf(stderr,"nproc   = %d\n", trans.nproc);
-    fprintf(stderr,"ngptot  = %d\n", trans.ngptot);
-    fprintf(stderr,"ngptotg = %d\n", trans.ngptotg);
+    print("nproc   = %d\n", trans.nproc);
+    print("ngptot  = %d\n", trans.ngptot);
+    print("ngptotg = %d\n", trans.ngptotg);
   }
   //trans_inquire(&trans,"nvalue,mvalue");
 
@@ -40,28 +44,24 @@ int main ( int arc, char **argv )
 
   // Load data on proc 1
   double* rgpg = NULL;
-  if( trans.myproc == 1 )
-  {
+  if( trans.myproc == 1 ) {
     rgpg = malloc( sizeof(double) * 4*trans.ngptotg );
-    int i, j;
-    for ( j=0;j<nvordiv;j++) {
-		  for( i=0; i<trans.ngptotg; ++i )
-		  {
-		    rgpg[(2*j)*trans.ngptotg+i] = 2*j; 		// U
-		    rgpg[(2*j+1)*trans.ngptotg+i] = 2*j+1; // V
-		  }
-		}
-    for ( j=0;j<nscalar;j++) {
-		  for( i=0; i<trans.ngptotg; ++i )
-		  {
-		    rgpg[(2*nvordiv+j)*trans.ngptotg+i] =2*nvordiv+j; // scalar
-		  }
-		}
+    for (int j=0;j<nvordiv;j++) {
+      for(int i=0; i<trans.ngptotg; ++i) {
+        rgpg[(2*j+0)*trans.ngptotg+i] = 2*j+1; // U
+        rgpg[(2*j+1)*trans.ngptotg+i] = 2*j+2; // V
+      }
+    }
+    for (int j=0;j<nscalar;j++) {
+      for(int i=0; i<trans.ngptotg; ++i) {
+        rgpg[(2*nvordiv+j)*trans.ngptotg+i] = 2*nvordiv+j + 1; // scalar
+      }
+    }
   }
 
   // Distribute gridpoint data from proc 1
   int* nfrom = malloc( sizeof(int) * nfld );
-  for ( int j=0;j<nfld;j++) nfrom[j]=1;
+  for (int j=0;j<nfld;j++) nfrom[j]=1;
 
   struct DistGrid_t distgrid = new_distgrid(&trans);
     distgrid.nfrom = nfrom;
@@ -70,21 +70,8 @@ int main ( int arc, char **argv )
     distgrid.nfld  = nfld;
   trans_distgrid(&distgrid);
 
-  if( trans.myproc == 1 )
-  {
-    int i,j;
-    for( j=0; j<nfld; ++j)
-    {
-      for( i=0; i<nout; ++i )
-      {
-        printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
-      }
-      if(nout < trans.ngptot-1) {
-        printf("rgp[%d][...] : ...\n",j);
-        i = trans.ngptot-1;
-        printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
-      }
-    }
+  if( trans.myproc == 1 ) {
+    print_gp("rgp", rgp, nfld, trans.ngptot, nout_gp);
   }
 
   // Allocate spectral data
@@ -92,9 +79,9 @@ int main ( int arc, char **argv )
   double* rspvor    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
   double* rspdiv    = malloc( sizeof(double) * nvordiv*trans.nspec2 );
   double* rspscalar = malloc( sizeof(double) * nscalar*trans.nspec2 );
-	double* rmeanu = malloc( sizeof(double) * nvordiv);
-	double* rmeanv = malloc( sizeof(double) * nvordiv);
-	
+  double* rmeanu    = malloc( sizeof(double) * nvordiv);
+  double* rmeanv    = malloc( sizeof(double) * nvordiv);
+
   // Direct Transform
   struct DirTrans_t dirtrans = new_dirtrans(&trans);
     dirtrans.nscalar   = nscalar;
@@ -107,14 +94,14 @@ int main ( int arc, char **argv )
     dirtrans.rmeanv    = rmeanv;
   trans_dirtrans(&dirtrans);
 
-  if( trans.myproc == 1 )
-  {
-    int i,j;
-    for( j=0; j<nscalar; ++j)
-    {
-      for( i=0; i<nout; ++i )
-        printf("rspscalar[%d][%d] : %f\n",j,i,rspscalar[i*nscalar+j]);
+  if( trans.myproc == 1 ) {
+    for(int j=0; j<nvordiv; ++j) {
+      print("rmeanu[%d] : %f\n",j,rmeanu[j]);
+      print("rmeanv[%d] : %f\n",j,rmeanv[j]);
     }
+    print_sp("rspvor",rspvor,nvordiv,trans.nspec,nout_sp);
+    print_sp("rspdiv",rspdiv,nvordiv,trans.nspec,nout_sp);
+    print_sp("rspscalar",rspscalar,nscalar,trans.nspec,nout_sp);
   }
 
   // Gather spectral field (for fun)
@@ -123,8 +110,9 @@ int main ( int arc, char **argv )
   nto[1] = 1;
 
   double* rspscalarg = NULL;
-  if( trans.myproc == 1 )
+  if( trans.myproc == 1 ) {
     rspscalarg = malloc( sizeof(double) * nscalar*trans.nspec2g );
+  }
 
   struct GathSpec_t gathspec = new_gathspec(&trans);
     gathspec.rspec  = rspscalar;
@@ -133,24 +121,10 @@ int main ( int arc, char **argv )
     gathspec.nto    = nto;
   trans_gathspec(&gathspec);
 
-  if( trans.myproc == 1 )
-  {
-    int i,j;
-    for( j=0; j<nvordiv; ++j)
-    {
-      printf("rmeanu[%d] : %f\n",j,rmeanu[j]);
-      printf("rmeanv[%d] : %f\n",j,rmeanv[j]);
-      for( i=0; i<nout; ++i )
-        printf("rspvor[%d][%d] : %f\n",j,i,rspvor[i*nvordiv+j]);
-        printf("rspdiv[%d][%d] : %f\n",j,i,rspdiv[i*nvordiv+j]);
-    }
-    for( j=0; j<nscalar; ++j)
-    {
-      for( i=0; i<nout; ++i )
-        printf("rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
-    }
+  if( trans.myproc == 1 ) {
+    print_sp("rspscalarg",rspscalarg,nscalar,trans.nspec2g,nout_sp);
   }
-  
+
   // Distribute spectral field (for fun)
   struct DistSpec_t distspec = new_distspec(&trans);
     distspec.rspec  = rspscalar;
@@ -171,21 +145,8 @@ int main ( int arc, char **argv )
     invtrans.rgp       = rgp;
   trans_invtrans(&invtrans);
 
-  if( trans.myproc == 1 )
-  {
-    int i,j;
-    for( j=0; j<nfld; ++j)
-    {
-      for( i=0; i<nout; ++i )
-      {
-        printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
-      }
-      if(nout < trans.ngptot-1) {
-        printf("rgp[%d][...] : ...\n",j);
-        i = trans.ngptot-1;
-        printf("rgp[%d][%d] : %f\n",j,i,rgp[j*trans.ngptot+i]);
-      }
-    }
+  if( trans.myproc == 1 ) {
+    print_gp("rgp",rgp,nfld,trans.ngptot,nout_gp);
   }
 
   // Gather gridpoint fields
@@ -197,21 +158,8 @@ int main ( int arc, char **argv )
   trans_gathgrid(&gathgrid);
 
 
-  if( trans.myproc == 1 )
-  {
-    int i,j;
-    for( j=0; j<nfld; ++j)
-    {
-      for( i=0; i<nout; ++i )
-      {
-        printf("rgpg[%d][%d] : %f\n",j,i,rgpg[j*trans.ngptotg+i]);
-      }
-      if(nout < trans.ngptot-1) {
-        printf("rgpg[%d][...] : ...\n",j);
-        i = trans.ngptotg-1;
-        printf("rgpg[%d][%d] : %f\n",j,i,rgpg[j*trans.ngptotg+i]);
-      }
-    }
+  if( trans.myproc == 1 ) {
+    print_gp("rgpg",rgpg,nfld,trans.ngptotg,nout_gp);
   }
 
   // Deallocate arrays
@@ -227,28 +175,43 @@ int main ( int arc, char **argv )
   free(rmeanv);
 
   if( trans.myproc == 1 ) {
-    printf("cleanup\n");
+    print("cleanup\n");
   }
   trans_delete(&trans);
 
   trans_finalize();
 
-  // printf("transi finished\n");
+  // print("transi finished\n");
   return 0;
 }
 
+// ---------------------------------------------------------------------------------
 
+void print_gp(const char* name, double* array, int nfld, int ngp, int nout) {
+  if (nout < 0) {
+    nout = ngp;
+  }
+  for(int j=0; j<nfld; ++j) {
+    for(int i=0; i<nout; ++i) {
+      print("%s[%d][%3d] : %f\n",name,j,i,array[j*ngp+i]);
+    }
+    if(nout < ngp-1) {
+      print("%s[%d][...] : ...\n",name,j);
+      int i = ngp-1;
+      print("%s[%d][%3d] : %f\n",name,j,i,array[j*ngp+i]);
+    }
+  }
+}
 
-
-
-
-
-void read_grid(struct Trans_t* trans)
-{
-	// lam grid of 20x18
-	trans->ndgl=18;
-	trans->nlon=20;
-	trans->nsmax=9;
-	trans->nmsmax=8;
-	trans->llam=true;
+void print_sp(const char* name, double* array, int nfld, int nspec2, int nout) {
+  for(int j=0; j<nfld; ++j) {
+    for(int i=0; i<nout; ++i ) {
+      print("%s[%3d][%d] : %f\n",name, i,j,array[i*nfld+j]);
+    }
+    if(nout < nspec2-1) {
+      print("%s[...][%d] : ...\n",name,j);
+      int i = nspec2-1;
+      print("%s[%3d][%d] : %f\n",name, i,j,array[i*nfld+j]);
+    }
+  }
 }

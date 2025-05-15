@@ -873,11 +873,27 @@ int trans_set_resol( struct Trans_t* trans, int ndgl, const int* nloen );
 int trans_set_resol_lonlat( struct Trans_t* trans, int nlon, int nlat );
 
 /*!
+   @brief Set gridpoint resolution for trans for LAM grids
+   @param  trans [in] Trans_t used to setup
+   @param  nx    [in] Number of grid points in x-direction
+   @param  ny    [in] Number of grid points in y-direction
+ */
+int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny );
+
+/*!
    @brief Set spectral truncation wave number for trans
    @param  trans [in] Trans_t used to setup
    @param  nsmax [in] Spectral truncation wave number
  */
 int trans_set_trunc( struct Trans_t* trans, int nsmax );
+
+/*!
+   @brief Set spectral truncation wave number for trans for LAM grids
+   @param  trans   [in] Trans_t used to setup
+   @param  trunc_x [in] Spectral truncation wave number in x-direction (a.k.a. nmsmax)
+   @param  trunc_y [in] Spectral truncation wave number in y-direction (a.k.a. nsmax)
+ */
+int trans_set_trunc_lam( struct Trans_t* trans, int trunc_x, int trunc_y );
 
 
 /*!

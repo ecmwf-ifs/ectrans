@@ -54,5 +54,6 @@ void print_mem(const char* str,const int bytes);
 void set_standard_rgg(struct Trans_t* trans, int N, int T);
 
 int test_use_mpi();
+int transi_test_nprgpew();
 
 #endif

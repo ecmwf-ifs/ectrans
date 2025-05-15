@@ -64,6 +64,7 @@ int trans_new( struct Trans_t* trans )
   trans->flt = -1;
   trans->fft = TRANS_FFTW;
   trans->nsmax = -1;
+  trans->nmsmax = -1;
   trans->ndgl = -1;
   trans->nlon = -1;
   trans->nloen = NULL;
@@ -111,9 +112,28 @@ int trans_set_resol_lonlat( struct Trans_t* trans, int nlon, int nlat )
   return TRANS_SUCCESS;
 }
 
+int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny )
+{
+  trans->ndgl=ny;
+  trans->nlon=nx;
+  trans->llam=true;
+  // Sensible defaults for (linear) truncation
+  //   trans->nsmax=(ny-1)/2;
+  //   trans->nmsmax=(nx-1)/2;
+  return TRANS_SUCCESS;
+}
+
+
 int trans_set_trunc( struct Trans_t* trans, int nsmax )
 {
   trans->nsmax = nsmax;
+  return TRANS_SUCCESS;
+}
+
+int trans_set_trunc_lam( struct Trans_t* trans, int trunc_x, int trunc_y )
+{
+  trans->nmsmax = trunc_x;
+  trans->nsmax  = trunc_y;
   return TRANS_SUCCESS;
 }
 
@@ -146,6 +166,8 @@ struct DirTrans_t new_dirtrans(struct Trans_t* trans)
   dirtrans.rspscalar = NULL;
   dirtrans.rspvor = NULL;
   dirtrans.rspdiv = NULL;
+  dirtrans.rmeanu = NULL;
+  dirtrans.rmeanv = NULL;
   dirtrans.ngpblks = 1;
   dirtrans.nproma = trans->ngptot;
   dirtrans.nscalar = 0;
@@ -179,6 +201,8 @@ struct InvTrans_t new_invtrans(struct Trans_t* trans)
   invtrans.rspscalar = NULL;
   invtrans.rspvor = NULL;
   invtrans.rspdiv = NULL;
+  invtrans.rmeanu = NULL;
+  invtrans.rmeanv = NULL;
   invtrans.rgp = NULL;
   invtrans.ngpblks = 1;
   invtrans.nproma = trans->ngptot;
