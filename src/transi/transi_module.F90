@@ -2253,7 +2253,6 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
         &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
 #if ECTRANS_HAVE_ETRANS
     else
-print*, "TOTO: run EINV_TRANSAD",nfld_gp
       call EINV_TRANSAD( KRESOL=trans%handle, &
         &                KPROMA=args%nproma, &
         &                LDSCDERS=lscalarders, &
