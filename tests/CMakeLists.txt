@@ -223,7 +223,7 @@ foreach( benchmark ${benchmarks} )
         if( NOT "${benchmark}" MATCHES "-gpu-" )
           ecbuild_add_test( TARGET ${base_title}_nfld0
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${baseargs} --callmode ${callmode}
+              ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 200 ${baseargs} --callmode ${callmode}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -233,7 +233,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields
         ecbuild_add_test( TARGET ${base_title}_nfld10
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 ${baseargs} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 200 ${baseargs} --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -242,7 +242,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields and 20 levels
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${baseargs} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 200 ${baseargs} --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -251,7 +251,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${baseargs} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 200 ${baseargs} --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -278,7 +278,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${baseargs} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 200 ${baseargs} --callmode ${callmode}
             MPI ${mpi}
             OMP ${omp}
         )
