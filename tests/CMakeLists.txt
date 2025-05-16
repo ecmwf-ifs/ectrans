@@ -492,4 +492,18 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     CONDITION HAVE_ETRANS
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam_dirtrans_adjoint
+    SOURCES   transi/transi_test_lam_dirtrans_adjoint.c
+    LIBS      -lm ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam_invtrans_adjoint
+    SOURCES   transi/transi_test_lam_invtrans_adjoint.c
+    LIBS      -lm ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
 endif()

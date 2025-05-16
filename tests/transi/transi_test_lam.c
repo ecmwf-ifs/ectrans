@@ -26,7 +26,7 @@ int main ( int arc, char **argv ) {
   trans_new(&trans);
   // lam grid of 20x18
   trans_set_resol_lam(&trans, 20, 18);
-  trans_set_trunc_lam(&trans, 8, 9);
+  trans_set_trunc_lam(&trans, 9, 8);
   trans_setup(&trans);
 
   if( trans.myproc == 1 ) {
