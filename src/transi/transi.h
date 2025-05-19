@@ -916,9 +916,9 @@ struct DirTrans_t
                          //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
   double* rspdiv;        //!< @brief  [output] spectral divergence
                          //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
-  const double* rmeanu;  //!<@brief   [input] mean value of u-wind (only for LAM)
+  const double* rmeanu;  //!< @brief  [input] mean value of u-wind (only for LAM)
                          //!<         @details Dimensioning: rmeanu[#nvordiv]
-  const double* rmeanv;  //!<@brief   [input] mean value of v-wind (only for LAM)
+  const double* rmeanv;  //!< @brief  [input] mean value of v-wind (only for LAM)
                          //!<         @details Dimensioning: rmeanv[#nvordiv]
   int nproma;            //!< @brief  [input,default=@link Trans_t::ngptot ngptot@endlink] Blocking factor for distributed gridpoint array
   int nscalar;           //!< @brief  [input,default=0] Number of scalar fields present in RGP
@@ -956,6 +956,10 @@ struct DirTransAdj_t
                          //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
   double* rspdiv;        //!< @brief  [output] spectral divergence
                          //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
+  const double* rmeanu;  //!< @brief  [input] mean value of u-wind (only for LAM)
+                         //!<         @details Dimensioning: rmeanu[#nvordiv]
+  const double* rmeanv;  //!< @brief  [input] mean value of v-wind (only for LAM)
+                         //!<         @details Dimensioning: rmeanv[#nvordiv]
   int nproma;            //!< @brief  [input,default=@link Trans_t::ngptot ngptot@endlink] Blocking factor for distributed gridpoint array
   int nscalar;           //!< @brief  [input,default=0] Number of scalar fields present in RGP
   int nvordiv;           //!< @brief  [input,default=0] Number of vorticity/divergence fields in RGP
@@ -985,9 +989,9 @@ struct InvTrans_t
                             //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
   const double* rspdiv;     //!< @brief  [input] spectral divergence
                             //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
-  const double* rmeanu;     //!<@brief   [input] mean value of u-wind (only for LAM)
+  const double* rmeanu;     //!< @brief  [input] mean value of u-wind (only for LAM)
                             //!<         @details Dimensioning: rmeanu[#nvordiv]
-  const double* rmeanv;     //!<@brief   [input] mean value of v-wind (only for LAM)
+  const double* rmeanv;     //!< @brief  [input] mean value of v-wind (only for LAM)
                             //!<         @details Dimensioning: rmeanv[#nvordiv]
   double* rgp;              //!< @brief  [output] gridpoint fields
                             //!<         @details Dimensioning:  rgp[#ngpblks][2*#nvordiv+#nscalar][#nproma]\n\n
@@ -1031,6 +1035,10 @@ struct InvTransAdj_t
                             //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
   double* rspdiv;           //!< @brief  [output] spectral divergence
                             //!<         @details Dimensioning: rspvor[@link Trans_t::nspec2 nspec2 @endlink][#nvordiv]
+  const double* rmeanu;     //!< @brief  [input] mean value of u-wind (only for LAM)
+                            //!<         @details Dimensioning: rmeanu[#nvordiv]
+  const double* rmeanv;     //!< @brief  [input] mean value of v-wind (only for LAM)
+                            //!<         @details Dimensioning: rmeanv[#nvordiv]
   const double* rgp;        //!< @brief  [input] gridpoint fields
                             //!<         @details Dimensioning:  rgp[#ngpblks][2*#nvordiv+#nscalar][#nproma]\n\n
                             //!<         The ordering of the output fields is as follows (all
