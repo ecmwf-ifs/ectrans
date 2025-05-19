@@ -115,7 +115,9 @@ private
 #include "esetup_trans.h"
 #include "etrans_inq.h"
 #include "edir_trans.h"
+#include "edir_transad.h"
 #include "einv_trans.h"
+#include "einv_transad.h"
 #include "edist_grid.h"
 #include "egath_grid.h"
 #include "edist_spec.h"
@@ -156,7 +158,7 @@ integer, parameter :: TRANS_STALE_ARG        = -5
 !> @brief Interface to the Trans_t struct in transi/trans.h
 type, bind(C) :: Trans_t
 
-  ! FILL IN THESE 4 VALUES YOURSELF BEFORE callING trans_setup() */
+  ! FILL IN THESE 5 VALUES YOURSELF BEFORE callING trans_setup() */
   integer(c_int) :: ndgl        ! -- Number of lattitudes
   type(c_ptr)    :: nloen       ! -- Number of longitude points for each latitude
                                 !    TYPE: INTEGER(1:NDGL)
@@ -309,6 +311,8 @@ type, bind(C) :: DirTransAdj_t
   type(c_ptr)    :: rspscalar
   type(c_ptr)    :: rspvor
   type(c_ptr)    :: rspdiv
+  type(c_ptr)    :: rmeanu
+  type(c_ptr)    :: rmeanv
   integer(c_int) :: nproma
   integer(c_int) :: nscalar
   integer(c_int) :: nvordiv
@@ -341,6 +345,8 @@ type, bind(C) :: InvTransAdj_t
   type(c_ptr)    :: rspscalar
   type(c_ptr)    :: rspvor
   type(c_ptr)    :: rspdiv
+  type(c_ptr)    :: rmeanu
+  type(c_ptr)    :: rmeanv
   type(c_ptr)    :: rgp
   integer(c_int) :: nproma
   integer(c_int) :: nscalar
@@ -1787,6 +1793,8 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
   real(c_double), pointer :: RSPVOR(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPDIV(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPSCALAR(:,:) !(FIELD,WAVE)
+  real(c_double), pointer :: RMEANU(:)      !(FIELD)
+  real(c_double), pointer :: RMEANV(:)      !(FIELD)
   real(c_double), pointer :: RGP(:,:,:)     !(NPROMA,IF_GP,NGPBLKS)
   real(c_double), pointer :: RGPM(:,:,:)    !(NPROMA,FIELD,NGPBLKS)
   type(Trans_t), pointer :: trans
@@ -1825,6 +1833,20 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
     endif
     call c_f_pointer(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
     call c_f_pointer(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    if( is_lam(trans) ) then
+      if( .not. c_associated(args%rmeanu)    ) then
+        call transi_error( "trans_dirtrans_adj: Array RMEANU was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      if( .not. c_associated(args%rmeanv)    ) then
+        call transi_error( "trans_dirtrans_adj: Array RMEANV was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      call c_f_pointer(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
+      call c_f_pointer(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
+    endif
   endif
   if( args%nscalar > 0 ) then
     if( .not. c_associated(args%rspscalar) ) then
@@ -1854,23 +1876,50 @@ function trans_dirtrans_adj(args) bind(C,name="trans_dirtrans_adj") result(iret)
 #endif
 
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
-    call DIR_TRANSAD( KRESOL=trans%handle, &
-      &               KPROMA=args%nproma, &
-!      &               LDLATLON=llatlon, &
-      &               PGP=RGPM, &
-      &               PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call DIR_TRANSAD( KRESOL=trans%handle, &
+        &               KPROMA=args%nproma, &
+!        &               LDLATLON=llatlon, &
+        &               PGP=RGPM, &
+        &               PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIR_TRANSAD( KRESOL=trans%handle, &
+        &                KPROMA=args%nproma, &
+        &                PGP=RGP, &
+        &                PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR,PMEANU=RMEANU,PMEANV=RMEANV ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   elseif( args%nscalar > 0 ) then
-    call DIR_TRANSAD( KRESOL=trans%handle, &
-      &               KPROMA=args%nproma, &
-!      &               LDLATLON=llatlon, &
-      &               PGP=RGPM, &
-      &               PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call DIR_TRANSAD( KRESOL=trans%handle, &
+        &               KPROMA=args%nproma, &
+!        &               LDLATLON=llatlon, &
+        &               PGP=RGPM, &
+        &               PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIR_TRANSAD( KRESOL=trans%handle, &
+        &                KPROMA=args%nproma, &
+        &                PGP=RGP, &
+        &                PSPSCALAR=RSPSCALAR ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   elseif( args%nvordiv > 0 ) then
-    call DIR_TRANSAD( KRESOL=trans%handle, &
-      &               KPROMA=args%nproma, &
-!      &               LDLATLON=llatlon, &
-      &               PGP=RGPM, &
-      &               PSPVOR=RSPVOR,PSPDIV=RSPDIV ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call DIR_TRANSAD( KRESOL=trans%handle, &
+        &               KPROMA=args%nproma, &
+!        &               LDLATLON=llatlon, &
+        &               PGP=RGPM, &
+        &               PSPVOR=RSPVOR,PSPDIV=RSPDIV ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EDIR_TRANSAD( KRESOL=trans%handle, &
+        &                KPROMA=args%nproma, &
+        &                PGP=RGP, &
+        &                PSPVOR=RSPVOR,PSPDIV=RSPDIV,PMEANU=RMEANU,PMEANV=RMEANV ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   endif
 
   if( args%lglobal == 1 ) then
@@ -2069,6 +2118,8 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
   real(c_double), pointer :: RSPVOR(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPDIV(:,:)    !(FIELD,WAVE)
   real(c_double), pointer :: RSPSCALAR(:,:) !(FIELD,WAVE)
+  real(c_double), pointer :: RMEANU(:)      !(FIELD)
+  real(c_double), pointer :: RMEANV(:)      !(FIELD)
   real(c_double), pointer :: RGP(:,:,:)     !(NPROMA,FIELD,NGPBLKS)
   real(c_double), pointer :: RGPM(:,:,:)    !(NPROMA,FIELD,NGPBLKS)
 
@@ -2116,6 +2167,20 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
     endif
     call c_f_pointer(args%rspvor,    RSPVOR,    (/args%nvordiv, trans%nspec2/)  )
     call c_f_pointer(args%rspdiv,    RSPDIV,    (/args%nvordiv, trans%nspec2/)  )
+    if( is_lam(trans) ) then
+      if( .not. c_associated(args%rmeanu)    ) then
+        call transi_error( "trans_invtrans_adj: ERROR: Array RMEANU was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      if( .not. c_associated(args%rmeanv)    ) then
+        call transi_error( "trans_invtrans_adj: ERROR: Array RMEANV was not allocated" )
+        iret = TRANS_MISSING_ARG
+        return
+      endif
+      call c_f_pointer(args%rmeanu,    RMEANU,    (/args%nvordiv/)  )
+      call c_f_pointer(args%rmeanv,    RMEANV,    (/args%nvordiv/)  )
+    endif
   endif
   if( args%nscalar > 0 ) then
     if( .not. c_associated(args%rspscalar) ) then
@@ -2146,33 +2211,69 @@ function trans_invtrans_adj(args) bind(C,name="trans_invtrans_adj") result(iret)
     RGPM => RGP
   endif
 
-
   if( args%nvordiv > 0 .and. args%nscalar > 0 ) then
-    call INV_TRANSAD( KRESOL=trans%handle, &
-      &               KPROMA=args%nproma, &
-!      &               LDLATLON=llatlon, &
-      &               LDSCDERS=lscalarders, &
-      &               LDVORGP=lvordivgp, &
-      &               LDDIVGP=lvordivgp, &
-      &               LDUVDER=luvder_EW, &
-      &               PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR, &
-      &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call INV_TRANSAD( KRESOL=trans%handle, &
+        &               KPROMA=args%nproma, &
+!        &               LDLATLON=llatlon, &
+        &               LDSCDERS=lscalarders, &
+        &               LDVORGP=lvordivgp, &
+        &               LDDIVGP=lvordivgp, &
+        &               LDUVDER=luvder_EW, &
+        &               PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR, &
+        &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EINV_TRANSAD( KRESOL=trans%handle, &
+        &                KPROMA=args%nproma, &
+        &                LDSCDERS=lscalarders, &
+        &                LDVORGP=lvordivgp, &
+        &                LDDIVGP=lvordivgp, &
+        &                LDUVDER=luvder_EW, &
+        &                PSPVOR=RSPVOR,PSPDIV=RSPDIV,PSPSCALAR=RSPSCALAR, &
+        &                PMEANU=RMEANU,PMEANV=RMEANV, &
+        &                PGP=RGP ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   elseif( args%nscalar > 0 ) then
-    call INV_TRANSAD( KRESOL=trans%handle, &
-      &               KPROMA=args%nproma, &
-!      &               LDLATLON=llatlon, &
-      &               LDSCDERS=lscalarders, &
-      &               PSPSCALAR=RSPSCALAR, &
-      &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call INV_TRANSAD( KRESOL=trans%handle, &
+        &               KPROMA=args%nproma, &
+!        &               LDLATLON=llatlon, &
+        &               LDSCDERS=lscalarders, &
+        &               PSPSCALAR=RSPSCALAR, &
+        &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EINV_TRANSAD( KRESOL=trans%handle, &
+        &                KPROMA=args%nproma, &
+        &                LDSCDERS=lscalarders, &
+        &                PSPSCALAR=RSPSCALAR, &
+        &                PGP=RGP ) ! unused args: KVSETUV,KVSETSC
+#endif
+   endif
   elseif( args%nvordiv > 0 ) then
-    call INV_TRANSAD( KRESOL=trans%handle, &
-      &               KPROMA=args%nproma, &
-!      &               LDLATLON=llatlon, &
-      &               LDVORGP=lvordivgp, &
-      &               LDDIVGP=lvordivgp, &
-      &               LDUVDER=luvder_EW, &
-      &               PSPVOR=RSPVOR,PSPDIV=RSPDIV, &
-      &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+    if( .not. is_lam(trans) ) then
+      call INV_TRANSAD( KRESOL=trans%handle, &
+        &               KPROMA=args%nproma, &
+!        &               LDLATLON=llatlon, &
+        &               LDVORGP=lvordivgp, &
+        &               LDDIVGP=lvordivgp, &
+        &               LDUVDER=luvder_EW, &
+        &               PSPVOR=RSPVOR,PSPDIV=RSPDIV, &
+        &               PGP=RGPM ) ! unused args: KVSETUV,KVSETSC
+#if ECTRANS_HAVE_ETRANS
+    else
+      call EINV_TRANSAD( KRESOL=trans%handle, &
+        &                KPROMA=args%nproma, &
+        &                LDVORGP=lvordivgp, &
+        &                LDDIVGP=lvordivgp, &
+        &                LDUVDER=luvder_EW, &
+        &                PSPVOR=RSPVOR,PSPDIV=RSPDIV, &
+        &                PMEANU=RMEANU,PMEANV=RMEANV, &
+        &                PGP=RGP ) ! unused args: KVSETUV,KVSETSC
+#endif
+    endif
   endif
 
   if( args%lglobal == 1 ) then
