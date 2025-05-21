@@ -57,7 +57,7 @@ jobs:
               - prgenv/nvidia
               - hpcx-openmpi/2.14.0-cuda
               - fftw
-            cmake_options: -DENABLE_ACC=ON
+            cmake_options: -DENABLE_ACC=ON -G Ninja
 
           - name: lumi-g cce
             site: lumi
@@ -88,6 +88,7 @@ jobs:
               - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
+              - CMAKE_BUILD_PARALLEL_LEVEL=1
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -123,6 +124,10 @@ jobs:
               module load {{module}}
             {% endfor %}
 
+            {% for var in "${{ join(matrix.env_vars, ',') }}".split(',') %}
+              export {{var}}
+            {% endfor %}
+
             export CMAKE_TEST_LAUNCHER="srun;-n;1"
             export DR_HOOK_ASSERT_MPI_INITIALIZED=0
             BASEDIR=$PWD
@@ -133,7 +138,7 @@ jobs:
                 git remote add origin ${{ github.server_url }}/{{name}}
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
-                cmake -G Ninja -S . -B build \
+                cmake -S . -B build \
                   {% for name in dependencies %}
                     {% set org, proj = name.split('/') %}
                     -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
@@ -152,17 +157,13 @@ jobs:
             git fetch origin $SHA
             git reset --hard FETCH_HEAD
             popd
-            cmake -G Ninja -S $REPO -B build \
+            cmake -S $REPO -B build \
               {% for name in dependencies %}
                 {% set org, proj = name.split('/') %}
                 -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build
-
-            {% for var in "${{ join(matrix.env_vars, ',') }}".split(',') %}
-              export {{var}}
-            {% endfor %}
 
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
