@@ -144,7 +144,7 @@ ALLOCATE(ZSPECY(NFLEV,NSPEC2))
 ALLOCATE(ZSPECP(NFLEV,NSPEC2))
 
 ! Temporary grid point array
-ALLOCATE(ZGX(NPROMA,3*NFLEVG,NGPBLKS))
+ALLOCATE(ZGX(NPROMA,NFLEVG,NGPBLKS))
 
 ! Prepare perturbations (random numbers between -1 and +1)
 IF (MYPROC == 1) THEN
