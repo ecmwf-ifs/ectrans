@@ -103,6 +103,7 @@ jobs:
           output_dir: ${{ format(matrix.output_dir, secrets[matrix.account_secret]) || '' }}
           workdir: ${{ format(matrix.workdir, secrets[matrix.account_secret]) || '' }}
           template_data: |
+            site: ${{ matrix.site }}
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_GPU=ON
@@ -120,6 +121,31 @@ jobs:
                   - -DENABLE_MPI=ON
                   - ${{ matrix.cmake_options || '' }}
           template: |
+            REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
+            SHA=${{ github.event.pull_request.head.sha || github.sha }}
+
+            # Cleanup function
+            cleanup() {
+              {% for name in dependencies.keys() %}
+                rm -r {{name}}
+              {% endfor %}
+
+              rm -r $REPO
+              rm -r build
+
+              if [ "{{ site }}" = "lumi" ]; then
+                rm -f $ROCFFT_RTC_CACHE_PATH
+              fi
+            }
+            error_trap() {
+              cleanup
+
+              echo "Finished: FAILURE"
+              exit 1
+            }
+
+            trap error_trap ERR
+
             {% for module in "${{ join(matrix.modules, ',') }}".split(',') %}
               module load {{module}}
             {% endfor %}
@@ -148,8 +174,6 @@ jobs:
                 cmake --install build --prefix installation
                 popd
             {% endfor %}
-            REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
-            SHA=${{ github.event.pull_request.head.sha || github.sha }}
             mkdir -p $REPO
             pushd $REPO
             git init
@@ -167,9 +191,5 @@ jobs:
 
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
-            {% for name in dependencies.keys() %}
-              rm -r {{name}}
-            {% endfor %}
+            cleanup
 
-            rm -r $REPO
-            rm -r build
