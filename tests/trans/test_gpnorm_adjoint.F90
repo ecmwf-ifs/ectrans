@@ -62,6 +62,7 @@ INTEGER(KIND=JPIM), ALLOCATABLE :: SEED(:)
 #include "gpnorm_transtl.h"
 #include "gpnorm_transad.h"
 #include "gpnorm_trans.h"
+#include "trans_end.h"
 
 ! Fix random number seed
 CALL RANDOM_SEED(SIZE=N)
@@ -164,9 +165,12 @@ IF (IMYPROC == 1) THEN
     WRITE(IERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 5000.0*EPSILON(1.0_JPRB)
     WRITE(IERR, '(A)') '*******************************'
     FLUSH(IERR)
+    CALL TRANS_END
     CALL ABORT_TRANS("TEST_GPNORM_TRANS_ADJOINT: test failed")
   ENDIF
 ENDIF
+
+CALL TRANS_END
 
 IF (LLUSE_MPI) THEN
   CALL MPL_BARRIER()
