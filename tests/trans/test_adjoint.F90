@@ -46,6 +46,8 @@ REAL(KIND=JPRB) , ALLOCATABLE :: ZRANDSP(:)
 REAL(KIND=JPRB) :: ZSC1, ZSC2, ZRELATIVE_ERROR
 INTEGER(KIND=JPIM) :: JA, JB, I
 LOGICAL :: LUSE_MPI
+INTEGER(KIND=JPIM) :: N
+INTEGER(KIND=JPIM), ALLOCATABLE :: SEED(:)
 
 #include "setup_trans0.h"
 #include "setup_trans.h"
@@ -57,6 +59,12 @@ LOGICAL :: LUSE_MPI
 #include "dist_grid.h"
 #include "gath_spec.h"
 #include "dist_spec.h"
+
+! Fix random number seed
+CALL RANDOM_SEED(SIZE=N)
+ALLOCATE(SEED(N))
+SEED(:) = 1
+CALL RANDOM_SEED(PUT=SEED)
 
 LUSE_MPI = DETECT_MPIRUN()
 
