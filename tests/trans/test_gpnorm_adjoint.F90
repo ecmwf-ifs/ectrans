@@ -53,6 +53,8 @@ INTEGER(KIND=JPIM) :: IOUT = 6, IERR = 0 ! STDOUT and STDERR
 INTEGER(KIND=JPIM) :: JA, JB, JL, JP, JF, JBLK
 REAL(KIND=JPRB) :: ZRAND
 REAL(KIND=JPRB) :: ZLHS, ZRHS, ZRELATIVE_ERROR
+INTEGER(KIND=JPIM) :: N
+INTEGER(KIND=JPIM), ALLOCATABLE :: SEED(:)
 
 #include "setup_trans0.h"
 #include "setup_trans.h"
@@ -60,6 +62,12 @@ REAL(KIND=JPRB) :: ZLHS, ZRHS, ZRELATIVE_ERROR
 #include "gpnorm_transtl.h"
 #include "gpnorm_transad.h"
 #include "gpnorm_trans.h"
+
+! Fix random number seed
+CALL RANDOM_SEED(SIZE=N)
+ALLOCATE(SEED(N))
+SEED(:) = 1
+CALL RANDOM_SEED(PUT=SEED)
 
 LLUSE_MPI = DETECT_MPIRUN()
 

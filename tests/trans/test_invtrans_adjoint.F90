@@ -59,6 +59,8 @@ REAL(KIND=JPRB) , ALLOCATABLE :: ZGXG(:,:)
 REAL(KIND=JPRB) :: ADJ_VALUE_1
 REAL(KIND=JPRB) :: ADJ_VALUE_2
 REAL(KIND=JPRB) :: ZRELATIVE_ERROR
+INTEGER(KIND=JPIM) :: N
+INTEGER(KIND=JPIM), ALLOCATABLE :: SEED(:)
 
 #include "setup_trans0.h"
 #include "setup_trans.h"
@@ -70,6 +72,12 @@ REAL(KIND=JPRB) :: ZRELATIVE_ERROR
 #include "gath_spec.h"
 #include "dist_spec.h"
 #include "trans_end.h"
+
+! Fix random number seed
+CALL RANDOM_SEED(SIZE=N)
+ALLOCATE(SEED(N))
+SEED(:) = 1
+CALL RANDOM_SEED(PUT=SEED)
 
 LLUSE_MPI = DETECT_MPIRUN()
 
