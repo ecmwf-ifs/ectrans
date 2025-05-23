@@ -59,6 +59,7 @@ INTEGER(KIND=JPIM), ALLOCATABLE :: SEED(:)
 #include "dist_grid.h"
 #include "gath_spec.h"
 #include "dist_spec.h"
+#include "trans_end.h"
 
 ! Fix random number seed
 CALL RANDOM_SEED(SIZE=N)
@@ -203,9 +204,12 @@ IF (MYPROC == 1) THEN
     WRITE(NERR, '(1E9.2,A3,1E9.2)') ZRELATIVE_ERROR, ' > ', 2000.0*EPSILON(1.0_JPRB)
     WRITE(NERR, '(A)') '*******************************'
     FLUSH(NERR)
+    CALL TRANS_END
     CALL ABORT_TRANS("Adjoint test failed")
   ENDIF
 ENDIF
+
+CALL TRANS_END
 
 IF (LUSE_MPI) THEN
   CALL MPL_BARRIER()
