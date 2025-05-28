@@ -33,18 +33,18 @@ int nvordiv = 1;
 int nfld  = 2*nvordiv+nscalar;
 
 // Allocate test data
-double* rgp1  = malloc( sizeof(double) * nfld * trans.ngptot );
-double* rspvor1 = malloc( sizeof(double) * nvordiv * trans.nspec2 );
-double* rspdiv1 = malloc( sizeof(double) * nvordiv * trans.nspec2 );
-double* rspscalar1 = malloc( sizeof(double) * nscalar * trans.nspec2 );
-double* rmeanu1 = calloc( nvordiv, sizeof(double));
-double* rmeanv1 = calloc( nvordiv, sizeof(double));
-double* rgp2 = calloc( nfld * trans.ngptot, sizeof(double));
-double* rspvor2 = calloc( nvordiv * trans.nspec2, sizeof(double));
-double* rspdiv2 = calloc( nvordiv * trans.nspec2, sizeof(double));
-double* rspscalar2 = calloc( nscalar * trans.nspec2, sizeof(double));
-double* rmeanu2 = calloc( nvordiv, sizeof(double));
-double* rmeanv2 = calloc( nvordiv, sizeof(double));
+double* rgp1  = calloc( nfld * trans.ngptot, sizeof(double) );
+double* rspvor1 = calloc( nvordiv * trans.nspec2, sizeof(double) );
+double* rspdiv1 = calloc( nvordiv * trans.nspec2, sizeof(double) );
+double* rspscalar1 = calloc( nscalar * trans.nspec2, sizeof(double) );
+double* rmeanu1 = calloc( nvordiv, sizeof(double) );
+double* rmeanv1 = calloc( nvordiv, sizeof(double) );
+double* rgp2 = calloc( nfld * trans.ngptot, sizeof(double) );
+double* rspvor2 = calloc( nvordiv * trans.nspec2, sizeof(double) );
+double* rspdiv2 = calloc( nvordiv * trans.nspec2, sizeof(double) );
+double* rspscalar2 = calloc( nscalar * trans.nspec2, sizeof(double) );
+double* rmeanu2 = calloc( nvordiv, sizeof(double) );
+double* rmeanv2 = calloc( nvordiv, sizeof(double) );
 
 // Create random grid-point fields
 for(int j=0; j<nfld; ++j)
