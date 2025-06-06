@@ -63,22 +63,33 @@ endforeach()
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
+  set( precisions "" )
   if( HAVE_DOUBLE_PRECISION )
-    set( trans trans_dp )
-    set( parkind parkind_dp )
-  else()
-    set( trans trans_sp )
-    set( parkind parkind_sp )
+    list( APPEND precisions "dp" )
+  endif()
+  if( HAVE_SINGLE_PRECISION )
+    list( APPEND precisions "sp" )
   endif()
 
-  ecbuild_add_test(TARGET ectrans_test_adjoint
-    SOURCES trans/test_adjoint.F90
-    LIBS ${trans} ${parkind}
-    LINKER_LANGUAGE Fortran
-  )
-  if( TEST ectrans_test_adjoint AND HAVE_OMP )
-    target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
+  set( ntasks 0 )
+  if( HAVE_MPI )
+    list( APPEND ntasks 1 2 )
   endif()
+
+  foreach( precision ${precisions} )
+    foreach( mpi ${ntasks} )
+      set( test_name ectrans_test_adjoint_mpi${mpi}_${precision} )
+      ecbuild_add_test(TARGET ${test_name}
+        SOURCES trans/test_adjoint.F90
+        LIBS trans_${precision} parkind_${precision}
+        LINKER_LANGUAGE Fortran
+        MPI ${mpi}
+      )
+      if( TEST ${test_name} AND HAVE_OMP )
+        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
+      endif()
+    endforeach()
+  endforeach()
 endif()
 
 # --------------------------------------------------------------------------------------------------
