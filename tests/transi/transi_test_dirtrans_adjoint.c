@@ -154,7 +154,13 @@ struct DirTransAdj_t dirtrans_adj = new_dirtrans_adj(&trans);
   dirtrans_adj.rspvor    = rspvor;
   dirtrans_adj.rspdiv    = rspdiv;
   dirtrans_adj.rgp       = rgp;
+#ifdef GPU_VERSION
+TRANS_CHECK_ERROR(trans_dirtrans_adj(&dirtrans_adj), TRANS_NOTIMPL);
+printf("ERROR: trans_dirtrans_adj not yet implemented for GPU version\n");
+exit(0);
+#else
 TRANS_CHECK( trans_dirtrans_adj(&dirtrans_adj) );
+#endif
 
 printf("trans_gathgrid()\n");
 // Gather gridpoint fields
