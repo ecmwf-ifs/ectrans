@@ -92,6 +92,10 @@ if( HAVE_CPU )
   endforeach()
 endif()
 
+# --------------------------------------------------------------------------------------------------
+# Add tests for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS
+# --------------------------------------------------------------------------------------------------
+
 set( platforms )
 if( HAVE_CPU )
   list( APPEND platforms cpu )
@@ -123,7 +127,6 @@ foreach( platform ${platforms} )
   endif()
 
   foreach( mpi ${ntasks} )
-    
     ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}
       SOURCES trans/test_dirtrans_adjoint.F90
       LIBS ${trans} ${parkind}
@@ -135,46 +138,7 @@ foreach( platform ${platforms} )
       target_link_libraries( ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} OpenMP::OpenMP_Fortran )
     endif()
     set_tests_properties(ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} PROPERTIES LABELS "${platform};Fortran")
-    
-  endforeach() # mpi comm size
 
-endforeach() # platform
-
-# --------------------------------------------------------------------------------------------------
-# Add a test for tangent-linear/adjoint correspondence of INV_TRANS alone
-# --------------------------------------------------------------------------------------------------
-
-set( platforms )
-if( HAVE_CPU )
-  list( APPEND platforms cpu )
-endif()
-if( HAVE_GPU )
-  list( APPEND platforms gpu )
-endif()
-
-foreach( platform ${platforms} )
-  
-  if( "${platform}" MATCHES "cpu" )
-    set( platform_tag "" )
-  endif()
-  if( "${platform}" MATCHES "gpu" )
-    set( platform_tag "_gpu" )
-  endif()
-  
-  if( HAVE_DOUBLE_PRECISION )
-    set( trans trans${platform_tag}_dp )
-    set( parkind parkind_dp )
-  else()
-    set( trans trans${platform_tag}_sp )
-    set( parkind parkind_sp )
-  endif()
-
-  set( ntasks 0 )
-  if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
-  endif()
-
-  foreach( mpi ${ntasks} )
     ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}
       SOURCES trans/test_invtrans_adjoint.F90
       LIBS ${trans} ${parkind}
