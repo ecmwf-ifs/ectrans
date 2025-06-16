@@ -1,15 +1,3 @@
----
-title: Interfacing with C
----
-
-ecTrans can be called from C. This functionality is provided by a set of C bindings which allow
-access to a subset of ecTrans [API subroutines](api.html) from within a C program. The library
-exposing these bindings is called "transi" (trans interface — "trans" is the old name for ecTrans),
-pronounced "tran-zee". This is built when the `TRANSI` CMake feature is enabled (`ON` by default).
-
-Here we will demonstrate transi by rewriting the program described in [Usage](usage.html) in C:
-
-```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -92,17 +80,3 @@ int main() {
 
   return 0;
 }
-```
-
-The structure of the program is very similar to the Fortran equivalent. The crucial differences of
-course come as a consequence of the differences between Fortran and C:
-- Everything is done through function calls which return an error code, hence the error handler.
-- The persistent state of a spectral transform instance is controlled through "handles" which must
-  be initialised and freed explicitly (e.g. with `struct Trans_t trans`).
-- Spectral transform parameters returned by the `TRANS_INQ` Fortran subroutine are members of the
-  `Trans_t` struct, but must first be populated by calling `trans_inquire`.
-
-Otherwise it is very straightforward to write a C program which calls ecTrans, if you keep in mind
-what would be the Fortran equivalent.
-
-Further documention of the transi library is provided [here](transi/index.html).
