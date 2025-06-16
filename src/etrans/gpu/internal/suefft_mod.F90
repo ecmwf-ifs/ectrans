@@ -9,13 +9,7 @@ USE TPM_DIM         ,ONLY : R
 USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_FFT         ,ONLY : T
-#ifdef WITH_FFTW
-USE TPM_FFTW        ,ONLY : TW, INIT_PLANS_FFTW
-#endif
 !
-  USE TPM_HICFFT    ,ONLY : HICT, INIT_PLANS_FFT
-
 USE TPMALD_FFT      ,ONLY : TALD
 !
 
@@ -35,8 +29,6 @@ IF(.NOT.D%LGRIDONLY) THEN
   LLP2 = NPRINTLEV>1
   IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SUEFFT ==='
   
-  CALL INIT_PLANS_FFT(2)   ! number of FFT lengths to allocate: one for zonal, one for meridional
-
 ENDIF
 
 IF (LHOOK) CALL DR_HOOK('SUEFFT_MOD:SUEFFT',1,ZHOOK_HANDLE)

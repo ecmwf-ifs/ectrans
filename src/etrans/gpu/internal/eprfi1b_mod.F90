@@ -6,8 +6,8 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 !USE TPM_DIM
-USE TPM_DISTR
-USE TPMALD_DISTR    ,ONLY : DALD, DALD_NESM0, DALD_NCPL2M
+USE TPM_DISTR, ONLY : D
+USE TPMALD_DISTR    ,ONLY : DALD
 !
 !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
 
@@ -86,21 +86,21 @@ ENDIF
 !PFFT = 0._JPRB
 !!$acc end kernels
 
-MAX_NCPL2M = MAXVAL (DALD_NCPL2M)
+MAX_NCPL2M = MAXVAL (DALD%NCPL2M)
 
 !$ACC parallel loop collapse(3) &
-!$ACC& present(D_MYMS,DALD_NCPL2M,DALD_NESM0,D_NUMP) &
+!$ACC& present(D,DALD,D%MYMS,DALD%NCPL2M,DALD%NESM0,D%NUMP) &
 !$ACC& copyin(KFIELDS,MAX_NCPL2M,JFLDPTR) &
 !$ACC& private(IR,II,IM,ILCM,IOFF,INM,JFLD) default(none)
-DO JM = 1, D_NUMP
+DO JM = 1, D%NUMP
   DO JFLD=1,KFIELDS
     DO J=1,MAX_NCPL2M,2
       IR = 2*JFLD-1
       II = IR+1
-      IM   = D_MYMS(JM)
-      ILCM = DALD_NCPL2M(IM)
+      IM   = D%MYMS(JM)
+      ILCM = DALD%NCPL2M(IM)
       IF (J .LE. ILCM) THEN
-        IOFF = DALD_NESM0(IM)
+        IOFF = DALD%NESM0(IM)
         INM = IOFF+(J-1)*2
         PFFT(J  ,JM,IR) = PSPEC(JFLDPTR(JFLD),INM  )
         PFFT(J+1,JM,IR) = PSPEC(JFLDPTR(JFLD),INM+1)

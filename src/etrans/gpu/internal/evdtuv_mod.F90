@@ -7,10 +7,10 @@ USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 !USE TPM_DIM
 !USE TPM_FIELDS
-USE TPMALD_FIELDS   ,ONLY : FALD, FALD_RLEPINM
+USE TPMALD_FIELDS   ,ONLY : FALD
 USE TPMALD_GEO      ,ONLY : GALD
-USE TPMALD_DISTR    ,ONLY : DALD, DALD_NCPL2M, DALD_NPME
-USE TPM_DISTR       ,ONLY : D, D_NUMP, D_MYMS
+USE TPMALD_DISTR    ,ONLY : DALD
+USE TPM_DISTR       ,ONLY : D
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 !**** *VDTUV* - Compute U,V in  spectral space
@@ -91,12 +91,12 @@ IF (LHOOK) CALL DR_HOOK('EVDTUV_MOD:EVDTUV',0,ZHOOK_HANDLE)
 JNMAX = MAXVAL (DALD%NCPL2M)
 
 !$acc parallel loop collapse (3) private (JM, J, JN, IM, IN, ZIN) &
-!$acc & present (D_NUMP, D_MYMS, DALD_NCPL2M, PU, PV, PVOR, PDIV)
+!$acc & present (D%NUMP, D%MYMS, DALD%NCPL2M, PU, PV, PVOR, PDIV)
 DO J=1,2*KFIELD
-  DO JM = 1, D_NUMP
+  DO JM = 1, D%NUMP
     DO JN=1,JNMAX,2
-      IM = D_MYMS (JM)
-      IF (JN <= DALD_NCPL2M(IM)) THEN
+      IM = D%MYMS (JM)
+      IF (JN <= DALD%NCPL2M(IM)) THEN
         IN = (JN-1)/2
         ZIN = REAL(IN,JPRB)*GALD%EYWN
         PU(JN  ,JM,J) = -ZIN*PVOR(JN+1,JM,J)
@@ -110,17 +110,17 @@ ENDDO
 !$acc end parallel loop
 
 !$acc parallel loop collapse (3) private (JM, J, JN, IM, ZKM, IR, II, IJ, ZLEPINM) &
-!$acc & present (D_NUMP, D_MYMS, DALD_NCPL2M, FALD_RLEPINM, PU, PV, PDIV, PVOR)
+!$acc & present (D%NUMP, D%MYMS, DALD%NCPL2M, FALD%RLEPINM, PU, PV, PDIV, PVOR)
 DO J=1,KFIELD
-  DO JM = 1, D_NUMP
+  DO JM = 1, D%NUMP
     DO JN=1,JNMAX
-      IM = D_MYMS (JM)
+      IM = D%MYMS (JM)
       ZKM=REAL(IM,JPRB)*GALD%EXWN
       IR = 2*J-1
       II = IR+1
-      IF (JN <= DALD_NCPL2M(IM)) THEN
+      IF (JN <= DALD%NCPL2M(IM)) THEN
         IJ=(JN-1)/2
-        ZLEPINM = FALD_RLEPINM(DALD_NPME(IM)+IJ)
+        ZLEPINM = FALD%RLEPINM(DALD%NPME(IM)+IJ)
         PU(JN,JM,IR)= ZLEPINM*(-ZKM*PDIV(JN,JM,II)-PU(JN,JM,IR))
         PU(JN,JM,II)= ZLEPINM*( ZKM*PDIV(JN,JM,IR)-PU(JN,JM,II))
         PV(JN,JM,IR)= ZLEPINM*(-ZKM*PVOR(JN,JM,II)+PV(JN,JM,IR))
@@ -133,10 +133,10 @@ ENDDO
 
 IF (PRESENT(KFLDPTR)) THEN
 !$acc parallel loop collapse (2) private (J, JM, IM, IR, IFLD) &
-!$acc & present (D_NUMP, D_MYMS, PU, PV, PSPMEANU, PSPMEANV) copyin (KFLDPTR)
+!$acc & present (D%NUMP, D%MYMS, PU, PV, PSPMEANU, PSPMEANV) copyin (KFLDPTR)
   DO J = 1, KFIELD
-    DO JM = 1, D_NUMP
-      IM = D_MYMS (JM)
+    DO JM = 1, D%NUMP
+      IM = D%MYMS (JM)
       IF (IM == 0) THEN
         IR = 2*J-1
         IFLD=KFLDPTR(J)
@@ -148,10 +148,10 @@ IF (PRESENT(KFLDPTR)) THEN
 !$acc end parallel loop
 ELSE
 !$acc parallel loop collapse (2) private (J, JM, IM, IR) &
-!$acc & present (D_NUMP, D_MYMS, PU, PV, PSPMEANU, PSPMEANV)
+!$acc & present (D%NUMP, D%MYMS, PU, PV, PSPMEANU, PSPMEANV)
   DO J = 1, KFIELD
-    DO JM = 1, D_NUMP
-      IM = D_MYMS (JM)
+    DO JM = 1, D%NUMP
+      IM = D%MYMS (JM)
       IF (IM == 0) THEN
         IR = 2*J-1
         PU(1,JM,IR)=PSPMEANU(J)

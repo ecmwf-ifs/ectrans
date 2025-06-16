@@ -49,10 +49,11 @@ SUBROUTINE ELEDIR(ALLOCATOR,PFFT)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPRB
+USE PARKIND1  ,ONLY : JPIM, JPRB, JPIB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
-USE TPM_DISTR       ,ONLY : D, D_NUMP, D_MYMS
+USE TPM_GEN,                ONLY: NCUR_RESOL
+USE TPM_DISTR       ,ONLY : D
 USE TPM_DIM         ,ONLY : R
 USE TPMALD_DIM      ,ONLY : RALD
 USE TPMALD_FFT      ,ONLY : TALD
@@ -76,7 +77,7 @@ INTEGER(KIND=JPIM) :: IRLEN, ICLEN, JLOT, JJ
 TYPE(C_PTR) :: IPLAN_C2R
 REAL (KIND=JPRB)   :: ZSCAL
 REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
-INTEGER(KIND=JPIM) :: OFFSETS(2)
+INTEGER(KIND=JPIB) :: OFFSETS(2)
 INTEGER(KIND=JPIM) :: LOENS(1)
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -118,7 +119,7 @@ ENDDO
 #else
 
 !$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
-CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
+CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),NCUR_RESOL,-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=LOENS, &
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA
