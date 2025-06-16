@@ -12,6 +12,7 @@ favicon: img/favicon.ico
 privacy_policy_url: https://www.ecmwf.int/en/privacy
 terms_of_service_url: https://www.ecmwf.int/en/terms-use
 version: 1.6.1
+html_template_dir: html
 ---
 
 ## Efficient and _scalable_ spectral transforms.
