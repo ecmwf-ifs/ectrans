@@ -1,0 +1,132 @@
+MODULE ELEINV_MOD
+CONTAINS
+SUBROUTINE ELEINV(ALLOCATOR,PFFT)
+
+!**** *LEINV* - Inverse Legendre transform.
+
+!     Purpose.
+!     --------
+!        Inverse Legendre tranform of all variables(kernel).
+
+!**   Interface.
+!     ----------
+!        CALL LEINV(...)
+
+!        Explicit arguments :  KM - zonal wavenumber (input-c)
+!        --------------------  KFC - number of fields to tranform (input-c)
+!                              PIA - spectral fields
+!                              for zonal wavenumber KM (input)
+!                              PAOA1 - antisymmetric part of Fourier
+!                              fields for zonal wavenumber KM (output)
+!                              PSOA1 - symmetric part of Fourier
+!                              fields for zonal wavenumber KM (output)
+!                              PLEPO - Legendre polonomials for zonal
+!                              wavenumber KM (input-c)
+
+!        Implicit arguments :  None.
+!        --------------------
+
+!     Method.
+!     -------
+
+!     Externals.   MXMAOP - calls SGEMVX (matrix multiply)
+!     ----------
+
+!     Reference.
+!     ----------
+!        ECMWF Research Department documentation of the IFS
+
+!     Author.
+!     -------
+!        Mats Hamrud and Philippe Courtier  *ECMWF*
+
+!     Modifications.
+!     --------------
+!        Original : 00-02-01 From LEINV in IFS CY22R1
+!        M.Hamrud      01-Oct-2003 CY28 Cleaning
+!        D. Degrauwe  (Feb 2012): Alternative extension zone (E')
+!        R. El Khatib 01-Sep-2015 support for FFTW transforms
+
+!     ------------------------------------------------------------------
+
+USE PARKIND1  ,ONLY : JPIM, JPRB
+USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+
+USE TPM_DISTR       ,ONLY : D, D_NUMP
+USE TPM_DIM         ,ONLY : R
+USE TPMALD_DIM      ,ONLY : RALD
+USE TPMALD_FFT      ,ONLY : TALD
+
+USE TPM_HICFFT      ,ONLY : EXECUTE_INV_FFT
+
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
+
+USE ISO_C_BINDING
+USE BUFFERED_ALLOCATOR_MOD
+
+!
+
+IMPLICIT NONE
+
+TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
+REAL(KIND=JPRB),    INTENT(INOUT)  :: PFFT(:,:,:)
+
+INTEGER(KIND=JPIM) :: IRLEN, ICLEN, JLOT, JJ
+!INTEGER(KIND=JPIM) :: IPLAN_C2R
+TYPE(C_PTR) :: IPLAN_C2R
+REAL (KIND=JPRB)   :: ZSCAL
+REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
+INTEGER(KIND=JPIM) :: OFFSETS(2)   ! daand: why isn't OFFSETS(1) not enough?
+INTEGER(KIND=JPIM) :: LOENS(1)
+
+REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+
+!     ------------------------------------------------------------------
+
+!*       1.       PERFORM LEGENDRE TRANFORM.
+!                 --------------------------
+
+IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',0,ZHOOK_HANDLE)
+
+IRLEN=R%NDGL+R%NNOEXTZG
+LOENS(1)=IRLEN
+JLOT=UBOUND(PFFT,2)*UBOUND (PFFT,3)
+
+! compute offsets; TODO: avoid recomputing/putting on device every time.
+DO JJ=1,SIZE(OFFSETS)
+  OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
+ENDDO
+
+CALL C_F_POINTER(C_LOC(PFFT), ZFFT_L, (/UBOUND(PFFT,1)*UBOUND(PFFT,2)*UBOUND(PFFT,3)/) )
+
+IF (JLOT==0) THEN
+  IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
+  RETURN
+ENDIF
+
+
+#ifdef gnarls
+
+! fake fft: only take mean value, on cpu
+!$acc data present(zfft_l)
+!$acc update host(zfft_l)
+DO JJ=1,JLOT
+  zfft_l((JJ-1)*(irlen+2)+2:jj*(irlen+2)-2)=zfft_l((JJ-1)*(irlen+2)+1)
+ENDDO
+!$acc update device(zfft_l)
+!$acc end data
+
+#else
+
+!$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
+CALL EXECUTE_INV_FFT(ZFFT_L(:),ZFFT_L(:),-JLOT, &
+    & LOENS, &
+    & OFFSETS,ALLOCATOR%PTR)
+!$ACC END DATA
+
+#endif
+
+IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
+
+END SUBROUTINE ELEINV
+END MODULE ELEINV_MOD
