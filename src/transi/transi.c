@@ -15,6 +15,7 @@
  *  @date Jul 2014
  */
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include "transi.h"
@@ -112,10 +113,12 @@ int trans_set_resol_lonlat( struct Trans_t* trans, int nlon, int nlat )
   return TRANS_SUCCESS;
 }
 
-int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny )
+int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny, double dx, double dy )
 {
   trans->ndgl=ny;
   trans->nlon=nx;
+  trans->pexwn=2.*M_PI/((double)nx*dx);
+  trans->peywn=2.*M_PI/((double)ny*dy);
   trans->llam=true;
   // Sensible defaults for (linear) truncation
   //   trans->nsmax=(ny-1)/2;

@@ -877,8 +877,10 @@ int trans_set_resol_lonlat( struct Trans_t* trans, int nlon, int nlat );
    @param  trans [in] Trans_t used to setup
    @param  nx    [in] Number of grid points in x-direction
    @param  ny    [in] Number of grid points in y-direction
+   @param  dx    [in] Grid cell size in x-direction
+   @param  dy    [in] Grid cell size in y-direction
  */
-int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny );
+int trans_set_resol_lam( struct Trans_t* trans, int nx, int ny, double dx, double dy );
 
 /*!
    @brief Set spectral truncation wave number for trans

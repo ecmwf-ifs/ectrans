@@ -26,9 +26,11 @@ int main ( int arc, char **argv ) {
   // lam grid of 20x18
   int nx = 20;
   int ny = 18;
+  double dx = 2500.0;
+  double dy = 2500.0;
   int tx = (nx-1)/2;
   int ty = (ny-1)/2;
-  trans_set_resol_lam(&trans, nx, ny);
+  trans_set_resol_lam(&trans, nx, ny, dx, dy);
   trans_set_trunc_lam(&trans, ty, tx);
   trans_setup(&trans);
 
