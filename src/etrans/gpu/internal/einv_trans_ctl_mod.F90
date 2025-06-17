@@ -190,7 +190,7 @@ IF(KF_OUT_LT > 0) THEN
 
   CALL GSTATS(152,0)
 !write (6,*) __FILE__, __LINE__; call flush(6)
-  CALL TRMTOL_CUDAAWARE(ALLOCATOR,HTRMTOL,FOUBUF_IN,FOUBUF,KF_OUT_LT)
+  CALL TRMTOL(ALLOCATOR,HTRMTOL,FOUBUF_IN,FOUBUF,KF_OUT_LT)
 !write (6,*) __FILE__, __LINE__; call flush(6)
   CALL TRMTOL_UNPACK(ALLOCATOR,HTRMTOL_UNPACK,FOUBUF,PREEL,KF_OUT_LT,KF_FS)   ! Formerly known as fourier_in routine
 !write (6,*) __FILE__, __LINE__; call flush(6)

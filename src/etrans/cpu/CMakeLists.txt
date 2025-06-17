@@ -27,7 +27,7 @@ function(generate_backend_sources)
     internal/*.F90
     external/*.F90
     biper/internal/*.F90
-          biper/external/*.F90
+    biper/external/*.F90
     QUIET
   )
 
@@ -50,20 +50,20 @@ set( BUILD_INTERFACE_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include/ectrans )
 foreach( prec dp sp )
   if( HAVE_${prec} )
 
-    generate_backend_includes(BACKEND ${prec} TARGET ectrans_etrans_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/etrans/include )
-    generate_backend_sources( BACKEND ${prec} OUTPUT ectrans_etrans_${prec}_src  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_etrans_${prec})
+    generate_backend_includes(BACKEND ${prec} TARGET ectrans_lam_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/etrans/include )
+    generate_backend_sources( BACKEND ${prec} OUTPUT ectrans_lam_${prec}_src  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_lam_${prec})
     ecbuild_add_library(
-      TARGET           ectrans_etrans_${prec}
+      TARGET           ectrans_lam_${prec}
       LINKER_LANGUAGE  Fortran
-      SOURCES          ${ectrans_etrans_${prec}_src}
+      SOURCES          ${ectrans_lam_${prec}_src}
       PUBLIC_INCLUDES  $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
                        $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}>
-      PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes ectrans_${prec} ectrans_etrans_${prec}_includes
+      PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes ectrans_${prec} ectrans_lam_${prec}_includes
     )
 
     ectrans_target_fortran_module_directory(
-      TARGET            ectrans_etrans_${prec}
+      TARGET            ectrans_lam_${prec}
       MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
       INSTALL_DIRECTORY module/ectrans
     )
@@ -75,23 +75,23 @@ foreach( prec dp sp )
         set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
     endif()
     ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
-    target_link_libraries( ectrans_etrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
-    target_include_directories( ectrans_etrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-    target_compile_definitions( ectrans_etrans_${prec} PRIVATE WITH_FFTW )
+    target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+    target_include_directories( ectrans_lam_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+    target_compile_definitions( ectrans_lam_${prec} PRIVATE WITH_FFTW )
     # daand: lam transforms don't need lapack
     #ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
     #target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
 
     if( HAVE_OMP )
       ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-      target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      target_link_libraries( ectrans_lam_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 
     # This interface library is for backward compatibility, and provides the older includes
     ecbuild_add_library( TARGET etrans_${prec} TYPE INTERFACE )
     target_include_directories( etrans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_${prec}> )
     target_include_directories( etrans_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_${prec}> )
-    target_link_libraries( trans_${prec} INTERFACE fiat etrans_${prec} ectrans_etrans_${prec} parkind_${prec})
+	target_link_libraries( etrans_${prec} INTERFACE ectrans_lam_${prec}) # seems ok to omit fiat, parkind, trans here.
   endif()
 endforeach()
 

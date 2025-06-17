@@ -101,6 +101,9 @@ real(kind=jprb), allocatable, target :: zgmvs  (:,:,:)   ! Single level fields a
 real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
+real(kind=jprb), allocatable :: zgp3a_ctg (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable :: zgpuv_ctg   (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable :: zgp2_ctg (:,:,:) ! Single level fields at t and t-dt
 
 ! Spectral space data structures
 real(kind=jprb), allocatable, target :: sp3d(:,:,:)
@@ -144,7 +147,7 @@ integer(kind=jpim) :: ncheck = 0
 logical :: lmpoff = .false. ! Message passing switch
 
 ! Verbosity level (0 or 1)
-integer :: verbosity = 0
+integer :: verbosity = 1
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
@@ -644,11 +647,16 @@ do jstep = 1, iters
   if( lstats ) call gstats(5,0)
   
 
+  ! take local copies to make them contiguous; this is not the case when derivatives are requested and nproma<ngptot
+  allocate(zgpuv_ctg,source=zgpuv(:,:,1:2,:))
+  allocate(zgp3a_ctg,source=zgp3a(:,:,1:nfld,:))
+  allocate(zgp2_ctg,source=zgp2(:,1:1,:))
+  
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
-      & pgp2=zgp2(:,1:1,:),                &
-      & pgpuv=zgpuv(:,:,1:2,:),             &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
+      & pgp2=zgp2_ctg,                &
+      & pgpuv=zgpuv_ctg,             &
+      & pgp3a=zgp3a_ctg,          &
       & pspvor=zspvor,                      &
       & pspdiv=zspdiv,                      &
       & pspsc2=zspsc2,                      &
@@ -661,13 +669,15 @@ do jstep = 1, iters
   else
   
     call edir_trans(kresol=1, kproma=nproma, &
-      & pgp2=zgp2(:,1:1,:),                &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
+      & pgp2=zgp2_ctg,                &
+      & pgp3a=zgp3a_ctg,          &
       & pspsc2=zspsc2,                      &
       & pspsc3a=zspsc3a,                    &
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
+  deallocate(zgpuv_ctg,zgp3a_ctg,zgp2_ctg)
+
   if( lstats ) call gstats(5,1)
   ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
 
@@ -1239,7 +1249,7 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer :: n_num = 0 ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='harmonic'    
+  character(len=32) :: init_type='spectrum'    
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0

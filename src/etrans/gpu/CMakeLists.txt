@@ -1,14 +1,3 @@
-# build list of sources to add to trans library 
-# (using CMAKE_CURRENT_SOURCE_DIR is necessary because sources are in a different directory than the target library (trans_${prec})
-ecbuild_list_add_pattern( LIST etrans_src
-					  GLOB
-							${CMAKE_CURRENT_SOURCE_DIR}/etrans/biper/internal/*
-							${CMAKE_CURRENT_SOURCE_DIR}/etrans/biper/external/*
-							${CMAKE_CURRENT_SOURCE_DIR}/etrans/internal/*
-							${CMAKE_CURRENT_SOURCE_DIR}/etrans/external/*
-					  QUIET
-					)
-
 set( GPU_LIBRARY_TYPE SHARED )
 if( HAVE_GPU_STATIC )
     set( GPU_LIBRARY_TYPE STATIC )
@@ -110,7 +99,7 @@ foreach( prec dp sp )
                                $<INSTALL_INTERFACE:include/ectrans>
                                $<INSTALL_INTERFACE:include>
           #PUBLIC_LIBS          ectrans_common ectrans_gpu_common ectrans_gpu_${prec}_includes
-          PUBLIC_LIBS          ectrans_common ectrans_gpu_common ectrans_gpu_${prec}_includes ectrans_lam_gpu_${prec}_includes
+          PUBLIC_LIBS          fiat ectrans_common ectrans_gpu_common ectrans_gpu_${prec} ectrans_gpu_${prec}_includes ectrans_lam_gpu_${prec}_includes
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
@@ -159,7 +148,7 @@ foreach( prec dp sp )
         ecbuild_add_library( TARGET etrans_gpu_${prec} TYPE INTERFACE )
         target_include_directories( etrans_gpu_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_gpu_${prec}> )
         target_include_directories( etrans_gpu_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_gpu_${prec}> )
-        target_link_libraries( etrans_gpu_${prec} INTERFACE fiat ectrans_gpu_${prec} parkind_${prec})
+		target_link_libraries( etrans_gpu_${prec} INTERFACE ectrans_lam_gpu_${prec})
 
 
         # ## Install trans_gpu_${prec} interface
@@ -171,23 +160,5 @@ foreach( prec dp sp )
   endif()
 endforeach()
 
-
-
-
-### OBSOLETE -- TO BE CLEANED
-if (FALSE)
-
-# loop over precisions
-foreach( prec sp dp )
-  if( HAVE_${prec} )
-	# add sources
-	target_sources(trans_gpu_${prec} PRIVATE ${etrans_src})
-	# add include directories
-	target_include_directories(trans_gpu_${prec}
-	    PUBLIC
-			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/biper>
-			$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include/etrans>
-    )
-  endif()
-endforeach()
-endif()
+## Install etrans interface
+install( DIRECTORY ${BUILD_INTERFACE_INCLUDE_DIR}/ DESTINATION include/ectrans )
