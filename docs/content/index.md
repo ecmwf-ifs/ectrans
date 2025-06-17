@@ -40,5 +40,6 @@ This user guide contains the following sections:
 - [Usage](usage.html)
 - [Benchmarking](benchmarking.html)
 - [API](api.html)
-- [transi](transi.html)
+- [Interfacing with C](transi.html)
+- [GPU offloading](gpu.html)
 - [License](license.html)
