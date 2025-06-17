@@ -478,11 +478,7 @@ contains
 function is_lam(trans)
   logical :: is_lam
   type(Trans_t), intent(in) :: trans
-  if (trans%llam == 0)  then
-    is_lam = .false.
-  else
-    is_lam = .true.
-  endif
+  is_lam = trans%llam /= 0
 end function
 
 ! =============================================================================
@@ -550,11 +546,7 @@ end function
 function trans_set_leq_regions(ldeq_regions) bind(C,name="trans_set_leq_regions")
   integer(c_int) :: trans_set_leq_regions
   BOOLEAN, value, intent(in) :: ldeq_regions
-  if( ldeq_regions == 0) then
-    LEQ_REGIONS = .false.
-  else
-    LEQ_REGIONS = .true.
-  endif
+  LEQ_REGIONS = ldeq_regions /= 0
   trans_set_leq_regions = TRANS_SUCCESS
 end function
 

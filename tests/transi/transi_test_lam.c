@@ -19,7 +19,6 @@ int main ( int arc, char **argv ) {
   trans_set_leq_regions(false);
   trans_set_nprgpew(transi_test_nprgpew());
 
-  //printf("transi started\n");
   int nout_gp = 3;
   int nout_sp = 3;
   struct Trans_t trans;
@@ -40,7 +39,6 @@ int main ( int arc, char **argv ) {
     print("ngptot  = %d\n", trans.ngptot);
     print("ngptotg = %d\n", trans.ngptotg);
   }
-  //trans_inquire(&trans,"nvalue,mvalue");
 
   // Allocate gridpoint data
   int nvordiv = 1;
@@ -187,7 +185,6 @@ int main ( int arc, char **argv ) {
 
   trans_finalize();
 
-  // print("transi finished\n");
   return 0;
 }
 
