@@ -96,6 +96,7 @@ int main() {
 
 The structure of the program is very similar to the Fortran equivalent. The crucial differences of
 course come as a consequence of the differences between Fortran and C:
+
 - Everything is done through function calls which return an error code, hence the error handler.
 - The persistent state of a spectral transform instance is controlled through "handles" which must
   be initialised and freed explicitly (e.g. with `struct Trans_t trans`).
