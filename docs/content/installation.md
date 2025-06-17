@@ -1,5 +1,5 @@
 ---
-title: Installing ecTrans
+title: Installation
 ---
 
 ecTrans relies on CMake for building and for unit testing. It follows standard CMake procedures for

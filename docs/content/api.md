@@ -1,5 +1,5 @@
 ---
-title: ecTrans API
+title: API
 ---
 
 @warning

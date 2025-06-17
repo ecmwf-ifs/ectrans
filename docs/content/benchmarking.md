@@ -1,5 +1,5 @@
 ---
-title: Benchmarking ecTrans
+title: Benchmarking
 ---
 
 A ["benchmark driver" program](https://sites.ecmwf.int/docs/ectrans/sourcefile/ectrans-benchmark.
