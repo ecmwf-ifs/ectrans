@@ -20,7 +20,8 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   # should really be part of configuration, or ecbuild default?
   ecbuild_add_fortran_flags("-traceback"      BUILD DEBUG )
   ecbuild_add_fortran_flags("-fast"           BUILD RELEASE )
-  ecbuild_add_fortran_flags("-gopt -fast"     BUILD RELWITHDEBINFO )
+  #ecbuild_add_fortran_flags("-gopt -fast"     BUILD RELWITHDEBINFO )
+  ecbuild_add_fortran_flags("-g -traceback -fast"     BUILD RELWITHDEBINFO )
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
   ecbuild_add_fortran_flags("-hnomessage=878")  # A module named ... has already been directly or indirectly use associated into this scope
   ecbuild_add_fortran_flags("-hnomessage=867")  # Module ... has no public objects declared in the module, therefore nothing can be use associated from the module.

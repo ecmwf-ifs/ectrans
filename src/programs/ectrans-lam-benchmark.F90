@@ -147,7 +147,7 @@ integer(kind=jpim) :: ncheck = 0
 logical :: lmpoff = .false. ! Message passing switch
 
 ! Verbosity level (0 or 1)
-integer :: verbosity = 1
+integer :: verbosity = 0
 
 integer(kind=jpim) :: nmax_resol = 37 ! Max number of resolutions
 integer(kind=jpim) :: npromatr = 0 ! nproma for trans lib
@@ -210,6 +210,7 @@ real(kind=jprb) :: zexwn, zeywn
 #include "esetup_trans.h"
 #include "einv_trans.h"
 #include "edir_trans.h"
+#include "etrans_end.h"
 #include "etrans_inq.h"
 #include "especnorm.h"
 #include "abor1.intfb.h"
@@ -486,6 +487,8 @@ allocate(zgpuv(nproma,nflevg,jend_vder_EW,ngpblks))
 allocate(zgp3a(nproma,nflevg,jend_scder_EW-jbegin_sc+1,ngpblks))
 allocate(zgp2(nproma,ndimgmvs,ngpblks))
 
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
 zgp2=0.
 zgp3a=0.
 zgpuv=0.
@@ -503,6 +506,9 @@ if (lprint_norms .or. ncheck > 0) then
   allocate(znormdiv0(nflevg))
   allocate(znormt(nflevg))
   allocate(znormt0(nflevg))
+
+write (6,*) 'zspsc3a = '
+write (6,'(4E16.6)') zspsc3a
 
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor0, kvset=ivset(1:nflevg))
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv0, kvset=ivset(1:nflevg))
@@ -578,6 +584,8 @@ ztloop = omp_get_wtime()
 !===================================================================================================
 
 do jstep = 1, iters
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
   if( lstats ) call gstats(3,0)
   ztstep(jstep) = omp_get_wtime()
 
@@ -620,6 +628,8 @@ do jstep = 1, iters
 
   endif
   
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
   if( lstats ) call gstats(4,1)
 
   ztstep1(jstep) = (omp_get_wtime() - ztstep1(jstep))
@@ -647,11 +657,13 @@ do jstep = 1, iters
   if( lstats ) call gstats(5,0)
   
 
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
   ! take local copies to make them contiguous; this is not the case when derivatives are requested and nproma<ngptot
-  allocate(zgpuv_ctg,source=zgpuv(:,:,1:2,:))
+  if (lvordiv) allocate(zgpuv_ctg,source=zgpuv(:,:,1:2,:))
   allocate(zgp3a_ctg,source=zgp3a(:,:,1:nfld,:))
   allocate(zgp2_ctg,source=zgp2(:,1:1,:))
-  
+
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2_ctg,                &
@@ -676,7 +688,10 @@ do jstep = 1, iters
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
-  deallocate(zgpuv_ctg,zgp3a_ctg,zgp2_ctg)
+  if ( lvordiv ) deallocate(zgpuv_ctg)
+  deallocate(zgp3a_ctg,zgp2_ctg)
+
+!write (6,*) __FILE__,__LINE__; call flush(6)
 
   if( lstats ) call gstats(5,1)
   ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
@@ -717,8 +732,14 @@ do jstep = 1, iters
   ! Print norms
   !=================================================================================================
 
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
   if (lprint_norms) then
     if( lstats ) call gstats(6,0)
+
+write (6,*) 'zspsc3a = '
+write (6,'(4E16.6)') zspsc3a
+
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
@@ -744,6 +765,9 @@ do jstep = 1, iters
       enddo
       ! Temperature
       do ifld = 1, nflevg
+write (6,*) 'znormt(ifld) = ',znormt(ifld)
+write (6,*) 'znormt0(ifld) = ',znormt0(ifld)
+call flush(6)
         zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
         zmaxerr(4) = max(zmaxerr(4), zerr(4))
       enddo
@@ -761,6 +785,8 @@ do jstep = 1, iters
 
 enddo
 
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
 !===================================================================================================
 
 ztloop = (omp_get_wtime() - ztloop)
@@ -770,11 +796,13 @@ write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
 if (lprint_norms .or. ncheck > 0) then
+!write (6,*) __FILE__,__LINE__; call flush(6)
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
   
+!write (6,*) __FILE__,__LINE__; call flush(6)
   if ( myproc == 1 ) then
 
 	  zmaxerr(:) = -999.0
@@ -819,20 +847,25 @@ if (lprint_norms .or. ncheck > 0) then
 	  write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
 	  write(nout,*)
 
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
 	  if (ncheck > 0) then
-		! If the maximum spectral norm error across all fields is greater than 100 times the machine
-		! epsilon, fail the test
-		if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
-		  write(nout, '(a)') '*******************************'
-		  write(nout, '(a)') 'Correctness test failed'
-		  write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
-		  write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
-		  write(nout, '(a)') '*******************************'
-		  error stop
-		endif
+      ! If the maximum spectral norm error across all fields is greater than 100 times the machine
+      ! epsilon, fail the test
+      if (zmaxerrg > real(ncheck, jprb) * epsilon(1.0_jprb)) then
+        write(nout, '(a)') '*******************************'
+        write(nout, '(a)') 'Correctness test failed'
+        write(nout, '(a,1e7.2)') 'Maximum spectral norm error = ', zmaxerrg
+        write(nout, '(a,1e7.2)') 'Error tolerance = ', real(ncheck, jprb) * epsilon(1.0_jprb)
+        write(nout, '(a)') '*******************************'
+        call flush(nout)
+        error stop
+      endif
 	  endif
   endif
 endif
+
+!write (6,*) __FILE__,__LINE__; call flush(6)
 
 if (luse_mpi) then
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
@@ -852,6 +885,8 @@ if (luse_mpi) then
   call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
 endif
 
+!write (6,*) __FILE__,__LINE__; call flush(6)
+
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
@@ -870,6 +905,8 @@ ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 
 call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
+
+!write (6,*) __FILE__,__LINE__; call flush(6)
 
 
 write(nout,'(a)') '======= Start of time step stats ======='
@@ -899,6 +936,9 @@ write(nout,'(" ")')
 write(nout,'(a)') '======= End of time step stats ======='
 write(nout,'(" ")')
 
+
+write (6,*) __FILE__,__LINE__; call flush(6)
+
 if (lstack) then
   ! Gather stack usage statistics
   istack = getstackusage()
@@ -919,11 +959,23 @@ if (lstack) then
   endif
 endif
 
+
+write (6,*) __FILE__,__LINE__; call flush(6)
+
 !===================================================================================================
 ! Cleanup
 !===================================================================================================
 
-! TODO: many more arrays to deallocate
+deallocate(nprcids,numll)
+deallocate(sp3d,zspsc2,zmeanu,zmeanv)
+deallocate(ivset)
+deallocate(zgpuv,zgp3a,zgp2)
+if ( allocated(znormsp) ) deallocate(znormsp,znormsp0,znormvor,znormvor0,znormdiv,znormdiv0,znormt,znormt0)
+deallocate(ztstep,ztstep1,ztstep2)
+
+write (6,*) __FILE__,__LINE__; call flush(6)
+call etrans_end()
+write (6,*) __FILE__,__LINE__; call flush(6)
 
 !===================================================================================================
 
@@ -931,6 +983,9 @@ if (lstats) then
   call gstats(0,1)
   call gstats_print(nout, zaveave, jpmaxstat)
 endif
+
+
+write (6,*) __FILE__,__LINE__; call flush(6)
 
 if (lmeminfo) then
   write(nout,*)
@@ -942,9 +997,15 @@ endif
 ! Finalize MPI
 !===================================================================================================
 
+
+write (6,*) __FILE__,__LINE__; call flush(6)
+
 if (luse_mpi) then
   call mpl_end(ldmeminfo=.false.)
 endif
+
+write (6,*) __FILE__,__LINE__; call flush(6)
+
 
 !===================================================================================================
 ! Close file
@@ -955,6 +1016,9 @@ if (nproc > 1) then
     close(unit=nout)
   endif
 endif
+
+
+write (6,*) __FILE__,__LINE__; call flush(6)
 
 !===================================================================================================
 
@@ -1245,11 +1309,11 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer, allocatable :: my_km(:), my_kn(:)
 
   ! Choose a harmonic to initialize arrays
-  integer :: m_num = 1 ! Zonal wavenumber
+  integer :: m_num = 3 ! Zonal wavenumber
   integer :: n_num = 0 ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='spectrum'    
+  character(len=32) :: init_type='harmonic'    
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1271,6 +1335,10 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   call etrans_inq(kspec2=kspec2)
   allocate(my_kn(kspec2),my_km(kspec2))
   call etrans_inq(knvalue=my_kn,kmvalue=my_km)
+  
+  write (6,*) 'kn = ',my_kn
+  write (6,*) 'km = ',my_km
+  
 
   ! If rank is responsible for the chosen zonal wavenumber...
   if ( init_type == 'harmonic' ) then
@@ -1291,10 +1359,10 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
     ! set some components to zero because they are unphysical
     do ispec=1,nspec2,4
       if ( my_kn(ispec)== 0 .and. my_km(ispec) == 0 ) field(ispec:ispec+3)=0. ! remove mean value for vorticity and divergence
-      if ( my_kn(ispec)== 0 ) field(ispec+1:ispec+3:2)=0. ! remove sine component on zero-wavenumber
-      if ( my_kn(ispec)== nmsmax ) field(ispec+1:ispec+3:2)=0. ! remove sine component on last-wavenumber
-      if ( my_km(ispec)== 0 ) field(ispec+2:ispec+3)=0. ! remove sine component on zero-wavenumber
-      if ( my_km(ispec)== nsmax ) field(ispec+2:ispec+3)=0. ! remove sine component on last-wavenumber
+      if ( my_kn(ispec)== 0 ) field(ispec+1:ispec+3:2)=0. ! remove sine component on zero meridional wavenumber
+      !if ( my_kn(ispec)== nsmax ) field(ispec+1:ispec+3:2)=0. ! remove sine component on last meridional wavenumber -- must only be zero when nsmax==nlat/2
+      if ( my_km(ispec)== 0 ) field(ispec+2:ispec+3)=0. ! remove sine component on zero zonal wavenumber
+      !if ( my_km(ispec)== nmsmax ) field(ispec+2:ispec+3)=0. ! remove sine component on last meridional wavenumber -- must only be zero when nmsmax==nlon/2
     enddo
     
     ! scale according to wavenumber**2
@@ -1302,6 +1370,8 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
       field(ispec)=field(ispec)/(0.01+(my_kn(ispec)/real(nsmax))**2+(my_km(ispec)/real(nmsmax))**2)
     enddo
   endif
+  
+  deallocate(my_kn,my_km)
   
 end subroutine initialize_2d_spectral_field
 
@@ -1396,7 +1466,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   if ( myproc == 1 ) then
     call etrans_inq(kspec2g=nspec2g)
     allocate(fldg(1,nspec2g))
-	call ellips(nsmax,nmsmax,knse,kmse)
+	  call ellips(nsmax,nmsmax,knse,kmse)
   endif
 
   call egath_spec(PSPECG=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,PSPEC=fld)

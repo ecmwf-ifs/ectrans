@@ -72,6 +72,19 @@ IF (JLOT==0) THEN
   RETURN
 ENDIF
 
+
+#ifdef gnarls
+! debugging
+!$acc data present(preel)
+!$acc update host(preel)
+write (6,*) 'before direct zonal transform : '
+write (6,*) 'shape(preel) = ',shape(preel)
+write (6,*) 'preel = ',preel
+call flush(6)
+!$acc end data
+#endif
+
+
 #ifdef gnarls
 
 ! fake fft: only take mean value, on cpu
@@ -97,6 +110,18 @@ CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),NCUR_RESOL,JLOT, &
 !write (6,*) __FILE__, __LINE__; call flush(6)
 
 
+#endif
+
+
+#ifdef gnarls
+! debugging
+!$acc data present(preel)
+!$acc update host(preel)
+write (6,*) 'before direct zonal transform : '
+write (6,*) 'shape(preel) = ',shape(preel)
+write (6,*) 'preel = ',preel
+call flush(6)
+!$acc end data
 #endif
 
 IF (LHOOK) CALL DR_HOOK('EFTDIR_MOD:EFTDIR',1,ZHOOK_HANDLE)

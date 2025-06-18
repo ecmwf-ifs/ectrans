@@ -97,7 +97,22 @@ DO JJ=1,SIZE(OFFSETS)
   OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
 ENDDO
 
+write (6,*) __FILE__,__LINE__; call flush(6)
+write (6,*)'  JLOT = ',JLOT; call flush(6)
+write (6,*)'  shape(PFFT) = ',shape(PFFT); call flush(6)
+
 CALL C_F_POINTER(C_LOC(PFFT), ZFFT_L, (/UBOUND(PFFT,1)*UBOUND(PFFT,2)*UBOUND(PFFT,3)/) )
+
+#ifndef gnarls
+! debugging
+!$acc data present(zfft_l)
+!$acc update host(zfft_l)
+write (6,*) 'before meridional transform:'
+write (6,*) 'zfft_l = '
+write (6,'(8F10.3)') zfft_l
+call flush(6)
+!$acc end data
+#endif
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)
@@ -124,6 +139,18 @@ CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),NCUR_RESOL,-JLOT, &    ! -JLOT to have 
     & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA
 
+#endif
+
+
+#ifndef gnarls
+! debugging
+!$acc data present(zfft_l)
+!$acc update host(zfft_l)
+write (6,*) 'after meridional transform:'
+write (6,*) 'zfft_l = '
+write (6,'(8F10.3)') zfft_l
+call flush(6)
+!$acc end data
 #endif
 
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)

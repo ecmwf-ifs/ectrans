@@ -170,6 +170,8 @@ IALLOC_POS = IALLOC_POS + IALLOC_SZ
 !*     1.    PREPARE WORK ARRAYS.
 !            --------------------
 
+write (6,*) __FILE__, __LINE__,': KF_FS = ',KF_FS,'; D%NUMP = ',D%NUMP; call flush(6)
+
 CALL EPRFI2B(KF_FS,ZFFT,FOUBUF)
 
 !*     2.    PERIODICIZATION IN Y DIRECTION
