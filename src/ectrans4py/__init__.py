@@ -12,7 +12,7 @@ import os
 import resource
 import numpy as np
 import ctypesForFortran
-from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT
+from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT, array2string
 import platform
 
 
@@ -72,9 +72,8 @@ def init_env(omp_num_threads=None,
 # Transforms interfaces
 #######################
 
-@treatReturnCode
+@array2string(0)
 @ctypesFF()
-@addReturnCode
 def ectrans_version():
     """
     Return the version string of ecTrans.
@@ -82,7 +81,7 @@ def ectrans_version():
     Returns:\n
     1) CD_VERSION_STRING: version string of ecTrans (always 14 elements so must be trimmed)
     """
-    return ([], [(str, (14,), OUT)], None)
+    return ([], [(str, (1, 14), OUT)], None)
 
 @treatReturnCode
 @ctypesFF()
