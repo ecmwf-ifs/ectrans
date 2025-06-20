@@ -77,8 +77,8 @@ INTEGER(KIND=JPIM) :: IRLEN, ICLEN, JLOT, JJ
 TYPE(C_PTR) :: IPLAN_C2R
 REAL (KIND=JPRB)   :: ZSCAL
 REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
-INTEGER(KIND=JPIB) :: OFFSETS(2)
-INTEGER(KIND=JPIM) :: LOENS(1)
+! INTEGER(KIND=JPIB), SAVE :: OFFSETS(2)
+! INTEGER(KIND=JPIM), SAVE :: LOENS(1)
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -89,29 +89,29 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',0,ZHOOK_HANDLE)
 
 IRLEN=R%NDGL+R%NNOEXTZG
-LOENS(1)=IRLEN
+! LOENS(1)=IRLEN
 JLOT=UBOUND(PFFT,2)*UBOUND (PFFT,3)
 
 ! compute offsets; TODO: avoid recomputing/putting on device every time.
-DO JJ=1,SIZE(OFFSETS)
-  OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
-ENDDO
+! DO JJ=1,SIZE(OFFSETS)
+  ! OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
+! ENDDO
 
-write (6,*) __FILE__,__LINE__; call flush(6)
-write (6,*)'  JLOT = ',JLOT; call flush(6)
-write (6,*)'  shape(PFFT) = ',shape(PFFT); call flush(6)
+! write (6,*) __FILE__,__LINE__; call flush(6)
+! write (6,*)'  JLOT = ',JLOT; call flush(6)
+! write (6,*)'  shape(PFFT) = ',shape(PFFT); call flush(6)
 
 CALL C_F_POINTER(C_LOC(PFFT), ZFFT_L, (/UBOUND(PFFT,1)*UBOUND(PFFT,2)*UBOUND(PFFT,3)/) )
 
-#ifndef gnarls
-! debugging
-!$acc data present(zfft_l)
-!$acc update host(zfft_l)
-write (6,*) 'before meridional transform:'
-write (6,*) 'zfft_l = '
-write (6,'(8F10.3)') zfft_l
-call flush(6)
-!$acc end data
+#ifdef gnarls
+! ! debugging
+! !$acc data present(zfft_l)
+! !$acc update host(zfft_l)
+! write (6,*) 'before meridional transform:'
+! write (6,*) 'zfft_l = '
+! write (6,'(8F10.3)') zfft_l
+! call flush(6)
+! !$acc end data
 #endif
 
 IF (JLOT==0) THEN
@@ -133,24 +133,24 @@ ENDDO
 
 #else
 
-!$ACC DATA PRESENT(PFFT) COPYIN(LOENS,OFFSETS)
+!$ACC DATA PRESENT(PFFT,RALD%NLOENS_LAT,RALD%NOFFSETS_LAT)
 CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),NCUR_RESOL,-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
-    & LOENS=LOENS, &
-    & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
+    & LOENS=RALD%NLOENS_LAT, &
+    & OFFSETS=RALD%NOFFSETS_LAT,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA
 
 #endif
 
 
-#ifndef gnarls
-! debugging
-!$acc data present(zfft_l)
-!$acc update host(zfft_l)
-write (6,*) 'after meridional transform:'
-write (6,*) 'zfft_l = '
-write (6,'(8F10.3)') zfft_l
-call flush(6)
-!$acc end data
+#ifdef gnarls
+! ! debugging
+! !$acc data present(zfft_l)
+! !$acc update host(zfft_l)
+! write (6,*) 'after meridional transform:'
+! write (6,*) 'zfft_l = '
+! write (6,'(8F10.3)') zfft_l
+! call flush(6)
+! !$acc end data
 #endif
 
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)

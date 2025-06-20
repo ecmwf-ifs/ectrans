@@ -507,8 +507,8 @@ if (lprint_norms .or. ncheck > 0) then
   allocate(znormt(nflevg))
   allocate(znormt0(nflevg))
 
-write (6,*) 'zspsc3a = '
-write (6,'(4E16.6)') zspsc3a
+! write (6,*) 'zspsc3a = '
+! write (6,'(4E16.6)') zspsc3a
 
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor0, kvset=ivset(1:nflevg))
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv0, kvset=ivset(1:nflevg))
@@ -595,6 +595,7 @@ do jstep = 1, iters
 
   ztstep1(jstep) = omp_get_wtime()
   if( lstats ) call gstats(4,0)
+#ifndef gnarls
   if (lvordiv) then
 
     call einv_trans(kresol=1, kproma=nproma, &
@@ -627,6 +628,7 @@ do jstep = 1, iters
        & pgp3a=zgp3a)
 
   endif
+#endif
   
 !write (6,*) __FILE__,__LINE__; call flush(6)
 
@@ -664,6 +666,7 @@ do jstep = 1, iters
   allocate(zgp3a_ctg,source=zgp3a(:,:,1:nfld,:))
   allocate(zgp2_ctg,source=zgp2(:,1:1,:))
 
+#ifndef gnarls
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2_ctg,                &
@@ -688,6 +691,7 @@ do jstep = 1, iters
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
+#endif
   if ( lvordiv ) deallocate(zgpuv_ctg)
   deallocate(zgp3a_ctg,zgp2_ctg)
 
@@ -737,8 +741,8 @@ do jstep = 1, iters
   if (lprint_norms) then
     if( lstats ) call gstats(6,0)
 
-write (6,*) 'zspsc3a = '
-write (6,'(4E16.6)') zspsc3a
+! write (6,*) 'zspsc3a = '
+! write (6,'(4E16.6)') zspsc3a
 
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
@@ -765,8 +769,8 @@ write (6,'(4E16.6)') zspsc3a
       enddo
       ! Temperature
       do ifld = 1, nflevg
-write (6,*) 'znormt(ifld) = ',znormt(ifld)
-write (6,*) 'znormt0(ifld) = ',znormt0(ifld)
+! write (6,*) 'znormt(ifld) = ',znormt(ifld)
+! write (6,*) 'znormt0(ifld) = ',znormt0(ifld)
 call flush(6)
         zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
         zmaxerr(4) = max(zmaxerr(4), zerr(4))
@@ -1336,8 +1340,8 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   allocate(my_kn(kspec2),my_km(kspec2))
   call etrans_inq(knvalue=my_kn,kmvalue=my_km)
   
-  write (6,*) 'kn = ',my_kn
-  write (6,*) 'km = ',my_km
+  ! write (6,*) 'kn = ',my_kn
+  ! write (6,*) 'km = ',my_km
   
 
   ! If rank is responsible for the chosen zonal wavenumber...

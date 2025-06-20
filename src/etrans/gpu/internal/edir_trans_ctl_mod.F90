@@ -182,35 +182,39 @@ IF (KF_FS > 0) THEN
 !write (6,*) __FILE__, __LINE__; call flush(6)
 
   CALL GSTATS(153,0)
-write (6,*) __FILE__, __LINE__; call flush(6)
-!$acc data present(PREEL)
+#ifdef gnarls
+! write (6,*) __FILE__, __LINE__; call flush(6)
+! !$acc data present(PREEL)
 
-!$acc update host(PREEL)
-write (6,*) '  PREEL = '
-write (6,'(8F10.2)') PREEL
+! !$acc update host(PREEL)
+! write (6,*) '  PREEL = '
+! write (6,'(8F10.2)') PREEL
 
-!$acc end data
-
+! !$acc end data
+#endif
   CALL TRLTOM_PACK(ALLOCATOR,HTRLTOM_PACK,PREEL,FOUBUF_IN,KF_FS)    ! formerly known as efourier_out
 
-write (6,*) __FILE__, __LINE__; call flush(6)
-!$acc data present(FOUBUF_IN,FOUBUF)
+#ifdef gnarls
+! write (6,*) __FILE__, __LINE__; call flush(6)
+! !$acc data present(FOUBUF_IN,FOUBUF)
 
-!$acc update host(FOUBUF_IN)
-write (6,*) '  FOUBUF_IN = '
-write (6,'(8F10.2)') FOUBUF_IN
-
+! !$acc update host(FOUBUF_IN)
+! write (6,*) '  FOUBUF_IN = '
+! write (6,'(8F10.2)') FOUBUF_IN
+#endif
   CALL TRLTOM(ALLOCATOR,HTRLTOM,FOUBUF_IN,FOUBUF,KF_FS)
   CALL GSTATS(153,1)
 
-!$acc update host(FOUBUF)
-write (6,*) '  FOUBUF = '
-write (6,'(8F10.2)') FOUBUF
-call flush(6)
+#ifdef gnarls
+! !$acc update host(FOUBUF)
+! write (6,*) '  FOUBUF = '
+! write (6,'(8F10.2)') FOUBUF
+! call flush(6)
 
-!$acc end data
+! !$acc end data
 
 !write (6,*) __FILE__, __LINE__; call flush(6)
+#endif
 
   CALL ELTDIR(ALLOCATOR,HELTDIR,KF_FS,KF_UV,KF_SCALARS,FOUBUF, &
         & PSPVOR,PSPDIV,PSPSCALAR,&

@@ -29,8 +29,8 @@ EXTERNAL AUX_PROC
 OPTIONAL AUX_PROC
 
 INTEGER(KIND=JPIM) :: JLOT, IRLEN, JJ
-INTEGER(KIND=JPIB) :: OFFSETS(2)
-INTEGER(KIND=JPIM) :: LOENS(1)
+! INTEGER(KIND=JPIB), SAVE :: OFFSETS(2)
+! INTEGER(KIND=JPIM), SAVE :: LOENS(1)
 integer :: istat
 character(len=32) :: cfrmt
 REAL(KIND=JPRB) :: ZDUM
@@ -60,12 +60,12 @@ IF (PRESENT(AUX_PROC)) THEN
 ENDIF
 
 
-LOENS(1)=IRLEN
+! LOENS(1)=IRLEN
 JLOT=SIZE(PREEL)/(IRLEN+2)
 ! compute offsets; TODO: avoid recomputing/putting on device every time.
-DO JJ=1,SIZE(OFFSETS)
-  OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
-ENDDO
+! DO JJ=1,SIZE(OFFSETS)
+  ! OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
+! ENDDO
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
@@ -74,14 +74,14 @@ ENDIF
 
 
 #ifdef gnarls
-! debugging
-!$acc data present(preel)
-!$acc update host(preel)
-write (6,*) 'before direct zonal transform : '
-write (6,*) 'shape(preel) = ',shape(preel)
-write (6,*) 'preel = ',preel
-call flush(6)
-!$acc end data
+! ! debugging
+! !$acc data present(preel)
+! !$acc update host(preel)
+! write (6,*) 'before direct zonal transform : '
+! write (6,*) 'shape(preel) = ',shape(preel)
+! write (6,*) 'preel = ',preel
+! call flush(6)
+! !$acc end data
 #endif
 
 
@@ -100,11 +100,11 @@ ENDDO
 #else
 
 !write (6,*) __FILE__, __LINE__; call flush(6)
-!$ACC DATA PRESENT(PREEL) COPYIN(LOENS,OFFSETS)
+!$ACC DATA PRESENT(PREEL,RALD%NLOENS_LON,RALD%NOFFSETS_LON)
 !write (6,*) __FILE__, __LINE__; call flush(6)
 CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),NCUR_RESOL,JLOT, &
-    & LOENS=LOENS, &
-    & OFFSETS=OFFSETS,ALLOC=ALLOCATOR%PTR)
+    & LOENS=RALD%NLOENS_LON, &
+    & OFFSETS=RALD%NOFFSETS_LON,ALLOC=ALLOCATOR%PTR)
 !write (6,*) __FILE__, __LINE__; call flush(6)
 !$ACC END DATA
 !write (6,*) __FILE__, __LINE__; call flush(6)
@@ -114,14 +114,14 @@ CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),NCUR_RESOL,JLOT, &
 
 
 #ifdef gnarls
-! debugging
-!$acc data present(preel)
-!$acc update host(preel)
-write (6,*) 'before direct zonal transform : '
-write (6,*) 'shape(preel) = ',shape(preel)
-write (6,*) 'preel = ',preel
-call flush(6)
-!$acc end data
+! ! debugging
+! !$acc data present(preel)
+! !$acc update host(preel)
+! write (6,*) 'before direct zonal transform : '
+! write (6,*) 'shape(preel) = ',shape(preel)
+! write (6,*) 'preel = ',preel
+! call flush(6)
+! !$acc end data
 #endif
 
 IF (LHOOK) CALL DR_HOOK('EFTDIR_MOD:EFTDIR',1,ZHOOK_HANDLE)
