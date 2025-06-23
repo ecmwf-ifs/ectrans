@@ -3,36 +3,6 @@ if( HAVE_GPU_STATIC )
     set( GPU_LIBRARY_TYPE STATIC )
 endif()
 
-# TODO: extract common parts of single/double and cpu/gpu
-# -- keeping code from global here as example
-
-# ecbuild_add_library(
-  # TARGET               ectrans_lam_gpu_common
-  # TYPE                 ${GPU_LIBRARY_TYPE}
-  # SOURCES              ${trans_gpu_common_src}
-  # LINKER_LANGUAGE      Fortran
-  # PUBLIC_INCLUDES      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include>
-                       # $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
-                       # $<INSTALL_INTERFACE:include/ectrans>
-                       # $<INSTALL_INTERFACE:include>
-  # PUBLIC_LIBS          fiat ectrans_common
-  # PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
-                       # $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
-                       # $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                       # $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
-  # PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
-                       # $<${HAVE_CUTLASS}:USE_CUTLASS>
-                       # $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
-                       # $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
-                       # $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
-# )
-
-# ectrans_target_fortran_module_directory(
-  # TARGET            ectrans_gpu_common
-  # MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/ectrans
-  # INSTALL_DIRECTORY module/ectrans
-# )
-
 function(generate_backend_sources)
   set (options)
   set (oneValueArgs BACKEND DESTINATION OUTPUT)
@@ -98,8 +68,7 @@ foreach( prec dp sp )
                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/etrans/include/etrans>
                                $<INSTALL_INTERFACE:include/ectrans>
                                $<INSTALL_INTERFACE:include>
-          #PUBLIC_LIBS          ectrans_common ectrans_gpu_common ectrans_gpu_${prec}_includes
-          PUBLIC_LIBS          fiat ectrans_common ectrans_gpu_common ectrans_gpu_${prec} ectrans_gpu_${prec}_includes ectrans_lam_gpu_${prec}_includes
+          PUBLIC_LIBS          fiat ectrans_common ectrans_gpu_common ectrans_gpu_${prec} ectrans_gpu_${prec}_includes ectrans_lam_common ectrans_lam_gpu_${prec}_includes
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>

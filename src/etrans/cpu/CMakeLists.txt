@@ -59,7 +59,7 @@ foreach( prec dp sp )
       PUBLIC_INCLUDES  $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
                        $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}>
-      PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes ectrans_${prec} ectrans_lam_${prec}_includes
+      PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes ectrans_${prec} ectrans_lam_common ectrans_lam_${prec}_includes
     )
 
     ectrans_target_fortran_module_directory(

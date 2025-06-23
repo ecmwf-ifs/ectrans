@@ -589,7 +589,7 @@ do jstep = 1, iters
 
   ztstep1(jstep) = omp_get_wtime()
   if( lstats ) call gstats(4,0)
-#ifndef gnarls
+
   if (lvordiv) then
 
     call einv_trans(kresol=1, kproma=nproma, &
@@ -622,7 +622,6 @@ do jstep = 1, iters
        & pgp3a=zgp3a)
 
   endif
-#endif
   
   if( lstats ) call gstats(4,1)
 
@@ -655,7 +654,6 @@ do jstep = 1, iters
   allocate(zgp3a_ctg,source=zgp3a(:,:,1:nfld,:))
   allocate(zgp2_ctg,source=zgp2(:,1:1,:))
 
-#ifndef gnarls
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2_ctg,                &
@@ -680,7 +678,7 @@ do jstep = 1, iters
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
-#endif
+
   if ( lvordiv ) deallocate(zgpuv_ctg)
   deallocate(zgp3a_ctg,zgp2_ctg)
 

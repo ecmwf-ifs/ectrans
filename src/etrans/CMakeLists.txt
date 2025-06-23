@@ -64,7 +64,7 @@ function(generate_backend_includes)
     get_filename_component(outfile_name_we ${file_i} NAME_WE)
     get_filename_component(outfile_ext     ${file_i} EXT)
     get_filename_component(outfile_dir     ${file_i} DIRECTORY)
-    if (${file_i} IN_LIST ectrans_common_includes)
+    if (${file_i} IN_LIST ectrans_lam_common_includes)
       configure_file(${_PAR_INCLUDE_DIRECTORY}/${file_i} ${destination}/${outfile_name})
     else()
       set(outfile "${destination}/${outfile_name_we}_${backend}${outfile_ext}")
@@ -92,12 +92,7 @@ function(generate_backend_includes)
   target_include_directories(${_PAR_TARGET} INTERFACE $<BUILD_INTERFACE:${destination}>)
 endfunction(generate_backend_includes)
 
-
-
-
-
-# TODO: move precision-independent files to common
-#add_subdirectory( common )
+add_subdirectory( common )
 
 if( HAVE_CPU)
   add_subdirectory( cpu )

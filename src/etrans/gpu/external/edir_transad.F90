@@ -1,16 +1,27 @@
-SUBROUTINE EDIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
- & KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
- & PGP,PGPUV,PGP3A,PGP3B,PGP2,PMEANU,PMEANV,AUX_PROC)
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+! 
 
-!**** *EDIR_TRANS* - Direct spectral transform (from grid-point to spectral).
+
+SUBROUTINE EDIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
+ & KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
+ & PGP,PGPUV,PGP3A,PGP3B,PGP2,PMEANU,PMEANV)
+
+!**** *EDIR_TRANSAD* - Direct spectral transform - adjoint.
 
 !     Purpose.
 !     --------
-!        Interface routine for the direct spectral transform
+!        Interface routine for the direct spectral transform - adjoint
 
 !**   Interface.
 !     ----------
-!     CALL EDIR_TRANS(...)
+!     CALL EDIR_TRANSAD(...)
 
 !     Explicit arguments : All arguments except from PGP are optional.
 !     --------------------
@@ -77,16 +88,12 @@ SUBROUTINE EDIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 )
-!    PMEANU(:),PMEANV(:) - mean wind
-!    AUX_PROC     - optional external procedure for biperiodization of
-!           aux.fields
 
 !     Method.
 !     -------
 
 !     Externals.  ESET_RESOL   - set resolution
-!     ----------  ELTDIR_CTL   - control of Legendre transform
-!                 EFTDIR_CTL   - control of Fourier transform
+!     ----------  EDIR_TRANS_CTLAD - control routine
 
 !     Author.
 !     -------
@@ -95,12 +102,8 @@ SUBROUTINE EDIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     Modifications.
 !     --------------
 !        Original : 00-03-03
-!        G. Radnoti: 01-03-13 adaptation to aladin
-!        P. Smolikova 02-09-30 : AUX_PROC for d4 in NH
-!               Y. Seity and G. Radnoti : 03-09-29 : phasing for AL27
 !        M.Hamrud      01-Oct-2003 CY28 Cleaning
-!        A.Bogatchev 19-04-2013 Comparison of ubound(pspdiv,1) 
-!                                with ubound(pspvor,1)
+
 !     ------------------------------------------------------------------
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
@@ -114,7 +117,7 @@ USE TPM_TRANS       ,ONLY : LDIVGP, LSCDERS, LUVDER, LVORGP,          &
 USE TPM_DISTR       ,ONLY : D, NPRTRV, MYSETV
 
 USE ESET_RESOL_MOD  ,ONLY : ESET_RESOL
-USE EDIR_TRANS_CTL_MOD ,ONLY : EDIR_TRANS_CTL
+!USE EDIR_TRANS_CTLAD_MOD ,ONLY : EDIR_TRANS_CTLAD
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 !endif INTERFACE
@@ -123,12 +126,12 @@ IMPLICIT NONE
 
 ! Declaration of arguments
 
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PSPVOR(:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PSPDIV(:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PSPSCALAR(:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PSPSC3A(:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PSPSC3B(:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PSPSC2(:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PSPVOR(:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PSPDIV(:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PSPSCALAR(:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PSPSC3A(:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PSPSC3B(:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PSPSC2(:,:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KPROMA
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KVSETUV(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KVSETSC(:)
@@ -136,31 +139,32 @@ INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KRESOL
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KVSETSC3A(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KVSETSC3B(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KVSETSC2(:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)    :: PGP(:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)    :: PGPUV(:,:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)    :: PGP3A(:,:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)    :: PGP3B(:,:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(IN)    :: PGP2(:,:,:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PMEANU(:)
-REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PMEANV(:)
-EXTERNAL AUX_PROC
-OPTIONAL AUX_PROC
-
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PGP(:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PGPUV(:,:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PGP3A(:,:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PGP3B(:,:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(OUT)   :: PGP2(:,:,:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PMEANU(:)
+REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT) :: PMEANV(:)
 !ifndef INTERFACE
 
 ! Local variables
 INTEGER(KIND=JPIM) :: IUBOUND(4),J
 INTEGER(KIND=JPIM) :: IF_UV,IF_UV_G,IF_SCALARS,IF_SCALARS_G,IF_FS,IF_GP
 INTEGER(KIND=JPIM) :: IF_SC2_G,IF_SC3A_G,IF_SC3B_G
-
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
 
+IF (LHOOK) CALL DR_HOOK('EDIR_TRANSAD',0,ZHOOK_HANDLE)
+
+CALL ABORT_TRANS('Adjoint code of ectrans/lam not implemented on GPU yet')
+
+#ifdef UNDEF
+
+CALL GSTATS(1810,0)
 
 ! Set current resolution
-IF (LHOOK) CALL DR_HOOK('EDIR_TRANS',0,ZHOOK_HANDLE)
-CALL GSTATS(1808,0)
 CALL ESET_RESOL(KRESOL)
 
 ! Set defaults
@@ -176,8 +180,7 @@ IF_SC2_G = 0
 IF_SC3A_G = 0
 IF_SC3B_G = 0
 NPROMA = D%NGPTOT
-! This is for use in TRGTOL which is shared with adjoint inverse transform
-LSCDERS=.FALSE.
+LSCDERS=.FALSE. ! This is for use in TRLTOG which is shared with inverse transform
 LVORGP=.FALSE.
 LDIVGP=.FALSE.
 LUVDER=.FALSE.
@@ -187,9 +190,9 @@ LUVDER=.FALSE.
 IF(PRESENT(KVSETUV)) THEN
   IF_UV_G = UBOUND(KVSETUV,1)
   DO J=1,IF_UV_G
-    IF(KVSETUV(J) > NPRTRV .OR. KVSETUV(J) < 1) THEN
-      WRITE(NERR,*) 'DIR_TRANS:KVSETUV(J) > NPRTRV ',J,KVSETUV(J),NPRTRV
-      CALL ABORT_TRANS('DIR_TRANS:KVSETUV TOO LONG OR CONTAINS VALUES OUTSIDE RANGE')
+    IF(KVSETUV(J) > NPRTRV) THEN
+      WRITE(NERR,*) 'DIR_TRANSAD:KVSETUV(J) > NPRTRV ',J,KVSETUV(J),NPRTRV
+      CALL ABORT_TRANS('DIR_TRANSAD:KVSETUV  CONTAINS VALUES OUTSIDE RANGE')
     ENDIF
     IF(KVSETUV(J) == MYSETV) THEN
       IF_UV = IF_UV+1
@@ -203,9 +206,9 @@ ENDIF
 IF(PRESENT(KVSETSC)) THEN
   IF_SCALARS_G = UBOUND(KVSETSC,1)
   DO J=1,IF_SCALARS_G
-    IF(KVSETSC(J) > NPRTRV .OR. KVSETSC(J) < 1) THEN
-      WRITE(NERR,*) 'DIR_TRANS:KVSETSC(J) > NPRTRV ',J,KVSETSC(J),NPRTRV
-      CALL ABORT_TRANS('DIR_TRANS:KVSETSC TOO LONG OR CONTAINS VALUES OUTSIDE RANGE')
+    IF(KVSETSC(J) > NPRTRV) THEN
+      WRITE(NERR,*) 'DIR_TRANSAD:KVSETSC(J) > NPRTRV ',J,KVSETSC(J),NPRTRV
+      CALL ABORT_TRANS('DIR_TRANSAD:KVSETSC CONTAINS VALUES OUTSIDE RANGE')
     ENDIF
     IF(KVSETSC(J) == MYSETV) THEN
       IF_SCALARS = IF_SCALARS+1
@@ -301,18 +304,20 @@ IF_GP = 2*IF_UV_G+IF_SCALARS_G
 
 IF (IF_UV > 0) THEN
   IF(.NOT. PRESENT(PSPVOR) ) THEN
-    CALL ABORT_TRANS('DIR_TRANS : IF_UV > 0 BUT PSPVOR MISSING')
+    CALL ABORT_TRANS('DIR_TRANSAD : IF_UV > 0 BUT PSPVOR MISSING')
   ENDIF
   IF(UBOUND(PSPVOR,1) < IF_UV) THEN
-    WRITE(NERR,*)'DIR_TRANS : UBOUND(PSPVOR,1) < IF_UV ',UBOUND(PSPVOR,1),IF_UV
-    CALL ABORT_TRANS('DIR_TRANS : PSPVOR TOO SHORT')
+    WRITE(NERR,*)'DIR_TRANSAD : UBOUND(PSPVOR,1) < IF_UV ',&
+     & UBOUND(PSPVOR,1),IF_UV
+    CALL ABORT_TRANS('DIR_TRANSAD : PSPVOR TOO SHORT')
   ENDIF
   IF(.NOT. PRESENT(PSPDIV) ) THEN
-    CALL ABORT_TRANS('DIR_TRANS : PSPVOR PRESENT BUT PSPDIV MISSING')
+    CALL ABORT_TRANS('DIR_TRANSAD : PSPVOR PRESENT BUT PSPDIV MISSING')
   ENDIF
-  IF(UBOUND(PSPDIV,1) /= UBOUND(PSPVOR,1)) THEN
-    WRITE(NERR,*)'DIR_TRANS : UBOUND(PSPDIV,1) < IF_UV ',UBOUND(PSPDIV,1),IF_UV
-    CALL ABORT_TRANS('DIR_TRANS : INCONSISTENT FIRST DIM. OF PSPVOR AND PSPDIV')
+  IF(UBOUND(PSPDIV,1) /= IF_UV) THEN
+    WRITE(NERR,*)'DIR_TRANSAD : UBOUND(PSPDIV,1) < IF_UV ',&
+     & UBOUND(PSPDIV,1),IF_UV
+    CALL ABORT_TRANS('DIR_TRANSAD : INCONSISTENT FIRST DIM. OF PSPVOR AND PSPDIV')
   ENDIF
 ENDIF
 
@@ -486,18 +491,21 @@ IF(IF_SC3B_G > 0) THEN
     CALL ABORT_TRANS('DIR_TRANS:PGP3B MISSING')
   ENDIF
 ENDIF
-CALL GSTATS(1808,1)
+CALL GSTATS(1810,1)
 
-!     ------------------------------------------------------------------
+! Perform transform
 
-CALL EDIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
+CALL EDIR_TRANS_CTLAD(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2,&
- & PMEANU,PMEANV,AUX_PROC)
-
-IF (LHOOK) CALL DR_HOOK('EDIR_TRANS',1,ZHOOK_HANDLE)
+ & PMEANU,PMEANV)
 
 !     ------------------------------------------------------------------
+#endif
+
 !endif INTERFACE
 
-END SUBROUTINE EDIR_TRANS
+IF (LHOOK) CALL DR_HOOK('EDIR_TRANSAD',1,ZHOOK_HANDLE)
+
+END SUBROUTINE EDIR_TRANSAD
+
