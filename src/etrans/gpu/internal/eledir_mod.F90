@@ -1,6 +1,6 @@
 MODULE ELEDIR_MOD
 CONTAINS
-SUBROUTINE ELEDIR(ALLOCATOR,PFFT)
+SUBROUTINE ELEDIR(ALLOCATOR,PFFT,PFFT_OUT)
 
 !**** *LEINV* - Inverse Legendre transform.
 
@@ -70,15 +70,13 @@ USE BUFFERED_ALLOCATOR_MOD
 IMPLICIT NONE
 
 TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
-REAL(KIND=JPRB),    INTENT(INOUT)  :: PFFT(:,:,:)
+REAL(KIND=JPRB),  POINTER,  INTENT(INOUT)  :: PFFT(:,:,:)
+REAL(KIND=JPRB),  POINTER,  INTENT(INOUT)  :: PFFT_OUT(:,:,:)
 
-INTEGER(KIND=JPIM) :: IRLEN, ICLEN, JLOT, JJ
-!INTEGER(KIND=JPIM) :: IPLAN_C2R
+INTEGER(KIND=JPIM) :: IRLEN, JLOT
 TYPE(C_PTR) :: IPLAN_C2R
 REAL (KIND=JPRB)   :: ZSCAL
-REAL (KIND=JPRB), POINTER :: ZFFT_L(:)  ! 1D copy
-! INTEGER(KIND=JPIB), SAVE :: OFFSETS(2)
-! INTEGER(KIND=JPIM), SAVE :: LOENS(1)
+REAL (KIND=JPRB), POINTER :: ZFFT_L(:), ZFFT_L_OUT(:)  ! 1D copy
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 !     ------------------------------------------------------------------
@@ -89,69 +87,21 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',0,ZHOOK_HANDLE)
 
 IRLEN=R%NDGL+R%NNOEXTZG
-! LOENS(1)=IRLEN
 JLOT=UBOUND(PFFT,2)*UBOUND (PFFT,3)
 
-! compute offsets; TODO: avoid recomputing/putting on device every time.
-! DO JJ=1,SIZE(OFFSETS)
-  ! OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
-! ENDDO
-
-! write (6,*) __FILE__,__LINE__; call flush(6)
-! write (6,*)'  JLOT = ',JLOT; call flush(6)
-! write (6,*)'  shape(PFFT) = ',shape(PFFT); call flush(6)
-
 CALL C_F_POINTER(C_LOC(PFFT), ZFFT_L, (/UBOUND(PFFT,1)*UBOUND(PFFT,2)*UBOUND(PFFT,3)/) )
-
-#ifdef gnarls
-! ! debugging
-! !$acc data present(zfft_l)
-! !$acc update host(zfft_l)
-! write (6,*) 'before meridional transform:'
-! write (6,*) 'zfft_l = '
-! write (6,'(8F10.3)') zfft_l
-! call flush(6)
-! !$acc end data
-#endif
+CALL C_F_POINTER(C_LOC(PFFT_OUT), ZFFT_L_OUT, (/UBOUND(PFFT_OUT,1)*UBOUND(PFFT_OUT,2)*UBOUND(PFFT_OUT,3)/) )
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)
   RETURN
 ENDIF
 
-#ifdef gnarls
-
-! fake fft: only take mean value, on cpu
-!$acc data present(zfft_l)
-!$acc update host(zfft_l)
-DO JJ=1,JLOT
-  zfft_l((JJ-1)*(irlen+2)+1)=sum(zfft_l((JJ-1)*(irlen+2)+1:jj*(irlen+2)-2))   ! mean value
-  zfft_l((JJ-1)*(irlen+2)+2:jj*(irlen+2))=0.
-ENDDO
-!$acc update device(zfft_l)
-!$acc end data
-
-#else
-
-!$ACC DATA PRESENT(PFFT,RALD%NLOENS_LAT,RALD%NOFFSETS_LAT)
-CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L(:),NCUR_RESOL,-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
+!$ACC DATA PRESENT(ZFFT_L,ZFFT_L_OUT,RALD%NLOENS_LAT,RALD%NOFFSETS_LAT)
+CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L_OUT(:),NCUR_RESOL,-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=RALD%NLOENS_LAT, &
     & OFFSETS=RALD%NOFFSETS_LAT,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA
-
-#endif
-
-
-#ifdef gnarls
-! ! debugging
-! !$acc data present(zfft_l)
-! !$acc update host(zfft_l)
-! write (6,*) 'after meridional transform:'
-! write (6,*) 'zfft_l = '
-! write (6,'(8F10.3)') zfft_l
-! call flush(6)
-! !$acc end data
-#endif
 
 IF (LHOOK) CALL DR_HOOK('ELEDIR_MOD:ELEDIR',1,ZHOOK_HANDLE)
 

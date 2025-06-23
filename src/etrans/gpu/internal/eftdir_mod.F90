@@ -51,10 +51,8 @@ IRLEN=R%NDLON+R%NNOEXTZG
 
 
 #ifdef IN_PLACE_FFT
-    write (6,*) 'Using in-place FFT'; call flush(6)
     PREEL_COMPLEX => PREEL
 #else
-    write (6,*) 'Using out-of-place FFT'; call flush(6)
     CALL ASSIGN_PTR(PREEL_COMPLEX, GET_ALLOCATION(ALLOCATOR, HFTDIR%HREEL_COMPLEX),&
       & 1_JPIB, 1_JPIB*KF_FS*D%NLENGTF*C_SIZEOF(PREEL_COMPLEX(1)))
 #endif
