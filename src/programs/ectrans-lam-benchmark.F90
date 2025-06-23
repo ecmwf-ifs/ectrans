@@ -487,8 +487,6 @@ allocate(zgpuv(nproma,nflevg,jend_vder_EW,ngpblks))
 allocate(zgp3a(nproma,nflevg,jend_scder_EW-jbegin_sc+1,ngpblks))
 allocate(zgp2(nproma,ndimgmvs,ngpblks))
 
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
 zgp2=0.
 zgp3a=0.
 zgpuv=0.
@@ -506,9 +504,6 @@ if (lprint_norms .or. ncheck > 0) then
   allocate(znormdiv0(nflevg))
   allocate(znormt(nflevg))
   allocate(znormt0(nflevg))
-
-! write (6,*) 'zspsc3a = '
-! write (6,'(4E16.6)') zspsc3a
 
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor0, kvset=ivset(1:nflevg))
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv0, kvset=ivset(1:nflevg))
@@ -584,7 +579,6 @@ ztloop = omp_get_wtime()
 !===================================================================================================
 
 do jstep = 1, iters
-!write (6,*) __FILE__,__LINE__; call flush(6)
 
   if( lstats ) call gstats(3,0)
   ztstep(jstep) = omp_get_wtime()
@@ -630,8 +624,6 @@ do jstep = 1, iters
   endif
 #endif
   
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
   if( lstats ) call gstats(4,1)
 
   ztstep1(jstep) = (omp_get_wtime() - ztstep1(jstep))
@@ -658,9 +650,6 @@ do jstep = 1, iters
 
   if( lstats ) call gstats(5,0)
   
-
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
   ! take local copies to make them contiguous; this is not the case when derivatives are requested and nproma<ngptot
   if (lvordiv) allocate(zgpuv_ctg,source=zgpuv(:,:,1:2,:))
   allocate(zgp3a_ctg,source=zgp3a(:,:,1:nfld,:))
@@ -694,8 +683,6 @@ do jstep = 1, iters
 #endif
   if ( lvordiv ) deallocate(zgpuv_ctg)
   deallocate(zgp3a_ctg,zgp2_ctg)
-
-!write (6,*) __FILE__,__LINE__; call flush(6)
 
   if( lstats ) call gstats(5,1)
   ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
@@ -736,13 +723,8 @@ do jstep = 1, iters
   ! Print norms
   !=================================================================================================
 
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
   if (lprint_norms) then
     if( lstats ) call gstats(6,0)
-
-! write (6,*) 'zspsc3a = '
-! write (6,'(4E16.6)') zspsc3a
 
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
@@ -769,9 +751,6 @@ do jstep = 1, iters
       enddo
       ! Temperature
       do ifld = 1, nflevg
-! write (6,*) 'znormt(ifld) = ',znormt(ifld)
-! write (6,*) 'znormt0(ifld) = ',znormt0(ifld)
-call flush(6)
         zerr(4) = abs(znormt(ifld)/znormt0(ifld) - 1.0_jprb)
         zmaxerr(4) = max(zmaxerr(4), zerr(4))
       enddo
@@ -789,8 +768,6 @@ call flush(6)
 
 enddo
 
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
 !===================================================================================================
 
 ztloop = (omp_get_wtime() - ztloop)
@@ -800,13 +777,12 @@ write(nout,'(a)') '======= End of spectral transforms  ======='
 write(nout,'(" ")')
 
 if (lprint_norms .or. ncheck > 0) then
-!write (6,*) __FILE__,__LINE__; call flush(6)
+
   call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset)
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
-  
-!write (6,*) __FILE__,__LINE__; call flush(6)
+
   if ( myproc == 1 ) then
 
 	  zmaxerr(:) = -999.0
@@ -851,8 +827,6 @@ if (lprint_norms .or. ncheck > 0) then
 	  write(nout,'("max error combined =          = ",e10.3)') zmaxerrg
 	  write(nout,*)
 
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
 	  if (ncheck > 0) then
       ! If the maximum spectral norm error across all fields is greater than 100 times the machine
       ! epsilon, fail the test
@@ -868,8 +842,6 @@ if (lprint_norms .or. ncheck > 0) then
 	  endif
   endif
 endif
-
-!write (6,*) __FILE__,__LINE__; call flush(6)
 
 if (luse_mpi) then
   call mpl_allreduce(ztloop,     'sum', ldreprod=.false.)
@@ -889,8 +861,6 @@ if (luse_mpi) then
   call mpl_allreduce(ztstepmin2, 'min', ldreprod=.false.)
 endif
 
-!write (6,*) __FILE__,__LINE__; call flush(6)
-
 ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
@@ -909,8 +879,6 @@ ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 
 call sort(ztstep2,iters)
 ztstepmed2 = ztstep2(iters/2)
-
-!write (6,*) __FILE__,__LINE__; call flush(6)
 
 
 write(nout,'(a)') '======= Start of time step stats ======='
@@ -941,8 +909,6 @@ write(nout,'(a)') '======= End of time step stats ======='
 write(nout,'(" ")')
 
 
-write (6,*) __FILE__,__LINE__; call flush(6)
-
 if (lstack) then
   ! Gather stack usage statistics
   istack = getstackusage()
@@ -964,8 +930,6 @@ if (lstack) then
 endif
 
 
-write (6,*) __FILE__,__LINE__; call flush(6)
-
 !===================================================================================================
 ! Cleanup
 !===================================================================================================
@@ -977,9 +941,7 @@ deallocate(zgpuv,zgp3a,zgp2)
 if ( allocated(znormsp) ) deallocate(znormsp,znormsp0,znormvor,znormvor0,znormdiv,znormdiv0,znormt,znormt0)
 deallocate(ztstep,ztstep1,ztstep2)
 
-write (6,*) __FILE__,__LINE__; call flush(6)
 call etrans_end()
-write (6,*) __FILE__,__LINE__; call flush(6)
 
 !===================================================================================================
 
@@ -987,9 +949,6 @@ if (lstats) then
   call gstats(0,1)
   call gstats_print(nout, zaveave, jpmaxstat)
 endif
-
-
-write (6,*) __FILE__,__LINE__; call flush(6)
 
 if (lmeminfo) then
   write(nout,*)
@@ -1001,14 +960,9 @@ endif
 ! Finalize MPI
 !===================================================================================================
 
-
-write (6,*) __FILE__,__LINE__; call flush(6)
-
 if (luse_mpi) then
   call mpl_end(ldmeminfo=.false.)
 endif
-
-write (6,*) __FILE__,__LINE__; call flush(6)
 
 
 !===================================================================================================
@@ -1020,9 +974,6 @@ if (nproc > 1) then
     close(unit=nout)
   endif
 endif
-
-
-write (6,*) __FILE__,__LINE__; call flush(6)
 
 !===================================================================================================
 
@@ -1340,10 +1291,6 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   allocate(my_kn(kspec2),my_km(kspec2))
   call etrans_inq(knvalue=my_kn,kmvalue=my_km)
   
-  ! write (6,*) 'kn = ',my_kn
-  ! write (6,*) 'km = ',my_km
-  
-
   ! If rank is responsible for the chosen zonal wavenumber...
   if ( init_type == 'harmonic' ) then
     do ispec=1,nspec2,4
