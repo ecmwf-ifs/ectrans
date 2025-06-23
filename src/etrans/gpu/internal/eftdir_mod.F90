@@ -1,6 +1,6 @@
 MODULE EFTDIR_MOD
 CONTAINS
-SUBROUTINE EFTDIR(ALLOCATOR,PREEL,KF_FS,AUX_PROC)
+SUBROUTINE EFTDIR(ALLOCATOR,HFTDIR,PREEL,PREEL_COMPLEX,KF_FS,AUX_PROC)
 
 USE PARKIND1  ,ONLY : JPIM, JPRB, JPIB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
@@ -12,6 +12,7 @@ USE TPMALD_DIM      ,ONLY : RALD
 USE TPMALD_FFT      ,ONLY : TALD
 
 USE TPM_HICFFT      ,ONLY : EXECUTE_DIR_FFT
+USE FTDIR_MOD, ONLY : FTDIR_HANDLE
 
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
@@ -23,18 +24,19 @@ USE BUFFERED_ALLOCATOR_MOD
 IMPLICIT NONE
 
 TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
+TYPE(FTDIR_HANDLE) :: HFTDIR
 INTEGER(KIND=JPIM), INTENT(IN)  :: KF_FS
-REAL(KIND=JPRB),    INTENT(INOUT)  :: PREEL(:)   ! (IRLEN+2)*NDGLG*KF_FS
+REAL(KIND=JPRB),    INTENT(INOUT), POINTER  :: PREEL(:)   ! (IRLEN+2)*NDGLG*KF_FS
+REAL(KIND=JPRB),    INTENT(OUT), POINTER  :: PREEL_COMPLEX(:)
 EXTERNAL AUX_PROC
 OPTIONAL AUX_PROC
 
 INTEGER(KIND=JPIM) :: JLOT, IRLEN, JJ
-! INTEGER(KIND=JPIB), SAVE :: OFFSETS(2)
-! INTEGER(KIND=JPIM), SAVE :: LOENS(1)
-integer :: istat
-character(len=32) :: cfrmt
+
 REAL(KIND=JPRB) :: ZDUM
 INTEGER(KIND=JPIM) :: INUL
+
+REAL(KIND=JPRB), POINTER, SAVE :: ZREEL(:), ZREEL_COMPLEX(:)
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -46,6 +48,17 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',0,ZHOOK_HANDLE)
 
 IRLEN=R%NDLON+R%NNOEXTZG
+
+
+#ifdef IN_PLACE_FFT
+    write (6,*) 'Using in-place FFT'; call flush(6)
+    PREEL_COMPLEX => PREEL
+#else
+    write (6,*) 'Using out-of-place FFT'; call flush(6)
+    CALL ASSIGN_PTR(PREEL_COMPLEX, GET_ALLOCATION(ALLOCATOR, HFTDIR%HREEL_COMPLEX),&
+      & 1_JPIB, 1_JPIB*KF_FS*D%NLENGTF*C_SIZEOF(PREEL_COMPLEX(1)))
+#endif
+
 
 
 ! Periodization of auxiliary fields in x direction
@@ -60,69 +73,21 @@ IF (PRESENT(AUX_PROC)) THEN
 ENDIF
 
 
-! LOENS(1)=IRLEN
 JLOT=SIZE(PREEL)/(IRLEN+2)
-! compute offsets; TODO: avoid recomputing/putting on device every time.
-! DO JJ=1,SIZE(OFFSETS)
-  ! OFFSETS(JJ)=(JJ-1)*(IRLEN+2)
-! ENDDO
 
 IF (JLOT==0) THEN
   IF (LHOOK) CALL DR_HOOK('ELEINV_MOD:ELEINV',1,ZHOOK_HANDLE)
   RETURN
 ENDIF
 
-
-#ifdef gnarls
-! ! debugging
-! !$acc data present(preel)
-! !$acc update host(preel)
-! write (6,*) 'before direct zonal transform : '
-! write (6,*) 'shape(preel) = ',shape(preel)
-! write (6,*) 'preel = ',preel
-! call flush(6)
-! !$acc end data
-#endif
-
-
-#ifdef gnarls
-
-! fake fft: only take mean value, on cpu
-!$acc data present(preel)
-!$acc update host(preel)
-DO JJ=1,JLOT
-  preel((JJ-1)*(irlen+2)+1)=sum(preel((JJ-1)*(irlen+2)+1:jj*(irlen+2)-2))   ! mean value
-  preel((JJ-1)*(irlen+2)+2:jj*(irlen+2))=0.
-ENDDO
-!$acc update device(preel)
-!$acc end data
-
-#else
-
-!write (6,*) __FILE__, __LINE__; call flush(6)
 !$ACC DATA PRESENT(PREEL,RALD%NLOENS_LON,RALD%NOFFSETS_LON)
-!write (6,*) __FILE__, __LINE__; call flush(6)
-CALL EXECUTE_DIR_FFT(PREEL(:),PREEL(:),NCUR_RESOL,JLOT, &
+
+CALL EXECUTE_DIR_FFT(PREEL(:),PREEL_COMPLEX(:),NCUR_RESOL,JLOT, &
     & LOENS=RALD%NLOENS_LON, &
     & OFFSETS=RALD%NOFFSETS_LON,ALLOC=ALLOCATOR%PTR)
-!write (6,*) __FILE__, __LINE__; call flush(6)
+
 !$ACC END DATA
-!write (6,*) __FILE__, __LINE__; call flush(6)
 
-
-#endif
-
-
-#ifdef gnarls
-! ! debugging
-! !$acc data present(preel)
-! !$acc update host(preel)
-! write (6,*) 'before direct zonal transform : '
-! write (6,*) 'shape(preel) = ',shape(preel)
-! write (6,*) 'preel = ',preel
-! call flush(6)
-! !$acc end data
-#endif
 
 IF (LHOOK) CALL DR_HOOK('EFTDIR_MOD:EFTDIR',1,ZHOOK_HANDLE)
 

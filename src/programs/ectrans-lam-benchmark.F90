@@ -1317,7 +1317,7 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer :: n_num = 0 ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='harmonic'    
+  character(len=32) :: init_type='spectrum'    
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
