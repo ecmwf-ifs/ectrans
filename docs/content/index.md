@@ -42,5 +42,6 @@ This user guide contains the following sections:
 - [Benchmarking](benchmarking.html)
 - [API](api.html)
 - [Interfacing with C](transi.html)
+- [Interfacing with Python](ectrans4py.html)
 - [GPU offloading](gpu.html)
 - [License](license.html)
