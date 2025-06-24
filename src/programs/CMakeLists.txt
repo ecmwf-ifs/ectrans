@@ -77,6 +77,7 @@ if( HAVE_ETRANS )
 									  parkind_${prec}
 									  trans_${prec}
 									  etrans_${prec}
+									  $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
 									DEFINITIONS
 									  VERSION="cpu"
 			)
