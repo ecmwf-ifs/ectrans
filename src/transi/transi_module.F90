@@ -694,7 +694,7 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
   endif
 
   lspeconly = .False.
-  if( trans%ndgl < 0 ) then
+  if( trans%ndgl < 0 .and. trans%nlon < 0 ) then
     lspeconly = .true.
     trans%ndgl = 2
   endif
@@ -1054,6 +1054,12 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
       call transi_error("trans_setup: ERROR: nmsmax < 0")
       iret=TRANS_ERROR
       return
+    endif
+
+    ! ESETUP_TRANS does not have LDSPSETUPONLY, so add the grid resolution here
+    if (lspeconly) then
+      trans%nlon = trans%nmsmax * 2 + 1
+      trans%ndgl = trans%nsmax  * 2 + 1
     endif
 
     ! set resolution-dependent defaults

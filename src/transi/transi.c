@@ -135,6 +135,7 @@ int trans_set_trunc( struct Trans_t* trans, int nsmax )
 
 int trans_set_trunc_lam( struct Trans_t* trans, int trunc_x, int trunc_y )
 {
+  trans->llam=true;
   trans->nmsmax = trunc_x;
   trans->nsmax  = trunc_y;
   return TRANS_SUCCESS;
