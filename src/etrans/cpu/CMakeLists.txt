@@ -91,7 +91,7 @@ foreach( prec dp sp )
     ecbuild_add_library( TARGET etrans_${prec} TYPE INTERFACE )
     target_include_directories( etrans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_${prec}> )
     target_include_directories( etrans_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_${prec}> )
-	target_link_libraries( etrans_${prec} INTERFACE ectrans_lam_${prec}) # seems ok to omit fiat, parkind, trans here.
+  target_link_libraries( etrans_${prec} INTERFACE ectrans_lam_${prec}) # seems ok to omit fiat, parkind, trans here.
   endif()
 endforeach()
 

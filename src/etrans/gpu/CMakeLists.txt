@@ -117,7 +117,7 @@ foreach( prec dp sp )
         ecbuild_add_library( TARGET etrans_gpu_${prec} TYPE INTERFACE )
         target_include_directories( etrans_gpu_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_gpu_${prec}> )
         target_include_directories( etrans_gpu_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_gpu_${prec}> )
-		target_link_libraries( etrans_gpu_${prec} INTERFACE ectrans_lam_gpu_${prec})
+        target_link_libraries( etrans_gpu_${prec} INTERFACE ectrans_lam_gpu_${prec})
 
 
         # ## Install trans_gpu_${prec} interface
