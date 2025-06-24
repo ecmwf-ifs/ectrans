@@ -85,7 +85,7 @@ if( HAVE_ETRANS )
         endif()
       endforeach( prec)
     endif()
-	
+  
     if( HAVE_GPU AND TRUE )
       list( APPEND util_PRIVATE_DEFINITIONS
         $<${HAVE_CUDA}:CUDA>
