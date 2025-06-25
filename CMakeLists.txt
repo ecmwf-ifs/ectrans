@@ -70,22 +70,26 @@ endif()
 set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
-ecbuild_add_option( FEATURE MKL
-                    DESCRIPTION "Use MKL for BLAS and/or FFTW"
-                    DEFAULT ON
-                    REQUIRED_PACKAGES "MKL QUIET" )
-
-if( NOT HAVE_MKL )
-    option( FFTW_ENABLE_MKL OFF )
-endif()
-
 ecbuild_add_option( FEATURE CPU
                     DEFAULT ON
                     DESCRIPTION "Compile CPU version of ectrans"
                    )
 
+ecbuild_add_option( FEATURE MKL
+                    DESCRIPTION "Use MKL for BLAS"
+                    DEFAULT ON
+                    CONDITION HAVE_CPU
+                    REQUIRED_PACKAGES "MKL QUIET" )
+
+ecbuild_add_option( FEATURE FFTW_MKL
+                    DESCRIPTION "Use MKL for FFTW"
+                    DEFAULT OFF
+                    CONDITION HAVE_MKL )
+
 if( HAVE_CPU )
-  ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
+  if( NOT HAVE_FFTW_MKL )
+    ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
+  endif()
 endif()
 
 ecbuild_add_option( FEATURE TRANSI
