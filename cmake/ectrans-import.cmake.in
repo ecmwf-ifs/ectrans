@@ -26,12 +26,19 @@
 set( ectrans_VERSION_STR             @ectrans_VERSION_STR@ )
 set( ectrans_HAVE_MPI                @ectrans_HAVE_MPI@ )
 set( ectrans_HAVE_OMP                @ectrans_HAVE_OMP@ )
-set( ectrans_HAVE_FFTW               @ectrans_HAVE_FFTW@ )
 set( ectrans_HAVE_ETRANS             @ectrans_HAVE_ETRANS@ )
 set( ectrans_HAVE_TRANSI             @ectrans_HAVE_TRANSI@ )
 set( ectrans_HAVE_SINGLE_PRECISION   @ectrans_HAVE_SINGLE_PRECISION@ )
 set( ectrans_HAVE_DOUBLE_PRECISION   @ectrans_HAVE_DOUBLE_PRECISION@ )
 set( ectrans_REQUIRES_PRIVATE_DEPENDENCIES @PACKAGE_REQUIRES_PRIVATE_DEPENDENCIES@ )
+
+if ( ectrans_HAVE_TRANSI AND ectrans_HAVE_ETRANS )
+  set( ectrans_HAVE_TRANSI_LAM       1)
+else()
+  set( ectrans_HAVE_TRANSI_LAM       0)
+endif()
+
+set( ectrans_HAVE_FFTW               1 ) # this is now mandatory
 
 if( NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY )
   message( STATUS "Found ectrans version ${ectrans_VERSION_STR}" )
