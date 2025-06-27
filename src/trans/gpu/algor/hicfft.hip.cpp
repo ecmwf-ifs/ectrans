@@ -247,6 +247,18 @@ extern "C" {
 #else
 #define RUN run_group
 #endif
+void preplan_dir_fft_float(int kfield, int resol_id, int *loens, int64_t *offsets, int nfft) {
+  auto plans = plan_all<Float, HIPFFT_R2C>(resol_id, kfield, loens, nfft, offsets);
+}
+void preplan_inv_fft_float(int kfield, int resol_id, int *loens, int64_t *offsets, int nfft) {
+  auto plans = plan_all<Float, HIPFFT_C2R>(resol_id, kfield, loens, nfft, offsets);
+}
+void preplan_dir_fft_double(int kfield, int resol_id, int *loens, int64_t *offsets, int nfft) {
+  auto plans = plan_all<Double, HIPFFT_D2Z>(resol_id, kfield, loens, nfft, offsets);
+}
+void preplan_inv_fft_double(int kfield, int resol_id, int *loens, int64_t *offsets, int nfft) {
+  auto plans = plan_all<Double, HIPFFT_Z2D>(resol_id, kfield, loens, nfft, offsets);
+}
 void execute_dir_fft_float(float *data_real, hipfftComplex *data_complex,
                            int resol_id, int kfield, int *loens, int64_t *offsets, int nfft,
                            void *growing_allocator) {
