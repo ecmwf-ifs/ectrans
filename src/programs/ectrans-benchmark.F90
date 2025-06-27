@@ -209,6 +209,8 @@ integer(kind=jpim) :: ierr
 
 real(kind=jprb), allocatable :: global_field(:,:)
 
+integer(kind=jpim) :: ndir_fft_fields, ninv_fft_fields
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -411,9 +413,14 @@ call gstats(2, 0)
 call set_ectrans_gpu_nflev(nflevl)
   ! We pass nflevl via environment variable in order not to change API
   ! In long run, ectrans should grow its internal buffers automatically
+ndir_fft_fields = (2+nfld)*nflevl+merge(1, 0, iprused == mysetv)
+ninv_fft_fields = (nfld+nfld*merge(2, 0, lscders))*nflevl+merge(1, 0, iprused == mysetv)
+ninv_fft_fields = ninv_fft_fields + (merge(2, 0, lvordiv)+merge(2, 0, luvders .and. lvordiv))*nflevl
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
   &              lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
-  &              lduseflt=luseflt)
+  &              lduseflt=luseflt, &
+  &              kpreplan_dir_fft_nfields=[ndir_fft_fields], &
+  &              kpreplan_inv_fft_nfields=[ninv_fft_fields])
 call gstats(2, 1)
 
 call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
