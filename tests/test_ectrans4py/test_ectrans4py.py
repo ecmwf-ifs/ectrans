@@ -117,6 +117,7 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             KNUMMAXRESOL
         )
         weights_sum = sum(weights)
+        # The sum of the Gaussian weights should be equal to 1.0
         self.assertTrue(abs(weights_sum - 1.0) < EPSILON, f"sum of weights is {weights_sum}")
 
     def test_trans_inq4py(self):
