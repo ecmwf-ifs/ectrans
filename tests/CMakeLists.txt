@@ -444,9 +444,10 @@ if( HAVE_TRANSI )
     ecbuild_warn( "ectrans tests checking memory leaks are disabled as malloc.h was not found" )
   endif()
 
+  find_package( CMath )
   ecbuild_add_library( TARGET ectrans_test
     SOURCES     transi/transi_test.h transi/transi_test.c
-    PUBLIC_LIBS transi_dp
+    PUBLIC_LIBS transi_dp ${CMATH_LIBRARIES}
     NOINSTALL
   )
   target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
@@ -552,4 +553,25 @@ if( HAVE_TRANSI )
   if( NOT HAVE_MEMORY_TESTS )
     set_tests_properties( ectrans_test_transi_memory ectrans_test_transi_memory_lonlat PROPERTIES DISABLED ON )
   endif()
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam
+    SOURCES   transi/transi_test_lam.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam_dirtrans_adjoint
+    SOURCES   transi/transi_test_lam_dirtrans_adjoint.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam_invtrans_adjoint
+    SOURCES   transi/transi_test_lam_invtrans_adjoint.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
 endif()

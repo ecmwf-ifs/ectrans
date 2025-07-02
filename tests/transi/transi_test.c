@@ -20,6 +20,11 @@ int test_use_mpi() {
     return 1;
 }
 
+int transi_test_nprgpew() {
+    if ( getenv( "TRANS_NPRGPEW" ) ) { return atoi( getenv( "TRANS_NPRGPEW" ) ); }
+    return 1;
+}
+
 double transi_test_time()
 {
   static double time_init = -1;
