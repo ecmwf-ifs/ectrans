@@ -86,6 +86,24 @@ def ectrans_version():
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
+def get_lt_arrays(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
+    """
+    """
+    return ([KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KSLOEN,), IN),
+             (np.int64, None, IN),
+             (np.int64, (KSLOEN,), OUT),
+             (np.float64, (KSLOEN,), OUT),
+             (np.float64, (KSLOEN,KSPOLEGL), OUT)],
+            None)
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
 def etrans_inq4py(KSIZEI, KSIZEJ,
                  KPHYSICALSIZEI, KPHYSICALSIZEJ,
                  KTRUNCX, KTRUNCY,
