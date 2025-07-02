@@ -106,6 +106,19 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         gpdata[offset:offset+nlon] = gpdata_latlon[i,:nlon]
         offset += nlon
 
+    def test_get_lt_arrays(self):
+        nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
+        knmeng, weights, polys = ectrans4py.get_lt_arrays(
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            nspec,
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL
+        )
+        weights_sum = sum(weights)
+        self.assertTrue(abs(weights_sum - 1.0) < EPSILON, f"sum of weights is {weights_sum}")
+
     def test_trans_inq4py(self):
         spectral_data_sizes = ectrans4py.trans_inq4py(
             self.gpdims['lat_number'],
