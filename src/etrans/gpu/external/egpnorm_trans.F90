@@ -39,7 +39,7 @@ SUBROUTINE EGPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL)
 !        R. El Khatib 16-Sep-2019 merge with global model code
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 !ifndef INTERFACE
 
@@ -66,19 +66,14 @@ INTEGER(KIND=JPIM),OPTIONAL, INTENT(IN)  :: KRESOL
 !ifndef INTERFACE
 
 ! Local variables
-INTEGER(KIND=JPIM) :: JGL
-REAL(KIND=JPRB) :: ZW(R%NDGL)
-
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+
 !     ------------------------------------------------------------------
+
 IF (LHOOK) CALL DR_HOOK('EGPNORM_TRANS',0,ZHOOK_HANDLE)
 
 ! Set current resolution
 CALL ESET_RESOL(KRESOL)
-
-DO JGL=1,R%NDGL
-  ZW(1:)=1._JPRB/G%NLOEN(JGL)
-ENDDO
 
 CALL GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY)
 
