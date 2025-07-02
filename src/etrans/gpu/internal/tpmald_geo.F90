@@ -2,7 +2,7 @@ MODULE TPMALD_GEO
 
 ! Module containing data describing plane projection grid.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE PARKIND1  ,ONLY : JPRB
 
 IMPLICIT NONE
 

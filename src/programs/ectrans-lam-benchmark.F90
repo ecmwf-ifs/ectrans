@@ -1367,7 +1367,7 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
 #endif
     open(noutdump, file=filename, form="unformatted", access="stream")
     write(noutdump) kgptotg/nlat,nlat ! dimensions
-  write(noutdump) fldg ! data
+    write(noutdump) fldg ! data
     close(noutdump)
     
     ! write to screen
@@ -1422,18 +1422,18 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   
   if ( myproc == 1 ) then
 
-  fld2g=0.
-  jj=1
-  do jms=0,nmsmax
-    do jns=0,knse(jms)
-    fld2g(2*jms+0,2*jns+0)=fldg(1,jj)
-    fld2g(2*jms+0,2*jns+1)=fldg(1,jj+1)
-    fld2g(2*jms+1,2*jns+0)=fldg(1,jj+2)
-    fld2g(2*jms+1,2*jns+1)=fldg(1,jj+3)
-    jj=jj+4
+    fld2g=0.
+    jj=1
+    do jms=0,nmsmax
+      do jns=0,knse(jms)
+        fld2g(2*jms+0,2*jns+0)=fldg(1,jj)
+        fld2g(2*jms+0,2*jns+1)=fldg(1,jj+1)
+        fld2g(2*jms+1,2*jns+0)=fldg(1,jj+2)
+        fld2g(2*jms+1,2*jns+1)=fldg(1,jj+3)
+        jj=jj+4
+      enddo
     enddo
-  enddo
-  
+
     ! write to binary file
     write(filename(1:1),'(a1)') fldchar
     write(filename(3:5),'(i3.3)') jstep
@@ -1443,7 +1443,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
     write(filename(7:9),'(a3)') 'cpu'
 #endif
     open(noutdump, file=filename, form="unformatted", access="stream")
-  write(noutdump) 2*nmsmax+2,2*nsmax+2  ! dimensions
+    write(noutdump) 2*nmsmax+2,2*nsmax+2  ! dimensions
     write(noutdump) fld2g             ! data
     close(noutdump)
     

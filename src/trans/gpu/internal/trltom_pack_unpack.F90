@@ -125,7 +125,6 @@ CONTAINS
 #endif
 #endif
     DO KGL=1,D_NDGL_FS
-      !DO JM=0,R_NSMAX !(note that R_NSMAX <= G_NMEN(IGLG) for all IGLG)
       DO JM=0,NMEN_MAX
         DO JF=1,KF_FS
           IGLG = OFFSET_VAR+KGL-1
