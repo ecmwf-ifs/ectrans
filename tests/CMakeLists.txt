@@ -273,7 +273,7 @@ foreach( benchmark ${benchmarks} )
 
       # Base arguments -> 2 iterations, memory consumption/pinning information, spectral norms, and
       # verbose output
-      set( base_args "--niter 2 --meminfo --norms -v" )
+      set( base_args --niter 2 --meminfo --norms -v )
 
       set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}")
 
@@ -380,7 +380,7 @@ if( HAVE_ETRANS )
 
       # Base arguments -> nlat x nlon, 2 iterations, memory consumption/pinning information,
       # spectral norms, and verbose output
-      set( base_args "--nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v" )
+      set( base_args --nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
