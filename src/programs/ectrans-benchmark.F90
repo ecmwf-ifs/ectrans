@@ -1161,7 +1161,7 @@ subroutine parsing_failed(message)
     call print_help(unit=nerr)
   endif
   if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-  stop
+  error stop
 
 end subroutine
 
