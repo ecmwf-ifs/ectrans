@@ -28,7 +28,7 @@ SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 !     KTO(:)      - Processor responsible for gathering each field
 !     KRESOL      - resolution tag  which is required ,default is the
 !                   first defined resulution (input)
-!     PGP(:,:,:)  - Local spectral array
+!     PGP(:,:,:)  - Local gridpoint array
 !
 !     Method.
 !     -------
