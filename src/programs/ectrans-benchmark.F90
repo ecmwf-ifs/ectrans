@@ -138,6 +138,8 @@ integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
 integer(kind=jpim) :: nopt_mem_tr = 0
 
+character*64 :: clfile
+
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
 integer(kind=jpim) :: ncheck = 0
@@ -196,9 +198,11 @@ integer(kind=jpim) :: jbegin_uder_EW = 0
 integer(kind=jpim) :: jend_uder_EW = 0
 integer(kind=jpim) :: jbegin_vder_EW = 0
 integer(kind=jpim) :: jend_vder_EW = 0
+integer(kind=jpim) :: iend = 0 
 
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
+logical :: ldump_crcs = .false.
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
@@ -232,7 +236,7 @@ endif
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
+  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values,  ldump_crcs, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
   & lpinning)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
@@ -631,6 +635,11 @@ do jstep = 1, iters+iters_warmup
 
   ztstep1(jstep) = timef()
   call gstats(4,0)
+
+  if (ldump_crcs) then
+    zgmv(:,:,:,:) = 0
+    zgmvs(:,:,:) = 0
+  endif
   if (lvordiv) then
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
@@ -659,6 +668,14 @@ do jstep = 1, iters+iters_warmup
   endif
   call gstats(4,1)
 
+if (ldump_crcs) then  
+    ! Remove trash at end of last block    
+    iend = ngptot - nproma * (ngpblks - 1)      
+    zgmvs (iend+1:, :, ngpblks) = 0
+    write (clfile,'(A)') 'inv_trans.txt'
+    
+    call dump_crc(clfile, iter=jstep,zgmv=zgmv, zgmvs=zgmvs)
+endif
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
   !=================================================================================================
@@ -707,6 +724,13 @@ do jstep = 1, iters+iters_warmup
       & kvsetsc3a=ivset)
   endif
   call gstats(5,1)
+
+
+if (ldump_crcs) then  
+  write (clfile,'(A)') 'dir_trans.txt'
+  call dump_crc(clfile, iter=jstep,sp3d=sp3d,zspc2=zspsc2)
+endif
+
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
 
   ztstep(jstep) = (timef() - ztstep(jstep))/1000.0_jprd
@@ -1146,6 +1170,7 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
+  write(nout, "(a)") "    --dump-crcs          Output CRC64 checksums of fields in text file"
   write(nout, "(a)") ""
 
 end subroutine print_help
@@ -1168,7 +1193,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
+  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, ldump_crcs, lprint_norms, &
   &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning)
 
 #ifdef _OPENACC
@@ -1189,6 +1214,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
+  logical, intent(inout) :: ldump_crcs      ! Dump CRC checksums
   logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
   logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
                                             ! end
@@ -1245,6 +1271,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
+      case('--dump-crcs'); ldump_crcs = .true.
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
       case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
@@ -1408,6 +1435,66 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutd
   endif
 
 end subroutine dump_gridpoint_field
+
+!===================================================================================================
+
+subroutine dump_crc(filename,iter, zgmv, zgmvs,sp3d,zspc2)
+  real(kind=jprb), optional :: zgmv   (:,:,:,:) 
+  real(kind=jprb), optional :: zgmvs   (:,:,:) 
+  real(kind=jprb), optional :: sp3d  (:,:,:) 
+  real(kind=jprb), optional :: zspc2   (:,:) 
+  INTEGER(KIND = JPIM):: iter
+  INTEGER*8 :: ICRC
+  INTEGER(KIND = JPIM):: JLEV, JFLD
+  character(len=*):: filename
+  LOGICAL:: EXIST = .False.
+  
+  IF (iter>1)  INQUIRE(FILE = filename, EXIST = EXIST)
+  IF (EXIST) THEN
+    OPEN(10, FILE = filename, STATUS="OLD", POSITION="APPEND", ACTION="WRITE")
+  ELSE
+    OPEN(10, FILE = filename, ACTION="WRITE")
+  END IF
+
+  WRITE(10,*) "===================="
+  WRITE(10,*) "iteration", iter  
+  WRITE(10,*) "===================="
+
+  IF (PRESENT(ZGMV)) THEN
+    ICRC = 0
+    DO JFLD = 1, SIZE (zgmv, 3)
+      DO JLEV = 1, SIZE (zgmv, 2)
+        CALL CRC64 (zgmv (:, JLEV, JFLD, :), INT (SIZE (zgmv (:, JLEV, JFLD, :)) * KIND (zgmv), 8), ICRC)
+        WRITE (10, '(A," (",I0,", ",I0,") = ",Z16.16)') "zgmv", JLEV, JFLD, ICRC 
+      ENDDO
+    ENDDO
+    ENDIF
+  
+  IF (PRESENT(ZGMVS)) THEN
+  ICRC = 0
+  DO JFLD = 1, SIZE (zgmvs, 2)
+       CALL CRC64 (zgmvs (:, JFLD, :), INT (SIZE (zgmvs (:, JFLD, :)) * KIND (zgmvs), 8), ICRC)
+       WRITE (10, '(A," (",I0,") = ",Z16.16)') "zgmvs", JFLD, ICRC            
+  ENDDO
+  ENDIF
+  IF (PRESENT(sp3d)) THEN
+  ICRC = 0
+  DO JFLD = 1, SIZE (sp3d, 3)
+    DO JLEV = 1, SIZE (sp3d, 1)
+       CALL CRC64 (sp3d (JLEV,:, JFLD), INT (SIZE (sp3d (JLEV, :, JFLD)) * KIND (sp3d), 8), ICRC)
+       WRITE (10, '(A," (",I0,", ",I0,") = ",Z16.16)') "sp3d", JLEV, JFLD, ICRC 
+    ENDDO
+  ENDDO
+ENDIF
+IF (PRESENT(zspc2)) THEN
+  ICRC = 0
+  DO JFLD = 1, SIZE (zspc2, 1)
+       CALL CRC64 (zspc2 (JFLD, :), INT (SIZE (zspc2 (JFLD, :)) * KIND (zspc2), 8), ICRC)
+       WRITE (10, '(A," (",I0,") = ",Z16.16)') "zspc2", JFLD, ICRC     
+  ENDDO
+ENDIF
+  CLOSE(10)
+end subroutine dump_crc
 
 !===================================================================================================
 
