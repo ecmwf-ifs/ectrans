@@ -673,7 +673,7 @@ if (ldump_checksums) then
     ! Remove trash at end of last block    
     iend = ngptot - nproma * (ngpblks - 1)      
     zgmvs (iend+1:, :, ngpblks) = 0
-    write (checksums_filename,'(A)') trim(cchecksums_path)//'inv_trans.txt'    
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'    
     call dump_checksums(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,zgmv=zgmv, zgmvs=zgmvs,noutdump=noutdump)
 endif
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
@@ -727,7 +727,7 @@ endif
 
 
 if (ldump_checksums) then  
-  write (checksums_filename,'(A)') trim(cchecksums_path)//'dir_trans.txt'
+  write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
   call dump_checksums(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,sp3d=sp3d,zspc2=zspsc2,noutdump=noutdump)
 endif
 
