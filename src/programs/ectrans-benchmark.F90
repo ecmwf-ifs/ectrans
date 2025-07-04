@@ -221,6 +221,7 @@ real(kind=jprb), allocatable :: global_field(:,:)
 #include "dir_trans.h"
 #include "trans_inq.h"
 #include "gath_grid.h"
+#include "gath_spec.h"
 #include "specnorm.h"
 #include "abor1.intfb.h"
 #include "gstats_setup.intfb.h"
@@ -672,9 +673,8 @@ if (ldump_checksums) then
     ! Remove trash at end of last block    
     iend = ngptot - nproma * (ngpblks - 1)      
     zgmvs (iend+1:, :, ngpblks) = 0
-    write (checksums_filename,'(A)') trim(cchecksums_path)//'inv_trans.txt'
-    
-    call dump_crc(checksums_filename, iter=jstep,zgmv=zgmv, zgmvs=zgmvs)
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'inv_trans.txt'    
+    call dump_crc(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg,nspec2g=nspec2g,zgmv=zgmv, zgmvs=zgmvs,noutdump=noutdump)
 endif
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
@@ -728,7 +728,7 @@ endif
 
 if (ldump_checksums) then  
   write (checksums_filename,'(A)') trim(cchecksums_path)//'dir_trans.txt'
-  call dump_crc(checksums_filename, iter=jstep,sp3d=sp3d,zspc2=zspsc2)
+  call dump_crc(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,sp3d=sp3d,zspc2=zspsc2,noutdump=noutdump)
 endif
 
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
@@ -1441,62 +1441,98 @@ end subroutine dump_gridpoint_field
 
 !===================================================================================================
 
-subroutine dump_crc(filename,iter, zgmv, zgmvs,sp3d,zspc2)
+subroutine dump_crc(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, nspec2g, zgmv, zgmvs,sp3d,zspc2,noutdump)
+  integer(kind = jpim):: jstep             !time step
+  integer(kind=jpim), intent(in) :: myproc ! mpi rank
+  integer(kind=jpim), intent(in) :: nproma ! size of nproma  
+  integer(kind=jpim), intent(in) :: ivset(:)
+  integer(kind=jpim), intent(in) :: ivsetsc(1)
+
+  character(len=*), intent(in)   :: filename
+  integer(kind=jpim), intent(in) :: ngptotg
+  integer(kind=jpim), intent(in) :: nspec2g
   real(kind=jprb), optional :: zgmv   (:,:,:,:) 
   real(kind=jprb), optional :: zgmvs   (:,:,:) 
   real(kind=jprb), optional :: sp3d  (:,:,:) 
-  real(kind=jprb), optional :: zspc2   (:,:) 
-  INTEGER(KIND = JPIM):: iter
-  INTEGER*8 :: ICRC
-  INTEGER(KIND = JPIM):: JLEV, JFLD
-  character(len=*):: filename
-  LOGICAL:: EXIST = .False.
-  
-  IF (iter>1)  INQUIRE(FILE = filename, EXIST = EXIST)
-  IF (EXIST) THEN
-    OPEN(10, FILE = filename, STATUS="OLD", POSITION="APPEND", ACTION="WRITE")
-  ELSE
-    OPEN(10, FILE = filename, ACTION="WRITE")
-  END IF
+  real(kind=jprb), optional :: zspc2   (:,:)   
+  integer(kind=jpim), intent(in) :: noutdump ! tnit number for output file
+  integer*8 :: icrc
+  integer(kind = jpim):: jlev, jfld
+  real(kind=jprb), allocatable :: gfld(:,:)
+  real(kind=jprb), allocatable :: gspfld(:,:)
+  logical:: exist = .false.
 
-  WRITE(10,*) "===================="
-  WRITE(10,*) "iteration", iter  
-  WRITE(10,*) "===================="
-
-  IF (PRESENT(ZGMV)) THEN
-    ICRC = 0
-    DO JFLD = 1, SIZE (zgmv, 3)
-      DO JLEV = 1, SIZE (zgmv, 2)
-        CALL CRC64 (zgmv (:, JLEV, JFLD, :), INT (SIZE (zgmv (:, JLEV, JFLD, :)) * KIND (zgmv), 8), ICRC)
-        WRITE (10, '(A," (",I0,", ",I0,") = ",Z16.16)') "zgmv", JLEV, JFLD, ICRC 
-      ENDDO
-    ENDDO
-    ENDIF
+  if (myproc == 1) then
+      if (jstep>1)  inquire(file = filename, exist = exist)
+        if (exist) then
+          open(noutdump, file = filename, status="old", position="append", action="write")
+        else
+          open(noutdump, file = filename, action="write")
+      endif
   
-  IF (PRESENT(ZGMVS)) THEN
-  ICRC = 0
-  DO JFLD = 1, SIZE (zgmvs, 2)
-       CALL CRC64 (zgmvs (:, JFLD, :), INT (SIZE (zgmvs (:, JFLD, :)) * KIND (zgmvs), 8), ICRC)
-       WRITE (10, '(A," (",I0,") = ",Z16.16)') "zgmvs", JFLD, ICRC            
-  ENDDO
-  ENDIF
-  IF (PRESENT(sp3d)) THEN
-  ICRC = 0
-  DO JFLD = 1, SIZE (sp3d, 3)
-    DO JLEV = 1, SIZE (sp3d, 1)
-       CALL CRC64 (sp3d (JLEV,:, JFLD), INT (SIZE (sp3d (JLEV, :, JFLD)) * KIND (sp3d), 8), ICRC)
-       WRITE (10, '(A," (",I0,", ",I0,") = ",Z16.16)') "sp3d", JLEV, JFLD, ICRC 
-    ENDDO
-  ENDDO
-ENDIF
-IF (PRESENT(zspc2)) THEN
-  ICRC = 0
-  DO JFLD = 1, SIZE (zspc2, 1)
-       CALL CRC64 (zspc2 (JFLD, :), INT (SIZE (zspc2 (JFLD, :)) * KIND (zspc2), 8), ICRC)
-       WRITE (10, '(A," (",I0,") = ",Z16.16)') "zspc2", JFLD, ICRC     
-  ENDDO
-ENDIF
-  CLOSE(10)
+    write(noutdump,*) "===================="
+    write(noutdump,*) "iteration", jstep  
+    write(noutdump,*) "===================="
+      
+    if (present(zgmv) .or. present(zgmvs))  allocate(gfld(ngptotg,1))    
+    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(nspec2g,1))    
+  endif
+
+  if (present(zgmv)) then
+    icrc = 0
+    do jfld = 1, size (zgmv, 3)
+      do jlev = 1, size (zgmv, 2)
+        call gath_grid(gfld(:,:),nproma,1,(/1/),1,zgmv(:,jlev:jlev,jfld, :))
+        if (myproc == 1) then
+            !call crc64 (zgmv (:, jlev, jfld, :), int (size (zgmv (:, jlev, jfld, :)) * kind (zgmv), 8), icrc)
+            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgmv", jlev, jfld, icrc 
+        endif
+      enddo
+    enddo
+    endif
+  
+  if (present(zgmvs)) then
+  icrc = 0
+  do jfld = 1, size (zgmvs, 2)    
+      call gath_grid(gfld(:,:),nproma,1,(/1/),1,zgmvs(:,jfld:jfld,:))
+       if (myproc == 1) then
+           !call crc64 (zgmvs (:, jfld, :), int (size (zgmvs (:, jfld, :)) * kind (zgmvs), 8), icrc)
+           call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+           write (noutdump, '(a," (",i0,") = ",z16.16)') "zgmvs", jfld, icrc            
+       endif
+  enddo
+  endif
+  if (present(sp3d)) then
+  icrc = 0
+  do jfld = 1, size (sp3d, 3)
+    do jlev = 1, size (sp3d, 1)      
+      call gath_spec(gspfld(:,:),1,(/1/),ivset(jlev:jlev), 1,sp3d(jlev,:,jfld:jfld))
+      if (myproc == 1) then
+         !call crc64 (sp3d (jlev,:, jfld), int (size (sp3d (jlev, :, jfld)) * kind (sp3d), 8), icrc)
+         call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+         write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc 
+      endif
+    enddo
+  enddo
+endif
+if (present(zspc2)) then
+  icrc = 0
+  do jfld = 1, size (zspc2, 1)
+    call gath_spec(gfld(:,:),1,(/1/),ivsetsc(1:1), 1,zspc2(jfld:jfld,:))
+    if (myproc == 1) then
+       !call crc64 (zspc2 (jfld, :), int (size (zspc2 (jfld, :)) * kind (zspc2), 8), icrc)
+      call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+       write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc     
+    endif
+  enddo
+endif
+
+if (myproc == 1) then
+  close(noutdump)
+  if (allocated(gfld)) deallocate(gfld)
+  if (allocated(gspfld)) deallocate(gspfld)
+endif
 end subroutine dump_crc
 
 !===================================================================================================
