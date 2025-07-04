@@ -674,7 +674,7 @@ if (ldump_checksums) then
     iend = ngptot - nproma * (ngpblks - 1)      
     zgmvs (iend+1:, :, ngpblks) = 0
     write (checksums_filename,'(A)') trim(cchecksums_path)//'inv_trans.txt'    
-    call dump_crc(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg,nspec2g=nspec2g,zgmv=zgmv, zgmvs=zgmvs,noutdump=noutdump)
+    call dump_crc(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,zgmv=zgmv, zgmvs=zgmvs,noutdump=noutdump)
 endif
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
@@ -1475,14 +1475,16 @@ subroutine dump_crc(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, ns
     write(noutdump,*) "===================="
       
     if (present(zgmv) .or. present(zgmvs))  allocate(gfld(ngptotg,1))    
-    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(nspec2g,1))    
+    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(1,nspec2g)) 
+    
   endif
 
   if (present(zgmv)) then
     icrc = 0
+    write(nout,*)"Denis - zgmv begin"
     do jfld = 1, size (zgmv, 3)
       do jlev = 1, size (zgmv, 2)
-        call gath_grid(gfld(:,:),nproma,1,(/1/),1,zgmv(:,jlev:jlev,jfld, :))
+        call gath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgmv(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
             !call crc64 (zgmv (:, jlev, jfld, :), int (size (zgmv (:, jlev, jfld, :)) * kind (zgmv), 8), icrc)
             call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
@@ -1491,11 +1493,12 @@ subroutine dump_crc(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, ns
       enddo
     enddo
     endif
-  
+    
   if (present(zgmvs)) then
   icrc = 0
+  write(nout,*)"Denis - zgmvs begin"
   do jfld = 1, size (zgmvs, 2)    
-      call gath_grid(gfld(:,:),nproma,1,(/1/),1,zgmvs(:,jfld:jfld,:))
+      call gath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgmvs(:,jfld:jfld,:))
        if (myproc == 1) then
            !call crc64 (zgmvs (:, jfld, :), int (size (zgmvs (:, jfld, :)) * kind (zgmvs), 8), icrc)
            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
@@ -1505,9 +1508,10 @@ subroutine dump_crc(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, ns
   endif
   if (present(sp3d)) then
   icrc = 0
+  write(nout,*)"Denis - sp3d begin"
   do jfld = 1, size (sp3d, 3)
     do jlev = 1, size (sp3d, 1)      
-      call gath_spec(gspfld(:,:),1,(/1/),ivset(jlev:jlev), 1,sp3d(jlev,:,jfld:jfld))
+      call gath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
       if (myproc == 1) then
          !call crc64 (sp3d (jlev,:, jfld), int (size (sp3d (jlev, :, jfld)) * kind (sp3d), 8), icrc)
          call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
@@ -1518,8 +1522,10 @@ subroutine dump_crc(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, ns
 endif
 if (present(zspc2)) then
   icrc = 0
+  write(nout,*)"Denis - zspc2 begin"
   do jfld = 1, size (zspc2, 1)
-    call gath_spec(gfld(:,:),1,(/1/),ivsetsc(1:1), 1,zspc2(jfld:jfld,:))
+    
+    call gath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
     if (myproc == 1) then
        !call crc64 (zspc2 (jfld, :), int (size (zspc2 (jfld, :)) * kind (zspc2), 8), icrc)
       call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
