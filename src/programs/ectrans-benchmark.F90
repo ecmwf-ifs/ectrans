@@ -138,7 +138,7 @@ integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
 integer(kind=jpim) :: nopt_mem_tr = 0
 
-character*64 :: clfile
+character(len=256) :: checksums_filename
 
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
@@ -202,14 +202,14 @@ integer(kind=jpim) :: iend = 0
 
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
-logical :: ldump_crcs = .false.
+logical :: ldump_checksums = .false.
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
 
-character(len=16) :: cgrid = ''
-
-integer(kind=jpim) :: ierr
+character(len=16)   :: cgrid = ''
+character(len=128)  :: cchecksums_path = ''
+integer(kind=jpim)  :: ierr
 
 real(kind=jprb), allocatable :: global_field(:,:)
 
@@ -236,8 +236,8 @@ endif
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values,  ldump_crcs, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  & lpinning)
+  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values,  ldump_checksums, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
+  & lpinning, cchecksums_path)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -636,7 +636,7 @@ do jstep = 1, iters+iters_warmup
   ztstep1(jstep) = timef()
   call gstats(4,0)
 
-  if (ldump_crcs) then
+  if (ldump_checksums) then
     zgmv(:,:,:,:) = 0
     zgmvs(:,:,:) = 0
   endif
@@ -668,13 +668,13 @@ do jstep = 1, iters+iters_warmup
   endif
   call gstats(4,1)
 
-if (ldump_crcs) then  
+if (ldump_checksums) then  
     ! Remove trash at end of last block    
     iend = ngptot - nproma * (ngpblks - 1)      
     zgmvs (iend+1:, :, ngpblks) = 0
-    write (clfile,'(A)') 'inv_trans.txt'
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'inv_trans.txt'
     
-    call dump_crc(clfile, iter=jstep,zgmv=zgmv, zgmvs=zgmvs)
+    call dump_crc(checksums_filename, iter=jstep,zgmv=zgmv, zgmvs=zgmvs)
 endif
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
@@ -726,9 +726,9 @@ endif
   call gstats(5,1)
 
 
-if (ldump_crcs) then  
-  write (clfile,'(A)') 'dir_trans.txt'
-  call dump_crc(clfile, iter=jstep,sp3d=sp3d,zspc2=zspsc2)
+if (ldump_checksums) then  
+  write (checksums_filename,'(A)') trim(cchecksums_path)//'dir_trans.txt'
+  call dump_crc(checksums_filename, iter=jstep,sp3d=sp3d,zspc2=zspsc2)
 endif
 
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
@@ -1170,7 +1170,7 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
-  write(nout, "(a)") "    --dump-crcs          Output CRC64 checksums of fields in text file"
+  write(nout, "(a)") "    --dump-checksums    Output CRC64 checksums of fields in text file"
   write(nout, "(a)") ""
 
 end subroutine print_help
@@ -1193,15 +1193,15 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, ldump_crcs, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning)
+  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, &
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning, cchecksums_path)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
 #endif
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
-  character(len=16), intent(inout) :: cgrid ! Spectral truncation
+  character(len=16), intent(inout) :: cgrid ! Grid
   integer, intent(inout) :: iters           ! Number of iterations for transform test
   integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
   integer, intent(inout) :: nfld            ! Number of scalar fields
@@ -1214,7 +1214,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
-  logical, intent(inout) :: ldump_crcs      ! Dump CRC checksums
+  logical, intent(inout) :: ldump_checksums ! Dump CRC checksums
   logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
   logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
                                             ! end
@@ -1224,6 +1224,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
                                             ! tolerance for correctness checking
   logical, intent(inout) :: lpinning        ! Use memory-pinning (a.k.a. page-locked memory) to allocate fields for GPU version
 
+  character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg = 1      ! Argument index
 
@@ -1271,7 +1272,9 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--dump-values'); ldump_values = .true.
-      case('--dump-crcs'); ldump_crcs = .true.
+      case('--dump-checksums')
+        ldump_checksums = .true.
+        cchecksums_path = get_str_value('--dump-checksums', iarg)
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
       case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
