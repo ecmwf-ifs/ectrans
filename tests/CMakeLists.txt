@@ -263,7 +263,7 @@ foreach( benchmark ${benchmarks} )
       list( APPEND nthreads 4 8 )
     endif()
   endif()
-
+  
   # Add test for each parameter combination
   foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
@@ -386,37 +386,37 @@ if( HAVE_ETRANS )
         foreach( omp ${nthreads} )
           set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )          
           ecbuild_add_test( TARGET ${base_title}_nfld0
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0 --dump-checksums ${base_title}_nfld0
               MPI ${mpi}
               OMP ${omp}
           )
           ecbuild_add_test( TARGET ${base_title}_nfld10
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --dump-checksums ${base_title}_nfld10
               MPI ${mpi}
               OMP ${omp}
           )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --dump-checksums ${base_title}_nfld20
               MPI ${mpi}
               OMP ${omp}
           )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders --dump-checksums ${base_title}_nfld10_nlev20_scders
               MPI ${mpi}
               OMP ${omp}
           )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --dump-checksums ${base_title}_nfld10_nlev20_vordiv
               MPI ${mpi}
               OMP ${omp}
           )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders
               MPI ${mpi}
               OMP ${omp}
           )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_nfld10_nlev20_nproma16
               MPI ${mpi}
               OMP ${omp}
           )
