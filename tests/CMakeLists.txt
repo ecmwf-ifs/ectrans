@@ -460,6 +460,11 @@ if( HAVE_TRANSI )
     target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
   endif()
 
+  configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
+  ecbuild_add_test( TARGET compare_checksums
+     COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py" ARGS "."
+   )
+
   ecbuild_add_test( TARGET ectrans_test_transi_program
     SOURCES   transi/transi_test_program.c
     LIBS      ectrans_test

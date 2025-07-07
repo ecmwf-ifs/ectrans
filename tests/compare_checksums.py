@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -68,4 +68,9 @@ if __name__ == "__main__":
         print("Usage: python compare_checksums.py <folder_path>")
     else:
         folder = sys.argv[1]
-        result = compare_checksums(folder)
+        if compare_checksums(folder):
+            exit(0)
+        else:
+            exit(1)
+        
+        
