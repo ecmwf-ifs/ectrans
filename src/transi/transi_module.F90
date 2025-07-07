@@ -181,7 +181,7 @@ type, bind(C) :: Trans_t
 
   ! MULTI-TRANSFORMS MANAGEMENT
   integer(c_int) :: handle       ! --  Resolution tag for which info is required ,default is the
-                                 !     first defined resulution (input)
+                                 !     first defined resolution (input)
 
   ! SPECTRAL SPACE
   integer(c_int) :: nspec        ! --  Number of complex spectral coefficients on this PE

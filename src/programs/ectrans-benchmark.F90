@@ -1176,7 +1176,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
 #endif
 
   integer, intent(inout) :: nsmax           ! Spectral truncation
-  character(len=16), intent(inout) :: cgrid ! Spectral truncation
+  character(len=16), intent(inout) :: cgrid ! Grid
   integer, intent(inout) :: iters           ! Number of iterations for transform test
   integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
   integer, intent(inout) :: nfld            ! Number of scalar fields
