@@ -3,17 +3,11 @@
 import sys
 import os
 import filecmp
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
+class colors:
+    SUCCESS = '\033[94m'
+    FAILURE = '\033[91m'
     ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    
+        
 def compare_checksums(folder_path):
     if not os.path.isdir(folder_path):
         print(f"Error: '{folder_path}' is not a valid directory.")
@@ -41,22 +35,22 @@ def compare_checksums(folder_path):
                             total_count = total_count + 1
                             found = True
                             if (filecmp.cmp(file_path, other_file_path)):
-                                print(f"    {other_file_name} ...{bcolors.OKBLUE}Passed{bcolors.ENDC}")
+                                print(f"    {other_file_name} ...{colors.SUCCESS}Passed{colors.ENDC}")
                                 success_count = success_count +1
                             else:
-                                print(f"    {other_file_name} ...***{bcolors.FAIL}Failed{bcolors.ENDC}")
+                                print(f"    {other_file_name} ...***{colors.FAILURE}Failed{colors.ENDC}")
                                 error_count = error_count + 1
                                 failed_list.append(f"{file_path} {other_file_path}")
                 if (not found):
                     print(f"    No comparison found")
     percentage = int(100*(success_count/total_count))
     if (error_count> 0):
-        print(f"{percentage}% comparison passed, {bcolors.FAIL}{error_count} comparison failed out of {total_count}{bcolors.ENDC}")
+        print(f"{percentage}% comparison passed, {colors.FAILURE}{error_count} comparison failed out of {total_count}{colors.ENDC}")
     
         print("The following comparisons FAILED:")
         
         for failed in failed_list:
-            print(f"    {bcolors.FAIL}{failed}{bcolors.ENDC}")
+            print(f"    {colors.FAILURE}{failed}{colors.ENDC}")
     else:
         print(f"{percentage}% checks passed")
 
