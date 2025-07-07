@@ -25,29 +25,30 @@ def compare_checksums(folder_path):
     error_count = 0
     total_count = 0
     failed_list = []
-    for file_name in os.listdir(folder_path):        
-        file_path = os.path.join(folder_path, file_name)
-        if os.path.isfile(file_path) and "benchmark" in file_name and "mpi0_omp1" in file_name:
-            print(f"{file_name}")
-            found = False
-            for mpi in [0,1,2]:
-                for omp in [1,4,8]:                    
-                    other_file_name = file_name.replace("mpi0_omp1",f"mpi{mpi}_omp{omp}")
-                    if other_file_name == file_name:
-                        continue
-                    other_file_path = os.path.join(folder_path, other_file_name)
-                    if os.path.isfile(other_file_path):
-                        total_count = total_count + 1
-                        found = True
-                        if (filecmp.cmp(file_path, other_file_path)):
-                            print(f"    {other_file_name} ...{bcolors.OKBLUE}Passed{bcolors.ENDC}")
-                            success_count = success_count +1
-                        else:
-                            print(f"    {other_file_name} ...***{bcolors.FAIL}Failed{bcolors.ENDC}")
-                            error_count = error_count + 1
-                            failed_list.append(f"{file_path} {other_file_path}")
-            if (not found):
-                print(f"    No comparison found")
+    for file_name in os.listdir(folder_path):
+        if (".checksums" in file_name and "benchmark" in file_name  and "mpi0_omp1" in file_name):
+            file_path = os.path.join(folder_path, file_name)
+            if os.path.isfile(file_path):
+                print(f"{file_name}")
+                found = False
+                for mpi in [0,1,2]:
+                    for omp in [1,4,8]:                    
+                        other_file_name = file_name.replace("mpi0_omp1",f"mpi{mpi}_omp{omp}")
+                        if other_file_name == file_name:
+                            continue
+                        other_file_path = os.path.join(folder_path, other_file_name)
+                        if os.path.isfile(other_file_path):
+                            total_count = total_count + 1
+                            found = True
+                            if (filecmp.cmp(file_path, other_file_path)):
+                                print(f"    {other_file_name} ...{bcolors.OKBLUE}Passed{bcolors.ENDC}")
+                                success_count = success_count +1
+                            else:
+                                print(f"    {other_file_name} ...***{bcolors.FAIL}Failed{bcolors.ENDC}")
+                                error_count = error_count + 1
+                                failed_list.append(f"{file_path} {other_file_path}")
+                if (not found):
+                    print(f"    No comparison found")
     percentage = int(100*(success_count/total_count))
     if (error_count> 0):
         print(f"{percentage}% comparison passed, {bcolors.FAIL}{error_count} comparison failed out of {total_count}{bcolors.ENDC}")
