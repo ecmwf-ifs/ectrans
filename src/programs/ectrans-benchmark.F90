@@ -237,8 +237,9 @@ endif
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
-  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values,  ldump_checksums, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  & lpinning, cchecksums_path)
+                              & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values,  ldump_checksums, &
+                              & lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
+                              & lpinning, cchecksums_path)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -670,7 +671,10 @@ if (ldump_checksums) then
     iend = ngptot - nproma * (ngpblks - 1)      
     zgmvs (iend+1:, :, ngpblks) = 0
     write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'    
-    call dump_checksums(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,zgmv=zgmv, zgmvs=zgmvs,noutdump=noutdump)
+    call dump_checksums(filename = checksums_filename, noutdump=noutdump,                 &
+                      & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
+                      & ivset = ivset, ivsetsc = ivsetsc,                                 &
+                      & nspec2g=nspec2g, zgmv=zgmv, zgmvs=zgmvs)
 endif
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
 
@@ -724,7 +728,10 @@ endif
 
 if (ldump_checksums) then  
   write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-  call dump_checksums(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,sp3d=sp3d,zspc2=zspsc2,noutdump=noutdump)
+  call dump_checksums(filename = checksums_filename, noutdump = noutdump,               &
+                    & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
+                    & ivset = ivset, ivsetsc = ivsetsc,                                 &
+                    & nspec2g = nspec2g, sp3d = sp3d, zspc2 = zspsc2)
 endif
 
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
@@ -1437,21 +1444,24 @@ end subroutine dump_gridpoint_field
 
 !===================================================================================================
 
-subroutine dump_checksums(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, nspec2g, zgmv, zgmvs,sp3d,zspc2,noutdump)
-  integer(kind = jpim):: jstep             !time step
-  integer(kind=jpim), intent(in) :: myproc ! mpi rank
-  integer(kind=jpim), intent(in) :: nproma ! size of nproma  
-  integer(kind=jpim), intent(in) :: ivset(:)
-  integer(kind=jpim), intent(in) :: ivsetsc(1)
-
-  character(len=*), intent(in)   :: filename
+subroutine dump_checksums(filename, noutdump,                      &
+                        & jstep, myproc, nproma, ngptotg, nspec2g, &
+                        & ivset, ivsetsc,                          &
+                        & zgmv, zgmvs, sp3d, zspc2)
+  character(len=*),   intent(in) :: filename
+  integer(kind=jpim), intent(in) :: noutdump ! tnit number for output file
+  integer(kind=jpim), intent(in) :: jstep               !time step
+  integer(kind=jpim), intent(in) :: myproc   ! mpi rank
+  integer(kind=jpim), intent(in) :: nproma   ! size of nproma  
   integer(kind=jpim), intent(in) :: ngptotg
   integer(kind=jpim), intent(in) :: nspec2g
+  integer(kind=jpim), intent(in) :: ivset(:)
+  integer(kind=jpim), intent(in) :: ivsetsc(1)
   real(kind=jprb), optional :: zgmv   (:,:,:,:) 
   real(kind=jprb), optional :: zgmvs   (:,:,:) 
   real(kind=jprb), optional :: sp3d  (:,:,:) 
   real(kind=jprb), optional :: zspc2   (:,:)   
-  integer(kind=jpim), intent(in) :: noutdump ! tnit number for output file
+  
   integer*8 :: icrc
   integer(kind = jpim):: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)

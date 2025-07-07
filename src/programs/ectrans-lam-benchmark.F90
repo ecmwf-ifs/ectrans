@@ -223,7 +223,8 @@ luse_mpi = detect_mpirun()
 
 ! Setup
 call get_command_line_arguments(nlon, nlat, nsmax, nmsmax, iters, nfld, nlev, lvordiv, lscders, luvders, &
-  & nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path)
+                              & nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, lmeminfo, &
+                              & nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path)
 ! derived defaults
 if ( nsmax == 0 ) nsmax = nlat/2-1
 if ( nmsmax == 0 ) nmsmax = nlon/2-1
@@ -623,7 +624,10 @@ if (ldump_checksums) then
   iend = ngptot - nproma * (ngpblks - 1)      
   zgp2 (iend+1:, :, ngpblks) = 0
   write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'    
-  call dump_checksums(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,zgpuv=zgpuv,zgp3a=zgpuv, zgp2=zgp2,noutdump=noutdump)
+  call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
+                    & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
+                    & ivset = ivset, ivsetsc = ivsetsc,                                   &  
+                    & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
 endif
 
   ztstep1(jstep) = (omp_get_wtime() - ztstep1(jstep))
@@ -695,7 +699,10 @@ endif
 
 if (ldump_checksums) then  
   write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-  call dump_checksums(jstep,myproc,nproma,ivset,ivsetsc,checksums_filename,ngptotg=ngptotg,nspec2g=nspec2g,sp3d=sp3d,zspc2=zspsc2,noutdump=noutdump)
+  call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
+                    & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
+                    & ivset = ivset, ivsetsc = ivsetsc,                                   &                   
+                    & nspec2g = nspec2g, sp3d = sp3d, zspc2 = zspsc2)
 endif
   !=================================================================================================
   ! Calculate timings
@@ -1451,22 +1458,27 @@ end subroutine dump_spectral_field
 
 !===================================================================================================
 
-subroutine dump_checksums(jstep, myproc, nproma, ivset, ivsetsc, filename, ngptotg, nspec2g, zgpuv, zgp3a,zgp2,sp3d,zspc2,noutdump)
-  integer(kind = jpim):: jstep             !time step
-  integer(kind=jpim), intent(in) :: myproc ! mpi rank
-  integer(kind=jpim), intent(in) :: nproma ! size of nproma  
-  integer(kind=jpim), intent(in) :: ivset(:)
-  integer(kind=jpim), intent(in) :: ivsetsc(1)
+subroutine dump_checksums(filename, noutdump,                      &
+                        & jstep, myproc, nproma, ngptotg, nspec2g, &
+                        & ivset, ivsetsc,                          &                    
+                        & zgpuv, zgp3a, zgp2, sp3d, zspc2)
 
-  character(len=*), intent(in)   :: filename
+  character(len=*),   intent(in)   :: filename ! filename
+  integer(kind=jpim), intent(in) :: noutdump ! tnit number for output file
+  integer(kind=jpim), intent(in) :: jstep    ! time step
+  integer(kind=jpim), intent(in) :: myproc   ! mpi rank
+  integer(kind=jpim), intent(in) :: nproma   ! size of nproma  
   integer(kind=jpim), intent(in) :: ngptotg
   integer(kind=jpim), intent(in) :: nspec2g
-  real(kind=jprb), optional :: zgpuv   (:,:,:,:) 
-  real(kind=jprb), optional :: zgp3a   (:,:,:,:) 
-  real(kind=jprb), optional :: zgp2   (:,:,:) 
+  integer(kind=jpim), intent(in) :: ivset  (:)
+  integer(kind=jpim), intent(in) :: ivsetsc(1)
+
+  real(kind=jprb), optional :: zgpuv (:,:,:,:) 
+  real(kind=jprb), optional :: zgp3a (:,:,:,:) 
+  real(kind=jprb), optional :: zgp2  (:,:,:) 
   real(kind=jprb), optional :: sp3d  (:,:,:) 
-  real(kind=jprb), optional :: zspc2   (:,:)   
-  integer(kind=jpim), intent(in) :: noutdump ! tnit number for output file
+  real(kind=jprb), optional :: zspc2 (:,:)   
+  
   integer*8 :: icrc
   integer(kind = jpim):: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)
