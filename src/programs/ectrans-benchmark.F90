@@ -636,11 +636,7 @@ do jstep = 1, iters+iters_warmup
 
   ztstep1(jstep) = timef()
   call gstats(4,0)
-
-  if (ldump_checksums) then
-    zgmv(:,:,:,:) = 0
-    zgmvs(:,:,:) = 0
-  endif
+  
   if (lvordiv) then
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure

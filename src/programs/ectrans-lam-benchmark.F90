@@ -582,11 +582,7 @@ do jstep = 1, iters
 
   ztstep1(jstep) = omp_get_wtime()
   if( lstats ) call gstats(4,0)
-  if (ldump_checksums) then
-    zgpuv(:,:,:,:) = 0
-    zgp3a(:,:,:,:) = 0
-    zgp2(:,:,:) = 0
-  endif
+  
   if (lvordiv) then
 
     call einv_trans(kresol=1, kproma=nproma, &
