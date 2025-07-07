@@ -28,7 +28,7 @@ SUBROUTINE EGATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 !     KPROMA      - blocking factor for gridpoint input
 !     KTO(:)      - Processor responsible for gathering each field
 !     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
+!                   first defined resolution (input)
 !     PGP(:,:,:)  - Local spectral array
 
 !     Method.

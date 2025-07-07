@@ -23,7 +23,7 @@ SUBROUTINE TRANS_PNM(KRESOL,KM,PRPNM,LDTRANSPOSE,LDCHEAP)
 !     Explicit arguments : All arguments are optional.
 !     --------------------
 !     KRESOL   - resolution tag for which info is required ,default is the
-!                first defined resulution (input)
+!                first defined resolution (input)
 !     KM       - wave number
 !     PRPNM    - Legendre polynomials
 !     LDTRANSPOSE - Legendre polynomials array is transposed
