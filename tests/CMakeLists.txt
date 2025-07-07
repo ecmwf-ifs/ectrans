@@ -273,7 +273,7 @@ foreach( benchmark ${benchmarks} )
 
       # Base arguments -> 2 iterations, memory consumption/pinning information, spectral norms, and
       # verbose output
-      set( base_args "--niter 2 --meminfo --norms -v" )
+      set( base_args --niter 2 --meminfo --norms -v )
 
       set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}")
 
@@ -282,7 +282,7 @@ foreach( benchmark ${benchmarks} )
       if( NOT "${benchmark}" MATCHES "-gpu-" )
         ecbuild_add_test( TARGET ${base_title}_nfld0
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${baseargs}
+            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -292,7 +292,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields
       ecbuild_add_test( TARGET ${base_title}_nfld10
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 ${baseargs}
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 ${base_args}
           MPI ${mpi}
           OMP ${omp}
       )
@@ -301,7 +301,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields and 20 levels
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${baseargs}
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${base_args}
           MPI ${mpi}
           OMP ${omp}
       )
@@ -310,7 +310,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${baseargs}
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${base_args}
           MPI ${mpi}
           OMP ${omp}
       )
@@ -319,7 +319,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and wind transforms
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  ${baseargs}
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  ${base_args}
           MPI ${mpi}
           OMP ${omp}
       )
@@ -328,7 +328,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, wind transforms, and wind derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 ${baseargs}
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 ${base_args}
           MPI ${mpi}
           OMP ${omp}
       )
@@ -337,7 +337,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${baseargs}
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${base_args}
           MPI ${mpi}
           OMP ${omp}
       )
@@ -347,7 +347,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 4000 ${baseargs}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 4000 ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -380,7 +380,7 @@ if( HAVE_ETRANS )
 
       # Base arguments -> nlat x nlon, 2 iterations, memory consumption/pinning information,
       # spectral norms, and verbose output
-      set( base_args "--nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v" )
+      set( base_args --nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
