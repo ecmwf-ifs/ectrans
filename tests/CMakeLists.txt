@@ -301,7 +301,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields and 20 levels
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${base_args} --dump-checksums ${base_title}_nfld20
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20
           MPI ${mpi}
           OMP ${omp}
       )
@@ -310,7 +310,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_scders
           MPI ${mpi}
           OMP ${omp}
       )
@@ -319,7 +319,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and wind transforms
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_scders
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_vordiv
           MPI ${mpi}
           OMP ${omp}
       )
@@ -328,7 +328,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, wind transforms, and wind derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_vordiv
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders
           MPI ${mpi}
           OMP ${omp}
       )
@@ -337,7 +337,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${base_args} --dump-checksums ${base_title}_nfld10_nlev20_nproma16
           MPI ${mpi}
           OMP ${omp}
       )
@@ -347,7 +347,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 4000 ${base_args}  --dump-checksums ${base_title}_nfld10_nlev20_nproma16
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 4000 ${base_args}  --dump-checksums ${base_title}_nfld10_nlev20_flt
             MPI ${mpi}
             OMP ${omp}
         )
