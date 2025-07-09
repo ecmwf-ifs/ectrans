@@ -274,10 +274,10 @@ CONTAINS
         & 'N', 'T', &
         & KF_LEG, G_NDGLU(0), (R_NSMAX+2)/2, &
         & 1.0_JPRD, &
-        & ZINP0, IIN0_STRIDES0, 0, &
-        & ZAA0, SIZE(ZAA0,1), 0, &
+        & C_LOC(ZINP0), IIN0_STRIDES0, 0, &
+        & C_LOC(ZAA0), SIZE(ZAA0,1), 0, &
         & 0.0_JPRD, &
-        & ZOUTA0, IOUT0_STRIDES0, 0, &
+        & C_LOC(ZOUTA0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
       !$ACC END HOST_DATA
@@ -310,10 +310,10 @@ CONTAINS
         & 'N', 'T', &
         & 2*KF_LEG, NS(:), KS(:), &
         & 1.0_JPRBT, &
-        & ZINP, IIN_STRIDES0, AOFFSETS, &
-        & ZAA, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
+        & C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
+        & C_LOC(ZAA), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
         & 0.0_JPRBT, &
-        & ZOUTA, IOUT_STRIDES0, COFFSETS, &
+        & C_LOC(ZOUTA), IOUT_STRIDES0, COFFSETS, &
         & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
       !$ACC END HOST_DATA
@@ -415,10 +415,10 @@ CONTAINS
         & 'N', 'T', &
         & KF_LEG, G_NDGLU(0), (R_NSMAX+3)/2, &
         & 1.0_JPRD, &
-        & ZINP0, IIN0_STRIDES0, 0, &
-        & ZAS0, SIZE(ZAS0,1), 0, &
+        & C_LOC(ZINP0), IIN0_STRIDES0, 0, &
+        & C_LOC(ZAS0), SIZE(ZAS0,1), 0, &
         & 0.0_JPRD, &
-        & ZOUTS0, IOUT0_STRIDES0, 0, &
+        & C_LOC(ZOUTS0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
       !$ACC END HOST_DATA
@@ -451,10 +451,10 @@ CONTAINS
       & 'N', 'T', &
       & 2*KF_LEG, NS(:), KS(:), &
       & 1.0_JPRBT, &
-      & ZINP, IIN_STRIDES0, AOFFSETS, &
-      & ZAS, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
+      & C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
+      & C_LOC(ZAS), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
       & 0.0_JPRBT, &
-      & ZOUTS, IOUT_STRIDES0, COFFSETS, &
+      & C_LOC(ZOUTS), IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
     !$ACC END HOST_DATA

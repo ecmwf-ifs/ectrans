@@ -209,10 +209,10 @@ CONTAINS
         & 'N', 'N', &
         & KF_FS, (R_NSMAX+2)/2, G_NDGLU(0), &
         & 1.0_JPRD, &
-        & ZINPA0, IIN0_STRIDES0, 0, &
-        & ZAA0, SIZE(ZAA0,1), 0, &
+        & C_LOC(ZINPA0), IIN0_STRIDES0, 0, &
+        & C_LOC(ZAA0), SIZE(ZAA0,1), 0, &
         & 0.0_JPRD, &
-        & ZOUT0, IOUT0_STRIDES0, 0, &
+        & C_LOC(ZOUT0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef OMPGPU
     !$OMP END TARGET DATA
@@ -247,10 +247,10 @@ CONTAINS
       & 'N', 'N', &
       & 2*KF_FS, NS(:), KS(:), &
       & 1.0_JPRBT, &
-      & ZINPA, IIN_STRIDES0, AOFFSETS, &
-      & ZAA, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
+      & C_LOC(ZINPA), IIN_STRIDES0, AOFFSETS, &
+      & C_LOC(ZAA), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
       & 0.0_JPRBT, &
-      & ZOUT, IOUT_STRIDES0, COFFSETS, &
+      & C_LOC(ZOUT), IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef OMPGPU
     !$OMP END TARGET DATA
@@ -327,10 +327,10 @@ CONTAINS
         & 'N', 'N', &
         & KF_FS, (R_NSMAX+3)/2, G_NDGLU(0), &
         & 1.0_JPRD, &
-        & ZINPS0, IIN0_STRIDES0, 0, &
-        & ZAS0, SIZE(ZAS0,1), 0, &
+        & C_LOC(ZINPS0), IIN0_STRIDES0, 0, &
+        & C_LOC(ZAS0), SIZE(ZAS0,1), 0, &
         & 0.0_JPRD, &
-        & ZOUT0, IOUT0_STRIDES0, 0, &
+        & C_LOC(ZOUT0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef OMPGPU
     !$OMP END TARGET DATA
@@ -366,10 +366,10 @@ CONTAINS
       & 'N', 'N', &
       & 2*KF_FS, NS(:), KS(:), &
       & 1.0_JPRBT, &
-      & ZINPS, IIN_STRIDES0, AOFFSETS, &
-      & ZAS, D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
+      & C_LOC(ZINPS), IIN_STRIDES0, AOFFSETS, &
+      & C_LOC(ZAS), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
       & 0.0_JPRBT, &
-      & ZOUT, IOUT_STRIDES0, COFFSETS, &
+      & C_LOC(ZOUT), IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef OMPGPU
     !$OMP END TARGET DATA
