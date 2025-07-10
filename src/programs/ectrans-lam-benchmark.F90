@@ -343,16 +343,15 @@ call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),  
   &               kmax_resol=nmax_resol, kpromatr=0, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, ldsync_trans=lsync_trans,               &
   &               ldalloperm=.true., ldmpoff=.not.luse_mpi)
-  if( lstats ) call gstats(1, 1)
+if( lstats ) call gstats(1, 1)
 
-  if( lstats ) call gstats(2, 0)
+if( lstats ) call gstats(2, 0)
 zexwn=1._jprb  ! 2*pi/(nx*dx): spectral resolution
 zeywn=1._jprb  ! 2*pi/(ny*dy)
 nloen=nlon
 call esetup_trans(ksmax=nsmax, kmsmax=nmsmax, kdgl=nlat, kdgux=nlat, kloen=nloen, ldsplit=.true.,          &
   &                 ldusefftw=lfftw,pexwn=zexwn,peywn=zeywn)
-
-  if( lstats ) call gstats(2, 1)
+if( lstats ) call gstats(2, 1)
 
 call etrans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
 
@@ -593,33 +592,33 @@ do jstep = 1, iters
   if (lvordiv) then
 
     call einv_trans(kresol=1, kproma=nproma, &
-       & pspsc2=zspsc2,                     & ! spectral surface pressure
-       & pspvor=zspvor,                     & ! spectral vorticity
-       & pspdiv=zspdiv,                     & ! spectral divergence
-       & pspsc3a=zspsc3a,                   & ! spectral scalars
-       & ldscders=lscders,                  &
-       & ldvorgp=.false.,                   & ! no gridpoint vorticity
-       & lddivgp=.false.,                   & ! no gridpoint divergence
-       & lduvder=luvders,                   &
-       & kvsetuv=ivset,                     &
-       & kvsetsc2=ivsetsc,                  &
-       & kvsetsc3a=ivset,                   &
-       & pgp2=zgp2,                         &
-       & pgpuv=zgpuv,                       &
-       & pgp3a=zgp3a,                       &
-     & pmeanu=zmeanu,                     &
-     & pmeanv=zmeanv)
+        & pspsc2=zspsc2,                     & ! spectral surface pressure
+        & pspvor=zspvor,                     & ! spectral vorticity
+        & pspdiv=zspdiv,                     & ! spectral divergence
+        & pspsc3a=zspsc3a,                   & ! spectral scalars
+        & ldscders=lscders,                  &
+        & ldvorgp=.false.,                   & ! no gridpoint vorticity
+        & lddivgp=.false.,                   & ! no gridpoint divergence
+        & lduvder=luvders,                   &
+        & kvsetuv=ivset,                     &
+        & kvsetsc2=ivsetsc,                  &
+        & kvsetsc3a=ivset,                   &
+        & pgp2=zgp2,                         &
+        & pgpuv=zgpuv,                       &
+        & pgp3a=zgp3a,                       &
+        & pmeanu=zmeanu,                     &
+        & pmeanv=zmeanv)
 
   else
 
     call einv_trans(kresol=1, kproma=nproma, &
-       & pspsc2=zspsc2,                     & ! spectral surface pressure
-       & pspsc3a=zspsc3a,                   & ! spectral scalars
-       & ldscders=lscders,                  & ! scalar derivatives
-       & kvsetsc2=ivsetsc,                  &
-       & kvsetsc3a=ivset,                   &
-       & pgp2=zgp2,                         &
-       & pgp3a=zgp3a)
+        & pspsc2=zspsc2,                     & ! spectral surface pressure
+        & pspsc3a=zspsc3a,                   & ! spectral scalars
+        & ldscders=lscders,                  & ! scalar derivatives
+        & kvsetsc2=ivsetsc,                  &
+        & kvsetsc3a=ivset,                   &
+        & pgp2=zgp2,                         &
+        & pgp3a=zgp3a)
 
   endif
   
@@ -653,29 +652,30 @@ do jstep = 1, iters
 
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
-      & pgp2=zgp2(:,1:1,:),                &
-      & pgpuv=zgpuv(:,:,1:2,:),             &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
-      & pspvor=zspvor,                      &
-      & pspdiv=zspdiv,                      &
-      & pspsc2=zspsc2,                      &
-      & pspsc3a=zspsc3a,                    &
-      & kvsetuv=ivset,                      &
-      & kvsetsc2=ivsetsc,                   &
-      & kvsetsc3a=ivset,                    &
-    & pmeanu=zmeanu,                      &
-    & pmeanv=zmeanv)
+       & pgp2=zgp2(:,1:1,:),                 &
+       & pgpuv=zgpuv(:,:,1:2,:),             &
+       & pgp3a=zgp3a(:,:,1:nfld,:),          &
+       & pspvor=zspvor,                      &
+       & pspdiv=zspdiv,                      &
+       & pspsc2=zspsc2,                      &
+       & pspsc3a=zspsc3a,                    &
+       & kvsetuv=ivset,                      &
+       & kvsetsc2=ivsetsc,                   &
+       & kvsetsc3a=ivset,                    &
+       & pmeanu=zmeanu,                      &
+       & pmeanv=zmeanv)
   else
-  
     call edir_trans(kresol=1, kproma=nproma, &
-      & pgp2=zgp2(:,1:1,:),                &
-      & pgp3a=zgp3a(:,:,1:nfld,:),          &
-      & pspsc2=zspsc2,                      &
-      & pspsc3a=zspsc3a,                    &
-      & kvsetsc2=ivsetsc,                   &
-      & kvsetsc3a=ivset)
+       & pgp2=zgp2(:,1:1,:),                 &
+       & pgp3a=zgp3a(:,:,1:nfld,:),          &
+       & pspsc2=zspsc2,                      &
+       & pspsc3a=zspsc3a,                    &
+       & kvsetsc2=ivsetsc,                   &
+       & kvsetsc3a=ivset)
   endif
+
   if( lstats ) call gstats(5,1)
+  
   ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
 
   !=================================================================================================
@@ -815,14 +815,16 @@ if (lprint_norms .or. ncheck > 0) then
         zerr(3) = abs(real(znormvor(ifld),kind=jprd)/real(znormvor0(ifld),kind=jprd) - 1.0_jprd)
         zmaxerr(3) = max(zmaxerr(3), zerr(3))
         if (verbosity >= 1) then
-          write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') ifld, znormvor0(ifld), zerr(3)
+          write(nout,'("norm zspvor( ",i4,")     = ",f20.15,"        error = ",e10.3)') &
+             & ifld, znormvor0(ifld), zerr(3)
         endif
       enddo
       do ifld = 1, nflevg
         zerr(2) = abs(real(znormdiv(ifld),kind=jprd)/real(znormdiv0(ifld),kind=jprd) - 1.0d0)
         zmaxerr(2) = max(zmaxerr(2),zerr(2))
         if (verbosity >= 1) then
-          write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormdiv0(ifld), zerr(2)
+          write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') &
+             & ifld, znormdiv0(ifld), zerr(2)
         endif
       enddo
     endif
@@ -831,7 +833,8 @@ if (lprint_norms .or. ncheck > 0) then
         zerr(4) = abs(real(znormt(ifld),kind=jprd)/real(znormt0(ifld),kind=jprd) - 1.0d0)
         zmaxerr(4) = max(zmaxerr(4), zerr(4))
         if (verbosity >= 1) then
-          write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') ifld, znormt0(ifld), zerr(4)
+          write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15,"        error = ",e10.3)') &
+             & ifld, znormt0(ifld), zerr(4)
         endif
       enddo
     endif
@@ -839,7 +842,8 @@ if (lprint_norms .or. ncheck > 0) then
       zerr(1) = abs(real(znormsp(ifld),kind=jprd)/real(znormsp0(ifld),kind=jprd) - 1.0d0)
       zmaxerr(1) = max(zmaxerr(1), zerr(1))
       if (verbosity >= 1) then
-        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') ifld, znormsp0(ifld), zerr(1)
+        write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15,"        error = ",e10.3)') &
+           & ifld, znormsp0(ifld), zerr(1)
       endif
     enddo
 
@@ -1055,7 +1059,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
- &                                    iters, nfld, nlev, lvordiv, lscders, luvders, &
+  &                                   iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   nproma, verbosity, ldump_values, lprint_norms, &
   &                                   lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck)
 
