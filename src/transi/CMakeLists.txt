@@ -12,6 +12,13 @@ endif()
 
 configure_file( version.c.in  version.c )
 
+set(transi_PRIVATE_LIBRARIES trans_dp)
+if( HAVE_ETRANS )
+  list( APPEND transi_PRIVATE_LIBRARIES
+    etrans_dp
+  )
+endif()
+
 ecbuild_add_library( TARGET transi_dp
   SOURCES             transi_module.F90
                       transi.h
@@ -21,7 +28,7 @@ ecbuild_add_library( TARGET transi_dp
   HEADER_DESTINATION  include/ectrans
   PUBLIC_INCLUDES     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                       $<INSTALL_INTERFACE:include>
-  PRIVATE_LIBS        trans_dp
+  PRIVATE_LIBS        ${transi_PRIVATE_LIBRARIES}
   PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
                       ECTRANS_HAVE_ETRANS=${ectrans_HAVE_ETRANS}
 )

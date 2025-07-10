@@ -93,7 +93,7 @@ SUBROUTINE SUEMPLAT(KDGL,KPROC,KPROCA,KMYSETA,LDSPLIT,LDEQ_REGIONS,&
 !        R. El Khatib 09-Aug-2013 Allow LEQ_REGIONS
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
+USE EC_PARKIND  ,ONLY : JPIM ,JPRD
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV

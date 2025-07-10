@@ -13,7 +13,7 @@ MODULE TPMALD_DISTR
 
 ! Module for distributed memory environment.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE EC_PARKIND  ,ONLY : JPIM
 
 IMPLICIT NONE
 

@@ -161,14 +161,15 @@ ecbuild_add_option( FEATURE GPU_STATIC
                     DEFAULT ${GPU_STATIC_DEFAULT}
                     DESCRIPTION "Compile GPU library as static library")
 
+# Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
 ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
+                    CONDITION NOT HAVE_GPU OR ( HAVE_ACC AND NOT HAVE_GPU_GRAPHS_FFT)
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
-
-	   
+     
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
-		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
+                    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
 
 
