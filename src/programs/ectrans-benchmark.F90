@@ -1488,7 +1488,7 @@ subroutine dump_checksums(filename, noutdump,                      &
     icrc = 0
     do jfld = 1, size (zgmv, 3)
       do jlev = 1, size (zgmv, 2)
-        call gath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgmv(:,jlev:jlev,jfld, :))
+        call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgmv(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
             call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
             write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgmv", jlev, jfld, icrc
@@ -1500,7 +1500,7 @@ subroutine dump_checksums(filename, noutdump,                      &
   if (present(zgmvs)) then
     icrc = 0
     do jfld = 1, size (zgmvs, 2)
-        call gath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgmvs(:,jfld:jfld,:))
+        call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgmvs(:,jfld:jfld,:))
         if (myproc == 1) then
             call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
             write (noutdump, '(a," (",i0,") = ",z16.16)') "zgmvs", jfld, icrc
@@ -1512,7 +1512,7 @@ subroutine dump_checksums(filename, noutdump,                      &
     icrc = 0
     do jfld = 1, size (sp3d, 3)
       do jlev = 1, size (sp3d, 1)
-        call gath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
+        call gath_spec(PSPECG=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
         if (myproc == 1) then
           call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc
@@ -1524,7 +1524,7 @@ subroutine dump_checksums(filename, noutdump,                      &
   if (present(zspc2)) then
     icrc = 0
     do jfld = 1, size (zspc2, 1)
-      call gath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
+      call gath_spec(PSPECG=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
       if (myproc == 1) then
         call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc
