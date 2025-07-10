@@ -1,12 +1,12 @@
 ! (C) Copyright 2001- ECMWF.
 ! (C) Copyright 2001- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
-! 
+!
 
 program ectrans_lam_benchmark
 
@@ -65,7 +65,7 @@ integer(kind=jpim) :: nlat    = 128   ! Meridional dimension
 integer(kind=jpim) :: nsmax   = 0   ! Spectral meridional truncation
 integer(kind=jpim) :: nmsmax  = 0   ! Spectral zonal truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
-integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields 
+integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
 
 integer(kind=jpim) :: nloen(1)  ! only one value needed for LAM
@@ -193,7 +193,7 @@ integer(kind=jpim) :: jend_uder_EW = 0
 integer(kind=jpim) :: jbegin_vder_EW = 0
 integer(kind=jpim) :: jend_vder_EW = 0
 
-integer(kind=jpim) :: iend = 0 
+integer(kind=jpim) :: iend = 0
 logical :: ldump_values = .false.
 logical :: ldump_checksums = .false.
 logical :: luse_mpi = .true.
@@ -504,7 +504,7 @@ if (lprint_norms .or. ncheck > 0) then
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv0, kvset=ivset(1:nflevg))
   call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt0,   kvset=ivset(1:nflevg))
   call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp0,  kvset=ivsetsc)
-  
+
   if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
       write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor0(ifld)
@@ -583,7 +583,7 @@ do jstep = 1, iters
 
   ztstep1(jstep) = omp_get_wtime()
   if( lstats ) call gstats(4,0)
-  
+
   if (lvordiv) then
 
     call einv_trans(kresol=1, kproma=nproma, &
@@ -616,17 +616,17 @@ do jstep = 1, iters
        & pgp3a=zgp3a)
 
   endif
-  
+
   if( lstats ) call gstats(4,1)
 
-if (ldump_checksums) then  
-  ! Remove trash at end of last block    
-  iend = ngptot - nproma * (ngpblks - 1)      
+if (ldump_checksums) then
+  ! Remove trash at end of last block
+  iend = ngptot - nproma * (ngpblks - 1)
   zgp2 (iend+1:, :, ngpblks) = 0
-  write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'    
+  write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
   call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
                     & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
-                    & ivset = ivset, ivsetsc = ivsetsc,                                   &  
+                    & ivset = ivset, ivsetsc = ivsetsc,                                   &
                     & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
 endif
 
@@ -645,7 +645,7 @@ endif
     endif
     call dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, zgp3a(:,nflevg,1,:), 'T', noutdump)
   endif
-  
+
   !=================================================================================================
   ! Do direct transform
   !=================================================================================================
@@ -653,7 +653,6 @@ endif
   ztstep2(jstep) = omp_get_wtime()
 
   if( lstats ) call gstats(5,0)
-  
 
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
@@ -670,7 +669,7 @@ endif
     & pmeanu=zmeanu,                      &
     & pmeanv=zmeanv)
   else
-  
+
     call edir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgp2(:,1:1,:),                &
       & pgp3a=zgp3a(:,:,1:nfld,:),          &
@@ -697,11 +696,11 @@ endif
 	endif
 
 
-if (ldump_checksums) then  
+if (ldump_checksums) then
   write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
   call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
                     & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
-                    & ivset = ivset, ivsetsc = ivsetsc,                                   &                   
+                    & ivset = ivset, ivsetsc = ivsetsc,                                   &
                     & nspec2g = nspec2g, sp3d = sp3d, zspc2 = zspsc2)
 endif
   !=================================================================================================
@@ -732,7 +731,7 @@ endif
     call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset(1:nflevg))
     call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset(1:nflevg))
-  
+
     if ( myproc == 1 ) then
 
       ! Surface pressure
@@ -783,7 +782,7 @@ if (lprint_norms .or. ncheck > 0) then
   call especnorm(pspec=zspdiv(1:nflevl,:),    pnorm=znormdiv, kvset=ivset)
   call especnorm(pspec=zspsc3a(1:nflevl,:,1), pnorm=znormt,   kvset=ivset)
   call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc)
-  
+
   if ( myproc == 1 ) then
 
 	  zmaxerr(:) = -999.0
@@ -936,7 +935,7 @@ endif
 
 !===================================================================================================
 
-if (lstats) then  
+if (lstats) then
   call gstats(0,1)
   call gstats_print(nout, zaveave, jpmaxstat)
 endif
@@ -1023,7 +1022,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
- &                                    iters, nfld, nlev, lvordiv, lscders, luvders, &
+  &                                   iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, &
   &                                   lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path)
 
@@ -1090,7 +1089,7 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
       case('--dump-checksums')
         ldump_checksums = .true.
         cchecksums_path = get_str_value('--dump-checksums', iarg)
-      
+
       case('--norms'); lprint_norms = .true.
       case('--meminfo'); lmeminfo = .true.
       case('--nprgpns'); nprgpns = get_int_value('--nprgpns', iarg)
@@ -1261,13 +1260,13 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   ! Choose a harmonic to initialize arrays
   integer :: m_num = 1 ! Zonal wavenumber
   integer :: n_num = 0 ! Meridional wavenumber
-  
+
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='harmonic'    
+  character(len=32) :: init_type='harmonic'
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
-  
+
   ! make sure wavenumbers are within truncation
   if ( m_num>nmsmax .or. n_num > nsmax .or. &
      & ( nsmax>0 .and. nmsmax>0 .and. ( (m_num/real(nmsmax))**2+(n_num/real(nsmax))**2 ) > 1.) ) then
@@ -1280,7 +1279,7 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
     m_num=nmsmax/2
     n_num=nsmax/2
   endif
-  
+
   ! Get wavenumbers this rank is responsible for
   call etrans_inq(kspec2=kspec2)
   allocate(my_kn(kspec2),my_km(kspec2))
@@ -1310,13 +1309,13 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
       if ( my_km(ispec)== 0 ) field(ispec+2:ispec+3)=0. ! remove sine component on zero-wavenumber
       if ( my_km(ispec)== nsmax ) field(ispec+2:ispec+3)=0. ! remove sine component on last-wavenumber
     enddo
-    
+
     ! scale according to wavenumber**2
     do ispec=1,nspec2
       field(ispec)=field(ispec)/(0.01+(my_kn(ispec)/real(nsmax))**2+(my_km(ispec)/real(nmsmax))**2)
     enddo
   endif
-  
+
 end subroutine initialize_2d_spectral_field
 
 !===================================================================================================
@@ -1333,7 +1332,7 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
   real(kind=jprb)   , intent(in) :: fld(nproma,1,ngpblks) ! 2D field
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Unit number for output file
-  
+
   integer(kind=jpim) :: kgptotg      ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field
   integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
@@ -1343,15 +1342,15 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
 
 #include "etrans_inq.h"
 #include "egath_grid.h"
-  
+
   call etrans_inq(kgptotg=kgptotg)
 
   if ( myproc == 1 ) allocate(fldg(kgptotg,1))
 
   call egath_grid(pgpg=fldg,kproma=nproma,kfgathg=kfgathg,kto=kto,pgp=fld)
-  
+
   if ( myproc == 1 ) then
- 
+
     ! write to file
     write(filename(1:1),'(a1)') fldchar
     write(filename(3:5),'(i3.3)') jstep
@@ -1364,17 +1363,17 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
     write(noutdump) kgptotg/nlat,nlat ! dimensions
 	write(noutdump) fldg ! data
     close(noutdump)
-    
+
     ! write to screen
     write(frmt(5:8),'(i4.4)') kgptotg/nlat
     write (*,*) fldchar,' at iteration ',jstep,':'
     write (*,frmt) fldg
     call flush(6)
-	
+
     deallocate(fldg)
-  
+
   endif
-  
+
 
 end subroutine dump_gridpoint_field
 
@@ -1393,7 +1392,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   integer(kind=jpim), intent(in) :: kvset(1)   ! B-set on which the field resides
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Unit number for output file
-  
+
   integer(kind=jpim) :: nspec2g              ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field (nspec2g)
   integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
@@ -1403,10 +1402,10 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   integer(kind=jpim) :: knse(0:nmsmax),kmse(0:nsmax) ! elliptic truncation
   real(kind=jprb)    :: fld2g(0:2*nmsmax+1,0:2*nsmax+1) ! 2D representation of spectral field
   integer(kind=jpim) :: jj, jms, jns
-  
+
 #include "etrans_inq.h"
 #include "egath_spec.h"
-  
+
   if ( myproc == 1 ) then
     call etrans_inq(kspec2g=nspec2g)
     allocate(fldg(1,nspec2g))
@@ -1414,7 +1413,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   endif
 
   call egath_spec(PSPECG=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,PSPEC=fld)
-  
+
   if ( myproc == 1 ) then
 
 	fld2g=0.
@@ -1428,7 +1427,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
 		jj=jj+4
 	  enddo
 	enddo
-	
+
     ! write to binary file
     write(filename(1:1),'(a1)') fldchar
     write(filename(3:5),'(i3.3)') jstep
@@ -1441,49 +1440,49 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
 	write(noutdump) 2*nmsmax+2,2*nsmax+2  ! dimensions
     write(noutdump) fld2g             ! data
     close(noutdump)
-    
+
     ! write to screen
     write(frmt(5:8),'(i4.4)') 2*(nmsmax+1)
     write (*,*) fldchar,' at iteration ',jstep,':'
     write (*,frmt) fld2g
     call flush(6)
-	
+
     deallocate(fldg)
-  
+
   endif
-  
+
 
 end subroutine dump_spectral_field
 
 
 !===================================================================================================
 
-subroutine dump_checksums(filename, noutdump,                      &
-                        & jstep, myproc, nproma, ngptotg, nspec2g, &
-                        & ivset, ivsetsc,                          &                    
-                        & zgpuv, zgp3a, zgp2, sp3d, zspc2)
+subroutine dump_checksums(filename, noutdump, &
+  & jstep, myproc, nproma, ngptotg, nspec2g,  &
+  & ivset, ivsetsc,                           &
+  & zgpuv, zgp3a, zgp2, sp3d, zspc2)
 
   character(len=*),   intent(in)   :: filename ! filename
-  integer(kind=jpim), intent(in) :: noutdump ! tnit number for output file
-  integer(kind=jpim), intent(in) :: jstep    ! time step
-  integer(kind=jpim), intent(in) :: myproc   ! mpi rank
-  integer(kind=jpim), intent(in) :: nproma   ! size of nproma  
+  integer(kind=jpim), intent(in) :: noutdump   ! unit number for output file
+  integer(kind=jpim), intent(in) :: jstep      ! time step
+  integer(kind=jpim), intent(in) :: myproc     ! mpi rank
+  integer(kind=jpim), intent(in) :: nproma     ! size of nproma
   integer(kind=jpim), intent(in) :: ngptotg
   integer(kind=jpim), intent(in) :: nspec2g
   integer(kind=jpim), intent(in) :: ivset  (:)
   integer(kind=jpim), intent(in) :: ivsetsc(1)
 
-  real(kind=jprb), optional :: zgpuv (:,:,:,:) 
-  real(kind=jprb), optional :: zgp3a (:,:,:,:) 
-  real(kind=jprb), optional :: zgp2  (:,:,:) 
-  real(kind=jprb), optional :: sp3d  (:,:,:) 
-  real(kind=jprb), optional :: zspc2 (:,:)   
-  
+  real(kind=jprb), optional :: zgpuv (:,:,:,:)
+  real(kind=jprb), optional :: zgp3a (:,:,:,:)
+  real(kind=jprb), optional :: zgp2  (:,:,:)
+  real(kind=jprb), optional :: sp3d  (:,:,:)
+  real(kind=jprb), optional :: zspc2 (:,:)
+
   integer*8 :: icrc
-  integer(kind = jpim):: jlev, jfld
+  integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)
-  logical:: exist = .false.
+  logical :: exist = .false.
 
   if (myproc == 1) then
       if (jstep>1)  inquire(file = filename, exist = exist)
@@ -1492,81 +1491,82 @@ subroutine dump_checksums(filename, noutdump,                      &
         else
           open(noutdump, file = filename, action="write")
       endif
-  
+
     write(noutdump,*) "===================="
-    write(noutdump,*) "iteration", jstep  
+    write(noutdump,*) "iteration", jstep
     write(noutdump,*) "===================="
-      
-    if (present(zgpuv) .or. present(zgp3a) .or. present(zgp2))  allocate(gfld(ngptotg,1))    
-    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(1,nspec2g)) 
-    
+
+    if (present(zgpuv) .or. present(zgp3a) .or. present(zgp2))  allocate(gfld(ngptotg,1))
+    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(1,nspec2g))
+
   endif
 
   if (present(zgpuv)) then
     icrc = 0
     do jfld = 1, size (zgpuv, 3)
-      do jlev = 1, size (zgpuv, 2)        
+      do jlev = 1, size (zgpuv, 2)
         call egath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
-        if (myproc == 1) then            
+        if (myproc == 1) then
             call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc 
+            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
         endif
       enddo
     enddo
   endif
-  
+
   if (present(zgp3a)) then
     icrc = 0
     do jfld = 1, size (zgp3a, 3)
-      do jlev = 1, size (zgp3a, 2)        
+      do jlev = 1, size (zgp3a, 2)
         call egath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
-        if (myproc == 1) then            
+        if (myproc == 1) then
             call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc 
+            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
         endif
       enddo
     enddo
   endif
-  
+
   if (present(zgp2)) then
-  icrc = 0
-  do jfld = 1, size (zgp2, 2)    
-      call egath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp2(:,jfld:jfld,:))
-       if (myproc == 1) then
-           call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-           write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc            
-       endif
-  enddo
-  endif
+    icrc = 0
+    do jfld = 1, size (zgp2, 2)
+        call egath_grid(pgpg=gfld(:,:),kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp2(:,jfld:jfld,:))
+        if (myproc == 1) then
+            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+            write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
+        endif
+    enddo
+    endif
   if (present(sp3d)) then
-  icrc = 0
-  do jfld = 1, size (sp3d, 3)
-    do jlev = 1, size (sp3d, 1)      
-      call egath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
+    icrc = 0
+    do jfld = 1, size (sp3d, 3)
+      do jlev = 1, size (sp3d, 1)
+        call egath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
+        if (myproc == 1) then
+          call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc
+        endif
+      enddo
+    enddo
+  endif
+
+  if (present(zspc2)) then
+    icrc = 0
+
+    do jfld = 1, size (zspc2, 1)
+      call egath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
       if (myproc == 1) then
-         call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
-         write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc 
+        call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+        write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc
       endif
     enddo
-  enddo
-endif
-if (present(zspc2)) then
-  icrc = 0
+  endif
 
-  do jfld = 1, size (zspc2, 1)
-    call egath_spec(PSPECG=gspfld(:,:),kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
-    if (myproc == 1) then
-      call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
-       write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc     
-    endif
-  enddo
-endif
-
-if (myproc == 1) then
-  close(noutdump)
-  if (allocated(gfld)) deallocate(gfld)
-  if (allocated(gspfld)) deallocate(gspfld)
-endif
+  if (myproc == 1) then
+    close(noutdump)
+    if (allocated(gfld))   deallocate(gfld)
+    if (allocated(gspfld)) deallocate(gspfld)
+  endif
 end subroutine dump_checksums
 
 !===================================================================================================

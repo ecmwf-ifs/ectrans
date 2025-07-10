@@ -263,7 +263,7 @@ foreach( benchmark ${benchmarks} )
       list( APPEND nthreads 4 8 )
     endif()
   endif()
-  
+
   # Add test for each parameter combination
   foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
