@@ -11,7 +11,7 @@ class colors:
 def compare_checksums(folder_path):
     if not os.path.isdir(folder_path):
         print(f"Error: '{folder_path}' is not a valid directory.")
-        return
+        return False
     
     print(f"Check files in folder {folder_path}:")
     
