@@ -234,6 +234,7 @@ macro(ectrans_set_test_properties target)
   if( "${target}" MATCHES "gpu" )
     set_tests_properties(${target} PROPERTIES LABELS "gpu;Fortran")
   endif()
+  set_tests_properties( ${target} PROPERTIES FIXTURES_SETUP checksum_tests )
 endmacro()
 
 # Determine which benchmarks are available
@@ -252,6 +253,15 @@ if( TARGET ectrans-benchmark-gpu-sp )
 endif()
 
 foreach( benchmark ${benchmarks} )
+
+if( NOT TEST compare_checksums )
+    configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
+    ecbuild_add_test( TARGET compare_checksums
+      COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py" ARGS "."
+    )
+    set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
+  endif()
+
   # Establish which task/thread parameters to test
   set( ntasks 0 )
   set( nthreads 1 )
@@ -385,41 +395,55 @@ if( HAVE_ETRANS )
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
           set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )          
+                    
           ecbuild_add_test( TARGET ${base_title}_nfld0
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0 --dump-checksums ${base_title}_nfld0
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld0 )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --dump-checksums ${base_title}_nfld10
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10 )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --dump-checksums ${base_title}_nfld20
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders --dump-checksums ${base_title}_nfld10_nlev20_scders
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties(  ${base_title}_nfld10_nlev20_scders )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --dump-checksums ${base_title}_nfld10_nlev20_vordiv
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv_uvders )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_nfld10_nlev20_nproma16
               MPI ${mpi}
-              OMP ${omp}
+              OMP ${omp}          
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
         endforeach()
       endforeach()
     endif()
@@ -459,11 +483,6 @@ if( HAVE_TRANSI )
     )
     target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
   endif()
-
-  configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
-  ecbuild_add_test( TARGET compare_checksums
-     COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py" ARGS "."
-   )
 
   ecbuild_add_test( TARGET ectrans_test_transi_program
     SOURCES   transi/transi_test_program.c
