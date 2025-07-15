@@ -114,7 +114,7 @@ def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), OUT),
              (np.float64, (KSLOEN,), OUT),
-             (np.float64, (KSLOEN/2,KSPOLEGL), OUT)],
+             (np.float64, (KSLOEN//2,KSPOLEGL), OUT)],
             None)
 
 @treatReturnCode
