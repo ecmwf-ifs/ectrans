@@ -89,7 +89,7 @@ def ectrans_version():
 def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
     """
     Fetch arrays relevant for performing the Legendre transform.
-    All arrays returned are specified across the full globe, pole to pole.
+    KNMENG and PGW are specified across the full globe, pole to pole. PRPNM is specified across the Northern hemisphere only.
 
     Args:\n
     1) KSIZEJ: number of latitudes in grid-point space
@@ -114,7 +114,7 @@ def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), OUT),
              (np.float64, (KSLOEN,), OUT),
-             (np.float64, (KSLOEN,KSPOLEGL), OUT)],
+             (np.float64, (KSLOEN/2,KSPOLEGL), OUT)],
             None)
 
 @treatReturnCode
