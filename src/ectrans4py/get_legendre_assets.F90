@@ -1,5 +1,5 @@
-SUBROUTINE GET_LT_ARRAYS(KRETURNCODE, KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL, &
-                      &KNMENG, PGW, PRPNM)
+SUBROUTINE GET_LEGENDRE_ASSETS(KRETURNCODE, KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL, &
+  &                            KNMENG, PGW, PRPNM)
 ! ** PURPOSE
 !    Simplified wrapper to TRANS_INQ for obtaining arrays necessary for performing Legendre transform
 !    (Gaussian weights, Legendre polynomials and NMENG (cutoff zonal wavenumber for each latitude))
@@ -67,4 +67,4 @@ IF (.NOT. LLSTOP) THEN
   PRPNM=ZRPNM
 ENDIF
 !
-END SUBROUTINE GET_LT_ARRAYS
+END SUBROUTINE GET_LEGENDRE_ASSETS

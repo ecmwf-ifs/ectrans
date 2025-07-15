@@ -86,7 +86,7 @@ def ectrans_version():
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def get_lt_arrays(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
+def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
     """
     Fetch arrays relevant for performing the Legendre transform.
     All arrays returned are specified across the full globe, pole to pole.
