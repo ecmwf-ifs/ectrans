@@ -106,9 +106,9 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         gpdata[offset:offset+nlon] = gpdata_latlon[i,:nlon]
         offset += nlon
 
-    def test_get_lt_arrays(self):
+    def test_get_legendre_assets(self):
         nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
-        knmeng, weights, polys = ectrans4py.get_lt_arrays(
+        knmeng, weights, polys = ectrans4py.get_legendre_assets(
             self.gpdims['lat_number'],
             self.truncation['max'],
             len(self.gpdims['lon_number_by_lat']),
