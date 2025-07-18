@@ -89,7 +89,7 @@ jobs:
               - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
-
+              - CMAKE_BUILD_PARALLEL_LEVEL=1
 
     runs-on: [self-hosted, linux, hpc]
     env:
