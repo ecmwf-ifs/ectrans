@@ -64,9 +64,10 @@ jobs:
             troika_user_secret: LUMI_CI_SSH_USER
             account_secret: LUMI_CI_PROJECT
             sbatch_options: |
-              #SBATCH --time=00:20:00
+              #SBATCH --time=00:40:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
+              #SBATCH --cpus-per-task=7
               #SBATCH --gpus-per-task=1
               #SBATCH --partition=dev-g
               #SBATCH --account={0}
@@ -88,7 +89,7 @@ jobs:
               - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
-
+              - CMAKE_BUILD_PARALLEL_LEVEL=1
 
     runs-on: [self-hosted, linux, hpc]
     env:
