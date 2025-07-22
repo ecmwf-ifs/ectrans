@@ -70,11 +70,11 @@ foreach( prec dp sp )
 
     set( FFTW_LINK PRIVATE )
     if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
-        ecbuild_warn( "Danger: Both MKL and FFTW are linked in trans_${prec}. "
+        ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_etrans_${prec}. "
                       "No guarantees on link order can be made for the final executable.")
         set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
     endif()
-    ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
+    ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
     target_link_libraries( ectrans_etrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
     target_include_directories( ectrans_etrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
     target_compile_definitions( ectrans_etrans_${prec} PRIVATE WITH_FFTW )
@@ -83,15 +83,15 @@ foreach( prec dp sp )
     #target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
 
     if( HAVE_OMP )
-      ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-      target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
+      target_link_libraries( ectrans_etrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
     endif()
 
     # This interface library is for backward compatibility, and provides the older includes
     ecbuild_add_library( TARGET etrans_${prec} TYPE INTERFACE )
     target_include_directories( etrans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_${prec}> )
     target_include_directories( etrans_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_${prec}> )
-    target_link_libraries( trans_${prec} INTERFACE fiat etrans_${prec} ectrans_etrans_${prec} parkind_${prec})
+    target_link_libraries( etrans_${prec} INTERFACE ectrans_etrans_${prec} )
   endif()
 endforeach()
 
