@@ -67,7 +67,6 @@ jobs:
               #SBATCH --time=00:40:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
-              #SBATCH --cpus-per-task=7
               #SBATCH --gpus-per-task=1
               #SBATCH --partition=standard-g
               #SBATCH --account={0}
