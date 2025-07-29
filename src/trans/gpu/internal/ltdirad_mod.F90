@@ -27,7 +27,7 @@ CONTAINS
   FUNCTION PREPARE_LTDIRAD(ALLOCATOR, KF_FS, KF_UV) RESULT(HLTDIR)
     USE TPM_DISTR,              ONLY: D
     USE TPM_DIM,                ONLY: R
-    USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_SIZEOF
+    USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE LEDIR_MOD,              ONLY: LEDIR_STRIDES
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, RESERVE
 
@@ -82,18 +82,17 @@ CONTAINS
     USE TPM_DIM,                ONLY: R
     USE TPM_DISTR,              ONLY: D
     USE TPM_GEOMETRY,           ONLY: G
-    USE PREPSNM_MOD,            ONLY: PREPSNM
     USE LEDIR_MOD,              ONLY: LEDIR_STRIDES
     USE LEINV_MOD,              ONLY: LEINV
     USE UVTVDAD_MOD,            ONLY: UVTVDAD
     USE UPDSPAD_MOD,            ONLY: UPDSPAD
     USE UPDSPBAD_MOD,           ONLY: UPDSPBAD
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
-    USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR
+    USE TPM_GEN,                ONLY: LSYNC_TRANS
     USE TPM_TRANS,              ONLY: NF_SC2, NF_SC3A, NF_SC3B
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
-    USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_F_POINTER, C_LOC, C_SIZEOF
+    USE ISO_C_BINDING,          ONLY: C_F_POINTER, C_LOC, C_SIZEOF
 
     !**** *LTDIR* - Control of Direct Legendre transform step
 
@@ -118,7 +117,6 @@ CONTAINS
 
     !     Externals.
     !     ----------
-    !         PREPSNM - prepare REPSNM for wavenumber KM
     !         PRFI2   - prepares the Fourier work arrays for model variables.
     !         LEDIR   - direct Legendre transform
     !         UVTVD   -
@@ -168,7 +166,7 @@ CONTAINS
     REAL(KIND=JPRD)   ,POINTER, INTENT(OUT) :: ZINPS0(:), ZINPA0(:)
 
     !     LOCAL INTEGER SCALARS
-    INTEGER(KIND=JPIM) :: IFC, IIFC, IDGLU, IFIRST
+    INTEGER(KIND=JPIM) :: IFIRST
 
     REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
     REAL(KIND=JPRB), POINTER :: POA1_L(:), POA1(:,:,:)
