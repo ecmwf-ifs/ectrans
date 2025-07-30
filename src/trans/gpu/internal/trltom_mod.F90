@@ -156,7 +156,7 @@ CONTAINS
 
       ! copy to self workaround
       IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
-      IF (ILENS(IRANK) .ne. ILENR(IRANK)) THEN
+      IF (ILENS(IRANK) /= ILENR(IRANK)) THEN
           WRITE(NERR,*) "ERROR", ILENS(IRANK), ILENR(IRANK)
           CALL ABORT_TRANS("TRLTOM: Error - ILENS(IRANK) /= ILENR(IRANK)")
       ENDIF

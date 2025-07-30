@@ -231,7 +231,7 @@ CONTAINS
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
           ENDDO
 #endif
-        ELSEIF (MOD((JK-1),2) .EQ. 0) THEN
+        ELSEIF (MOD((JK-1),2) == 0) THEN
           ! every other field is sufficient because Im(KM=0) == 0
 #ifdef ACCGPU
           !$ACC LOOP SEQ
