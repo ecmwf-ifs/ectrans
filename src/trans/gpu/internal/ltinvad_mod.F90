@@ -298,7 +298,7 @@ CONTAINS
     DO KMLOC=1,D_NUMP
       DO JK=1,IF_LEG
         KM =  D_MYMS(KMLOC)
-        IF(KM .eq. 0)THEN
+        IF(KM == 0)THEN
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif

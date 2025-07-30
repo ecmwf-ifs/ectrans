@@ -425,7 +425,7 @@ w = x - (n + 2)
 y = ((((((((((((p13 * w + p12) * w + p11) * w + p10) *&
 &    w + p9) * w + p8) * w + p7) * w + p6) * w + p5) *&
 &    w + p4) * w + p3) * w + p2) * w + p1) * w + p0
-if (n .gt. 0) then
+if (n > 0) then
   w = x - 1
   do k = 2, n
     w = w * (x - k)
