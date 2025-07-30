@@ -1002,7 +1002,7 @@ contains
 
 subroutine parse_grid(cgrid,ndgl,nloen)
 
-  character(len=*) :: cgrid
+  character(len=*), intent(in) :: cgrid
   integer, intent(inout) :: ndgl
   integer, intent(inout), allocatable :: nloen(:)
   integer :: ios
