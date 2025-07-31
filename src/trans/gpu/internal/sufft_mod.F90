@@ -13,15 +13,12 @@ MODULE SUFFT_MOD
   CONTAINS
   SUBROUTINE SUFFT
 
-  USE PARKIND1,     ONLY: JPIM
-  USE TPM_DIM,      ONLY: R
   USE TPM_GEN,      ONLY: NOUT, NPRINTLEV
   USE TPM_DISTR,    ONLY: D
   !
 
   IMPLICIT NONE
 
-  INTEGER(KIND=JPIM) :: JGL,IGLG
   LOGICAL :: LLP1,LLP2
 
   !     ------------------------------------------------------------------

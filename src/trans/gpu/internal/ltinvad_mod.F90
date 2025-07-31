@@ -27,7 +27,7 @@ CONTAINS
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPRD, JPIB
     USE TPM_DISTR,              ONLY: D
     USE TPM_DIM,                ONLY: R
-    USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_SIZEOF
+    USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE LEINV_MOD,              ONLY: LEINV_STRIDES
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, RESERVE
 
@@ -107,7 +107,7 @@ CONTAINS
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
     USE TPM_GEN,                ONLY: LSYNC_TRANS
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
-    USE ISO_C_BINDING,          ONLY: C_SIZE_T, C_LOC, C_SIZEOF
+    USE ISO_C_BINDING,          ONLY: C_LOC, C_SIZEOF
 
     !**** *LTINVAD* - adjoint of inverse Legendre transform
     !

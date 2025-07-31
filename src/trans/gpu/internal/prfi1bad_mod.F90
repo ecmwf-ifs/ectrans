@@ -71,7 +71,7 @@ MODULE PRFI1BAD_MOD
   INTEGER(KIND=JPIM),INTENT(IN),OPTIONAL :: KFLDPTR(:)
   
   !     LOCAL INTEGER SCALARS
-  INTEGER(KIND=JPIM) :: II, INM, IR, JN, JFLD, ILCM, IASM0, IFLD
+  INTEGER(KIND=JPIM) :: INM, IR, JN, JFLD, IASM0
   
   !     ------------------------------------------------------------------
   
