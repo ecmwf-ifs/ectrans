@@ -174,6 +174,15 @@ ecbuild_add_option( FEATURE ECTRANS4PY
 
 ectrans_find_lapack()
 
+ecbuild_add_option( FEATURE FIELD_API
+                    DEFAULT OFF
+                    DESCRIPTION "Compile field API interface to ectrans"
+                   )
+
+if (HAVE_FIELD_API)
+    ecbuild_find_package(field_api)
+endif()
+
 ### Add sources
 include( ectrans_compile_options )
 add_subdirectory( src )

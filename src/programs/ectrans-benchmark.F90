@@ -45,11 +45,18 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
-
 use ectrans_memory, only : allocator
 
-implicit none
+#if USE_FIELD_API
+USE ectrans_field_api_helper, only : wrapped_fields, fields_lists, &
+                                   & wrap_benchmark_fields, create_fields_lists, &
+                                   & delete_wrapped_fields,delete_fields_lists, &
+                                   & output_wrapped_fields, output_fields_lists, &
+                                   & nullify_wrapped_fields, synchost_rdonly_wrapped_fields, &
+                                   & synchost_rdwr_wrapped_fields
+#endif
 
+implicit none
 ! Number of points in top/bottom latitudes
 integer(kind=jpim), parameter :: min_octa_points = 20
 
@@ -132,12 +139,15 @@ logical :: lscders = .false.
 logical :: luvders = .false.
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
+logical :: llacc = .false.      ! retrieve data on device
+logical :: lfield_api = .false. ! use field API interface
 
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
 integer(kind=jpim) :: nopt_mem_tr = 0
 
+real(kind=jprb)    :: clamp_epsilon
 character(len=256) :: checksums_filename
 
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
@@ -200,6 +210,11 @@ integer(kind=jpim) :: jbegin_vder_EW = 0
 integer(kind=jpim) :: jend_vder_EW = 0
 integer(kind=jpim) :: iend = 0
 
+#if USE_FIELD_API
+type(wrapped_fields) :: ywflds
+type(fields_lists) :: ylf
+#endif
+
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
@@ -214,11 +229,15 @@ integer(kind=jpim)  :: ierr
 real(kind=jprb), allocatable :: global_field(:,:)
 
 !===================================================================================================
-
+#include "fspgl_intf.h"
 #include "setup_trans0.h"
 #include "setup_trans.h"
 #include "inv_trans.h"
 #include "dir_trans.h"
+#if USE_FIELD_API
+#include "inv_trans_field_api.h"
+#include "dir_trans_field_api.h"
+#endif
 #include "trans_inq.h"
 #include "gath_grid.h"
 #include "gath_spec.h"
@@ -233,13 +252,14 @@ real(kind=jprb), allocatable :: global_field(:,:)
 luse_mpi = detect_mpirun()
 if (VERSION == "gpu") then
   lpinning = .true.
+  llacc = .true.
 endif
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
                               & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values,  ldump_checksums, &
                               & lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-                              & lpinning, cchecksums_path)
+                              & lpinning, lfield_api, cchecksums_path)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -259,6 +279,12 @@ endif
 nthread = oml_max_threads()
 
 call dr_hook_init()
+IF (JPRB == JPRD) THEN
+  clamp_epsilon = 1e-14
+else
+  clamp_epsilon = 1e-12
+endif
+
 
 !===================================================================================================
 
@@ -462,7 +488,11 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("lvordiv    ",l1)') lvordiv
   write(nout,'("lscders    ",l1)') lscders
   write(nout,'("luvders    ",l1)') luvders
+  write(nout,'("lfield_api ",l1)') lfield_api
+  write(nout,'("llacc      ",l1)') llacc
+
   write(nout,'(" ")')
+
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
 end if
@@ -478,6 +508,9 @@ nullify(zspdiv)
 nullify(zspsc3a)
 call allocator%allocate('sp3d',   sp3d,   [nflevl,nspec2,2+nfld])
 call allocator%allocate('zspsc2', zspsc2, [1,nspec2])
+!sp3d(:,:,:) = 0
+!zspsc2(:,:) = 0 
+
 
 call initialize_spectral_arrays(nsmax, zspsc2, sp3d)
 
@@ -508,9 +541,9 @@ if (lvordiv) then
 endif
 if (luvders) then
   jbegin_uder_EW  = jend_uv + 1
-  jend_uder_EW    = jbegin_uder_EW + 1
+  jend_uder_EW    = jbegin_uder_EW
   jbegin_vder_EW  = jend_uder_EW + 1
-  jend_vder_EW    = jbegin_vder_EW + 1
+  jend_vder_EW    = jbegin_vder_EW
 else
   jbegin_uder_EW = jend_uv
   jend_uder_EW   = jend_uv
@@ -542,7 +575,22 @@ call allocator%allocate('zgmvs', zgmvs, [nproma,ndimgmvs,ngpblks])
 zgpuv => zgmv(:,:,1:jend_vder_EW,:)
 zgp3a => zgmv(:,:,jbegin_sc:jend_scder_EW,:)
 zgp2  => zgmvs(:,:,:)
+ 
+#if USE_FIELD_API
+if (lfield_api) then
+  call nullify_wrapped_fields(ywflds)
+  call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvders, &
+                          & sp3d, zspsc2, zgmv, zgmvs, zgp2, &
+                          & jbegin_uv,jend_uv, &
+                          & jbegin_sc,jend_sc, &
+                          & jbegin_scder_NS, jend_scder_NS, &
+                          & jbegin_scder_EW, jend_scder_EW, &
+                          & jbegin_uder_EW, jend_uder_EW, &
+                          & jbegin_vder_EW, jend_vder_EW)
 
+  call create_fields_lists(ywflds,ylf,ivset,ivsetsc)
+endif
+#endif
 !===================================================================================================
 ! Allocate norm arrays
 !===================================================================================================
@@ -638,6 +686,20 @@ do jstep = 1, iters+iters_warmup
   ztstep1(jstep) = timef()
   call gstats(4,0)
 
+ if (lfield_api) then
+#if USE_FIELD_API
+    call inv_trans_field_api (ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
+                            & ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
+                            & ydfu_ns=ylf%u_ns, ydfv_ns=ylf%v_ns, &
+                            & ydfscalar_ns=ylf%scalar_ns, ydfscalar_ew=ylf%scalar_ew, &
+                            & ydfvor=ylf%vor, ydfdiv=ylf%div, &
+                            & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
+                            & kproc=myproc, ldacc=llacc)
+    call synchost_rdonly_wrapped_fields(ywflds)
+#else
+  call abor1('ectrans_benchmark: No field API support')
+#endif
+else
   if (lvordiv) then
     call inv_trans(kresol=1, kproma=nproma, &
        & pspsc2=zspsc2,                     & ! spectral surface pressure
@@ -664,13 +726,18 @@ do jstep = 1, iters+iters_warmup
        & pgp2=zgp2,                         &
        & pgp3a=zgp3a)
   endif
+endif
   call gstats(4,1)
 
 if (ldump_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
+
+    zgmv (iend+1:,:, :, ngpblks) = 0
     zgmvs (iend+1:, :, ngpblks) = 0
     write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
+
+
     call dump_checksums(filename = checksums_filename, noutdump=noutdump,                 &
                       & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
                       & ivset = ivset, ivsetsc = ivsetsc,                                 &
@@ -702,6 +769,18 @@ endif
   ztstep2(jstep) = timef()
 
   call gstats(5,0)
+
+  if (lfield_api) then
+#if USE_FIELD_API
+    call dir_trans_field_api (ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
+                            & ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
+                            & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
+                            & kproc=myproc, ldacc=llacc)
+    call synchost_rdonly_wrapped_fields(ywflds)
+#else
+    call abor1('ectrans_benchmark: No field API support')
+#endif
+  else
   if (lvordiv) then
     call dir_trans(kresol=1, kproma=nproma, &
       & pgp2=zgmvs(:,1:1,:),                &
@@ -723,11 +802,18 @@ endif
       & kvsetsc2=ivsetsc,                   &
       & kvsetsc3a=ivset)
   endif
+endif
   call gstats(5,1)
+
+  WRITE(*,*)"clamp_epsilon = ", clamp_epsilon
+if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon)zspsc2 = 0
+if (associated(sp3d)) where (abs(sp3d) < clamp_epsilon)sp3d = 0
+
 
 
 if (ldump_checksums) then
   write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+
   call dump_checksums(filename = checksums_filename, noutdump = noutdump,               &
                     & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
                     & ivset = ivset, ivsetsc = ivsetsc,                                 &
@@ -982,6 +1068,12 @@ endif
 !===================================================================================================
 ! Cleanup
 !===================================================================================================
+#if USE_FIELD_API
+if (lfield_api) then
+  call delete_wrapped_fields(ywflds)
+  call delete_fields_lists(ylf)
+endif
+#endif
 
 call allocator%deallocate('zgmv',   zgmv)
 call allocator%deallocate('zgmvs',  zgmvs)
@@ -1166,6 +1258,7 @@ subroutine print_help(unit)
     & subroutine on memory usage, thread-binding etc."
   write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
   write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
+  write(nout, "(a)") "    --field-api         Use field API interface"
   write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
    & tolerance for correctness checking"
   write(nout, "(a)") "    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory) &
@@ -1197,7 +1290,7 @@ end subroutine
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning, cchecksums_path)
+  &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning,lfield_api, cchecksums_path)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1226,6 +1319,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
                                             ! tolerance for correctness checking
   logical, intent(inout) :: lpinning        ! Use memory-pinning (a.k.a. page-locked memory) to allocate fields for GPU version
+  logical, intent(inout) :: lfield_api      ! Use field API interface
 
   character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
   character(len=128) :: carg          ! Storage variable for command line arguments
@@ -1284,6 +1378,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
       case('-c', '--check'); ncheck = get_int_value('-c', iarg)
       case('--no-pinning'); lpinning = .False.
+      case('--field-api'); lfield_api = .True.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1614,3 +1709,4 @@ end subroutine
 end program ectrans_benchmark
 
 !===================================================================================================
+
