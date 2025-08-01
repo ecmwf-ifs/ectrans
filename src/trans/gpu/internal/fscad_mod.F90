@@ -64,7 +64,6 @@ SUBROUTINE FSCAD(ALLOCATOR,HFSC,PREEL_COMPLEX, KF_FS, KF_UV, KF_SCALARS, KUV_OFF
 
 !     ------------------------------------------------------------------
 
-USE TPM_TRANS,       ONLY: LATLON
 USE TPM_DISTR,       ONLY: MYSETW,  MYPROC, NPROC, D
 USE TPM_GEOMETRY,    ONLY: G
 USE TPM_FIELDS,      ONLY: F
