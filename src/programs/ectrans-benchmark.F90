@@ -116,6 +116,9 @@ real(kind=jprb), pointer :: zspvor(:,:) => null()
 real(kind=jprb), pointer :: zspdiv(:,:) => null()
 real(kind=jprb), pointer :: zspsc3a(:,:,:) => null()
 real(kind=jprb), pointer :: zspsc2(:,:)
+#ifdef FIELD_API_CLAMP
+REAL(KIND=JPRB)    :: CLAMP_EPSILON = 1E-14
+#endif
 
 logical :: lstack = .false. ! Output stack info
 logical :: luserpnm = .false.
@@ -247,6 +250,7 @@ real(kind=jprb), allocatable :: global_field(:,:)
 #include "trans_end.h"
 
 !===================================================================================================
+
 
 luse_mpi = detect_mpirun()
 if (VERSION == "gpu") then
@@ -799,6 +803,16 @@ endif
 endif
   call gstats(5,1)
   
+#ifdef FIELD_API_CLAMP
+   ! clamp small spectral values to ensure bit reproductibility with field Api interface
+   ! Only activated in dp, with nvhpc and on cpu
+   IF (JPRB == JPRD) THEN
+     write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
+     if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon)zspsc2 = 0
+     if (associated(sp3d)) where (abs(sp3d) < clamp_epsilon)sp3d = 0
+   endif
+#endif
+
 if (ldump_checksums) then
   write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
