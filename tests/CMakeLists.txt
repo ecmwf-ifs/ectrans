@@ -282,7 +282,7 @@ foreach( benchmark ${benchmarks} )
         if( NOT "${benchmark}" MATCHES "-gpu-" )
           ecbuild_add_test( TARGET ${base_title}_nfld0
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${base_args} --callmode ${callmode}
+              ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -292,7 +292,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields
         ecbuild_add_test( TARGET ${base_title}_nfld10
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 ${base_args} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 --callmode ${callmode} ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -301,7 +301,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields and 20 levels
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${base_args} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -310,7 +310,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${base_args} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 --callmode ${callmode} ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -319,7 +319,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and vordiv in grid point space
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  ${base_args} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  --callmode ${callmode} ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -328,7 +328,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, vordiv in grid point space, and wind derivatives
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 ${base_args} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 --callmode ${callmode} ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -337,7 +337,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${base_args} --callmode ${callmode}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 --callmode ${callmode} ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -348,7 +348,7 @@ foreach( benchmark ${benchmarks} )
           # TODO: Find out why the FLT gives so much higher errors
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 ${base_args} --callmode ${callmode}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 --callmode ${callmode} ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
