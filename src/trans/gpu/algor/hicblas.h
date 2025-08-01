@@ -22,6 +22,8 @@
 #include "hicblas_hip.h"
 #elif defined(CUDAGPU)
 #include "hicblas_cuda.h"
+#elif defined (HOSTGPU)
+#include "hicblas_host.h"
 #endif
 
 inline void _printError(const char * component, const char * file, const int line, int err, const char * err_str) {

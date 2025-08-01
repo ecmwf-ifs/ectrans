@@ -10,7 +10,6 @@
 
 list( APPEND trans_gpu_common_src
   algor/ext_acc.F90
-  algor/c_hipmemgetinfo.cpp
   algor/buffered_allocator_mod.F90
   algor/device_mod.F90
   algor/growing_allocator_mod.F90
@@ -24,6 +23,7 @@ if( HAVE_HIP )
     algor/*.hip.cpp
   )
   list( APPEND trans_gpu_common_src
+    algor/c_hipmemgetinfo.cpp
     algor/hicblas_gemm.hip.cpp
     algor/hicfft.hip.cpp
   )
@@ -32,12 +32,17 @@ elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
   list( APPEND trans_gpu_common_src
+    algor/c_hipmemgetinfo.cpp
     algor/hicblas_gemm.cuda.cu
     algor/hicfft.cuda.cu
   )
   ecbuild_info("warn: IN_PLACE_FFT defined for cuFFT")
 else()
-  ecbuild_info("warn: HIP and CUDA not found")
+  set( GPU_RUNTIME "HOST" )
+  list( APPEND trans_gpu_common_src
+    algor/fft.host.cpp
+    algor/gemm.host.cpp
+  )
 endif()
 
 
