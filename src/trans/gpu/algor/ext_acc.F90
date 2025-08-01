@@ -27,12 +27,10 @@ module openacc_ext
   implicit none
 
   private
-  public :: ext_acc_pass, ext_acc_create, ext_acc_copyin, ext_acc_copyout, &
+  public :: ext_acc_pass, ext_acc_create, ext_acc_copyin, ext_acc_copyout, ext_acc_delete
+  public :: ext_acc_arr_desc
 #ifdef ACCGPU
-       & ext_acc_delete, ext_acc_arr_desc, acc_handle_kind
-#endif
-#ifdef OMPGPU
-       & ext_acc_delete, ext_acc_arr_desc
+  public :: acc_handle_kind
 #endif
 
   type common_pointer_descr
@@ -271,9 +269,8 @@ contains
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-#endif
-#ifdef OMPGPU
-    integer(kind=int32), optional :: stream
+#else
+    integer(kind=int32), optional :: stream ! not used by other runtimes than OpenACC
 #endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
@@ -310,9 +307,8 @@ contains
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-#endif
-#ifdef OMPGPU
-    integer(kind=int32), optional :: stream
+#else
+    integer(kind=int32), optional :: stream  ! not used by other runtimes than OpenACC
 #endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
@@ -349,9 +345,8 @@ contains
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
-#endif
-#ifdef OMPGPU
-    integer(kind=int32), optional :: stream
+#else
+    integer(kind=int32), optional :: stream  ! not used by other runtimes than OpenACC
 #endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
@@ -388,7 +383,7 @@ contains
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
 #else
-    integer(kind=int32), optional :: stream
+    integer(kind=int32), optional :: stream ! not used by other runtimes than OpenACC
 #endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
