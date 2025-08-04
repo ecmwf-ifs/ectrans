@@ -174,7 +174,7 @@ logical :: luse_mpi = .true.
 character(len=16) :: cgrid = ''
 
 integer(kind=jpim) :: ierr
-integer :: icall_mode = 1
+integer :: icall_mode = 2
 integer :: inum_wind_fields, inum_sc_3d_fields, inum_sc_2d_fields, itotal_fields
 integer :: ipgp_start, ipgp_end, ipgpuv_start, ipgpuv_end
 
@@ -1131,7 +1131,7 @@ subroutine print_help(unit)
   write(nout, "(a)") "                        Call mode 2 uses arrays PSPVOR, PSPDIV, PSPSC3A,&
    & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
   write(nout, "(a)") "                        See&
-   & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 1)"
+   & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
