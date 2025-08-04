@@ -51,7 +51,7 @@ ecbuild_add_option( FEATURE OMP
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
-ecbuild_add_option( FEATURE OMPOFF
+ecbuild_add_option( FEATURE OMP_OFFLOAD
                     DEFAULT ON
                     DESCRIPTION "Support for using GPUs with OpenMP offload"
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
@@ -116,7 +116,7 @@ endif()
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA OR HAVE_GPU_HOST) AND (HAVE_ACC OR HAVE_OMPOFF OR HAVE_GPU_HOST) )
+                    CONDITION (HAVE_HIP OR HAVE_CUDA OR HAVE_GPU_HOST) AND (HAVE_ACC OR HAVE_OMP_OFFLOAD OR HAVE_GPU_HOST) )
 
 # Check CPU or GPU is enabled, and if not, abort
 if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
@@ -126,7 +126,7 @@ endif()
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
-  elseif( HAVE_OMPOFF )
+  elseif( HAVE_OMP_OFFLOAD )
     set( GPU_OFFLOAD "OMP" )
   else()
     ecbuild_info("Build GPU version with host-side emulation")
