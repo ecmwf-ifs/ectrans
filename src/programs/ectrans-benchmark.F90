@@ -1126,6 +1126,12 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory) &
    & to allocate fields for GPU version"
   write(nout, "(a)") "    --callmode          The call mode for INV_TRANS and DIR_TRANS (1 or 2)"
+  write(nout, "(a)") "                        Call mode 1 uses arrays PSPVOR, PSPDIV, PSPSCALAR and&
+   & PGP"
+  write(nout, "(a)") "                        Call mode 2 uses arrays PSPVOR, PSPDIV, PSPSC3A,&
+   & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
+  write(nout, "(a)") "                        See&
+   & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 1)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
