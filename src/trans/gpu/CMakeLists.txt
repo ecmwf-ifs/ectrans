@@ -180,7 +180,7 @@ foreach( prec dp sp )
         endif()
 
         # cuFFT can do in-place FFT, hipFFT cannot
-        if( HAVE_CUDA )
+        if( HAVE_CUDA OR (GPU_RUNTIME STREQUAL "HOST"))
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
 
