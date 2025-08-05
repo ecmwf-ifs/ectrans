@@ -72,6 +72,12 @@ ecbuild_add_library(
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
 )
 
+if( HAVE_GPU_HOST )
+  target_link_libraries( ectrans_gpu_common PRIVATE ${LAPACK_LIBRARIES} )
+  target_link_libraries( ectrans_gpu_common PRIVATE ${FFTW_LIBRARIES} )
+  target_include_directories( ectrans_gpu_common PRIVATE ${FFTW_INCLUDE_DIRS} )
+endif()
+
 ectrans_target_fortran_module_directory(
   TARGET            ectrans_gpu_common
   MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/ectrans
