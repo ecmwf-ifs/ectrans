@@ -1079,9 +1079,11 @@ end function
 subroutine print_help(unit)
 
   integer, optional :: unit
-  integer, parameter :: nout = 6
+  integer :: nout
   if (present(unit)) then
     nout = unit
+  else
+    nout = 6
   endif
 
   write(nout, "(a)") ""
@@ -1393,8 +1395,9 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutd
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
 
-  character(len=10), parameter :: filename = "x.xxxx.dat"
+  character(len=10) :: filename
 
+  filename = "x.xxxx.dat"
   if (myproc == 1) then
     write(filename(1:1),'(a1)') fldchar
     write(filename(3:6),'(i4.4)') jstep

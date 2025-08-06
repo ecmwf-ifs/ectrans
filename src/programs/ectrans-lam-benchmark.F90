@@ -1183,9 +1183,11 @@ end subroutine sort
 subroutine print_help(unit)
 
   integer, optional :: unit
-  integer, parameter :: nout = 6
+  integer :: nout
   if (present(unit)) then
     nout = unit
+  else
+    nout = 6
   endif
 
   write(nout, "(a)") ""
@@ -1291,11 +1293,15 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer, allocatable :: my_km(:), my_kn(:)
 
   ! Choose a harmonic to initialize arrays
-  integer, parameter :: m_num = 1 ! Zonal wavenumber
-  integer, parameter :: n_num = 0 ! Meridional wavenumber
+  integer :: m_num ! Zonal wavenumber
+  integer :: n_num ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
   character(len=32), parameter :: init_type='harmonic'
+
+  ! Default harmonic
+  m_num = 1
+  n_num = 0
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1370,12 +1376,15 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field
   integer(kind=jpim), parameter :: kfgathg=1    ! number of fields to gather
   integer(kind=jpim), parameter :: kto(1)=(/1/) ! processor where to gather
-  character(len=14), parameter  :: filename = "x.xxx.xxx.grid"
-  character(len=13), parameter :: frmt='(4X,xxxxF8.2)'
+  character(len=14) :: filename
+  character(len=13) :: frmt
 
 #include "etrans_inq.h"
 #include "egath_grid.h"
   
+  filename = "x.xxx.xxx.grid"
+  frmt = '(4X,xxxxF8.2)'
+
   call etrans_inq(kgptotg=kgptotg)
 
   if ( myproc == 1 ) allocate(fldg(kgptotg,1))
@@ -1430,8 +1439,8 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field (nspec2g)
   integer(kind=jpim), parameter :: kfgathg=1    ! number of fields to gather
   integer(kind=jpim), parameter :: kto(1)=(/1/) ! processor where to gather
-  character(len=14), parameter   :: filename = "x.xxx.xxx.spec"
-  character(len=13), parameter  :: frmt='(4X,xxxxF8.2)' ! for printing to screen
+  character(len=14)  :: filename
+  character(len=13)  :: frmt ! for printing to screen
   integer(kind=jpim) :: knse(0:nmsmax),kmse(0:nsmax) ! elliptic truncation
   real(kind=jprb)    :: fld2g(0:2*nmsmax+1,0:2*nsmax+1) ! 2D representation of spectral field
   integer(kind=jpim) :: jj, jms, jns
@@ -1439,6 +1448,9 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
 #include "etrans_inq.h"
 #include "egath_spec.h"
   
+  filename = "x.xxx.xxx.spec"
+  frmt = '(4X,xxxxF8.2)'
+
   if ( myproc == 1 ) then
     call etrans_inq(kspec2g=nspec2g)
     allocate(fldg(1,nspec2g))
