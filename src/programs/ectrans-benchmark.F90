@@ -1061,7 +1061,7 @@ end function
 subroutine print_help(unit)
 
   integer, optional :: unit
-  integer :: nout = 6
+  integer, parameter :: nout = 6
   if (present(unit)) then
     nout = unit
   endif
@@ -1191,12 +1191,13 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
                                             ! 2: pspvor, pspdiv, pspsc3a, pspsc2, pgpuv, pgp3a, pgp2
 
   character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
+  integer            :: iarg          ! Argument index
 
 #ifdef _OPENACC
   call acc_init(acc_get_device_type())
 #endif
 
+  iarg = 1
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
@@ -1333,8 +1334,8 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   integer, allocatable :: my_zon_wns(:), nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays
-  integer :: m_num = 4  ! Zonal wavenumber
-  integer :: l_num = 19  ! Total wavenumber
+  integer, parameter :: m_num = 4  ! Zonal wavenumber
+  integer, parameter :: l_num = 19  ! Total wavenumber
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1375,7 +1376,7 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutd
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
 
-  character(len=10) :: filename = "x.xxxx.dat"
+  character(len=10), parameter :: filename = "x.xxxx.dat"
 
   if (myproc == 1) then
     write(filename(1:1),'(a1)') fldchar

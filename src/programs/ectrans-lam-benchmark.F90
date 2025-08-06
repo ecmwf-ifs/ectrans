@@ -1087,10 +1087,11 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
                                             ! tolerance for correctness checking
 
   character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
+  integer            :: iarg          ! Argument index
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
 
+  iarg = 1
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
@@ -1182,7 +1183,7 @@ end subroutine sort
 subroutine print_help(unit)
 
   integer, optional :: unit
-  integer :: nout = 6
+  integer, parameter :: nout = 6
   if (present(unit)) then
     nout = unit
   endif
@@ -1290,11 +1291,11 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer, allocatable :: my_km(:), my_kn(:)
 
   ! Choose a harmonic to initialize arrays
-  integer :: m_num = 1 ! Zonal wavenumber
-  integer :: n_num = 0 ! Meridional wavenumber
+  integer, parameter :: m_num = 1 ! Zonal wavenumber
+  integer, parameter :: n_num = 0 ! Meridional wavenumber
   
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='harmonic'    
+  character(len=32), parameter :: init_type='harmonic'
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1367,10 +1368,10 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
   
   integer(kind=jpim) :: kgptotg      ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field
-  integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
-  integer(kind=jpim) :: kto(1)=(/1/) ! processor where to gather
-  character(len=14)  :: filename = "x.xxx.xxx.grid"
-  character(len=13) :: frmt='(4X,xxxxF8.2)'
+  integer(kind=jpim), parameter :: kfgathg=1    ! number of fields to gather
+  integer(kind=jpim), parameter :: kto(1)=(/1/) ! processor where to gather
+  character(len=14), parameter  :: filename = "x.xxx.xxx.grid"
+  character(len=13), parameter :: frmt='(4X,xxxxF8.2)'
 
 #include "etrans_inq.h"
 #include "egath_grid.h"
@@ -1427,10 +1428,10 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
   
   integer(kind=jpim) :: nspec2g              ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field (nspec2g)
-  integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
-  integer(kind=jpim) :: kto(1)=(/1/) ! processor where to gather
-  character(len=14)   :: filename = "x.xxx.xxx.spec"
-  character(len=13)  :: frmt='(4X,xxxxF8.2)' ! for printing to screen
+  integer(kind=jpim), parameter :: kfgathg=1    ! number of fields to gather
+  integer(kind=jpim), parameter :: kto(1)=(/1/) ! processor where to gather
+  character(len=14), parameter   :: filename = "x.xxx.xxx.spec"
+  character(len=13), parameter  :: frmt='(4X,xxxxF8.2)' ! for printing to screen
   integer(kind=jpim) :: knse(0:nmsmax),kmse(0:nsmax) ! elliptic truncation
   real(kind=jprb)    :: fld2g(0:2*nmsmax+1,0:2*nsmax+1) ! 2D representation of spectral field
   integer(kind=jpim) :: jj, jms, jns
