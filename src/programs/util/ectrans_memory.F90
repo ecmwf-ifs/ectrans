@@ -114,7 +114,8 @@ interface
         integer(c_int), value :: logging
     end subroutine
 
-    subroutine c_set_logging_fortran_output_unit(output_unit) bind(c, name="ectrans_memory_set_logging_fortran_output_unit")
+    subroutine c_set_logging_fortran_output_unit(output_unit) bind(c, &
+          & name="ectrans_memory_set_logging_fortran_output_unit")
         use iso_c_binding, only: c_int
         integer(c_int), value :: output_unit
     end subroutine
