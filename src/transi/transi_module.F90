@@ -446,7 +446,8 @@ interface
     use, intrinsic :: iso_c_binding, only: c_ptr
     type(c_ptr), intent(in) :: ptr
   end subroutine transi_free
-  subroutine transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() bind(C,name="transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED")
+  subroutine transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() bind(C, &
+    & name="transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED")
   end subroutine
 end interface
 
