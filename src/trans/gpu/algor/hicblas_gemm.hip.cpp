@@ -145,7 +145,6 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
     }
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
-    HIC_CHECK(hipStreamDestroy(captureStream));
     HIC_CHECK(hipGraphDestroy(new_graph));
 #else
     HIC_CHECK(hipStreamBeginCapture(captureStream, hipStreamCaptureModeGlobal));
@@ -160,9 +159,9 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
     HIC_CHECK(hipStreamEndCapture(captureStream, &my_graph));
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
+#endif
     HIC_CHECK(hipStreamDestroy(captureStream));
 
-#endif
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(
                                 new hipGraphExec_t{instance}, [](auto ptr) {
                                   HIC_CHECK(hipGraphExecDestroy(*ptr));
