@@ -1258,10 +1258,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
     iarg = iarg + 1
   end do
 
-  if (.not. lvordiv) then
-    luvder = .false.
-  endif
-
 end subroutine get_command_line_arguments
 !===================================================================================================
 
