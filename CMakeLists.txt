@@ -51,15 +51,14 @@ ecbuild_add_option( FEATURE OMP
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
 
-ecbuild_add_option( FEATURE OMP_OFFLOAD
-                    DEFAULT ON
-                    DESCRIPTION "Support for using GPUs with OpenMP offload"
-                    REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
-
 ecbuild_add_option( FEATURE ACC
                     DEFAULT OFF
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
+
+ecbuild_add_option( FEATURE GPU_HOST
+                    DEFAULT OFF
+                    DESCRIPTION "Use host backend for GPU version" )
 
 ecbuild_add_option( FEATURE DOUBLE_PRECISION
                     DEFAULT ON
@@ -100,23 +99,21 @@ ecbuild_add_option( FEATURE TRANSI
 
 # Search for available GPU runtimes, searching for CUDA first and, if not found,
 # attempt to find HIP
-if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
-  set(HAVE_CUDA 0)
-  set(HAVE_HIP 0)
-  set(HAVE_GPU_HOST 0)
-  ectrans_find_cuda() # sets "HAVE_CUDA"
-  if( NOT HAVE_CUDA )
-    ectrans_find_hip() # sets "HAVE_HIP"
-  endif()
-  if( NOT HAVE_HIP )
-    set( HAVE_GPU_HOST 1)
+set(HAVE_CUDA 0)
+set(HAVE_HIP 0)
+if ( NOT HAVE_GPU_HOST )
+  if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
+    ectrans_find_cuda() # sets "HAVE_CUDA"
+    if( NOT HAVE_CUDA )
+      ectrans_find_hip() # sets "HAVE_HIP"
+    endif()
   endif()
 endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA OR HAVE_GPU_HOST) AND (HAVE_ACC OR HAVE_OMP_OFFLOAD OR HAVE_GPU_HOST) )
+                    CONDITION ((HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP)) OR HAVE_GPU_HOST )
 
 # Check CPU or GPU is enabled, and if not, abort
 if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
@@ -126,10 +123,8 @@ endif()
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
-  elseif( HAVE_OMP_OFFLOAD )
+  elseif( HAVE_OMP )
     set( GPU_OFFLOAD "OMP" )
-  else()
-    ecbuild_info("Build GPU version with host-side emulation")
   endif()
 endif()
 
