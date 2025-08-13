@@ -31,14 +31,29 @@ declare -a files=(
 
 # Prepare processed content directory
 OUT_DIR=$TOP_DIR/docs/content_processed
-rm -r $OUT_DIR && mkdir $OUT_DIR
+rm -rf $OUT_DIR && mkdir $OUT_DIR
 cp -r $TOP_DIR/docs/content/* $OUT_DIR
+
+# Print list of all subroutines to API page
+for file in "${files[@]}"; do
+    # Get name of this subroutine in capitals
+    subroutine_name=$(echo "${file%.*}" | tr '[:lower:]' '[:upper:]')
+
+    # Print list of all subroutines
+    echo "- [\`$subroutine_name\`](#$subroutine_name)" >> $OUT_DIR/api.md
+    echo >> $OUT_DIR/api.md # Add a newline
+done
 
 # Build API documentation by extracting docblocks from every file in src/trans/include/ectrans
 for file in "${files[@]}"; do
+    # Get name of this subroutine in capitals
+    subroutine_name=$(echo "${file%.*}" | tr '[:lower:]' '[:upper:]')
+
     # Extract docblock
+    echo "<hr>" >> $OUT_DIR/api.md # Horizontal rule
+    echo "<a name=\"$subroutine_name\"></a>" >> $OUT_DIR/api.md # Add an anchor
     awk '/begin_doc_block/{flag=1; next} /end_doc_block/{flag=0} flag' $INC_DIR/$file | \
-        sed 's/^! //g' | sed 's/^!//g' >> $OUT_DIR/api.md
+        sed 's/^! //g' | sed 's/^!$//g' >> $OUT_DIR/api.md
     echo >> $OUT_DIR/api.md # Add a newline
 done
 
