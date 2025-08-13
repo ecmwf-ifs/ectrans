@@ -11,41 +11,49 @@
 INTERFACE
 SUBROUTINE SPECNORM(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
 
-!**** *SPECNORM* - Compute global spectral norms
-
-!     Purpose.
-!     --------
-!        Interface routine for computing spectral norms
-
-!**   Interface.
-!     ----------
-!     CALL SPECNORM(...)
-
-!     Explicit arguments : All arguments optional
-!     -------------------- 
-!     PSPEC(:,:)  - Spectral array
-!     KVSET(:)    - "B-Set" for each field
-!     KMASTER     - processor to recieve norms
-!     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
-!     PMET(:)     - metric
-!     PNORM(:)    - Norms (output for processor KMASTER)
+! begin_doc_block
+! ## `SPECNORM`
 !
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL - set resolution
-!     ----------  SPNORM_CTL - control routine
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE SPECNORM(PNORM, PSPEC, KVSET, KMASTER, KRESOL, PMET)
+! ```
+!
+! ### Purpose
+!
+! This subroutine computes the spectral norms of the fields in the given input array and returns the
+! values to a specific MPI task.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPEC(:,:)`  
+!   The spectral array to compute the norm of. This argument is optional because not all MPI tasks  
+!   necessarily possess a field, depending on the contents of `KVSET`.  
+!   Dimensions: (number of fields on this MPI task, spectral dimension)  
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSET(:)`  
+!   Array specifying which MPI task each of the fields belongs to.  
+!   Dimensions: (number of global fields)
+!   Dimensions: (number of fields across all MPI tasks)  
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KMASTER`  
+!   The MPI task for whom `PNORM` will contain values.  
+!   *Default*: `1`
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PMET(:)`  
+!   A multiplier applied in the total wavenumber direction as the norm is calculated.  
+!   Dimensions: (`0:R%NSMAX`) (`R%NSMAX` is the same as `KSMAX` passed to `SETUP_TRANS`)  
+!   *Default*: `1.0`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.  
+!   *Default*: `1` (i.e. first resolution handle)
+!
+! ### `INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(OUT) :: PNORM(:)`  
+!   An array containing the spectral norms of all input spectral fields.  
+!   Note that all MPI tasks must pass this array - it is not optional. Only task `KMASTER` needs to
+!   actually allocate its array though.  
+!   Dimensions: (number of fields across all MPI tasks)
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
