@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if summary %}
+      <meta name="description" content="{{ summary|striptags }}">
+    {% else %}
+      <meta name="description" content="Documentation for {{ project }}">
+    {% endif %}
+    <meta name="author" content="{{ author }}" >
+    <link rel="icon" href="{{ project_url }}/favicon.png">
+
+    <title>{% block title %} {{ project }} {% endblock title %}</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- Font Awesome -->
+    <link href="{{ project_url }}/css/fontawesome.min.css" rel="stylesheet">
+    <link href="{{ project_url }}/css/brands.min.css" rel="stylesheet">
+    <link href="{{ project_url }}/css/regular.min.css" rel="stylesheet">
+    <link href="{{ project_url }}/css/solid.min.css" rel="stylesheet">
+    <link href="{{ project_url }}/css/v4-font-face.min.css" rel="stylesheet">
+    <link href="{{ project_url }}/css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    {% if mathjax_config %}
+      <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
+    {% endif %}
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
+    <!-- Other scripts and stylesheets -->
+    <link href="{{ project_url }}/css/local.css" rel="stylesheet">
+    <link href="{{ project_url }}/css/pygments.css" rel="stylesheet">
+    {% if css %}
+      <link href="{{ project_url }}/css/user.css" rel="stylesheet">
+    {% endif %}
+    <script src="{{ project_url }}/js/svg-pan-zoom.min.js"></script>
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <div class="container-fluid mb-sm-4 mb-xl-2">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+          <a class="navbar-brand" href="{{ project_url }}/index.html">{{ project }} {% if version %}<small>{{ version }}</small>{% endif %}</a>
+          <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
+                  aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
+                  <span class="navbar-toggler-icon">
+          </button>
+
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="navbar-nav">
+              {% if pages %}
+                <li class="nav-item"><a class="nav-link" href="{{ pages.url | relurl(page_url) }}">{{ pages.title }}</a></li>
+              {% endif %}
+              {% if incl_src %}
+                {% if (project.files|length + project.extra_files|length) is more_than_one %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ project_url }}/lists/files.html">Source Files</a>
+                  </li>
+                {% else %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="{{ project_url }}/{{project.files[0].get_url()}}">Source File</a>
+                  </li>
+                {% endif %}
+              {% endif %}
+              {% if project.modules %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/modules.html">Modules</a>
+                </li>
+              {% endif %}
+              {% if project.blockdata|length is more_than_one %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/blockdata.html">Block Data</a>
+                </li>
+              {% elif project.blockdata|length == 1 %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/{{ project.blockdata[0].get_url() }}">Block Data</a>
+                </li>
+              {% endif %}
+              {% if project.procedures %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/procedures.html">Procedures</a>
+                </li>
+              {% endif %}
+              {% if project.absinterfaces %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/absint.html">Abstract Interfaces</a>
+                </li>
+              {% endif %}
+              {% if project.types %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/types.html">Derived Types</a>
+                </li>
+              {% endif %}
+              {% if project.namelists %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/namelists.html">Namelists</a>
+                </li>
+              {% endif %}
+              {% if project.programs|length is more_than_one %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/lists/programs.html">Programs</a>
+                </li>
+              {% elif project.programs|length == 1 %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ project_url }}/{{ project.programs[0].get_url() }}">Program</a>
+                </li>
+              {% endif %}
+              {% if privacy_policy_url %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ privacy_policy_url }}">Privacy Policy</a>
+                </li>
+              {% endif %}
+              {% if terms_of_service_url %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ terms_of_service_url }}">Terms Of Service</a>
+                </li>
+              {% endif %}
+            </ul>
+            {% if search %}
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="{{ project_url }}/search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
+            {% endif %}
+          </div><!--/.nav-collapse -->
+        </div>
+      </nav>
+    </div>
+
+    <div class="container">
+      {% block body %}
+      {% endblock body %}
+      <hr>
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+        <div class="row justify-content-between">
+          <div class="col">
+            <p>
+              {{ project }}
+              {% if author %} was built by {{ author }}<br>{% endif %}
+              &copy; {{ year }} {{ license }}
+              {% if revision %}<br /><small>{{ revision }}</small>{% endif %}</p>
+          </div>
+          <div class="col" id="ecmwf_logo">
+            <img src="{{ project_url }}/img/ECMWF_logo.svg" alt="ECMWF logo">
+          </div>
+          <div class="col">
+            <p class="text-end">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+              {% if print_creation_date %} on {{ creation_date }} {% endif %}
+              {% if doc_license %}<br>&copy; {{ doc_license }} {% endif %}
+            </p>
+          </div>
+        </div>
+        <br>
+      </div> <!-- /container -->
+    </footer>
+  </body>
+</html>

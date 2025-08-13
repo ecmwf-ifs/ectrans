@@ -60,5 +60,9 @@ done
 # Generate FORD-based documentation of main ecTrans source code
 ford ford_config.md
 
+# Manually copy ECMWF logo to img directory
+mkdir $TOP_DIR/docs/site/img
+cp $TOP_DIR/docs/img/ECMWF_logo.svg $TOP_DIR/docs/site/img/
+
 # Generate Doxygen-based documentation of transi
 doxygen transi.doxygen
