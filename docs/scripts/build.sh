@@ -5,28 +5,28 @@ set -ea
 TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd)"
 INC_DIR="$TOP_DIR/src/trans/include/ectrans" # Location of ecTrans include files
 
-# List include  files in order to be processed
+# List include files in order to be processed
 declare -a files=(
     "setup_trans0.h"
     "setup_trans.h"
+    "trans_inq.h"
     "dir_trans.h"
     "inv_trans.h"
-    "trans_release.h"
-    "trans_end.h"
-    "trans_inq.h"
     "specnorm.h"
-    "dir_transad.h"
-    "inv_transad.h"
+    "gpnorm_trans.h"
     "dist_grid.h"
-    "dist_grid_32.h"
     "gath_grid.h"
-    "gath_grid_32.h"
     "gath_spec.h"
     "get_current.h"
-    "gpnorm_trans.h"
     "ini_spec_dist.h"
     "trans_pnm.h"
     "vordiv_to_uv.h"
+    "dir_transad.h"
+    "inv_transad.h"
+    "trans_release.h"
+    "trans_end.h"
+    "dist_grid_32.h"
+    "gath_grid_32.h"
 )
 
 # Prepare processed content directory
