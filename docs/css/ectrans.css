@@ -23,5 +23,13 @@ div.container.p-2.mb-4.bg-light.border.rounded-3 {
 }
 
 div.container p img {
-    max-width: 100%;
+    max-width: 800px;
+    display: block;
+    margin: auto;
+}
+
+div.container > div.row ul > li > p {
+    margin-bottom: 0.5em;
+}
+
 }

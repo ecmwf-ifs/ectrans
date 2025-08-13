@@ -6,6 +6,9 @@ title: API
 Page under construction.
 @endwarning
 
+The following subroutines can be called by programs that are linked against ecTrans. Here we
+describe in detail their signatures.
+
 ## General notes
 
 @note
@@ -39,3 +42,5 @@ subroutines described here, only two must be considered:
 
 - `INTEGER, PARAMETER :: JPIM = SELECTED_INT_KIND(9)` (i.e. 4-byte integer)
 - `INTEGER, PARAMETER :: JPRD = SELECTED_REAL_KIND(13,300)` (i.e. 8-byte float)
+
+## List of subroutines
