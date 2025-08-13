@@ -17,6 +17,23 @@ html_template_dir: html
 
 ## Efficient and _scalable_ spectral transforms.
 
-ecTrans is the global spherical Harmonics transforms library, extracted from the IFS. It is using a hybrid of MPI and OpenMP parallelisation strategies. The package contains both single- and double precision Fortran libraries (trans_sp, trans_dp), as well as a C interface to the double-precision version (transi_dp)
+ecTrans is a library for performing efficient and scalable spectral transformations. It is used for
+transforming fields from a grid point space on the sphere (e.g. latitude-longitude) to a spectral
+space based on spherical harmonics (for global transformations) or bifourier harmonics (for limited
+area transformations), which constitutes a direct transform. A corresponding inverse transform can
+also be performed. A transform consists of a Fourier transform in the longitudinal direction and
+either a Legendre transform (global) or another Fourier transform (limited area) in the latitudinal
+direction. ecTrans can also operate on fields which are distributed across separate MPI tasks and
+performs the necessary communication to ensure all data needed for a particular transform are
+resident on a local task.
 
-<p><a class="btn btn-primary" href="https://github.com/ecmwf-ifs/ectrans" role="button">Browse source code on GitHub</a></p>
+After co-development as part of the Integrated Forecasting System (IFS) atmospheric model of the
+European Centre for Medium-Range Weather Forecasts for several decades, ecTrans became a standalone
+software package in 2022. It constitutes one of the most important and expensive parts of the IFS
+and neatly encapsulates both computational and communicational paradigms and bottlenecks exhibited
+by the IFS model as a whole.
+
+ecTrans primarily targets conventional CPU platforms, requiring FFTW- and BLAS-implementing
+libraries. It can also operate efficiently on GPU accelerators making use of offloading directives
+(either OpenACC or OpenMP) and vendor library routines (cuBLAS/cuFFT or hipBLAS/hipFFT). ecTrans
+performs efficiently and stably on Nvidia platforms but is currently less mature on AMD platforms.
