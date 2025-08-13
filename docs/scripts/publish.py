@@ -6,16 +6,13 @@
 #
 #     pip install sites-toolkit --upgrade -index-url https://get.ecmwf.int/repository/pypi-all/simple
 
-from sites.toolkit.file_manager import Authenticator, FileManager, Site
+from sites.sdk.sites import Authenticator, Site
 
 import argparse
 from pathlib import Path
 
 scripts = Path(__file__).parent.resolve()
 ectrans_docs = scripts.parent.resolve()
-
-print(scripts)
-print(ectrans_docs)
 
 parser = argparse.ArgumentParser(description='Publish documentation')
 parser.add_argument('--token', type=str, default="")
@@ -37,10 +34,10 @@ else :
     exit(1)
     
 # Create a Site instance
-my_site = Site(space='docs', name='ectrans', authenticator=my_authenticator)
+my_site = Site(space='docs', name='ectrans')
 
-# Create a FileManager instance
-my_site_manager = FileManager(site=my_site)
+# Create a content_manager
+content_manager = my_site.get_content_manager(authenticator=my_authenticator)
 
 # Upload all the contents of a directory inside the content directory
-my_site_manager.upload(local_path=args.html)
+content_manager.upload(local_path=args.html, recursive=True)
