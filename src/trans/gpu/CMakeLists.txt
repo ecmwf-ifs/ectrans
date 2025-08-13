@@ -56,8 +56,8 @@ ecbuild_add_library(
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
   PUBLIC_LIBS          fiat ectrans_common
-  PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
-                       $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
+                       ${ECTRANS_GPU_HIP_LIBRARIES}
+  PRIVATE_LIBS         $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                        $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                        $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
   PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
