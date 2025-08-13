@@ -32,4 +32,8 @@ div.container > div.row ul > li > p {
     margin-bottom: 0.5em;
 }
 
+#ecmwf_logo > img {
+    height: 40px;
+    display: block;
+    margin: auto;
 }
