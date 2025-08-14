@@ -9,13 +9,15 @@ building out-of-source, but below we describe this explicitly for newcomers to C
 
 ecTrans has the following requirements:
 
-- A [CMake](https://cmake.org/) with version >= 3.12
+- A [CMake](https://cmake.org/) with version >= 3.25
 - [ecBuild](https://github.com/ecmwf/ecbuild.git) (a collection of ECMWF-specific CMake macros)
 - A Fortran compiler with OpenMP support and a C compiler. Officially we support:
     - Classic Intel (i.e. ifort and icc)
+    - LLVM Intel (i.e. ifx)
     - GNU
     - NVHPC
     - Cray
+    - AMD ROCm AFAR
 - [FIAT: the Fortran IFS and Arpege Toolkit](https://github.com/ecmwf-ifs/fiat)
 - [FFTW](https://www.fftw.org/)
 - A library containing standard BLAS routines such as [LAPACK](https://www.netlib.org/lapack/)
@@ -81,7 +83,7 @@ source env.sh
 First clone the latest version of the FIAT repository:
 
 ```bash
-git clone https://github.com/ecmwf-ifs/fiat.git -b 1.4.1
+git clone https://github.com/ecmwf-ifs/fiat.git -b 1.5.1
 ```
 
 Then run the configure step for FIAT (you can leave out `-DCMAKE_TOOLCHAIN_FILE` if you don't want
@@ -102,7 +104,7 @@ cmake --build fiat/build -j 4
 Clone the latest version of the ecTrans repository:
 
 ```bash
-git clone https://github.com/ecmwf-ifs/ectrans.git -b 1.3.2
+git clone https://github.com/ecmwf-ifs/ectrans.git -b 1.6.2
 ```
 
 Then run the configure step, making sure to pass the location of the FIAT build directory to CMake:
