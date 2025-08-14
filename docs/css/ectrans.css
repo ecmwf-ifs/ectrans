@@ -38,3 +38,7 @@ div.container > div.row ul > li > p {
     display: block;
     margin: auto;
 }
+
+div#text {
+    margin-top: 20px;
+}
