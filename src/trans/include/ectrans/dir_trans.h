@@ -43,7 +43,7 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 ! ### `OPTIONAL, INTENT(IN)` arguments
 !
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMA`  
-!   Required blocking factor for grid point output.  
+!   Blocking factor for grid point input.  
 !   *Default*: `D%NGPTOT`
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETUV(:)`  
 !   Array which maps each vertical level of the output vorticity/divergence to its corresponding  
