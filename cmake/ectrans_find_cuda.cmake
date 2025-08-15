@@ -30,7 +30,7 @@ macro( ectrans_find_cuda )
          # there is a transient dependency somewhere that also requires the directory path to be set.
          # This symptom only manifests on systems where libcudart lives in a separate location to
          # libcublas. It is unclear whether this is an nvhpc or a cmake bug, but nevertheless manually
-         # specifying the linkk directory here should be harmless.
+         # specifying the link directory here should be harmless.
          cmake_path(GET CUDA_cublas_LIBRARY PARENT_PATH _cublas_path)
          target_link_directories( CUDA::cublas INTERFACE ${_cublas_path} )
       endif()
