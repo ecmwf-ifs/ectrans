@@ -21,7 +21,7 @@ program ectrans_benchmark
 !           Sam Hatfield
 !
 
-use parkind1, only: jpim, jprb, jprd
+use parkind1, only: jpim, jpib, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
@@ -125,7 +125,6 @@ integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
 integer(kind=jpim) :: nopt_mem_tr = 0
 
-character(len=256) :: checksums_filename
 logical :: lprint_norms = .false. ! Calculate and print spectral norms
 logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at the end
 
@@ -169,12 +168,12 @@ integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
+character(len=256) :: checksums_filename
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
 
 character(len=16)   :: cgrid = ''
-
 character(len=128)  :: cchecksums_path = ''
 
 integer(kind=jpim) :: iend
@@ -658,7 +657,9 @@ do jstep = 1, iters+iters_warmup
     if (ldump_checksums) then
       ! Remove trash at end of last block
       iend = ngptot - nproma * (ngpblks - 1)
-      zgp (iend+1:, :, ngpblks) = 0
+      zgpuv (iend+1:, :, :, ngpblks) = 0
+      zgp3a (iend+1:, :, :, ngpblks) = 0
+      zgp2 (iend+1:, :, ngpblks) = 0
       write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
       call dump_checksums(filename = checksums_filename, noutdump=noutdump,                 &
                         & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
@@ -706,7 +707,7 @@ do jstep = 1, iters+iters_warmup
                           & ivset = ivset, ivsetsc = ivsetsc,                                 &
                           & nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     endif
-      
+
   else
     call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
       &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
@@ -1473,7 +1474,7 @@ subroutine dump_checksums(filename, noutdump,                      &
   real(kind=jprb), optional :: zspscalar (:,:)
   real(kind=jprb), optional :: zspsc3a (:,:,:)
   real(kind=jprb), optional :: zspsc2 (:,:)
-  integer*8 :: icrc
+  integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)

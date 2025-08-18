@@ -360,8 +360,8 @@ if( HAVE_ETRANS )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
-          set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )          
-                    
+          set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
+
           ecbuild_add_test( TARGET ${base_title}_nfld0
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0 --dump-checksums ${base_title}_nfld0
               MPI ${mpi}
@@ -407,7 +407,7 @@ if( HAVE_ETRANS )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
               COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_nfld10_nlev20_nproma16
               MPI ${mpi}
-              OMP ${omp}          
+              OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
         endforeach()
