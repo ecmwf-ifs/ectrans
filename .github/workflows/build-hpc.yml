@@ -64,7 +64,7 @@ jobs:
             troika_user_secret: LUMI_CI_SSH_USER
             account_secret: LUMI_CI_PROJECT
             sbatch_options: |
-              #SBATCH --time=00:40:00
+              #SBATCH --time=00:50:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
               #SBATCH --gpus-per-task=1
