@@ -85,7 +85,7 @@ jobs:
               -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
               -DENABLE_OMP=ON
             env_vars:
-              - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
+              - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
               - CMAKE_BUILD_PARALLEL_LEVEL=1
@@ -132,10 +132,6 @@ jobs:
 
               rm -r $REPO
               rm -r build
-
-              if [ "{{ site }}" = "lumi" ]; then
-                rm -f $ROCFFT_RTC_CACHE_PATH
-              fi
             }
             error_trap() {
               cleanup
