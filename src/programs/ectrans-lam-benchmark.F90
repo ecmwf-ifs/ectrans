@@ -1580,7 +1580,7 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
     do jfld = 1, size (zgpuv, 3)
       do jlev = 1, size (zgpuv, 2)
-        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
+        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
           call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
@@ -1593,7 +1593,7 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
     do jfld = 1, size (zgp3a, 3)
       do jlev = 1, size (zgp3a, 2)
-        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
+        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
           call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
@@ -1605,7 +1605,7 @@ subroutine dump_checksums(filename, noutdump, &
   if (present(zgp2)) then
     icrc = 0
     do jfld = 1, size (zgp2, 2)
-      call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp2(:,jfld:jfld,:))
+      call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp2(:,jfld:jfld,:))
       if (myproc == 1) then
         call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
@@ -1616,7 +1616,7 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
     do jfld = 1, size (sp3d, 3)
       do jlev = 1, size (sp3d, 1)
-        call egath_spec(PSPECG=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
+        call egath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),kresol=1,pspec=sp3d(jlev:jlev,:,jfld))
         if (myproc == 1) then
           call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc
@@ -1629,7 +1629,7 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
 
     do jfld = 1, size (zspc2, 1)
-      call egath_spec(PSPECG=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
+      call egath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), kresol=1,pspec=zspc2(jfld:jfld,:))
       if (myproc == 1) then
         call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc
