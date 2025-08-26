@@ -41,7 +41,7 @@ program ectrans_lam_benchmark
 !           Sam Hatfield
 !           Daan Degrauwe
 
-use parkind1, only: jpim, jprb, jprd
+use parkind1, only: jpim, jpib, jprb, jprd
 use oml_mod ,only : oml_max_threads
 use omp_lib, only: omp_get_wtime
 use mpl_module
@@ -1487,7 +1487,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
     call ellips(nsmax,nmsmax,knse,kmse)
   endif
 
-  call egath_spec(PSPECG=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,PSPEC=fld)
+  call egath_spec(pspecg=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,pspec=fld)
 
   if ( myproc == 1 ) then
 
@@ -1537,7 +1537,7 @@ subroutine dump_checksums(filename, noutdump, &
   & ivset, ivsetsc,                           &
   & zgpuv, zgp3a, zgp2, sp3d, zspc2)
 
-  character(len=*),   intent(in)   :: filename ! filename
+  character(len=*),   intent(in) :: filename   ! filename
   integer(kind=jpim), intent(in) :: noutdump   ! unit number for output file
   integer(kind=jpim), intent(in) :: jstep      ! time step
   integer(kind=jpim), intent(in) :: myproc     ! mpi rank
@@ -1547,13 +1547,13 @@ subroutine dump_checksums(filename, noutdump, &
   integer(kind=jpim), intent(in) :: ivset  (:)
   integer(kind=jpim), intent(in) :: ivsetsc(1)
 
-  real(kind=jprb), optional :: zgpuv (:,:,:,:)
-  real(kind=jprb), optional :: zgp3a (:,:,:,:)
-  real(kind=jprb), optional :: zgp2  (:,:,:)
-  real(kind=jprb), optional :: sp3d  (:,:,:)
-  real(kind=jprb), optional :: zspc2 (:,:)
+  real(kind=jprb), intent(in), optional :: zgpuv (:,:,:,:)
+  real(kind=jprb), intent(in), optional :: zgp3a (:,:,:,:)
+  real(kind=jprb), intent(in), optional :: zgp2  (:,:,:)
+  real(kind=jprb), intent(in), optional :: sp3d  (:,:,:)
+  real(kind=jprb), intent(in), optional :: zspc2 (:,:)
 
-  integer*8 :: icrc
+  integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)
