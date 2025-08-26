@@ -44,7 +44,7 @@ jobs:
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
             sbatch_options: |
-              #SBATCH --time=00:40:00
+              #SBATCH --time=00:30:00
               #SBATCH --nodes=1
               #SBATCH --ntasks=2
               #SBATCH --cpus-per-task=32
