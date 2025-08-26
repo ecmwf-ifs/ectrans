@@ -1482,12 +1482,12 @@ subroutine dump_checksums(filename, noutdump,                      &
   logical :: exist = .false.
 
   if (myproc == 1) then
-      if (jstep>1)  inquire(file = filename, exist = exist)
-        if (exist) then
-          open(noutdump, file = filename, status="old", position="append", action="write")
-        else
-          open(noutdump, file = filename, action="write")
-      endif
+    if (jstep>1)  inquire(file = filename, exist = exist)
+      if (exist) then
+        open(noutdump, file = filename, status="old", position="append", action="write")
+      else
+        open(noutdump, file = filename, action="write")
+    endif
 
     write(noutdump,*) "===================="
     write(noutdump,*) "iteration", jstep
@@ -1505,11 +1505,11 @@ subroutine dump_checksums(filename, noutdump,                      &
   if (present(zgp)) then
     icrc = 0
     do jfld = 1, size (zgp, 2)
-        call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp(:,jfld:jfld,:))
-        if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
-        endif
+      call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp(:,jfld:jfld,:))
+      if (myproc == 1) then
+        call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+        write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
+      endif
     enddo
   endif
 
@@ -1519,8 +1519,8 @@ subroutine dump_checksums(filename, noutdump,                      &
       do jlev = 1, size (zgpuv, 2)
         call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
+          call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
         endif
       enddo
     enddo
@@ -1532,8 +1532,8 @@ subroutine dump_checksums(filename, noutdump,                      &
       do jlev = 1, size (zgp3a, 2)
         call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
+          call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
         endif
       enddo
     enddo
@@ -1542,11 +1542,11 @@ subroutine dump_checksums(filename, noutdump,                      &
   if (present(zgp2)) then
     icrc = 0
     do jfld = 1, size (zgp2, 2)
-        call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp2(:,jfld:jfld,:))
-        if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
-        endif
+      call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp2(:,jfld:jfld,:))
+      if (myproc == 1) then
+        call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+        write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
+      endif
     enddo
   endif
 
