@@ -26,8 +26,6 @@ INTEGER(KIND=JPIM) :: MSETUP0 = 0     ! Control of setup calls
 INTEGER(KIND=JPIM) :: NMAX_RESOL = 0  ! Maximum allowed number of resolutions
 INTEGER(KIND=JPIM) :: NCUR_RESOL = 0  ! Current resolution
 INTEGER(KIND=JPIM) :: NDEF_RESOL = 0  ! Number of defined resolutions
-INTEGER(KIND=JPIM) :: NPROMATR        ! Packet size for transform (in no of fields)
-                             ! NPROMATR=0 means do all fields together (dflt)
 
 LOGICAL   :: LALLOPERM       ! Allocate some shared data structures permanently
 LOGICAL   :: LMPOFF          ! true: switch off message passing

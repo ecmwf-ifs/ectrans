@@ -58,10 +58,8 @@ CONTAINS
     !     Method.
     !     -------
 
-    !     Externals.  SHUFFLE     - reshuffle fields for load balancing
-    !     ----------  FIELD_SPLIT - split fields in NPROMATR packets
-    !                 LTDIR_CTL   - control of Legendre transform
-    !                 FTDIR_CTL   - control of Fourier transform
+    !     Externals.  LTDIR_CTL   - control of Legendre transform
+    !     ----------  FTDIR_CTL   - control of Fourier transform
 
     !     Author.
     !     -------
@@ -74,7 +72,6 @@ CONTAINS
     !     ------------------------------------------------------------------
 
     USE PARKIND_ECTRANS,        ONLY: JPRBT, JPRD, JPRB, JPIM
-    USE TPM_GEN,                ONLY: NPROMATR
     USE TPM_TRANS,              ONLY: GROWING_ALLOCATION
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, MAKE_BUFFERED_ALLOCATOR, &
       &                               INSTANTIATE_ALLOCATOR
@@ -128,10 +125,6 @@ CONTAINS
     TYPE(TRLTOM_HANDLE) :: HTRLTOM
     TYPE(TRLTOM_UNPACK_HANDLE) :: HTRLTOM_UNPACK
     TYPE(LTDIR_HANDLE) :: HLTDIR
-
-    IF (NPROMATR > 0) THEN
-      CALL ABORT_TRANS("NPROMATR > 0 not supported for GPU")
-    ENDIF
 
     ! Prepare everything
     ALLOCATOR = MAKE_BUFFERED_ALLOCATOR()

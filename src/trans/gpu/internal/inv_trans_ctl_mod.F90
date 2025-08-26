@@ -69,10 +69,8 @@ CONTAINS
     !     Method.
     !     -------
 
-    !     Externals.  SHUFFLE     - reshuffle fields for load balancing
-    !     ----------  FIELD_SPLIT - split fields in NPROMATR packets
-    !                 LTINV_CTL   - control of Legendre transform
-    !                 FTINV_CTL   - control of Fourier transform
+    !     Externals.  LTINV_CTL   - control of Legendre transform
+    !     ----------  FTINV_CTL   - control of Fourier transform
 
     !     Author.
     !     -------
@@ -87,7 +85,6 @@ CONTAINS
 
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT, JPRD
     USE ISO_C_BINDING,          ONLY: C_INT8_T
-    USE TPM_GEN,                ONLY: NPROMATR
     USE TPM_TRANS,              ONLY: LDIVGP, LSCDERS, LUVDER, LVORGP, GROWING_ALLOCATION
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, MAKE_BUFFERED_ALLOCATOR, &
@@ -156,10 +153,6 @@ CONTAINS
     INTEGER(KIND=C_INT8_T), POINTER :: PTR(:)
 
     !     ------------------------------------------------------------------
-
-    IF (NPROMATR > 0) THEN
-      CALL ABORT_TRANS("NPROMATR > 0 not supported for GPU")
-    ENDIF
 
     ! Compute Vertical domain decomposition
 

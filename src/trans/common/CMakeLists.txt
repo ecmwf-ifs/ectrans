@@ -16,7 +16,6 @@ list( APPEND ectrans_common_src
   internal/ectrans_blas_mod.F90
   internal/abort_trans_mod.F90
   internal/cpledn_mod.F90
-  internal/field_split_mod.F90
   internal/gawl_mod.F90
   internal/interpol_decomp_mod.F90
   internal/sugaw_mod.F90
@@ -36,7 +35,6 @@ list( APPEND ectrans_common_src
   internal/pre_suleg_mod.F90
   internal/setup_dims_mod.F90
   internal/setup_geom_mod.F90
-  internal/shuffle_mod.F90
   internal/sump_trans0_mod.F90
   internal/sustaonl_mod.F90
   internal/sumplat_mod.F90
