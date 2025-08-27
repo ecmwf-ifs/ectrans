@@ -114,6 +114,8 @@ ENDIF
 
 !     ------------------------------------------------------------------
 
+OFFSET_VAR=D%NPTRLS(MYSETW)
+
 !*       2.    EAST-WEST DERIVATIVES
 !              ---------------------
 
@@ -218,8 +220,6 @@ ENDIF
 !              ----------------------------------------------
 
 !*       1.1      U AND V.
-
-OFFSET_VAR=D%NPTRLS(MYSETW)
 
 #ifdef OMPGPU
 !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) DEFAULT(NONE) &

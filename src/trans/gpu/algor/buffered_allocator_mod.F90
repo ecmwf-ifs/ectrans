@@ -152,6 +152,7 @@ CONTAINS
     IF (SET_VALUE_EFF .AND. LENGTH_IN_BYTES > 0) THEN
       ! This option is turned off by default, but for experimentation we can turn it on. This is
       ! setting all bits to 1 (meaning NaN in floating point)
+      END_IN_BYTES=START_IN_BYTES+LENGTH_IN_BYTES-1
 #ifdef ACCGPU
       !$ACC PARALLEL PRESENT(SRC) ASYNC(SET_STREAM_EFF)
 #endif
