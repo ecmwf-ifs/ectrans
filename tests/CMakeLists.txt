@@ -341,7 +341,7 @@ if( HAVE_ETRANS )
         list( APPEND ntasks 1 2 )
       endif()
       if( HAVE_OMP )
-        list( APPEND nthreads 4 8 )
+        list( APPEND nthreads 8 )
       endif()
 
       # Base arguments -> nlat x nlon, 2 iterations, memory consumption/pinning information,
