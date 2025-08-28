@@ -252,16 +252,13 @@ foreach( benchmark ${benchmarks} )
       foreach( callmode 1 2 )
         set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}_callmode${callmode}")
         # Check it works with 0 3D scalar fields
-        # This test doesn't work on GPU -> should we delete it?
-        if( NOT "${benchmark}" MATCHES "-gpu-" )
-          ecbuild_add_test( TARGET ${base_title}_nfld0
-              COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld0 ${base_args}
-              MPI ${mpi}
-              OMP ${omp}
-          )
-          ectrans_set_test_properties( ${base_title}_nfld0 )
-        endif()
+        ecbuild_add_test( TARGET ${base_title}_nfld0
+            COMMAND ${benchmark}
+            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld0 ${base_args}
+            MPI ${mpi}
+            OMP ${omp}
+        )
+        ectrans_set_test_properties( ${base_title}_nfld0 )
 
         # Check it works with 10 3D scalar fields
         ecbuild_add_test( TARGET ${base_title}_nfld10
