@@ -86,7 +86,6 @@ CONTAINS
 
 
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRB, JPRBT, JPRD
-    USE ISO_C_BINDING,          ONLY: C_INT8_T
     USE TPM_GEN,                ONLY: NPROMATR
     USE TPM_TRANS,              ONLY: LDIVGP, LSCDERS, LUVDER, LVORGP, GROWING_ALLOCATION
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
@@ -151,8 +150,6 @@ CONTAINS
     TYPE(TRMTOL_UNPACK_HANDLE) :: HTRMTOL_UNPACK
     TYPE(FTINV_HANDLE) :: HFTINV
     TYPE(TRLTOG_HANDLE) :: HTRLTOG
-
-    INTEGER(KIND=C_INT8_T), POINTER :: PTR(:)
 
     !     ------------------------------------------------------------------
 
