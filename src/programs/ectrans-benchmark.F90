@@ -159,6 +159,7 @@ logical :: lsync_trans = .true. ! Activate barrier sync
 logical :: leq_regions = .true. ! Eq regions flag
 
 integer(kind=jpim) :: nproma = 0
+integer(kind=jpim) :: npromatr = 0
 integer(kind=jpim) :: ngpblks
 ! locals
 integer(kind=jpim) :: iprtrv
@@ -207,9 +208,10 @@ if (VERSION == "gpu") then
 endif
 
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvder, &
-  & luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  & lpinning, icall_mode, ldump_checksums, cchecksums_path)
+call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, &
+  &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
+  &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
+  &                             lpinning, icall_mode, ldump_checksums, cchecksums_path)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -372,7 +374,7 @@ endif
 if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 
 call gstats(1, 0)
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
+call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1), kpromatr=npromatr, &
   &               kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw, ldsync_trans=lsync_trans,  &
   &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi,         &
   &               kopt_memory_tr=nopt_mem_tr)
@@ -1165,6 +1167,8 @@ subroutine print_help(unit)
     & when also --vordiv is given"
   write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
   write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
+  write(nout, "(a)") "    --npromatr NPROMATR Perform transforms in blocks of size NPROMATR rather&
+    & than all at once"
   write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed&
     & fields"
   write(nout, "(a)") "                        The computation of spectral norms will skew overall&
@@ -1209,9 +1213,11 @@ end subroutine
 
 !===================================================================================================
 
-subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, luvder, &
-  &                                   luseflt, nopt_mem_tr, nproma, verbosity, ldump_values, lprint_norms, &
-  &                                   lmeminfo, nprtrv, nprtrw, ncheck, lpinning, icall_mode, ldump_checksums, cchecksums_path)
+subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, &
+  &                                   lscders, luvder, luseflt, nopt_mem_tr, nproma, npromatr, &
+  &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
+  &                                   nprtrw, ncheck, lpinning, icall_mode, ldump_checksums, &
+  &                                   cchecksums_path)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1229,6 +1235,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
   integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
   integer, intent(inout) :: nproma          ! NPROMA
+  integer, intent(inout) :: npromatr        ! block size for field-blocking
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
   logical, intent(inout) :: ldump_checksums ! Dump CRC checksums
@@ -1292,6 +1299,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--flt'); luseflt = .True.
       case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
+      case('--npromatr'); npromatr = get_int_value('--npromatr', iarg)
       case('--dump-values'); ldump_values = .true.
       case('--dump-checksums')
         ldump_checksums = .true.
