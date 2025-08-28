@@ -260,15 +260,6 @@ foreach( benchmark ${benchmarks} )
         )
         ectrans_set_test_properties( ${base_title}_nfld0 )
 
-        # Check it works with 10 3D scalar fields
-        ecbuild_add_test( TARGET ${base_title}_nfld10
-            COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10 ${base_args}
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ectrans_set_test_properties( ${base_title}_nfld10 )
-
         # Check it works with 10 3D scalar fields and 20 levels
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
             COMMAND ${benchmark}
@@ -278,14 +269,14 @@ foreach( benchmark ${benchmarks} )
         )
         ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
 
-        # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
-        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
+        # Check it works with 10 3D scalar fields, 20 levels, and derivatives
+        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_derivatives
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_scders ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --uvders --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_derivatives ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
-        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_scders )
+        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_derivatives )
 
         # Check it works with 10 3D scalar fields, 20 levels, and vordiv in grid point space
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
@@ -295,15 +286,6 @@ foreach( benchmark ${benchmarks} )
             OMP ${omp}
         )
         ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
-
-        # Check it works with 10 3D scalar fields, 20 levels, vordiv in grid point space, and wind derivatives
-        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
-            COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv ${base_args}
-            MPI ${mpi}
-            OMP ${omp}
-        )
-        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv_uvders )
 
         # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
