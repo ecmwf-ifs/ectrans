@@ -234,7 +234,7 @@ foreach( benchmark ${benchmarks} )
   endif()
   if( ${benchmark} MATCHES "cpu" )
     if( HAVE_OMP )
-      list( APPEND nthreads 4 8 )
+      list( APPEND nthreads 8 )
     endif()
   endif()
 
