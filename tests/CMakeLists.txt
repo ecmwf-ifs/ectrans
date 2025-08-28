@@ -281,7 +281,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and vordiv in grid point space
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 100  --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
