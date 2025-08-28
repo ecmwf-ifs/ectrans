@@ -55,7 +55,8 @@ jobs:
               - cmake
               - ninja
               - prgenv/nvidia
-              - hpcx-openmpi/2.14.0-cuda
+              - nvidia/24.5
+              - hpcx-openmpi/2.19.0-cuda
               - fftw
             cmake_options: -DENABLE_ACC=ON -G Ninja
 
