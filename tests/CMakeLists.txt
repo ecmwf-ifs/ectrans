@@ -266,7 +266,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields
         ecbuild_add_test( TARGET ${base_title}_nfld10
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} ${base_args} --dump-checksums ${base_title}_nfld10 ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10 ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
