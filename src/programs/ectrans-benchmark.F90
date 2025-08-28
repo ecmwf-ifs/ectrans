@@ -421,6 +421,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("nfld       ",i0)') nfld
   write(nout,'("nlev       ",i0)') nlev
   write(nout,'("nproma     ",i0)') nproma
+  write(nout,'("npromatr   ",i0)') npromatr
   write(nout,'("ngpblks    ",i0)') ngpblks
   write(nout,'("nspec2     ",i0)') nspec2
   write(nout,'("nspec2g    ",i0)') nspec2g
