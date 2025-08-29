@@ -98,7 +98,7 @@ foreach( prec dp sp )
 
     generate_backend_includes(BACKEND ${prec} TARGET ectrans_etrans_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/etrans/include )
 
-    if( HAVE_ETRANS_DUMMY_LIB )
+    if( NOT HAVE_ETRANS )
       generate_etrans_dummy_sources(
         BACKEND     ${prec}
         OUTPUT      ectrans_etrans_${prec}_src
@@ -128,7 +128,7 @@ foreach( prec dp sp )
       INSTALL_DIRECTORY module/ectrans
     )
 
-    if( NOT HAVE_ETRANS_DUMMY_LIB )
+    if( HAVE_ETRANS )
       set( FFTW_LINK PRIVATE )
       if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
           ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_etrans_${prec}. "
