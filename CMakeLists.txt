@@ -165,14 +165,6 @@ ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
 
-ecbuild_add_option( FEATURE ETRANS_DUMMY_LIB
-                    DEFAULT OFF
-                    DESCRIPTION "Compile a dummy library for etrans" )
-
-if( HAVE_ETRANS AND HAVE_ETRANS_DUMMY_LIB )
-  ecbuild_critical("Please select only one of the ETRANS and ETRANS_DUMMY_LIB features")
-endif()
-
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
 		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
