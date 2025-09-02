@@ -1394,7 +1394,8 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
 
   integer :: index, num_my_zon_wns
-  integer, allocatable :: my_zon_wns(:), nasm0(:)
+  integer, allocatable :: my_zon_wns(:)
+  integer, allocatable :: nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays
   integer, parameter :: m_num = 4  ! Zonal wavenumber
