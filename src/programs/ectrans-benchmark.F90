@@ -1393,9 +1393,8 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   integer,         intent(in)    :: nsmax    ! Spectral truncation
   real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
 
-  integer :: index, num_my_zon_wns
+  integer :: num_my_zon_wns
   integer, allocatable :: my_zon_wns(:)
-  integer, allocatable :: nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays
   integer, parameter :: m_num = 4  ! Zonal wavenumber
@@ -1411,17 +1410,20 @@ subroutine initialize_2d_spectral_field(nsmax, field)
 
   ! If rank is responsible for the chosen zonal wavenumber...
   if (any(my_zon_wns == m_num) ) then
-    ! Get array of spectral array addresses (this maps (m, n=m) to array index)
-    allocate(nasm0(0:nsmax))
-    call trans_inq(kasm0=nasm0)
+    block
+      integer, allocatable :: nasm0(:)
+      integer :: index
 
-    ! Find out local array index of chosen spherical harmonic
-    index = nasm0(m_num) + 2 * (l_num - m_num) + 1
+      ! Get array of spectral array addresses (this maps (m, n=m) to array index)
+      allocate(nasm0(0:nsmax))
+      call trans_inq(kasm0=nasm0)
 
-    ! Set just that element to a constant value
-    field(index) = 1.0
-  else
-    return
+      ! Find out local array index of chosen spherical harmonic
+      index = nasm0(m_num) + 2 * (l_num - m_num) + 1
+
+      ! Set just that element to a constant value
+      field(index) = 1.0
+    end block
   end if
 
 end subroutine initialize_2d_spectral_field
