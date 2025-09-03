@@ -317,6 +317,17 @@ foreach( benchmark ${benchmarks} )
         )
         ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
 
+        # Check it works with 10 3D scalar fields, 20 levels, and NPROMATR=20 (feature only works for CPU)
+        if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "1" )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_npromatr20
+              COMMAND ${benchmark}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --npromatr 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders ${base_args}
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_npromatr20 )
+        endif()
+
         if( ${benchmark} MATCHES "cpu" )
           # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
           # TODO: Find out why the FLT gives so much higher errors
