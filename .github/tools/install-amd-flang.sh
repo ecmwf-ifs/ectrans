@@ -12,7 +12,7 @@
 # See <https://creativecommons.org/publicdomain/zero/1.0/> for
 # details.
 
-VERSION=6.0.0
+VERSION=7.0.5
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
 export AMDFLANG_NEW_INSTALL_DIR=$(pwd)/amdflang-new-install

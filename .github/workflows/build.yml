@@ -36,7 +36,7 @@ jobs:
           - linux nvhpc-26.3
           - linux intel-classic
           - linux intel-modern
-          - linux amd-flang-6.0.0
+          - linux amd-flang-7.0.5
           - macos
 
         include:
@@ -90,9 +90,9 @@ jobs:
             python-version: '3.11'
             caching: true
 
-          - name: linux amd-flang-6.0.0
+          - name: linux amd-flang-7.0.5
             os: ubuntu-24.04
-            compiler: amd-flang-6.0.0
+            compiler: amd-flang-7.0.5
             compiler_cc: amdclang
             compiler_cxx: amdclang++
             compiler_fc: amdflang-new
