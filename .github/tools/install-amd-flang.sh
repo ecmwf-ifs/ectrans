@@ -49,7 +49,7 @@ URL=https://repo.radeon.com/rocm/misc/flang/${URL_SHORT}
 
 if [ ! -f "${TEMPORARY_FILES}/${URL_SHORT}" ]; then
     echo "Downloading [${URL}]"
-    wget -P ${TEMPORARY_FILES} "${URL}"
+    wget -q -P ${TEMPORARY_FILES} "${URL}"
 else
     echo "Download already present in ${TEMPORARY_FILES}"
 fi
@@ -62,6 +62,9 @@ if [ ! -d "${AMDFLANG_INSTALL_DIR}/${BASENAME}" ]; then
 else
     echo "Install already present in ${AMDFLANG_INSTALL_DIR}"
 fi
+
+echo "ls ${AMDFLANG_INSTALL_DIR}"
+ls ${AMDFLANG_INSTALL_DIR}
 
 cat > ${AMDFLANG_INSTALL_DIR}/env.sh << EOF
 ### Variables
