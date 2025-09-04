@@ -42,9 +42,13 @@ done
 # Example download URL for version 6.0.0
 #    https://repo.radeon.com/rocm/misc/flang/rocm-afar-7450-drop-6.0.0-ubu.tar.bz2
 
-ver="$(echo $VERSION | tr -d . )"
-BASENAME=$(curl -s "https://repo.radeon.com/rocm/misc/flang/" | grep -oP "rocm-afar-[1-9][0-9]*-drop-{1}.{2}.{3}" | sort | tail -1)
-URL_SHORT=$(curl -s "https://repo.radeon.com/rocm/misc/flang/" | grep -oP "$BASENAME-ubu[a-z]*.tar.bz2" | sort | tail -1)
+# Get name of drop based on version
+BASENAME=$(curl -s "https://repo.radeon.com/rocm/misc/flang/" | \
+    grep -oP "rocm-afar-[1-9][0-9]*-drop-{1}.{2}.{3}" | grep "$VERSION" | sort | tail -1)
+
+# Get URL of drop
+URL_SHORT=$(curl -s "https://repo.radeon.com/rocm/misc/flang/" | \
+    grep -o "$BASENAME-ubuntu.tar.bz2" | sort | tail -1)
 URL=https://repo.radeon.com/rocm/misc/flang/${URL_SHORT}
 
 if [ ! -f "${TEMPORARY_FILES}/${URL_SHORT}" ]; then
