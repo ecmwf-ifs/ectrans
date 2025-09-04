@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Install amdflang new
+# Install amdflang
 # 
 #
 # Originally written for Squash <https://github.com/quixdb/squash> by
@@ -15,18 +15,18 @@
 VERSION=7.0.5
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
-export AMDFLANG_NEW_INSTALL_DIR=$(pwd)/amdflang-new-install
-export AMDFLANG_NEW_SILENT=true
+export AMDFLANG_INSTALL_DIR=$(pwd)/amdflang-install
+export AMDFLANG_SILENT=true
 while [ $# != 0 ]; do
     case "$1" in
     "--prefix")
-        export AMDFLANG_NEW_INSTALL_DIR="$2"; shift
+        export AMDFLANG_INSTALL_DIR="$2"; shift
         ;;
     "--tmpdir")
         TEMPORARY_FILES="$2"; shift
         ;;
     "--verbose")
-        export AMDFLANG_NEW_SILENT=false;
+        export AMDFLANG_SILENT=false;
         ;;
     "--version")
         VERSION="$2"; shift
@@ -54,18 +54,18 @@ else
     echo "Download already present in ${TEMPORARY_FILES}"
 fi
 
-if [ ! -d "${AMDFLANG_NEW_INSTALL_DIR}/${BASENAME}" ]; then
-    if [ ! -d "${AMDFLANG_NEW_INSTALL_DIR}" ]; then
-        mkdir -p ${AMDFLANG_NEW_INSTALL_DIR}
+if [ ! -d "${AMDFLANG_INSTALL_DIR}/${BASENAME}" ]; then
+    if [ ! -d "${AMDFLANG_INSTALL_DIR}" ]; then
+        mkdir -p ${AMDFLANG_INSTALL_DIR}
     fi
-    tar xjf ${TEMPORARY_FILES}/${URL_SHORT} -C ${AMDFLANG_NEW_INSTALL_DIR}
+    tar xjf ${TEMPORARY_FILES}/${URL_SHORT} -C ${AMDFLANG_INSTALL_DIR}
 else
-    echo "Install already present in ${AMDFLANG_NEW_INSTALL_DIR}"
+    echo "Install already present in ${AMDFLANG_INSTALL_DIR}"
 fi
 
-cat > ${AMDFLANG_NEW_INSTALL_DIR}/env.sh << EOF
+cat > ${AMDFLANG_INSTALL_DIR}/env.sh << EOF
 ### Variables
-export AMDFLANG_INSTALL_DIR=${AMDFLANG_NEW_INSTALL_DIR}/${BASENAME}
+export AMDFLANG_INSTALL_DIR=${AMDFLANG_INSTALL_DIR}/${BASENAME}
 export AMDFLANG_VERSION=${VERSION}
 
 ### Compilers
@@ -74,4 +74,4 @@ export LD_LIBRARY_PATH=\${AMDFLANG_INSTALL_DIR}/lib
 export LD_LIBRARY_PATH=\${AMDFLANG_INSTALL_DIR}/llvm/lib:\$LD_LIBRARY_PATH
 EOF
 
-cat ${AMDFLANG_NEW_INSTALL_DIR}/env.sh
+cat ${AMDFLANG_INSTALL_DIR}/env.sh
