@@ -43,6 +43,7 @@ def compare_checksums(folder_path):
                                 failed_list.append(f"{file_path} {other_file_path}")
                 if (not found):
                     print(f"    No comparison found")
+                    return False
     percentage = int(100*(success_count/total_count))
     if (error_count> 0):
         print(f"{percentage}% comparison passed, {colors.FAILURE}{error_count} comparison failed out of {total_count}{colors.ENDC}")
@@ -61,6 +62,7 @@ def compare_checksums(folder_path):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python compare_checksums.py <folder_path>")
+        exit(1)
     else:
         folder = sys.argv[1]
         if compare_checksums(folder):
