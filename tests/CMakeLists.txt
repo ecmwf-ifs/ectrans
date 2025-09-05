@@ -218,7 +218,7 @@ endif()
 
 foreach( benchmark ${benchmarks} )
 
-  if( NOT TEST compare_checksums )
+  if( NOT TEST compare_checksums AND HAVE_MPI )
     configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
     ecbuild_add_test( TARGET compare_checksums
       COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py" ARGS "."
