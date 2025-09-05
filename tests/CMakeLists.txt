@@ -217,15 +217,6 @@ if( TARGET ectrans-benchmark-gpu-sp )
 endif()
 
 foreach( benchmark ${benchmarks} )
-
-  if( NOT TEST compare_checksums AND HAVE_MPI )
-    configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
-    ecbuild_add_test( TARGET compare_checksums
-      COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py" ARGS "."
-    )
-    set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
-  endif()
-
   # Establish which task/thread parameters to test
   set( ntasks 0 )
   set( nthreads 1 )
@@ -236,6 +227,17 @@ foreach( benchmark ${benchmarks} )
     if( HAVE_OMP )
       list( APPEND nthreads 8 )
     endif()
+  endif()
+
+  if( NOT TEST compare_checksums AND HAVE_MPI )
+    configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
+    list( JOIN ntasks "," ntasks_joined )
+    list( JOIN nthreads "," nthreads_joined )
+    ecbuild_add_test( TARGET compare_checksums
+      COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py"
+      ARGS "." ${ntasks_joined} ${nthreads_joined}
+    )
+    set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
   endif()
 
   # Add test for each parameter combination
