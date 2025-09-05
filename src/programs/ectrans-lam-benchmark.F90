@@ -43,7 +43,6 @@ program ectrans_lam_benchmark
 
 use parkind1, only: jpim, jpib, jprb, jprd
 use oml_mod ,only : oml_max_threads
-use omp_lib, only: omp_get_wtime
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
@@ -86,6 +85,7 @@ integer(kind=jpim), allocatable :: nprcids(:)
 integer(kind=jpim) :: myproc, jj
 integer :: jstep
 
+real(kind=jprd), external :: timef ! Timing routine from FIAT
 real(kind=jprd) :: ztinit, ztloop, ztstepmax, ztstepmin, ztstepavg, ztstepmed
 real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
 real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
@@ -248,7 +248,7 @@ call dr_hook_init()
 !===================================================================================================
 
 if( lstats ) call gstats(0,0)
-ztinit = omp_get_wtime()
+ztinit = timef() / 1000.0_jprd
 
 ! only output to stdout on pe 1
 !if (nproc > 1) then
@@ -532,7 +532,7 @@ endif
 ! Setup timers
 !===================================================================================================
 
-ztinit = (omp_get_wtime() - ztinit)
+ztinit = (timef() / 1000.0_jprd - ztinit)
 
 if (verbosity >= 0) then
   write(nout,'(" ")')
@@ -576,7 +576,7 @@ endif
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
 
-ztloop = omp_get_wtime()
+ztloop = timef() / 1000.0_jprd
 
 !===================================================================================================
 ! Do spectral transform loop
@@ -584,13 +584,13 @@ ztloop = omp_get_wtime()
 
 do jstep = 1, iters
   if( lstats ) call gstats(3,0)
-  ztstep(jstep) = omp_get_wtime()
+  ztstep(jstep) = timef() / 1000.0_jprd
 
   !=================================================================================================
   ! Do inverse transform
   !=================================================================================================
 
-  ztstep1(jstep) = omp_get_wtime()
+  ztstep1(jstep) = timef() / 1000.0_jprd
   
   if( lstats ) call gstats(4,0)
   
@@ -640,7 +640,7 @@ do jstep = 1, iters
                       & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
   endif
 
-  ztstep1(jstep) = (omp_get_wtime() - ztstep1(jstep))
+  ztstep1(jstep) = (timef() / 1000.0_jprd - ztstep1(jstep))
 
   !=================================================================================================
   ! While in grid point space, dump the values to disk, for debugging only
@@ -662,7 +662,7 @@ do jstep = 1, iters
   ! Do direct transform
   !=================================================================================================
 
-  ztstep2(jstep) = omp_get_wtime()
+  ztstep2(jstep) = timef() / 1000.0_jprd
 
   if( lstats ) call gstats(5,0)
 
@@ -693,7 +693,7 @@ do jstep = 1, iters
 
   if( lstats ) call gstats(5,1)
   
-  ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
+  ztstep2(jstep) = (timef() / 1000.0_jprd - ztstep2(jstep))
 
   !=================================================================================================
   ! Dump the values to disk, for debugging only
@@ -723,7 +723,7 @@ do jstep = 1, iters
   ! Calculate timings
   !=================================================================================================
 
-  ztstep(jstep) = (omp_get_wtime() - ztstep(jstep))
+  ztstep(jstep) = (timef() / 1000.0_jprd - ztstep(jstep))
 
   ztstepavg = ztstepavg + ztstep(jstep)
   ztstepmin = min(ztstep(jstep), ztstepmin)
@@ -816,7 +816,7 @@ enddo
 
 !===================================================================================================
 
-ztloop = (omp_get_wtime() - ztloop)
+ztloop = (timef() / 1000.0_jprd - ztloop)
 
 write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
