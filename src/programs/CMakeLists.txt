@@ -74,7 +74,7 @@ if( HAVE_ETRANS )
                                 parkind_${prec}
                                 trans_${prec}
                                 etrans_${prec}
-                                OpenMP::OpenMP_Fortran
+                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                             )
     endif()
   endforeach()
