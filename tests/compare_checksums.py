@@ -8,7 +8,7 @@ class colors:
     FAILURE = '\033[91m'
     ENDC = '\033[0m'
 
-def compare_checksums(folder_path):
+def compare_checksums(folder_path, ntasks, nthreads):
     if not os.path.isdir(folder_path):
         print(f"Error: '{folder_path}' is not a valid directory.")
         return False
@@ -25,8 +25,8 @@ def compare_checksums(folder_path):
             if os.path.isfile(file_path):
                 print(f"{file_name}")
                 found = False
-                for mpi in [0,1,2]:
-                    for omp in [1,4,8]:
+                for mpi in ntasks:
+                    for omp in nthreads:
                         other_file_name = file_name.replace("mpi0_omp1",f"mpi{mpi}_omp{omp}")
                         if other_file_name == file_name:
                             continue
@@ -43,6 +43,7 @@ def compare_checksums(folder_path):
                                 failed_list.append(f"{file_path} {other_file_path}")
                 if (not found):
                     print(f"    No comparison found")
+                    return False
     percentage = int(100*(success_count/total_count))
     if (error_count> 0):
         print(f"{percentage}% comparison passed, {colors.FAILURE}{error_count} comparison failed out of {total_count}{colors.ENDC}")
@@ -59,11 +60,14 @@ def compare_checksums(folder_path):
     return True
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python compare_checksums.py <folder_path>")
+    if len(sys.argv) != 4:
+        print("Usage: python compare_checksums.py <folder_path> <ntasks list> <nthreads list>")
+        exit(1)
     else:
         folder = sys.argv[1]
-        if compare_checksums(folder):
+        ntasks = sys.argv[2].split(",")
+        nthreads = sys.argv[3].split(",")
+        if compare_checksums(folder, ntasks, nthreads):
             exit(0)
         else:
             exit(1)
