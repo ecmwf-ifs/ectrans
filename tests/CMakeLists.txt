@@ -229,7 +229,7 @@ foreach( benchmark ${benchmarks} )
     endif()
   endif()
 
-  if( NOT TEST compare_checksums AND HAVE_MPI )
+  if( NOT TEST compare_checksums AND (HAVE_MPI OR HAVE_OMP) )
     configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
     list( JOIN ntasks "," ntasks_joined )
     list( JOIN nthreads "," nthreads_joined )
