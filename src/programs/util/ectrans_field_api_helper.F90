@@ -45,13 +45,8 @@ type fields_lists
 contains
 
 subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
-                               & sp3d, spc2, zgmv, zgmvs, zgp2,    &
-                               & jbegin_uv,jend_uv,                &
-                               & jbegin_sc,jend_sc,                &
-                               & jbegin_scder_ns, jend_scder_ns,   &
-                               & jbegin_scder_ew, jend_scder_ew,   &
-                               & jbegin_uder_ew, jend_uder_ew,     &
-                               & jbegin_vder_ew, jend_vder_ew)
+                               & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv, zgp3a, zgp2,    &
+                               & inum_wind_fields, inum_sc_2d_fields, inum_sc_3d_fields)
 
   ! Wrap the arrays given as input in field API objects
 
@@ -59,61 +54,98 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
     logical, intent(in) :: lvordiv
     logical, intent(in) :: lscders
     logical, intent(in) :: luvders
-    real(kind=jprb), intent(in) :: sp3d(:,:,:)
-    real(kind=jprb), intent(in) :: spc2(:,:)
-    real(kind=jprb), intent(in) :: zgmv(:,:,:,:)
-    real(kind=jprb), intent(in) :: zgmvs(:,:,:)
-    real(kind=jprb), intent(in) :: zgp2 (:,:,:)
-    integer(kind=jpim), intent(in) :: jbegin_uv
-    integer(kind=jpim), intent(in) :: jend_uv
-    integer(kind=jpim), intent(in) :: jbegin_sc
-    integer(kind=jpim), intent(in) :: jend_sc
-    integer(kind=jpim), intent(in) :: jbegin_scder_ns
-    integer(kind=jpim), intent(in) :: jend_scder_ns
-    integer(kind=jpim), intent(in) :: jbegin_scder_ew
-    integer(kind=jpim), intent(in) :: jend_scder_ew
-    integer(kind=jpim), intent(in) :: jbegin_uder_ew
-    integer(kind=jpim), intent(in) :: jend_uder_ew
-    integer(kind=jpim), intent(in) :: jbegin_vder_ew
-    integer(kind=jpim), intent(in) :: jend_vder_ew
+    real(kind=jprb), intent(in) :: zspvor(:,:)
+    real(kind=jprb), intent(in) :: zspdiv(:,:)
+    real(kind=jprb), intent(in) :: zspsc3a(:,:,:)
+    real(kind=jprb), intent(in) :: zspsc2(:,:)
+    real(kind=jprb), intent(in) :: zgpuv (:,:,:,:)
+    real(kind=jprb), intent(in) :: zgp3a(:,:,:,:)
+    real(kind=jprb), intent(in) :: zgp2(:,:,:)
 
-  if (lvordiv) then
-      if (jbegin_uv>0 )      call field_new(ywflds%u, data=zgmv(:,:,jbegin_uv,:))
-      if (jend_uv>0 )        call field_new(ywflds%v, data=zgmv(:,:,jend_uv,:))
+    integer, intent(in) :: inum_wind_fields, inum_sc_3d_fields, inum_sc_2d_fields
+
+    integer(kind=jpim) :: jbegin_uv
+    integer(kind=jpim) :: jend_uv
+    integer(kind=jpim) :: jbegin_sc
+    integer(kind=jpim) :: jend_sc
+    integer(kind=jpim) :: jbegin_scder_ns
+    integer(kind=jpim) :: jend_scder_ns
+    integer(kind=jpim) :: jbegin_scder_ew
+    integer(kind=jpim) :: jend_scder_ew
+    integer(kind=jpim) :: jbegin_uder_ew
+    integer(kind=jpim) :: jend_uder_ew
+    integer(kind=jpim) :: jbegin_vder_ew
+    integer(kind=jpim) :: jend_vder_ew
+
+    if (lvordiv) then
+      jbegin_uv = 1
+      jend_uv = 2
+    endif
+    if (luvders) then
+      jbegin_uder_EW  = jend_uv + 1
+      jend_uder_EW    = jbegin_uder_EW
+      jbegin_vder_EW  = jend_uder_EW + 1
+      jend_vder_EW    = jbegin_vder_EW
+    else
+      jbegin_uder_EW = jend_uv
+      jend_uder_EW   = jend_uv
+      jbegin_vder_EW = jend_uv
+      jend_vder_EW   = jend_uv
+    endif
+
+    jbegin_sc = jend_vder_EW + 1
+    jend_sc   = jend_vder_EW +  inum_sc_3d_fields
+
+    if (lscders) then
+      jbegin_scder_NS = jend_sc + 1
+      jend_scder_NS   = jend_sc +  inum_sc_3d_fields
+      jbegin_scder_EW = jend_scder_NS + 1
+      jend_scder_EW   = jend_scder_NS +  inum_sc_3d_fields
+    else
+      jbegin_scder_NS = jend_sc
+      jend_scder_NS   = jend_sc
+      jbegin_scder_EW = jend_sc
+      jend_scder_EW   = jend_sc
+    endif
+
+    if (lvordiv) then
+        call field_new(ywflds%u, data=zgp3a(:,:,jbegin_uv,:))
+        call field_new(ywflds%v, data=zgp3a(:,:,jend_uv,:))
 
       ! In the benchmark, vorticity is not computed
-      !call field_new(ywflds%vor,         data=zgmv(:,:,jbegin_uv,:))
-      !call field_new(ywflds%div,         data=zgmv(:,:,jend_uv,:))
-  endif
+      !call field_new(ywflds%vor,         data=zgp3a(:,:,jbegin_uv,:))
+      !call field_new(ywflds%div,         data=zgp3a(:,:,jend_uv,:))
+
+    endif
 
   ! spectral vector fields
-  if (size(sp3d,3) >=1 ) call field_new(ywflds%spvor,      data=sp3d(:,:,1))
-  if (size(sp3d,3) >=2 ) call field_new(ywflds%spdiv,      data=sp3d(:,:,2))
+  call field_new(ywflds%spvor,      data=zspvor(:,:))
+  call field_new(ywflds%spdiv,      data=zspdiv(:,:))
 
   ! spectral scalar fields
-  if (size(sp3d,3) >=3 ) call field_new(ywflds%spscalar,  data=sp3d(:,:,3:))
-  if (size(spc2,2) >=1 ) call field_new(ywflds%spscalar2, data=spc2(:,:))
+  if (size(zspsc3a,3) >=3 ) call field_new(ywflds%spscalar, data=zspsc3a(:,:,:))
+  if (size(zspsc2,2) >=1 ) call field_new(ywflds%spscalar2, data=zspsc2(:,:))
 
   ! spectral surfacic scalar fields
-  if (size(zgmvs,2)>=1)  call field_new(ywflds%scalar2,   data=zgmvs(:,1:1,:))
+  if (size(zgp2,2)>=1)  call field_new(ywflds%scalar2,   data=zgp2(:,1:inum_sc_2d_fields,:))
 
   ! grid-point vector derivatives
   if (luvders) then
-     if (jend_uder_ew>0 .and. jend_uder_ew>=jbegin_uder_ew ) call field_new(ywflds%u_ns, data=zgmv(:,:,jbegin_uder_ew:jend_uder_ew,:))
-     if (jend_vder_ew>0 .and. jend_vder_ew>=jbegin_vder_ew ) call field_new(ywflds%v_ns, data=zgmv(:,:,jbegin_vder_ew:jend_vder_ew,:))
+    if (jend_uder_ew>0 .and. jend_uder_ew>=jbegin_uder_ew ) call field_new(ywflds%u_ns, data=zgp3a(:,:,jbegin_uder_ew:jend_uder_ew,:))
+    if (jend_vder_ew>0 .and. jend_vder_ew>=jbegin_vder_ew ) call field_new(ywflds%v_ns, data=zgp3a(:,:,jbegin_vder_ew:jend_vder_ew,:))
   endif
- 
+
   ! grid-point scalar fields
-  if (jend_sc>0 .and. jend_sc>=jbegin_sc ) call field_new(ywflds%scalar,  data=zgmv(:,:,jbegin_sc:jend_sc,:))
+  if (jend_sc>0 .and. jend_sc>=jbegin_sc ) call field_new(ywflds%scalar,  data=zgp3a(:,:,jbegin_sc:jend_sc,:))
 
   ! grid-point scalar derivatives fields
   if (lscders) then
-    if (jend_scder_ew>0 .and. jend_scder_ew>=jbegin_scder_ew ) call field_new(ywflds%scalar_ew,  data=zgmv(:,:,jbegin_scder_ew:jend_scder_ew,:))
-    if (jend_scder_ns>0 .and. jend_scder_ns>=jbegin_scder_ns ) call field_new(ywflds%scalar_ns,  data=zgmv(:,:,jbegin_scder_ns:jend_scder_ns,:))
+    if (jend_scder_ew>0 .and. jend_scder_ew>=jbegin_scder_ew ) call field_new(ywflds%scalar_ew,  data=zgp3a(:,:,jbegin_scder_ew:jend_scder_ew,:))
+    if (jend_scder_ns>0 .and. jend_scder_ns>=jbegin_scder_ns ) call field_new(ywflds%scalar_ns,  data=zgp3a(:,:,jbegin_scder_ns:jend_scder_ns,:))
 
     ! grid-point surfacic scalar derivatives fields
-    if (size(zgmvs,2)>=2)     call field_new(ywflds%scalar2_ns, data=zgmvs(:,2:2,:))
-    if (size(zgmvs,2)>=3)     call field_new(ywflds%scalar2_ew, data=zgmvs(:,3:3,:))
+    if (size(zgp2,2)>=2)     call field_new(ywflds%scalar2_ns, data=zgp2(:,1*inum_sc_2d_fields+1:2*inum_sc_2d_fields,:))
+    if (size(zgp2,2)>=3)     call field_new(ywflds%scalar2_ew, data=zgp2(:,2*inum_sc_2d_fields+1:3*inum_sc_2d_fields,:))
   endif
 end subroutine wrap_benchmark_fields
 

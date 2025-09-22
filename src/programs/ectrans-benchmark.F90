@@ -556,15 +556,9 @@ else
 #if USE_FIELD_API
   if (icall_mode == 2) then
     call nullify_wrapped_fields(ywflds)
-    call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvders, &
-                            & sp3d, zspsc2, zgmv, zgmvs, zgp2, &
-                            & jbegin_uv,jend_uv, &
-                            & jbegin_sc,jend_sc, &
-                            & jbegin_scder_NS, jend_scder_NS, &
-                            & jbegin_scder_EW, jend_scder_EW, &
-                            & jbegin_uder_EW, jend_uder_EW, &
-                            & jbegin_vder_EW, jend_vder_EW)
-
+    call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvder, &
+                            & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv,zgp3a, zgp2,     &
+                            & inum_wind_fields, inum_sc_3d_fields, inum_sc_3d_fields)
     call create_fields_lists(ywflds,ylf,ivset,ivsetsc)
   endif
 #endif
@@ -1058,7 +1052,7 @@ endif
 ! Cleanup
 !===================================================================================================
 #if USE_FIELD_API
-if (lfield_api) then
+if (icall_mode ==2) then
   call delete_wrapped_fields(ywflds)
   call delete_fields_lists(ylf)
 endif
