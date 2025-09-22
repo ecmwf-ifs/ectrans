@@ -22,6 +22,8 @@
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+#include <tuple>
+
 #include "abor1.h"
 
 #ifdef HIPGPU
@@ -44,7 +46,7 @@ inline void __fftSafeCall(hipfftResult err, const char *file, const int line)
 {
     if( hipSuccess != (int) err) {
         _printError("GPU runtime", file, line, err, _fftGetErrorEnum(err));
-        hipDeviceReset();
+        std::ignore = hipDeviceReset();
         ABOR1("Error in FFT\n");
     }
 }

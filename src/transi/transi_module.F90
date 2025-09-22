@@ -446,7 +446,8 @@ interface
     use, intrinsic :: iso_c_binding, only: c_ptr
     type(c_ptr), intent(in) :: ptr
   end subroutine transi_free
-  subroutine transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() bind(C,name="transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED")
+  subroutine transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED() bind(C, &
+    & name="transi_disable_DR_HOOK_ASSERT_MPI_INITIALIZED")
   end subroutine
 end interface
 
@@ -488,7 +489,7 @@ function c_str_to_string(s) result(string)
   use, intrinsic :: iso_c_binding
   character(kind=c_char,len=1), intent(in) :: s(*)
   character(len=:), allocatable :: string
-  integer i, nchars
+  integer :: i, nchars
   i = 1
   do
      if (s(i) == c_null_char) exit
@@ -513,7 +514,7 @@ end function
 ! =============================================================================
 
 subroutine to_lower(str)
-  character(*), intent(in out) :: str
+  character(*), intent(inout) :: str
   integer :: i
 
   do i = 1, len(str)
@@ -1206,7 +1207,7 @@ end function trans_inquire_cstr
 function trans_inquire_fstr(trans,vars_fstr) result(iret)
   integer(c_int) :: iret
   type(Trans_t), intent(inout) :: trans
-  character(len=*) :: vars_fstr
+  character(len=*), intent(in) :: vars_fstr
   character(20) :: var_arr(30), var
   integer :: nvars, jvar
   !logical(c_bool), pointer :: bool1(:)

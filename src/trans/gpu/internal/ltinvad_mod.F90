@@ -107,7 +107,7 @@ CONTAINS
     USE MPL_MODULE,             ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
     USE TPM_GEN,                ONLY: LSYNC_TRANS
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
-    USE ISO_C_BINDING,          ONLY: C_LOC, C_SIZEOF
+    USE ISO_C_BINDING,          ONLY: C_LOC, C_SIZEOF, C_F_POINTER
 
     !**** *LTINVAD* - adjoint of inverse Legendre transform
     !
@@ -169,8 +169,8 @@ CONTAINS
     REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT)  :: PSPSC2(:,:)
     REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT)  :: PSPSC3A(:,:,:)
     REAL(KIND=JPRB)   ,OPTIONAL,INTENT(INOUT)  :: PSPSC3B(:,:,:)
-    REAL(KIND=JPRBT)  , INTENT(IN) :: ZOUTS(:), ZOUTA(:)
-    REAL(KIND=JPRD)   , INTENT(IN) :: ZOUTS0(:), ZOUTA0(:)
+    REAL(KIND=JPRBT)  , POINTER, INTENT(IN) :: ZOUTS(:), ZOUTA(:)
+    REAL(KIND=JPRD)   , POINTER, INTENT(IN) :: ZOUTS0(:), ZOUTA0(:)
 
     INTEGER(KIND=JPIM) :: IFIRST, J3
 
@@ -298,7 +298,7 @@ CONTAINS
     DO KMLOC=1,D_NUMP
       DO JK=1,IF_LEG
         KM =  D_MYMS(KMLOC)
-        IF(KM .eq. 0)THEN
+        IF(KM == 0)THEN
 #ifdef ACCGPU
           !$ACC LOOP SEQ
 #endif
