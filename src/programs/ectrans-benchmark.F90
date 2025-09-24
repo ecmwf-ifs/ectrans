@@ -432,6 +432,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
+  write(nout,'("call_mode  ",i0)') icall_mode
   write(nout,'("nsmax      ",i0)') nsmax
   write(nout,'("grid       ",a)') trim(cgrid)
   write(nout,'("ndgl       ",i0)') ndgl
@@ -555,25 +556,25 @@ else
   call allocator%allocate('zgpuv', zgpuv, [nproma,nflevg,inum_wind_fields,ngpblks])
   call allocator%allocate('zgp3a', zgp3a, [nproma,nflevg,inum_sc_3d_fields,ngpblks])
   call allocator%allocate('zgp2', zgp2, [nproma,inum_sc_2d_fields,ngpblks])
-    write(6,*) "inum_sc_2d_fields", inum_sc_2d_fields
-    write(6,*) "inum_sc_3d_fields", inum_sc_3d_fields
-    write(6,*) "inum_wind_fields", inum_wind_fields
- 
+endif
+
 #if USE_FIELD_API
-  if (lfield_api) then
+if (lfield_api) then
     call nullify_wrapped_fields(ywflds)
     if (icall_mode == 1) then
+        write(6,*) "Wrap zgp"
         call wrap_benchmark_fields_zgp(ywflds,lvordiv, lscders, luvder, &
                                      & zspvor, zspdiv, zspscalar, zgp)
+        call create_fields_lists(ywflds,ylf,kvsetuv = ivset,kvsetsc2=ivsetsc)
     else
+        write(6,*) "Wrap "
         call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvder, &
                                  & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv,zgp3a, zgp2)
+        call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc2=ivsetsc2, kvsetsc=ivset)
     endif
-    call create_fields_lists(ywflds,ylf,ivset,ivsetsc)
   endif
 #endif
 
-endif
 
 
 
@@ -1275,7 +1276,6 @@ subroutine print_help(unit)
    & PGP"
   write(nout, "(a)") "                        Call mode 2 uses arrays PSPVOR, PSPDIV, PSPSC3A,&
    & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
-  write(nout, "(a)") "                        Call mode 3 uses field api interface"
   write(nout, "(a)") "                        See&
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
   write(nout, "(a)") ""

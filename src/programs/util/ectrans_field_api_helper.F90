@@ -129,6 +129,7 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
       call field_new(ywflds%scalar2_ew, data=zgp(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
      endif
   endif
+  call flush(6)
 end subroutine wrap_benchmark_fields_zgp
 
 
@@ -232,58 +233,59 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
 #endif
 end subroutine wrap_benchmark_fields
 
-subroutine create_fields_lists(ywflds,ylf, nbsetlev,nbsetsc2)
+subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
 
   ! Create field lists in ylf from field API objects in ywflds
 
   type(wrapped_fields), intent(in) :: ywflds       !input fields api objects
   type(fields_lists), intent(inout), target :: ylf ! output field lists
-  integer(kind=jpim), intent(in) :: nbsetlev(:)    ! 'b-set' for vector fields
-  integer(kind=jpim), intent(in) :: nbsetsc2(:)    ! 'b-set' for surfacic fields
+  integer(kind=jpim), optional, intent(in) :: kvsetuv(:)     ! 'b-set' for vector fields
+  integer(kind=jpim), optional, intent(in) :: kvsetsc(:)     ! 'b-set' for scalar fields
+  integer(kind=jpim), optional, intent(in) :: kvsetsc2(:)    ! 'b-set' for surfacic fields
 
-  if(associated(ywflds%spvor)) ylf%spvor=[b(ywflds%spvor,'spvor',nbsetlev)]
+  if(associated(ywflds%spvor)) ylf%spvor=[b(ywflds%spvor,'spvor',kvsetuv)]
 
-  if(associated(ywflds%spdiv)) ylf%spdiv= [b(ywflds%spdiv,'spdiv',nbsetlev)]
+  if(associated(ywflds%spdiv)) ylf%spdiv= [b(ywflds%spdiv,'spdiv',kvsetuv)]
 
-  if(associated(ywflds%u)) ylf%u = [b(ywflds%u,'u',nbsetlev)]
-  if(associated(ywflds%v)) ylf%v = [b(ywflds%v,'v',nbsetlev)]
+  if(associated(ywflds%u)) ylf%u = [b(ywflds%u,'u',kvsetuv)]
+  if(associated(ywflds%v)) ylf%v = [b(ywflds%v,'v',kvsetuv)]
 
-  if(associated(ywflds%u_ns)) ylf%u_ns=[b(ywflds%u_ns,'u_ns', nbsetlev)]
-  if(associated(ywflds%v_ns)) ylf%v_ns=[b(ywflds%v_ns,'v_ns', nbsetlev)]
+  if(associated(ywflds%u_ns)) ylf%u_ns=[b(ywflds%u_ns,'u_ns', kvsetuv)]
+  if(associated(ywflds%v_ns)) ylf%v_ns=[b(ywflds%v_ns,'v_ns', kvsetuv)]
 
-  if(associated(ywflds%vor))  ylf%vor = [b(ywflds%vor,'vor', nbsetlev)]
-  if(associated(ywflds%div))  ylf%div = [b(ywflds%div,'div', nbsetlev)]
+  if(associated(ywflds%vor))  ylf%vor = [b(ywflds%vor,'vor', kvsetuv)]
+  if(associated(ywflds%div))  ylf%div = [b(ywflds%div,'div', kvsetuv)]
 
   if (associated(ywflds%spscalar) .and. associated(ywflds%spscalar2) ) then
-    ylf%spscalar = [b(ywflds%spscalar,'spscalar',nbsetlev), b(ywflds%spscalar2,'spscalar2',nbsetsc2)]
+    ylf%spscalar = [b(ywflds%spscalar,'spscalar',kvsetsc), b(ywflds%spscalar2,'spscalar2',kvsetsc2)]
   else if (associated(ywflds%spscalar)) then
-    ylf%spscalar = [b(ywflds%spscalar,'spscalar',nbsetlev)]
+    ylf%spscalar = [b(ywflds%spscalar,'spscalar',kvsetsc)]
   else if (associated(ywflds%spscalar2)) then
-    ylf%spscalar = [b(ywflds%spscalar2,'spscalar2',nbsetsc2)]
+    ylf%spscalar = [b(ywflds%spscalar2,'spscalar2',kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar) .and. associated(ywflds%scalar2) ) then
-    ylf%scalar = [b(ywflds%scalar,'scalar', nbsetlev), b(ywflds%scalar2,'scalar2', nbsetsc2)]
+    ylf%scalar = [b(ywflds%scalar,'scalar', kvsetsc), b(ywflds%scalar2,'scalar2', kvsetsc2)]
   else if (associated(ywflds%scalar)) then
-    ylf%scalar = [b(ywflds%scalar,'scalar', nbsetlev)]
+    ylf%scalar = [b(ywflds%scalar,'scalar', kvsetsc)]
   else if (associated(ywflds%scalar2)) then
-    ylf%scalar = [b(ywflds%scalar2,'scalar2', nbsetsc2)]
+    ylf%scalar = [b(ywflds%scalar2,'scalar2', kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar_ns) .and. associated(ywflds%scalar2_ns) ) then
-    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', nbsetlev), b(ywflds%scalar2_ns,'scalar2_ns', nbsetsc2)]
+    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', kvsetsc), b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
   else if (associated(ywflds%scalar_ns)) then
-    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', nbsetlev)]
+    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', kvsetsc)]
   else if (associated(ywflds%scalar2_ns)) then
-    ylf%scalar_ns = [b(ywflds%scalar2_ns,'scalar2_ns', nbsetsc2)]
+    ylf%scalar_ns = [b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar_ew) .and. associated(ywflds%scalar2_ew) ) then
-    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', nbsetlev), b(ywflds%scalar2_ew,'scalar2_ew', nbsetsc2)]
+    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', kvsetsc), b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
   else if (associated(ywflds%scalar_ew)) then
-    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', nbsetlev)]
+    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', kvsetsc)]
   else if (associated(ywflds%scalar2_ew)) then
-    ylf%scalar_ew = [b(ywflds%scalar2_ew,'scalar2_ew', nbsetsc2)]
+    ylf%scalar_ew = [b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
   endif
  end subroutine create_fields_lists
 
