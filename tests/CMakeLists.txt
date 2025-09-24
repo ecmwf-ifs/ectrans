@@ -7,6 +7,18 @@
 # nor does it submit to any jurisdiction.
 
 # --------------------------------------------------------------------------------------------------
+# First establish which precisions to test
+# --------------------------------------------------------------------------------------------------
+
+set( precisions "" )
+if( HAVE_DOUBLE_PRECISION )
+  list( APPEND precisions "dp" )
+endif()
+if( HAVE_SINGLE_PRECISION )
+  list( APPEND precisions "sp" )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add a test for installation of ecTrans
 # --------------------------------------------------------------------------------------------------
 
@@ -63,14 +75,6 @@ endforeach()
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
-  set( precisions "" )
-  if( HAVE_DOUBLE_PRECISION )
-    list( APPEND precisions "dp" )
-  endif()
-  if( HAVE_SINGLE_PRECISION )
-    list( APPEND precisions "sp" )
-  endif()
-
   set( ntasks 0 )
   if( HAVE_MPI )
     list( APPEND ntasks 1 2 )
@@ -160,14 +164,6 @@ endforeach() # platform
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
-  set( precisions "" )
-  if( HAVE_DOUBLE_PRECISION )
-    list( APPEND precisions "dp" )
-  endif()
-  if( HAVE_SINGLE_PRECISION )
-    list( APPEND precisions "sp" )
-  endif()
-
   set( ntasks 0 )
   if( HAVE_MPI )
     list( APPEND ntasks 1 2 )
