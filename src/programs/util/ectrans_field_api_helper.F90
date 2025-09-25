@@ -69,49 +69,52 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 
     inum_wind_fields = size(zspvor,1)
     inum_sc_2d_fields = size(zspscalar,1)
- ! spectral vector fields
-  call field_new(ywflds%spvor,      data=zspvor(:,:))
-  call field_new(ywflds%spdiv,      data=zspdiv(:,:))
-  ioffset = 1
-  if (lvordiv) then
-      ! In the benchmark, vorticity is not computed
-      call field_new(ywflds%vor, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+    ! spectral vector fields
+    call field_new(ywflds%spvor,  data=zspvor(:,:))
+    call field_new(ywflds%spdiv,  data=zspdiv(:,:))
+    
+    ! spectral scalar fields
+    if (inum_sc_2d_fields > 0) then
+      call field_new(ywflds%spscalar, data=zspscalar(:,:))
+    endif
+    ioffset = 1
+    
+    ! grid-point vector fields
+
+    ! gridpoint vector field vorticitity and divergence
+    if (lvordiv) then        
+        call field_new(ywflds%vor, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+        ioffset = ioffset + inum_wind_fields
+        call field_new(ywflds%div, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+        ioffset = ioffset + inum_wind_fields
+    endif
+
+    ! grid-point u and v
+    call field_new(ywflds%u, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+    ioffset = ioffset + inum_wind_fields
+    call field_new(ywflds%v, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+    ioffset = ioffset + inum_wind_fields
+
+    ! grid-point vector derivatives
+    if (luvders) then
+      call field_new(ywflds%u_ns, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
       ioffset = ioffset + inum_wind_fields
-
-      call field_new(ywflds%div, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+      call field_new(ywflds%v_ns, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
       ioffset = ioffset + inum_wind_fields
-  endif
+    endif
 
-  call field_new(ywflds%u, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
-  ioffset = ioffset + inum_wind_fields
-
-  call field_new(ywflds%v, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
-  ioffset = ioffset + inum_wind_fields
-
-  ! grid-point vector derivatives
-  if (luvders) then
-     call field_new(ywflds%u_ns, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
-     ioffset = ioffset + inum_wind_fields
-     call field_new(ywflds%v_ns, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
-     ioffset = ioffset + inum_wind_fields
-  endif
-
-  ! spectral scalar fields
-  if (inum_sc_2d_fields > 0) then! spectral surfacic scalar fields
-     call field_new(ywflds%spscalar, data=zspscalar(:,:))
-
-     call field_new(ywflds%scalar, data=zgp(:,ioffset:ioffset+inum_sc_2d_fields-1,:))
-     ioffset = ioffset + inum_sc_2d_fields
-     if (lscders) then
-        call field_new(ywflds%scalar_ns, data=zgp(:,ioffset:ioffset+inum_sc_2d_fields-1,:))
-        ioffset = ioffset + inum_sc_2d_fields
-
-        call field_new(ywflds%scalar_ew, data=zgp(:,ioffset:ioffset+inum_sc_2d_fields-1,:))
-        ioffset = ioffset + inum_sc_2d_fields
-     endif
-  endif
+    ! grid-point scalar fields
+    if (inum_sc_2d_fields > 0) then
+      call field_new(ywflds%scalar, data=zgp(:,ioffset:ioffset+inum_sc_2d_fields-1,:))
+      ioffset = ioffset + inum_sc_2d_fields
+      if (lscders) then
+          call field_new(ywflds%scalar_ns, data=zgp(:,ioffset:ioffset+inum_sc_2d_fields-1,:))
+          ioffset = ioffset + inum_sc_2d_fields
+          call field_new(ywflds%scalar_ew, data=zgp(:,ioffset:ioffset+inum_sc_2d_fields-1,:))
+          ioffset = ioffset + inum_sc_2d_fields
+      endif
+    endif
 end subroutine wrap_benchmark_fields_zgp
-
 
 subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
                                & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv, zgp3a, zgp2)
@@ -136,62 +139,68 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
     inum_wind_fields = 1
     inum_sc_3d_fields = size(zspsc3a,3)
     inum_sc_2d_fields = size(zspsc2,1)
- ! spectral vector fields
-  call field_new(ywflds%spvor,      data=zspvor(:,:))
-  call field_new(ywflds%spdiv,      data=zspdiv(:,:))
-
-  ioffset = 1
-  if (lvordiv) then
-      ! In the benchmark, vorticity is not computed
-      call field_new(ywflds%vor, data=zgpuv(:,:, ioffset, :))
-      ioffset = ioffset + inum_wind_fields
-      call field_new(ywflds%div, data=zgpuv(:,:, ioffset, :))
-      ioffset = ioffset + inum_wind_fields
-  endif
-
-  call field_new(ywflds%u, data=zgpuv(:,:, ioffset, :))
-  ioffset = ioffset + inum_wind_fields
-  call field_new(ywflds%v, data=zgpuv(:,:, ioffset, :))
-  ioffset = ioffset + inum_wind_fields
-
-
-  ! grid-point vector derivatives
-  if (luvders) then
-     call field_new(ywflds%u_ns, data=zgpuv(:,:, ioffset, :))
-     ioffset = ioffset + inum_wind_fields
-     call field_new(ywflds%v_ns, data=zgpuv(:,:, ioffset, :))
-     ioffset = ioffset + inum_wind_fields
-  endif
-
-
-  ! spectral scalar fields
-  if (inum_sc_3d_fields > 0) then
-     call field_new(ywflds%spscalar3, data=zspsc3a(:,:,:))
-     ioffset = 1
-     call field_new(ywflds%scalar3,  data=zgp3a(:,:,ioffset:ioffset+inum_sc_3d_fields-1,:))
-     ioffset = ioffset + inum_sc_3d_fields
-     if (lscders) then
-         ! grid-point surfacic scalar derivatives fields
-        call field_new(ywflds%scalar3_ns,  data=zgp3a(:,:,ioffset:ioffset+inum_sc_3d_fields-1,:))
-        ioffset = ioffset + inum_sc_3d_fields
-        call field_new(ywflds%scalar3_ew,  data=zgp3a(:,:,ioffset:ioffset+inum_sc_3d_fields-1,:))
-        ioffset = ioffset + inum_sc_3d_fields
+  ! spectral vector fields
+    call field_new(ywflds%spvor,      data=zspvor(:,:))
+    call field_new(ywflds%spdiv,      data=zspdiv(:,:))
+    ! spectral scalar fields
+    if (inum_sc_3d_fields > 0) then
+      call field_new(ywflds%spscalar3, data=zspsc3a(:,:,:))
     endif
-   endif
+    ! spectral surfacic scalar fields
+    if (inum_sc_2d_fields > 0) then
+      call field_new(ywflds%spscalar2, data=zspsc2(:,:))
+    endif
 
-  if (inum_sc_2d_fields > 0) then! spectral surfacic scalar fields
-     call field_new(ywflds%spscalar2, data=zspsc2(:,:))
+    ! grid-point vector fields
+    ioffset = 1    
+    ! gridpoint vector field vorticitity and divergence
+    if (lvordiv) then        
+        call field_new(ywflds%vor, data=zgpuv(:,:, ioffset, :))
+        ioffset = ioffset + inum_wind_fields
+        call field_new(ywflds%div, data=zgpuv(:,:, ioffset, :))
+        ioffset = ioffset + inum_wind_fields
+    endif
 
-     ioffset = 1
-     call field_new(ywflds%scalar2,   data=zgp2(:,ioffset:ioffset + inum_sc_2d_fields-1,:))
-     ioffset = ioffset + inum_sc_2d_fields
-     if (lscders) then
-      call field_new(ywflds%scalar2_ns, data=zgp2(:,ioffset : ioffset + inum_sc_2d_fields-1,:))
+    ! grid-point u and v
+    call field_new(ywflds%u, data=zgpuv(:,:, ioffset, :))
+    ioffset = ioffset + inum_wind_fields
+    call field_new(ywflds%v, data=zgpuv(:,:, ioffset, :))
+    ioffset = ioffset + inum_wind_fields
+
+    ! grid-point vector derivatives
+    if (luvders) then
+      call field_new(ywflds%u_ns, data=zgpuv(:,:, ioffset, :))
+      ioffset = ioffset + inum_wind_fields
+      call field_new(ywflds%v_ns, data=zgpuv(:,:, ioffset, :))
+      ioffset = ioffset + inum_wind_fields
+    endif
+
+    !grid-point scalar fields
+    if (inum_sc_3d_fields > 0) then      
+      ioffset = 1
+      call field_new(ywflds%scalar3,  data=zgp3a(:,:,ioffset:ioffset+inum_sc_3d_fields-1,:))
+      ioffset = ioffset + inum_sc_3d_fields
+      if (lscders) then
+          ! grid-point surfacic scalar derivatives fields
+          call field_new(ywflds%scalar3_ns,  data=zgp3a(:,:,ioffset:ioffset+inum_sc_3d_fields-1,:))
+          ioffset = ioffset + inum_sc_3d_fields
+          call field_new(ywflds%scalar3_ew,  data=zgp3a(:,:,ioffset:ioffset+inum_sc_3d_fields-1,:))
+          ioffset = ioffset + inum_sc_3d_fields
+      endif
+    endif
+
+    ! grid-point surfacic scalar fields      
+    if (inum_sc_2d_fields > 0) then! 
+      ioffset = 1
+      call field_new(ywflds%scalar2,   data=zgp2(:,ioffset:ioffset + inum_sc_2d_fields-1,:))
       ioffset = ioffset + inum_sc_2d_fields
-      call field_new(ywflds%scalar2_ew, data=zgp2(:, ioffset : ioffset + inum_sc_2d_fields-1,:))
-      ioffset = ioffset + inum_sc_2d_fields
-     endif
-  endif
+      if (lscders) then
+        call field_new(ywflds%scalar2_ns, data=zgp2(:,ioffset : ioffset + inum_sc_2d_fields-1,:))
+        ioffset = ioffset + inum_sc_2d_fields
+        call field_new(ywflds%scalar2_ew, data=zgp2(:, ioffset : ioffset + inum_sc_2d_fields-1,:))
+        ioffset = ioffset + inum_sc_2d_fields
+      endif
+    endif
 
 end subroutine wrap_benchmark_fields
 
