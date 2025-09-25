@@ -47,6 +47,7 @@ foreach( precision ${precisions} )
     # Declare that this test should fail
     if( ${test} IN_LIST will_fail_list )
       set_property( TEST ${test}_${precision} PROPERTY WILL_FAIL TRUE )
+      set_property( TEST ${test}_${precision} PROPERTY LABELS "will_fail" )
     endif()
   endforeach()
 endforeach()
