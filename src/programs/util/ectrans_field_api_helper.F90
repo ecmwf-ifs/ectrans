@@ -81,7 +81,7 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
     integer :: ioffset
 
     inum_wind_fields = size(zspvor,1)
-    inum_sc_2d_fields = size(zspscalar,2)
+    inum_sc_2d_fields = size(zspscalar,1)
     WRITE(6,*) "zspvor", SHAPE(ZSPVOR)
     WRITE(6,*) "zspdiv", SHAPE(ZSPDIV)
     WRITE(6,*) "zspscalar", SHAPE(zspscalar)

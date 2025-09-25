@@ -565,7 +565,7 @@ if (lfield_api) then
         write(6,*) "Wrap zgp"
         call wrap_benchmark_fields_zgp(ywflds,lvordiv, lscders, luvder, &
                                      & zspvor, zspdiv, zspscalar, zgp)
-        call create_fields_lists(ywflds,ylf,kvsetuv = ivset,kvsetsc2=ivsetsc)
+        call create_fields_lists(ywflds,ylf,kvsetuv = ivset,kvsetsc=ivsetsc)
     else
         write(6,*) "Wrap "
         call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvder, &
