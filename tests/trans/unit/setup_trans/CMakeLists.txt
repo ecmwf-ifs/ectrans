@@ -35,7 +35,7 @@ foreach( precision ${precisions} )
                             setup_trans_test_suite_${precision}.c
                             setup_trans_test_suite.F90
                           LIBS trans_${precision} )
-
+  target_link_options( setup_trans_test_suite_${precision} PRIVATE ${NO_FORTRAN_MAIN_FLAG} )
   ectrans_target_fortran_module_directory( TARGET setup_trans_test_suite_${precision}
     MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/setup_trans_test_suite_${precision} )
 
