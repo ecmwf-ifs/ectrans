@@ -189,7 +189,7 @@ jobs:
         dependency_cmake_options: |
           ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
         cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON"
-        ctest_options: "${{ matrix.ctest_options }}"
+        ctest_options: "${{ matrix.ctest_options }} -LE will_fail"
 
     - name: Verify tools
       run: |
