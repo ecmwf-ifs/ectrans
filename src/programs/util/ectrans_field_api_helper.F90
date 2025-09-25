@@ -22,9 +22,9 @@ type wrapped_fields
   class (field_3rb), pointer :: u, v          ! grid-point u and v fields
   class (field_3rb), pointer :: u_ns, v_ns    ! grid-point u and derivatives
 
-  class (field_4rb), pointer :: scalar       ! grid-point scalar fields
-  class (field_4rb), pointer :: scalar_ew    ! grid-point scalar fields derivatives ew
-  class (field_4rb), pointer :: scalar_ns    ! grid-point scalar fields derivatives ns
+  class (field_4rb), pointer :: scalar3      ! grid-point scalar fields
+  class (field_4rb), pointer :: scalar3_ew   ! grid-point scalar fields derivatives ew
+  class (field_4rb), pointer :: scalar3_ns   ! grid-point scalar fields derivatives ns
 
   class (field_3rb), pointer :: scalar2      ! grid-point surfacic scalar fields
   class (field_3rb), pointer :: scalar2_ew   ! grid-point surfacic scalar fields derivatives ew
@@ -207,16 +207,16 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
      write(6,*)"ywflds%spscalar", shape(zspsc3a(:,:,:))
      call field_new(ywflds%spscalar, data=zspsc3a(:,:,:))
 
-    write(6,*) "ywflds%scalar",  1,inum_sc_3d_fields
-     call field_new(ywflds%scalar,  data=zgp3a(:,:,1:inum_sc_3d_fields,:))
+    write(6,*) "ywflds%scalar3",  1,inum_sc_3d_fields
+     call field_new(ywflds%scalar3,  data=zgp3a(:,:,1:inum_sc_3d_fields,:))
      if (lscders) then
          ioffset = 1
          ! grid-point surfacic scalar derivatives fields
-        write(6,*) "ywflds%scalar_ew",  istart(ioffset,inum_sc_3d_fields), iend(ioffset,inum_sc_3d_fields)
-        call field_new(ywflds%scalar_ew,  data=zgp3a(:,:,istart(ioffset,inum_sc_3d_fields): iend(ioffset,inum_sc_3d_fields),:))
+        write(6,*) "ywflds%scalar3_ew",  istart(ioffset,inum_sc_3d_fields), iend(ioffset,inum_sc_3d_fields)
+        call field_new(ywflds%scalar3_ew,  data=zgp3a(:,:,istart(ioffset,inum_sc_3d_fields): iend(ioffset,inum_sc_3d_fields),:))
         ioffset = ioffset + 1
-        write(6,*) "ywflds%scalar_ns", istart(ioffset,inum_sc_3d_fields), iend(ioffset,inum_sc_3d_fields)
-        call field_new(ywflds%scalar_ns,  data=zgp3a(:,:,istart(ioffset,inum_sc_3d_fields): iend(ioffset,inum_sc_3d_fields),:))
+        write(6,*) "ywflds%scalar3_ns", istart(ioffset,inum_sc_3d_fields), iend(ioffset,inum_sc_3d_fields)
+        call field_new(ywflds%scalar3_ns,  data=zgp3a(:,:,istart(ioffset,inum_sc_3d_fields): iend(ioffset,inum_sc_3d_fields),:))
     endif
    endif
 #if 1
@@ -274,30 +274,30 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
 
   if (associated(ywflds%scalar_zgp)) then
     ylf%scalar = [b(ywflds%scalar_zgp,'scalar', kvsetsc)]
-  else if (associated(ywflds%scalar) .and. associated(ywflds%scalar2) ) then
-    ylf%scalar = [b(ywflds%scalar,'scalar', kvsetsc), b(ywflds%scalar2,'scalar2', kvsetsc2)]
-  else if (associated(ywflds%scalar)) then
-    ylf%scalar = [b(ywflds%scalar,'scalar', kvsetsc)]
+  else if (associated(ywflds%scalar3) .and. associated(ywflds%scalar2) ) then
+    ylf%scalar = [b(ywflds%scalar3,'scalar', kvsetsc), b(ywflds%scalar2,'scalar2', kvsetsc2)]
+  else if (associated(ywflds%scalar3)) then
+    ylf%scalar = [b(ywflds%scalar3,'scalar', kvsetsc)]
   else if (associated(ywflds%scalar2)) then
     ylf%scalar = [b(ywflds%scalar2,'scalar2', kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar_zgp_ns)) then
     ylf%scalar_ns = [b(ywflds%scalar_zgp_ns,'scalar_ns', kvsetsc)]
-  else if (associated(ywflds%scalar_ns) .and. associated(ywflds%scalar2_ns) ) then
-    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', kvsetsc), b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
-  else if (associated(ywflds%scalar_ns)) then
-    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', kvsetsc)]
+  else if (associated(ywflds%scalar3_ns) .and. associated(ywflds%scalar2_ns) ) then
+    ylf%scalar_ns = [b(ywflds%scalar3_ns,'scalar_ns', kvsetsc), b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
+  else if (associated(ywflds%scalar3_ns)) then
+    ylf%scalar_ns = [b(ywflds%scalar3_ns,'scalar_ns', kvsetsc)]
   else if (associated(ywflds%scalar2_ns)) then
     ylf%scalar_ns = [b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar_zgp_ew)) then
     ylf%scalar_ew = [b(ywflds%scalar_zgp_ew,'scalar_ew', kvsetsc)]
-  else if (associated(ywflds%scalar_ew) .and. associated(ywflds%scalar2_ew) ) then
-    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', kvsetsc), b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
-  else if (associated(ywflds%scalar_ew)) then
-    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', kvsetsc)]
+  else if (associated(ywflds%scalar3_ew) .and. associated(ywflds%scalar2_ew) ) then
+    ylf%scalar_ew = [b(ywflds%scalar3_ew,'scalar_ew', kvsetsc), b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
+  else if (associated(ywflds%scalar3_ew)) then
+    ylf%scalar_ew = [b(ywflds%scalar3_ew,'scalar_ew', kvsetsc)]
   else if (associated(ywflds%scalar2_ew)) then
     ylf%scalar_ew = [b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
   endif
@@ -322,9 +322,9 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
   if(associated(ywflds%vor))        call field_delete(ywflds%vor)
   if(associated(ywflds%div))        call field_delete(ywflds%div)
 
-  if(associated(ywflds%scalar))     call field_delete(ywflds%scalar)
-  if(associated(ywflds%scalar_ew))  call field_delete(ywflds%scalar_ew)
-  if(associated(ywflds%scalar_ns))  call field_delete(ywflds%scalar_ns)
+  if(associated(ywflds%scalar3))     call field_delete(ywflds%scalar3)
+  if(associated(ywflds%scalar3_ew))  call field_delete(ywflds%scalar3_ew)
+  if(associated(ywflds%scalar3_ns))  call field_delete(ywflds%scalar3_ns)
 
 
   if(associated(ywflds%scalar2))    call field_delete(ywflds%scalar2)
@@ -373,9 +373,9 @@ subroutine synchost_rdonly_wrapped_fields(ywflds)
   if (associated(ywflds%v_ns))       call ywflds%v_ns%sync_host_rdonly()
   if (associated(ywflds%vor))        call ywflds%vor%sync_host_rdonly()
   if (associated(ywflds%div))        call ywflds%div%sync_host_rdonly()
-  if (associated(ywflds%scalar))     call ywflds%scalar%sync_host_rdonly()
-  if (associated(ywflds%scalar_ew))  call ywflds%scalar_ew%sync_host_rdonly()
-  if (associated(ywflds%scalar_ns))  call ywflds%scalar_ns%sync_host_rdonly()
+  if (associated(ywflds%scalar3))     call ywflds%scalar3%sync_host_rdonly()
+  if (associated(ywflds%scalar3_ew))  call ywflds%scalar3_ew%sync_host_rdonly()
+  if (associated(ywflds%scalar3_ns))  call ywflds%scalar3_ns%sync_host_rdonly()
   if (associated(ywflds%scalar2))    call ywflds%scalar2%sync_host_rdonly()
   if (associated(ywflds%scalar2_ew)) call ywflds%scalar2_ew%sync_host_rdonly()
   if (associated(ywflds%scalar2_ns)) call ywflds%scalar2_ns%sync_host_rdonly()
@@ -402,9 +402,9 @@ subroutine synchost_rdwr_wrapped_fields(ywflds)
   if (associated(ywflds%v_ns))       call ywflds%v_ns%sync_host_rdwr()
   if (associated(ywflds%vor))        call ywflds%vor%sync_host_rdwr()
   if (associated(ywflds%div))        call ywflds%div%sync_host_rdwr()
-  if (associated(ywflds%scalar))     call ywflds%scalar%sync_host_rdwr()
-  if (associated(ywflds%scalar_ew))  call ywflds%scalar_ew%sync_host_rdwr()
-  if (associated(ywflds%scalar_ns))  call ywflds%scalar_ns%sync_host_rdwr()
+  if (associated(ywflds%scalar3))     call ywflds%scalar3%sync_host_rdwr()
+  if (associated(ywflds%scalar3_ew))  call ywflds%scalar3_ew%sync_host_rdwr()
+  if (associated(ywflds%scalar3_ns))  call ywflds%scalar3_ns%sync_host_rdwr()
   if (associated(ywflds%scalar2))    call ywflds%scalar2%sync_host_rdwr()
   if (associated(ywflds%scalar2_ew)) call ywflds%scalar2_ew%sync_host_rdwr()
   if (associated(ywflds%scalar2_ns)) call ywflds%scalar2_ns%sync_host_rdwr()
@@ -432,9 +432,9 @@ subroutine nullify_wrapped_fields(ywflds)
   nullify(ywflds%vor)
   nullify(ywflds%div)
 
-  nullify(ywflds%scalar)
-  nullify(ywflds%scalar_ew)
-  nullify(ywflds%scalar_ns)
+  nullify(ywflds%scalar3)
+  nullify(ywflds%scalar3_ew)
+  nullify(ywflds%scalar3_ns)
  
   nullify(ywflds%scalar2)
   nullify(ywflds%scalar2_ew)
@@ -465,17 +465,17 @@ subroutine output_wrapped_fields(nout, ywflds)
   write(nout,*) "ywflds%vor", loc(ywflds%vor)
   write(nout,*) "ywflds%div", loc(ywflds%div)
 
-  write(nout,*) "ywflds%scalar", loc(ywflds%scalar)
-  write(nout,*) "ywflds%scalar_ew", loc(ywflds%scalar_ew)
-  write(nout,*) "ywflds%scalar_ns", loc(ywflds%scalar_ns)
+  write(nout,*) "ywflds%scalar3", loc(ywflds%scalar3)
+  write(nout,*) "ywflds%scalar3_ew", loc(ywflds%scalar3_ew)
+  write(nout,*) "ywflds%scalar3_ns", loc(ywflds%scalar3_ns)
  
   write(nout,*) "ywflds%scalar2", loc(ywflds%scalar2)
   write(nout,*) "ywflds%scalar2_ew", loc(ywflds%scalar2_ew)
   write(nout,*) "ywflds%scalar2_ns", loc(ywflds%scalar2_ns)
   
-  write(nout,*) "ywflds%scalar_zgp", loc(ywflds%scalar2)
-  write(nout,*) "ywflds%scalar_zgp_ew", loc(ywflds%scalar2_ew)
-  write(nout,*) "ywflds%scalar_zgp_ns", loc(ywflds%scalar2_ns)
+  write(nout,*) "ywflds%scalar_zgp", loc(ywflds%scalar_zgp)
+  write(nout,*) "ywflds%scalar_zgp_ew", loc(ywflds%scalar_zgp_ew)
+  write(nout,*) "ywflds%scalar_zgp_ns", loc(ywflds%scalar_zgp_ns)
 end subroutine output_wrapped_fields
 
 subroutine output_fields_lists(nout,yfl)
