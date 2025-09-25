@@ -181,16 +181,15 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
 
   if (inum_sc_2d_fields > 0) then! spectral surfacic scalar fields
      call field_new(ywflds%spscalar2, data=zspsc2(:,:))
-     
-     ioffset = 1
 
+     ioffset = 1
      call field_new(ywflds%scalar2,   data=zgp2(:,ioffset:ioffset + inum_sc_2d_fields-1,:))
-!     call field_new(ywflds%scalar2,   data=zgp2(:,1:1,:))
+     ioffset = ioffset + inum_sc_2d_fields
      if (lscders) then
-      ioffset = ioffset + inum_sc_2d_fields
       call field_new(ywflds%scalar2_ns, data=zgp2(:,ioffset : ioffset + inum_sc_2d_fields-1,:))
       ioffset = ioffset + inum_sc_2d_fields
       call field_new(ywflds%scalar2_ew, data=zgp2(:, ioffset : ioffset + inum_sc_2d_fields-1,:))
+      ioffset = ioffset + inum_sc_2d_fields
      endif
   endif
 
