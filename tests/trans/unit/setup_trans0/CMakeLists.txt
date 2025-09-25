@@ -8,15 +8,6 @@
 
 # Unit tests for SETUP_TRANS0
 
-# Establish which precisions are enabled
-set( precisions "" )
-if( HAVE_DOUBLE_PRECISION )
-  list( APPEND precisions "dp" )
-endif()
-if( HAVE_SINGLE_PRECISION )
-  list( APPEND precisions "sp" )
-endif()
-
 # Define list of SETUP_TRANS0 tests
 set( test_list
   unit_test_setup_trans0_eq_regions
