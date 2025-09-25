@@ -685,7 +685,7 @@ do jstep = 1, iters+iters_warmup
 #if USE_FIELD_API
       call inv_trans_field_api (ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
                             & ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
-                            & ydfu_ns=ylf%u_ns, ydfv_ns=ylf%v_ns, &
+                            & ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew, &
                             & ydfscalar_ns=ylf%scalar_ns, ydfscalar_ew=ylf%scalar_ew, &
                             & ydfvor=ylf%vor, ydfdiv=ylf%div, &
                             & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, &

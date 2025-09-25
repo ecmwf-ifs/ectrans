@@ -13,7 +13,7 @@ INTERFACE
 
 SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
     & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-    & YDFU_NS, YDFV_NS, YDFSCALAR_NS, YDFSCALAR_EW,& 
+    & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,& 
     & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL,KPROC,&
     & LDACC, &
     & FSPGL_PROC)
@@ -51,8 +51,8 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !       YDFVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDFDIV(:)      - List of grid-point vector fields (divergence)
 !       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU_NS(:)      - List of grid-point vector fields derivatives N-S (u)
-!       YDFV_NS(:)      - List of grid-point vector fields derivatives N-S (v)
+!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
 
@@ -69,7 +69,7 @@ TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU(:),YDFV(:)                 !
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFVOR(:),YDFDIV(:)             ! GRID VECTOR FIELDS :VORTICITY AND DIVERGENCE     (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
 
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_NS(:),YDFV_NS(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
+TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KSPEC

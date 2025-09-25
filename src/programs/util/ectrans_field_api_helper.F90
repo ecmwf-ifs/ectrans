@@ -20,7 +20,7 @@ type wrapped_fields
 
   class (field_3rb), pointer :: vor, div      ! grid-point vorticity and divergence
   class (field_3rb), pointer :: u, v          ! grid-point u and v fields
-  class (field_3rb), pointer :: u_ns, v_ns    ! grid-point u and derivatives
+  class (field_3rb), pointer :: u_ew, v_ew    ! grid-point u and derivatives
 
   class (field_4rb), pointer :: scalar3      ! grid-point scalar fields
   class (field_4rb), pointer :: scalar3_ew   ! grid-point scalar fields derivatives ew
@@ -44,7 +44,7 @@ type fields_lists
   type (field_basic_ptr), allocatable :: spvor (:), spdiv (:)        ! spectral vorticity and divergence
   type (field_basic_ptr), allocatable :: vor (:), div (:)            ! grid-point vorticity and diverence
   type (field_basic_ptr), allocatable :: spscalar (:)                ! spectral scalar fields
-  type (field_basic_ptr), allocatable :: u_ns (:), v_ns (:)            ! grid-point u and derivatives we
+  type (field_basic_ptr), allocatable :: u_ew (:), v_ew (:)            ! grid-point u and derivatives we
   type (field_basic_ptr), allocatable :: scalar_ns (:), scalar_ew (:)  ! grid space scalar derivatives ns and ew
   end type fields_lists
 
@@ -110,9 +110,9 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 
  ! grid-point vector derivatives
     if (luvders) then
-      call field_new(ywflds%u_ns, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+      call field_new(ywflds%u_ew, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
       ioffset = ioffset + inum_wind_fields
-      call field_new(ywflds%v_ns, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
+      call field_new(ywflds%v_ew, data=zgp(:, ioffset:ioffset+inum_wind_fields-1, :))
       ioffset = ioffset + inum_wind_fields
     endif
 
@@ -177,9 +177,9 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
 
     ! grid-point vector derivatives
     if (luvders) then
-      call field_new(ywflds%u_ns, data=zgpuv(:,:, ioffset, :))
+      call field_new(ywflds%u_ew, data=zgpuv(:,:, ioffset, :))
       ioffset = ioffset + inum_wind_fields
-      call field_new(ywflds%v_ns, data=zgpuv(:,:, ioffset, :))
+      call field_new(ywflds%v_ew, data=zgpuv(:,:, ioffset, :))
       ioffset = ioffset + inum_wind_fields
     endif
 
@@ -229,8 +229,8 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
   if(associated(ywflds%u)) ylf%u = [b(ywflds%u,'u',kvsetuv)]
   if(associated(ywflds%v)) ylf%v = [b(ywflds%v,'v',kvsetuv)]
 
-  if(associated(ywflds%u_ns)) ylf%u_ns=[b(ywflds%u_ns,'u_ns', kvsetuv)]
-  if(associated(ywflds%v_ns)) ylf%v_ns=[b(ywflds%v_ns,'v_ns', kvsetuv)]
+  if(associated(ywflds%u_ew)) ylf%u_ew=[b(ywflds%u_ew,'u_ew', kvsetuv)]
+  if(associated(ywflds%v_ew)) ylf%v_ew=[b(ywflds%v_ew,'v_ew', kvsetuv)]
 
   if(associated(ywflds%vor))  ylf%vor = [b(ywflds%vor,'vor', kvsetuv)]
   if(associated(ywflds%div))  ylf%div = [b(ywflds%div,'div', kvsetuv)]
@@ -290,8 +290,8 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
 
   if(associated(ywflds%u))          call field_delete(ywflds%u)
   if(associated(ywflds%v))          call field_delete(ywflds%v)
-  if(associated(ywflds%u_ns))       call field_delete(ywflds%u_ns)
-  if(associated(ywflds%v_ns))       call field_delete(ywflds%v_ns)
+  if(associated(ywflds%u_ew))       call field_delete(ywflds%u_ew)
+  if(associated(ywflds%v_ew))       call field_delete(ywflds%v_ew)
 
   if(associated(ywflds%vor))        call field_delete(ywflds%vor)
   if(associated(ywflds%div))        call field_delete(ywflds%div)
@@ -324,8 +324,8 @@ subroutine delete_fields_lists(yfl)
   if (allocated(yfl%spdiv))     deallocate(yfl%spdiv)
   if (allocated(yfl%vor))       deallocate(yfl%vor)
   if (allocated(yfl%div))       deallocate(yfl%div)
-  if (allocated(yfl%u_ns))      deallocate(yfl%u_ns)
-  if (allocated(yfl%v_ns))      deallocate(yfl%v_ns)
+  if (allocated(yfl%u_ew))      deallocate(yfl%u_ew)
+  if (allocated(yfl%v_ew))      deallocate(yfl%v_ew)
   if (allocated(yfl%scalar_ns)) deallocate(yfl%scalar_ns)
   if (allocated(yfl%scalar_ew)) deallocate(yfl%scalar_ew)
 end subroutine delete_fields_lists
@@ -343,8 +343,8 @@ subroutine synchost_rdonly_wrapped_fields(ywflds)
   if (associated(ywflds%spscalar2))  call ywflds%spscalar2%sync_host_rdonly()
   if (associated(ywflds%u))          call ywflds%u%sync_host_rdonly()
   if (associated(ywflds%v))          call ywflds%v%sync_host_rdonly()
-  if (associated(ywflds%u_ns))       call ywflds%u_ns%sync_host_rdonly()
-  if (associated(ywflds%v_ns))       call ywflds%v_ns%sync_host_rdonly()
+  if (associated(ywflds%u_ew))       call ywflds%u_ew%sync_host_rdonly()
+  if (associated(ywflds%v_ew))       call ywflds%v_ew%sync_host_rdonly()
   if (associated(ywflds%vor))        call ywflds%vor%sync_host_rdonly()
   if (associated(ywflds%div))        call ywflds%div%sync_host_rdonly()
   if (associated(ywflds%scalar3))     call ywflds%scalar3%sync_host_rdonly()
@@ -373,8 +373,8 @@ subroutine synchost_rdwr_wrapped_fields(ywflds)
   if (associated(ywflds%spscalar2))  call ywflds%spscalar2%sync_host_rdwr()
   if (associated(ywflds%u))          call ywflds%u%sync_host_rdwr()
   if (associated(ywflds%v))          call ywflds%v%sync_host_rdwr()
-  if (associated(ywflds%u_ns))       call ywflds%u_ns%sync_host_rdwr()
-  if (associated(ywflds%v_ns))       call ywflds%v_ns%sync_host_rdwr()
+  if (associated(ywflds%u_ew))       call ywflds%u_ew%sync_host_rdwr()
+  if (associated(ywflds%v_ew))       call ywflds%v_ew%sync_host_rdwr()
   if (associated(ywflds%vor))        call ywflds%vor%sync_host_rdwr()
   if (associated(ywflds%div))        call ywflds%div%sync_host_rdwr()
   if (associated(ywflds%scalar3))     call ywflds%scalar3%sync_host_rdwr()
@@ -403,8 +403,8 @@ subroutine nullify_wrapped_fields(ywflds)
 
   nullify(ywflds%u)
   nullify(ywflds%v)
-  nullify(ywflds%u_ns)
-  nullify(ywflds%v_ns)
+  nullify(ywflds%u_ew)
+  nullify(ywflds%v_ew)
   nullify(ywflds%vor)
   nullify(ywflds%div)
 
@@ -437,8 +437,8 @@ subroutine output_wrapped_fields(nout, ywflds)
 
   write(nout,*) "ywflds%u", loc(ywflds%u)
   write(nout,*) "ywflds%v", loc(ywflds%v)
-  write(nout,*) "ywflds%u_ns", loc(ywflds%u_ns)
-  write(nout,*) "ywflds%v_ns", loc(ywflds%v_ns)
+  write(nout,*) "ywflds%u_ew", loc(ywflds%u_ew)
+  write(nout,*) "ywflds%v_ew", loc(ywflds%v_ew)
   write(nout,*) "ywflds%vor", loc(ywflds%vor)
   write(nout,*) "ywflds%div", loc(ywflds%div)
 
@@ -470,8 +470,8 @@ subroutine output_fields_lists(nout,yfl)
   if (allocated(yfl%spdiv)) write(nout,*) "yfl%spdiv", size(yfl%spdiv)
   if (allocated(yfl%vor)) write(nout,*) "yfl%vor", size(yfl%vor)
   if (allocated(yfl%div)) write(nout,*) "yfl%div", size(yfl%div)
-  if (allocated(yfl%u_ns)) write(nout,*) "yfl%u_ns", size(yfl%u_ns)
-  if (allocated(yfl%v_ns)) write(nout,*) "yfl%v_ns", size(yfl%v_ns)
+  if (allocated(yfl%u_ew)) write(nout,*) "yfl%u_ew", size(yfl%u_ew)
+  if (allocated(yfl%v_ew)) write(nout,*) "yfl%v_ew", size(yfl%v_ew)
   if (allocated(yfl%scalar_ns)) write(nout,*) "yfl%scalar_ns", size(yfl%scalar_ns)
   if (allocated(yfl%scalar_ew)) write(nout,*) "yfl%scalar_ew", size(yfl%scalar_ew)
 end subroutine output_fields_lists
