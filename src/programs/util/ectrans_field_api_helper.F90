@@ -82,57 +82,40 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 
     inum_wind_fields = size(zspvor,1)
     inum_sc_2d_fields = size(zspscalar,1)
-    WRITE(6,*) "zspvor", SHAPE(ZSPVOR)
-    WRITE(6,*) "zspdiv", SHAPE(ZSPDIV)
-    WRITE(6,*) "zspscalar", SHAPE(zspscalar)
-    WRITE(6,*) "zgp", SHAPE(Zgp)
-    write(6,*) "inum_sc_2d_fields", inum_sc_2d_fields
-    write(6,*) "inum_wind_fields", inum_wind_fields
  ! spectral vector fields
   call field_new(ywflds%spvor,      data=zspvor(:,:))
   call field_new(ywflds%spdiv,      data=zspdiv(:,:))
-  write(6,*) ":WRAP:"
   ioffset = 0
   if (lvordiv) then
       ! In the benchmark, vorticity is not computed
-      write(6,*) "ywflds%vor",  istart(ioffset,inum_wind_fields), iend(ioffset, inum_wind_fields)
       call field_new(ywflds%vor, data=zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
       ioffset = ioffset + 1
-       write(6,*) "ywflds%div",  istart(ioffset,inum_wind_fields), iend(ioffset, inum_wind_fields)
       call field_new(ywflds%div, data=zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
       ioffset = ioffset + 1
   endif
 
-  write(6,*) "ywflds%u",  istart(ioffset,inum_wind_fields), iend(ioffset, inum_wind_fields), shape(zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
   call field_new(ywflds%u, data=zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
   ioffset = ioffset + 1
-  write(6,*) "ywflds%v",  istart(ioffset,inum_wind_fields), iend(ioffset, inum_wind_fields), shape(zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
   call field_new(ywflds%v, data=zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
   ioffset = ioffset + 1
 
   ! grid-point vector derivatives
   if (luvders) then
-     write(6,*) "ywflds%u_ns", istart(ioffset,inum_wind_fields),  iend(ioffset, inum_wind_fields)
      call field_new(ywflds%u_ns, data=zgp(:, istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
      ioffset = ioffset + 1
-     write(6,*) "ywflds%v_ns", istart(ioffset,inum_wind_fields),  iend(ioffset, inum_wind_fields)
      call field_new(ywflds%v_ns, data=zgp(:,istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
   endif
 
 
   ! spectral scalar fields
   if (inum_sc_2d_fields > 0) then! spectral surfacic scalar fields
-!     write(6,*) "ywflds%spscalar", shape(zspscalar(:,:))
      call field_new(ywflds%spscalar, data=zspscalar(:,:))
 
-     write(6,*) "ywflds%scalar",   1,inum_sc_2d_fields
      call field_new(ywflds%scalar, data=zgp(:,1:inum_sc_2d_fields,:))
      if (lscders) then
       ioffset = 1
-      write(6,*) "ywflds%scalar_ns", istart(ioffset,inum_sc_2d_fields), iend(ioffset,inum_sc_2d_fields)
       call field_new(ywflds%scalar_ns, data=zgp(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
       ioffset = ioffset + 1
-      write(6,*)"ywflds%scalar_ew", istart(ioffset,inum_sc_2d_fields), iend(ioffset,inum_sc_2d_fields)
       call field_new(ywflds%scalar_ew, data=zgp(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
      endif
   endif
@@ -163,81 +146,56 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
     inum_wind_fields = 1
     inum_sc_3d_fields = size(zspsc3a,3)
     inum_sc_2d_fields = size(zspsc2,1)
-    WRITE(6,*) "zspvor", SHAPE(ZSPVOR)
-    WRITE(6,*) "zspdiv", SHAPE(ZSPDIV)
-    WRITE(6,*) "zspsc3a", SHAPE(ZSPSC3A)
-    WRITE(6,*) "zspsc2", SHAPE(ZSPSC2)
-    WRITE(6,*) "zgpuv", SHAPE(Zgpuv)
-    WRITE(6,*) "zgp3a", SHAPE(Zgp3a)
-    WRITE(6,*) "zgp2", SHAPE(Zgp2)
-    write(6,*) "inum_sc_2d_fields", inum_sc_2d_fields
-    write(6,*) "inum_sc_3d_fields", inum_sc_3d_fields
-    write(6,*) "inum_wind_fields", inum_wind_fields
  ! spectral vector fields
   call field_new(ywflds%spvor,      data=zspvor(:,:))
   call field_new(ywflds%spdiv,      data=zspdiv(:,:))
-  write(6,*) ":WRAP:"
 
   ioffset = 0
   if (lvordiv) then
       ! In the benchmark, vorticity is not computed
-      write(6,*) "ywflds%vor",  istart(ioffset,inum_wind_fields)
       call field_new(ywflds%vor, data=zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
       ioffset = ioffset + 1
-      write(6,*) "ywflds%vor",  istart(ioffset,inum_wind_fields)
       call field_new(ywflds%div, data=zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
       ioffset = ioffset + 1
   endif
 
-  write(6,*) "ywflds%u",  istart(ioffset,inum_wind_fields),shape(zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
   call field_new(ywflds%u, data=zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
   ioffset = ioffset + 1
-  write(6,*) "ywflds%v",  istart(ioffset,inum_wind_fields),shape(zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
   call field_new(ywflds%v, data=zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
   ioffset = ioffset + 1
 
 
   ! grid-point vector derivatives
   if (luvders) then
-     write(6,*) "ywflds%u_ns", istart(ioffset,inum_wind_fields)
       call field_new(ywflds%u_ns, data=zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
      ioffset = ioffset + 1
-     write(6,*) "ywflds%v_ns", istart(ioffset,inum_wind_fields)
      call field_new(ywflds%v_ns, data=zgpuv(:,:, istart(ioffset,inum_wind_fields), :))
   endif
 
 
   ! spectral scalar fields
   if (inum_sc_3d_fields > 0) then
-     write(6,*)"ywflds%spscalar3", shape(zspsc3a(:,:,:))
      call field_new(ywflds%spscalar3, data=zspsc3a(:,:,:))
 
-    write(6,*) "ywflds%scalar3",  1,inum_sc_3d_fields
      call field_new(ywflds%scalar3,  data=zgp3a(:,:,1:inum_sc_3d_fields,:))
      if (lscders) then
          ioffset = 1
          ! grid-point surfacic scalar derivatives fields
-        write(6,*) "ywflds%scalar3_ew",  istart(ioffset,inum_sc_3d_fields), iend(ioffset,inum_sc_3d_fields)
         call field_new(ywflds%scalar3_ew,  data=zgp3a(:,:,istart(ioffset,inum_sc_3d_fields): iend(ioffset,inum_sc_3d_fields),:))
         ioffset = ioffset + 1
-        write(6,*) "ywflds%scalar3_ns", istart(ioffset,inum_sc_3d_fields), iend(ioffset,inum_sc_3d_fields)
         call field_new(ywflds%scalar3_ns,  data=zgp3a(:,:,istart(ioffset,inum_sc_3d_fields): iend(ioffset,inum_sc_3d_fields),:))
     endif
    endif
 #if 1
   if (inum_sc_2d_fields > 0) then! spectral surfacic scalar fields
-     write(6,*) "ywflds%spscalar2", shape(zspsc2(:,:))
      call field_new(ywflds%spscalar2, data=zspsc2(:,:))
 
-     write(6,*) "ywflds%scalar2",   1,inum_sc_2d_fields
      call field_new(ywflds%scalar2,   data=zgp2(:,1:inum_sc_2d_fields,:))
 !     call field_new(ywflds%scalar2,   data=zgp2(:,1:1,:))
      if (lscders) then
       ioffset = 1
-      write(6,*) "ywflds%scalar2_ns", istart(ioffset,inum_sc_2d_fields), iend(ioffset,inum_sc_2d_fields)
       call field_new(ywflds%scalar2_ns, data=zgp2(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
       ioffset = ioffset + 1
-      write(6,*)"ywflds%scalar2_ew", istart(ioffset,inum_sc_2d_fields), iend(ioffset,inum_sc_2d_fields)
       call field_new(ywflds%scalar2_ew, data=zgp2(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
      endif
   endif
@@ -253,17 +211,6 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
   integer(kind=jpim), optional, intent(in) :: kvsetuv(:)     ! 'b-set' for vector fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc(:)     ! 'b-set' for scalar fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc2(:)    ! 'b-set' for surfacic fields
-  if (present(kvsetuv)) write(6,*) "kvsetuv", shape(kvsetuv)
-  if (present(kvsetuv)) write(6,*) "kvsetuv:", kvsetuv
-  if (present(kvsetsc)) write(6,*) "kvsetsc", shape(kvsetsc)
-  if (present(kvsetsc)) write(6,*) "kvsetsc:", kvsetsc
-  if (present(kvsetsc2)) write(6,*) "kvsetsc2", shape(kvsetsc2)
-  if (present(kvsetsc2)) write(6,*) "kvsetsc2:", kvsetsc2
-
-
-
-
-
 
   if(associated(ywflds%spvor)) ylf%spvor=[b(ywflds%spvor,'spvor',kvsetuv)]
 
@@ -277,7 +224,7 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
 
   if(associated(ywflds%vor))  ylf%vor = [b(ywflds%vor,'vor', kvsetuv)]
   if(associated(ywflds%div))  ylf%div = [b(ywflds%div,'div', kvsetuv)]
-  
+
   if (associated(ywflds%spscalar)) then
     ylf%spscalar = [b(ywflds%spscalar,'spscalar',kvsetsc)]
   else if (associated(ywflds%spscalar3) .and. associated(ywflds%spscalar2) ) then
@@ -454,7 +401,7 @@ subroutine nullify_wrapped_fields(ywflds)
   nullify(ywflds%scalar3)
   nullify(ywflds%scalar3_ew)
   nullify(ywflds%scalar3_ns)
- 
+
   nullify(ywflds%scalar2)
   nullify(ywflds%scalar2_ew)
   nullify(ywflds%scalar2_ns)
@@ -488,11 +435,11 @@ subroutine output_wrapped_fields(nout, ywflds)
   write(nout,*) "ywflds%scalar3", loc(ywflds%scalar3)
   write(nout,*) "ywflds%scalar3_ew", loc(ywflds%scalar3_ew)
   write(nout,*) "ywflds%scalar3_ns", loc(ywflds%scalar3_ns)
- 
+
   write(nout,*) "ywflds%scalar2", loc(ywflds%scalar2)
   write(nout,*) "ywflds%scalar2_ew", loc(ywflds%scalar2_ew)
   write(nout,*) "ywflds%scalar2_ns", loc(ywflds%scalar2_ns)
-  
+
   write(nout,*) "ywflds%scalar", loc(ywflds%scalar)
   write(nout,*) "ywflds%scalar_ew", loc(ywflds%scalar_ew)
   write(nout,*) "ywflds%scalar_ns", loc(ywflds%scalar_ns)
