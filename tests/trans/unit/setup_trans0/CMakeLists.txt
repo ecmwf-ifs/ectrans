@@ -37,6 +37,9 @@ foreach( precision ${precisions} )
                             setup_trans0_test_suite.F90
                           LIBS trans_${precision} )
 
+  ectrans_target_fortran_module_directory( TARGET setup_trans0_test_suite_${precision}
+    MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/setup_trans0_test_suite_${precision} )
+
   # Add each test in the test list for this precision
   foreach( test ${test_list} )
     add_test( NAME ${test}_${precision} COMMAND setup_trans0_test_suite_${precision} ${test} )
