@@ -26,27 +26,6 @@ set( will_fail_list
   unit_test_setup_trans_without_setup_trans0
 )
 
-# Add unit tests for SETUP_TRANS, with a separate driver executable for each precision
-foreach( precision ${precisions} )
-  # Create test suite driver executable encapsulating all SETUP_TRANS tests for this precision
-  create_test_sourcelist( _ setup_trans_test_suite_${precision}.c ${test_list} )
-  ecbuild_add_executable( TARGET setup_trans_test_suite_${precision}
-                          SOURCES
-                            setup_trans_test_suite_${precision}.c
-                            setup_trans_test_suite.F90
-                          LIBS trans_${precision} )
-  target_link_options( setup_trans_test_suite_${precision} PRIVATE ${NO_FORTRAN_MAIN_FLAG} )
-  ectrans_target_fortran_module_directory( TARGET setup_trans_test_suite_${precision}
-    MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/setup_trans_test_suite_${precision} )
-
-  # Add each test in the test list for this precision
-  foreach( test ${test_list} )
-    add_test( NAME ${test}_${precision} COMMAND setup_trans_test_suite_${precision} ${test} )
-
-    # Declare that this test should fail
-    if( ${test} IN_LIST will_fail_list )
-      set_property( TEST ${test}_${precision} PROPERTY WILL_FAIL TRUE )
-      set_property( TEST ${test}_${precision} PROPERTY LABELS "will_fail" )
-    endif()
-  endforeach()
-endforeach()
+generate_unit_test_suite( SUITE_NAME setup_trans_test_suite
+                          TEST_LIST ${test_list}
+                          WILL_FAIL_LIST ${will_fail_list} )
