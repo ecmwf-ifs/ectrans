@@ -106,7 +106,6 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
      call field_new(ywflds%v_ns, data=zgp(:,istart(ioffset,inum_wind_fields) :  iend(ioffset, inum_wind_fields), :))
   endif
 
-
   ! spectral scalar fields
   if (inum_sc_2d_fields > 0) then! spectral surfacic scalar fields
      call field_new(ywflds%spscalar, data=zspscalar(:,:))
@@ -114,9 +113,9 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
      call field_new(ywflds%scalar, data=zgp(:,1:inum_sc_2d_fields,:))
      if (lscders) then
       ioffset = 1
-      call field_new(ywflds%scalar_ns, data=zgp(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
-      ioffset = ioffset + 1
       call field_new(ywflds%scalar_ew, data=zgp(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
+      ioffset = ioffset + 1
+      call field_new(ywflds%scalar_ns, data=zgp(:,istart(ioffset,inum_sc_2d_fields): iend(ioffset,inum_sc_2d_fields),:))
      endif
   endif
   call flush(6)
