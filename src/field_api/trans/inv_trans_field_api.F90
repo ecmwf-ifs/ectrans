@@ -10,7 +10,7 @@
 
 SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
                              & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-                             & YDFU_NS, YDFV_NS, YDFSCALAR_NS, YDFSCALAR_EW,&
+                             & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,&
                              & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KPROC,&
                              & LDACC,&
                              & FSPGL_PROC)
@@ -48,8 +48,8 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !       YDFVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDFDIV(:)      - List of grid-point vector fields (divergence)
 !       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU_NS(:)      - List of grid-point vector fields derivatives N-S (u)
-!       YDFV_NS(:)      - List of grid-point vector fields derivatives N-S (v)
+!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
 
@@ -69,7 +69,7 @@ TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU(:),YDFV(:)                 !
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFVOR(:),YDFDIV(:)             ! GRID VECTOR FIELDS :VORTICITY AND DIVERGENCE     (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
 
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_NS(:),YDFV_NS(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
+TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KSPEC
@@ -93,7 +93,7 @@ TYPE(GRID_VIEW), ALLOCATABLE :: YLGVU(:),YLGVV(:)
 TYPE(GRID_VIEW), ALLOCATABLE :: YLGVVOR(:),YLGVDIV(:)
 TYPE(GRID_VIEW), ALLOCATABLE :: YLGVSCALAR(:)
 
-TYPE(GRID_VIEW), ALLOCATABLE :: YLGVU_NS(:),YLGVV_NS(:)
+TYPE(GRID_VIEW), ALLOCATABLE :: YLGVU_EW(:),YLGVV_EW(:)
 TYPE(GRID_VIEW), ALLOCATABLE :: YLGVSCALAR_NS(:), YLGVSCALAR_EW(:)
 
 ! Temporary arrays for inv_trans
@@ -199,11 +199,11 @@ IF (PRESENT(YDFU)) THEN
   IUVDIM = 2
 
   ! Output derivatives of vector fields
-  IF (PRESENT(YDFU_NS) .AND. PRESENT(YDFV_NS))    THEN
+  IF (PRESENT(YDFU_EW) .AND. PRESENT(YDFV_EW))    THEN
     LLUVDER = .TRUE.
     IUVDIM = 5
-    ALLOCATE(YLGVU_NS(LG_COUNT(YDFU_NS)))
-    ALLOCATE(YLGVV_NS(LG_COUNT(YDFV_NS)))
+    ALLOCATE(YLGVU_EW(LG_COUNT(YDFU_EW)))
+    ALLOCATE(YLGVV_EW(LG_COUNT(YDFV_EW)))
  ENDIF
 
   ! Output divergence of vector fields
@@ -487,14 +487,14 @@ IF (IUVG>0) THEN
 
   ! copy u and v derivatives
   IF (LLUVDER) THEN
-    C = LG(YLGVU_NS,YDFU_NS, LDACC, .FALSE.)
-    C = LG(YLGVV_NS,YDFV_NS, LDACC, .FALSE.)
+    C = LG(YLGVU_EW,YDFU_EW, LDACC, .FALSE.)
+    C = LG(YLGVV_EW,YDFV_EW, LDACC, .FALSE.)
 
     DO JFLD=1,IUVG
       DO JLEV=1,KFLEVG
         ID = JLEV + (JFLD -1) * KFLEVG
-        ZZ2_1=>YLGVU_NS(ID)%P
-        ZZ2_2=>YLGVV_NS(ID)%P
+        ZZ2_1=>YLGVU_EW(ID)%P
+        ZZ2_2=>YLGVV_EW(ID)%P
         IF (LDACC) THEN
           !$ACC KERNELS PRESENT(ZPGPUV,ZZ2_1,ZZ2_2)
           ZZ2_1(:,:) =  ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:)
@@ -585,8 +585,8 @@ IF (ALLOCATED(YLGVSCALAR))  DEALLOCATE(YLGVSCALAR)
 
 IF (ALLOCATED(YLGVVOR))        DEALLOCATE(YLGVVOR)
 IF (ALLOCATED(YLGVDIV))        DEALLOCATE(YLGVDIV)
-IF (ALLOCATED(YLGVU_NS))       DEALLOCATE(YLGVU_NS)
-IF (ALLOCATED(YLGVV_NS))       DEALLOCATE(YLGVV_NS)
+IF (ALLOCATED(YLGVU_EW))       DEALLOCATE(YLGVU_EW)
+IF (ALLOCATED(YLGVV_EW))       DEALLOCATE(YLGVV_EW)
 IF (ALLOCATED(YLGVSCALAR_NS))  DEALLOCATE(YLGVSCALAR_NS)
 IF (ALLOCATED(YLGVSCALAR_EW))  DEALLOCATE(YLGVSCALAR_EW)
 

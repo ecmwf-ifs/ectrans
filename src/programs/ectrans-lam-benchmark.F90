@@ -41,9 +41,8 @@ program ectrans_lam_benchmark
 !           Sam Hatfield
 !           Daan Degrauwe
 
-use parkind1, only: jpim, jprb, jprd
+use parkind1, only: jpim, jpib, jprb, jprd
 use oml_mod ,only : oml_max_threads
-use omp_lib, only: omp_get_wtime
 use mpl_module
 use yomgstats, only: jpmaxstat
 use yomhook, only : dr_hook_init
@@ -86,6 +85,7 @@ integer(kind=jpim), allocatable :: nprcids(:)
 integer(kind=jpim) :: myproc, jj
 integer :: jstep
 
+real(kind=jprd), external :: timef ! Timing routine from FIAT
 real(kind=jprd) :: ztinit, ztloop, ztstepmax, ztstepmin, ztstepavg, ztstepmed
 real(kind=jprd) :: ztstepmax1, ztstepmin1, ztstepavg1, ztstepmed1
 real(kind=jprd) :: ztstepmax2, ztstepmin2, ztstepavg2, ztstepmed2
@@ -248,7 +248,7 @@ call dr_hook_init()
 !===================================================================================================
 
 if( lstats ) call gstats(0,0)
-ztinit = omp_get_wtime()
+ztinit = timef() / 1000.0_jprd
 
 ! only output to stdout on pe 1
 !if (nproc > 1) then
@@ -532,7 +532,7 @@ endif
 ! Setup timers
 !===================================================================================================
 
-ztinit = (omp_get_wtime() - ztinit)
+ztinit = (timef() / 1000.0_jprd - ztinit)
 
 if (verbosity >= 0) then
   write(nout,'(" ")')
@@ -576,7 +576,7 @@ endif
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
 
-ztloop = omp_get_wtime()
+ztloop = timef() / 1000.0_jprd
 
 !===================================================================================================
 ! Do spectral transform loop
@@ -584,13 +584,13 @@ ztloop = omp_get_wtime()
 
 do jstep = 1, iters
   if( lstats ) call gstats(3,0)
-  ztstep(jstep) = omp_get_wtime()
+  ztstep(jstep) = timef() / 1000.0_jprd
 
   !=================================================================================================
   ! Do inverse transform
   !=================================================================================================
 
-  ztstep1(jstep) = omp_get_wtime()
+  ztstep1(jstep) = timef() / 1000.0_jprd
   
   if( lstats ) call gstats(4,0)
   
@@ -629,18 +629,18 @@ do jstep = 1, iters
 
   if( lstats ) call gstats(4,1)
 
-if (ldump_checksums) then
-  ! Remove trash at end of last block
-  iend = ngptot - nproma * (ngpblks - 1)
-  zgp2 (iend+1:, :, ngpblks) = 0
-  write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
-  call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
-                    & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
-                    & ivset = ivset, ivsetsc = ivsetsc,                                   &
-                    & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
-endif
+  if (ldump_checksums) then
+    ! Remove trash at end of last block
+    iend = ngptot - nproma * (ngpblks - 1)
+    zgp2 (iend+1:, :, ngpblks) = 0
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
+    call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
+                      & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
+                      & ivset = ivset, ivsetsc = ivsetsc,                                   &
+                      & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
+  endif
 
-  ztstep1(jstep) = (omp_get_wtime() - ztstep1(jstep))
+  ztstep1(jstep) = (timef() / 1000.0_jprd - ztstep1(jstep))
 
   !=================================================================================================
   ! While in grid point space, dump the values to disk, for debugging only
@@ -662,7 +662,7 @@ endif
   ! Do direct transform
   !=================================================================================================
 
-  ztstep2(jstep) = omp_get_wtime()
+  ztstep2(jstep) = timef() / 1000.0_jprd
 
   if( lstats ) call gstats(5,0)
 
@@ -693,7 +693,7 @@ endif
 
   if( lstats ) call gstats(5,1)
   
-  ztstep2(jstep) = (omp_get_wtime() - ztstep2(jstep))
+  ztstep2(jstep) = (timef() / 1000.0_jprd - ztstep2(jstep))
 
   !=================================================================================================
   ! Dump the values to disk, for debugging only
@@ -711,19 +711,19 @@ endif
     endif
   endif
 
+  if (ldump_checksums) then
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+    call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
+                      & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
+                      & ivset = ivset, ivsetsc = ivsetsc,                                   &
+                      & nspec2g = nspec2g, sp3d = sp3d, zspc2 = zspsc2)
+  endif
 
-if (ldump_checksums) then
-  write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-  call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
-                    & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
-                    & ivset = ivset, ivsetsc = ivsetsc,                                   &
-                    & nspec2g = nspec2g, sp3d = sp3d, zspc2 = zspsc2)
-endif
   !=================================================================================================
   ! Calculate timings
   !=================================================================================================
 
-  ztstep(jstep) = (omp_get_wtime() - ztstep(jstep))
+  ztstep(jstep) = (timef() / 1000.0_jprd - ztstep(jstep))
 
   ztstepavg = ztstepavg + ztstep(jstep)
   ztstepmin = min(ztstep(jstep), ztstepmin)
@@ -816,7 +816,7 @@ enddo
 
 !===================================================================================================
 
-ztloop = (omp_get_wtime() - ztloop)
+ztloop = (timef() / 1000.0_jprd - ztloop)
 
 write(nout,'(" ")')
 write(nout,'(a)') '======= End of spectral transforms  ======='
@@ -1113,10 +1113,11 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
                                             ! tolerance for correctness checking
   character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
   character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
+  integer            :: iarg          ! Argument index
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
 
+  iarg = 1
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
@@ -1212,9 +1213,11 @@ end subroutine sort
 subroutine print_help(unit)
 
   integer, optional :: unit
-  integer :: nout = 6
+  integer :: nout
   if (present(unit)) then
     nout = unit
+  else
+    nout = 6
   endif
 
   write(nout, "(a)") ""
@@ -1320,11 +1323,15 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   integer, allocatable :: my_km(:), my_kn(:)
 
   ! Choose a harmonic to initialize arrays
-  integer :: m_num = 1 ! Zonal wavenumber
-  integer :: n_num = 0 ! Meridional wavenumber
-
+  integer :: m_num ! Zonal wavenumber
+  integer :: n_num ! Meridional wavenumber
+  
   ! Type of initialization: (single) 'harmonic' or (random) 'spectrum'
-  character(len=32) :: init_type='harmonic'
+  character(len=32), parameter :: init_type='harmonic'
+
+  ! Default harmonic
+  m_num = 1
+  n_num = 0
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1397,13 +1404,16 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
 
   integer(kind=jpim) :: kgptotg      ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field
-  integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
-  integer(kind=jpim) :: kto(1)=(/1/) ! processor where to gather
-  character(len=14)  :: filename = "x.xxx.xxx.grid"
-  character(len=13) :: frmt='(4X,xxxxF8.2)'
+  integer(kind=jpim), parameter :: kfgathg=1    ! number of fields to gather
+  integer(kind=jpim), parameter :: kto(1)=(/1/) ! processor where to gather
+  character(len=14) :: filename
+  character(len=13) :: frmt
 
 #include "etrans_inq.h"
 #include "egath_grid.h"
+  
+  filename = "x.xxx.xxx.grid"
+  frmt = '(4X,xxxxF8.2)'
 
   call etrans_inq(kgptotg=kgptotg)
 
@@ -1457,16 +1467,19 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
 
   integer(kind=jpim) :: nspec2g              ! global number of gridpoints
   real(kind=jprb), allocatable :: fldg(:,:)  ! global field (nspec2g)
-  integer(kind=jpim) :: kfgathg=1    ! number of fields to gather
-  integer(kind=jpim) :: kto(1)=(/1/) ! processor where to gather
-  character(len=14)   :: filename = "x.xxx.xxx.spec"
-  character(len=13)  :: frmt='(4X,xxxxF8.2)' ! for printing to screen
+  integer(kind=jpim), parameter :: kfgathg=1    ! number of fields to gather
+  integer(kind=jpim), parameter :: kto(1)=(/1/) ! processor where to gather
+  character(len=14)  :: filename
+  character(len=13)  :: frmt ! for printing to screen
   integer(kind=jpim) :: knse(0:nmsmax),kmse(0:nsmax) ! elliptic truncation
   real(kind=jprb)    :: fld2g(0:2*nmsmax+1,0:2*nsmax+1) ! 2D representation of spectral field
   integer(kind=jpim) :: jj, jms, jns
 
 #include "etrans_inq.h"
 #include "egath_spec.h"
+  
+  filename = "x.xxx.xxx.spec"
+  frmt = '(4X,xxxxF8.2)'
 
   if ( myproc == 1 ) then
     call etrans_inq(kspec2g=nspec2g)
@@ -1474,7 +1487,7 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
     call ellips(nsmax,nmsmax,knse,kmse)
   endif
 
-  call egath_spec(PSPECG=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,PSPEC=fld)
+  call egath_spec(pspecg=fldg,kfgathg=kfgathg,kto=kto,kvset=kvset,pspec=fld)
 
   if ( myproc == 1 ) then
 
@@ -1524,7 +1537,7 @@ subroutine dump_checksums(filename, noutdump, &
   & ivset, ivsetsc,                           &
   & zgpuv, zgp3a, zgp2, sp3d, zspc2)
 
-  character(len=*),   intent(in)   :: filename ! filename
+  character(len=*),   intent(in) :: filename   ! filename
   integer(kind=jpim), intent(in) :: noutdump   ! unit number for output file
   integer(kind=jpim), intent(in) :: jstep      ! time step
   integer(kind=jpim), intent(in) :: myproc     ! mpi rank
@@ -1534,25 +1547,25 @@ subroutine dump_checksums(filename, noutdump, &
   integer(kind=jpim), intent(in) :: ivset  (:)
   integer(kind=jpim), intent(in) :: ivsetsc(1)
 
-  real(kind=jprb), optional :: zgpuv (:,:,:,:)
-  real(kind=jprb), optional :: zgp3a (:,:,:,:)
-  real(kind=jprb), optional :: zgp2  (:,:,:)
-  real(kind=jprb), optional :: sp3d  (:,:,:)
-  real(kind=jprb), optional :: zspc2 (:,:)
+  real(kind=jprb), intent(in), optional :: zgpuv (:,:,:,:)
+  real(kind=jprb), intent(in), optional :: zgp3a (:,:,:,:)
+  real(kind=jprb), intent(in), optional :: zgp2  (:,:,:)
+  real(kind=jprb), intent(in), optional :: sp3d  (:,:,:)
+  real(kind=jprb), intent(in), optional :: zspc2 (:,:)
 
-  integer*8 :: icrc
+  integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)
   logical :: exist = .false.
 
   if (myproc == 1) then
-      if (jstep>1)  inquire(file = filename, exist = exist)
-        if (exist) then
-          open(noutdump, file = filename, status="old", position="append", action="write")
-        else
-          open(noutdump, file = filename, action="write")
-      endif
+    if (jstep>1)  inquire(file = filename, exist = exist)
+      if (exist) then
+        open(noutdump, file = filename, status="old", position="append", action="write")
+      else
+        open(noutdump, file = filename, action="write")
+    endif
 
     write(noutdump,*) "===================="
     write(noutdump,*) "iteration", jstep
@@ -1567,10 +1580,10 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
     do jfld = 1, size (zgpuv, 3)
       do jlev = 1, size (zgpuv, 2)
-        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
+        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
+          call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
         endif
       enddo
     enddo
@@ -1580,10 +1593,10 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
     do jfld = 1, size (zgp3a, 3)
       do jlev = 1, size (zgp3a, 2)
-        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
+        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
+          call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
         endif
       enddo
     enddo
@@ -1592,18 +1605,18 @@ subroutine dump_checksums(filename, noutdump, &
   if (present(zgp2)) then
     icrc = 0
     do jfld = 1, size (zgp2, 2)
-        call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),KRESOL=1,pgp=zgp2(:,jfld:jfld,:))
-        if (myproc == 1) then
-            call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
-            write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
-        endif
+      call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp2(:,jfld:jfld,:))
+      if (myproc == 1) then
+        call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+        write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
+      endif
     enddo
-    endif
+  endif
   if (present(sp3d)) then
     icrc = 0
     do jfld = 1, size (sp3d, 3)
       do jlev = 1, size (sp3d, 1)
-        call egath_spec(PSPECG=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),KRESOL=1,PSPEC=sp3d(jlev:jlev,:,jfld))
+        call egath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),kresol=1,pspec=sp3d(jlev:jlev,:,jfld))
         if (myproc == 1) then
           call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc
@@ -1616,7 +1629,7 @@ subroutine dump_checksums(filename, noutdump, &
     icrc = 0
 
     do jfld = 1, size (zspc2, 1)
-      call egath_spec(PSPECG=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), KRESOL=1,PSPEC=zspc2(jfld:jfld,:))
+      call egath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), kresol=1,pspec=zspc2(jfld:jfld,:))
       if (myproc == 1) then
         call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc

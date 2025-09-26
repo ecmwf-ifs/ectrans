@@ -44,7 +44,7 @@ jobs:
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
             sbatch_options: |
-              #SBATCH --time=00:20:00
+              #SBATCH --time=00:30:00
               #SBATCH --nodes=1
               #SBATCH --ntasks=2
               #SBATCH --cpus-per-task=32
@@ -55,7 +55,8 @@ jobs:
               - cmake
               - ninja
               - prgenv/nvidia
-              - hpcx-openmpi/2.14.0-cuda
+              - nvidia/24.5
+              - hpcx-openmpi/2.19.0-cuda
               - fftw
             cmake_options: -DENABLE_ACC=ON -G Ninja
 
@@ -64,7 +65,7 @@ jobs:
             troika_user_secret: LUMI_CI_SSH_USER
             account_secret: LUMI_CI_PROJECT
             sbatch_options: |
-              #SBATCH --time=00:40:00
+              #SBATCH --time=01:10:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
               #SBATCH --gpus-per-task=1
@@ -85,7 +86,7 @@ jobs:
               -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
               -DENABLE_OMP=ON
             env_vars:
-              - ROCFFT_RTC_CACHE_PATH=$PWD/rocfft_kernel_cache.db
+              - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
               - CMAKE_BUILD_PARALLEL_LEVEL=1
@@ -132,10 +133,6 @@ jobs:
 
               rm -r $REPO
               rm -r build
-
-              if [ "{{ site }}" = "lumi" ]; then
-                rm -f $ROCFFT_RTC_CACHE_PATH
-              fi
             }
             error_trap() {
               cleanup

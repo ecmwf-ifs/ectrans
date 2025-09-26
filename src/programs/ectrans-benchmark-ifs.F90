@@ -1067,7 +1067,7 @@ contains
 
 subroutine parse_grid(cgrid,ndgl,nloen)
 
-  character(len=*) :: cgrid
+  character(len=*), intent(in) :: cgrid
   integer, intent(inout) :: ndgl
   integer, intent(inout), allocatable :: nloen(:)
   integer :: ios
@@ -1144,7 +1144,7 @@ end function
 subroutine print_help(unit)
 
   integer, optional :: unit
-  integer :: nout = 6
+  integer, parameter :: nout = 6
   if (present(unit)) then
     nout = unit
   endif
@@ -1254,10 +1254,11 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, nfld, nlev, lvordiv, 
                                             ! tolerance for correctness checking
 
   character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
+  integer            :: iarg          ! Argument index
   integer            :: stat          ! For storing success status of string->integer conversion
   integer            :: myproc
 
+  iarg = 1
   do while (iarg <= command_argument_count())
     call get_command_argument(iarg, carg)
 
@@ -1384,8 +1385,8 @@ subroutine initialize_2d_spectral_field(nsmax, field)
   integer, allocatable :: my_zon_wns(:), nasm0(:)
 
   ! Choose a spherical harmonic to initialize arrays
-  integer :: m_num = 4  ! Zonal wavenumber
-  integer :: l_num = 19  ! Total wavenumber
+  integer, parameter :: m_num = 4  ! Zonal wavenumber
+  integer, parameter :: l_num = 19  ! Total wavenumber
 
   ! First initialise all spectral coefficients to zero
   field(:) = 0.0
@@ -1426,7 +1427,7 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, ngpblks, fld, fldchar, no
   character         , intent(in) :: fldchar ! Single character field identifier
   integer(kind=jpim), intent(in) :: noutdump ! Tnit number for output file
 
-  character(len=14) :: filename = "x.xxx.xxxx.dat"
+  character(len=14), parameter :: filename = "x.xxx.xxxx.dat"
 
   write(filename(1:1),'(a1)') fldchar
   write(filename(3:5),'(i3.3)') jstep
