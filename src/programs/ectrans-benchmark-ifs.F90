@@ -400,10 +400,6 @@ call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),  
 call gstats(1, 1)
 
 call gstats(2, 0)
-! IFS spectral fields are dimensioned NFLEVL, Nils !!
-call set_ectrans_gpu_nflev(nflevl)
-  ! We pass nflevl via environment variable in order not to change API
-  ! In long run, ectrans should grow its internal buffers automatically
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true.,       &
   &              ldusefftw=lfftw, lduserpnm=luserpnm, ldkeeprpnm=lkeeprpnm, &
   &              lduseflt=luseflt)
@@ -1490,17 +1486,6 @@ subroutine gstats_labels
   call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
 
 end subroutine gstats_labels
-
-!===================================================================================================
-
-subroutine set_ectrans_gpu_nflev(kflev)
-  use ec_env_mod, only : ec_putenv
-  integer(kind=jpim), intent(in) :: kflev
-  character(len=32) :: ECTRANS_GPU_NFLEV
-  write(ECTRANS_GPU_NFLEV,'(A,I0)') "ECTRANS_GPU_NFLEV=",kflev
-  call ec_putenv(ECTRANS_GPU_NFLEV, overwrite=.true.)
-end subroutine
-
 
 end program transform_test
 
