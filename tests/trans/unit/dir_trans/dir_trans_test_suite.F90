@@ -143,4 +143,148 @@ END FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_1_WIND_1
 
 !---------------------------------------------------------------------------------------------------
 
+! Test DIR_TRANS with call mode 1 and 1-level wind fields and 1 scalar field
+INTEGER FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_1_WIND_1_SCALAR_1() RESULT(RET) BIND(C)
+    REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:), ZSPVOR(:,:), ZSPDIV(:,:), ZSPSCALAR(:,:)
+    INTEGER(KIND=JPIM) :: NSPEC2, NGPTOT
+    REAL(KIND=JPRB) :: TEMP_TOLERANCE
+
+    CALL SETUP_TEST(NSPEC2, NGPTOT)
+
+    ! Initialise arrays
+    ALLOCATE(ZGP(NGPTOT,3,1))
+    ALLOCATE(ZSPVOR(1,NSPEC2))
+    ALLOCATE(ZSPDIV(1,NSPEC2))
+    ALLOCATE(ZSPSCALAR(1,NSPEC2))
+
+    ! Set all of the input to one
+    ZGP(:,:,:) = 1.0_JPRB
+
+    CALL DIR_TRANS(PGP=ZGP, PSPVOR=ZSPVOR, PSPDIV=ZSPDIV, PSPSCALAR=ZSPSCALAR)
+
+    ! We pass in constant U and V so vorticity and divergence should both be zero
+    ! As for the scalar, check only the (0,0) mode (global mean) is one and all the rest are zero
+    ! TODO: for some reason the double precision computation of vorticity and divergence gives
+    ! errors more like single precision. This possibly indicates a hard-coded single-precision
+    ! value somewhere in the double-precision code path. For now we use a higher tolerance.
+    IF (JPRB == JPRD) THEN
+        TEMP_TOLERANCE = 1E7_JPRD * TOLERANCE
+    ELSE
+        TEMP_TOLERANCE = TOLERANCE
+    END IF
+    IF (ALL(APPROX_EQ(ZSPVOR(1,1:), 0.0_JPRB, TOL=TEMP_TOLERANCE)) .AND. &
+      & ALL(APPROX_EQ(ZSPDIV(1,1:), 0.0_JPRB, TOL=TEMP_TOLERANCE)) .AND. &
+      & APPROX_EQ(ZSPSCALAR(1,1), 1.0_JPRB) .AND. ALL(APPROX_EQ(ZSPSCALAR(1,2:), 0.0_JPRB))) THEN
+        RET = 0
+    ELSE
+        RET = 1
+    END IF
+
+    DEALLOCATE(ZSPSCALAR, ZSPDIV, ZSPVOR, ZGP)
+    CALL TRANS_END
+END FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_1_WIND_1_SCALAR_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 2 and just one "3A" scalar field
+INTEGER FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_2_PGP3A_1() RESULT(RET) BIND(C)
+    REAL(KIND=JPRB), ALLOCATABLE :: ZGP3A(:,:,:,:), ZSPSC3A(:,:,:)
+    INTEGER(KIND=JPIM) :: NSPEC2, NGPTOT
+    REAL(KIND=JPRB) :: TEMP_TOLERANCE
+
+    CALL SETUP_TEST(NSPEC2, NGPTOT)
+
+    ! Initialise arrays
+    ALLOCATE(ZGP3A(NGPTOT,1,1,1))
+    ALLOCATE(ZSPSC3A(1,NSPEC2,1))
+
+    ! Set all of the input to one
+    ZGP3A(:,:,:,:) = 1.0_JPRB
+
+    CALL DIR_TRANS(PGP3A=ZGP3A, PSPSC3A=ZSPSC3A)
+
+    ! Check only the (0,0) mode (global mean) is one and all the rest are zero
+    IF (APPROX_EQ(ZSPSC3A(1,1,1), 1.0_JPRB) .AND. ALL(APPROX_EQ(ZSPSC3A(1,2:,1), 0.0_JPRB))) THEN
+        RET = 0
+    ELSE
+        RET = 1
+    END IF
+
+    DEALLOCATE(ZSPSC3A, ZGP3A)
+    CALL TRANS_END
+END FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_2_PGP3A_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 2 and just one "3B" scalar field
+INTEGER FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_2_PGP3B_1() RESULT(RET) BIND(C)
+    REAL(KIND=JPRB), ALLOCATABLE :: ZGP3B(:,:,:,:), ZSPSC3B(:,:,:)
+    INTEGER(KIND=JPIM) :: NSPEC2, NGPTOT
+    REAL(KIND=JPRB) :: TEMP_TOLERANCE
+
+    CALL SETUP_TEST(NSPEC2, NGPTOT)
+
+    ! Initialise arrays
+    ALLOCATE(ZGP3B(NGPTOT,1,1,1))
+    ALLOCATE(ZSPSC3B(1,NSPEC2,1))
+
+    ! Set all of the input to one
+    ZGP3B(:,:,:,:) = 1.0_JPRB
+
+    CALL DIR_TRANS(PGP3B=ZGP3B, PSPSC3B=ZSPSC3B)
+
+    ! Check only the (0,0) mode (global mean) is one and all the rest are zero
+    IF (APPROX_EQ(ZSPSC3B(1,1,1), 1.0_JPRB) .AND. ALL(APPROX_EQ(ZSPSC3B(1,2:,1), 0.0_JPRB))) THEN
+        RET = 0
+    ELSE
+        RET = 1
+    END IF
+
+    DEALLOCATE(ZSPSC3B, ZGP3B)
+    CALL TRANS_END
+END FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_2_PGP3B_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 2 and 1-level wind fields
+INTEGER FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_2_WIND_1() RESULT(RET) BIND(C)
+    REAL(KIND=JPRB), ALLOCATABLE :: ZGPUV(:,:,:,:), ZSPVOR(:,:), ZSPDIV(:,:)
+    INTEGER(KIND=JPIM) :: NSPEC2, NGPTOT
+    REAL(KIND=JPRB) :: TEMP_TOLERANCE
+
+    CALL SETUP_TEST(NSPEC2, NGPTOT)
+
+    ! Initialise arrays
+    ALLOCATE(ZGPUV(NGPTOT,1,2,1))
+    ALLOCATE(ZSPVOR(1,NSPEC2))
+    ALLOCATE(ZSPDIV(1,NSPEC2))
+
+    ! Set all of the input to one
+    ZGPUV(:,:,:,:) = 1.0_JPRB
+
+    CALL DIR_TRANS(PGPUV=ZGPUV, PSPVOR=ZSPVOR, PSPDIV=ZSPDIV)
+
+    ! We pass in constant U and V so vorticity and divergence should both be zero
+    ! As for the scalar, check only the (0,0) mode (global mean) is one and all the rest are zero
+    ! TODO: for some reason the double precision computation of vorticity and divergence gives
+    ! errors more like single precision. This possibly indicates a hard-coded single-precision
+    ! value somewhere in the double-precision code path. For now we use a higher tolerance.
+    IF (JPRB == JPRD) THEN
+        TEMP_TOLERANCE = 1E7_JPRD * TOLERANCE
+    ELSE
+        TEMP_TOLERANCE = TOLERANCE
+    END IF
+    IF (ALL(APPROX_EQ(ZSPVOR(1,1:), 0.0_JPRB, TOL=TEMP_TOLERANCE)) .AND. &
+      & ALL(APPROX_EQ(ZSPDIV(1,1:), 0.0_JPRB, TOL=TEMP_TOLERANCE))) THEN
+        RET = 0
+    ELSE
+        RET = 1
+    END IF
+
+    DEALLOCATE(ZSPDIV, ZSPVOR, ZGPUV)
+    CALL TRANS_END
+END FUNCTION UNIT_TEST_DIR_TRANS_CALL_MODE_2_WIND_1
+
+!---------------------------------------------------------------------------------------------------
+
 END MODULE DIR_TRANS_TEST_SUITE

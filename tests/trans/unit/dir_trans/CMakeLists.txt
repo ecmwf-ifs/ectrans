@@ -12,6 +12,10 @@
 set( test_list
   unit_test_dir_trans_call_mode_1_scalar_1
   unit_test_dir_trans_call_mode_1_wind_1
+  unit_test_dir_trans_call_mode_1_wind_1_scalar_1
+  unit_test_dir_trans_call_mode_2_pgp3a_1
+  unit_test_dir_trans_call_mode_2_pgp3b_1
+  unit_test_dir_trans_call_mode_2_wind_1
 )
 
 # Declare tests that WILL_FAIL
