@@ -10,7 +10,6 @@
 
 list( APPEND trans_gpu_common_src
   algor/ext_acc.F90
-  algor/c_hipmemgetinfo.cpp
   algor/buffered_allocator_mod.F90
   algor/device_mod.F90
   algor/growing_allocator_mod.F90
@@ -24,6 +23,7 @@ if( HAVE_HIP )
     algor/*.hip.cpp
   )
   list( APPEND trans_gpu_common_src
+    algor/c_hipmemgetinfo.cpp
     algor/hicblas_gemm.hip.cpp
     algor/hicfft.hip.cpp
   )
@@ -32,12 +32,17 @@ elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
   list( APPEND trans_gpu_common_src
+    algor/c_hipmemgetinfo.cpp
     algor/hicblas_gemm.cuda.cu
     algor/hicfft.cuda.cu
   )
   ecbuild_info("warn: IN_PLACE_FFT defined for cuFFT")
 else()
-  ecbuild_info("warn: HIP and CUDA not found")
+  set( GPU_RUNTIME "HOST" )
+  list( APPEND trans_gpu_common_src
+    algor/fft.host.cpp
+    algor/gemm.host.cpp
+  )
 endif()
 
 
@@ -66,6 +71,12 @@ ecbuild_add_library(
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
 )
+
+if( HAVE_GPU_HOST )
+  target_link_libraries( ectrans_gpu_common PRIVATE ${LAPACK_LIBRARIES} )
+  target_link_libraries( ectrans_gpu_common PRIVATE ${FFTW_LIBRARIES} )
+  target_include_directories( ectrans_gpu_common PRIVATE ${FFTW_INCLUDE_DIRS} )
+endif()
 
 ectrans_target_fortran_module_directory(
   TARGET            ectrans_gpu_common
@@ -169,7 +180,7 @@ foreach( prec dp sp )
         endif()
 
         # cuFFT can do in-place FFT, hipFFT cannot
-        if( HAVE_CUDA )
+        if( HAVE_CUDA OR (GPU_RUNTIME STREQUAL "HOST"))
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
 
