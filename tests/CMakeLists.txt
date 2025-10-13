@@ -319,6 +319,22 @@ if( HAVE_ETRANS )
 
 endif()
 
+# EDIT(JC)
+ecbuild_add_test(TARGET ectrans_test_example
+  SOURCES trans/test_example.F90
+  LIBS trans_sp parkind_sp
+  LINKER_LANGUAGE Fortran
+  MPI 1
+  OMP 1
+)
+ecbuild_add_test(TARGET ectrans_test_multiple_res
+  SOURCES trans/test_multiple_res.F90
+  LIBS trans_sp parkind_sp
+  LINKER_LANGUAGE Fortran
+  MPI 1
+  OMP 1
+)
+
 # --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
