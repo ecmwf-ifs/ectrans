@@ -8,7 +8,7 @@ program test_multiple_res
 
 USE PARKIND1, ONLY: JPRM, JPIM
 USE MPL_MODULE  ,ONLY : MPL_INIT, MPL_END, MPL_BARRIER, MPL_MYRANK, MPL_NPROC, &
-                        MPL_SET_DEFAULT_COMM, MPL_COMM_SPLIT
+                        MPL_COMM_SPLIT
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
 use mpl_data_module
 use mpl_mpif

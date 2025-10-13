@@ -8,7 +8,7 @@ program test_example
 
 USE PARKIND1, ONLY: JPRM, JPIM
 USE MPL_MODULE  ,ONLY : MPL_INIT, MPL_END, MPL_BARRIER, MPL_MYRANK, MPL_NPROC, &
-                        MPL_SET_DEFAULT_COMM, MPL_COMM_SPLIT
+                        MPL_COMM_SPLIT
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
 use mpl_data_module
 use mpl_mpif
@@ -55,17 +55,19 @@ real(kind=JPRM), allocatable :: g_grid_point_field(:)
 character(len=1024) :: filename
 
 
-call MPL_INIT()
-rank = MPL_MYRANK() - 1
+call MPI_Init(ierror)
+call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
 
 split_colour = get_split_group()
 split_key = rank
-call MPL_COMM_SPLIT(MPI_COMM_WORLD, split_colour, split_key, split_comm, ierror)
+call MPI_Comm_split(MPI_COMM_WORLD, split_colour, split_key, split_comm, ierror)
 
 print*, "=== Rank ", rank, ", Setup on group", split_colour, "==="
 
-! NOTE(JC): New feature to set comm after-the-fact.
-call MPL_SET_DEFAULT_COMM(split_comm)
+! Set MPL comm
+LMPLUSERCOMM = .true.
+MPLUSERCOMM = split_comm
+call MPL_INIT()
 
 
 rank = MPL_MYRANK()
@@ -153,7 +155,7 @@ if (rank == 1) then
 end if
 
 call MPL_END()
-!call MPI_Finalize()
+call MPI_Finalize()
 
 CONTAINS
 
