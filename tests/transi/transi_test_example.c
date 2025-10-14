@@ -13,7 +13,7 @@
 
 #include "transi_test.h"
 
-#include "<mpi.h>"
+#include <mpi.h>
 
 static bool check_values = false;
 
