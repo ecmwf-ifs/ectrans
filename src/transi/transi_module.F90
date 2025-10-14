@@ -582,19 +582,23 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   integer(c_int) :: iret
   integer(c_int), value, intent(in) :: mpi_user_comm
 
+  integer(c_int), save :: last_comm_set = -1   ! -1 indicates no comm has been set
+
+  iret = TRANS_SUCCESS
+  if (.not. USE_MPI) return
+  ! If a comm is already set, and the comm coming in is the same, then skip.
+  if (last_comm_set > -1 .and. mpi_user_comm == last_comm_set) return
+
   ! Confirm that this is called prior to MPL_INIT
-  if ( is_init ) then
+  if (is_init) then
     write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
     iret = TRANS_ERROR
     return
   end if
 
-  if ( USE_MPI ) then
-    LMPLUSERCOMM = .true.
-    MPLUSERCOMM = mpi_user_comm
-  end if
-
-  iret = TRANS_SUCCESS
+  LMPLUSERCOMM = .true.
+  MPLUSERCOMM = mpi_user_comm
+  last_comm_set = mpi_user_comm
 
 end function trans_set_mpi_comm
 
