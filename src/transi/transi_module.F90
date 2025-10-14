@@ -39,6 +39,11 @@ use MPL_module, only: &
   MPL_END, &
   MPL_NPROC, &
   MPL_MYRANK
+
+use MPL_DATA_MODULE
+
+use mpl_mpif
+
 implicit none
 
 private :: c_ptr
@@ -570,6 +575,28 @@ function trans_init() bind(C,name="trans_init") result(iret)
   iret = TRANS_SUCCESS
 
 end function trans_init
+
+
+function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") result(iret)
+  use, intrinsic :: iso_c_binding
+  integer(c_int) :: iret
+  integer(c_int), value, intent(in) :: mpi_user_comm
+
+  ! Confirm that this is called prior to MPL_INIT
+  if ( is_init ) then
+    write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
+    iret = TRANS_ERROR
+    return
+  end if
+
+  if ( USE_MPI ) then
+    LMPLUSERCOMM = .true.
+    MPLUSERCOMM = mpi_user_comm
+  end if
+
+  iret = TRANS_SUCCESS
+
+end function trans_set_mpi_comm
 
 
 function trans_setup(trans) bind(C,name="trans_setup") result(iret)

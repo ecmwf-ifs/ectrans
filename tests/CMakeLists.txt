@@ -433,6 +433,13 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
+
+  ecbuild_add_test( TARGET ectrans_test_transi_example
+    SOURCES   transi/transi_test_example.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    ENVIRONMENT TRANS_USE_MPI=1 )
+
   ecbuild_add_test( TARGET ectrans_test_transi_lonlat_diff_incr
     SOURCES   transi/transi_test_lonlat_diff_incr.c
     LIBS      ectrans_test
