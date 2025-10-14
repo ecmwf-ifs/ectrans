@@ -86,35 +86,33 @@ def ectrans_version():
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
+def get_legendre_assets(NLAT, KTRUNC, KSPOLEGL, KLOEN, KNUMMAXRESOL):
     """
     Fetch arrays relevant for performing the Legendre transform.
     KNMENG and PGW are specified across the full globe, pole to pole. PRPNM is specified across the Northern hemisphere only.
 
     Args:\n
-    1) KSIZEJ: number of latitudes in grid-point space
+    1) NLAT: number of latitudes in grid-point space
     2) KTRUNC: truncation
-    3) KSLOEN: Size of KLOEN
-    4) KSPOLEGL: the second dimension of the array storing all of the Legendre polynomials, equal to
+    3) KSPOLEGL: the second dimension of the array storing all of the Legendre polynomials, equal to
        sum([truncation + 2 - im for im in range(truncation+1)])
-    5) KLOEN: number of points on each latitude row
-    6) KNUMMAXRESOL: maximum number of troncatures handled
+    4) KLOEN: number of points on each latitude row
+    5) KNUMMAXRESOL: maximum number of troncatures handled
 
     Returns:\n
     1) KNMENG: cut-off zonal wavenumber
     2) PGW: Gaussian weights
     3) PRPNM: associated Legendre polynomials
     """
-    return ([KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL],
+    return ([NLAT, KTRUNC, KSPOLEGL, KLOEN, KNUMMAXRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
+             (np.int64, (NLAT,), IN),
              (np.int64, None, IN),
-             (np.int64, (KSLOEN,), IN),
-             (np.int64, None, IN),
-             (np.int64, (KSLOEN,), OUT),
-             (np.float64, (KSLOEN,), OUT),
-             (np.float64, (KSLOEN//2,KSPOLEGL), OUT)],
+             (np.int64, (NLAT,), OUT),
+             (np.float64, (NLAT,), OUT),
+             (np.float64, (NLAT//2,KSPOLEGL), OUT)],
             None)
 
 @treatReturnCode
