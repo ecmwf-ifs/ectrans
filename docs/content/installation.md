@@ -35,7 +35,7 @@ should have these installed already, so we will assume this is the case for you 
 ecBuild can simply be cloned from GitHub like so:
 
 ```bash
-git clone https://github.com/ecmwf/ecbuild.git --branch 3.8.2 --single-branch
+git clone https://github.com/ecmwf/ecbuild.git --branch 3.12.0 --single-branch
 ```
 
 It does not require a build or installation step. Simply export a variable `ecbuild_DIR` pointing to
@@ -83,7 +83,7 @@ source env.sh
 First clone the latest version of the FIAT repository:
 
 ```bash
-git clone https://github.com/ecmwf-ifs/fiat.git -b 1.5.1
+git clone https://github.com/ecmwf-ifs/fiat.git -b 1.6.1
 ```
 
 Then run the configure step for FIAT (you can leave out `-DCMAKE_TOOLCHAIN_FILE` if you don't want
