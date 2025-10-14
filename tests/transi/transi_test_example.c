@@ -13,8 +13,7 @@
 
 #include "transi_test.h"
 
-// TODO
-#include "/home/users/darth/opt/mobbs-61/util/spice_gnu/include/mpi.h"
+#include "<mpi.h>"
 
 static bool check_values = false;
 

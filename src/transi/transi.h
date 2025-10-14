@@ -76,8 +76,7 @@
 #ifndef ectrans_transi_h
 #define ectrans_transi_h
 
-// TODO
-#include "/home/users/darth/opt/mobbs-61/util/spice_gnu/include/mpi.h"
+#include <mpi.h>
 #include <stddef.h> // size_t
 
 typedef int _bool;

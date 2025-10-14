@@ -1,4 +1,5 @@
 # (C) Copyright 2020- ECMWF.
+# (C) Crown Copyright 2025- Met Office.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -12,15 +13,24 @@ endif()
 
 configure_file( version.c.in  version.c )
 
+if( HAVE_MPI )
+  set(transi_mpi_defs ${MPI_C_DEFINITIONS} )
+  set(transi_mpi_incs ${MPI_C_INCLUDE_PATH} )
+  set(transi_mpi_libs ${MPI_C_LIBRARIES} )
+endif()
+
 ecbuild_add_library( TARGET transi_dp
   SOURCES             transi_module.F90
                       transi.h
                       transi.c
                       version.h
                       ${CMAKE_CURRENT_BINARY_DIR}/version.c
+  DEFINITIONS         "${transi_mpi_defs}"
   HEADER_DESTINATION  include/ectrans
   PUBLIC_INCLUDES     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                       $<INSTALL_INTERFACE:include>
+                      "${transi_mpi_incs}"
+  PUBLIC_LIBS         "${transi_mpi_libs}"
   PRIVATE_LIBS        trans_dp
                       $<${ectrans_HAVE_ETRANS}:etrans_dp>
   PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
