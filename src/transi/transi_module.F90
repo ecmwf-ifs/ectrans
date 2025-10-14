@@ -586,8 +586,8 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
 
   iret = TRANS_SUCCESS
   if (.not. USE_MPI) return
-  ! If a comm is already set, and the comm coming in is the same, then skip.
-  if (last_comm_set > -1 .and. mpi_user_comm == last_comm_set) return
+  ! If MPL_INIT already setup, and the comm coming in is the same, then skip.
+  if (is_init .and. mpi_user_comm == last_comm_set) return
 
   ! Confirm that this is called prior to MPL_INIT
   if (is_init) then
