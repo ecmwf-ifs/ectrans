@@ -589,7 +589,7 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   ! If MPL_INIT already setup, and the comm coming in is the same, then skip.
   if (is_init .and. mpi_user_comm == last_comm_set) return
 
-  ! Confirm that this is called prior to MPL_INIT
+  ! Confirm that this is called prior to MPL_INIT, to ensure correct setting of global vars.
   if (is_init) then
     write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
     iret = TRANS_ERROR

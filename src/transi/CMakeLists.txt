@@ -29,6 +29,7 @@ ecbuild_add_library( TARGET transi_dp
   PUBLIC_INCLUDES     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                       $<INSTALL_INTERFACE:include>
                       "${transi_mpi_incs}"
+  PUBLIC_LIBS         "${transi_mpi_libs}"
   PRIVATE_LIBS        trans_dp
                       $<${ectrans_HAVE_ETRANS}:etrans_dp>
   PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
