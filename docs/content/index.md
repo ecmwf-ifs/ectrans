@@ -1,6 +1,6 @@
 ---
 title: ecTrans User Guide
-ordered_subpage: design.md
+ordered_subpage: design
 ordered_subpage: installation.md
 ordered_subpage: usage.md
 ordered_subpage: benchmarking.md
@@ -37,7 +37,8 @@ optimisation of IFS execution speed.
 
 This user guide contains the following sections:
 
-- [Design](design.html)
+- [Design](design/index.html)
+    - [Generation of Legendre polynomials](design/legendre_polynomials.html)
 - [Installation](installation.html)
 - [Usage](usage.html)
 - [Benchmarking](benchmarking.html)
