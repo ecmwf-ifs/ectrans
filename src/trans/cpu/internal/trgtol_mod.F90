@@ -379,7 +379,7 @@ IF (NSTACK_MEMORY_TR == 0) THEN
 
 ! Now, force the OS to allocate this shared array right now, not when it starts to be used which is
 ! an OPEN-MP loop, that would cause a threads synchronization lock :
-  IF (YDCTX%INSEND > 0 .AND. YDCTX%ISENDCOUNT >=-1) ZCOMBUFS(-1,1)=HUGE(1._JPRB)
+  IF (YDCTX%INSEND > 0 .AND. YDCTX%ISENDCOUNT >=-1) ZCOMBUFS_HEAP(-1,1)=HUGE(1._JPRB)
   ZCOMBUFS (-1:,1:) => ZCOMBUFS_HEAP
   ZCOMBUFR (-1:,1:) => ZCOMBUFR_HEAP
 ELSE
