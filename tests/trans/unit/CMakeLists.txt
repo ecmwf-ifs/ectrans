@@ -17,7 +17,8 @@ function( generate_unit_test_suite )
   set( test_list ${_PAR_TEST_LIST} )
   set( will_fail_list ${_PAR_WILL_FAIL_LIST} )
 
-  # Add unit tests for this suite, with a separate driver executable for each precision
+  # Add unit tests for this suite, with a separate driver executable for each precision and MPI
+  # configuration
   foreach( precision ${precisions} )
     # Create test suite driver executable encapsulating all tests for this suite at this precision
     create_test_sourcelist( _ ${suite_name}_${precision}.c ${test_list} )
@@ -25,6 +26,7 @@ function( generate_unit_test_suite )
                             SOURCES
                                 ${suite_name}_${precision}.c
                                 ${suite_name}.F90
+                                ${CMAKE_SOURCE_DIR}/tests/trans/unit/util.F90
                             LIBS trans_${precision} )
 
     # Prevent the Fortran runtime from trying to provide a main program
@@ -33,15 +35,20 @@ function( generate_unit_test_suite )
     ectrans_target_fortran_module_directory( TARGET ${suite_name}_${precision}
         MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${suite_name}_${precision} )
 
-    # Add each test in the test list for this precision
-    foreach( test ${test_list} )
-      add_test( NAME ${test}_${precision} COMMAND ${suite_name}_${precision} ${test} )
+    foreach( mpi ${ntasks} )
+      # Add each test in the test list for this precision
+      foreach( test ${test_list} )
+        ecbuild_add_test( TARGET ${test}_${precision}_mpi${mpi}
+                          COMMAND ${suite_name}_${precision}
+                          ARGS ${test}
+                          MPI ${mpi} )
 
-      # Declare that this test should fail
-      if( ${test} IN_LIST will_fail_list )
-        set_property( TEST ${test}_${precision} PROPERTY WILL_FAIL TRUE )
-        set_property( TEST ${test}_${precision} PROPERTY LABELS "will_fail" )
-      endif()
+        # Declare that this test should fail
+        if( ${test} IN_LIST will_fail_list )
+          set_property( TEST ${test}_${precision}_mpi${mpi} PROPERTY WILL_FAIL TRUE )
+          set_property( TEST ${test}_${precision}_mpi${mpi} PROPERTY LABELS "will_fail" )
+        endif()
+      endforeach()
     endforeach()
   endforeach()
 endfunction( generate_unit_test_suite )
