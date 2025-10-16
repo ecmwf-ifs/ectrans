@@ -24,8 +24,8 @@ CONTAINS
 
 ! Test SETUP_TRANS0 with equal regions enabled
 INTEGER FUNCTION UNIT_TEST_SETUP_TRANS0_EQ_REGIONS() RESULT(RET) BIND(C)
-    CALL SETUP_TRANS0(LDMPOFF=.TRUE., LDEQ_REGIONS=.TRUE.)
-    RET = 0
+  CALL SETUP_TRANS0(LDMPOFF=.TRUE., LDEQ_REGIONS=.TRUE.)
+  RET = 0
 END FUNCTION UNIT_TEST_SETUP_TRANS0_EQ_REGIONS
 
 !---------------------------------------------------------------------------------------------------
