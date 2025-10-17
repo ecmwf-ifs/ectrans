@@ -30,7 +30,7 @@ integer(kind=JPIM), parameter, dimension(2) :: Ns = [2, 4]
 
 integer(kind=JPIM) :: num_spectral_elements, num_grid_points
 integer(kind=JPIM) :: g_num_spectral_elements, g_num_grid_points  ! global
-integer(kind=JPIM) :: mode_index
+integer(kind=JPIM) :: local_spectral_coefficient_index
 integer(kind=JPIM) :: ierror
 integer(kind=JPIM) :: i
 integer(kind=JPIM) :: num_ranks, rank
@@ -50,6 +50,7 @@ integer(kind=JPIM), allocatable :: spectral_indices(:)
 real(kind=JPRM), allocatable :: spectral_field(:,:)
 real(kind=JPRM), allocatable :: grid_point_field(:,:,:)
 
+! NOTE: 1 Dimensional as this is a field simply used to write to file output.
 real(kind=JPRM), allocatable :: g_grid_point_field(:)
 
 character(len=1024) :: filename
@@ -101,12 +102,12 @@ call trans_inq(KASM0=spectral_indices)
 ! select mode
 M = Ms(split_colour + 1)
 N = Ns(split_colour + 1)
-mode_index = spectral_indices(M) + 2*(N - M) + 1
+local_spectral_coefficient_index = spectral_indices(M) + 2*(N - M) + 1
 
 spectral_field(:,:) = 0.0
 
-if (mode_index > 0) then
-  spectral_field(1,mode_index) = 1.0
+if (local_spectral_coefficient_index > 0) then
+  spectral_field(1,local_spectral_coefficient_index) = 1.0
 end if
 
 call inv_trans(PSPSCALAR=spectral_field, PGP=grid_point_field)
