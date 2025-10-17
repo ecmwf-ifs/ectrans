@@ -33,7 +33,8 @@ integer(kind=JPIM) :: g_num_spectral_elements, g_num_grid_points  ! global
 integer(kind=JPIM) :: local_spectral_coefficient_index
 integer(kind=JPIM) :: ierror
 integer(kind=JPIM) :: i
-integer(kind=JPIM) :: num_ranks, rank
+integer(kind=JPIM) :: split_num_ranks, split_rank
+integer(kind=JPIM) :: world_num_ranks, world_rank
 integer(kind=JPIM) :: split_colour, split_key
 integer(kind=JPIM) :: split_comm
 integer(kind=JPIM) :: truncation
@@ -57,26 +58,27 @@ character(len=1024) :: filename
 
 
 call MPI_Init(ierror)
-call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
+call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierror)
 
 split_colour = get_split_group()
-split_key = rank
+split_key = world_rank
 call MPI_Comm_split(MPI_COMM_WORLD, split_colour, split_key, split_comm, ierror)
 
-print*, "=== Rank ", rank, ", Setup on group", split_colour, "==="
+print*, "=== Rank ", world_rank, ", Setup on group", split_colour, "==="
 
-! Set MPL comm
+! Set MPL comm. Global variables from fiat MPL_DATA_MODULE.
+! Acts like arguments to MPL_INIT.
 LMPLUSERCOMM = .true.
 MPLUSERCOMM = split_comm
 call MPL_INIT()
 
 
-rank = MPL_MYRANK()
-num_ranks = MPL_NPROC()
-print*, "=== Local rank ", rank, ", on group", split_colour, "size", num_ranks, "==="
+split_rank = MPL_MYRANK()
+split_num_ranks = MPL_NPROC()
+print*, "=== Local rank ", split_rank, ", on group", split_colour, "size", split_num_ranks, "==="
 
 !                                           Split grid NS  Split spectral
-call setup_trans0(KPRINTLEV=0, LDMPOFF=.false., KPRGPNS=num_ranks, KPRTRW=num_ranks)
+call setup_trans0(KPRINTLEV=0, LDMPOFF=.false., KPRGPNS=split_num_ranks, KPRTRW=split_num_ranks)
 
 ! DIFFERENT TRANSFORM BASED ON COMM GROUP
 truncation = truncations(split_colour + 1)
@@ -116,7 +118,7 @@ call inv_trans(PSPSCALAR=spectral_field, PGP=grid_point_field)
 
 ! Get counts from each PE.
 grid_partition_size_local(1) = num_grid_points
-allocate(grid_partition_sizes(num_ranks))
+allocate(grid_partition_sizes(split_num_ranks))
 grid_partition_sizes = 0
 
 call MPI_Gather(grid_partition_size_local, 1, MPI_INT, &
@@ -133,9 +135,9 @@ print*, "SIZES => ", grid_partition_sizes(:)
 allocate(g_grid_point_field(g_num_grid_points))
 
 ! Make displacement arrays
-allocate(displs(num_ranks))
+allocate(displs(split_num_ranks))
 displs = 0
-do i=2, num_ranks
+do i=2, split_num_ranks
   displs(i) = displs(i - 1) + grid_partition_sizes(i - 1)
 end do
 print*,"displs => ", displs(:)
@@ -148,7 +150,7 @@ if (ierror /= 0) then
   call ABORT_TRANS("MPI ERROR")
 end if
 
-if (rank == 1) then
+if (split_rank == 1) then
   write(filename, "(A22,I0,A4)") "grid_point_field_group", split_colour, ".dat"
   open(7, file=filename, form="unformatted")
   write(7) g_grid_point_field(:)

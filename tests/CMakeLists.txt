@@ -319,9 +319,8 @@ if( HAVE_ETRANS )
 
 endif()
 
-# EDIT(JC)
-ecbuild_add_test(TARGET ectrans_test_example
-  SOURCES trans/test_example.F90
+ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
+  SOURCES trans/test_split_mpi_comm.F90
   LIBS trans_sp parkind_sp
   LINKER_LANGUAGE Fortran
   MPI 1
