@@ -4,7 +4,7 @@
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 
-program test_example
+program test_split_mpi_comm
 
 USE PARKIND1, ONLY: JPRM, JPIM
 USE MPL_MODULE  ,ONLY : MPL_INIT, MPL_END, MPL_BARRIER, MPL_MYRANK, MPL_NPROC, &
