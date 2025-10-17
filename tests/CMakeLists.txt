@@ -64,24 +64,6 @@ add_test( NAME ectrans_test_install
 add_subdirectory( trans/unit )
 
 # --------------------------------------------------------------------------------------------------
-# Add a test for SETUP_TRANS0
-# --------------------------------------------------------------------------------------------------
-
-ecbuild_add_executable(
-  TARGET  ectrans_test_setup_trans0
-  SOURCES trans/test_setup_trans0.F90
-  LIBS    ectrans_common
-  LINKER_LANGUAGE Fortran
-  NOINSTALL)
-
-foreach( mpi ${ntasks} )
-    ecbuild_add_test( TARGET ectrans_test_setup_trans0_mpi${mpi}
-        COMMAND ectrans_test_setup_trans0
-        MPI ${mpi}
-    )
-endforeach()
-
-# --------------------------------------------------------------------------------------------------
 # Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU
 # version only)
 # --------------------------------------------------------------------------------------------------
