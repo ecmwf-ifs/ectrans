@@ -112,7 +112,7 @@ COS_THETA = SQRT(COS2_THETA)
 !           ---------------------------------------------------
 
 ! this is supol_fast just using single KM
-IF( ABS(REAL(COS_THETA,JPRD)) <= ZEPS ) THEN
+IF (ABS(COS_THETA) <= ZEPS) THEN
   DLX = 1.0_JPRD
   COS_THETA = 0.0_JPRD
   COS_THETA_R = 0.0_JPRD
