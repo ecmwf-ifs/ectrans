@@ -136,13 +136,6 @@ END SUBROUTINE CLEANUP_TEST
 
 !---------------------------------------------------------------------------------------------------
 
-! NOTES:
-! - For now there is only a very primitive correctness check. For scalar fields we set the input to
-!   one and check that only the (0,0) mode (global mean) is one and all the rest are zero. For wind
-!  fields we set the input to one and check that vorticity and divergence are both zero.
-
-!---------------------------------------------------------------------------------------------------
-
 ! Test GPNORM_TRANS minimum functionality
 INTEGER FUNCTION UNIT_TEST_GPNORM_TRANS_MIN() RESULT(RET) BIND(C)
   REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:)
@@ -211,6 +204,44 @@ INTEGER FUNCTION UNIT_TEST_GPNORM_TRANS_MAX() RESULT(RET) BIND(C)
   DEALLOCATE(ZGP)
   CALL CLEANUP_TEST(LUSE_MPI)
 END FUNCTION UNIT_TEST_GPNORM_TRANS_MAX
+
+!---------------------------------------------------------------------------------------------------
+
+! Test GPNORM_TRANS average functionality
+INTEGER FUNCTION UNIT_TEST_GPNORM_TRANS_AVE() RESULT(RET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:)
+  REAL(KIND=JPRB) :: ZAVE(1), ZMIN(1), ZMAX(1)
+  INTEGER(KIND=JPIM) :: NSPEC2, NGPTOTG, NGPTOT, MY_PROC, NGPBLKS
+  LOGICAL :: LUSE_MPI
+
+  ! Set up everything
+  CALL SETUP_TEST(NSPEC2, NGPTOTG, NGPTOT, NGPBLKS, LUSE_MPI, MY_PROC)
+
+  ! Initialise distributed fields
+  ALLOCATE(ZGP(NPROMA,1,NGPBLKS))
+
+  ! Set all values to one
+  ZGP(:,:,:) = 1.0_JPRB
+
+  ! Calculate average, minimum, and maximum of field (LDAVE_ONLY = .FALSE.)
+  ! Note: not possible to compute only one of average, min, max - all three must be computed
+  ! (unless LDAVE_ONLY = .TRUE. in which case only average is computed)
+  CALL GPNORM_TRANS(ZGP, 1, NPROMA, ZAVE, ZMIN, ZMAX, .FALSE.)
+
+  ! If I am task 1, check that the average is one
+  IF (MY_PROC == 1) THEN
+    RET = MERGE(0, 1, APPROX_EQ(ZAVE(1), 1.0_JPRB))
+  ELSE
+    RET = 0
+  ENDIF
+
+  ! Communicate results to other tasks
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(RET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZGP)
+  CALL CLEANUP_TEST(LUSE_MPI)
+END FUNCTION UNIT_TEST_GPNORM_TRANS_AVE
 
 !---------------------------------------------------------------------------------------------------
 
