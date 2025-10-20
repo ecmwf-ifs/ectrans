@@ -56,6 +56,7 @@ SUBROUTINE FTDIR_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS, &
 
 !     ------------------------------------------------------------------
 
+USE, INTRINSIC :: IEEE_EXCEPTIONS, ONLY: IEEE_USUAL, IEEE_GET_HALTING_MODE, IEEE_SET_HALTING_MODE
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
 USE TPM_GEN         ,ONLY : NSTACK_MEMORY_TR
@@ -93,6 +94,7 @@ INTEGER(KIND=JPIM) :: IVSETSC(KF_SCALARS_G)
 INTEGER(KIND=JPIM) :: IVSET(KF_GP)
 INTEGER(KIND=JPIM) :: JGL,IGL
 INTEGER(KIND=JPIM) :: IFGP2,IFGP3A,IFGP3B,IOFF,J3
+LOGICAL :: IEEE_HALT_FLAGS(SIZE(IEEE_USUAL))
 
 !     ------------------------------------------------------------------
 
@@ -112,6 +114,12 @@ ELSE
   ZGTF => ZGTF_HEAP(:,:)
 ENDIF
 
+! Determine halting state for IEEE_USUAL and store in IEEE_HALT_FLAGS
+CALL IEEE_GET_HALTING_MODE(IEEE_USUAL, IEEE_HALT_FLAGS)
+
+! Disable halting for IEEE_USUAL to avoid FPEs during vectorised FFT (e.g. for AVX512)
+IF (ANY(IEEE_HALT_FLAGS)) CALL IEEE_SET_HALTING_MODE(IEEE_USUAL, .FALSE.)
+
 CALL GSTATS(1642, 0)
 ! If this rank has any Fourier fields, Fourier transform them
 IF (KF_FS > 0) THEN
@@ -127,6 +135,9 @@ IF (KF_FS > 0) THEN
   !$OMP END PARALLEL DO
 ENDIF
 CALL GSTATS(1642, 1)
+
+! Restore halting state for IEEE_USUAL
+IF (ANY(IEEE_HALT_FLAGS)) CALL IEEE_SET_HALTING_MODE(IEEE_USUAL, IEEE_HALT_FLAGS)
 
 CALL GSTATS(133,1)
 
