@@ -209,10 +209,10 @@ ELSE
   ICORR(:) = ICORR3
 
   IF (ICHEAP /= 3) THEN
-    ISTART = KM + 2
+    ISTART = KM + 4
     ISTART2 = KM
   ELSE
-    ISTART = KM + 3
+    ISTART = KM + 5
     ISTART2 = KM + 1
   ENDIF
 
@@ -222,24 +222,25 @@ ELSE
     IINC = 1
   ENDIF
 
-  DO JN = ISTART, KNSMAX - 2, IINC
+  DO JN = ISTART, KNSMAX, IINC
     IF (ICHEAP == 2 .OR. ICHEAP == 3) THEN
-      IF (ABS(DDPOL(JN-2)) > ZSCALE) THEN
+      IF (ABS(DDPOL(JN-4)) > ZSCALE) THEN
+        DDPOL(JN-4) = DDPOL(JN-4) / ZSCALE
         DDPOL(JN-2) = DDPOL(JN-2) / ZSCALE
-        DDPOL(JN) = DDPOL(JN) / ZSCALE
-        ICORR(JN-2:KNSMAX) = ICORR(JN-2:KNSMAX) - 1
+        ICORR(JN-4:KNSMAX) = ICORR(JN-4:KNSMAX) - 1
       ENDIF
     ELSE
-      IF (ABS(DDPOL(JN-2)) > ZSCALE) THEN
+      IF (ABS(DDPOL(JN-4)) > ZSCALE) THEN
+        DDPOL(JN-4) = DDPOL(JN-4) / ZSCALE
+        DDPOL(JN-3) = DDPOL(JN-3) / ZSCALE
         DDPOL(JN-2) = DDPOL(JN-2) / ZSCALE
         DDPOL(JN-1) = DDPOL(JN-1) / ZSCALE
-        DDPOL(JN) = DDPOL(JN) / ZSCALE
-        DDPOL(JN+1) = DDPOL(JN+1) / ZSCALE
-        ICORR(JN-2:KNSMAX) = ICORR(JN-2:KNSMAX) - 1
+        ICORR(JN-4:KNSMAX) = ICORR(JN-4:KNSMAX) - 1
       ENDIF
     ENDIF
 
-    DDPOL(JN+2) = ((DLX * DLX - DDL(JN)) * DDPOL(JN) - DCL(JN-2) * DDPOL(JN-2)) / DCL(JN)
+    ! P_{m,n} = ( (mu^2 - f_1(n-2)) * P_{m,n-2} - f_2(n_4) * P_{m,n-4} ) / f_2(n_2)
+    DDPOL(JN) = ((DLX * DLX - DDL(JN-2)) * DDPOL(JN-2) - DCL(JN-4) * DDPOL(JN-4)) / DCL(JN-2)
   ENDDO
 
   DO JN = ISTART2, KNSMAX, IINC
