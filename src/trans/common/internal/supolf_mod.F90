@@ -183,14 +183,14 @@ ELSE
       ZMULT = ZFAC
     CASE (1)
       ZFAC1 = 1.0_JPRD
-      ZFAC = ZFAC * REAL(2 * KM + IC, JPRD)
+      ZFAC = ZFAC * REAL(2 * KM + 1, JPRD)
       ZMULT = ZFAC * DLX
     CASE (2)
       ZFAC1 = 2.0_JPRD
       ZMULT = 0.5_JPRD * ZFAC * (REAL(2 * KM + 3, JPRD) * DLX * DLX - 1.0_JPRD)
     CASE (3)
       ZFAC1 = 6.0_JPRD
-      ZFAC = ZFAC * REAL(2 * KM + IC, JPRD)
+      ZFAC = ZFAC * REAL(2 * KM + 3, JPRD)
       ZMULT = (1.0_JPRD / 6.0_JPRD) * DLX * ZFAC * (REAL(2 * KM + 5, JPRD) * DLX * DLX - 3.0_JPRD)
     END SELECT
 
