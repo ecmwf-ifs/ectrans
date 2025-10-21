@@ -10,8 +10,8 @@ USE PARKIND1, ONLY: JPRM, JPIM
 USE MPL_MODULE  ,ONLY : MPL_INIT, MPL_END, MPL_BARRIER, MPL_MYRANK, MPL_NPROC, &
                         MPL_COMM_SPLIT
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
-use mpl_data_module
-use mpl_mpif
+USE mpl_data_module, ONLY : MPLUSERCOMM, LMPLUSERCOMM
+USE mpl_mpif
 
 implicit none
 
