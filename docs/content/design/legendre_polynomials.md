@@ -21,7 +21,12 @@ evaluated at is the same as the zonal wavenumber truncation.
 
 Now we describe how the polynomial array, \( P_{m,n}(\mu) \) is filled, where \( m \) is the zonal
 wavenumber, \( n \) is the total wavenumber, and \( \mu \) is the sine of the latitude. The
-recurrence relation used is different depending on \( m \).
+recurrence relation used is different depending on \( m \). This figure gives a flavour of the
+algorithm employed:
+
+![A representation of the algorithm used to compute the Legendre polynomials](../img/legendre_polynomials_algorithm.png)
+
+
 
 ### \( m = 0 \) case
 
@@ -61,4 +66,22 @@ p_1 &= (2m+1)p_0, &d_1 = \mu p_1\\
 p_2 &= p_1, &d_2 = \frac{1}{2}p_2((2m+3)\mu^2 - 1)\\
 p_3 &= (2m+3)p_2, &d_3 = \frac{1}{6} \mu p_3((2m+5)\mu^2 - 3)
 \end{align*}
+\]
+
+The remaining terms are computed with the following recurrence relation:
+
+\[
+P_{m,n}(\mu) = \frac{(\mu^2 - f_1(m,n-2))P_{m,n-2}(\mu) - f_2(m,n-4)P_{m,n-4}(\mu)}{f_2(m,n-2)}
+\]
+
+with the following convenience formulae:
+
+\[
+f_1(m,n) = \frac{2k(k+1) - 2m^2-1}{(2k-1)(2k+3)}
+\]
+
+and
+
+\[
+f_2(m,n) = \sqrt{\frac{(k-m+1)(k-m+2)(k+m+1)(k+m+2)}{(2k+1)(2k+3)^2(2k+5)}}
 \]
