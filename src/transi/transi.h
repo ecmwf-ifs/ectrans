@@ -76,7 +76,6 @@
 #ifndef ectrans_transi_h
 #define ectrans_transi_h
 
-#include <mpi.h>
 #include <stddef.h> // size_t
 
 typedef int _bool;
@@ -167,7 +166,7 @@ int trans_use_mpi(_bool);
  */
 int trans_init(void);
 
-int trans_set_mpi_comm(const MPI_Fint mpi_user_comm);
+int trans_set_mpi_comm(const int mpi_user_comm);
 
 int trans_set_read(struct Trans_t*, const char* filepath);
 int trans_set_write(struct Trans_t*, const char* filepath);
