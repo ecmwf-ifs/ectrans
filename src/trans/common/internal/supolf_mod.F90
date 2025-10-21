@@ -222,7 +222,7 @@ ELSE
 
     DO JN=KM,KNSMAX,2
       DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=MAX(DDPOL(JN)/ZSCALE, ZEPS)
+        DDPOL(JN)=DDPOL(JN)/ZSCALE
         IF( DDPOL(JN) < ZEPS ) THEN
           DDPOL(JN) = ZEPS
         ENDIF
