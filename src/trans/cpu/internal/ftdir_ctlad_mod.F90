@@ -114,11 +114,13 @@ ELSE
   ZGTF => ZGTF_HEAP(:,:)
 ENDIF
 
+#ifdef IGNORE_FPE_FFT
 ! Determine halting state for IEEE_USUAL and store in IEEE_HALT_FLAGS
 CALL IEEE_GET_HALTING_MODE(IEEE_USUAL, IEEE_HALT_FLAGS)
 
 ! Disable halting for IEEE_USUAL to avoid FPEs during vectorised FFT (e.g. for AVX512)
 IF (ANY(IEEE_HALT_FLAGS)) CALL IEEE_SET_HALTING_MODE(IEEE_USUAL, .FALSE.)
+#endif
 
 CALL GSTATS(1642, 0)
 ! If this rank has any Fourier fields, Fourier transform them
@@ -136,8 +138,10 @@ IF (KF_FS > 0) THEN
 ENDIF
 CALL GSTATS(1642, 1)
 
+#ifdef IGNORE_FPE_FFT
 ! Restore halting state for IEEE_USUAL
 IF (ANY(IEEE_HALT_FLAGS)) CALL IEEE_SET_HALTING_MODE(IEEE_USUAL, IEEE_HALT_FLAGS)
+#endif
 
 CALL GSTATS(133,1)
 

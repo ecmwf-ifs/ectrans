@@ -112,6 +112,11 @@ foreach( prec dp sp )
       target_compile_definitions( ectrans_${prec} PRIVATE CONTIG_BUGGY_COMPILER)
     endif()
 
+    if( HAVE_IGNORE_FPE_FFT )
+      ecbuild_debug("target_compile_definitions( ectrans_${prec} PRIVATE IGNORE_FPE_FFT)")
+      target_compile_definitions( ectrans_${prec} PRIVATE IGNORE_FPE_FFT)
+    endif()
+
     # This interface library is for backward compatibility, and provides the older includes
     ecbuild_add_library( TARGET trans_${prec} TYPE INTERFACE )
     target_include_directories( trans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/trans_${prec}> )

@@ -170,6 +170,10 @@ ecbuild_add_option( FEATURE ECTRANS4PY
 		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
 
+ecbuild_add_option( FEATURE IGNORE_FPE_FFT
+                    DEFAULT OFF
+                    CONDITION HAVE_CPU
+                    DESCRIPTION "Disable floating-point exception trapping for the FFT, useful for AVX512" )
 
 ectrans_find_lapack()
 
