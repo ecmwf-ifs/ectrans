@@ -64,7 +64,7 @@ split_colour = get_split_group()
 split_key = world_rank
 call MPI_Comm_split(MPI_COMM_WORLD, split_colour, split_key, split_comm, ierror)
 
-print*, "=== Rank ", world_rank, ", Setup on group", split_colour, "==="
+print*,"=== Rank ", world_rank, ", Setup on group", split_colour, "==="
 
 ! Set MPL comm. Global variables from fiat MPL_DATA_MODULE.
 ! Acts like arguments to MPL_INIT.
@@ -72,27 +72,34 @@ LMPLUSERCOMM = .true.
 MPLUSERCOMM = split_comm
 call MPL_INIT()
 
-
 split_rank = MPL_MYRANK()
 split_num_ranks = MPL_NPROC()
-print*, "=== Local rank ", split_rank, ", on group", split_colour, "size", split_num_ranks, "==="
 
-!                                           Split grid NS  Split spectral
-call setup_trans0(KPRINTLEV=0, LDMPOFF=.false., KPRGPNS=split_num_ranks, KPRTRW=split_num_ranks)
+! Assert that the split comm is smaller than WORLD.
+if (split_num_ranks >= world_num_ranks) then
+  call ABORT_TRANS("ERROR: Split communicator not smaller than MPI_COMM_WORLD.")
+end if
 
-! DIFFERENT TRANSFORM BASED ON COMM GROUP
+print*,"=== Local rank ", split_rank, ", on group", split_colour, "size", split_num_ranks, "==="
+
+call setup_trans0(KPRINTLEV=0, LDMPOFF=.false., &
+!                 Split grid NS            Split spectral
+                  KPRGPNS=split_num_ranks, KPRTRW=split_num_ranks)
+
+! Different transform based on the colour.
 truncation = truncations(split_colour + 1)
-print*, "TRUNCATION = ", truncation
 
 num_latitudes = 2*(truncation + 1)
 num_longitudes = num_latitudes*2
-print*, ">>> GLOBAL NUM LON =>", num_longitudes, "| LAT =>", num_latitudes
+
+if (split_rank == 1) print*,"Colour ", split_colour, &
+  " GLOBAL NUM LON =>", num_longitudes, "| LAT =>", num_latitudes
+
 call setup_trans(KSMAX=truncation, KDGL=num_latitudes)
 
 ! Get function space sizes
 call trans_inq(KSPEC2=num_spectral_elements, KGPTOT=num_grid_points)
 call trans_inq(KSPEC2G=g_num_spectral_elements, KGPTOTG=g_num_grid_points)
-print*,"Num spec = ", num_spectral_elements, "| Num grid points = ", num_grid_points, g_num_grid_points
 
 allocate(spectral_field(1, num_spectral_elements))
 allocate(grid_point_field(num_grid_points, 1, 1))
@@ -129,18 +136,17 @@ if (ierror /= 0) then
   call ABORT_TRANS("MPI ERROR")
 end if
 
-print*, "SIZES => ", grid_partition_sizes(:)
+if (split_rank == 1) then
+  ! Allocate a global field.
+  allocate(g_grid_point_field(g_num_grid_points))
 
-! Allocate a global field.
-allocate(g_grid_point_field(g_num_grid_points))
-
-! Make displacement arrays
-allocate(displs(split_num_ranks))
-displs = 0
-do i=2, split_num_ranks
-  displs(i) = displs(i - 1) + grid_partition_sizes(i - 1)
-end do
-print*,"displs => ", displs(:)
+  ! Make displacement arrays
+  allocate(displs(split_num_ranks))
+  displs = 0
+  do i=2, split_num_ranks
+    displs(i) = displs(i - 1) + grid_partition_sizes(i - 1)
+  end do
+end if
 
 call MPI_Gatherv(grid_point_field(:,1,1), num_grid_points, MPI_FLOAT, &
                  g_grid_point_field, grid_partition_sizes, displs, MPI_FLOAT, &
@@ -151,10 +157,12 @@ if (ierror /= 0) then
 end if
 
 if (split_rank == 1) then
-  write(filename, "(A22,I0,A4)") "grid_point_field_group", split_colour, ".dat"
+  write(filename, "(A22,I0,A4)") "grid_point_field_trunc_", truncation, ".dat"
   open(7, file=filename, form="unformatted")
   write(7) g_grid_point_field(:)
   close(7)
+
+  print*,"Colour", split_colour, "finished and written to file: "//trim(filename)
 end if
 
 call MPL_END()
@@ -174,15 +182,13 @@ function get_split_group() result(group)
   call MPI_Comm_size(MPI_COMM_WORLD, world_size, ierror)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
 
-  !group = mod(rank, 2)   ! Split comm in half, alternating.
-
   ! ----------------------------------------------
   ! Uneven splitting.
   ! ----------------------------------------------
-  rank_ratio = real(rank, kind=JPRM) / real(world_size, kind=JPRM)
+  rank_ratio = real(rank + 1, kind=JPRM) / real(world_size, kind=JPRM)
 
   ! Split X%
-  if (rank_ratio < 0.3_jprm) then
+  if (rank_ratio <= 0.25_jprm) then
     group = 0
   else
     group = 1

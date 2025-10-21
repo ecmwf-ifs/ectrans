@@ -323,7 +323,7 @@ ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
   SOURCES trans/test_split_mpi_comm.F90
   LIBS trans_sp parkind_sp
   LINKER_LANGUAGE Fortran
-  MPI 1
+  MPI 4
   OMP 1
 )
 ecbuild_add_test(TARGET ectrans_test_multiple_res
