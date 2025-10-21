@@ -153,18 +153,19 @@ ELSE
   ZSCALE=1.0E+100_JPRD
   ZISCALE=1.0E-100_JPRD
 
-  IEND=KM/2
-  ZLSITA=1._JPRD
-  DO JN=1,IEND
-    ZLSITA=ZLSITA*COS2_THETA
-    IF( ABS(ZLSITA) < ZISCALE ) THEN
-      ZLSITA=ZLSITA*ZSCALE
-      ICORR3=ICORR3+1
+  ! Calculate (cos^2(theta))^(m/2) = (1 - mu^2)^(m/2)
+  IEND = KM / 2
+  ZLSITA = 1.0_JPRD
+  DO JN = 1, IEND
+    ZLSITA = ZLSITA * COS2_THETA
+    IF (ABS(ZLSITA) < ZISCALE) THEN
+      ZLSITA = ZLSITA * ZSCALE
+      ICORR3 = ICORR3 + 1
     ENDIF
   ENDDO
-  IF( MOD(KM,2) == 1 ) ZLSITA=ZLSITA*COS_THETA
+  IF (MOD(KM,2) == 1) ZLSITA = ZLSITA * COS_THETA
 
-  ZFAC0 = 1.0_JPRD
+  ! Calculate the first factorial term p_0 = sqrt(2m-1) * prod_{n=1}^{m-1} sqrt((2n-1)/(2n))
   ZFAC = 1.0_JPRD
   DO JN = 1, KM - 1
     ZFAC = ZFAC * SQRT(REAL(2 * JN - 1, JPRD))
@@ -172,6 +173,7 @@ ELSE
   ENDDO
   ZFAC = ZFAC * SQRT(REAL(2 * KM - 1, JPRD))
 
+  ZFAC0 = 1.0_JPRD
   ! Fill the first 4 values using explicit formulae
   DO IC = 0, MIN(KNSMAX - KM, 3)
     ! (2m+i)!
@@ -179,21 +181,28 @@ ELSE
 
     SELECT CASE (IC)
     CASE (0)
-      ZFAC1 = 1.0_JPRD
+      ZFAC1 = 1.0_JPRD ! 0!
+      ! d_0 = d_0
       ZMULT = ZFAC
     CASE (1)
-      ZFAC1 = 1.0_JPRD
+      ZFAC1 = 1.0_JPRD ! 1!
+      ! p_1 = (2m+1) * p_0
       ZFAC = ZFAC * REAL(2 * KM + 1, JPRD)
+      ! d_1 = mu * p_1
       ZMULT = ZFAC * DLX
     CASE (2)
-      ZFAC1 = 2.0_JPRD
+      ZFAC1 = 2.0_JPRD ! 2!
+      ! d_2 = 0.5 * p_2 * ( (2m+3) * mu^2 - 1 ) (p_2 = p_1)
       ZMULT = 0.5_JPRD * ZFAC * (REAL(2 * KM + 3, JPRD) * DLX * DLX - 1.0_JPRD)
     CASE (3)
-      ZFAC1 = 6.0_JPRD
+      ZFAC1 = 6.0_JPRD ! 3!
+      ! p_3 = (2m+3) * p_2
       ZFAC = ZFAC * REAL(2 * KM + 3, JPRD)
+      ! d_3 = (1/6) * mu * p_3 * ( (2m+5) * mu^2 - 3 )
       ZMULT = (1.0_JPRD / 6.0_JPRD) * DLX * ZFAC * (REAL(2 * KM + 5, JPRD) * DLX * DLX - 3.0_JPRD)
     END SELECT
 
+    ! P_{m,m+j} = (1 - mu^2)^{m/2} * d_j * sqrt( (2(m+j)+1) * j! / prod_{j'=0}^{j} (2m+j') )
     DDPOL(KM + IC) = ZLSITA * ZMULT * SQRT(2.0_JPRD * (REAL(KM + IC, JPRD) + 0.5_JPRD) * ZFAC1 / ZFAC0)
   ENDDO
 
