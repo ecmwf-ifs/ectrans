@@ -42,3 +42,23 @@ d_1 &= \mu, &P_{1,1}(\mu) = \sqrt{\frac{3}{2}(1 - \mu^2)}\\
 d_n &= \frac{2n-1}{n}\mu d_{n-1} - \frac{n-1}{n}d_{n-2}, &P_{1,n}(\mu) = n\frac{(d_{n-1} - \mu d_n)}{\sqrt{1-\mu^2}}\sqrt{\frac{2n+1}{n(n+1)}}
 \end{align*}
 \]
+
+### \( m >= 2 \) case
+
+For higher order polynomials, the situation is more complicated. We begin by calculating the first
+4 terms using explicit formulae. The general expression for these 4 terms is
+
+\[
+P_{m,m+j}(\mu) = (1 - \mu^2)^{m/2}d_j\sqrt{\frac{(2(m+j)+1)j!}{\prod_{j'=0}^j (2m+j')}}, j = 0...3
+\]
+
+Here, the \( {d_j} \) are calculated according to the following:
+
+\[
+\begin{align*}
+p_0 &= \sqrt{2m-1}\prod_{n=1}^{m-1}\sqrt{\frac{2n-1}{2n}}, &d_0 = p_0\\
+p_1 &= (2m+1)p_0, &d_1 = \mu p_1\\
+p_2 &= p_1, &d_2 = \frac{1}{2}p_2((2m+3)\mu^2 - 1)\\
+p_3 &= (2m+3)p_2, &d_3 = \frac{1}{6} \mu p_3((2m+5)\mu^2 - 3)
+\end{align*}
+\]
