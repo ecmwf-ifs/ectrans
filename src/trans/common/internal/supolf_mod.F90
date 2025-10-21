@@ -207,76 +207,69 @@ ELSE
   ENDDO
 
   ICORR(:)=ICORR3
-  IF( ICHEAP == 2 ) THEN
+  IF (ICHEAP == 2) THEN
     ! symmetric case
-    DO JN=KM+2,KNSMAX-2,2
-      
-      IF( ABS(DDPOL(JN-2)) > ZSCALE ) THEN
-        DDPOL(JN-2)=DDPOL(JN-2)/ZSCALE
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        ICORR(JN-2:KNSMAX)=ICORR(JN-2:KNSMAX)-1
+    DO JN = KM + 2, KNSMAX - 2, 2
+      IF (ABS(DDPOL(JN-2)) > ZSCALE) THEN
+        DDPOL(JN-2) = DDPOL(JN-2) / ZSCALE
+        DDPOL(JN) = DDPOL(JN) / ZSCALE
+        ICORR(JN-2:KNSMAX) = ICORR(JN-2:KNSMAX) - 1
       ENDIF
-      
-      DDPOL(JN+2)=((DLX*DLX-DDL(JN))*DDPOL(JN)-DCL(JN-2)*DDPOL(JN-2))/DCL(JN)
+
+      DDPOL(JN+2) = ((DLX * DLX - DDL(JN)) * DDPOL(JN) - DCL(JN-2) * DDPOL(JN-2)) / DCL(JN)
     ENDDO
 
-    DO JN=KM,KNSMAX,2
-      DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        IF( DDPOL(JN) < ZEPS ) THEN
+    DO JN = KM, KNSMAX, 2
+      DO JCORR = 1, ICORR(JN)
+        DDPOL(JN) = DDPOL(JN) / ZSCALE
+        IF (DDPOL(JN) < ZEPS) THEN
           DDPOL(JN) = ZEPS
         ENDIF
       ENDDO
     ENDDO
 
-  ELSEIF( ICHEAP == 3 ) THEN
+  ELSEIF (ICHEAP == 3) THEN
     ! antisymmetric case
-    DO JN=KM+3,KNSMAX-2,2
-      
-      IF( ABS(DDPOL(JN-2)) > ZSCALE ) THEN
-        DDPOL(JN-2)=DDPOL(JN-2)/ZSCALE
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        ICORR(JN-2:KNSMAX)=ICORR(JN-2:KNSMAX)-1
+    DO JN = KM + 3, KNSMAX - 2, 2
+      IF (ABS(DDPOL(JN-2)) > ZSCALE) THEN
+        DDPOL(JN-2) = DDPOL(JN-2) / ZSCALE
+        DDPOL(JN) = DDPOL(JN) / ZSCALE
+        ICORR(JN-2:KNSMAX) = ICORR(JN-2:KNSMAX) - 1
       ENDIF
-      
-      DDPOL(JN+2)=((DLX*DLX-DDL(JN))*DDPOL(JN)-DCL(JN-2)*DDPOL(JN-2))/DCL(JN)
+
+      DDPOL(JN+2) = ((DLX * DLX - DDL(JN)) * DDPOL(JN) - DCL(JN-2) * DDPOL(JN-2)) / DCL(JN)
     ENDDO
 
-    DO JN=KM+1,KNSMAX,2
-      DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        IF( DDPOL(JN) < ZEPS ) THEN
+    DO JN = KM + 1, KNSMAX, 2
+      DO JCORR = 1, ICORR(JN)
+        DDPOL(JN) = DDPOL(JN) / ZSCALE
+        IF (DDPOL(JN) < ZEPS) THEN
           DDPOL(JN) = ZEPS
         ENDIF
       ENDDO
     ENDDO
-
   ELSE
-    DO JN=KM+2,KNSMAX-2
-      
-      IF( ABS(DDPOL(JN-2)) > ZSCALE ) THEN
-        DDPOL(JN-2)=DDPOL(JN-2)/ZSCALE
-        DDPOL(JN-1)=DDPOL(JN-1)/ZSCALE
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        DDPOL(JN+1)=DDPOL(JN+1)/ZSCALE
-        ICORR(JN-2:KNSMAX)=ICORR(JN-2:KNSMAX)-1
+    DO JN = KM + 2, KNSMAX - 2
+      IF (ABS(DDPOL(JN-2)) > ZSCALE) THEN
+        DDPOL(JN-2) = DDPOL(JN-2) / ZSCALE
+        DDPOL(JN-1) = DDPOL(JN-1) / ZSCALE
+        DDPOL(JN) = DDPOL(JN) / ZSCALE
+        DDPOL(JN+1) = DDPOL(JN+1) / ZSCALE
+        ICORR(JN-2:KNSMAX) = ICORR(JN-2:KNSMAX) - 1
       ENDIF
-      
-      DDPOL(JN+2)=((DLX*DLX-DDL(JN))*DDPOL(JN)-DCL(JN-2)*DDPOL(JN-2))/DCL(JN)
-      
+
+      DDPOL(JN+2) = ((DLX * DLX - DDL(JN)) * DDPOL(JN) - DCL(JN-2) * DDPOL(JN-2)) / DCL(JN)
     ENDDO
 
-    DO JN=KM,KNSMAX
-      DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        IF( DDPOL(JN) < ZEPS ) THEN
+    DO JN = KM, KNSMAX
+      DO JCORR = 1, ICORR(JN)
+        DDPOL(JN) = DDPOL(JN) / ZSCALE
+        IF (DDPOL(JN) < ZEPS) THEN
           DDPOL(JN) = ZEPS
         ENDIF
       ENDDO
     ENDDO
-
   ENDIF
-  
 ENDIF
 
 !     ------------------------------------------------------------------
