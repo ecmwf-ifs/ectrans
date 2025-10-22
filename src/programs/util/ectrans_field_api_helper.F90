@@ -222,57 +222,57 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
   integer(kind=jpim), optional, intent(in) :: kvsetsc(:)     ! 'b-set' for scalar fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc2(:)    ! 'b-set' for surfacic fields
 
-  if(associated(ywflds%spvor)) ylf%spvor=[b(ywflds%spvor,'spvor',kvsetuv)]
+  if(associated(ywflds%spvor)) ylf%spvor=[make_field(ywflds%spvor,'spvor',kvsetuv)]
 
-  if(associated(ywflds%spdiv)) ylf%spdiv= [b(ywflds%spdiv,'spdiv',kvsetuv)]
+  if(associated(ywflds%spdiv)) ylf%spdiv= [make_field(ywflds%spdiv,'spdiv',kvsetuv)]
 
-  if(associated(ywflds%u)) ylf%u = [b(ywflds%u,'u',kvsetuv)]
-  if(associated(ywflds%v)) ylf%v = [b(ywflds%v,'v',kvsetuv)]
+  if(associated(ywflds%u)) ylf%u = [make_field(ywflds%u,'u',kvsetuv)]
+  if(associated(ywflds%v)) ylf%v = [make_field(ywflds%v,'v',kvsetuv)]
 
-  if(associated(ywflds%u_ew)) ylf%u_ew=[b(ywflds%u_ew,'u_ew', kvsetuv)]
-  if(associated(ywflds%v_ew)) ylf%v_ew=[b(ywflds%v_ew,'v_ew', kvsetuv)]
+  if(associated(ywflds%u_ew)) ylf%u_ew=[make_field(ywflds%u_ew,'u_ew', kvsetuv)]
+  if(associated(ywflds%v_ew)) ylf%v_ew=[make_field(ywflds%v_ew,'v_ew', kvsetuv)]
 
-  if(associated(ywflds%vor))  ylf%vor = [b(ywflds%vor,'vor', kvsetuv)]
-  if(associated(ywflds%div))  ylf%div = [b(ywflds%div,'div', kvsetuv)]
+  if(associated(ywflds%vor))  ylf%vor = [make_field(ywflds%vor,'vor', kvsetuv)]
+  if(associated(ywflds%div))  ylf%div = [make_field(ywflds%div,'div', kvsetuv)]
 
   if (associated(ywflds%spscalar)) then
-    ylf%spscalar = [b(ywflds%spscalar,'spscalar',kvsetsc)]
+    ylf%spscalar = [make_field(ywflds%spscalar,'spscalar',kvsetsc)]
   else if (associated(ywflds%spscalar3) .and. associated(ywflds%spscalar2) ) then
-    ylf%spscalar = [b(ywflds%spscalar3,'spscalar3',kvsetsc), b(ywflds%spscalar2,'spscalar2',kvsetsc2)]
+    ylf%spscalar = [make_field(ywflds%spscalar3,'spscalar3',kvsetsc), make_field(ywflds%spscalar2,'spscalar2',kvsetsc2)]
   else if (associated(ywflds%spscalar3)) then
-    ylf%spscalar = [b(ywflds%spscalar3,'spscalar3',kvsetsc)]
+    ylf%spscalar = [make_field(ywflds%spscalar3,'spscalar3',kvsetsc)]
   else if (associated(ywflds%spscalar2)) then
-    ylf%spscalar = [b(ywflds%spscalar2,'spscalar2',kvsetsc2)]
+    ylf%spscalar = [make_field(ywflds%spscalar2,'spscalar2',kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar)) then
-    ylf%scalar = [b(ywflds%scalar,'scalar', kvsetsc)]
+    ylf%scalar = [make_field(ywflds%scalar,'scalar', kvsetsc)]
   else if (associated(ywflds%scalar3) .and. associated(ywflds%scalar2) ) then
-    ylf%scalar = [b(ywflds%scalar3,'scalar', kvsetsc), b(ywflds%scalar2,'scalar2', kvsetsc2)]
+    ylf%scalar = [make_field(ywflds%scalar3,'scalar', kvsetsc), make_field(ywflds%scalar2,'scalar2', kvsetsc2)]
   else if (associated(ywflds%scalar3)) then
-    ylf%scalar = [b(ywflds%scalar3,'scalar', kvsetsc)]
+    ylf%scalar = [make_field(ywflds%scalar3,'scalar', kvsetsc)]
   else if (associated(ywflds%scalar2)) then
-    ylf%scalar = [b(ywflds%scalar2,'scalar2', kvsetsc2)]
+    ylf%scalar = [make_field(ywflds%scalar2,'scalar2', kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar_ns)) then
-    ylf%scalar_ns = [b(ywflds%scalar_ns,'scalar_ns', kvsetsc)]
+    ylf%scalar_ns = [make_field(ywflds%scalar_ns,'scalar_ns', kvsetsc)]
   else if (associated(ywflds%scalar3_ns) .and. associated(ywflds%scalar2_ns) ) then
-    ylf%scalar_ns = [b(ywflds%scalar3_ns,'scalar3_ns', kvsetsc), b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
+    ylf%scalar_ns = [make_field(ywflds%scalar3_ns,'scalar3_ns', kvsetsc), make_field(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
   else if (associated(ywflds%scalar3_ns)) then
-    ylf%scalar_ns = [b(ywflds%scalar3_ns,'scalar3_ns', kvsetsc)]
+    ylf%scalar_ns = [make_field(ywflds%scalar3_ns,'scalar3_ns', kvsetsc)]
   else if (associated(ywflds%scalar2_ns)) then
-    ylf%scalar_ns = [b(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
+    ylf%scalar_ns = [make_field(ywflds%scalar2_ns,'scalar2_ns', kvsetsc2)]
   endif
 
   if (associated(ywflds%scalar_ew)) then
-    ylf%scalar_ew = [b(ywflds%scalar_ew,'scalar_ew', kvsetsc)]
+    ylf%scalar_ew = [make_field(ywflds%scalar_ew,'scalar_ew', kvsetsc)]
   else if (associated(ywflds%scalar3_ew) .and. associated(ywflds%scalar2_ew) ) then
-    ylf%scalar_ew = [b(ywflds%scalar3_ew,'scalar3_ew', kvsetsc), b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
+    ylf%scalar_ew = [make_field(ywflds%scalar3_ew,'scalar3_ew', kvsetsc), make_field(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
   else if (associated(ywflds%scalar3_ew)) then
-    ylf%scalar_ew = [b(ywflds%scalar3_ew,'scalar3_ew', kvsetsc)]
+    ylf%scalar_ew = [make_field(ywflds%scalar3_ew,'scalar3_ew', kvsetsc)]
   else if (associated(ywflds%scalar2_ew)) then
-    ylf%scalar_ew = [b(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
+    ylf%scalar_ew = [make_field(ywflds%scalar2_ew,'scalar2_ew', kvsetsc2)]
   endif
  end subroutine create_fields_lists
 
