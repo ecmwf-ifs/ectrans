@@ -109,7 +109,7 @@ ZCOS_THETA = SQRT(ZCOS2_THETA)
 !*          ordinary Legendre polynomials from series expansion
 !           ---------------------------------------------------
 
-! this is supol_fast just using single KM
+! This logic is triggered for latitudes very close to the poles, like 89.99999999999999 degrees
 IF (ABS(ZCOS_THETA) <= ZEPS) THEN
   DLX = 1.0_JPRD
   ZCOS_THETA = 0.0_JPRD
@@ -147,11 +147,13 @@ ELSE
 !*       KM >= 2
 !     ------------------------------------------------------------------
 
-  ! Maintaining the consistency with the CY41R1 reference
-  ZSCALE=1.0E+100_JPRD
-  ZISCALE=1.0E-100_JPRD
+  ZSCALE = 1.0E+100_JPRD ! A very big number
+  ZISCALE = 1.0E-100_JPRD ! A very small number
 
   ! Calculate (cos^2(theta))^(m/2) = (1 - mu^2)^(m/2)
+  ! ZLSITA can become absolutely TINY for large KM, so whenever it goes below a threshold, ZISCALE,
+  ! we rescale it by multiplying with ZSCALE and keep track of the number of such rescalings in
+  ! ICORR3
   ZLSITA = 1.0_JPRD
   DO JN = 1, KM / 2
     ZLSITA = ZLSITA * ZCOS2_THETA
@@ -227,6 +229,7 @@ ELSE
     DDPOL(JN) = ((DLX * DLX - DDL(JN-2)) * DDPOL(JN-2) - DCL(JN-4) * DDPOL(JN-4)) / DCL(JN-2)
   ENDDO
 
+  ! Undo all rescalings to get back the true value
   DO JN = KM + ISTART, KNSMAX, IINC
     DO JCORR = 1, ICORR(JN)
       DDPOL(JN) = DDPOL(JN) / ZSCALE
