@@ -94,6 +94,10 @@ DDL(K) = REAL(2 * K * (K + 1) - 2 * KM**2 - 1, JPRD) / REAL((2 * K - 1) * (2 * K
 ZEPS  = EPSILON(ZSCALE)
 ICORR3 = 0
 
+! This parameter determines which polynomials are computed
+! ICHEAP = 1 : all polynomials
+! ICHEAP = 2 : only even polynomials
+! ICHEAP = 3 : only odd polynomials
 ICHEAP = 1
 IF (PRESENT(KCHEAP)) THEN
   ICHEAP = KCHEAP
