@@ -43,15 +43,17 @@ integer(kind=JPIM) :: num_latitudes, num_longitudes
 
 ! Number of grid points on each rank
 integer(kind=JPIM) :: grid_partition_size_local(1)
+! Book-keeping for MPI gather.
 integer(kind=JPIM), allocatable :: displs(:)
 integer(kind=JPIM), allocatable :: grid_partition_sizes(:)
 
 integer(kind=JPIM), allocatable :: spectral_indices(:)
 
+! Fields
 real(kind=JPRM), allocatable :: spectral_field(:,:)
 real(kind=JPRM), allocatable :: grid_point_field(:,:,:)
 
-! NOTE: 1 Dimensional as this is a field simply used to write to file output.
+! NOTE: 1 Dimensional global field used to write to file output.
 real(kind=JPRM), allocatable :: g_grid_point_field(:)
 
 character(len=1024) :: filename
@@ -61,7 +63,7 @@ call MPI_Init(ierror)
 call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierror)
 
 split_colour = get_split_group()
-split_key = world_rank
+split_key = world_rank    ! Key used here is the WORLD rank.
 call MPI_Comm_split(MPI_COMM_WORLD, split_colour, split_key, split_comm, ierror)
 
 print*,"=== Rank ", world_rank, ", Setup on group", split_colour, "==="
@@ -157,6 +159,9 @@ if (ierror /= 0) then
 end if
 
 if (split_rank == 1) then
+  ! Write to file. Can then be plotted using a python script
+  ! such as in the docs: https://sites.ecmwf.int/docs/ectrans/page/usage.html.
+
   write(filename, "(A22,I0,A4)") "grid_point_field_trunc_", truncation, ".dat"
   open(7, file=filename, form="unformatted")
   write(7) g_grid_point_field(:)
@@ -183,7 +188,7 @@ function get_split_group() result(group)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
 
   ! ----------------------------------------------
-  ! Uneven splitting.
+  ! Uneven splitting based on a ratio 1:3.
   ! ----------------------------------------------
   rank_ratio = real(rank + 1, kind=JPRM) / real(world_size, kind=JPRM)
 
