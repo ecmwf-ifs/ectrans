@@ -132,7 +132,7 @@ INTEGER(KIND=JPIM) :: INDIC(KPROCA),ILAST(KPROCA)
 INTEGER(KIND=JPIM) :: IPTRLATITUDE,  JA, JGL
 
 LOGICAL :: LLFOURIER
-LOGICAL :: LLDEBUG=.FALSE.
+LOGICAL, PARAMETER :: LLDEBUG=.FALSE.
 
 !      -----------------------------------------------------------------
 

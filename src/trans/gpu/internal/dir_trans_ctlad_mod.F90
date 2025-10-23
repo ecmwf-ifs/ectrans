@@ -1,0 +1,174 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+! (C) Copyright 2022- NVIDIA.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
+MODULE DIR_TRANS_CTLAD_MOD
+CONTAINS
+  SUBROUTINE DIR_TRANS_CTLAD(KF_UV_G,KF_SCALARS_G,KF_GP,KF_FS,KF_UV,KF_SCALARS,&
+    & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,&
+    & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2)
+
+    !**** *DIR_TRANS_CTLAD* - Control routine for adjoint of the direct spectral transform.
+
+    !     Purpose.
+    !     --------
+    !        Control routine for the adjoint of the direct spectral transform
+
+    !**   Interface.
+    !     ----------
+    !     CALL DIR_TRANS_CTLAD(...)
+
+    !     Explicit arguments :
+    !     --------------------
+    !     KF_UV_G      - global number of spectral u-v fields
+    !     KF_SCALARS_G - global number of scalar spectral fields
+    !     KF_GP        - total number of output gridpoint fields
+    !     KF_FS        - total number of fields in fourier space
+    !     KF_UV        - local number of spectral u-v fields
+    !     KF_SCALARS   - local number of scalar spectral fields
+    !     PSPVOR(:,:)  - spectral vorticity
+    !     PSPDIV(:,:)  - spectral divergence
+    !     PSPSCALAR(:,:) - spectral scalarvalued fields
+    !     KVSETUV(:)  - indicating which 'b-set' in spectral space owns a
+    !                   vor/div field. Equivalant to NBSETLEV in the IFS.
+    !                   The length of KVSETUV should be the GLOBAL number
+    !                   of u/v fields which is the dimension of u and v releated
+    !                   fields in grid-point space.
+    !     KVESETSC(:) - indicating which 'b-set' in spectral space owns a
+    !                   scalar field. As for KVSETUV this argument is required
+    !                   if the total number of processors is greater than
+    !                   the number of processors used for distribution in
+    !                   spectral wave space.
+    !     PGP(:,:,:)  - gridpoint fields
+
+    !                  The ordering of the output fields is as follows (all
+    !                  parts are optional depending on the input switches):
+    !
+    !       u             : KF_UV_G fields
+    !       v             : KF_UV_G fields
+    !       scalar fields : KF_SCALARS_G fields
+
+    !     Method.
+    !     -------
+
+    !     Externals.  SHUFFLE     - reshuffle fields for load balancing
+    !     ----------  FIELD_SPLIT - split fields in NPROMATR packets
+    !                 LTDIR_CTL   - control of Legendre transform
+    !                 FTDIR_CTL   - control of Fourier transform
+
+    !     Author.
+    !     -------
+    !        Mats Hamrud *ECMWF*
+
+    !     Modifications.
+    !     --------------
+    !        Original : 01-01-03
+
+    !     ------------------------------------------------------------------
+
+    USE PARKIND_ECTRANS,        ONLY: JPRBT, JPRD, JPRB, JPIM
+    USE TPM_GEN,                ONLY: NPROMATR
+    USE TPM_TRANS,              ONLY: GROWING_ALLOCATION
+    USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, MAKE_BUFFERED_ALLOCATOR, &
+      &                               INSTANTIATE_ALLOCATOR
+    USE FTINV_MOD,              ONLY: FTINV_HANDLE, PREPARE_FTINV, FTINV
+    USE LTDIRAD_MOD,            ONLY: LTDIRAD_HANDLE, PREPARE_LTDIRAD, LTDIRAD
+    USE TRLTOG_MOD,             ONLY: TRLTOG_HANDLE, PREPARE_TRLTOG, TRLTOG
+    USE TRLTOMAD_MOD,           ONLY: TRLTOMAD_HANDLE, PREPARE_TRLTOMAD, TRLTOMAD
+    USE TRLTOMAD_PACK_UNPACK,   ONLY: TRLTOMAD_PACK_HANDLE, TRLTOMAD_UNPACK_HANDLE, &
+      &                               PREPARE_TRLTOMAD_PACK, PREPARE_TRLTOMAD_UNPACK, TRLTOMAD_PACK, &
+      &                               TRLTOMAD_UNPACK
+    USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
+
+    IMPLICIT NONE
+
+    ! Declaration of arguments
+
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV_G
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCALARS_G
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_GP
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_UV
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_SCALARS
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPVOR(:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPDIV(:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPSCALAR(:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPSC3A(:,:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPSC3B(:,:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN)  :: PSPSC2(:,:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSETUV(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSETSC(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSETSC3A(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSETSC3B(:)
+    INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KVSETSC2(:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGP(:,:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGPUV(:,:,:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGP3A(:,:,:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGP3B(:,:,:,:)
+    REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) :: PGP2(:,:,:)
+
+    ! Local variables
+    REAL(KIND=JPRBT), POINTER :: FOUBUF_IN(:), FOUBUF(:)
+    REAL(KIND=JPRBT), POINTER :: PREEL_REAL(:), PREEL_COMPLEX(:)
+
+    REAL(KIND=JPRBT), POINTER :: ZINPS(:), ZINPA(:)
+    REAL(KIND=JPRD), POINTER :: ZINPS0(:), ZINPA0(:)
+
+    TYPE(BUFFERED_ALLOCATOR) :: ALLOCATOR
+    TYPE(TRLTOG_HANDLE) :: HTRLTOG
+    TYPE(FTINV_HANDLE) :: HFTINV
+    TYPE(TRLTOMAD_PACK_HANDLE) :: HTRLTOM_PACK
+    TYPE(TRLTOMAD_HANDLE) :: HTRLTOM
+    TYPE(TRLTOMAD_UNPACK_HANDLE) :: HTRLTOM_UNPACK
+    TYPE(LTDIRAD_HANDLE) :: HLTDIR
+
+    IF (NPROMATR > 0) THEN
+      CALL ABORT_TRANS("NPROMATR > 0 not supported for GPU")
+    ENDIF
+
+    ! Prepare everything
+    ALLOCATOR = MAKE_BUFFERED_ALLOCATOR()
+    IF (KF_FS > 0) THEN
+      HLTDIR = PREPARE_LTDIRAD(ALLOCATOR, KF_FS, KF_UV)
+      HTRLTOM_UNPACK = PREPARE_TRLTOMAD_UNPACK(ALLOCATOR, KF_FS)
+      HTRLTOM = PREPARE_TRLTOMAD(ALLOCATOR, KF_FS)
+      HTRLTOM_PACK = PREPARE_TRLTOMAD_PACK(ALLOCATOR, KF_FS)
+      HFTINV = PREPARE_FTINV(ALLOCATOR,KF_FS)
+    ENDIF
+    HTRLTOG = PREPARE_TRLTOG(ALLOCATOR,KF_GP,KF_FS)
+    
+    CALL INSTANTIATE_ALLOCATOR(ALLOCATOR, GROWING_ALLOCATION)
+
+    IF (KF_FS > 0) THEN
+      CALL LTDIRAD(ALLOCATOR,HLTDIR,ZINPS,ZINPA,ZINPS0,ZINPA0,KF_FS,KF_UV,KF_SCALARS, &
+                 & PSPVOR,PSPDIV,PSPSCALAR,&
+                 & PSPSC3A,PSPSC3B,PSPSC2)
+
+      CALL GSTATS(153,0)
+      CALL TRLTOMAD_UNPACK(ALLOCATOR,HTRLTOM_UNPACK,FOUBUF,ZINPS,ZINPA,ZINPS0,ZINPA0,KF_FS,KF_UV)
+      CALL TRLTOMAD(ALLOCATOR,HTRLTOM,FOUBUF_IN,FOUBUF,KF_FS)
+      CALL TRLTOMAD_PACK(ALLOCATOR,HTRLTOM_PACK,PREEL_COMPLEX,FOUBUF_IN,KF_FS)
+      CALL GSTATS(153,1)
+
+      ! fourier transform from PREEL_REAL to PREEL_COMPLEX (in-place!)
+      CALL GSTATS(1640,0)
+      CALL FTINV(ALLOCATOR,HFTINV,PREEL_COMPLEX,PREEL_REAL,KF_FS)
+      CALL GSTATS(1640,1)
+    ENDIF
+
+    CALL GSTATS(158,0)
+    CALL TRLTOG(ALLOCATOR,HTRLTOG,PREEL_REAL,KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G,&
+              & KVSETUV=KVSETUV,KVSETSC=KVSETSC,&
+              & KVSETSC3A=KVSETSC3A,KVSETSC3B=KVSETSC3B,KVSETSC2=KVSETSC2,&
+              & PGP=PGP,PGPUV=PGPUV,PGP3A=PGP3A,PGP3B=PGP3B,PGP2=PGP2)
+    CALL GSTATS(158,1)
+
+  END SUBROUTINE DIR_TRANS_CTLAD
+END MODULE DIR_TRANS_CTLAD_MOD

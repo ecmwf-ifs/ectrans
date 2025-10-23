@@ -95,9 +95,17 @@ IF (LHOOK) CALL DR_HOOK('EUVTVD_MOD:EUVTVD',0,ZHOOK_HANDLE)
 !              ------------------------------------------
 
 ZKM=REAL(KM,JPRB)*GALD%EXWN
+
+! Initialize to zero what would not get assigned in Loop 1,
+! but is accessed in Loop 2!
+PDIV(R%NDGL+R%NNOEXTZG:,:)=0
+PVOR(R%NDGL+R%NNOEXTZG:,:)=0
+
+! Loop 1
 DO J=1,KFIELD
   IR=2*J-1
   II=IR+1
+  ! Warning, this loop does not initialize the entire array!
   DO JN=1,R%NDGL+R%NNOEXTZG
     PDIV(JN,IR)=-ZKM*PU(JN,II)
     PDIV(JN,II)= ZKM*PU(JN,IR)
@@ -105,6 +113,8 @@ DO J=1,KFIELD
     PVOR(JN,II)= ZKM*PV(JN,IR)
   ENDDO
 ENDDO
+
+! Loop 2
 DO J=1,2*KFIELD
   DO JN=1,DALD%NCPL2M(KM),2
     IN=(JN-1)/2

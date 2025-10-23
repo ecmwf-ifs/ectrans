@@ -28,7 +28,7 @@ SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
 !     KFROM(:)    - Processor resposible for distributing each field
 !     KVSET(:)    - "B-Set" for each field
 !     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
+!                   first defined resolution (input)
 !     PSPEC(:,:)  - Local spectral array
 !     KSORT (:)   - Re-order fields on output
 !

@@ -80,10 +80,9 @@ REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IFLD, J, JK, I1, I2, I3, I4
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IFLD, J, JK
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
-REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCA_D(:,:), ZCS_D(:,:),ZRPNMA(:,:), ZRPNMS(:,:)
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 CHARACTER(LEN=1) :: CLX
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
@@ -135,35 +134,40 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCA,ILA)
        ELSE
-          I1 = size(S%FA(KMLOC)%RPNMA(:,1))
-          I2 = size(S%FA(KMLOC)%RPNMA(1,:))
-          ALLOCATE(ZRPNMA(I1,I2))
-          ALLOCATE(ZB_D(KDGLU,KIFC))
-          ALLOCATE(ZCA_D((R%NTMAX-KM+2)/2,KIFC))
-          IFLD=0
-          DO JK=1,KFC,ISKIP
-             IFLD=IFLD+1
-             DO J=1,KDGLU
-                ZB_D(J,IFLD)=ZB(J,IFLD)
+          BLOCK
+             REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCA_D(:,:), ZRPNMA(:,:)
+             INTEGER(KIND=JPIM) :: I1, I2, I3, I4
+
+             I1 = size(S%FA(KMLOC)%RPNMA(:,1))
+             I2 = size(S%FA(KMLOC)%RPNMA(1,:))
+             ALLOCATE(ZRPNMA(I1,I2))
+             ALLOCATE(ZB_D(KDGLU,KIFC))
+             ALLOCATE(ZCA_D((R%NTMAX-KM+2)/2,KIFC))
+             IFLD=0
+             DO JK=1,KFC,ISKIP
+                IFLD=IFLD+1
+                DO J=1,KDGLU
+                   ZB_D(J,IFLD)=ZB(J,IFLD)
+                ENDDO
              ENDDO
-          ENDDO
-          DO I3=1,I1
-             DO I4=1,I2
-                ZRPNMA(I3,I4) = S%FA(KMLOC)%RPNMA(I3,I4)
+             DO I3=1,I1
+                DO I4=1,I2
+                   ZRPNMA(I3,I4) = S%FA(KMLOC)%RPNMA(I3,I4)
+                END DO
              END DO
-          END DO
-          CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
-               &ZB_D,KDGLU,0._JPRD,ZCA_D,ILA)
-          IFLD=0
-          DO JK=1,KFC,ISKIP
-             IFLD=IFLD+1
-             DO J=1,ILA
-                ZCA(J,IFLD) = ZCA_D(J,IFLD)
+             CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
+                  &ZB_D,KDGLU,0._JPRD,ZCA_D,ILA)
+             IFLD=0
+             DO JK=1,KFC,ISKIP
+                IFLD=IFLD+1
+                DO J=1,ILA
+                   ZCA(J,IFLD) = ZCA_D(J,IFLD)
+                ENDDO
              ENDDO
-          ENDDO
-          DEALLOCATE(ZRPNMA)
-          DEALLOCATE(ZB_D)
-          DEALLOCATE(ZCA_D)
+             DEALLOCATE(ZRPNMA)
+             DEALLOCATE(ZB_D)
+             DEALLOCATE(ZCA_D)
+          END BLOCK
        END IF
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
@@ -204,35 +208,40 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCS,ILS)
        ELSE
-          I1 = size(S%FA(KMLOC)%RPNMS(:,1))
-          I2 = size(S%FA(KMLOC)%RPNMS(1,:))
-          ALLOCATE(ZRPNMS(I1,I2))
-          ALLOCATE(ZB_D(KDGLU,KIFC))
-          ALLOCATE(ZCS_D((R%NTMAX-KM+3)/2,KIFC))          
-          IFLD=0
-          DO JK=1,KFC,ISKIP
-             IFLD=IFLD+1
-             DO J=1,KDGLU
-                ZB_D(J,IFLD)=PSIA(JK,ISL+J-1)*REAL(PW(ISL+J-1),JPRB)
+          BLOCK
+             REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCS_D(:,:), ZRPNMS(:,:)
+             INTEGER(KIND=JPIM) :: I1, I2, I3, I4
+
+             I1 = size(S%FA(KMLOC)%RPNMS(:,1))
+             I2 = size(S%FA(KMLOC)%RPNMS(1,:))
+             ALLOCATE(ZRPNMS(I1,I2))
+             ALLOCATE(ZB_D(KDGLU,KIFC))
+             ALLOCATE(ZCS_D((R%NTMAX-KM+3)/2,KIFC))
+             IFLD=0
+             DO JK=1,KFC,ISKIP
+                IFLD=IFLD+1
+                DO J=1,KDGLU
+                   ZB_D(J,IFLD)=PSIA(JK,ISL+J-1)*REAL(PW(ISL+J-1),JPRB)
+                ENDDO
              ENDDO
-          ENDDO
-          DO I3=1,I1
-             DO I4=1,I2
-                ZRPNMS(I3,I4) = S%FA(KMLOC)%RPNMS(I3,I4)
+             DO I3=1,I1
+                DO I4=1,I2
+                   ZRPNMS(I3,I4) = S%FA(KMLOC)%RPNMS(I3,I4)
+                END DO
              END DO
-          END DO
-          CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
-               &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
-          IFLD=0
-          DO JK=1,KFC,ISKIP
-             IFLD=IFLD+1
-             DO J=1,ILS
-                ZCS(J,IFLD) = ZCS_D(J,IFLD)
+             CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
+                  &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
+             IFLD=0
+             DO JK=1,KFC,ISKIP
+                IFLD=IFLD+1
+                DO J=1,ILS
+                   ZCS(J,IFLD) = ZCS_D(J,IFLD)
+                ENDDO
              ENDDO
-          ENDDO
-          DEALLOCATE(ZRPNMS)
-          DEALLOCATE(ZB_D)
-          DEALLOCATE(ZCS_D)
+             DEALLOCATE(ZRPNMS)
+             DEALLOCATE(ZB_D)
+             DEALLOCATE(ZCS_D)
+          END BLOCK
        END IF
     ENDIF
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)

@@ -200,6 +200,18 @@ void run_group_graph(typename Type::real *data_real,
     for (auto &plan : plans) // set the streams
       plan.set_stream(stream);
 
+#if HIPGPU
+    // now create the graph
+    HIC_CHECK(hipStreamBeginCapture(stream, hipStreamCaptureModeGlobal));
+    for (auto &plan : plans) {
+      plan.exec(data_real, data_complex);
+    }
+    hipGraph_t my_graph;
+    HIC_CHECK(hipStreamEndCapture(stream, &my_graph));
+    hipGraphExec_t instance;
+    HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
+#endif
+#if CUDAGPU
     // now create the graph
     hipGraph_t new_graph;
     hipGraphCreate(&new_graph, 0);
@@ -214,8 +226,9 @@ void run_group_graph(typename Type::real *data_real,
     }
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
-    HIC_CHECK(hipStreamDestroy(stream));
     HIC_CHECK(hipGraphDestroy(new_graph));
+#endif
+    HIC_CHECK(hipStreamDestroy(stream));
 
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(
                                 new hipGraphExec_t{instance}, [](auto ptr) {
@@ -225,8 +238,9 @@ void run_group_graph(typename Type::real *data_real,
     ptrCache.insert({key, std::make_pair(data_real, data_complex)});
   }
 
+  /* running in stream 0 */
   HIC_CHECK(hipGraphLaunch(*graphCache.at(key), 0));
-  HIC_CHECK(hipDeviceSynchronize());
+  HIC_CHECK(hipStreamSynchronize(0));
 }
 
 template <class Type, hipfftType Direction>

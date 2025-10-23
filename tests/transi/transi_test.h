@@ -35,6 +35,7 @@
 #define ASSERT( assertion ) do {\
   if( !(assertion) ) {\
     printf("ERROR: Assertion `%s' failed @%s:%d\n",#assertion,__FILE__,__LINE__);\
+    TRANS_CHECK( trans_delete(&trans) );\
     exit(1);\
   }\
 } while(0)
@@ -53,5 +54,6 @@ void print_mem(const char* str,const int bytes);
 void set_standard_rgg(struct Trans_t* trans, int N, int T);
 
 int test_use_mpi();
+int transi_test_nprgpew();
 
 #endif

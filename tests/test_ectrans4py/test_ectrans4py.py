@@ -13,7 +13,7 @@ else:
     raise NotImplementedError("ectrans4py does not support Windows")
 
 KNUMMAXRESOL = 10
-EPSILON = 1e-13
+EPSILON = 1e-10
 
 
 class ArraysAlmostEqual(object):
@@ -96,7 +96,29 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             11175,
             data.zonal_wavenumbers)
     spdata = data.tl149_c24['sp']
-    gpdata = data.tl149_c24['sp2gp']
+    gpdata_latlon = data.tl149_c24['sp2gp']
+
+    # Pack latlon gridded data to reduced grid
+    gpdata = numpy.zeros((sum(gpdims['lon_number_by_lat'])))
+    offset = 0
+    for i in range(gpdims['lat_number']):
+        nlon = gpdims['lon_number_by_lat'][i]
+        gpdata[offset:offset+nlon] = gpdata_latlon[i,:nlon]
+        offset += nlon
+
+    def test_get_legendre_assets(self):
+        nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
+        knmeng, weights, polys = ectrans4py.get_legendre_assets(
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            nspec,
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL
+        )
+        weights_sum = sum(weights)
+        # The sum of the Gaussian weights should be equal to 1.0
+        self.assertTrue(abs(weights_sum - 1.0) < EPSILON, f"sum of weights is {weights_sum}")
 
     def test_trans_inq4py(self):
         spectral_data_sizes = ectrans4py.trans_inq4py(
@@ -116,11 +138,11 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             sum(self.gpdims['lon_number_by_lat']),
             len(self.gpdims['lon_number_by_lat']),
             self.gpdims['lon_number_by_lat'],
-            len(self.spdata.flatten()),
+            len(self.spdata),
             False,  # no derivatives
             False, # spectral_coeff_order != 'model',
-            self.spdata.flatten())[0]
-        self.assert_arrays_diff_under_epsilon(gpdata, gpdata.flatten())
+            self.spdata)[0]
+        self.assert_arrays_diff_under_epsilon(self.gpdata, gpdata)
     
     def test_gp2sp(self):
         spdata = ectrans4py.gp2sp_gauss4py(
@@ -130,8 +152,8 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             KNUMMAXRESOL,
             len(self.gpdims['lon_number_by_lat']),
             self.gpdims['lon_number_by_lat'],
-            len(self.gpdata.flatten()),
+            len(self.gpdata),
             False,  # spectral_coeff_order != 'model',
-            self.gpdata.flatten())
-        self.assert_arrays_diff_under_epsilon(spdata, spdata.flatten())
+            self.gpdata)
+        self.assert_arrays_diff_under_epsilon(self.spdata, spdata)
 

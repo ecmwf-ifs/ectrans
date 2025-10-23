@@ -285,7 +285,7 @@ ELSE
 ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     ! should not happen, but does if loss of accuracy in supolf occurs (useful for debugging)
-    IF( JGL < INS2 ) LLREF = PW(JGL+1).GT.ZEPSH
+    IF( JGL < INS2 ) LLREF = PW(JGL+1) > ZEPSH
       
     IF( LLREF ) THEN
 

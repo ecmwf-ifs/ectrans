@@ -106,7 +106,8 @@ LOGICAL :: LLP1,LLP2
 !     ------------------------------------------------------------------
 
 IF(MSETUP0 /= 0) THEN
-!gr  CALL ABORT_TRANS('SETUP_TRANS0: SETUP_TRANS0 MAY ONLY BE CALLED ONCE')
+  ! SUMP_TRANS0 should be run only once (arrays allocation)
+  RETURN
 ENDIF
 
 ! Default values
