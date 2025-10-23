@@ -1,0 +1,44 @@
+div.codehilite {
+    border-radius: 5px;
+}
+
+div.codehilite > pre {
+    padding: 12px;
+}
+
+div.card-body {
+    margin: 20px;
+}
+
+div.container > div.row > h1 {
+    margin-left: 20px;
+}
+
+div.container > div.row > div#text.col-9 {
+    margin-top: 20px;
+}
+
+div.container.p-2.mb-4.bg-light.border.rounded-3 {
+    display: none;
+}
+
+div.container p img {
+    width: 100%;
+    max-width: 700px;
+    display: block;
+    margin: auto;
+}
+
+div.container > div.row ul > li > p {
+    margin-bottom: 0.5em;
+}
+
+#ecmwf_logo > p > img {
+    height: 40px;
+    display: block;
+    margin: auto;
+}
+
+div#text {
+    margin-top: 20px;
+}
