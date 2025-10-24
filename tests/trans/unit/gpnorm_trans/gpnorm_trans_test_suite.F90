@@ -64,8 +64,8 @@ FUNCTION GET_INPUT_FIELD(MY_PROC, NGPTOTG, NGPBLKS, NFIELDS) RESULT(PGP)
     ALLOCATE(ZGPG(NGPTOTG,NFIELDS))
 
     ! Set one element to one, all others to zero
+    ZGPG(:,:) = 0.0_JPRB
     ZGPG(1,1) = 1.0_JPRB
-    ZGPG(2:,2:) = 0.0_JPRB
   ENDIF
 
   ! Initialise distributed fields
