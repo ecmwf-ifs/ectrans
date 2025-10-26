@@ -14,6 +14,10 @@ foreach( program ectrans-benchmark )
     util/ectrans_memory.c
   )
 
+  if (HAVE_FIELD_API)
+    list(APPEND util_src util/ectrans_field_api_helper.F90)
+  endif()
+
   if ( HAVE_CPU )
     foreach( prec dp sp )
       if( HAVE_${prec} )
@@ -24,10 +28,21 @@ foreach( program ectrans-benchmark )
                                   fiat
                                   parkind_${prec}
                                   trans_${prec}
+                                  $<${HAVE_FIELD_API}:ectrans_field_api_${prec}>
+                                  $<$<AND:${HAVE_FIELD_API},${HAVE_ACC}>:OpenACC::OpenACC_Fortran>
                                 DEFINITIONS
                                   VERSION="cpu"
-        )
+                                  USE_FIELD_API=${HAVE_FIELD_API}
+                                  )
+
         ectrans_target_fortran_module_directory(TARGET ${program}-cpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-cpu-${prec} )
+
+        if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
+             # clamp small spectral values to ensure bit reproductibility with field Api interface
+             # Only activated in dp, with nvhpc and on cpu
+             target_compile_definitions(${program}-cpu-${prec} PRIVATE "FIELD_API_CLAMP")
+        endif()
+
       endif()
     endforeach( prec)
   endif()
@@ -53,9 +68,11 @@ foreach( program ectrans-benchmark )
                                   $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                   $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                   ${util_PRIVATE_LIBRARIES}
+                                  $<${HAVE_FIELD_API}:ectrans_field_api_gpu_${prec}>
                                 DEFINITIONS
                                   VERSION="gpu"
                                   ${util_PRIVATE_DEFINITIONS}
+                                  USE_FIELD_API=${HAVE_FIELD_API}
         )
         ectrans_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
       endif()
