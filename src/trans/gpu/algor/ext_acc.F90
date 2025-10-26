@@ -41,14 +41,16 @@ module openacc_ext
   end type
 
   interface ext_acc_pass
-    module procedure ext_acc_pass_2d_r4, ext_acc_pass_3d_r4, ext_acc_pass_4d_r4, ext_acc_pass_2d_r8, ext_acc_pass_3d_r8, ext_acc_pass_4d_r8
+    module procedure ext_acc_pass_2d_r4, ext_acc_pass_3d_r4, ext_acc_pass_4d_r4
+    module procedure ext_acc_pass_2d_r8, ext_acc_pass_3d_r8, ext_acc_pass_4d_r8
   end interface
 contains
 
   function ext_acc_pass_2d_r4(arr) result(ret)
+    use iso_fortran_env, only: real32
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in), target :: arr(:,:)
+    real(kind=real32), intent(in), target :: arr(:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -70,9 +72,10 @@ contains
     ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 1)
   end function
   function ext_acc_pass_3d_r4(arr) result(ret)
+    use iso_fortran_env, only: real32
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in), target :: arr(:,:,:)
+    real(kind=real32), intent(in), target :: arr(:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -94,9 +97,10 @@ contains
     ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 2)
   end function
   function ext_acc_pass_4d_r4(arr) result(ret)
+    use iso_fortran_env, only: real32
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(4), intent(in), target :: arr(:,:,:,:)
+    real(kind=real32), intent(in), target :: arr(:,:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -118,9 +122,10 @@ contains
     ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 3)
   end function
   function ext_acc_pass_2d_r8(arr) result(ret)
+    use iso_fortran_env, only: real64
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in), target :: arr(:,:)
+    real(kind=real64), intent(in), target :: arr(:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -142,9 +147,10 @@ contains
     ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 1)
   end function
   function ext_acc_pass_3d_r8(arr) result(ret)
+    use iso_fortran_env, only: real64
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in), target :: arr(:,:,:)
+    real(kind=real64), intent(in), target :: arr(:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -166,9 +172,10 @@ contains
     ret%sz = ret%sz + (ptr2_v - ptr1_v) * size(arr, 2)
   end function
   function ext_acc_pass_4d_r8(arr) result(ret)
+    use iso_fortran_env, only: real64
     implicit none
     type(ext_acc_arr_desc) :: ret
-    real(8), intent(in), target :: arr(:,:,:,:)
+    real(kind=real64), intent(in), target :: arr(:,:,:,:)
 
     type(c_ptr) :: ptr1, ptr2
     integer(c_size_t) :: ptr1_v, ptr2_v
@@ -266,7 +273,7 @@ contains
     integer(acc_handle_kind), optional :: stream
 #endif
 #ifdef OMPGPU
-    integer(4), optional :: stream
+    integer(kind=int32), optional :: stream
 #endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
@@ -298,19 +305,20 @@ contains
 #ifdef ACCGPU
     use openacc, only: acc_async_sync
 #endif
+    use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
 #endif
 #ifdef OMPGPU
-    integer(4), optional :: stream
+    integer(kind=int32), optional :: stream
 #endif
 
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
-    integer(4), pointer :: pp(:)
+    integer(kind=int32), pointer :: pp(:)
 #ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
     if (present(stream)) then
@@ -336,18 +344,19 @@ contains
 #ifdef ACCGPU
     use openacc, only: acc_async_sync
 #endif
+    use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
 #endif
 #ifdef OMPGPU
-    integer(4), optional :: stream
+    integer(kind=int32), optional :: stream
 #endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
-    integer(4), pointer :: pp(:)
+    integer(kind=int32), pointer :: pp(:)
 #ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
     if (present(stream)) then
@@ -373,17 +382,18 @@ contains
 #ifdef ACCGPU
     use openacc, only: acc_async_sync
 #endif
+    use iso_fortran_env, only: int32
     implicit none
     type(ext_acc_arr_desc), intent(in) :: ptrs(:)
 #ifdef ACCGPU
     integer(acc_handle_kind), optional :: stream
 #else
-    integer(4), optional :: stream
+    integer(kind=int32), optional :: stream
 #endif
     type(common_pointer_descr), allocatable :: common_ptrs(:)
 
     integer :: i, num_ranges
-    integer(4), pointer :: pp(:)
+    integer(kind=int32), pointer :: pp(:)
 #ifdef ACCGPU
     integer(acc_handle_kind) :: stream_act
 

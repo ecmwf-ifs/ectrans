@@ -6,10 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
-# CMake 3.17 adds INTERFACE link options which get propagated to the link stage,
-#   even if the target is linked in privately
-# CMake 3.18 allows "LINK_LANG_AND_ID" generator expression.
+cmake_minimum_required( VERSION 3.25 FATAL_ERROR )
 
 find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
@@ -53,19 +50,6 @@ ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
                     DESCRIPTION "Support for OpenMP shared memory parallelism"
                     REQUIRED_PACKAGES "OpenMP COMPONENTS Fortran" )
-
-if( ${CMAKE_VERSION} VERSION_LESS "3.25" )
-  if ( ECTRANS_ENABLE_ACC OR (NOT DEFINED ECTRANS_ENABLE_ACC AND ENABLE_ACC) )
-    # See https://gitlab.kitware.com/cmake/cmake/-/issues/23691, fixed in CMake 3.25
-    # (TL;DR: FindOpenACC sets OpenACC_<LANG>_FOUND correctly but does not set
-    #  OpenACC_FOUND unless all three C, CXX, and Fortran have been found - even if
-    #  only one language has been requested via COMPONENTS)
-    find_package( OpenACC COMPONENTS Fortran )
-    if( OpenACC_Fortran_FOUND )
-      set( OpenACC_FOUND ON )
-    endif()
-  endif()
-endif()
 
 ecbuild_add_option( FEATURE ACC
                     DEFAULT OFF
@@ -116,11 +100,7 @@ if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
   set(HAVE_HIP 0)
   ectrans_find_cuda() # sets "HAVE_CUDA"
   if( NOT HAVE_CUDA )
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
-        ectrans_find_hip() # sets "HAVE_HIP"
-    else()
-        message("Cannot enable for HIP language, require CMake >= 3.24")
-    endif()
+    ectrans_find_hip() # sets "HAVE_HIP"
   endif()
 endif()
 
@@ -185,7 +165,6 @@ ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
 
-	   
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
 		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
@@ -193,11 +172,6 @@ ecbuild_add_option( FEATURE ECTRANS4PY
 
 
 ectrans_find_lapack()
-
-ecbuild_add_option( FEATURE TESTS
-                    DEFAULT ON
-                    DESCRIPTION "Enable unit testing"
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran" )
 
 ### Add sources
 include( ectrans_compile_options )

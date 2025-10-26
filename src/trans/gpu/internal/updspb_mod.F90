@@ -72,7 +72,7 @@ MODULE UPDSPB_MOD
   
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM)  :: KM,KMLOC
-  INTEGER(KIND=JPIM) :: II, INM, IR, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
+  INTEGER(KIND=JPIM) :: INM, IR, JFLD, JN, IASM0
   
   
   !     ------------------------------------------------------------------

@@ -27,7 +27,7 @@ SUBROUTINE ESPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
 !     KVSET(:)    - "B-Set" for each field
 !     KMASTER     - processor to recieve norms
 !     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
+!                   first defined resolution (input)
 !     PMET(:)     - metric
 !     PNORM(:)    - Norms (output for processor KMASTER)
 

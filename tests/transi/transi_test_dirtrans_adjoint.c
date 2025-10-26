@@ -16,10 +16,10 @@
 
 void test_dirtrans_adjoint(int nlon, int nlat, int nsmax)
 {
-double adjoint_tol = 1.e-6;
+const unsigned int seed = 123;
+srand(seed);
+const double adjoint_tol = 1.e-12;
 printf("test_dirtrans_adjoint( nlon=%d, nlat=%d, nsmax=%d )\n",nlon,nlat,nsmax);
-
-int nout = 2;
 
 struct Trans_t trans;
 TRANS_CHECK( trans_new(&trans) );
@@ -47,24 +47,31 @@ ASSERT(trans.ngptotg == nlon*nlat);
 int nscalar = 2;
 int nvordiv = 1;
 int nfld  = 2*nvordiv+nscalar;
-double* rgp  = malloc( sizeof(double) * nfld * trans.ngptot );
 
-// Load data on proc 1
-double* rgpg = NULL;
+// ===== Allocate and initialize gridpoint data =====
+double* rgpx  = calloc( nfld * trans.ngptot, sizeof(double) );
+double* rgpy  = calloc( nfld * trans.ngptot, sizeof(double) );
+double* rgpxg = NULL;
+double* rgpyg = NULL;
+if( trans.myproc == 1 ) {
+  rgpxg = malloc( sizeof(double) * nfld * trans.ngptotg );
+  rgpyg = calloc( nfld * trans.ngptotg, sizeof(double) );
+}
+
+// Initialize global gridpoint data on proc 1
 if( trans.myproc == 1 )
 {
-  rgpg = malloc( sizeof(double) * nfld*trans.ngptotg );
   int i;
   for( i=0; i<trans.ngptotg; ++i )
   {
-    rgpg[0*trans.ngptotg+i] = 1.; // U
-    rgpg[1*trans.ngptotg+i] = 2.; // V
-    rgpg[2*trans.ngptotg+i] = 3.; // scalar 1
-    rgpg[3*trans.ngptotg+i] = 4.; // scalar 2
+    rgpxg[0*trans.ngptotg+i] = rand() * (2.0 / RAND_MAX) - 1.0; // U
+    rgpxg[1*trans.ngptotg+i] = rand() * (2.0 / RAND_MAX) - 1.0; // V
+    rgpxg[2*trans.ngptotg+i] = rand() * (2.0 / RAND_MAX) - 1.0; // scalar 1
+    rgpxg[3*trans.ngptotg+i] = rand() * (2.0 / RAND_MAX) - 1.0; // scalar 2
   }
 }
 
-// Distribute gridpoint data from proc 1
+// Distribute gridpoint data from proc 1 to initialize local gridpoint data
 int* nfrom = malloc( sizeof(int) * nfld );
 nfrom[0] = 1; // U
 nfrom[1] = 1; // V
@@ -74,43 +81,112 @@ nfrom[3] = 1; // scalar 2
 printf("trans_distgrid()\n");
 struct DistGrid_t distgrid = new_distgrid(&trans);
   distgrid.nfrom = nfrom;
-  distgrid.rgpg  = rgpg;
-  distgrid.rgp   = rgp;
+  distgrid.rgpg  = rgpxg;
+  distgrid.rgp   = rgpx;
   distgrid.nfld  = nfld;
 TRANS_CHECK( trans_distgrid(&distgrid) );
 
-// Allocate spectral data
+// ===== Allocate and initialize spectral data =====
+double* rspscalarx = calloc( nscalar*trans.nspec2, sizeof(double));
+double* rspscalary = calloc( nscalar*trans.nspec2, sizeof(double));
+double* rspvorx    = calloc( nvordiv*trans.nspec2, sizeof(double));
+double* rspvory    = calloc( nvordiv*trans.nspec2, sizeof(double));
+double* rspdivx    = calloc( nvordiv*trans.nspec2, sizeof(double));
+double* rspdivy    = calloc( nvordiv*trans.nspec2, sizeof(double));
+double* rspscalarxg = NULL;
+double* rspscalaryg = NULL;
+double* rspvorxg = NULL;
+double* rspvoryg = NULL;
+double* rspdivxg = NULL;
+double* rspdivyg = NULL;
+if( trans.myproc == 1 ) {
+  rspscalarxg = malloc( sizeof(double) * nscalar * trans.nspec2g );
+  rspscalaryg = calloc( nscalar * trans.nspec2g, sizeof(double) );
+  rspvorxg = malloc( sizeof(double) * nvordiv * trans.nspec2g );
+  rspvoryg = calloc( nvordiv * trans.nspec2g, sizeof(double) );
+  rspdivxg = malloc( sizeof(double) * nvordiv * trans.nspec2g );
+  rspdivyg = calloc( nvordiv * trans.nspec2g, sizeof(double) );
+}
 
-double* rspscalar = calloc( nscalar*trans.nspec2, sizeof(double));
-double* rspvor    = calloc( nvordiv*trans.nspec2, sizeof(double));
-double* rspdiv    = calloc( nvordiv*trans.nspec2, sizeof(double));
+// Initialize global spectral data on proc 1
+if( trans.myproc == 1 )
+{
+  int i;
+  for( i=0; i<trans.nspec2g; ++i )
+  {
+    rspvorxg[i] = rand() * (2.0 / RAND_MAX) - 1.0; // vor
+    rspdivxg[i] = rand() * (2.0 / RAND_MAX) - 1.0; // div
+    rspscalarxg[0*trans.nspec2g+i] = rand() * (2.0 / RAND_MAX) - 1.0; // scalar 1
+    rspscalarxg[1*trans.nspec2g+i] = rand() * (2.0 / RAND_MAX) - 1.0; // scalar 2
+  }
+  for( i=1; i<2*nlat; i+=2 )
+  {
+    rspvorxg[i] = 0.0; // vor
+    rspdivxg[i] = 0.0; // div
+    rspscalarxg[0*trans.nspec2g+i] = 0.0; // scalar 1
+    rspscalarxg[1*trans.nspec2g+i] = 0.0; // scalar 2
+  }
+}
 
+// Distribute global spectral data from proc 1 to initialize local spectral data
+int* nto = malloc( sizeof(int) * nscalar );
+nto[0] = 1; // scalar 1 / vor
+nto[1] = 1; // scalar 2 / div
+
+printf("trans_distspec()\n");
+struct DistSpec_t distspec = new_distspec(&trans);
+  distspec.rspec  = rspscalarx;
+  distspec.rspecg = rspscalarxg;
+  distspec.nfld   = nscalar;
+  distspec.nfrom  = nto;
+TRANS_CHECK( trans_distspec(&distspec) );
+distspec = new_distspec(&trans);
+  distspec.rspec  = rspvorx;
+  distspec.rspecg = rspvorxg;
+  distspec.nfld   = nvordiv;
+  distspec.nfrom  = nto;
+TRANS_CHECK( trans_distspec(&distspec) );
+distspec = new_distspec(&trans);
+  distspec.rspec  = rspdivx;
+  distspec.rspecg = rspdivxg;
+  distspec.nfld   = nvordiv;
+  distspec.nfrom  = nto;
+TRANS_CHECK( trans_distspec(&distspec) );
+
+// ===== Compute dirtrans and gather result on proc 1 =====
+// i.e. dirtrans(rgpx) = (rspscalary, rspvory, rspdivy)
 printf("trans_dirtrans()\n");
 struct DirTrans_t dirtrans = new_dirtrans(&trans);
   dirtrans.nscalar   = nscalar;
   dirtrans.nvordiv   = nvordiv;
-  dirtrans.rgp       = rgp;
-  dirtrans.rspscalar = rspscalar;
-  dirtrans.rspvor    = rspvor;
-  dirtrans.rspdiv    = rspdiv;
+  dirtrans.rgp       = rgpx;
+  dirtrans.rspscalar = rspscalary;
+  dirtrans.rspvor    = rspvory;
+  dirtrans.rspdiv    = rspdivy;
 TRANS_CHECK( trans_dirtrans(&dirtrans) );
-
-// Gather spectral field (for fun)
-int* nto = malloc( sizeof(int) * nscalar );
-nto[0] = 1;
-nto[1] = 1;
-
-double* rspscalarg = NULL;
-if( trans.myproc == 1 )
-  rspscalarg = malloc( sizeof(double) * nscalar*trans.nspec2g );
 
 printf("trans_gathspec()\n");
 struct GathSpec_t gathspec = new_gathspec(&trans);
-  gathspec.rspec  = rspscalar;
-  gathspec.rspecg = rspscalarg;
+  gathspec.rspec  = rspscalary;
+  gathspec.rspecg = rspscalaryg;
   gathspec.nfld   = nscalar;
   gathspec.nto    = nto;
 TRANS_CHECK( trans_gathspec(&gathspec) );
+gathspec = new_gathspec(&trans);
+  gathspec.rspec  = rspvory;
+  gathspec.rspecg = rspvoryg;
+  gathspec.nfld   = nvordiv;
+  gathspec.nto    = nto;
+TRANS_CHECK( trans_gathspec(&gathspec) );
+gathspec = new_gathspec(&trans);
+  gathspec.rspec  = rspdivy;
+  gathspec.rspecg = rspdivyg;
+  gathspec.nfld   = nvordiv;
+  gathspec.nto    = nto;
+TRANS_CHECK( trans_gathspec(&gathspec) );
+
+// ===== Compute: adj_value1 = <dirtrans(rgpx), (rspscalarx, rspvorx, rspdivx)> =====
+// i.e. adj_value1 = <(rspscalary, rspvory, rspdivy), (rspscalarx, rspvorx, rspdivx)>
 
 double adj_value1 = 0.0;
 if( trans.myproc == 1 )
@@ -119,83 +195,111 @@ if( trans.myproc == 1 )
 
   for( j=0; j<nscalar; ++j)
   {
-    for( i=0; i<nout; ++i )
-      printf("rspscalarg[%d][%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
-
     // The first 2*nlat terms are on m=0
     for( i=0; i<2*nlat; ++i )
-      adj_value1 += rspscalarg[i*nscalar+j] * rspscalarg[i*nscalar+j];
+      adj_value1 += rspscalaryg[i*nscalar+j] * rspscalarxg[i*nscalar+j];
 
     for( i=2*nlat; i<trans.nspec2g; ++i )
-      adj_value1 += 2.0 * rspscalarg[i*nscalar+j] * rspscalarg[i*nscalar+j];
+      adj_value1 += 2.0 * rspscalaryg[i*nscalar+j] * rspscalarxg[i*nscalar+j];
 
-    for( i=0; i<trans.nspec2g; ++i )
-      printf("error -> rspscalarg[fld=%d][wave=%d] : %f\n",j,i,rspscalarg[i*nscalar+j]);
+    for( i=0; i<trans.nspec2g; i+=2 ) {
+      printf("rspscalaryg[fld=%d][coeff=%d].real : %g\n",j,i/2,rspscalaryg[i*nscalar+j]);
+      printf("rspscalaryg[fld=%d][coeff=%d].imag : %g\n",j,i/2,rspscalaryg[(i+1)*nscalar+j]);
+    }
+  }
+  
+  for( j=0; j<nvordiv; ++j)
+  {
+    // The first 2*nlat terms are on m=0
+    for( i=0; i<2*nlat; ++i ) {
+      adj_value1 += rspvoryg[i*nvordiv+j] * rspvorxg[i*nvordiv+j];
+      adj_value1 += rspdivyg[i*nvordiv+j] * rspdivxg[i*nvordiv+j];
+    }
+    
+    for( i=2*nlat; i<trans.nspec2g; ++i ) {
+      adj_value1 += 2.0 * rspvoryg[i*nvordiv+j] * rspvorxg[i*nvordiv+j];
+      adj_value1 += 2.0 * rspdivyg[i*nvordiv+j] * rspdivxg[i*nvordiv+j];
+    }
 
+    for( i=0; i<trans.nspec2g; i+=2 ) {
+      printf("rspvoryg[fld=%d][coeff=%d].real : %g\n",j,i/2,rspvoryg[i*nvordiv+j]);
+      printf("rspvoryg[fld=%d][coeff=%d].imag : %g\n",j,i/2,rspvoryg[(i+1)*nvordiv+j]);
+    }
+    for( i=0; i<trans.nspec2g; i+=2 ) {
+      printf("rspdivyg[fld=%d][coeff=%d].real : %g\n",j,i/2,rspdivyg[i*nvordiv+j]);
+      printf("rspdivyg[fld=%d][coeff=%d].imag : %g\n",j,i/2,rspdivyg[(i+1)*nvordiv+j]);
+    }
   }
 }
 
-printf("trans_distspec()\n");
-// Distribute spectral field (for fun)
-struct DistSpec_t distspec = new_distspec(&trans);
-  distspec.rspec  = rspscalar;
-  distspec.rspecg = rspscalarg;
-  distspec.nfld   = nscalar;
-  distspec.nfrom  = nto;
-TRANS_CHECK( trans_distspec(&distspec) );
-
-
+// ===== Compute invtrans and gather result on proc 1 =====
+// i.e. dirtrans_adj(rspscalarx, rspvorx, rspdivx) = rgpy
 printf("trans_dirtrans_adj()\n");
-// Adjoint of Direct Transform
 struct DirTransAdj_t dirtrans_adj = new_dirtrans_adj(&trans);
   dirtrans_adj.nscalar   = nscalar;
   dirtrans_adj.nvordiv   = nvordiv;
-  dirtrans_adj.rspscalar = rspscalar;
-  dirtrans_adj.rspvor    = rspvor;
-  dirtrans_adj.rspdiv    = rspdiv;
-  dirtrans_adj.rgp       = rgp;
+  dirtrans_adj.rspscalar = rspscalarx;
+  dirtrans_adj.rspvor    = rspvorx;
+  dirtrans_adj.rspdiv    = rspdivx;
+  dirtrans_adj.rgp       = rgpy;
 TRANS_CHECK( trans_dirtrans_adj(&dirtrans_adj) );
 
 printf("trans_gathgrid()\n");
-// Gather gridpoint fields
 struct GathGrid_t gathgrid = new_gathgrid(&trans);
-  gathgrid.rgp  = rgp;
-  gathgrid.rgpg = rgpg;
+  gathgrid.rgp  = rgpy;
+  gathgrid.rgpg = rgpyg;
   gathgrid.nto  = nfrom;
   gathgrid.nfld = nfld;
 TRANS_CHECK( trans_gathgrid(&gathgrid) );
 
-
+// ===== Compute: adj_value2 = <rgpx, dirtrans_adj(rspscalarx, rspvorx, rspdivx)> =====
+// i.e. adj_value2 = <rgpx, rgpy>
 double adj_value2 = 0.0;
 if( trans.myproc == 1 )
 {
   int i,j;
   for( j=0; j<nfld; ++j)
-  {
-    for( i=0; i<nout; ++i )
-    {
-      printf("rgpg[fld=%d][pt=%d] : %f\n",j,i,rgpg[j*trans.ngptotg+i]);
-    }
-    if( j>=2 )
+  { 
+    if( j>=0 )
     {
       for( i=0; i<trans.ngptotg; ++i )
-        adj_value2 += rgpg[j*trans.ngptotg+i] * (double)(j+1);
+        adj_value2 += rgpxg[j*trans.ngptotg+i] * rgpyg[j*trans.ngptotg+i];
+    }
+
+    for( i=0; i<trans.ngptotg; ++i ) {
+      printf("rgpyg[fld=%d][pt=%d] : %g\n",j,i,rgpyg[j*trans.ngptotg+i]);
     }
   }
 }
-printf("rgpg[adjval1=%f][adjval2=%f] :\n", adj_value1, adj_value2);
-ASSERT( fabs(adj_value1 - adj_value2 )/adj_value1 < adjoint_tol );
+
+// ===== Compare inner products =====
+// i.e. <dirtrans(rgpx), (rspscalarx, rspvorx, rspdivx)> == <rgpx, dirtrans_adj(rspscalarx, rspvorx, rspdivx)>
+if( trans.myproc == 1 ) {
+  printf("rgpg[adjval1=%g][adjval2=%g] :\n", adj_value1, adj_value2);
+  ASSERT( fabs(adj_value1 - adj_value2 )/fabs(adj_value1) < adjoint_tol );
+}
 
 // Deallocate arrays
 free(nloen);
-free(rgp);
-free(rgpg);
-free(rspscalar);
-free(rspscalarg);
-free(rspvor);
-free(rspdiv);
+free(rgpx);
+free(rgpy);
+free(rgpxg);
+free(rgpyg);
+free(rspscalarx);
+free(rspscalary);
+free(rspscalarxg);
+free(rspscalaryg);
+free(rspvorx);
+free(rspvory);
+free(rspvorxg);
+free(rspvoryg);
+free(rspdivx);
+free(rspdivy);
+free(rspdivxg);
+free(rspdivyg);
 free(nfrom);
 free(nto);
+
 
 TRANS_CHECK( trans_delete(&trans) );
 
