@@ -35,6 +35,7 @@ jobs:
           - linux clang-18
           - linux nvhpc-25.1
           - linux intel-classic
+          - linux amd-flang-7.0.5
           - macos
 
         include:
@@ -67,13 +68,21 @@ jobs:
             ctest_options: -E memory
             caching: false
 
-          - name : linux intel-classic
+          - name: linux intel-classic
             os: ubuntu-22.04
             compiler: intel-classic
             compiler_cc: icc
             compiler_cxx: icpc
             compiler_fc: ifort
             caching: true
+
+          - name: linux amd-flang-7.0.5
+            os: ubuntu-24.04
+            compiler: amd-flang-7.0.5
+            compiler_cc: amdclang
+            compiler_cxx: amdclang++
+            compiler_fc: amdflang
+            cmake_options: -DCMAKE_Fortran_FLAGS_INIT='-fPIC -fdynamic-heap-array' -DCMAKE_CXX_FLAGS_INIT=-fPIC -DCMAKE_C_FLAGS_INIT=-fPIC -DENABLE_MPI=OFF -DOpenMP_Fortran_FLAGS=-fopenmp -DOpenMP_CXX_FLAGS=-fopenmp -DOpenMP_C_FLAGS=-fopenmp
 
           - name: macos
             # Xcode compiler requires empty environment variables, so we pass null (~) here
@@ -150,7 +159,17 @@ jobs:
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
 
+    - name: Install AMD flang compiler
+      if: contains( matrix.compiler, 'amd-flang' )
+      shell: bash -eux {0}
+      run: |
+        ${ECTRANS_TOOLS}/install-amd-flang.sh --prefix /opt/amd-flang
+        source /opt/amd-flang/env.sh
+        echo "${AMDFLANG_INSTALL_DIR}/bin"                   >> $GITHUB_PATH
+        echo "LD_LIBRARY_PATH=${AMDFLANG_INSTALL_DIR}/lib:${AMDFLANG_INSTALL_DIR}/llvm/lib" >> $GITHUB_ENV
+
     - name: Install MPI
+      if: ${{ !contains( matrix.compiler, 'amd-flang' ) }}
       shell: bash -eux {0}
       run: |
         FCFLAGS=-fPIC CFLAGS=-fPIC FFLAGS=-fPIC ${ECTRANS_TOOLS}/install-mpi.sh --mpi openmpi --prefix  ${DEPS_DIR}/openmpi
@@ -187,8 +206,8 @@ jobs:
           ecmwf-ifs/fiat
         dependency_branch: develop
         dependency_cmake_options: |
-          ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
-        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON"
+          ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON ${{ matrix.cmake_options }}"
+        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON ${{ matrix.cmake_options }}"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools
