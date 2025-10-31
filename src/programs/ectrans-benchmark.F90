@@ -644,7 +644,7 @@ do jstep = 1, iters+iters_warmup
       write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
       call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
         &                 myproc=myproc, nproma=nproma, ngptotg=ngptotg, ivset=ivset, &
-        &                 ivsetsc=ivsetsc, ivsetsc2=ivsetsc2, nspec2g=nspec2g, zgp=zgp)
+        &                 ivsetsc=ivsetsc, nspec2g=nspec2g, zgp=zgp)
     endif
   else
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
@@ -661,8 +661,7 @@ do jstep = 1, iters+iters_warmup
       write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
       call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
         &                 myproc=myproc, nproma=nproma, ngptotg=ngptotg, ivset=ivset, &
-        &                 ivsetsc=ivsetsc, ivsetsc2=ivsetsc2, nspec2g=nspec2g, zgpuv=zgpuv, &
-        &                 zgp3a=zgp3a, zgp2=zgp2)
+        &                 ivsetsc2=ivsetsc2, nspec2g=nspec2g, zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
   endif
   call gstats(4,1)
@@ -702,8 +701,8 @@ do jstep = 1, iters+iters_warmup
         write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
         call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
           &                 myproc=myproc, nproma=nproma, ngptotg=ngptotg, ivset=ivset, &
-          &                 ivsetsc=ivsetsc, ivsetsc2=ivsetsc2, nspec2g=nspec2g, zspvor=zspvor, &
-          &                 zspdiv=zspdiv, zspscalar=zspscalar)
+          &                 ivsetsc=ivsetsc, nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, &
+          &                 zspscalar=zspscalar)
     endif
 
   else
@@ -716,8 +715,8 @@ do jstep = 1, iters+iters_warmup
       write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
       call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
         &                 myproc=myproc, nproma=nproma, ngptotg=ngptotg, ivset=ivset, &
-        &                 ivsetsc=ivsetsc, ivsetsc2=ivsetsc2, nspec2g=nspec2g, zspvor=zspvor, &
-        &                 zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
+        &                 ivsetsc2=ivsetsc2, nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, &
+        &                 zspsc3a=zspsc3a, zspsc2=zspsc2)
     endif
 
   endif
@@ -1470,8 +1469,8 @@ subroutine dump_checksums(filename, noutdump,                      &
   integer(kind=jpim), intent(in) :: ngptotg
   integer(kind=jpim), intent(in) :: nspec2g
   integer(kind=jpim), intent(in) :: ivset(:)
-  integer(kind=jpim), intent(in) :: ivsetsc(:)
-  integer(kind=jpim), intent(in) :: ivsetsc2(:)
+  integer(kind=jpim), intent(in), optional :: ivsetsc(:)
+  integer(kind=jpim), intent(in), optional :: ivsetsc2(:)
   real(kind=jprb), intent(in), optional :: zgp   (:,:,:)
   real(kind=jprb), intent(in), optional :: zgpuv   (:,:,:,:)
   real(kind=jprb), intent(in), optional :: zgp3a   (:,:,:,:)
