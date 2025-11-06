@@ -2,6 +2,7 @@
 title: ecTrans User Guide
 ordered_subpage: design
 ordered_subpage: installation.md
+ordered_subpage: cmake_features.md
 ordered_subpage: usage.md
 ordered_subpage: benchmarking.md
 ordered_subpage: api.md
@@ -40,6 +41,7 @@ This user guide contains the following sections:
 - [Design](design/index.html)
     - [Generation of Legendre polynomials](design/legendre_polynomials.html)
 - [Installation](installation.html)
+- [CMake features](cmake_features.html)
 - [Usage](usage.html)
 - [Benchmarking](benchmarking.html)
 - [API](api.html)
