@@ -532,14 +532,6 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
-
-  ecbuild_add_test( TARGET ectrans_test_transi_example
-    SOURCES   transi/transi_test_example.c
-    LIBS      ectrans_test MPI::MPI_C
-    MPI 1
-    LINKER_LANGUAGE C
-    ENVIRONMENT TRANS_USE_MPI=1 )
-
   ecbuild_add_test( TARGET ectrans_test_transi_lonlat_diff_incr
     SOURCES   transi/transi_test_lonlat_diff_incr.c
     LIBS      ectrans_test
@@ -571,4 +563,14 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     CONDITION HAVE_ETRANS
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  if( HAVE_MPI )
+    ecbuild_add_test( TARGET ectrans_test_transi_split_comm
+      SOURCES   transi/transi_test_split_comm.c
+      LIBS      ectrans_test MPI::MPI_C
+      MPI 2
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=1 )
+  endif()
+
 endif()

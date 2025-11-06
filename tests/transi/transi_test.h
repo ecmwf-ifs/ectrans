@@ -40,6 +40,15 @@
   }\
 } while(0)
 
+#define ASSERT_MSG( assertion, msg ) do {\
+  if( !(assertion) ) {\
+    printf("ERROR: Assertion `%s' failed @%s:%d => %s\n",#assertion,__FILE__,__LINE__,#msg);\
+    TRANS_CHECK( trans_delete(&trans) );\
+    exit(1);\
+  }\
+} while(0)
+
+
 #define TRANS_ERROR            -1
 #define TRANS_NOTIMPL          -2
 #define TRANS_MISSING_ARG      -3
