@@ -165,7 +165,8 @@ else()
 endif()
 ecbuild_add_option( FEATURE GPU_STATIC
                     DEFAULT ${GPU_STATIC_DEFAULT}
-                    DESCRIPTION "Compile GPU library as static library")
+                    DESCRIPTION "Compile GPU library as static library"
+                    CONDITION HAVE_GPU )
 
 ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
