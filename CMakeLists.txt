@@ -65,6 +65,11 @@ ecbuild_add_option( FEATURE SINGLE_PRECISION
                     DEFAULT ON
                     DESCRIPTION "Support for Single Precision" )
 
+# Check DOUBLE_PRECISION or SINGLE_PRECISION is enabled, and if not, abort
+if( (NOT HAVE_DOUBLE_PRECISION) AND (NOT HAVE_SINGLE_PRECISION) )
+  ecbuild_critical("Please enable one or both of the DOUBLE_PRECISION and SINGLE_PRECISION features")
+endif()
+
 if( HAVE_SINGLE_PRECISION )
   set( single "single" )
 endif()
