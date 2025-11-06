@@ -6,9 +6,9 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-# Function for generating a suite of unit tests for one external subroutine using CMake's
+# Function for generating a suite of api tests for one external subroutine using CMake's
 # create_test_sourcelist function
-function( generate_unit_test_suite )
+function( generate_api_test_suite )
   set( options )
   set( oneValueArgs SUITE_NAME)
   set( multiValueArgs TEST_LIST WILL_FAIL_LIST )
@@ -17,7 +17,7 @@ function( generate_unit_test_suite )
   set( test_list ${_PAR_TEST_LIST} )
   set( will_fail_list ${_PAR_WILL_FAIL_LIST} )
 
-  # Add unit tests for this suite, with a separate driver executable for each precision and MPI
+  # Add api tests for this suite, with a separate driver executable for each precision and MPI
   # configuration
   foreach( precision ${precisions} )
     # Create test suite driver executable encapsulating all tests for this suite at this precision
@@ -26,7 +26,7 @@ function( generate_unit_test_suite )
                             SOURCES
                                 ${suite_name}_${precision}.c
                                 ${suite_name}.F90
-                                ${CMAKE_SOURCE_DIR}/tests/trans/unit/util.F90
+                                ${CMAKE_SOURCE_DIR}/tests/trans/api/util.F90
                             LIBS trans_${precision} )
 
     # Prevent the Fortran runtime from trying to provide a main program
@@ -51,6 +51,6 @@ function( generate_unit_test_suite )
       endforeach()
     endforeach()
   endforeach()
-endfunction( generate_unit_test_suite )
+endfunction( generate_api_test_suite )
 
 add_subdirectory( setup_trans0 )

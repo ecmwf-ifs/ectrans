@@ -58,10 +58,10 @@ add_test( NAME ectrans_test_install
           COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-install.sh ${_test_args} )
 
 # --------------------------------------------------------------------------------------------------
-# Add unit tests
+# Add API tests
 # --------------------------------------------------------------------------------------------------
 
-add_subdirectory( trans/unit )
+add_subdirectory( trans/api )
 
 # --------------------------------------------------------------------------------------------------
 # Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU

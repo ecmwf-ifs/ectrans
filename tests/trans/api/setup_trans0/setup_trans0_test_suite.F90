@@ -23,7 +23,7 @@ CONTAINS
 !---------------------------------------------------------------------------------------------------
 
 ! Test SETUP_TRANS0 with equal regions enabled
-INTEGER FUNCTION UNIT_TEST_SETUP_TRANS0_EQ_REGIONS() RESULT(RET) BIND(C)
+INTEGER FUNCTION API_TEST_SETUP_TRANS0_EQ_REGIONS() RESULT(RET) BIND(C)
   USE UTIL, ONLY: DETECT_MPIRUN
   USE MPL_MODULE, ONLY: MPL_INIT, MPL_NPROC, MPL_END
   USE PARKIND1, ONLY: JPIM
@@ -48,7 +48,7 @@ INTEGER FUNCTION UNIT_TEST_SETUP_TRANS0_EQ_REGIONS() RESULT(RET) BIND(C)
   ENDIF
 
   RET = 0
-END FUNCTION UNIT_TEST_SETUP_TRANS0_EQ_REGIONS
+END FUNCTION API_TEST_SETUP_TRANS0_EQ_REGIONS
 
 !---------------------------------------------------------------------------------------------------
 
