@@ -61,6 +61,7 @@ character(len=1024) :: filename
 
 call MPI_Init(ierror)
 call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierror)
+call MPI_Comm_size(MPI_COMM_WORLD, world_num_ranks, ierror)
 
 split_colour = get_split_group()
 split_key = world_rank    ! Key used here is the WORLD rank.
@@ -79,6 +80,7 @@ split_num_ranks = MPL_NPROC()
 
 ! Assert that the split comm is smaller than WORLD.
 if (split_num_ranks >= world_num_ranks) then
+  print*, "SPLIT = ", split_num_ranks, "TOTAL = ", world_num_ranks
   call ABORT_TRANS("ERROR: Split communicator not smaller than MPI_COMM_WORLD.")
 end if
 

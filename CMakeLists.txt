@@ -43,7 +43,7 @@ ecbuild_find_package( NAME fiat REQUIRED )
 
 ecbuild_add_option( FEATURE MPI
                     DESCRIPTION "Support for MPI distributed memory parallelism"
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran C CXX"
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran CXX"
                     CONDITION fiat_HAVE_MPI )
 
 ecbuild_add_option( FEATURE OMP

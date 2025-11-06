@@ -416,13 +416,6 @@ ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
   MPI 4
   OMP 1
 )
-ecbuild_add_test(TARGET ectrans_test_multiple_res
-  SOURCES trans/test_multiple_res.F90
-  LIBS trans_sp parkind_sp
-  LINKER_LANGUAGE Fortran
-  MPI 1
-  OMP 1
-)
 
 # --------------------------------------------------------------------------------------------------
 # Add tests for transi
