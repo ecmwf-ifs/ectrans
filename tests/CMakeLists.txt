@@ -435,7 +435,7 @@ if( HAVE_TRANSI )
 
   ecbuild_add_test( TARGET ectrans_test_transi_example
     SOURCES   transi/transi_test_example.c
-    LIBS      ectrans_test
+    LIBS      ectrans_test MPI::MPI_C
     MPI 1
     LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=1 )

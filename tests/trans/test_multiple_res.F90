@@ -20,11 +20,12 @@ implicit none
 #include "dir_trans.h"
 #include "trans_inq.h"
 
-integer(kind=JPIM), parameter, dimension(2) :: truncations = [79, 188]
+integer, parameter :: num_resolutions = 2
+integer(kind=JPIM), parameter, dimension(num_resolutions) :: truncations = [79, 188]
 
 ! MODE
-integer(kind=JPIM), parameter, dimension(2) :: Ms = [1, 3]
-integer(kind=JPIM), parameter, dimension(2) :: Ns = [2, 4]
+integer(kind=JPIM), parameter, dimension(num_resolutions) :: Ms = [1, 3]
+integer(kind=JPIM), parameter, dimension(num_resolutions) :: Ns = [2, 4]
 
 
 integer(kind=JPIM) :: num_spectral_elements, num_grid_points
@@ -54,7 +55,7 @@ real(kind=JPRM), allocatable :: g_grid_point_field(:)
 
 character(len=1024) :: filename
 
-integer(kind=JPIM), dimension(2) :: handles
+integer(kind=JPIM), dimension(num_resolutions) :: handles
 
 
 call MPL_INIT()
@@ -62,10 +63,17 @@ num_ranks = MPL_NPROC()
 rank = MPL_MYRANK()
 print*, "=== Local rank ", rank, "size", num_ranks, "==="
 
-!                 Num resolutions                             Split grid NS      Split spectral
-call setup_trans0(KMAX_RESOL=2, KPRINTLEV=0, LDMPOFF=.false., KPRGPNS=num_ranks, KPRTRW=num_ranks)
+call setup_trans0(KPRINTLEV=0, LDMPOFF=.false., &
+                  ! Num resolutions
+                  KMAX_RESOL=2, &
+                  ! Split grid NS
+                  KPRGPNS=1, &
+                  ! Split grid EW
+                  KPRGPEW=num_ranks, &
+                  ! Split spectral
+                  KPRTRW=num_ranks)
 
-do res_idx = 1, 2
+do res_idx = 1, num_resolutions
   truncation = truncations(res_idx)
 
   num_latitudes = 2*(truncation + 1)
