@@ -11,7 +11,7 @@ website: https://www.ecmwf.int
 favicon: img/favicon.ico
 privacy_policy_url: https://www.ecmwf.int/en/privacy
 terms_of_service_url: https://www.ecmwf.int/en/terms-use
-version: 1.6.2
+version: 1.7.0
 html_template_dir: html
 ---
 
