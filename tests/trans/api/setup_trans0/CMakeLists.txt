@@ -19,5 +19,5 @@ set( will_fail_list
 )
 
 generate_api_test_suite( SUITE_NAME setup_trans0_test_suite
-                          TEST_LIST ${test_list}
-                          WILL_FAIL_LIST ${will_fail_list} )
+                         TEST_LIST ${test_list}
+                         WILL_FAIL_LIST ${will_fail_list} )
