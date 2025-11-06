@@ -19,6 +19,12 @@ function( generate_api_test_suite )
 
   # Add api tests for this suite, with a separate driver executable for each precision
   foreach( precision ${precisions} )
+    if( suite_name STREQUAL setup_trans0_test_suite )
+      set( libs ectrans_common )
+    else()
+      set( libs trans_${precision} )
+    endif()
+
     # Create test suite driver executable encapsulating all tests for this suite at this precision
     create_test_sourcelist( _ ${suite_name}_${precision}.c ${test_list} )
     ecbuild_add_executable( TARGET ${suite_name}_${precision}
@@ -26,7 +32,7 @@ function( generate_api_test_suite )
                                 ${suite_name}_${precision}.c
                                 ${suite_name}.F90
                                 ${CMAKE_SOURCE_DIR}/tests/trans/api/util.F90
-                            LIBS trans_${precision} )
+                            LIBS ${libs} )
 
     # Prevent the Fortran runtime from trying to provide a main program
     target_link_options( ${suite_name}_${precision} PRIVATE ${NO_FORTRAN_MAIN_FLAG} )
