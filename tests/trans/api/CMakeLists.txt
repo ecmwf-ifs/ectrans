@@ -17,8 +17,7 @@ function( generate_api_test_suite )
   set( test_list ${_PAR_TEST_LIST} )
   set( will_fail_list ${_PAR_WILL_FAIL_LIST} )
 
-  # Add api tests for this suite, with a separate driver executable for each precision and MPI
-  # configuration
+  # Add api tests for this suite, with a separate driver executable for each precision
   foreach( precision ${precisions} )
     # Create test suite driver executable encapsulating all tests for this suite at this precision
     create_test_sourcelist( _ ${suite_name}_${precision}.c ${test_list} )
@@ -35,8 +34,9 @@ function( generate_api_test_suite )
     ectrans_target_fortran_module_directory( TARGET ${suite_name}_${precision}
         MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${suite_name}_${precision} )
 
+    # Add a test for each MPI configuration
     foreach( mpi ${ntasks} )
-      # Add each test in the test list for this precision
+      # Add each test in the test list for this precision and MPI configuration
       foreach( test ${test_list} )
         ecbuild_add_test( TARGET ${test}_${precision}_mpi${mpi}
                           COMMAND ${suite_name}_${precision}
