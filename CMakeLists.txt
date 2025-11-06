@@ -56,6 +56,10 @@ ecbuild_add_option( FEATURE ACC
                     DESCRIPTION "Support for using GPUs with OpenACC"
                     REQUIRED_PACKAGES "OpenACC COMPONENTS Fortran" )
 
+ecbuild_add_option( FEATURE GPU_HOST
+                    DEFAULT OFF
+                    DESCRIPTION "Use host backend for GPU version" )
+
 ecbuild_add_option( FEATURE DOUBLE_PRECISION
                     DEFAULT ON
                     DESCRIPTION "Support for Double Precision" )
@@ -95,19 +99,21 @@ ecbuild_add_option( FEATURE TRANSI
 
 # Search for available GPU runtimes, searching for CUDA first and, if not found,
 # attempt to find HIP
-if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
-  set(HAVE_CUDA 0)
-  set(HAVE_HIP 0)
-  ectrans_find_cuda() # sets "HAVE_CUDA"
-  if( NOT HAVE_CUDA )
-    ectrans_find_hip() # sets "HAVE_HIP"
+set(HAVE_CUDA 0)
+set(HAVE_HIP 0)
+if ( NOT HAVE_GPU_HOST )
+  if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
+    ectrans_find_cuda() # sets "HAVE_CUDA"
+    if( NOT HAVE_CUDA )
+      ectrans_find_hip() # sets "HAVE_HIP"
+    endif()
   endif()
 endif()
 
 ecbuild_add_option( FEATURE GPU
                     DEFAULT OFF
                     DESCRIPTION "Compile GPU version of ectrans (Requires OpenACC or sufficient OpenMP offloading support)"
-                    CONDITION (HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP) )
+                    CONDITION ((HAVE_HIP OR HAVE_CUDA) AND (HAVE_ACC OR HAVE_OMP)) OR HAVE_GPU_HOST )
 
 # Check CPU or GPU is enabled, and if not, abort
 if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
@@ -119,14 +125,13 @@ if( HAVE_GPU )
     set( GPU_OFFLOAD "ACC" )
   elseif( HAVE_OMP )
     set( GPU_OFFLOAD "OMP" )
-  else()
-    ecbuild_error("Could not enable GPU as OMP or ACC were not enabled")
   endif()
 endif()
 
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
+                      AND NOT HAVE_GPU_HOST
                     DESCRIPTION "Support for Cutlass BLAS operations"
                     REQUIRED_PACKAGES "NvidiaCutlass VERSION 2.11" )
 
@@ -138,18 +143,18 @@ ecbuild_add_option( FEATURE CUTLASS_3XTF32
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
-                    CONDITION HAVE_GPU
+                    CONDITION HAVE_GPU AND NOT HAVE_GPU_HOST
                     REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
                     DESCRIPTION "Enable CUDA-aware MPI" )
 
 ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     DEFAULT ON
-                    CONDITION HAVE_GPU
+                    CONDITION HAVE_GPU AND NOT HAVE_GPU_HOST
                     DESCRIPTION "Enable graph-based optimisation of Legendre transform GEMM kernel" )
 
 ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     DEFAULT ON
-                    CONDITION HAVE_GPU
+                    CONDITION HAVE_GPU AND NOT HAVE_GPU_HOST
                     DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
 if( BUILD_SHARED_LIBS )
