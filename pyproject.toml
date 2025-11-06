@@ -4,7 +4,10 @@ dynamic = ["version"]
 description = "ECTRANS interface for Python"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies=["numpy", "ctypesForFortran<2.0.0"]
+dependencies=[
+    "numpy",
+    "ctypesForFortran >=1.3.0, !=2.0.*, !=2.1.*",
+]
 classifiers = [
     'Development Status :: 3 - Alpha',
     'Intended Audience :: Science/Research',

@@ -50,6 +50,18 @@ inline static const char * _blasGetErrorEnum(hipblasStatus_t error)
 
         case HIPBLAS_STATUS_INTERNAL_ERROR:
             return "HIPBLAS_STATUS_INTERNAL_ERROR";
+
+        case HIPBLAS_STATUS_NOT_SUPPORTED:
+            return "HIPBLAS_STATUS_NOT_SUPPORTED";
+
+        case HIPBLAS_STATUS_HANDLE_IS_NULLPTR:
+            return "HIPBLAS_STATUS_HANDLE_IS_NULLPTR";
+
+        case HIPBLAS_STATUS_INVALID_ENUM:
+            return "HIPBLAS_STATUS_INVALID_ENUM";
+
+        case HIPBLAS_STATUS_UNKNOWN:
+            return "HIPBLAS_STATUS_UNKNOWN";
     }
 
     return "<unknown>";

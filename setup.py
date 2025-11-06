@@ -21,5 +21,5 @@ setup(
     package_dir={"": "src"},
     cmake_install_dir="src/ectrans4py",
     setup_requires=["scikit-build", "setuptools"],
-    install_requires=["numpy", "ctypesforfortran==1.1.3"],
+    install_requires=["numpy", "ctypesForFortran >=1.3.0, !=2.0.*, !=2.1.*"],
 )

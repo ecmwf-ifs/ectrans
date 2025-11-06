@@ -228,7 +228,7 @@ IMPLICIT NONE
 integer(kind=jpim),intent(in) :: N
 real(kind=jprd),intent(in) :: a_ideal,c_polar
 integer(kind=jpim) :: num_c
-logical enough
+logical :: enough
 enough = (N > 2) .and. (a_ideal > 0)
 if( enough )then
   num_c = max(1,nint((pi-2.*c_polar)/a_ideal))
@@ -377,7 +377,7 @@ function area_of_collar(a_top, a_bot) result(area)
 USE EC_PARKIND  ,ONLY : JPIM,   JPRD
 IMPLICIT NONE
 real(kind=jprd),intent(in) :: a_top,a_bot
-real(kind=jprd) area
+real(kind=jprd) :: area
 area = area_of_cap(a_bot) - area_of_cap(a_top)
 return
 end function area_of_collar
@@ -390,7 +390,7 @@ function area_of_cap(s_cap) result(area)
 ! cap of spherical radius S_CAP.
 !
 real(kind=jprd),intent(in) :: s_cap
-real(kind=jprd) area
+real(kind=jprd) :: area
 area = 4.0_jprd*pi * sin(s_cap/2.0_jprd)**2
 return
 end function area_of_cap
@@ -425,7 +425,7 @@ w = x - (n + 2)
 y = ((((((((((((p13 * w + p12) * w + p11) * w + p10) *&
 &    w + p9) * w + p8) * w + p7) * w + p6) * w + p5) *&
 &    w + p4) * w + p3) * w + p2) * w + p1) * w + p0
-if (n .gt. 0) then
+if (n > 0) then
   w = x - 1
   do k = 2, n
     w = w * (x - k)

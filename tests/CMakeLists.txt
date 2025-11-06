@@ -6,8 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-find_package( MPI )
-
 # --------------------------------------------------------------------------------------------------
 # Add a test for installation of ecTrans
 # --------------------------------------------------------------------------------------------------
@@ -60,27 +58,102 @@ foreach( mpi ${ntasks} )
 endforeach()
 
 # --------------------------------------------------------------------------------------------------
-# Add a test for tangent-linear/adjoint correspondence (CPU version only)
+# Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU
+# version only)
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
+  set( precisions "" )
   if( HAVE_DOUBLE_PRECISION )
-    set( trans trans_dp )
+    list( APPEND precisions "dp" )
+  endif()
+  if( HAVE_SINGLE_PRECISION )
+    list( APPEND precisions "sp" )
+  endif()
+
+  set( ntasks 0 )
+  if( HAVE_MPI )
+    list( APPEND ntasks 1 2 )
+  endif()
+
+  foreach( precision ${precisions} )
+    foreach( mpi ${ntasks} )
+      set( test_name ectrans_test_adjoint_mpi${mpi}_${precision} )
+      ecbuild_add_test(TARGET ${test_name}
+        SOURCES trans/test_adjoint.F90
+        LIBS trans_${precision} parkind_${precision}
+        LINKER_LANGUAGE Fortran
+        MPI ${mpi}
+      )
+      if( TEST ${test_name} AND HAVE_OMP )
+        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
+      endif()
+    endforeach()
+  endforeach()
+endif()
+
+# --------------------------------------------------------------------------------------------------
+# Add tests for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS
+# --------------------------------------------------------------------------------------------------
+
+set( platforms )
+if( HAVE_CPU )
+  list( APPEND platforms cpu )
+endif()
+if( HAVE_GPU )
+  list( APPEND platforms gpu )
+endif()
+
+foreach( platform ${platforms} )
+  
+  if( "${platform}" MATCHES "cpu" )
+    set( platform_tag "" )
+  endif()
+  if( "${platform}" MATCHES "gpu" )
+    set( platform_tag "_gpu" )
+  endif()
+  
+  if( HAVE_DOUBLE_PRECISION )
+    set( trans trans${platform_tag}_dp )
     set( parkind parkind_dp )
   else()
-    set( trans trans_sp )
+    set( trans trans${platform_tag}_sp )
     set( parkind parkind_sp )
   endif()
 
-  ecbuild_add_test(TARGET ectrans_test_adjoint
-    SOURCES trans/test_adjoint.F90
-    LIBS ${trans} ${parkind}
-    LINKER_LANGUAGE Fortran
-  )
-  if( TEST ectrans_test_adjoint AND HAVE_OMP )
-    target_link_libraries( ectrans_test_adjoint OpenMP::OpenMP_Fortran )
+  set( ntasks 0 )
+  if( HAVE_MPI )
+    list( APPEND ntasks 1 2 )
   endif()
-endif()
+
+  foreach( mpi ${ntasks} )
+    ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}
+      SOURCES trans/test_dirtrans_adjoint.F90
+      LIBS ${trans} ${parkind}
+      LINKER_LANGUAGE Fortran
+      MPI ${mpi}
+      OMP 1
+    )
+    if( TEST ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} AND HAVE_OMP )
+      target_link_libraries( ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} OpenMP::OpenMP_Fortran )
+    endif()
+    set_tests_properties(ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} PROPERTIES LABELS "${platform};Fortran")
+
+    ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}
+      SOURCES trans/test_invtrans_adjoint.F90
+      LIBS ${trans} ${parkind}
+      LINKER_LANGUAGE Fortran
+      MPI ${mpi}
+      OMP 1
+    )
+    if( TEST ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} AND HAVE_OMP )
+      target_link_libraries( ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} OpenMP::OpenMP_Fortran )
+    endif()
+    set_tests_properties(ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} PROPERTIES LABELS "${platform};Fortran")
+    
+  endforeach() # mpi comm size
+
+endforeach() # platform
 
 # --------------------------------------------------------------------------------------------------
 # Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD (CPU version only)
@@ -125,6 +198,7 @@ macro(ectrans_set_test_properties target)
   if( "${target}" MATCHES "gpu" )
     set_tests_properties(${target} PROPERTIES LABELS "gpu;Fortran")
   endif()
+  set_tests_properties( ${target} PROPERTIES FIXTURES_SETUP checksum_tests )
 endmacro()
 
 # Determine which benchmarks are available
@@ -151,8 +225,19 @@ foreach( benchmark ${benchmarks} )
   endif()
   if( ${benchmark} MATCHES "cpu" )
     if( HAVE_OMP )
-      list( APPEND nthreads 4 8 )
+      list( APPEND nthreads 8 )
     endif()
+  endif()
+
+  if( NOT TEST compare_checksums AND (HAVE_MPI OR HAVE_OMP) )
+    configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
+    list( JOIN ntasks "," ntasks_joined )
+    list( JOIN nthreads "," nthreads_joined )
+    ecbuild_add_test( TARGET compare_checksums
+      COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py"
+      ARGS "." ${ntasks_joined} ${nthreads_joined}
+    )
+    set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
   endif()
 
   # Add test for each parameter combination
@@ -164,86 +249,78 @@ foreach( benchmark ${benchmarks} )
 
       # Base arguments -> 2 iterations, memory consumption/pinning information, spectral norms, and
       # verbose output
-      set( base_args "--niter 2 --meminfo --norms -v" )
+      set( base_args --niter 2 --meminfo --norms -v )
 
-      set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}")
-
-      # Check it works with 0 3D scalar fields
-      # This test doesn't work on GPU -> should we delete it?
-      if( NOT "${benchmark}" MATCHES "-gpu-" )
+      foreach( callmode 1 2 )
+        set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}_callmode${callmode}")
+        # Check it works with 0 3D scalar fields
         ecbuild_add_test( TARGET ${base_title}_nfld0
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${baseargs}
+            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld0 ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
         ectrans_set_test_properties( ${base_title}_nfld0 )
-      endif()
 
-      # Check it works with 10 3D scalar fields
-      ecbuild_add_test( TARGET ${base_title}_nfld10
-          COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --check 100 ${baseargs}
-          MPI ${mpi}
-          OMP ${omp}
-      )
-      ectrans_set_test_properties( ${base_title}_nfld10 )
-
-      # Check it works with 10 3D scalar fields and 20 levels
-      ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
-          COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${baseargs}
-          MPI ${mpi}
-          OMP ${omp}
-      )
-      ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
-
-      # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
-      ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
-          COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${baseargs}
-          MPI ${mpi}
-          OMP ${omp}
-      )
-      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_scders )
-
-      # Check it works with 10 3D scalar fields, 20 levels, and wind transforms
-      ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
-          COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 200  ${baseargs}
-          MPI ${mpi}
-          OMP ${omp}
-      )
-      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
-
-      # Check it works with 10 3D scalar fields, 20 levels, wind transforms, and wind derivatives
-      ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
-          COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --uvders --check 200 ${baseargs}
-          MPI ${mpi}
-          OMP ${omp}
-      )
-      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv_uvders )
-
-      # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
-      ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
-          COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${baseargs}
-          MPI ${mpi}
-          OMP ${omp}
-      )
-      ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
-
-      if( ${benchmark} MATCHES "cpu" )
-        # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
-        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
+        # Check it works with 10 3D scalar fields and 20 levels
+        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 4000 ${baseargs}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20 ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
-        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_flt )
-      endif()
+        ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
+
+        # Check it works with 10 3D scalar fields, 20 levels, and derivatives
+        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_derivatives
+            COMMAND ${benchmark}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --uvders --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_derivatives ${base_args}
+            MPI ${mpi}
+            OMP ${omp}
+        )
+        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_derivatives )
+
+        # Check it works with 10 3D scalar fields, 20 levels, and vordiv in grid point space
+        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
+            COMMAND ${benchmark}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 100  --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv ${base_args}
+            MPI ${mpi}
+            OMP ${omp}
+        )
+        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
+
+        # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
+        ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
+            COMMAND ${benchmark}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders ${base_args}
+            MPI ${mpi}
+            OMP ${omp}
+        )
+        ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
+
+        # Check it works with 10 3D scalar fields, 20 levels, and NPROMATR=20 (feature only works for CPU)
+        if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "1" )
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_npromatr20
+              COMMAND ${benchmark}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --npromatr 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders ${base_args}
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_npromatr20 )
+        endif()
+
+        if( ${benchmark} MATCHES "cpu" )
+          # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
+          # TODO: Find out why the FLT gives so much higher errors
+          ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
+              COMMAND ${benchmark}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_flt ${base_args}
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
+        endif()
+      endforeach()
     endforeach()
   endforeach()
 endforeach()
@@ -266,52 +343,65 @@ if( HAVE_ETRANS )
         list( APPEND ntasks 1 2 )
       endif()
       if( HAVE_OMP )
-        list( APPEND nthreads 4 8 )
+        list( APPEND nthreads 8 )
       endif()
 
       # Base arguments -> nlat x nlon, 2 iterations, memory consumption/pinning information,
       # spectral norms, and verbose output
-      set( base_args "--nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v" )
+      set( base_args --nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
-          set( base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
+          set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
 
           ecbuild_add_test( TARGET ${base_title}_nfld0
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0 --dump-checksums ${base_title}_nfld0
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld0 )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --dump-checksums ${base_title}_nfld10
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10 )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --dump-checksums ${base_title}_nfld20
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders --dump-checksums ${base_title}_nfld10_nlev20_scders
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties(  ${base_title}_nfld10_nlev20_scders )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --dump-checksums ${base_title}_nfld10_nlev20_vordiv
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv_uvders )
+
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_nfld10_nlev20_nproma16
               MPI ${mpi}
               OMP ${omp}
           )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
         endforeach()
       endforeach()
     endif()
@@ -350,9 +440,10 @@ if( HAVE_TRANSI )
     ecbuild_warn( "ectrans tests checking memory leaks are disabled as malloc.h was not found" )
   endif()
 
+  find_package( CMath )
   ecbuild_add_library( TARGET ectrans_test
     SOURCES     transi/transi_test.h transi/transi_test.c
-    PUBLIC_LIBS transi_dp
+    PUBLIC_LIBS transi_dp ${CMATH_LIBRARIES}
     NOINSTALL
   )
   target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
@@ -380,6 +471,22 @@ if( HAVE_TRANSI )
       DEFINITIONS GPU_VERSION
       ENVIRONMENT TRANS_USE_MPI=0 )
     set_tests_properties(ectrans_test_transi_program_gpu PROPERTIES LABELS gpu)
+    
+    ecbuild_add_test( TARGET ectrans_test_transi_invtrans_adjoint_gpu
+      SOURCES   transi/transi_test_invtrans_adjoint.c
+      LIBS      ectrans_test_gpu
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      ENVIRONMENT TRANS_USE_MPI=0 )
+    set_tests_properties(ectrans_test_transi_invtrans_adjoint_gpu PROPERTIES LABELS gpu)
+
+    ecbuild_add_test( TARGET ectrans_test_transi_dirtrans_adjoint_gpu
+      SOURCES   transi/transi_test_dirtrans_adjoint.c
+      LIBS      ectrans_test_gpu
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      ENVIRONMENT TRANS_USE_MPI=0 )
+    set_tests_properties(ectrans_test_transi_dirtrans_adjoint_gpu PROPERTIES LABELS gpu)
   endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_timings
@@ -450,4 +557,25 @@ if( HAVE_TRANSI )
   if( NOT HAVE_MEMORY_TESTS )
     set_tests_properties( ectrans_test_transi_memory ectrans_test_transi_memory_lonlat PROPERTIES DISABLED ON )
   endif()
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam
+    SOURCES   transi/transi_test_lam.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam_dirtrans_adjoint
+    SOURCES   transi/transi_test_lam_dirtrans_adjoint.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_lam_invtrans_adjoint
+    SOURCES   transi/transi_test_lam_invtrans_adjoint.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
 endif()

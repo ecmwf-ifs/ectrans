@@ -118,6 +118,7 @@ ELSE
   S = S_
 
   ! Empty all fields (none of them has pointers; allocatable arrays implicitly deallocate)
+  R_%NSMAX = 0 ! Avoids warning of unused R_ with Cray compiler
   D = D_
   F = F_
   FG = FG_
