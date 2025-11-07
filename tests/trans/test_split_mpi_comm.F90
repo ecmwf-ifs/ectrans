@@ -8,7 +8,7 @@ program test_split_mpi_comm
 
 USE PARKIND1, ONLY: JPRM, JPIM
 USE MPL_MODULE  ,ONLY : MPL_INIT, MPL_END, MPL_BARRIER, MPL_MYRANK, MPL_NPROC, &
-                        MPL_COMM_SPLIT
+                        MPL_COMM_SPLIT, MPL_GATHERV
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
 USE mpl_data_module, ONLY : MPLUSERCOMM, LMPLUSERCOMM
 USE mpl_mpif
@@ -41,8 +41,6 @@ integer(kind=JPIM) :: truncation
 integer(kind=JPIM) :: M, N
 integer(kind=JPIM) :: num_latitudes, num_longitudes
 
-! Number of grid points on each rank
-integer(kind=JPIM) :: grid_partition_size_local(1)
 ! Book-keeping for MPI gather.
 integer(kind=JPIM), allocatable :: displs(:)
 integer(kind=JPIM), allocatable :: grid_partition_sizes(:)
@@ -128,17 +126,10 @@ call inv_trans(PSPSCALAR=spectral_field, PGP=grid_point_field)
 ! -------------- Gather the result on the root (0) and write to file -----------------
 
 ! Get counts from each PE.
-grid_partition_size_local(1) = num_grid_points
 allocate(grid_partition_sizes(split_num_ranks))
 grid_partition_sizes = 0
 
-call MPI_Gather(grid_partition_size_local, 1, MPI_INT, &
-                grid_partition_sizes, 1, MPI_INT, &
-                0, split_comm, ierror)
-if (ierror /= 0) then
-  print*,"MPI ERROR => ", ierror
-  call ABORT_TRANS("MPI ERROR")
-end if
+call MPL_GATHERV(num_grid_points, KRECVBUF=grid_partition_sizes, KCOMM=split_comm)
 
 if (split_rank == 1) then
   ! Allocate a global field.
@@ -152,13 +143,10 @@ if (split_rank == 1) then
   end do
 end if
 
-call MPI_Gatherv(grid_point_field(:,1,1), num_grid_points, MPI_FLOAT, &
-                 g_grid_point_field, grid_partition_sizes, displs, MPI_FLOAT, &
-                 0, split_comm, ierror)
-if (ierror /= 0) then
-  print*,"Gatherv MPI ERROR => ", ierror
-  call ABORT_TRANS("MPI ERROR")
-end if
+call MPL_GATHERV(grid_point_field(:,1,1), PRECVBUF=g_grid_point_field, &
+                 KCOMM=split_comm, &
+                 KRECVCOUNTS=grid_partition_sizes, &
+                 KRECVDISPL=displs)
 
 if (split_rank == 1) then
   ! Write to file. Can then be plotted using a python script
