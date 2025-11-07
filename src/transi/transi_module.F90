@@ -40,9 +40,9 @@ use MPL_module, only: &
   MPL_NPROC, &
   MPL_MYRANK
 
-use MPL_DATA_MODULE
-
-use mpl_mpif
+use MPL_DATA_MODULE, only: &
+  MPLUSERCOMM, &
+  LMPLUSERCOMM
 
 implicit none
 
