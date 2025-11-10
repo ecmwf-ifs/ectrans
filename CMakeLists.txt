@@ -142,9 +142,9 @@ ecbuild_add_option( FEATURE CUTLASS_3XTF32
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
-                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
                     DESCRIPTION "Enable CUDA-aware MPI" )
                     CONDITION HAVE_GPU AND HAVE_MPI
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
 
 ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     DEFAULT ON
