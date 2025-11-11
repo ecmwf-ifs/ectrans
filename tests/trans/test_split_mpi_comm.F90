@@ -7,7 +7,8 @@
 program test_split_mpi_comm
 
 USE PARKIND1,        ONLY : JPRM, JPIM
-USE MPL_MODULE,      ONLY : MPL_INIT, MPL_END, MPL_MYRANK, MPL_NPROC, MPL_GATHERV
+USE MPL_MODULE,      ONLY : MPL_INIT, MPL_END, MPL_MYRANK, MPL_NPROC, MPL_GATHERV, &
+                            MPL_COMM_SPLIT, MPL_SETDFLT_COMM, MPL_COMM
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
 USE mpl_data_module, ONLY : MPLUSERCOMM, LMPLUSERCOMM
 USE mpl_mpif
@@ -35,7 +36,7 @@ integer(kind=JPIM) :: i
 integer(kind=JPIM) :: split_num_ranks, split_rank
 integer(kind=JPIM) :: world_num_ranks, world_rank
 integer(kind=JPIM) :: split_colour, split_key
-integer(kind=JPIM) :: split_comm
+integer(kind=JPIM) :: split_comm, dummy_comm
 integer(kind=JPIM) :: truncation
 integer(kind=JPIM) :: M, N
 integer(kind=JPIM) :: num_latitudes, num_longitudes
@@ -55,25 +56,19 @@ real(kind=JPRM), allocatable :: g_grid_point_field(:)
 
 character(len=1024) :: filename
 
-
-call MPI_Init(ierror)
-call MPI_Comm_rank(MPI_COMM_WORLD, world_rank, ierror)
-call MPI_Comm_size(MPI_COMM_WORLD, world_num_ranks, ierror)
-
-split_colour = get_split_group()
-split_key = world_rank    ! Key used here is the WORLD rank.
-call MPI_Comm_split(MPI_COMM_WORLD, split_colour, split_key, split_comm, ierror)
-
-print*,"=== Rank ", world_rank, ", Setup on group", split_colour, "==="
-
-! Set MPL comm. Global variables from fiat MPL_DATA_MODULE.
-! Acts like arguments to MPL_INIT.
-LMPLUSERCOMM = .true.
-MPLUSERCOMM = split_comm
 call MPL_INIT()
+world_num_ranks = MPL_NPROC()
+world_rank = MPL_MYRANK()
+
+split_colour = get_split_group(world_rank, world_num_ranks)
+split_key = world_rank
+call MPL_COMM_SPLIT(MPL_COMM, split_colour, split_key, split_comm, ierror)
+call MPL_SETDFLT_COMM(split_comm, dummy_comm)
 
 split_rank = MPL_MYRANK()
 split_num_ranks = MPL_NPROC()
+
+print*,"=== Rank ", world_rank, ", Setup on group", split_colour, "num ranks = ", split_num_ranks, "==="
 
 ! Assert that the split comm is smaller than WORLD.
 if (split_num_ranks >= world_num_ranks) then
@@ -160,26 +155,24 @@ if (split_rank == 1) then
 end if
 
 call MPL_END()
-call MPI_Finalize()
 
 CONTAINS
 
 ! Get the colour of comm for this rank.
-function get_split_group() result(group)
+function get_split_group(rank, world_size) result(group)
   implicit none
+
+  integer(kind=JPIM), intent(in) :: rank
+  integer(kind=JPIM), intent(in) :: world_size
   ! return
   integer(kind=JPIM) :: group
 
-  integer(kind=JPIM) :: rank, world_size, ierror
   real(kind=JPRM) :: rank_ratio
-
-  call MPI_Comm_size(MPI_COMM_WORLD, world_size, ierror)
-  call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierror)
 
   ! ----------------------------------------------
   ! Uneven splitting based on a ratio 1:3.
   ! ----------------------------------------------
-  rank_ratio = real(rank + 1, kind=JPRM) / real(world_size, kind=JPRM)
+  rank_ratio = real(rank, kind=JPRM) / real(world_size, kind=JPRM)
 
   ! Split X%
   if (rank_ratio <= 0.25_jprm) then
