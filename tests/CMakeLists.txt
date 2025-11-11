@@ -318,7 +318,7 @@ foreach( benchmark ${benchmarks} )
               MPI ${mpi}
               OMP ${omp}
           )
-          ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
+          ectrans_set_test_properties( ${base_title}_nfld10_nlev20_flt )
         endif()
       endforeach()
     endforeach()
