@@ -406,10 +406,6 @@ call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1), k
 call gstats(1, 1)
 
 call gstats(2, 0)
-! IFS spectral fields are dimensioned NFLEVL, Nils !!
-call set_ectrans_gpu_nflev(nflevl)
-  ! We pass nflevl via environment variable in order not to change API
-  ! In long run, ectrans should grow its internal buffers automatically
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true., lduserpnm=luserpnm, &
   &              lduseflt=luseflt)
 call gstats(2, 1)
@@ -605,26 +601,26 @@ if (lprint_norms .or. ncheck > 0) then
   if (verbosity >= 1 .and. myproc == 1) then
     do ifld = 1, nflevg
       write(nout,'("norm zspvor( ",i4,",:)   = ",f20.15)') ifld, znormvor1(ifld)
-      write(nout,'("0x",Z16.16)') znormvor1(ifld)
+      write(nout,'("0x",Z16.16)') transfer(znormvor1(ifld),0_jpim)
     enddo
     do ifld = 1, nflevg
       write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv1(ifld)
-      write(nout,'("0x",Z16.16)') znormdiv1(ifld)
+      write(nout,'("0x",Z16.16)') transfer(znormdiv1(ifld),0_jpim)
     enddo
     if (icall_mode == 1) then
       do ifld = 1, nfld*nflevg+1
         write(nout,'("norm zspscalar(",i4,",:,1) = ",f20.15)') ifld, znormscalar1(ifld)
-        write(nout,'("0x",Z16.16)') znormscalar1(ifld)
+        write(nout,'("0x",Z16.16)') transfer(znormscalar1(ifld),0_jpim)
       enddo
     else
       if (nfld > 0) then
         do ifld = 1, nflevg
           write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormsc3a1(ifld)
-          write(nout,'("0x",Z16.16)') znormsc3a1(ifld)
+          write(nout,'("0x",Z16.16)') transfer(znormsc3a1(ifld),0_jpim)
         enddo
       endif
       write(nout,'("norm zspsc2( ",i4,",:)   = ",f20.15)') 1, znormsc21(1)
-      write(nout,'("0x",Z16.16)') znormsc21(1)
+      write(nout,'("0x",Z16.16)') transfer(znormsc21(1),0_jpim)
     endif
   endif
 endif
@@ -707,6 +703,7 @@ do jstep = 1, iters+iters_warmup
         &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
   endif
   if (ldump_checksums) then
+    ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
     write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
     if (icall_mode == 1) then
@@ -807,7 +804,6 @@ else
     endif
 
   endif
-  
   call gstats(5,1)
 
   ztstep2(jstep) = (timef() - ztstep2(jstep))/1000.0_jprd
@@ -835,8 +831,8 @@ else
       zmaxerr(2) = maxval(abs((znormdiv1 / znormdiv) - 1.0_jprb))
       if (icall_mode == 1) then
         zmaxerr(3) = maxval(abs((znormscalar1 / znormscalar) - 1.0_jprb))
-        write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-        & " | zspdiv max err="e10.3," | zspscalar max err="e10.3)') &
+        write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+        & " | zspdiv max err=",e10.3," | zspscalar max err=",e10.3)') &
         &  jstep, ztstep(jstep), zmaxerr(1), zmaxerr(2), zmaxerr(3)
       else
         zmaxerr(4) = maxval(abs((znormsc21 / znormsc2) - 1.0_jprb))
@@ -884,14 +880,14 @@ if (lprint_norms .or. ncheck > 0) then
     if (verbosity >= 1) then
       do ifld = 1, nflevg
         write(nout,'("norm zspvor( ",i4,")     = ",f20.15)') ifld, znormvor(ifld)
-        write(nout,'("0x",Z16.16)') znormvor(ifld)
+        write(nout,'("0x",Z16.16)') transfer(znormvor(ifld), 0_jpim)
       enddo
     endif
     zmaxerr(2) = maxval(abs((real(znormdiv1,jprd) / (real(znormdiv,jprd)) - 1.0_jprd)))
     if (verbosity >= 1) then
       do ifld = 1, nflevg
         write(nout,'("norm zspdiv( ",i4,",:)   = ",f20.15)') ifld, znormdiv(ifld)
-        write(nout,'("0x",Z16.16)') znormdiv(ifld)
+        write(nout,'("0x",Z16.16)') transfer(znormdiv(ifld), 0_jpim)
       enddo
     endif
     if (icall_mode == 1) then
@@ -899,21 +895,21 @@ if (lprint_norms .or. ncheck > 0) then
       if (verbosity >= 1) then
         do ifld = 1, nfld*nflevg+1
           write(nout,'("norm znormscalar( ",i4,",:)   = ",f20.15)') ifld, znormscalar(ifld)
-          write(nout,'("0x",Z16.16)') znormscalar(ifld)
+          write(nout,'("0x",Z16.16)') transfer(znormscalar(ifld), 0_jpim)
         enddo
       endif
     else
       zmaxerr(4) = maxval(abs((znormsc21 / znormsc2) - 1.0_jprb))
       if (verbosity >= 1) then
         write(nout,'("norm znormsc2( ",i4,",:)   = ",f20.15)') 1, znormsc2(1)
-        write(nout,'("0x",Z16.16)') znormsc2(1)
+        write(nout,'("0x",Z16.16)') transfer(znormsc2(1), 0_jpim)
       endif
       if (nfld > 0) then
         zmaxerr(3) = maxval(abs((znormsc3a1 / znormsc3a) - 1.0_jprb))
         if (verbosity >= 1) then
           do ifld = 1, nflevg
             write(nout,'("norm zspsc3a(",i4,",:,1) = ",f20.15)') ifld, znormsc3a(ifld)
-            write(nout,'("0x",Z16.16)') znormsc3a(ifld)
+            write(nout,'("0x",Z16.16)') transfer(znormsc3a(ifld), 0_jpim)
           enddo
         endif
       endif
@@ -1561,12 +1557,12 @@ subroutine dump_checksums(filename, noutdump,                      &
   integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
   integer(kind=jpim), intent(in) :: jstep    ! time step
   integer(kind=jpim), intent(in) :: myproc   ! mpi rank
-  integer(kind=jpim), intent(in) :: nproma   ! size of nproma
-  integer(kind=jpim), intent(in) :: ngptotg
-  integer(kind=jpim), intent(in) :: nspec2g
-  integer(kind=jpim), intent(in) :: ivset(:)
-  integer(kind=jpim), intent(in) :: ivsetsc(:)
-  integer(kind=jpim), intent(in) :: ivsetsc2(:)
+  integer(kind=jpim), intent(in), optional :: nproma   ! size of nproma
+  integer(kind=jpim), intent(in), optional :: ngptotg
+  integer(kind=jpim), intent(in), optional :: nspec2g
+  integer(kind=jpim), intent(in), optional :: ivset(:)
+  integer(kind=jpim), intent(in), optional :: ivsetsc(:)
+  integer(kind=jpim), intent(in), optional :: ivsetsc2(:)
   real(kind=jprb), intent(in), optional :: zgp   (:,:,:)
   real(kind=jprb), intent(in), optional :: zgpuv   (:,:,:,:)
   real(kind=jprb), intent(in), optional :: zgp3a   (:,:,:,:)
@@ -1581,128 +1577,148 @@ subroutine dump_checksums(filename, noutdump,                      &
   real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)
   logical :: exist = .false.
+  integer(kind=jpib) :: iconfig
+
+  if (present(zgp) .and. present(ngptotg) .and. present(nproma)) then
+    ! call mode 1, grid point
+    iconfig = 1
+  else if (present(zgpuv) .and. present(zgp3a) .and. present(zgp2) .and. present(ngptotg) &
+    &      .and. present(nproma)) then
+    ! call mode 2, grid point
+    iconfig = 2
+  else if (present(zspvor) .and. present(zspdiv) .and. present(zspscalar) .and. present(ivset) &
+    &      .and. present(ivsetsc) .and. present(nspec2g)) then
+    ! call mode 1, spectral
+    iconfig = 3
+  else if (present(zspvor) .and. present(zspdiv) .and. present(zspsc3a) .and. present(zspsc2) &
+    &      .and. present(ivset) .and. present(ivsetsc2) .and. present(nspec2g)) then
+    ! call mode 2, spectral
+    iconfig = 4
+  else
+    call abor1("dump_checksums: invalid argument combination")
+  endif
 
   if (myproc == 1) then
-    if (jstep>1)  inquire(file = filename, exist = exist)
-      if (exist) then
-        open(noutdump, file = filename, status="old", position="append", action="write")
-      else
-        open(noutdump, file = filename, action="write")
+    if (jstep > 1) inquire(file=filename, exist=exist)
+    if (exist) then
+      open(noutdump, file=filename, status="old", position="append", action="write")
+    else
+      open(noutdump, file=filename, action="write")
     endif
 
     write(noutdump,*) "===================="
     write(noutdump,*) "iteration", jstep
     write(noutdump,*) "===================="
 
-    if (present(zgp) .or. present(zgpuv) .or. present(zgp3a) .or. present(zgp2)) then
+    if (iconfig == 1 .or. iconfig == 2) then
       allocate(gfld(ngptotg,1))
     endif
-    if (present(zspdiv) .or. present(zspvor) .or. present(zspscalar) &
-       & .or. present(zspsc3a) .or. present(zspsc2)) then
+    if (iconfig == 3 .or. iconfig == 4) then
       allocate(gspfld(1,nspec2g))
     endif
   endif
 
-  if (present(zgp)) then
+  if (iconfig == 1) then
     icrc = 0
-    do jfld = 1, size (zgp, 2)
-      call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp(:,jfld:jfld,:))
+    do jfld = 1, size(zgp, 2)
+      call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+        &            pgp=zgp(:,jfld:jfld,:))
       if (myproc == 1) then
-        call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
       endif
     enddo
   endif
 
-  if (present(zgpuv)) then
+  if (iconfig == 2) then
     icrc = 0
-    do jfld = 1, size (zgpuv, 3)
-      do jlev = 1, size (zgpuv, 2)
-        call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
+    do jfld = 1, size(zgpuv, 3)
+      do jlev = 1, size(zgpuv, 2)
+        call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+          &            pgp=zgpuv(:,jlev:jlev,jfld,:))
         if (myproc == 1) then
-          call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+          call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
         endif
       enddo
     enddo
-  endif
 
-  if (present(zgp3a)) then
     icrc = 0
-    do jfld = 1, size (zgp3a, 3)
-      do jlev = 1, size (zgp3a, 2)
-        call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
+    do jfld = 1, size(zgp3a, 3)
+      do jlev = 1, size(zgp3a, 2)
+        call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+          &            pgp=zgp3a(:,jlev:jlev,jfld,:))
         if (myproc == 1) then
-          call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+          call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
         endif
       enddo
     enddo
-  endif
 
-  if (present(zgp2)) then
     icrc = 0
-    do jfld = 1, size (zgp2, 2)
-      call gath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp2(:,jfld:jfld,:))
+    do jfld = 1, size(zgp2, 2)
+      call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+        &            pgp=zgp2(:,jfld:jfld,:))
       if (myproc == 1) then
-        call crc64 (gfld (:, :), int (size (gfld (:, :)) * kind (gfld), 8), icrc)
+        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
       endif
     enddo
   endif
 
-  if (present(zspvor)) then
+  if (iconfig == 3 .or. iconfig == 4) then
     icrc = 0
-    do jfld = 1, size (ivset, 1)
-      call gath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jfld:jfld), kresol=1,pspec=zspvor(jfld:jfld,:))
+    do jfld = 1, size(ivset, 1)
+      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
+        &            pspec=zspvor(jfld:jfld,:))
       if (myproc == 1) then
-        call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspvor", jfld, icrc
       endif
     enddo
-  endif
 
-  if (present(zspdiv)) then
     icrc = 0
-    do jfld = 1, size (ivset, 1)
-      call gath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jfld:jfld), kresol=1,pspec=zspdiv(jfld:jfld,:))
+    do jfld = 1, size(ivset, 1)
+      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
+        &            pspec=zspdiv(jfld:jfld,:))
       if (myproc == 1) then
-        call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspdiv", jfld, icrc
       endif
     enddo
   endif
 
-  if (present(zspscalar)) then
+  if (iconfig == 3) then
     icrc = 0
-    do jfld = 1, size (ivsetsc, 1)
-      call gath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(jfld:jfld), kresol=1,pspec=zspscalar(jfld:jfld,:))
+    do jfld = 1, size(ivsetsc, 1)
+      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivsetsc(jfld:jfld), kresol=1, &
+        &            pspec=zspscalar(jfld:jfld,:))
       if (myproc == 1) then
-        call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspscalar", jfld, icrc
       endif
     enddo
   endif
 
-  if (present(zspsc3a)) then
+  if (iconfig == 4) then
     icrc = 0
-    do jfld = 1, size (zspsc3a, 3)
-      do jlev = 1, size (ivset, 1)
-        call gath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),kresol=1,pspec=zspsc3a(jlev:jlev,:,jfld))
+    do jfld = 1, size(zspsc3a, 3)
+      do jlev = 1, size(ivset, 1)
+        call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jlev:jlev), &
+          &            kresol=1, pspec=zspsc3a(jlev:jlev,:,jfld))
         if (myproc == 1) then
-          call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+          call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
           write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zspsc3a", jlev, jfld, icrc
         endif
       enddo
     enddo
-  endif
 
-  if (present(zspsc2)) then
     icrc = 0
-    do jfld = 1, size (ivsetsc2, 1)
-      call gath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc2(jfld:jfld), kresol=1,pspec=zspsc2(jfld:jfld,:))
+    do jfld = 1, size(ivsetsc2, 1)
+      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivsetsc2(jfld:jfld), kresol=1, &
+        &            pspec=zspsc2(jfld:jfld,:))
       if (myproc == 1) then
-        call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
+        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
         write (noutdump, '(a," (",i0,") = ",z16.16)') "zspsc2", jfld, icrc
       endif
     enddo
@@ -1776,16 +1792,6 @@ subroutine gstats_labels
   call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
 
 end subroutine gstats_labels
-
-!===================================================================================================
-
-subroutine set_ectrans_gpu_nflev(kflev)
-  use ec_env_mod, only : ec_putenv
-  integer(kind=jpim), intent(in) :: kflev
-  character(len=32) :: ECTRANS_GPU_NFLEV
-  write(ECTRANS_GPU_NFLEV,'(A,I0)') "ECTRANS_GPU_NFLEV=",kflev
-  call ec_putenv(ECTRANS_GPU_NFLEV, overwrite=.true.)
-end subroutine
 
 end program ectrans_benchmark
 

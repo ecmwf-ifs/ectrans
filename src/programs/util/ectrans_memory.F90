@@ -81,7 +81,7 @@ end type
 
 type(allocator_t) :: allocator
 
-character(kind=c_char), pointer, private :: c_label(:)
+character(kind=c_char), pointer, private :: c_label(:) => null()
 
 interface
     function c_allocate_var(bytes) result(ptr) bind(c, name="ectrans_memory_allocate_var")
