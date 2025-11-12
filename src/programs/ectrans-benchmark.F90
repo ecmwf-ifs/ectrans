@@ -33,9 +33,7 @@ USE ectrans_field_api_helper, only : wrapped_fields, fields_lists, &
                                    & wrap_benchmark_fields, wrap_benchmark_fields_zgp, &
                                    & create_fields_lists, &
                                    & delete_wrapped_fields,delete_fields_lists, &
-                                   & output_wrapped_fields, output_fields_lists, &
-                                   & nullify_wrapped_fields, synchost_rdonly_wrapped_fields, &
-                                   & synchost_rdwr_wrapped_fields
+                                   & nullify_wrapped_fields, synchost_rdonly_wrapped_fields
 #endif
 
 implicit none

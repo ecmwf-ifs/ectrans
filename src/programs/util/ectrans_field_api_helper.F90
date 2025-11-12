@@ -357,37 +357,8 @@ subroutine synchost_rdonly_wrapped_fields(ywflds)
   if (associated(ywflds%scalar_ew)) call ywflds%scalar_ew%sync_host_rdonly()
   if (associated(ywflds%scalar_ns)) call ywflds%scalar_ns%sync_host_rdonly()
 
-
 end subroutine synchost_rdonly_wrapped_fields
 
-subroutine synchost_rdwr_wrapped_fields(ywflds)
-
-  ! Synchronize all field lists on host read/write
-
-  type(wrapped_fields),intent(inout) ::ywflds
-
-  if (associated(ywflds%spvor))      call ywflds%spvor%sync_host_rdwr()
-  if (associated(ywflds%spdiv))      call ywflds%spdiv%sync_host_rdwr()
-  if (associated(ywflds%spscalar))   call ywflds%spscalar%sync_host_rdwr()
-  if (associated(ywflds%spscalar3))  call ywflds%spscalar3%sync_host_rdwr()
-  if (associated(ywflds%spscalar2))  call ywflds%spscalar2%sync_host_rdwr()
-  if (associated(ywflds%u))          call ywflds%u%sync_host_rdwr()
-  if (associated(ywflds%v))          call ywflds%v%sync_host_rdwr()
-  if (associated(ywflds%u_ew))       call ywflds%u_ew%sync_host_rdwr()
-  if (associated(ywflds%v_ew))       call ywflds%v_ew%sync_host_rdwr()
-  if (associated(ywflds%vor))        call ywflds%vor%sync_host_rdwr()
-  if (associated(ywflds%div))        call ywflds%div%sync_host_rdwr()
-  if (associated(ywflds%scalar3))     call ywflds%scalar3%sync_host_rdwr()
-  if (associated(ywflds%scalar3_ew))  call ywflds%scalar3_ew%sync_host_rdwr()
-  if (associated(ywflds%scalar3_ns))  call ywflds%scalar3_ns%sync_host_rdwr()
-  if (associated(ywflds%scalar2))    call ywflds%scalar2%sync_host_rdwr()
-  if (associated(ywflds%scalar2_ew)) call ywflds%scalar2_ew%sync_host_rdwr()
-  if (associated(ywflds%scalar2_ns)) call ywflds%scalar2_ns%sync_host_rdwr()
-  if (associated(ywflds%scalar))    call ywflds%scalar%sync_host_rdwr()
-  if (associated(ywflds%scalar_ew)) call ywflds%scalar_ew%sync_host_rdwr()
-  if (associated(ywflds%scalar_ns)) call ywflds%scalar_ns%sync_host_rdwr()
-
-end subroutine synchost_rdwr_wrapped_fields
 
 subroutine nullify_wrapped_fields(ywflds)
 
@@ -420,61 +391,5 @@ subroutine nullify_wrapped_fields(ywflds)
   nullify(ywflds%scalar_ew)
   nullify(ywflds%scalar_ns)
 end subroutine nullify_wrapped_fields
-
-
-subroutine output_wrapped_fields(nout, ywflds)
-
-  ! output the adress of all data fields in ywflds
-
-  type(wrapped_fields), intent(in) :: ywflds
-  integer(kind=jpim), intent(in) :: nout
-
-  write(nout,*) "ywflds%spvor", loc(ywflds%spvor)
-  write(nout,*) "ywflds%spdiv", loc(ywflds%spdiv)
-  write(nout,*) "ywflds%spscalar", loc(ywflds%spscalar)
-  write(nout,*) "ywflds%spscalar3", loc(ywflds%spscalar3)
-  write(nout,*) "ywflds%spscalar2", loc(ywflds%spscalar2)
-
-  write(nout,*) "ywflds%u", loc(ywflds%u)
-  write(nout,*) "ywflds%v", loc(ywflds%v)
-  write(nout,*) "ywflds%u_ew", loc(ywflds%u_ew)
-  write(nout,*) "ywflds%v_ew", loc(ywflds%v_ew)
-  write(nout,*) "ywflds%vor", loc(ywflds%vor)
-  write(nout,*) "ywflds%div", loc(ywflds%div)
-
-  write(nout,*) "ywflds%scalar3", loc(ywflds%scalar3)
-  write(nout,*) "ywflds%scalar3_ew", loc(ywflds%scalar3_ew)
-  write(nout,*) "ywflds%scalar3_ns", loc(ywflds%scalar3_ns)
-
-  write(nout,*) "ywflds%scalar2", loc(ywflds%scalar2)
-  write(nout,*) "ywflds%scalar2_ew", loc(ywflds%scalar2_ew)
-  write(nout,*) "ywflds%scalar2_ns", loc(ywflds%scalar2_ns)
-
-  write(nout,*) "ywflds%scalar", loc(ywflds%scalar)
-  write(nout,*) "ywflds%scalar_ew", loc(ywflds%scalar_ew)
-  write(nout,*) "ywflds%scalar_ns", loc(ywflds%scalar_ns)
-end subroutine output_wrapped_fields
-
-subroutine output_fields_lists(nout,yfl)
-
-  ! output the size of all field lists in yfl
-
-  integer(kind=jpim), intent(in) :: nout
-  type(fields_lists), intent(in) :: yfl
-
-  if (allocated(yfl%u)) write(nout,*) "yfl%u", size(yfl%u)
-  if (allocated(yfl%v)) write(nout,*) "yfl%v", size(yfl%v)
-  if (allocated(yfl%scalar)) write(nout,*) "yfl%scalar", size(yfl%scalar)
-  if (allocated(yfl%spscalar)) write(nout,*) "yfl%spscalar", size(yfl%spscalar)
-  if (allocated(yfl%spvor)) write(nout,*) "yfl%spvor", size(yfl%spvor)
-  if (allocated(yfl%spdiv)) write(nout,*) "yfl%spdiv", size(yfl%spdiv)
-  if (allocated(yfl%vor)) write(nout,*) "yfl%vor", size(yfl%vor)
-  if (allocated(yfl%div)) write(nout,*) "yfl%div", size(yfl%div)
-  if (allocated(yfl%u_ew)) write(nout,*) "yfl%u_ew", size(yfl%u_ew)
-  if (allocated(yfl%v_ew)) write(nout,*) "yfl%v_ew", size(yfl%v_ew)
-  if (allocated(yfl%scalar_ns)) write(nout,*) "yfl%scalar_ns", size(yfl%scalar_ns)
-  if (allocated(yfl%scalar_ew)) write(nout,*) "yfl%scalar_ew", size(yfl%scalar_ew)
-end subroutine output_fields_lists
-
 
 end module ectrans_field_api_helper
