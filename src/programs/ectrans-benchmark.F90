@@ -556,10 +556,12 @@ if (lfield_api) then
     call nullify_wrapped_fields(ywflds)
     if (icall_mode == 1) then
         call wrap_benchmark_fields_zgp(ywflds,lvordiv, lscders, luvder, &
+                                     & nflevg, 1 + nflevg * nfld,  &
                                      & zspvor, zspdiv, zspscalar, zgp)
-        call create_fields_lists(ywflds,ylf,kvsetuv = ivset,kvsetsc=ivsetsc)
+        call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc=ivsetsc)
     else
         call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvder, &
+                                 & 1, 1, nfld, &
                                  & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv,zgp3a, zgp2)
         call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc2=ivsetsc2, kvsetsc=ivset)
     endif

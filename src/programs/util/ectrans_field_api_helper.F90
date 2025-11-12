@@ -51,6 +51,7 @@ type fields_lists
 contains
 
 subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
+                                   & inum_wind_fields, inum_sc_2d_fields,&
                                    & zspvor, zspdiv, zspscalar, zgp)
 
   ! Wrap the arrays given as input in field API objects
@@ -63,12 +64,14 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
     real(kind=jprb), intent(in) :: zspdiv(:,:)
     real(kind=jprb), intent(in) :: zspscalar(:,:)
     real(kind=jprb), intent(in) :: zgp (:,:,:)
+    integer, intent(in) :: inum_wind_fields
+    integer, intent(in) :: inum_sc_2d_fields
 
-    integer :: inum_wind_fields,  inum_sc_2d_fields
     integer :: ioffset
 
-    inum_wind_fields = size(zspvor,1)
-    inum_sc_2d_fields = size(zspscalar,1)
+    write(6,*) "inum_wind_fields", inum_wind_fields, size(zspvor,1)
+    write(6,*) "inum_sc_2d_fields", inum_sc_2d_fields, size(zspscalar,1)
+
     ! spectral vector fields
     call field_new(ywflds%spvor,  data=zspvor(:,:))
     call field_new(ywflds%spdiv,  data=zspdiv(:,:))
@@ -125,6 +128,7 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 end subroutine wrap_benchmark_fields_zgp
 
 subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
+                               & inum_wind_fields, inum_sc_2d_fields, inum_sc_3d_fields, &
                                & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv, zgp3a, zgp2)
 
   ! Wrap the arrays given as input in field API objects
@@ -140,13 +144,18 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
     real(kind=jprb), intent(in) :: zgpuv (:,:,:,:)
     real(kind=jprb), intent(in) :: zgp3a(:,:,:,:)
     real(kind=jprb), intent(in) :: zgp2(:,:,:)
-
-    integer :: inum_wind_fields, inum_sc_3d_fields, inum_sc_2d_fields
+    integer, intent(in) :: inum_wind_fields
+    integer, intent(in) :: inum_sc_2d_fields
+    integer, intent(in) :: inum_sc_3d_fields
+    
     integer :: ioffset
 
-    inum_wind_fields = 1
-    inum_sc_3d_fields = size(zspsc3a,3)
-    inum_sc_2d_fields = size(zspsc2,1)
+    write(6,*) "inum_wind_fields", inum_wind_fields, 1
+    write(6,*) "inum_sc_2d_fields", inum_sc_2d_fields, size(zspsc2,1)
+    write(6,*) "inum_sc_3d_fields", inum_sc_3d_fields, size(zspsc3a,3)
+
+
+
   ! spectral vector fields
     call field_new(ywflds%spvor,      data=zspvor(:,:))
     call field_new(ywflds%spdiv,      data=zspdiv(:,:))
