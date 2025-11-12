@@ -767,8 +767,12 @@ do jstep = 1, iters+iters_warmup
       ! Only activated in dp, with nvhpc and on cpu
       if (jprb == jprd) then
         write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
-        if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon)zspsc2 = 0
-        if (associated(sp3d)) where (abs(sp3d) < clamp_epsilon)sp3d = 0
+        if (icall_mode==1) then
+           if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon) zspsc2 = 0
+           if (associated(zspsc3a)) where (abs(zspsc3a) < clamp_epsilon) zspsc3a = 0
+        else
+           if (associated(zspscalar)) where (abs(zspscalar) < clamp_epsilon) zspscalar = 0
+        endif
       endif
 #endif
 
