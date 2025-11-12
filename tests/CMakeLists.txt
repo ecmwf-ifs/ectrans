@@ -409,6 +409,16 @@ if( HAVE_ETRANS )
 
 endif()
 
+if( HAVE_CPU AND HAVE_MPI )
+  ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
+    SOURCES trans/test_split_mpi_comm.F90
+    LIBS trans_sp parkind_sp
+    LINKER_LANGUAGE Fortran
+    MPI 4
+    OMP 1
+  )
+endif()
+
 # --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
@@ -555,4 +565,14 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     CONDITION HAVE_ETRANS
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  if( HAVE_MPI )
+    ecbuild_add_test( TARGET ectrans_test_transi_split_comm
+      SOURCES   transi/transi_test_split_comm.c
+      LIBS      ectrans_test MPI::MPI_C
+      MPI 2
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=1 )
+  endif()
+
 endif()
