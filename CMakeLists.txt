@@ -181,11 +181,8 @@ ectrans_find_lapack()
 ecbuild_add_option( FEATURE FIELD_API
                     DEFAULT OFF
                     DESCRIPTION "Compile field API interface to ectrans"
+                    REQUIRED_PACKAGES "field_api"
                    )
-
-if (HAVE_FIELD_API)
-    ecbuild_find_package(field_api)
-endif()
 
 ### Add sources
 include( ectrans_compile_options )
