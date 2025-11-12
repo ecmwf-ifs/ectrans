@@ -95,7 +95,7 @@ foreach(platform ${platforms})
           TARGET           ectrans_field_api_${platform_tag}${prec}
           LINKER_LANGUAGE  Fortran
           SOURCES          ${ectrans_field_api_${platform_tag}${prec}_src}
-          PUBLIC_LIBS      ectrans_${prec} field_api_${prec} fiat parkind_${prec}
+          PUBLIC_LIBS      ectrans_${platform_tag}${prec} field_api_${prec} fiat parkind_${prec}
           PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/field_api/include>
                            )
