@@ -100,7 +100,7 @@ real(kind=jprb), pointer :: zgp3a(:,:,:,:)
 real(kind=jprb), pointer :: zgp2(:,:,:)
 
 #ifdef FIELD_API_CLAMP
-REAL(KIND=JPRB)    :: CLAMP_EPSILON = 1E-14
+real(kind=jprb)    :: clamp_epsilon = 1E-14
 #endif
 
 logical :: lstack = .false. ! Output stack info
@@ -684,21 +684,22 @@ do jstep = 1, iters+iters_warmup
                             & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, &
                             & kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
                             & kproc=myproc, ldacc=llacc)
-       call synchost_rdonly_wrapped_fields(ywflds)
+      call synchost_rdonly_wrapped_fields(ywflds)
 #else
-  call abor1('ectrans_benchmark: No field API support')
+      call abor1('ectrans_benchmark: No field API support')
 #endif
   else if (icall_mode == 1) then
-    call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
-      &            kvsetuv=ivset, kvsetsc=ivsetsc, &
-      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
-      &            kproma=nproma)
+      call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
+        &            kvsetuv=ivset, kvsetsc=ivsetsc, &
+        &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
+        &            kproma=nproma)
   else
-     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
+      call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
         &            pgp3a=zgp3a, pgp2=zgp2, &
         &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
         &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
   endif
+  
   if (ldump_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
@@ -706,21 +707,21 @@ do jstep = 1, iters+iters_warmup
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
-      call dump_checksums(filename = checksums_filename, noutdump=noutdump,                 &
-                        & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
-                        & ivset = ivset, ivsetsc = ivsetsc, ivsetsc2 = ivsetsc2,            &
+      call dump_checksums(filename=checksums_filename, noutdump=noutdump,                 &
+                        & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
+                        & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
                         & nspec2g=nspec2g, zgp=zgp)
     else
       ! Remove trash at end of last block
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      call dump_checksums(filename = checksums_filename, noutdump=noutdump,                 &
-                        & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
-                        & ivset = ivset, ivsetsc = ivsetsc, ivsetsc2 = ivsetsc2,            &
+      call dump_checksums(filename=checksums_filename, noutdump=noutdump,                 &
+                        & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
+                        & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
                         & nspec2g=nspec2g, zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
-endif
+  endif
 
   call gstats(4,1)
 
@@ -755,27 +756,27 @@ endif
     if (lfield_api) then
 #if USE_FIELD_API
       call dir_trans_field_api (ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
-                            & ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
-                            & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
-                            & kproc=myproc, ldacc=llacc)
+                            &   ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
+                            &   kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
+                            &   kproc=myproc, ldacc=llacc)
       call synchost_rdonly_wrapped_fields(ywflds)
 #ifdef FIELD_API_CLAMP
-   ! clamp small spectral values to ensure bit reproductibility with field Api interface
-   ! Only activated in dp, with nvhpc and on cpu
-   IF (JPRB == JPRD) THEN
-     write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
-     if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon)zspsc2 = 0
-     if (associated(sp3d)) where (abs(sp3d) < clamp_epsilon)sp3d = 0
-   endif
+      ! clamp small spectral values to ensure bit reproductibility with field Api interface
+      ! Only activated in dp, with nvhpc and on cpu
+      if (jprb == jprd) then
+        write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
+        if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon)zspsc2 = 0
+        if (associated(sp3d)) where (abs(sp3d) < clamp_epsilon)sp3d = 0
+      endif
 #endif
 
 #else
-        call abor1('ectrans_benchmark: No field API support')
+      call abor1('ectrans_benchmark: No field API support')
 #endif
 
-else  if (icall_mode == 1) then
+else if (icall_mode == 1) then
       call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
-      &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
+        &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
 else
       call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
         &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
@@ -788,14 +789,14 @@ else
     write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
     if (icall_mode == 1) then
-        call dump_checksums(filename = checksums_filename, noutdump = noutdump,               &
-                          & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
-                          & ivset = ivset, ivsetsc = ivsetsc, ivsetsc2 = ivsetsc2,            &
+        call dump_checksums(filename=checksums_filename, noutdump=noutdump,               &
+                          & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
+                          & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
                           & nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     else
-        call dump_checksums(filename = checksums_filename, noutdump = noutdump,               &
-                        & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg=ngptotg, &
-                        & ivset = ivset, ivsetsc = ivsetsc, ivsetsc2 = ivsetsc2,            &
+        call dump_checksums(filename=checksums_filename, noutdump=noutdump,               &
+                        & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
+                        & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
                         & nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a,   &
                         & zspsc2=zspsc2)
     endif
