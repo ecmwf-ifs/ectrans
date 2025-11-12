@@ -7,6 +7,27 @@
 # nor does it submit to any jurisdiction.
 
 # --------------------------------------------------------------------------------------------------
+# First establish which precisions to test
+# --------------------------------------------------------------------------------------------------
+
+set( precisions "" )
+if( HAVE_DOUBLE_PRECISION )
+  list( APPEND precisions "dp" )
+endif()
+if( HAVE_SINGLE_PRECISION )
+  list( APPEND precisions "sp" )
+endif()
+
+# --------------------------------------------------------------------------------------------------
+# Then set the MPI testing configuration
+# --------------------------------------------------------------------------------------------------
+
+set( ntasks 0 )
+if( HAVE_MPI )
+  list( APPEND ntasks 1 2 )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add a test for installation of ecTrans
 # --------------------------------------------------------------------------------------------------
 
@@ -37,25 +58,10 @@ add_test( NAME ectrans_test_install
           COMMAND ${CMAKE_CURRENT_BINARY_DIR}/test-install.sh ${_test_args} )
 
 # --------------------------------------------------------------------------------------------------
-# Add a test for SETUP_TRANS0
+# Add API tests
 # --------------------------------------------------------------------------------------------------
 
-ecbuild_add_executable(
-  TARGET  ectrans_test_setup_trans0
-  SOURCES trans/test_setup_trans0.F90
-  LIBS    ectrans_common
-  LINKER_LANGUAGE Fortran
-  NOINSTALL)
-set( ntasks 0 )
-if( HAVE_MPI )
-  list( APPEND ntasks 1 2 )
-endif()
-foreach( mpi ${ntasks} )
-    ecbuild_add_test( TARGET ectrans_test_setup_trans0_mpi${mpi}
-        COMMAND ectrans_test_setup_trans0
-        MPI ${mpi}
-    )
-endforeach()
+add_subdirectory( trans/api )
 
 # --------------------------------------------------------------------------------------------------
 # Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU
@@ -63,19 +69,6 @@ endforeach()
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
-  set( precisions "" )
-  if( HAVE_DOUBLE_PRECISION )
-    list( APPEND precisions "dp" )
-  endif()
-  if( HAVE_SINGLE_PRECISION )
-    list( APPEND precisions "sp" )
-  endif()
-
-  set( ntasks 0 )
-  if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
-  endif()
-
   foreach( precision ${precisions} )
     foreach( mpi ${ntasks} )
       set( test_name ectrans_test_adjoint_mpi${mpi}_${precision} )
@@ -121,11 +114,6 @@ foreach( platform ${platforms} )
     set( parkind parkind_sp )
   endif()
 
-  set( ntasks 0 )
-  if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
-  endif()
-
   foreach( mpi ${ntasks} )
     ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}
       SOURCES trans/test_dirtrans_adjoint.F90
@@ -160,19 +148,6 @@ endforeach() # platform
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_CPU )
-  set( precisions "" )
-  if( HAVE_DOUBLE_PRECISION )
-    list( APPEND precisions "dp" )
-  endif()
-  if( HAVE_SINGLE_PRECISION )
-    list( APPEND precisions "sp" )
-  endif()
-
-  set( ntasks 0 )
-  if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
-  endif()
-
   foreach( precision ${precisions} )
     foreach( mpi ${ntasks} )
       set( test_name ectrans_test_gpnorm_trans_adjoint_mpi${mpi}_${precision} )
@@ -337,11 +312,7 @@ if( HAVE_ETRANS )
 
   foreach( prec dp sp )
     if( TARGET ectrans-lam-benchmark-cpu-${prec} )
-      set( ntasks 0 )
       set( nthreads 1 )
-      if( HAVE_MPI )
-        list( APPEND ntasks 1 2 )
-      endif()
       if( HAVE_OMP )
         list( APPEND nthreads 8 )
       endif()

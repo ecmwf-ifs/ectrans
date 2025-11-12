@@ -6,6 +6,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+# Flag to tell compiler that Fortran side has no program
+# Needed if linking a C executable against some Fortran objects with some compilers
+# Not needed for most
+set( NO_FORTRAN_MAIN_FLAG "" )
 
 if( CMAKE_Fortran_COMPILER_ID MATCHES "XL" )
   ecbuild_add_fortran_flags("-qextname -qnobindcextname")
@@ -21,6 +25,8 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   ecbuild_add_fortran_flags("-traceback"      BUILD DEBUG )
   ecbuild_add_fortran_flags("-fast"           BUILD RELEASE )
   ecbuild_add_fortran_flags("-gopt -fast"     BUILD RELWITHDEBINFO )
+
+  set( NO_FORTRAN_MAIN_FLAG "-Mnomain")
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
   ecbuild_add_fortran_flags("-hnomessage=878")  # A module named ... has already been directly or indirectly use associated into this scope
   ecbuild_add_fortran_flags("-hnomessage=867")  # Module ... has no public objects declared in the module, therefore nothing can be use associated from the module.
@@ -31,6 +37,7 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM" )
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
   ecbuild_add_fortran_flags("-march=core-avx2 -no-fma" BUILD BIT)
   ecbuild_add_fortran_flags("-fast-transcendentals -fp-model precise -fp-speculation=safe")
+  set( NO_FORTRAN_MAIN_FLAG "-nofor-main")
 endif()
 
 if( NOT DEFINED ECTRANS_HAVE_CONTIGUOUS_ISSUE )
