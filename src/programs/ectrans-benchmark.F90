@@ -204,7 +204,6 @@ integer :: ipgp_start, ipgp_end, ipgpuv_start, ipgpuv_end
 real(kind=jprb), allocatable :: global_field(:,:)
 
 !===================================================================================================
-#include "fspgl_intf.h"
 #include "setup_trans0.h"
 #include "setup_trans.h"
 #include "inv_trans.h"
