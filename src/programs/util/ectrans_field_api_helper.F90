@@ -9,36 +9,42 @@ use parkind1, only: jpim, jprb, jprd
 implicit none
 
 type wrapped_fields
+  ! The type wrapped_fields is a helper, containing a set of field API objects (field_1rb, field_2rb, etc).
+  ! It is used in the benchmark to mimic IFS, where the field API objects wrapped the PGMV/PGFL arrays, and are used
+  ! to identify the various fields of the model. In a similar way, the fields in this type wrap the PGMV/PGFV arrays of the benchmark,
+  ! in the subroutines wrap_benchmark_fields and wrap_benchmark_fields_zgp
 
-! Set of fields for spectral transform
-
+  ! Set of field api object to be transformed in the spectral transforms
   class (field_3rb), pointer :: spscalar3      ! spectral scalar fields
-  class (field_2rb), pointer :: spscalar2     ! spectral surfacic scalar fields
-  class (field_2rb), pointer :: spscalar  ! spectral scalar fields as a single field
+  class (field_2rb), pointer :: spscalar2      ! spectral surfacic scalar fields
+  class (field_2rb), pointer :: spscalar       ! spectral scalar fields as a single field
 
-  class (field_2rb), pointer :: spvor, spdiv  ! spectral vorticity and divergence
+  class (field_2rb), pointer :: spvor, spdiv   ! spectral vorticity and divergence
 
-  class (field_3rb), pointer :: vor, div      ! grid-point vorticity and divergence
-  class (field_3rb), pointer :: u, v          ! grid-point u and v fields
-  class (field_3rb), pointer :: u_ew, v_ew    ! grid-point u and derivatives
+  class (field_3rb), pointer :: vor, div       ! grid-point vorticity and divergence
+  class (field_3rb), pointer :: u, v           ! grid-point u and v fields
+  class (field_3rb), pointer :: u_ew, v_ew     ! grid-point u and derivatives
 
-  class (field_4rb), pointer :: scalar3      ! grid-point scalar fields
-  class (field_4rb), pointer :: scalar3_ew   ! grid-point scalar fields derivatives ew
-  class (field_4rb), pointer :: scalar3_ns   ! grid-point scalar fields derivatives ns
+  class (field_4rb), pointer :: scalar3        ! grid-point scalar fields
+  class (field_4rb), pointer :: scalar3_ew     ! grid-point scalar fields derivatives ew
+  class (field_4rb), pointer :: scalar3_ns     ! grid-point scalar fields derivatives ns
 
-  class (field_3rb), pointer :: scalar2      ! grid-point surfacic scalar fields
-  class (field_3rb), pointer :: scalar2_ew   ! grid-point surfacic scalar fields derivatives ew
-  class (field_3rb), pointer :: scalar2_ns   ! grid-point surfacic scalar fields derivatives ns
+  class (field_3rb), pointer :: scalar2        ! grid-point surfacic scalar fields
+  class (field_3rb), pointer :: scalar2_ew     ! grid-point surfacic scalar fields derivatives ew
+  class (field_3rb), pointer :: scalar2_ns     ! grid-point surfacic scalar fields derivatives ns
 
-  class (field_3rb), pointer :: scalar   ! grid-point scalar fields as a single field
-  class (field_3rb), pointer :: scalar_ew! grid-point scalar fields derivatives ew
-  class (field_3rb), pointer :: scalar_ns! grid-point scalar fields derivatives ns
+  class (field_3rb), pointer :: scalar         ! grid-point scalar fields as a single field
+  class (field_3rb), pointer :: scalar_ew      ! grid-point scalar fields derivatives ew
+  class (field_3rb), pointer :: scalar_ns      ! grid-point scalar fields derivatives ns
 end type wrapped_fields
 
 type fields_lists
+   ! The type fields_lists contains arrays of field_basic_ptr.
+   ! These arrays are used to communicate the fields to the ectrans field API, under the form of arrays of 1d, 2d, 3d or 4d fields.
+   ! These field_basic_ptr arrays are created in create_fields_lists, in which the Field API objects contained in wrapped_fields
+   ! are converted into arrays of field_basic_ptr.
 
-! List of field lists that will be used as parameter to inv_trans_field_api and dir_trans_field_api
-
+   ! Set of field_basic_ptr lists that will be used as parameter to inv_trans_field_api and dir_trans_field_api
   type (field_basic_ptr), allocatable :: u (:), v (:)                ! grid-point u and v fields
   type (field_basic_ptr), allocatable :: scalar (:)                  ! grid-point scalar fields
   type (field_basic_ptr), allocatable :: spvor (:), spdiv (:)        ! spectral vorticity and divergence
