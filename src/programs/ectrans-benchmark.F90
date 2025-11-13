@@ -701,7 +701,7 @@ do jstep = 1, iters+iters_warmup
         &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
         &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
   endif
-  
+
   if (ldump_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
@@ -709,19 +709,17 @@ do jstep = 1, iters+iters_warmup
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
-      call dump_checksums(filename=checksums_filename, noutdump=noutdump,                 &
+      call dump_checksums(filename=checksums_filename, noutdump=noutdump,             &
                         & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
-                        & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
-                        & nspec2g=nspec2g, zgp=zgp)
+                        & zgp=zgp)
     else
       ! Remove trash at end of last block
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      call dump_checksums(filename=checksums_filename, noutdump=noutdump,                 &
+      call dump_checksums(filename=checksums_filename, noutdump=noutdump,             &
                         & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
-                        & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
-                        & nspec2g=nspec2g, zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
+                        & zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
   endif
 
@@ -795,16 +793,15 @@ else
     write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
     if (icall_mode == 1) then
-        call dump_checksums(filename=checksums_filename, noutdump=noutdump,               &
-                          & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
-                          & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
-                          & nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
+        call dump_checksums(filename=checksums_filename, noutdump=noutdump,                   &
+                          & jstep=jstep, myproc=myproc,                                       &
+                          & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
+                          & zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     else
-        call dump_checksums(filename=checksums_filename, noutdump=noutdump,               &
-                        & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
-                        & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2,            &
-                        & nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a,   &
-                        & zspsc2=zspsc2)
+        call dump_checksums(filename=checksums_filename, noutdump=noutdump,                   &
+                          & jstep=jstep, myproc=myproc,                                       &
+                          & ivset=ivset, ivsetsc=ivsetsc, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
+                          & zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
     endif
 
   endif
@@ -1335,7 +1332,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
                                             ! tolerance for correctness checking
   logical, intent(inout) :: lpinning        ! Use memory-pinning (a.k.a. page-locked memory) to allocate fields for GPU version
-  logical, intent(inout) :: lfield_api 
+  logical, intent(inout) :: lfield_api
   integer, intent(inout) :: icall_mode      ! The call mode for inv_trans and dir_trans
                                             ! 1: pspvor, pspdiv, pspscalar, pgp
                                             ! 2: pspvor, pspdiv, pspsc3a, pspsc2, pgpuv, pgp3a, pgp2
