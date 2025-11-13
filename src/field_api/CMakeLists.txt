@@ -52,10 +52,10 @@ function(generate_backend_sources)
     field_api_ectrans_mod.F90
     trans/dir_trans_field_api.F90
     trans/inv_trans_field_api.F90
+    field_api_basic_type_mod.F90
   )
 
-  set(outfiles field_api_basic_type_mod.F90)
-
+  set(outfiles)
   foreach(file_i ${files})
     get_filename_component(outfile_name    ${file_i} NAME)
     get_filename_component(outfile_name_we ${file_i} NAME_WE)
