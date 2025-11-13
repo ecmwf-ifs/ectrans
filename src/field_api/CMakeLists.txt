@@ -86,7 +86,7 @@ foreach(platform ${platforms})
       else()
         set (platform_tag "")
       endif()
- 
+
       generate_backend_sources(BACKEND ${platform_tag}${prec}
                                OUTPUT ectrans_field_api_${platform_tag}${prec}_src
                                DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_field_api_${platform_tag}${prec})
@@ -105,15 +105,7 @@ foreach(platform ${platforms})
           MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
           INSTALL_DIRECTORY module/ectrans
         )
-
-      if (${platform} MATCHES "gpu")
-          if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
-             set_source_files_properties(  ${ectrans_field_api_${platform_tag}${prec}_src} PROPERTIES COMPILE_OPTIONS "-acc" )
-             #     set_source_files_properties(  ${ectrans_field_api_${platform_tag}${prec}_src} PROPERTIES COMPILE_OPTIONS "-O1" )
-          endif()
-      endif()
-     endif()
-
+    endif()
   endforeach()
 endforeach()
 
