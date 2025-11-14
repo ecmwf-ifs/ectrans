@@ -42,7 +42,6 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 ecbuild_find_package( NAME fiat REQUIRED )
 
 # Inherit MPI feature from FIAT (if you don't want MPI, rebuild FIAT with ENABLE_MPI=OFF)
-set( HAVE_MPI ${fiat_HAVE_MPI} )
 set( ectrans_HAVE_MPI ${fiat_HAVE_MPI} )
 
 ecbuild_add_option( FEATURE OMP
@@ -142,7 +141,7 @@ ecbuild_add_option( FEATURE CUTLASS_3XTF32
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
-                    CONDITION HAVE_GPU AND HAVE_MPI
+                    CONDITION HAVE_GPU AND ectrans_HAVE_MPI
                     REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
                     DESCRIPTION "Enable GPU-aware MPI" )
 
