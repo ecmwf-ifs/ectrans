@@ -74,7 +74,7 @@ function( generate_api_test_suite )
       set(mpi "${CMAKE_MATCH_1}")
       set(omp "${CMAKE_MATCH_2}")
 
-      if( (mpi GREATER 0 AND NOT HAVE_MPI) OR (omp GREATER 1 AND NOT HAVE_OMP) )
+      if( (mpi GREATER 0 AND NOT ectrans_HAVE_MPI) OR (omp GREATER 1 AND NOT HAVE_OMP) )
         continue()
       endif()
 
