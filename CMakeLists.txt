@@ -42,7 +42,6 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 ecbuild_find_package( NAME fiat REQUIRED )
 
 # Inherit MPI feature from FIAT (if you don't want MPI, rebuild FIAT with ENABLE_MPI=OFF)
-set( HAVE_MPI ${fiat_HAVE_MPI} )
 set( ectrans_HAVE_MPI ${fiat_HAVE_MPI} )
 
 ecbuild_add_option( FEATURE OMP
