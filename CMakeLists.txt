@@ -119,7 +119,7 @@ if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
 endif()
 
 if( HAVE_GPU )
-  if( HAVE_MPI AND (NOT HAVE_GPU_AWARE_MPI))
+  if( HAVE_MPI)
      ecbuild_find_package( NAME MPI REQUIRED COMPONENTS Fortran )
   endif()
   if( HAVE_ACC )
