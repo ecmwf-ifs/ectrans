@@ -155,7 +155,6 @@ foreach( prec dp sp )
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                                $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
-                               ECTRANS_HAVE_GPU_AWARE_MPI=${ectrans_HAVE_GPU_AWARE_MPI}
         )
 
         ectrans_target_fortran_module_directory(
