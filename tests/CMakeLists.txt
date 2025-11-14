@@ -292,7 +292,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_nproma16 ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -302,7 +302,7 @@ foreach( benchmark ${benchmarks} )
         if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "1" )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_npromatr20
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --npromatr 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders ${base_args}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --npromatr 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_npromatr20 ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
