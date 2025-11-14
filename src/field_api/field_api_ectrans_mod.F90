@@ -1,0 +1,478 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
+MODULE FIELD_API_ECTRANS_MOD
+
+USE PARKIND1, ONLY : JPIM, JPRB
+USE FIELD_ACCESS_MODULE, ONLY: GET_HOST_DATA_RDWR, GET_DEVICE_DATA_RDWR, GET_HOST_DATA_RDONLY,GET_DEVICE_DATA_RDONLY
+USE FIELD_BASIC_MODULE, ONLY: FIELD_BASIC
+USE FIELD_MODULE, ONLY:FIELD_1RB, FIELD_2RB, FIELD_3RB, FIELD_4RB, FIELD_2RB_VIEW, FIELD_3RB_VIEW
+USE FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR
+IMPLICIT NONE
+
+TYPE SPEC_VIEW
+  ! Spectral field view
+  REAL(KIND=JPRB),POINTER :: P(:)
+  INTEGER               :: IVSET
+  CHARACTER(LEN=12)     :: NAME
+END TYPE
+
+TYPE GRID_VIEW
+! Grid point field view
+  REAL(KIND=JPRB),POINTER :: P(:,:)
+  INTEGER               :: IVSET
+  CHARACTER(LEN=12)     :: NAME
+END TYPE
+
+INTERFACE MAKE_FIELD
+  MODULE PROCEDURE :: MAKE_FIELD_1RB, MAKE_FIELD_2RB, MAKE_FIELD_3RB, MAKE_FIELD_4RB
+END INTERFACE
+
+CONTAINS
+
+FUNCTION MAKE_FIELD_1RB(YLF,NAME, IVSET)
+  ! Creation of a FIELD_BASIC_PTR encapsulating a FIELD_1RB field
+  CLASS (FIELD_1RB), POINTER :: YLF
+  CHARACTER(LEN=*) :: NAME
+  INTEGER, OPTIONAL :: IVSET(:)
+  TYPE (FIELD_BASIC_PTR) :: MAKE_FIELD_1RB
+
+  MAKE_FIELD_1RB%PTR => YLF
+  IF (PRESENT(IVSET)) THEN
+    ALLOCATE(MAKE_FIELD_1RB%IVSET(SIZE(IVSET)))
+    MAKE_FIELD_1RB%IVSET = IVSET
+  ENDIF
+  MAKE_FIELD_1RB%NAME = NAME
+
+END FUNCTION MAKE_FIELD_1RB
+
+FUNCTION MAKE_FIELD_2RB(YLF,NAME,IVSET)
+  ! Creation of a FIELD_BASIC_PTR encapsulating a FIELD_2RB field
+  CLASS (FIELD_2RB), POINTER :: YLF
+  CHARACTER(LEN=*) :: NAME
+
+  INTEGER, OPTIONAL :: IVSET(:)
+  TYPE (FIELD_BASIC_PTR) :: MAKE_FIELD_2RB
+
+  MAKE_FIELD_2RB%PTR => YLF
+  IF (PRESENT(IVSET)) THEN
+    ALLOCATE(MAKE_FIELD_2RB%IVSET(SIZE(IVSET)))
+    MAKE_FIELD_2RB%IVSET = IVSET
+  ENDIF
+  MAKE_FIELD_2RB%NAME = NAME
+
+END FUNCTION MAKE_FIELD_2RB
+
+FUNCTION MAKE_FIELD_3RB(YLF,NAME,IVSET)
+  ! Creation of a FIELD_BASIC_PTR encapsulating a FIELD_3RB field
+  CLASS (FIELD_3RB), POINTER :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER, OPTIONAL :: IVSET(:)
+  TYPE (FIELD_BASIC_PTR) :: MAKE_FIELD_3RB
+
+  MAKE_FIELD_3RB%PTR => YLF
+  IF (PRESENT(IVSET)) THEN
+    ALLOCATE(MAKE_FIELD_3RB%IVSET(SIZE(IVSET)))
+    MAKE_FIELD_3RB%IVSET = IVSET
+  ENDIF
+  MAKE_FIELD_3RB%NAME = NAME
+
+END FUNCTION MAKE_FIELD_3RB
+
+FUNCTION MAKE_FIELD_4RB(YLF,NAME,IVSET)
+  ! Creation of a FIELD_BASIC_PTR encapsulating a FIELD_4RB field
+  CLASS (FIELD_4RB), POINTER :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER, OPTIONAL :: IVSET(:)
+  TYPE (FIELD_BASIC_PTR) :: MAKE_FIELD_4RB
+
+  MAKE_FIELD_4RB%PTR => YLF
+
+  IF (PRESENT(IVSET)) THEN
+    ALLOCATE(MAKE_FIELD_4RB%IVSET(SIZE(IVSET)))
+    MAKE_FIELD_4RB%IVSET = IVSET
+  ENDIF
+  MAKE_FIELD_4RB%NAME = NAME
+
+END FUNCTION MAKE_FIELD_4RB
+
+SUBROUTINE LG2RB(LG2RBV,YLF,NAME,IVSET,LDACC,LDRDONLY)
+  ! Creation of a list of GRID_VIEW encapsulating the layer of an input FIELD_2RB field
+  ! Given YLF dimensioned(NPROMA, NBLKS) as input,
+  ! the output list size will contain one element, its view beeing dimensioned(NPROMA, NBLKS)
+  CLASS (FIELD_2RB), POINTER, INTENT (IN) :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER :: IVSET(:)
+  LOGICAL :: LDACC
+  LOGICAL :: LDRDONLY
+
+  TYPE (GRID_VIEW) :: LG2RBV (:)
+
+  REAL(KIND=JPRB), POINTER :: ZZ2 (:,:)
+  CHARACTER(LEN=6) CLOUT
+  IF (LDACC) THEN
+    IF (LDRDONLY) THEN
+      ZZ2 => GET_DEVICE_DATA_RDONLY(YLF)
+    ELSE
+      ZZ2 => GET_DEVICE_DATA_RDWR(YLF)
+    ENDIF
+  ELSE
+    IF (LDRDONLY) THEN
+      ZZ2 => GET_HOST_DATA_RDONLY(YLF)
+    ELSE
+      ZZ2 => GET_HOST_DATA_RDWR(YLF)
+    ENDIF
+  ENDIF
+
+  IF (SIZE(LG2RBV) /= 1 ) CALL ABOR1("Error - incorrect size for LG2RBV")
+
+  LG2RBV (1)%P => ZZ2(:,:)
+  LG2RBV (1)%IVSET = IVSET(1)
+  LG2RBV(1)%NAME = TRIM(NAME)//TRIM(CLOUT)
+END SUBROUTINE LG2RB
+
+SUBROUTINE LG3RB(LG3RBV,YLF,NAME, IVSET,LDACC,LDRDONLY)
+  ! Creation of a list of GRID_VIEW encapsulating the layers of an input FIELD_3RB field
+  ! Given YLF dimensioned(NPROMA, NLEVS, NBLKS) as input,
+  ! the output list size will contain  (NLEVS) elements, their view beeing dimensioned(NPROMA, NBLKS)
+  CLASS (FIELD_3RB), POINTER, INTENT (IN) :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER :: IVSET(:)
+  LOGICAL :: LDACC
+  LOGICAL :: LDRDONLY
+
+  TYPE (GRID_VIEW) :: LG3RBV (:)
+
+  REAL(KIND=JPRB), POINTER :: ZZ3 (:,:,:)
+  INTEGER(KIND=JPIM) :: JLEV, JCOUNT
+  CHARACTER(LEN=6) CLOUT
+
+  IF (LDACC) THEN
+    IF (LDRDONLY) THEN
+      ZZ3 => GET_DEVICE_DATA_RDONLY(YLF)
+    ELSE
+      ZZ3 => GET_DEVICE_DATA_RDWR(YLF)
+    ENDIF
+  ELSE
+    IF (LDRDONLY) THEN
+      ZZ3 => GET_HOST_DATA_RDONLY(YLF)
+    ELSE
+      ZZ3 => GET_HOST_DATA_RDWR(YLF)
+    ENDIF
+  ENDIF
+
+
+  IF (SIZE(LG3RBV) /= SIZE (ZZ3, 2) ) CALL ABOR1("Error - incorrect size for LG23BV")
+  JCOUNT = 1
+  DO JLEV = LBOUND (ZZ3, 2), UBOUND (ZZ3, 2)
+    LG3RBV (JCOUNT)%P => ZZ3 (:, JLEV, :)
+    LG3RBV (JCOUNT)%IVSET = IVSET(JLEV)
+    LG3RBV(JCOUNT)%NAME = TRIM(NAME)//TRIM(CLOUT)
+    JCOUNT = JCOUNT + 1
+  ENDDO
+
+END SUBROUTINE LG3RB
+
+SUBROUTINE LG4RB(LG4RBV, YLF,NAME,IVSET,LDACC,LDRDONLY)
+  ! Creation of a list of GRID_VIEW encapsulating the layers of an input FIELD_4RB field
+  ! Given YLF dimensioned(NPROMA, NLEVS, NFIELDS, NBLKS) as input,
+  ! the output list size will contain  (NLEVS*NFIELDS) elementa, their view beeing dimensioned(NPROMA, NBLKS)
+
+  CLASS (FIELD_4RB), POINTER, INTENT (IN) :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER :: IVSET(:)
+  LOGICAL :: LDACC
+  LOGICAL :: LDRDONLY
+
+  TYPE (GRID_VIEW) :: LG4RBV (:)
+
+  REAL(KIND=JPRB), POINTER :: ZZ4 (:,:,:,:)
+  INTEGER(KIND=JPIM) :: JLEV, JFLD, JCOUNT
+
+  CHARACTER(LEN=6) CLOUT
+
+  IF (LDACC) THEN
+    IF (LDRDONLY) THEN
+      ZZ4 => GET_DEVICE_DATA_RDONLY(YLF)
+    ELSE
+      ZZ4 => GET_DEVICE_DATA_RDWR(YLF)
+    ENDIF
+  ELSE
+    IF (LDRDONLY) THEN
+      ZZ4 => GET_HOST_DATA_RDONLY(YLF)
+    ELSE
+      ZZ4 => GET_HOST_DATA_RDWR(YLF)
+    ENDIF
+  ENDIF
+
+  IF (SIZE(LG4RBV) /= SIZE (ZZ4, 2) * SIZE (ZZ4, 3) ) CALL ABOR1("Error - incorrect size for LG4RBV")
+
+  JCOUNT = 1
+
+  DO JFLD = LBOUND (ZZ4, 3), UBOUND (ZZ4, 3)
+    DO JLEV = LBOUND (ZZ4, 2), UBOUND (ZZ4, 2)
+      LG4RBV (JCOUNT)%P => ZZ4(:, JLEV, JFLD, :)
+      LG4RBV (JCOUNT)%IVSET = IVSET(JLEV)
+      LG4RBV(JCOUNT)%NAME = TRIM(NAME)//TRIM(CLOUT)
+      JCOUNT = JCOUNT + 1
+    ENDDO
+  ENDDO
+
+END SUBROUTINE LG4RB
+ 
+FUNCTION LG(LGV, YLFL,LDACC,LDRDONLY) RESULT(IOFF)
+  ! Creation of a list of GRID_VIEW from a list YLFL of FIELD_BASIC_PTR
+  TYPE (FIELD_BASIC_PTR) :: YLFL (:)      ! input list of FIELD_BASIC_PTR
+  LOGICAL :: LDACC                        ! retrieve data on device
+  LOGICAL :: LDRDONLY
+  TYPE (GRID_VIEW) :: LGV (:) ! output list of GRID_VIEW
+  INTEGER(KIND=JPIM) :: IOFF
+
+  INTEGER(KIND=JPIM) :: ILEN, JFLD, JPASS
+  INTEGER(KIND=JPIM) :: ILBOUNDS (5), IUBOUNDS (5)
+
+  ! First pass: determination of the output size list
+  ! Second pass: allocate and instanciate the GRID_VIEW types
+  DO JPASS = 1, 2
+
+    IOFF = 0
+
+    ! iterate over YLFL LIST
+    DO JFLD = 1, SIZE (YLFL)
+
+    ! Phase 1: compute number of GRID_VIEW that will be generated for each field of the list
+    ! Phase 2: call the correct routine to create the GRID_VIEW for each field of the list
+      SELECT TYPE (YLF => YLFL (JFLD)%PTR)
+        CLASS IS (FIELD_1RB)
+          ILEN = 1
+        CLASS IS (FIELD_2RB)
+          CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
+          ILEN = 1
+          IF (JPASS == 2) CALL LG2RB(LGV (IOFF+1:IOFF+ILEN),YLF,YLFL(JFLD)%NAME,YLFL(JFLD)%IVSET,LDACC,LDRDONLY)
+        CLASS IS (FIELD_3RB)
+          CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
+          ILEN = (IUBOUNDS (2) - ILBOUNDS (2) + 1)
+          IF (JPASS == 2) CALL LG3RB(LGV (IOFF+1:IOFF+ILEN),YLF,YLFL(JFLD)%NAME,YLFL(JFLD)%IVSET, LDACC,LDRDONLY)
+        CLASS IS (FIELD_4RB)
+          CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
+          ILEN = (IUBOUNDS (2) - ILBOUNDS (2) + 1) * (IUBOUNDS (3) - ILBOUNDS (3) + 1)
+          IF (JPASS == 2) CALL LG4RB(LGV (IOFF+1:IOFF+ILEN),YLF,YLFL(JFLD)%NAME,YLFL(JFLD)%IVSET,LDACC,LDRDONLY)
+        CLASS DEFAULT
+          CALL ABOR1("LG FAILURE: CLASS UNKNOWN")
+      END SELECT
+      IOFF = IOFF + ILEN
+    ENDDO
+
+    ! at the end of the first pass, allocation of the list of GRID_VIEW
+    IF (SIZE(LGV) == 0 .AND.JPASS == 1) THEN
+      RETURN
+    ELSE
+      IF (SIZE(LGV) /= IOFF)  CALL ABOR1("LG FAILURE: LSV has incorrect size")
+    ENDIF
+  ENDDO
+
+END FUNCTION LG
+
+FUNCTION LG_COUNT(YLFL)
+  TYPE (FIELD_BASIC_PTR) :: YLFL (:)
+  INTEGER :: LG_COUNT
+  TYPE (GRID_VIEW) :: DUMMY (0)
+  LG_COUNT = LG(DUMMY,YLFL,.FALSE.,.FALSE.)
+END FUNCTION LG_COUNT
+
+
+SUBROUTINE LS1RB(LS1RBV, YLF, NAME, IVSET, LDACC,LDRDONLY)
+  ! Creation of a list of SPEC_VIEW encapsulating the layer of an input FIELD_1RB field
+  ! Given YLF dimensioned(NSPEC) as input,
+  ! the output list size will contain one element, its view beeing dimensioned(NSPEC)
+  CLASS (FIELD_1RB), POINTER, INTENT (IN) :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER :: IVSET(:)
+  LOGICAL :: LDACC
+  LOGICAL :: LDRDONLY
+
+  CHARACTER(LEN=6) CLOUT
+  TYPE (SPEC_VIEW) :: LS1RBV (:)
+
+  REAL(KIND=JPRB), POINTER :: ZZ1 (:)
+
+  IF (LDACC) THEN
+    IF (LDRDONLY) THEN
+      ZZ1 => GET_DEVICE_DATA_RDONLY(YLF)
+    ELSE
+      ZZ1 => GET_DEVICE_DATA_RDWR(YLF)
+    ENDIF
+  ELSE
+    IF (LDRDONLY) THEN
+      ZZ1 => GET_HOST_DATA_RDONLY(YLF)
+    ELSE
+      ZZ1 => GET_HOST_DATA_RDWR(YLF)
+    ENDIF
+  ENDIF
+
+  IF (SIZE(LS1RBV) /= 1 ) CALL ABOR1("Error - incorrect size for LS1RBV")
+  LS1RBV(1)%P => ZZ1(:)
+  LS1RBV(1)%IVSET = IVSET(1)
+
+END SUBROUTINE LS1RB
+
+SUBROUTINE LS2RB(LS2RBV,YLF,NAME, IVSET, LDACC,LDRDONLY)
+  ! Creation of a list of SPEC_VIEW, each of them encapsulating a layer of an input FIELD_2RB field.
+  ! Given YLF dimensioned(NLEVS, NSPEC) as input,
+  ! the output list size will contain (NLEVS) elements dimensioned(NSPEC)
+  CLASS (FIELD_2RB), POINTER, INTENT (IN) :: YLF
+  CHARACTER(LEN=*) ::NAME
+  INTEGER :: IVSET(:)
+  LOGICAL :: LDACC
+  LOGICAL :: LDRDONLY
+
+  CHARACTER(LEN=6) CLOUT
+  TYPE (SPEC_VIEW) :: LS2RBV (:)
+
+  REAL(KIND=JPRB), POINTER :: ZZ1 (:)
+  REAL(KIND=JPRB), POINTER :: ZZ2 (:,:)
+  INTEGER(KIND=JPIM) :: JLEV, JCOUNT
+  IF (LDACC) THEN
+    IF (LDRDONLY) THEN
+      ZZ2 => GET_DEVICE_DATA_RDONLY(YLF)
+    ELSE
+      ZZ2 => GET_DEVICE_DATA_RDWR(YLF)
+    ENDIF
+  ELSE
+    IF (LDRDONLY) THEN
+      ZZ2 => GET_HOST_DATA_RDONLY(YLF)
+    ELSE
+      ZZ2 => GET_HOST_DATA_RDWR(YLF)
+    ENDIF
+  ENDIF
+
+  IF (SIZE(LS2RBV) /= SIZE (ZZ2, 1) ) CALL ABOR1("Error - incorrect size for LS2RBV")
+  JCOUNT = 1
+
+  DO JLEV = LBOUND (ZZ2, 1), UBOUND (ZZ2, 1)
+    LS2RBV (JCOUNT)%P => ZZ2 (JLEV, :)
+    LS2RBV (JCOUNT)%IVSET = IVSET(JLEV)
+    LS2RBV(JCOUNT)%NAME=TRIM(NAME)//TRIM(CLOUT)
+    JCOUNT = JCOUNT + 1
+  ENDDO
+
+END SUBROUTINE LS2RB
+
+SUBROUTINE LS3RB(LS3RBV,YLF,NAME, IVSET, LDACC,LDRDONLY)
+  ! Creation of a list of SPEC_VIEW, each of them encapsulating a layer of an input FIELD_3RB field.
+  ! Given YLF dimensioned(NLEVS, NSPEC, NFIELDS) as input,
+  ! the output list size will contain (NLEVS*NFIELDS) SPEC_VIEW, each of them dimensioned(NSPEC)
+    CLASS (FIELD_3RB), POINTER, INTENT (IN) :: YLF
+  CHARACTER(LEN=*) :: NAME
+  LOGICAL :: LDACC
+  INTEGER :: IVSET(:)
+  LOGICAL :: LDRDONLY
+
+  CHARACTER(LEN=6) CLOUT
+  TYPE (SPEC_VIEW) :: LS3RBV (:)
+
+  REAL(KIND=JPRB), POINTER :: ZZ3 (:,:,:)
+  REAL(KIND=JPRB), POINTER :: ZZ1 (:)
+  INTEGER(KIND=JPIM) :: JLEV, JFLD, JCOUNT
+
+  IF (LDACC) THEN
+    IF (LDRDONLY) THEN
+      ZZ3 => GET_DEVICE_DATA_RDONLY(YLF)
+    ELSE
+      ZZ3 => GET_DEVICE_DATA_RDWR(YLF)
+    ENDIF
+  ELSE
+    IF (LDRDONLY) THEN
+      ZZ3 => GET_HOST_DATA_RDONLY(YLF)
+    ELSE
+      ZZ3 => GET_HOST_DATA_RDWR(YLF)
+    ENDIF
+  ENDIF
+
+  IF (SIZE(LS3RBV) /=SIZE (ZZ3, 1) * SIZE (ZZ3, 3) ) CALL ABOR1("Error - incorrect size for LS3RBV")
+
+  JCOUNT = 1
+
+  DO JFLD = LBOUND (ZZ3, 3), UBOUND (ZZ3, 3)
+    DO JLEV = LBOUND (ZZ3, 1), UBOUND (ZZ3, 1)
+      LS3RBV(JCOUNT)%P => ZZ3 (JLEV, :, JFLD)
+      LS3RBV(JCOUNT)%NAME=TRIM(NAME)//TRIM(CLOUT)
+      LS3RBV(JCOUNT)%IVSET = IVSET(JLEV)
+      JCOUNT = JCOUNT + 1
+
+    ENDDO
+  ENDDO
+
+END SUBROUTINE LS3RB
+
+FUNCTION LS(LSV,YLFL,LDACC,LDRDONLY) RESULT(IOFF)
+! Creation of a list of SPEC_VIEW from a list YLFL of FIELD_BASIC_PTR
+  TYPE (FIELD_BASIC_PTR) :: YLFL (:) ! input list of FIELD_BASIC_PTR
+  TYPE (SPEC_VIEW) :: LSV (:)        ! output list of SPEC_VIEW
+  LOGICAL ::  LDACC                  ! retrieve data on device
+  LOGICAL  :: LDRDONLY
+  INTEGER(KIND=JPIM) :: IOFF
+
+INTEGER(KIND=JPIM) :: ILEN, JFLD, JPASS
+INTEGER(KIND=JPIM) :: ILBOUNDS (5), IUBOUNDS (5)
+
+REAL(KIND=JPRB), POINTER :: ZZ1 (:)
+! First pass: determination of the output size list
+! Second pass: allocate and instanciate the SPEC_VIEW types
+DO JPASS = 1,2
+
+  IOFF = 0
+  ILEN = -1
+
+  ! iterate over YLFL LIST
+  DO JFLD = 1, SIZE (YLFL)
+   ! Phase 1: compute number of SPEC_VIEW that will be generated for each field of the list
+   ! Phase 2: call the correct routine to create the SPEC_VIEW for each field of the list
+    SELECT TYPE (YLF => YLFL (JFLD)%PTR)
+      CLASS IS (FIELD_1RB)
+        ILEN = 1
+        IF (JPASS == 2) CALL LS1RB(LSV(IOFF+1:IOFF+ILEN),YLF,YLFL(JFLD)%NAME,YLFL(JFLD)%IVSET, LDACC,LDRDONLY)
+      CLASS IS (FIELD_2RB)
+        CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
+        ILEN = (IUBOUNDS (1) - ILBOUNDS (1) + 1)
+        IF (JPASS == 2) CALL LS2RB(LSV(IOFF+1:IOFF+ILEN),YLF,YLFL(JFLD)%NAME,YLFL(JFLD)%IVSET, LDACC,LDRDONLY)
+      CLASS IS (FIELD_3RB)
+        CALL YLF%GET_DIMS (LBOUNDS=ILBOUNDS, UBOUNDS=IUBOUNDS)
+         ILEN =  (IUBOUNDS (1) - ILBOUNDS (1) + 1)* (IUBOUNDS (3) - ILBOUNDS (3) + 1)
+       IF (JPASS == 2) CALL LS3RB(LSV(IOFF+1:IOFF+ILEN),YLF ,YLFL(JFLD)%NAME,YLFL(JFLD)%IVSET, LDACC,LDRDONLY)
+      CLASS IS (FIELD_4RB)
+          CALL ABOR1("LS not implemeted for FIELD_4RB")
+      CLASS DEFAULT
+         ! Skip the spectral field as it is not present on this processor
+         ILEN = 1
+    END SELECT
+
+    IOFF = IOFF + ILEN
+
+  ENDDO
+
+  IF (SIZE(LSV) == 0 .AND.JPASS == 1) THEN
+    RETURN
+  ELSE
+    IF (SIZE(LSV) /= IOFF)  CALL ABOR1("LS FAILURE: LSV has incorrect size")
+  ENDIF
+
+ENDDO
+
+END FUNCTION LS
+
+FUNCTION LS_COUNT(YLFL)
+  TYPE (FIELD_BASIC_PTR) :: YLFL (:)
+  INTEGER :: LS_COUNT
+  TYPE (SPEC_VIEW) :: DUMMY (0)
+  LS_COUNT = LS(DUMMY,YLFL,.FALSE.,.FALSE.)
+END FUNCTION LS_COUNT
+
+END MODULE FIELD_API_ECTRANS_MOD
+
