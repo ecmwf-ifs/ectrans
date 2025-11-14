@@ -118,6 +118,10 @@ if( (NOT HAVE_CPU) AND (NOT HAVE_GPU) )
   ecbuild_critical("Please enable one or both of the CPU and GPU features")
 endif()
 
+if( HAVE_GPU AND HAVE_MPI )
+  ecbuild_find_package( NAME MPI REQUIRED COMPONENTS Fortran )
+endif()
+
 if( HAVE_GPU )
   if( HAVE_ACC )
     set( GPU_OFFLOAD "ACC" )
@@ -143,7 +147,6 @@ ecbuild_add_option( FEATURE CUTLASS_3XTF32
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
                     CONDITION HAVE_GPU AND HAVE_MPI
-                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
                     DESCRIPTION "Enable GPU-aware MPI" )
 
 ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
