@@ -19,6 +19,7 @@ def compare_checksums(folder_path, ntasks, nthreads):
     error_count = 0
     total_count = 0
     failed_list = []
+    missing_file_count = 0
     for file_name in os.listdir(folder_path):
         if (".checksums" in file_name and "benchmark" in file_name  and "mpi0_omp1" in file_name):
             file_path = os.path.join(folder_path, file_name)
@@ -28,7 +29,9 @@ def compare_checksums(folder_path, ntasks, nthreads):
                 for method in ["","_field_api"]:
                     for mpi in ntasks:
                         for omp in nthreads:
-                            other_file_name = file_name.replace("mpi0_omp1",f"mpi{mpi}_omp{omp}{method}")
+                            other_file_name = file_name.replace("mpi0_omp1",f"mpi{mpi}_omp{omp}")
+                            other_file_name = other_file_name.replace("field_api_nfld", "nfld")
+                            other_file_name = other_file_name.replace("_nfld", f"{method}_nfld")
                             if other_file_name == file_name:
                                continue
                             other_file_path = os.path.join(folder_path, other_file_name)
@@ -43,8 +46,9 @@ def compare_checksums(folder_path, ntasks, nthreads):
                                    error_count = error_count + 1
                                    failed_list.append(f"{file_path} {other_file_path}")
                 if (not found):
-                    print(f"    No comparison found")
-                    return False
+                    print(f"{colors.FAILURE}    No comparison found {colors.ENDC}")
+                    missing_file_count = missing_file_count + 1
+
     percentage = int(100*(success_count/total_count))
     if (error_count> 0):
         print(f"{percentage}% comparison passed, {colors.FAILURE}{error_count} comparison failed out of {total_count}{colors.ENDC}")
@@ -56,7 +60,10 @@ def compare_checksums(folder_path, ntasks, nthreads):
     else:
         print(f"{percentage}% checks passed")
 
-    if (error_count > 0):
+    if (missing_file_count > 0):
+        print(f"{colors.FAILURE}{missing_file_count} files missing{colors.ENDC}")
+
+    if (error_count > 0 or missing_file_count > 0):
         return False
     return True
 
