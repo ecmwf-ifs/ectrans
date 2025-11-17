@@ -105,7 +105,7 @@ USE PARKIND_ECTRANS, ONLY: JPRBT
 
 !ifndef INTERFACE
 
-USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_PTR, C_ASSOCIATED, C_SIZE_T, C_SIZEOF, C_LOC, C_F_POINTER
+USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_PTR, C_ASSOCIATED, C_SIZE_T, C_SIZEOF, C_LOC, C_F_POINTER, C_NULL_PTR
 USE TPM_GEN,                     ONLY: NOUT, MSETUP0, NCUR_RESOL, NDEF_RESOL, &
      &                                 NMAX_RESOL, NPRINTLEV, LENABLED, NERR
 USE TPM_DIM,                     ONLY: R, DIM_RESOL
@@ -125,6 +125,7 @@ USE ABORT_TRANS_MOD,             ONLY: ABORT_TRANS
 USE SHAREDMEM_MOD,               ONLY: SHAREDMEM_CREATE
 USE YOMHOOK,                     ONLY: LHOOK, DR_HOOK, JPHOOK
 USE PREPSNM_MOD,                 ONLY: PREPSNM
+USE HICBLAS_MOD,                 ONLY: HIP_BLAS_CREATE
 #ifdef ACCGPU
 USE OPENACC,                     ONLY: ACC_DEVICE_KIND, ACC_GET_DEVICE_TYPE, ACC_GET_NUM_DEVICES, &
   &                                    ACC_SET_DEVICE_NUM, ACC_GET_DEVICE_NUM
@@ -576,6 +577,8 @@ IF( .NOT.D%LGRIDONLY ) THEN
   !$OMP TARGET ENTER DATA MAP(TO:G,G%NDGLU,G%NMEN,G%NLOEN)
 #endif
 
+  FG%handle = C_NULL_PTR
+  CALL HIP_BLAS_CREATE(FG%handle)
   WRITE(NOUT,*) '===GPU arrays successfully allocated'
 
   ! TODO: This might be good idea - those polynomials are not needed

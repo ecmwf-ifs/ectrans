@@ -11,6 +11,7 @@
 
 MODULE TPM_FIELDS_GPU
 
+USE ISO_C_BINDING, ONLY: C_PTR
 USE EC_PARKIND, ONLY: JPRD, JPRBT
 
 IMPLICIT NONE
@@ -18,6 +19,9 @@ IMPLICIT NONE
 SAVE
 
 TYPE FIELDS_GPU_TYPE
+! ptr to hipblas handle
+TYPE(C_PTR) :: handle
+
 ! scratch arrays for ltinv and ltdir and associated dimension variables
 REAL(KIND=JPRBT),ALLOCATABLE :: ZAA(:)  !! JPRL for 1/2
 REAL(KIND=JPRBT),ALLOCATABLE :: ZAS(:)  !! JPRL for 1/2

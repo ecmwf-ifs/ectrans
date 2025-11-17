@@ -12,6 +12,20 @@ MODULE HICBLAS_MOD
 IMPLICIT NONE
 
 INTERFACE
+  SUBROUTINE HIP_BLAS_CREATE( &
+    HANDLE             &
+  &) BIND(C, NAME='hipblasCreate')
+    USE ISO_C_BINDING, ONLY: C_PTR
+    TYPE(C_PTR), INTENT(INOUT) :: HANDLE
+  END SUBROUTINE HIP_BLAS_CREATE
+
+  SUBROUTINE HIP_BLAS_DESTROY( &
+    HANDLE             &
+  &) BIND(C, NAME='hipblasDestroy')
+    USE ISO_C_BINDING, ONLY: C_PTR
+    TYPE(C_PTR), VALUE :: HANDLE
+  END SUBROUTINE HIP_BLAS_DESTROY
+
   SUBROUTINE HIP_DGEMM_BATCHED( &
     & CTA, CTB,                 &
     & M, N, K,                  &
@@ -20,7 +34,8 @@ INTERFACE
     & B, LDB, TDB,              &
     & BETA,                     &
     & C, LDC, TDC,              &
-    & BATCHCOUNT, STREAM, ALLOC &
+    & BATCHCOUNT, STREAM,       &
+    & ALLOC, HANDLE             &
   &) BIND(C, NAME='hipblas_dgemm_wrapper')
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_DOUBLE, C_SIZE_T, C_PTR
     CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
@@ -31,6 +46,7 @@ INTERFACE
     TYPE(C_PTR), INTENT(IN), VALUE :: C
     INTEGER(KIND=C_SIZE_T) :: STREAM
     TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
+    TYPE(C_PTR), INTENT(IN), VALUE :: HANDLE
   END SUBROUTINE HIP_DGEMM_BATCHED
 
   SUBROUTINE HIP_SGEMM_BATCHED( &
@@ -41,7 +57,8 @@ INTERFACE
     & B, LDB, TDB,              &
     & BETA,                     &
     & C, LDC, TDC,              &
-    & BATCHCOUNT, STREAM, ALLOC &
+    & BATCHCOUNT, STREAM,       &
+    & ALLOC, HANDLE             &
   &) BIND(C, NAME='hipblas_sgemm_wrapper')
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_FLOAT, C_SIZE_T, C_PTR
     CHARACTER(1,C_CHAR), VALUE            :: CTA, CTB
@@ -52,6 +69,7 @@ INTERFACE
     TYPE(C_PTR), INTENT(IN), VALUE :: C
     INTEGER(KIND=C_SIZE_T) :: STREAM
     TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
+    TYPE(C_PTR), INTENT(IN), VALUE :: HANDLE
   END SUBROUTINE HIP_SGEMM_BATCHED
 END INTERFACE
 INTERFACE
@@ -70,7 +88,8 @@ INTERFACE
     & B, LDB, OFFSETB,          &
     & BETA,                     &
     & C, LDC, OFFSETC,          &
-    & BATCHCOUNT, STREAM, ALLOC &
+    & BATCHCOUNT, STREAM,       &
+    & ALLOC, HANDLE             &
   &) BIND(C, NAME='hipblas_dgemm_wrapper_grouped')
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_DOUBLE, C_SIZE_T, C_PTR, C_INT64_T
     CHARACTER(1,C_CHAR), VALUE :: CTA, CTB
@@ -83,6 +102,7 @@ INTERFACE
     TYPE(C_PTR), INTENT(IN), VALUE :: C
     INTEGER(KIND=C_SIZE_T) :: STREAM
     TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
+    TYPE(C_PTR), INTENT(IN), VALUE :: HANDLE
   END SUBROUTINE HIP_DGEMM_GROUPED
 
   SUBROUTINE HIP_SGEMM_GROUPED( &
@@ -93,7 +113,8 @@ INTERFACE
     & B, LDB, OFFSETB,          &
     & BETA,                     &
     & C, LDC, OFFSETC,          &
-    & BATCHCOUNT, STREAM, ALLOC &
+    & BATCHCOUNT, STREAM,       &
+    & ALLOC, HANDLE             &
   &) BIND(C, NAME='hipblas_sgemm_wrapper_grouped')
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_FLOAT, C_SIZE_T, C_PTR, C_INT64_T
     CHARACTER(1,C_CHAR), VALUE :: CTA, CTB
@@ -106,6 +127,7 @@ INTERFACE
     TYPE(C_PTR), INTENT(IN), VALUE :: C
     INTEGER(KIND=C_SIZE_T) :: STREAM
     TYPE(C_PTR), INTENT(IN), VALUE :: ALLOC
+    TYPE(C_PTR), INTENT(IN), VALUE :: HANDLE
   END SUBROUTINE HIP_SGEMM_GROUPED
 END INTERFACE
 
