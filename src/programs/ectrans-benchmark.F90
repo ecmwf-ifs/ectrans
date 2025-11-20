@@ -1555,6 +1555,7 @@ subroutine open_dump_checksums_file(filename, noutdump, jstep)
   integer(kind=jpim), intent(in) :: jstep
   logical :: exist
 
+  exist = .false.
   if (jstep > 1) inquire(file=filename, exist=exist)
   if (exist) then
     open(noutdump, file=filename, status="old", position="append", action="write")
