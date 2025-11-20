@@ -72,23 +72,21 @@ REAL(KIND=JPRD)   ,INTENT(OUT) :: DDPOL(0:KNSMAX)
 
 INTEGER(KIND=JPIM),INTENT(IN), OPTIONAL :: KCHEAP
 
-REAL(KIND=JPRD) :: DLX,DLX1,DLSITA,DLSITA2,DL1SITA,DLK,DL1, DLKM1, DLKM2
+REAL(KIND=JPRD) :: DLX, ZCOS_THETA, ZCOS2_THETA, ZCOS_THETA_R, DLK, DL1, DLKM1, DLKM2
 
-INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(DLX)
-
-INTEGER(KIND=JPIM) :: JN, KKL, ICHEAP, IC, IEND
+INTEGER(KIND=JPIM) :: JN, KKL, ICHEAP, IC
 REAL(KIND=JPRD) :: DCL, DDL
 
 REAL(KIND=JPRD) :: ZFAC, ZLSITA, ZFAC0, ZFAC1, ZMULT, ZEPS
 
-INTEGER(KIND=JPIM) :: JCORR, ICORR3, ICORR(KNSMAX)
+INTEGER(KIND=JPIM) :: JCORR, ICORR3, ICORR(KNSMAX), ISTART, IINC
 REAL(KIND=JPRD) :: ZSCALE, ZISCALE
 
-DCL(KKL)=SQRT((REAL(KKL-KM+1,JPKD)*REAL(KKL-KM+2,JPKD)* &
- & REAL(KKL+KM+1,JPKD)*REAL(KKL+KM+2,JPKD))/(REAL(2*KKL+1,JPKD)*REAL(2*KKL+3,JPKD)*&
- & REAL(2*KKL+3,JPKD)*REAL(2*KKL+5,JPKD)))
-DDL(KKL)=(2.0_JPKD*REAL(KKL,JPKD)*REAL(KKL+1,JPKD)-2.0_JPKD*REAL(KM**2,JPKD)-1.0_JPKD)/ &
- & (REAL(2*KKL-1,JPKD)*REAL(2*KKL+3,JPKD))
+DCL(KKL)=SQRT((REAL(KKL-KM+1,JPRD)*REAL(KKL-KM+2,JPRD)* &
+ & REAL(KKL+KM+1,JPRD)*REAL(KKL+KM+2,JPRD))/(REAL(2*KKL+1,JPRD)*REAL(2*KKL+3,JPRD)*&
+ & REAL(2*KKL+3,JPRD)*REAL(2*KKL+5,JPRD)))
+DDL(KKL)=(2.0_JPRD*REAL(KKL,JPRD)*REAL(KKL+1,JPRD)-2.0_JPRD*REAL(KM**2,JPRD)-1.0_JPRD)/ &
+ & (REAL(2*KKL-1,JPRD)*REAL(2*KKL+3,JPRD))
 
 !     ------------------------------------------------------------------
 
@@ -96,53 +94,58 @@ DDL(KKL)=(2.0_JPKD*REAL(KKL,JPKD)*REAL(KKL+1,JPKD)-2.0_JPKD*REAL(KM**2,JPKD)-1.0
 !           ------------------
 
 ZEPS  = EPSILON(ZSCALE)
-ICORR3=0
+ICORR3 = 0
 
-ICHEAP=1
-IF( PRESENT(KCHEAP) ) THEN
+! This parameter determines which polynomials are computed
+! ICHEAP = 1 : all polynomials
+! ICHEAP = 2 : only even polynomials
+! ICHEAP = 3 : only odd polynomials
+ICHEAP = 1
+IF (PRESENT(KCHEAP)) THEN
   ICHEAP = KCHEAP
 ENDIF
 
-DLX=DDMU
-DLX1=ACOS(DLX)
-DLSITA2=1.0_JPRD-DLX*DLX
-DLSITA=SQRT(DLSITA2)
+! Ordinate to compute polynomials at (i.e. the sine of latitude)
+DLX = DDMU
+
+! Cosine^2 of latitude
+ZCOS2_THETA = 1.0_JPRD - DLX * DLX
+ZCOS_THETA = SQRT(ZCOS2_THETA)
 
 !*          ordinary Legendre polynomials from series expansion
 !           ---------------------------------------------------
 
-! this is supol_fast just using single KM
-IF( ABS(REAL(DLSITA,JPRD)) <= ZEPS ) THEN
-  DLX=1._JPRD
-  DLSITA=0._JPRD
-  DL1SITA=0._JPRD
-  DLSITA2=0._JPRD
+! This logic is triggered for latitudes very close to the poles, like 89.99999999999999 degrees
+IF (ABS(ZCOS_THETA) <= ZEPS) THEN
+  DLX = 1.0_JPRD
+  ZCOS_THETA = 0.0_JPRD
+  ZCOS_THETA_R = 0.0_JPRD
+  ZCOS2_THETA = 0.0_JPRD
 ELSE
-  DL1SITA=1.0_JPRD/DLSITA
+  ZCOS_THETA_R = 1.0_JPRD / ZCOS_THETA
 ENDIF
 
-DLKM2=1._JPRD
-DLKM1=DLX
+DLKM2 = 1._JPRD
+DLKM1 = DLX
 
-IF( KM == 0 ) THEN
-  DDPOL(0)=DLKM2
-  DDPOL(1)=DLKM1*DFB(1)/DFA(1)
-  DO JN=2,KNSMAX
-    DLK=DFF(JN)*DLX*DLKM1-DFG(JN)*DLKM2
-    DL1=DFI(JN)*(DLKM1-DLX*DLK)*DL1SITA
-    DDPOL(JN)=DLK*DFB(JN)/DFA(JN)
-    DLKM2=DLKM1
-    DLKM1=DLK
+IF (KM == 0) THEN
+  DDPOL(0) = DLKM2
+  DDPOL(1) = DLKM1 * DFB(1) / DFA(1)
+  DO JN = 2, KNSMAX
+    DLK = DFF(JN) * DLX * DLKM1 - DFG(JN) * DLKM2
+    DDPOL(JN) = DLK * DFB(JN) / DFA(JN)
+    DLKM2 = DLKM1
+    DLKM1 = DLK
   ENDDO
-ELSEIF( KM == 1 ) THEN
-  DDPOL(0)=0
-  DDPOL(1)=DLSITA*DFB(1)
-  DO JN=2,KNSMAX
-    DLK=DFF(JN)*DLX*DLKM1-DFG(JN)*DLKM2
-    DL1=DFI(JN)*(DLKM1-DLX*DLK)*DL1SITA
-    DDPOL(JN)=DL1*DFB(JN)
-    DLKM2=DLKM1
-    DLKM1=DLK
+ELSEIF (KM == 1) THEN
+  DDPOL(0) = 0
+  DDPOL(1) = ZCOS_THETA * DFB(1)
+  DO JN = 2, KNSMAX
+    DLK = DFF(JN) * DLX * DLKM1 - DFG(JN) * DLKM2
+    DL1 = DFI(JN) * (DLKM1 - DLX * DLK) * ZCOS_THETA_R
+    DDPOL(JN) = DL1 * DFB(JN)
+    DLKM2 = DLKM1
+    DLKM1 = DLK
   ENDDO
 ELSE
 
@@ -150,132 +153,97 @@ ELSE
 !*       KM >= 2
 !     ------------------------------------------------------------------
 
-!  ZSCALE=1._JPRD/ZEPS
-  ! Maintaining the consistency with the CY41R1 reference
-  ZSCALE=1.0E+100_JPRD
-  ZISCALE=1.0E-100_JPRD
-  ! General case 
-  !ZSCALE = 10._JPRD**( MAXEXPONENT(ZSCALE)/10)
-  !ZISCALE = 10._JPRD**(-MAXEXPONENT(ZSCALE)/10)
+  ZSCALE = 1.0E+100_JPRD ! A very big number
+  ZISCALE = 1.0E-100_JPRD ! A very small number
 
-  IEND=KM/2
-  ZLSITA=1._JPRD
-!  WRITE(*,*) 'SUPOLF: DLSITA2=',DLSITA2,' DDMU=',DDMU,' DLX=',DLX
-  DO JN=1,IEND
-    ZLSITA=ZLSITA*DLSITA2
-    IF( ABS(ZLSITA) < ZISCALE ) THEN
-      ZLSITA=ZLSITA*ZSCALE
-      ICORR3=ICORR3+1
+  ! Calculate (cos^2(theta))^(m/2) = (1 - mu^2)^(m/2)
+  ! ZLSITA can become absolutely TINY for large KM, so whenever it goes below a threshold, ZISCALE,
+  ! we rescale it by multiplying with ZSCALE and keep track of the number of such rescalings in
+  ! ICORR3
+  ZLSITA = 1.0_JPRD
+  DO JN = 1, KM / 2
+    ZLSITA = ZLSITA * ZCOS2_THETA
+    IF (ABS(ZLSITA) < ZISCALE) THEN
+      ZLSITA = ZLSITA * ZSCALE
+      ICORR3 = ICORR3 + 1
     ENDIF
   ENDDO
-  IF( MOD(KM,2) == 1 ) ZLSITA=ZLSITA*DLSITA
-!  WRITE(*,*) 'SUPOLF: ZSCALE=',ZSCALE,' ICORR3=',ICORR3,' KM=',KM,' ZLSITA=',ZLSITA
+  IF (MOD(KM,2) == 1) ZLSITA = ZLSITA * ZCOS_THETA
 
-  ZFAC0=1._JPRD
-  ZFAC=1._JPRD
-  DO JN=1,KM-1
-    ZFAC=ZFAC*SQRT(REAL(2*JN-1,JPRD))
-    ZFAC=ZFAC/SQRT(REAL(2*JN,JPRD))
+  ! Calculate the first factorial term p_0 = sqrt(2m-1) * prod_{n=1}^{m-1} sqrt((2n-1)/(2n))
+  ZFAC = 1.0_JPRD
+  DO JN = 1, KM - 1
+    ZFAC = ZFAC * SQRT(REAL(2 * JN - 1, JPRD))
+    ZFAC = ZFAC / SQRT(REAL(2 * JN, JPRD))
   ENDDO
-  ZFAC=ZFAC*SQRT(REAL(2*KM-1,JPRD))
-!  WRITE(*,*) 'SUPOLF: ZSCALE=',ZSCALE,' ICORR3=',ICORR3,' ZFAC=',ZFAC
+  ZFAC = ZFAC * SQRT(REAL(2 * KM - 1, JPRD))
 
-  ZFAC1=1._JPRD
-  DO IC=0,MIN(KNSMAX-KM,3)
-
+  ZFAC0 = 1.0_JPRD
+  ! Fill the first 4 values using explicit formulae
+  DO IC = 0, MIN(KNSMAX - KM, 3)
     ! (2m+i)!
-    ZFAC0 = ZFAC0 * REAL(2*KM+IC,JPRD)   
+    ZFAC0 = ZFAC0 * REAL(2 * KM + IC, JPRD)
 
     SELECT CASE (IC)
     CASE (0)
-      ZMULT=ZFAC
+      ZFAC1 = 1.0_JPRD ! 0!
+      ! d_0 = d_0
+      ZMULT = ZFAC
     CASE (1)
-      ZFAC=ZFAC*REAL(2*KM+IC,JPRD)
-      ZMULT=ZFAC*DLX
+      ZFAC1 = 1.0_JPRD ! 1!
+      ! p_1 = (2m+1) * p_0
+      ZFAC = ZFAC * REAL(2 * KM + 1, JPRD)
+      ! d_1 = mu * p_1
+      ZMULT = ZFAC * DLX
     CASE (2)
-      ZMULT=0.5_JPRD*ZFAC*(REAL(2*KM+3,JPRD)*DLX*DLX-1._JPRD)
+      ZFAC1 = 2.0_JPRD ! 2!
+      ! d_2 = 0.5 * p_2 * ( (2m+3) * mu^2 - 1 ) (p_2 = p_1)
+      ZMULT = 0.5_JPRD * ZFAC * (REAL(2 * KM + 3, JPRD) * DLX * DLX - 1.0_JPRD)
     CASE (3)
-      ZFAC=ZFAC*REAL(2*KM+IC,JPRD)
-      ZMULT=(1._JPRD/6._JPRD)*DLX*ZFAC*(REAL(2*KM+5,JPRD)*DLX*DLX-3._JPRD)
+      ZFAC1 = 6.0_JPRD ! 3!
+      ! p_3 = (2m+3) * p_2
+      ZFAC = ZFAC * REAL(2 * KM + 3, JPRD)
+      ! d_3 = (1/6) * mu * p_3 * ( (2m+5) * mu^2 - 3 )
+      ZMULT = (1.0_JPRD / 6.0_JPRD) * DLX * ZFAC * (REAL(2 * KM + 5, JPRD) * DLX * DLX - 3.0_JPRD)
     END SELECT
 
-    DDPOL(KM+IC) = ZLSITA*ZMULT*SQRT(2._JPRD*(REAL(KM+IC,JPRD)+0.5_JPRD)*ZFAC1/ZFAC0)
-
-    ZFAC1=ZFAC1*REAL(IC+1,JPRD)
-
+    ! P_{m,m+j} = (1 - mu^2)^{m/2} * d_j * sqrt( (2(m+j)+1) * j! / prod_{j'=0}^{j} (2m+j') )
+    DDPOL(KM + IC) = ZLSITA * ZMULT * SQRT(2.0_JPRD * (REAL(KM + IC, JPRD) + 0.5_JPRD) * ZFAC1 / ZFAC0)
   ENDDO
 
-  ICORR(:)=ICORR3
-  IF( ICHEAP == 2 ) THEN
-    ! symmetric case
-    DO JN=KM+2,KNSMAX-2,2
-      
-      IF( ABS(DDPOL(JN-2)) > ZSCALE ) THEN
-        DDPOL(JN-2)=DDPOL(JN-2)/ZSCALE
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        ICORR(JN-2:KNSMAX)=ICORR(JN-2:KNSMAX)-1
-      ENDIF
-      
-      DDPOL(JN+2)=((DLX*DLX-DDL(JN))*DDPOL(JN)-DCL(JN-2)*DDPOL(JN-2))/DCL(JN)
-    ENDDO
+  ICORR(:) = ICORR3
 
-    DO JN=KM,KNSMAX,2
-      DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        IF( DDPOL(JN) < ZEPS ) THEN
-          DDPOL(JN) = ZEPS
-        ENDIF
-      ENDDO
-    ENDDO
-
-  ELSEIF( ICHEAP == 3 ) THEN
-    ! antisymmetric case
-    DO JN=KM+3,KNSMAX-2,2
-      
-      IF( ABS(DDPOL(JN-2)) > ZSCALE ) THEN
-        DDPOL(JN-2)=DDPOL(JN-2)/ZSCALE
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        ICORR(JN-2:KNSMAX)=ICORR(JN-2:KNSMAX)-1
-      ENDIF
-      
-      DDPOL(JN+2)=((DLX*DLX-DDL(JN))*DDPOL(JN)-DCL(JN-2)*DDPOL(JN-2))/DCL(JN)
-    ENDDO
-
-    DO JN=KM+1,KNSMAX,2
-      DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        IF( DDPOL(JN) < ZEPS ) THEN
-          DDPOL(JN) = ZEPS
-        ENDIF
-      ENDDO
-    ENDDO
-
+  IF (ICHEAP /= 3) THEN
+    ISTART = 0
   ELSE
-    DO JN=KM+2,KNSMAX-2
-      
-      IF( ABS(DDPOL(JN-2)) > ZSCALE ) THEN
-        DDPOL(JN-2)=DDPOL(JN-2)/ZSCALE
-        DDPOL(JN-1)=DDPOL(JN-1)/ZSCALE
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        DDPOL(JN+1)=DDPOL(JN+1)/ZSCALE
-        ICORR(JN-2:KNSMAX)=ICORR(JN-2:KNSMAX)-1
-      ENDIF
-      
-      DDPOL(JN+2)=((DLX*DLX-DDL(JN))*DDPOL(JN)-DCL(JN-2)*DDPOL(JN-2))/DCL(JN)
-      
-    ENDDO
-
-    DO JN=KM,KNSMAX
-      DO JCORR=1,ICORR(JN)
-        DDPOL(JN)=DDPOL(JN)/ZSCALE
-        IF( DDPOL(JN) < ZEPS ) THEN
-          DDPOL(JN) = ZEPS
-        ENDIF
-      ENDDO
-    ENDDO
-
+    ISTART = 1
   ENDIF
-  
+
+  IF (ICHEAP == 2 .OR. ICHEAP == 3) THEN
+    IINC = 2
+  ELSE
+    IINC = 1
+  ENDIF
+
+  DO JN = KM + ISTART + 4, KNSMAX, IINC
+    IF (ABS(DDPOL(JN-4)) > ZSCALE) THEN
+      DDPOL(JN-4:JN-1) = DDPOL(JN-4:JN-1) / ZSCALE
+      ICORR(JN-4:KNSMAX) = ICORR(JN-4:KNSMAX) - 1
+    ENDIF
+
+    ! P_{m,n} = ( (mu^2 - f_1(n-2)) * P_{m,n-2} - f_2(n_4) * P_{m,n-4} ) / f_2(n_2)
+    DDPOL(JN) = ((DLX * DLX - DDL(JN-2)) * DDPOL(JN-2) - DCL(JN-4) * DDPOL(JN-4)) / DCL(JN-2)
+  ENDDO
+
+  ! Undo all rescalings to get back the true value
+  DO JN = KM + ISTART, KNSMAX, IINC
+    DO JCORR = 1, ICORR(JN)
+      DDPOL(JN) = DDPOL(JN) / ZSCALE
+      IF (DDPOL(JN) < ZEPS) THEN
+        DDPOL(JN) = ZEPS
+      ENDIF
+    ENDDO
+  ENDDO
 ENDIF
 
 !     ------------------------------------------------------------------
