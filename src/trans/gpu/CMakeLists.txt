@@ -26,8 +26,13 @@ if( HAVE_HIP )
   list( APPEND trans_gpu_common_src
     algor/hicblas_gemm.hip.cpp
     algor/hicfft.hip.cpp
+    algor/hicfft.rocfft.cpp
   )
-  ecbuild_info("warn: IN_PLACE_FFT not defined for hipFFT")
+  if( HAVE_ROCFFT )
+    ecbuild_info("warn: rocFFT uses out-of-place FFT")
+  else()
+    ecbuild_info("warn: IN_PLACE_FFT not defined for hipFFT")
+  endif()
 elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
@@ -71,6 +76,7 @@ ecbuild_add_library(
                        $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
+                       $<${HAVE_ROCFFT}:USE_ROCFFT>
 )
 
 ecbuild_target_fortran_module_directory(
@@ -152,6 +158,7 @@ foreach( prec dp sp )
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                                $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
+                               $<${HAVE_ROCFFT}:USE_ROCFFT>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                $<${USE_RAW_MPI}:USE_RAW_MPI>
         )
@@ -166,7 +173,7 @@ foreach( prec dp sp )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
         endif()
 
-        # cuFFT can do in-place FFT, hipFFT cannot
+        # cuFFT uses in-place FFT; rocFFT uses out-of-place FFT
         if( HAVE_CUDA )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()

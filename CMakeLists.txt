@@ -156,6 +156,11 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
+ecbuild_add_option( FEATURE ROCFFT
+                    DEFAULT OFF
+                    CONDITION HAVE_HIP
+                    DESCRIPTION "Use rocFFT library instead of hipFFT for FFT operations on AMD GPUs" )
+
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
 else()
