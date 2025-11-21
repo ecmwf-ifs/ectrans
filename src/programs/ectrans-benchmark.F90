@@ -1490,9 +1490,8 @@ subroutine dump_checksums_pgp(filename, noutdump,             &
   integer(kind=jpim), intent(in) :: ngptotg
   real(kind=jprb), intent(in) :: zgp(:,:,:)
   integer(kind=jpib) :: icrc
-  integer(kind=jpim) :: jlev, jfld
+  integer(kind=jpim) :: jfld
   real(kind=jprb), allocatable :: gfld(:,:)
-  logical :: exist = .false.
 
   if (myproc == 1) then
    call open_dump_checksums_file(filename, noutdump, jstep)
@@ -1537,8 +1536,6 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
   integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gfld(:,:)
-
-  logical :: exist = .false.
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep)
@@ -1604,9 +1601,8 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   real(kind=jprb), intent(in) :: zspdiv(:,:)
   real(kind=jprb), intent(in) :: zspscalar(:,:)
   integer(kind=jpib) :: icrc
-  integer(kind=jpim) :: jlev, jfld
+  integer(kind=jpim) :: jfld
   real(kind=jprb), allocatable :: gspfld(:,:)
-  logical :: exist = .false.
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep)
@@ -1673,8 +1669,6 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gspfld(:,:)
-  logical :: exist = .false.
-  integer(kind=jpib) :: iconfig
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep)
