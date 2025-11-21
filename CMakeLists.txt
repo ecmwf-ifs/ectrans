@@ -189,6 +189,9 @@ ecbuild_add_option( FEATURE ECTRANS4PY
                     CONDITION HAVE_ETRANS AND NOT (HAVE_DOUBLE_PRECISION AND HAVE_SINGLE_PRECISION)
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
 
+ecbuild_add_option( FEATURE FFT992
+                    DEFAULT OFF
+                    DESCRIPTION "Build separate FFT992 FFT implementation" )
 
 ectrans_find_lapack()
 
