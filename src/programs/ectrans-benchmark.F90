@@ -42,7 +42,7 @@ real(kind=jprd) :: zmaxerrg
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
 integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
-integer(kind=jpim), parameter :: noutdump_checksum = 8 ! Unit number for dump_checksun
+integer(kind=jpim), parameter :: noutdump_checksum = 8 ! Unit number for dump_checksum
 
 ! Default parameters
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
