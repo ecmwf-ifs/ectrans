@@ -40,6 +40,9 @@ else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
 
+if( HAVE_GPU_AWARE_MPI AND NOT fiat_HAVE_MPL_F08 )
+  set( USE_RAW_MPI 1 )
+endif()
 
 set( GPU_LIBRARY_TYPE SHARED )
 if( HAVE_GPU_STATIC )
@@ -154,7 +157,7 @@ foreach( prec dp sp )
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                                $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
-                               $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
+                               $<${USE_RAW_MPI}:USE_RAW_MPI>
         )
 
         ecbuild_target_fortran_module_directory(
