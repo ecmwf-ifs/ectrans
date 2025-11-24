@@ -1,6 +1,6 @@
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -98,10 +98,10 @@ IF (LHOOK) CALL DR_HOOK('TRLTOG',1,ZHOOK_HANDLE)
 END SUBROUTINE TRLTOG
 
 SUBROUTINE TRLTOG_PROLOG(KF_FS,KF_GP,KVSET,YDCTX)
- 
+
 !**** *TRLTOG_PROLOG * - prolog for transposition of grid point data from latitudinal
 !                 to column structure (this takes place between inverse
-!                 FFT and grid point calculations) : the purpose is essentially 
+!                 FFT and grid point calculations) : the purpose is essentially
 !                 to compute the size of communication buffers in order to enable
 !                 the use of automatic arrays later.
 !                 TRLTOG_PROLOG is the inverse of TRGTOL_PROLOG
@@ -144,7 +144,7 @@ USE PARKIND1  ,ONLY : JPIM
 
 USE INIGPTR_MOD     ,ONLY : INIGPTR
 USE PE2SET_MOD      ,ONLY : PE2SET
-USE TRGL_MOD  ,ONLY : TRGL_CTX, ALLOCATE_CTX, TRGL_PROLOG
+USE TRGL_MOD  ,ONLY : TRGL_CTX, ALLOCATE_CTX_CST, ALLOCATE_CTX_SR, TRGL_PROLOG
 
 IMPLICIT NONE
 
@@ -155,18 +155,18 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(KF_GP)
 !     ------------------------------------------------------------------
 !*       0.    Some initializations
 !              --------------------
-
-CALL ALLOCATE_CTX(YDCTX, KF_GP)
+YDCTX%LLTRGTOL = .FALSE.
+CALL ALLOCATE_CTX_CST(YDCTX)
 CALL GSTATS(1806,0)
-CALL TRGL_PROLOG(KF_FS,KF_GP,KVSET,YDCTX, .TRUE.)  ! TRUE. for LSEND
+CALL TRGL_PROLOG(KF_FS,KF_GP,KVSET,YDCTX)
 CALL GSTATS(1806,1)
-
+CALL ALLOCATE_CTX_SR(YDCTX, KF_GP)
 END SUBROUTINE TRLTOG_PROLOG
 
 
 SUBROUTINE TRLTOG_COMM(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,&
  & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YDCTX)
- 
+
 
 !**** *trltog * - transposition of grid point data from latitudinal
 !                 to column structure. This takes place between inverse
@@ -327,7 +327,7 @@ YDCTX%LLINDER = .FALSE.
 YDCTX%LLPGPONLY = .FALSE.
 IF(PRESENT(KPTRGP))  YDCTX%LLINDER = .TRUE.
 IF(PRESENT(PGP))     YDCTX%LLPGPONLY = .TRUE.
-CALL TRGL_ALLOCATE_VARS(YLVARS, KF_GP)
+CALL TRGL_ALLOCATE_VARS(YLVARS, KF_GP,KF_FS)
 CALL TRGL_INIT_VARS(YLVARS, KF_SCALARS_G, PGP, PGPUV, PGP3A, PGP3B, PGP2)
 CALL GSTATS(1806,1)
 
@@ -378,7 +378,7 @@ ENDDO
 
 !  Unpack loop.........................................................
 
-CALL TGRL_INIT_PACKING_VARS(.FALSE., YDCTX,YLVARS, KVSET, KF_GP)
+CALL TGRL_INIT_PACKING_VARS(YDCTX,YLVARS, KVSET, KF_GP)
 
 DO JNR=1,KNRECV
 
@@ -397,7 +397,7 @@ DO JNR=1,KNRECV
   CALL TGRL_COPY_ZCOMBUF(YDCTX, YLVARS, INR, &
                       &  ZCOMBUFR, &
                       & KPTRGP, &
-                      & PGP, PGPUV, PGP3A, PGP3B, PGP2) 
+                      & PGP, PGPUV, PGP3A, PGP3B, PGP2)
 ENDDO
 
 IF (NTRANS_SYNC_LEVEL <= 1) THEN

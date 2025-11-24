@@ -1,6 +1,6 @@
 ! (C) Copyright 1995- ECMWF.
 ! (C) Copyright 1995- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -96,7 +96,7 @@ SUBROUTINE TRGTOL_PROLOG(KF_FS,KF_GP,KVSET,YDCTX)
 !**** *TRGTOL_PROLOG * - prolog for transposition of grid point data from column
 !                 structure to latitudinal. Reorganize data between
 !                 grid point calculations and direct Fourier Transform
-!                 the purpose is essentially 
+!                 the purpose is essentially
 !                 to compute the size of communication buffers in order to enable
 !                 the use of automatic arrays later.
 
@@ -139,7 +139,7 @@ USE PARKIND1  ,ONLY : JPIM
 
 USE INIGPTR_MOD     ,ONLY : INIGPTR
 USE PE2SET_MOD      ,ONLY : PE2SET
-USE TRGL_MOD  ,ONLY : TRGL_CTX, ALLOCATE_CTX, TRGL_PROLOG
+USE TRGL_MOD  ,ONLY : TRGL_CTX, ALLOCATE_CTX_CST, ALLOCATE_CTX_SR, TRGL_PROLOG
 
 IMPLICIT NONE
 
@@ -150,11 +150,12 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(KF_GP)
 !     ------------------------------------------------------------------
 !*       0.    Some initializations
 !              --------------------
-
-CALL ALLOCATE_CTX(YDCTX, KF_GP)
+YDCTX%LLTRGTOL = .TRUE.
+CALL ALLOCATE_CTX_CST(YDCTX)
 CALL GSTATS(1805,0)
-CALL TRGL_PROLOG(KF_FS,KF_GP,KVSET,YDCTX, .FALSE.)  ! .FALSE. for LSEND
+CALL TRGL_PROLOG(KF_FS,KF_GP,KVSET,YDCTX)
 CALL GSTATS(1805,1)
+CALL ALLOCATE_CTX_SR(YDCTX, KF_GP)
 
 END SUBROUTINE TRGTOL_PROLOG
 
@@ -328,15 +329,15 @@ YDCTX%LLINDER = .FALSE.
 YDCTX%LLPGPONLY = .FALSE.
 IF(PRESENT(KPTRGP))  YDCTX%LLINDER = .TRUE.
 IF(PRESENT(PGP))     YDCTX%LLPGPONLY = .TRUE.
-CALL TRGL_ALLOCATE_VARS(YLVARS, KF_GP)
+CALL TRGL_ALLOCATE_VARS(YLVARS, KF_GP,KF_FS)
 CALL TRGL_INIT_VARS(YLVARS, KF_SCALARS_G, PGP, PGPUV, PGP3A, PGP3B, PGP2)
 CALL GSTATS(1805,1)
 
 ! Copy local contribution
 
 IF(KSENDTOT(MYPROC) > 0 )THEN
-  CALL TRGL_INIT_OFF_VARS(YDCTX,YLVARS,KVSET,KPTRGP,KF_GP)  
-  CALL GSTATS(1601,0)  
+  CALL TRGL_INIT_OFF_VARS(YDCTX,YLVARS,KVSET,KPTRGP,KF_GP)
+  CALL GSTATS(1601,0)
   CALL TGRL_COPY_PGLAT(PGLAT, YDCTX, YLVARS, PGP, PGPUV, PGP3A, PGP3B, PGP2)
   CALL GSTATS(1601,1)
 ENDIF
@@ -352,15 +353,15 @@ ENDIF
 
 !....Pack+send loop.........................................................
 
-CALL TGRL_INIT_PACKING_VARS(.TRUE., YDCTX,YLVARS, KVSET, KF_GP, ZCOMBUFS) !.TRUE. for LSEND
+CALL TGRL_INIT_PACKING_VARS(YDCTX,YLVARS, KVSET, KF_GP, ZCOMBUFS)
 
 DO INS=1,KNSEND
-  
+
   CALL TGRL_COPY_ZCOMBUF(YDCTX, YLVARS, INS, &
-                      &  ZCOMBUFS, & 
+                      &  ZCOMBUFS, &
                       & KPTRGP, &
                       PGP, PGPUV, PGP3A, PGP3B, PGP2)
-  
+
 ENDDO
 
 DO INS=1,KNSEND
