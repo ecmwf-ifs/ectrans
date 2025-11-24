@@ -23,7 +23,7 @@ ecbuild_add_library( TARGET transi_dp
                       $<INSTALL_INTERFACE:include>
   PRIVATE_LIBS        trans_dp
                       $<${ectrans_HAVE_ETRANS}:etrans_dp>
-  PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+  PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${HAVE_MPI}
                       ECTRANS_HAVE_ETRANS=${ectrans_HAVE_ETRANS}
 )
 ecbuild_target_fortran_module_directory( TARGET transi_dp
@@ -42,7 +42,7 @@ if( HAVE_GPU )
                         $<INSTALL_INTERFACE:include>
     PRIVATE_LIBS        trans_gpu_dp
                         $<${HAVE_ETRANS_GPU}:etrans_gpu_dp>
-    PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+    PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${HAVE_MPI}
                         ECTRANS_GPU_VERSION
                         ECTRANS_HAVE_ETRANS=0
   )
