@@ -42,6 +42,8 @@ endif()
 
 if( HAVE_GPU_AWARE_MPI AND NOT fiat_HAVE_MPL_F08 )
   set( USE_RAW_MPI 1 )
+else()
+  set( USE_RAW_MPI 0)
 endif()
 
 set( GPU_LIBRARY_TYPE SHARED )
