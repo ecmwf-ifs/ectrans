@@ -31,10 +31,11 @@ CONTAINS
     TYPE(BUFFERED_ALLOCATOR), INTENT(INOUT) :: ALLOCATOR
     INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
     TYPE(TRLTOMAD_HANDLE) :: HTRLTOMAD
-
+    INTEGER(KIND=JPIB) :: IALLOC_SZ
     REAL(KIND=JPRBT) :: DUMMY
 
-    HTRLTOMAD%HFOUBUF_IN = RESERVE(ALLOCATOR, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(DUMMY), "HTRLTOM%HFOUBUF_IN")
+    IALLOC_SZ = 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(DUMMY)
+    HTRLTOMAD%HFOUBUF_IN = RESERVE(ALLOCATOR, IALLOC_SZ, "HTRLTOM%HFOUBUF_IN")
   END FUNCTION
 
   SUBROUTINE TRLTOMAD(ALLOCATOR,HTRLTOMAD,PFBUF_IN,PFBUF,KF_FS)
@@ -78,14 +79,14 @@ CONTAINS
     !     Modifications.
     !     --------------
     !        Original : 95-10-01
-    !        Modified : 97-06-18 G. Mozdzynski - control MPI mailbox use
+    !        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
     !                                            (NCOMBFLEN) for nphase.eq.1
     !        Modified : 99-05-28  D.Salmond - Optimise copies.
     !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
     !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
     !                             passing and buffer packing
     !        G.Mozdzynski: 08-01-01 Cleanup
-    !        Y.Seity   : 07-08-30 Add barrier synchronisation under LSYNC_TRANS
+    !        Y.Seity   : 07-08-31 add barrier synchronisation under LSYNC_TRANS
     !     ------------------------------------------------------------------
 
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPIB
@@ -97,8 +98,8 @@ CONTAINS
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REAL4, MPI_REAL8
     ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
-    USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
+    USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
 
@@ -135,7 +136,7 @@ CONTAINS
     IF (LHOOK) CALL DR_HOOK('TRLTOMAD',0,ZHOOK_HANDLE)
 
     CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRLTOMAD%HFOUBUF_IN),&
-                  & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(PFBUF_IN(1)))
+        & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(PFBUF_IN(1)))
 
 
 #ifdef OMPGPU
@@ -205,18 +206,17 @@ CONTAINS
 #endif
 #endif
 #if ECTRANS_HAVE_MPI
-      CALL MPI_ALLTOALLV(PFBUF,ILENR,IOFFR,TRLTOMAD_DTYPE,&
-                       & PFBUF_IN,ILENS,IOFFS,TRLTOMAD_DTYPE,&
-                       & LOCAL_COMM,IERROR)
+      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRLTOMAD_DTYPE, PFBUF_IN, ILENS, IOFFS, &
+        &                TRLTOMAD_DTYPE, LOCAL_COMM,IERROR)
 #else
       CALL ABORT_TRANS("Should not be here: MPI is disabled")
 #endif
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
@@ -244,7 +244,8 @@ CONTAINS
       IEND = ISTA+ILEN-1
       CALL GSTATS(1607,0)
 #ifdef OMPGPU
-      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(IEND,ISTA,PFBUF_IN,PFBUF)
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) &
+      !$OMP SHARED(IEND,ISTA,PFBUF_IN,PFBUF)
 #endif
 #ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) FIRSTPRIVATE(ISTA,IEND)
@@ -263,6 +264,7 @@ CONTAINS
 #endif
 
     IF (LHOOK) CALL DR_HOOK('TRLTOMAD',1,ZHOOK_HANDLE)
+
     !     ------------------------------------------------------------------
-  END SUBROUTINE TRLTOMAD
+END SUBROUTINE TRLTOMAD
 END MODULE TRLTOMAD_MOD
