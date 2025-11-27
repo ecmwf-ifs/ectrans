@@ -14,7 +14,8 @@ USE PARKIND1, ONLY : JPIM
 
 IMPLICIT NONE
 
-PRIVATE TRLTOG_PROLOG, TRLTOG_COMM
+PUBLIC TRLTOG
+PRIVATE TRLTOG_COMM
 
 CONTAINS
 
@@ -64,7 +65,8 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DISTR       ,ONLY : D
-USE TRGL_MOD, ONLY : TRGL_BUFFERS
+USE TRGL_MOD, ONLY : TRGL_BUFFERS, ALLOCATE_BUFFERS_CST, TRGL_PROLOG, ALLOCATE_BUFFERS_SR
+
 IMPLICIT NONE
 
 REAL(KIND=JPRB),INTENT(IN)     :: PGLAT(KF_FS,D%NLENGTF)
@@ -78,7 +80,7 @@ REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL,INTENT(OUT)     :: PGP2(:,:,:)
 
-TYPE(TRGL_BUFFERS) :: YLCTX
+TYPE(TRGL_BUFFERS) :: YDBUFS
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -86,81 +88,21 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('TRLTOG',0,ZHOOK_HANDLE)
 
-CALL TRLTOG_PROLOG(KF_FS,KF_GP,KVSET,YLCTX)
+YDBUFS%LLTRGTOL = .FALSE.
+CALL ALLOCATE_BUFFERS_CST(YDBUFS)
+CALL GSTATS(1806, 0)
+CALL TRGL_PROLOG(KF_FS, KF_GP, KVSET, YDBUFS)
+CALL GSTATS(1806, 1)
+CALL ALLOCATE_BUFFERS_SR(YDBUFS, KF_GP)
 
 CALL TRLTOG_COMM(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET, &
-                 & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YLCTX)
+                 & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YDBUFS)
 
 IF (LHOOK) CALL DR_HOOK('TRLTOG',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
 END SUBROUTINE TRLTOG
-
-SUBROUTINE TRLTOG_PROLOG(KF_FS,KF_GP,KVSET,YDBUFS)
-
-!**** *TRLTOG_PROLOG * - prolog for transposition of grid point data from latitudinal
-!                 to column structure (this takes place between inverse
-!                 FFT and grid point calculations) : the purpose is essentially
-!                 to compute the size of communication buffers in order to enable
-!                 the use of automatic arrays later.
-!                 TRLTOG_PROLOG is the inverse of TRGTOL_PROLOG
-
-!     Purpose.
-!     --------
-
-!**   Interface.
-!     ----------
-!        *call* *TRLTOG_PROLOG(...)
-
-!        Explicit arguments :
-!        --------------------
-!           KVSET    - "v-set" for each field      (input)
-
-!        Implicit arguments :
-!        --------------------
-
-!     Method.
-!     -------
-!        See documentation
-
-!     Externals.
-!     ----------
-
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
-
-!     Author.
-!     -------
-!        R. El Khatib *Meteo-France*
-
-!     Modifications.
-!     --------------
-!        Original  : 18-Aug-2014 from trltog
-!     ------------------------------------------------------------------
-
-USE PARKIND1  ,ONLY : JPIM
-
-USE TRGL_MOD  ,ONLY : TRGL_BUFFERS, ALLOCATE_BUFFERS_CST, ALLOCATE_BUFFERS_SR, TRGL_PROLOG
-
-IMPLICIT NONE
-
-INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP
-TYPE (TRGL_BUFFERS), INTENT(INOUT) :: YDBUFS
-INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(KF_GP)
-
-!     ------------------------------------------------------------------
-!*       0.    Some initializations
-!              --------------------
-YDBUFS%LLTRGTOL = .FALSE.
-CALL ALLOCATE_BUFFERS_CST(YDBUFS)
-CALL GSTATS(1806,0)
-CALL TRGL_PROLOG(KF_FS,KF_GP,KVSET,YDBUFS)
-CALL GSTATS(1806,1)
-CALL ALLOCATE_BUFFERS_SR(YDBUFS, KF_GP)
-END SUBROUTINE TRLTOG_PROLOG
-
 
 SUBROUTINE TRLTOG_COMM(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,&
  & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YDBUFS)

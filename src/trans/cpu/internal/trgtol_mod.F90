@@ -11,7 +11,7 @@
 MODULE TRGTOL_MOD
 
 PUBLIC TRGTOL
-PRIVATE TRGTOL_PROLOG, TRGTOL_COMM
+PRIVATE TRGTOL_COMM
 
 CONTAINS
 
@@ -57,7 +57,7 @@ USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE TPM_DISTR       ,ONLY : D
-USE TRGL_MOD, ONLY : TRGL_BUFFERS, TRGL_VARS
+USE TRGL_MOD, ONLY : TRGL_BUFFERS, ALLOCATE_BUFFERS_CST, TRGL_PROLOG, ALLOCATE_BUFFERS_SR
 
 IMPLICIT NONE
 
@@ -72,7 +72,7 @@ REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL,INTENT(IN)     :: PGP2(:,:,:)
 
-TYPE (TRGL_BUFFERS) :: YLCTX
+TYPE (TRGL_BUFFERS) :: YDBUFS
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -80,82 +80,21 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 IF (LHOOK) CALL DR_HOOK('TRGTOL',0,ZHOOK_HANDLE)
 
-CALL TRGTOL_PROLOG(KF_FS,KF_GP,KVSET,YLCTX)
+YDBUFS%LLTRGTOL = .TRUE.
+CALL ALLOCATE_BUFFERS_CST(YDBUFS)
+CALL GSTATS(1805, 0)
+CALL TRGL_PROLOG(KF_FS, KF_GP, KVSET, YDBUFS)
+CALL GSTATS(1805, 1)
+CALL ALLOCATE_BUFFERS_SR(YDBUFS, KF_GP)
 
 CALL TRGTOL_COMM(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET, &
-                 & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YLCTX)
+                 & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YDBUFS)
 
 IF (LHOOK) CALL DR_HOOK('TRGTOL',1,ZHOOK_HANDLE)
 
 !     ------------------------------------------------------------------
 
 END SUBROUTINE TRGTOL
-
-SUBROUTINE TRGTOL_PROLOG(KF_FS,KF_GP,KVSET,YDBUFS)
-
-!**** *TRGTOL_PROLOG * - prolog for transposition of grid point data from column
-!                 structure to latitudinal. Reorganize data between
-!                 grid point calculations and direct Fourier Transform
-!                 the purpose is essentially
-!                 to compute the size of communication buffers in order to enable
-!                 the use of automatic arrays later.
-
-
-!     Purpose.
-!     --------
-
-
-!**   Interface.
-!     ----------
-!        *call* *trgtol_prolog(...)
-
-!        Explicit arguments :
-!        --------------------
-
-!        Implicit arguments :
-!        --------------------
-
-!     Method.
-!     -------
-!        See documentation
-
-!     Externals.
-!     ----------
-
-!     Reference.
-!     ----------
-!        ECMWF Research Department documentation of the IFS
-
-!     Author.
-!     -------
-!        R. El Khatib *Meteo-France*
-
-!     Modifications.
-!     --------------
-!        Original  : 18-Aug-2014 from trgtol
-!     ------------------------------------------------------------------
-
-USE PARKIND1  ,ONLY : JPIM
-
-USE TRGL_MOD  ,ONLY : TRGL_BUFFERS, ALLOCATE_BUFFERS_CST, ALLOCATE_BUFFERS_SR, TRGL_PROLOG
-
-IMPLICIT NONE
-
-INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP
-TYPE (TRGL_BUFFERS), INTENT(INOUT) :: YDBUFS
-INTEGER(KIND=JPIM),INTENT(IN) :: KVSET(KF_GP)
-
-!     ------------------------------------------------------------------
-!*       0.    Some initializations
-!              --------------------
-YDBUFS%LLTRGTOL = .TRUE.
-CALL ALLOCATE_BUFFERS_CST(YDBUFS)
-CALL GSTATS(1805,0)
-CALL TRGL_PROLOG(KF_FS,KF_GP,KVSET,YDBUFS)
-CALL GSTATS(1805,1)
-CALL ALLOCATE_BUFFERS_SR(YDBUFS, KF_GP)
-
-END SUBROUTINE TRGTOL_PROLOG
 
 SUBROUTINE TRGTOL_COMM(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,&
  & KPTRGP,PGP,PGPUV,PGP3A,PGP3B,PGP2,YDBUFS)
