@@ -1600,45 +1600,37 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   real(kind=jprb), intent(in) :: zspvor(:,:)
   real(kind=jprb), intent(in) :: zspdiv(:,:)
   real(kind=jprb), intent(in) :: zspscalar(:,:)
+  integer(kind=jpim) :: numfld
   integer(kind=jpib) :: icrc
-  integer(kind=jpim) :: jfld
   real(kind=jprb), allocatable :: gspfld(:,:)
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep)
-    allocate(gspfld(1,nspec2g))
+    allocate(gspfld(max(size(ivset), size(ivsetsc)), nspec2g))
   endif
 
-  icrc = 0
-  do jfld = 1, size(ivset, 1)
-    call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-      &            pspec=zspvor(jfld:jfld,:))
-    if (myproc == 1) then
-      call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-      write(noutdump, '(a," (",i0,") = ",z16.16)') "zspvor", jfld, icrc
-    endif
-  enddo
+  numfld = size(ivset)
+  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
+    &            pspec=zspvor)
+  if (myproc == 1) then
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
+  endif
 
-  icrc = 0
-  do jfld = 1, size(ivset, 1)
-    call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-      &            pspec=zspdiv(jfld:jfld,:))
-    if (myproc == 1) then
-      call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-      write(noutdump, '(a," (",i0,") = ",z16.16)') "zspdiv", jfld, icrc
-    endif
-  enddo
+  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
+    &            pspec=zspdiv)
+  if (myproc == 1) then
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
+  endif
 
-  icrc = 0
-  do jfld = 1, size(ivsetsc, 1)
-    call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivsetsc(jfld:jfld), kresol=1, &
-      &            pspec=zspscalar(jfld:jfld,:))
-    if (myproc == 1) then
-      call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-      write(noutdump, '(a," (",i0,") = ",z16.16)') "zspscalar", jfld, icrc
-    endif
-  enddo
-
+  numfld = size(ivsetsc)
+  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+    &            kvset=ivsetsc, pspec=zspscalar)
+  if (myproc == 1) then
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspscalar", icrc
+  endif
 
   if (myproc == 1) then
     write(nout,*) "close ", noutdump
@@ -1666,56 +1658,44 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   real(kind=jprb), intent(in), optional :: zspdiv(:,:)
   real(kind=jprb), intent(in), optional :: zspsc3a(:,:,:)
   real(kind=jprb), intent(in), optional :: zspsc2(:,:)
+  integer(kind=jpim) :: numfld, jfld
   integer(kind=jpib) :: icrc
-  integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), allocatable :: gspfld(:,:)
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep)
-    allocate(gspfld(1,nspec2g))
+    allocate(gspfld(max(size(ivset), 1), nspec2g)) ! size(ivsetsc2) is always 1
   endif
 
-  icrc = 0
-  do jfld = 1, size(ivset, 1)
-    call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-      &            pspec=zspvor(jfld:jfld,:))
+  numfld = size(ivset)
+  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
+    &            pspec=zspvor)
+  if (myproc == 1) then
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
+  endif
+
+  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
+    &            pspec=zspdiv)
+  if (myproc == 1) then
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
+  endif
+
+  do jfld = 1, size(zspsc3a, 3)
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
+      &            pspec=zspsc3a(:,:,jfld))
     if (myproc == 1) then
-      call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-      write(noutdump, '(a," (",i0,") = ",z16.16)') "zspvor", jfld, icrc
+      call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+      write(noutdump, '(a,"(",i0,") = ",z16.16)') "zspsc3a", jfld, icrc
     endif
   enddo
 
-  icrc = 0
-  do jfld = 1, size(ivset, 1)
-    call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-      &            pspec=zspdiv(jfld:jfld,:))
-    if (myproc == 1) then
-      call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-      write(noutdump, '(a," (",i0,") = ",z16.16)') "zspdiv", jfld, icrc
-    endif
-  enddo
-
-  icrc = 0
-   do jfld = 1, size(zspsc3a, 3)
-     do jlev = 1, size(ivset, 1)
-       call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jlev:jlev), &
-         &            kresol=1, pspec=zspsc3a(jlev:jlev,:,jfld))
-       if (myproc == 1) then
-         call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-         write(noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zspsc3a", jlev, jfld, icrc
-       endif
-     enddo
-   enddo
-
-   icrc = 0
-   do jfld = 1, size(ivsetsc2, 1)
-     call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivsetsc2(jfld:jfld), kresol=1, &
-       &            pspec=zspsc2(jfld:jfld,:))
-     if (myproc == 1) then
-       call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-       write(noutdump, '(a," (",i0,") = ",z16.16)') "zspsc2", jfld, icrc
-     endif
-   enddo
+  call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
+  if (myproc == 1) then
+    call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspsc2", icrc
+  endif
 
   if (myproc == 1) then
     write(nout,*) "close ", noutdump
