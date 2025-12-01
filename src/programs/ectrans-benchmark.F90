@@ -1613,6 +1613,7 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
     &            pspec=zspvor)
   if (myproc == 1) then
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
   endif
@@ -1620,6 +1621,7 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
     &            pspec=zspdiv)
   if (myproc == 1) then
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
   endif
@@ -1628,6 +1630,7 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
     &            kvset=ivsetsc, pspec=zspscalar)
   if (myproc == 1) then
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspscalar", icrc
   endif
@@ -1671,6 +1674,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
     &            pspec=zspvor)
   if (myproc == 1) then
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
   endif
@@ -1678,6 +1682,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
     &            pspec=zspdiv)
   if (myproc == 1) then
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
   endif
@@ -1686,6 +1691,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
       &            pspec=zspsc3a(:,:,jfld))
     if (myproc == 1) then
+      icrc = 0
       call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
       write(noutdump, '(a,"(",i0,") = ",z16.16)') "zspsc3a", jfld, icrc
     endif
@@ -1693,6 +1699,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
 
   call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
   if (myproc == 1) then
+    icrc = 0
     call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspsc2", icrc
   endif
