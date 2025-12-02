@@ -1615,22 +1615,26 @@ subroutine dump_checksums(filename, noutdump, &
   if (present(sp3d)) then
     numfld = size(ivset)
     do jfld = 1, size (sp3d, 3)
-      call egath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
-        &             kvset=ivset, pspec=sp3d(:,:,jfld))
       if (myproc == 1) then
+        call egath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+          &             kvset=ivset, pspec=sp3d(:,:,jfld))
         icrc = 0
         call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
         write(noutdump, '(a,"(",i0,") = ",z16.16)') "sp3d", jfld, icrc
+      else
+        call egath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=sp3d(:,:,jfld))
       endif
     enddo
   endif
 
   if (present(zspc2)) then
-    call egath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
     if (myproc == 1) then
+      call egath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
       icrc = 0
       call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
       write (noutdump, '(a," = ",z16.16)') "zspc2", icrc
+    else
+      call egath_spec(kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
     endif
   endif
 

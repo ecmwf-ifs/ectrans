@@ -1610,29 +1610,35 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   endif
 
   numfld = size(ivset)
-  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
-    &            pspec=zspvor)
   if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspvor)
     icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
 
-  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
-    &            pspec=zspdiv)
   if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspdiv)
     icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
   endif
 
   numfld = size(ivsetsc)
-  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
-    &            kvset=ivsetsc, pspec=zspscalar)
   if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivsetsc, pspec=zspscalar)
     icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspscalar", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivsetsc, pspec=zspscalar)
   endif
 
   if (myproc == 1) then
@@ -1671,37 +1677,45 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   endif
 
   numfld = size(ivset)
-  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
-    &            pspec=zspvor)
   if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspvor)
     icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
 
-  call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
-    &            pspec=zspdiv)
   if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspdiv)
     icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
   endif
 
   do jfld = 1, size(zspsc3a, 3)
-    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, &
-      &            pspec=zspsc3a(:,:,jfld))
     if (myproc == 1) then
+      call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+        &            kvset=ivset, pspec=zspsc3a(:,:,jfld))
       icrc = 0
       call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
       write(noutdump, '(a,"(",i0,") = ",z16.16)') "zspsc3a", jfld, icrc
+    else
+      call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspsc3a(:,:,jfld))
     endif
   enddo
 
-  call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
   if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
     icrc = 0
     call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspsc2", icrc
+  else
+    call gath_spec(kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
   endif
 
   if (myproc == 1) then
