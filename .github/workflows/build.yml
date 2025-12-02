@@ -152,7 +152,6 @@ jobs:
         ${ECTRANS_TOOLS}/install-nvhpc.sh --prefix /opt/nvhpc
         source /opt/nvhpc/env.sh
         echo "${NVHPC_DIR}/compilers/bin"                   >> $GITHUB_PATH
-        [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
 
     - name: Download Intel compiler
       if: contains( matrix.compiler, 'intel' )
