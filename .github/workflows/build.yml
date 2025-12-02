@@ -108,6 +108,10 @@ jobs:
         echo "CXX=${{ matrix.compiler_cxx }}"   >> $GITHUB_ENV
         echo "FC=${{ matrix.compiler_fc }}"     >> $GITHUB_ENV
 
+        if [[ "${{ matrix.compiler }}" = intel-classic ]]; then
+          echo "MKL_CBWR=AUTO,STRICT" >> $GITHUB_ENV
+        fi
+
         if [[ "${{ matrix.os }}" =~ macos ]]; then
           brew install ninja
         else
