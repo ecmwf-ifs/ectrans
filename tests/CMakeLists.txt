@@ -135,6 +135,12 @@ foreach( benchmark ${benchmarks} )
   # Add test for each parameter combination
   foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
+      # This test suite assumes a 4-core machine (e.g. Github runner) so we don't want to
+      # oversubscribe the cores
+      if( ${mpi} MATCHES "4" AND ${omp} GREATER "1" )
+        continue()
+      endif()
+
       # TCO47 truncation
       set( t 47 )
       set( grid O48 )
@@ -240,6 +246,12 @@ if( HAVE_ETRANS )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
+          # This test suite assumes a 4-core machine (e.g. Github runner) so we don't want to
+          # oversubscribe the cores
+          if( ${mpi} MATCHES "4" AND ${omp} GREATER "1" )
+            continue()
+          endif()
+
           set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
 
           ecbuild_add_test( TARGET ${base_title}_nfld0
