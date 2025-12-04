@@ -156,7 +156,7 @@ SUBROUTINE TRGTOL_COMM(PGLAT,KF_FS,KF_GP,KF_SCALARS_G,KVSET,&
 !        R. El Khatib 09-Sep-2020 64 bits addressing for PGLAT
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB    ,JPIB
+USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE MPL_MODULE  ,ONLY : MPL_RECV, MPL_SEND, MPL_WAIT, JP_NON_BLOCKING_STANDARD, MPL_WAITANY, &
@@ -167,7 +167,6 @@ USE TPM_DISTR       ,ONLY : D, MTAGGL,  &
      &                      NPRCIDS, MYPROC, NPROC
 USE TPM_TRANS       ,ONLY :  LGPNORM
 
-USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE TRGL_MOD  ,ONLY : TRGL_BUFFERS, TRGL_VARS, &
                              &TRGL_ALLOCATE_VARS, TRGL_ALLOCATE_HEAP_BUFFER,&
                              &TRGL_INIT_VARS, TRGL_INIT_OFF_VARS, &
