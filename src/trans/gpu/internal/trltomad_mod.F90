@@ -20,7 +20,7 @@ MODULE TRLTOMAD_MOD
     TYPE(ALLOCATION_RESERVATION_HANDLE) :: HFOUBUF_IN
   END TYPE
 CONTAINS
-  FUNCTION PREPARE_TRLTOMAD(ALLOCATOR, KF_FS) RESULT(HTRLTOMAD)
+  FUNCTION PREPARE_TRLTOMAD(ALLOCATOR, KF_LEG) RESULT(HTRLTOM)
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPIB
     USE TPM_DISTR,              ONLY: D
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, RESERVE
@@ -29,34 +29,33 @@ CONTAINS
     IMPLICIT NONE
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(INOUT) :: ALLOCATOR
-    INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
-    TYPE(TRLTOMAD_HANDLE) :: HTRLTOMAD
-    INTEGER(KIND=JPIB) :: IALLOC_SZ
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_LEG
+    TYPE(TRLTOMAD_HANDLE) :: HTRLTOM
+
     REAL(KIND=JPRBT) :: DUMMY
 
-    IALLOC_SZ = 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(DUMMY)
-    HTRLTOMAD%HFOUBUF_IN = RESERVE(ALLOCATOR, IALLOC_SZ, "HTRLTOM%HFOUBUF_IN")
+    HTRLTOM%HFOUBUF_IN = RESERVE(ALLOCATOR, 2_JPIB*D%NLENGT0B*KF_LEG*C_SIZEOF(DUMMY), "HTRLTOM%HFOUBUF_IN")
   END FUNCTION
 
-  SUBROUTINE TRLTOMAD(ALLOCATOR,HTRLTOMAD,PFBUF_IN,PFBUF,KF_FS)
-    !**** *TRLTOMAD * - transposition in Fourierspace
+  SUBROUTINE TRLTOMAD(ALLOCATOR,HTRLTOM,PFBUF_IN,PFBUF,KF_LEG)
+    !**** *trmtol * - transposition in Fourier space
 
     !     Purpose.
     !     --------
-    !              Transpose Fourier coefficients from partitioning
-    !              over latitudes to partitioning over wave numbers
-    !              This is done between inverse Legendre Transform
-    !              and inverse FFT.
-    !              This is the inverse routine of TRMTOLAD.
+    !              Transpose Fourier buffer data from partitioning
+    !              over wave numbers to partitioning over latitudes.
+    !              It is called between direct FFT and direct Legendre
+    !              transform.
+    !              This routine is the inverse of TRLTOM.
+
 
     !**   Interface.
     !     ----------
-    !        *CALL* *TRLTOMAD(...)*
+    !        *call* *trmtol(...)*
 
     !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
     !        --------------------          used for both input and output.
-
-    !                             KF_FS - Number of fields communicated
+    !                             KF_LEG - Number of fields communicated
 
     !        Implicit arguments :
     !        --------------------
@@ -105,7 +104,7 @@ CONTAINS
 
     IMPLICIT NONE
 
-    INTEGER(KIND=JPIM) ,INTENT(IN)  :: KF_FS
+    INTEGER(KIND=JPIM) ,INTENT(IN)  :: KF_LEG
     REAL(KIND=JPRBT)   ,INTENT(INOUT), POINTER :: PFBUF(:)
     REAL(KIND=JPRBT)   ,INTENT(OUT)  , POINTER :: PFBUF_IN(:)
 
@@ -122,9 +121,9 @@ CONTAINS
 #endif
 
 #ifdef PARKINDTRANS_SINGLE
-#define TRLTOMAD_DTYPE MPI_REAL4
+#define TRLTOM_DTYPE MPI_REAL4
 #else
-#define TRLTOMAD_DTYPE MPI_REAL8
+#define TRLTOM_DTYPE MPI_REAL8
 #endif
 
 #ifdef USE_RAW_MPI
@@ -135,8 +134,8 @@ CONTAINS
 
     IF (LHOOK) CALL DR_HOOK('TRLTOMAD',0,ZHOOK_HANDLE)
 
-    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRLTOMAD%HFOUBUF_IN),&
-        & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(PFBUF_IN(1)))
+    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRLTOM%HFOUBUF_IN),&
+                  & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_LEG*C_SIZEOF(PFBUF_IN(1)))
 
 
 #ifdef OMPGPU
@@ -148,10 +147,10 @@ CONTAINS
 
     IF(NPROC > 1) THEN
       DO J=1,NPRTRW
-        ILENS(J) = D%NLTSGTB(J)*2*KF_FS
-        IOFFS(J) = D%NSTAGT0B(J)*2*KF_FS
-        ILENR(J) = D%NLTSFTB(J)*2*KF_FS
-        IOFFR(J) = D%NSTAGT1B(J)*2*KF_FS
+        ILENS(J) = D%NLTSGTB(J)*2*KF_LEG
+        IOFFS(J) = D%NSTAGT0B(J)*2*KF_LEG
+        ILENR(J) = D%NLTSFTB(J)*2*KF_LEG
+        IOFFR(J) = D%NSTAGT1B(J)*2*KF_LEG
       ENDDO
 
       CALL GSTATS(806,0)
@@ -160,7 +159,7 @@ CONTAINS
       IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
       IF (ILENS(IRANK) /= ILENR(IRANK)) THEN
           WRITE(NERR,*) "ERROR", ILENS(IRANK), ILENR(IRANK)
-          CALL ABORT_TRANS("TRLTOMAD: Error - ILENS(IRANK) /= ILENR(IRANK)")
+          CALL ABORT_TRANS("TRLTOM: ILENS(IRANK) /= ILENR(IRANK)")
       ENDIF
       IF (ILENS(IRANK) > 0) THEN
           FROM_SEND = IOFFS(IRANK) + 1
@@ -197,22 +196,23 @@ CONTAINS
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
 #endif
 #else
-    !! this is safe-but-slow fallback for running without GPU-aware MPI
+      !! this is safe-but-slow fallback for running without GPU-aware MPI
 #ifdef OMPGPU
-    !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
+      !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
 #endif
 #ifdef ACCGPU
-    !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
+      !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
 #endif
 #endif
 #ifdef USE_RAW_MPI
-      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRLTOMAD_DTYPE, PFBUF_IN, ILENS, IOFFS, &
-        &                TRLTOMAD_DTYPE, LOCAL_COMM,IERROR)
+      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRLTOM_DTYPE, PFBUF_IN, ILENS, IOFFS, &
+        &                TRLTOM_DTYPE, LOCAL_COMM, IERROR)
 #else
       CALL MPL_ALLTOALLV(PSENDBUF=PFBUF, KSENDCOUNTS=ILENR, PRECVBUF=PFBUF_IN, KRECVCOUNTS=ILENS, &
         &                KSENDDISPL=IOFFR, KRECVDISPL=IOFFS, KCOMM=MPL_ALL_MS_COMM, &
         &                CDSTRING='TRLTOMAD:')
 #endif
+
 #ifdef USE_GPU_AWARE_MPI
 #ifdef ACCGPU
       !$ACC END HOST_DATA
@@ -221,12 +221,12 @@ CONTAINS
       !$OMP END TARGET DATA
 #endif
 #else
-    !! this is safe-but-slow fallback for running without GPU-aware MPI
-#ifdef OMPGPU
-    !$OMP TARGET UPDATE TO(PFBUF_IN)
-#endif
+      !! this is safe-but-slow fallback for running without GPU-aware MPI
 #ifdef ACCGPU
-    !$ACC UPDATE DEVICE(PFBUF_IN)
+      !$ACC UPDATE DEVICE(PFBUF_IN)
+#endif
+#ifdef OMPGPU
+      !$OMP TARGET UPDATE TO(PFBUF_IN)
 #endif
 #endif
       IF (LSYNC_TRANS) THEN
@@ -241,8 +241,8 @@ CONTAINS
 #endif
       CALL GSTATS(806,1)
     ELSE
-      ILEN = 2_JPIB*D%NLTSGTB(MYSETW)*KF_FS
-      ISTA = 2_JPIB*D%NSTAGT1B(MYSETW)*KF_FS+1
+      ILEN = 2_JPIB*D%NLTSGTB(MYSETW)*KF_LEG
+      ISTA = 2_JPIB*D%NSTAGT1B(MYSETW)*KF_LEG+1
       IEND = ISTA+ILEN-1
       CALL GSTATS(1607,0)
 #ifdef OMPGPU
