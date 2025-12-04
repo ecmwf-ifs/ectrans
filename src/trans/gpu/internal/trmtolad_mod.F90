@@ -10,17 +10,17 @@
 !
 
 MODULE TRMTOLAD_MOD
-USE BUFFERED_ALLOCATOR_MOD, ONLY: ALLOCATION_RESERVATION_HANDLE
-IMPLICIT NONE
+  USE BUFFERED_ALLOCATOR_MOD, ONLY: ALLOCATION_RESERVATION_HANDLE
+  IMPLICIT NONE
 
-PRIVATE
-PUBLIC :: TRMTOLAD, PREPARE_TRMTOLAD, TRMTOLAD_HANDLE
+  PRIVATE
+  PUBLIC :: TRMTOLAD, PREPARE_TRMTOLAD, TRMTOLAD_HANDLE
 
-TYPE TRMTOLAD_HANDLE
+  TYPE TRMTOLAD_HANDLE
     TYPE(ALLOCATION_RESERVATION_HANDLE) :: HFOUBUF_IN
-END TYPE
+  END TYPE
 CONTAINS
-FUNCTION PREPARE_TRMTOLAD(ALLOCATOR, KF_LEG) RESULT(HTRMTOLAD)
+  FUNCTION PREPARE_TRMTOLAD(ALLOCATOR, KF_FS) RESULT(HTRMTOLAD)
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPIB
     USE TPM_DISTR,              ONLY: D
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, RESERVE
@@ -29,34 +29,33 @@ FUNCTION PREPARE_TRMTOLAD(ALLOCATOR, KF_LEG) RESULT(HTRMTOLAD)
     IMPLICIT NONE
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(INOUT) :: ALLOCATOR
-    INTEGER(KIND=JPIM), INTENT(IN) :: KF_LEG
+    INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
     TYPE(TRMTOLAD_HANDLE) :: HTRMTOLAD
-    INTEGER(KIND=JPIB) :: IALLOC_SZ
+
     REAL(KIND=JPRBT) :: DUMMY
 
-    IALLOC_SZ = 2_JPIB*D%NLENGT1B*KF_LEG*C_SIZEOF(DUMMY)
-    HTRMTOLAD%HFOUBUF_IN = RESERVE(ALLOCATOR, IALLOC_SZ, "HTRMTOLAD%HFOUBUF_IN")
-END FUNCTION
+    HTRMTOLAD%HFOUBUF_IN = RESERVE(ALLOCATOR, 2_JPIB*D%NLENGT1B*KF_FS*C_SIZEOF(DUMMY), "HTRMTOLAD%HFOUBUF_IN")
+  END FUNCTION
 
-SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
-    !**** *TRMTOLAD * - transposition in Fourier space
+  SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_FS)
+    !**** *TRMTOL * - transposition in Fourierspace
 
     !     Purpose.
     !     --------
-    !              Transpose Fourier buffer data from partitioning
-    !              over wave numbers to partitioning over latitudes.
-    !              It is called between direct FFT and direct Legendre
-    !              transform.
-    !              This routine is the inverse of TRLTOMAD.
-
+    !              Transpose Fourier coefficients from partitioning
+    !              over latitudes to partitioning over wave numbers
+    !              This is done between inverse Legendre Transform
+    !              and inverse FFT.
+    !              This is the inverse routine of TRMTOL.
 
     !**   Interface.
     !     ----------
-    !        *CALL* *TRMTOLAD(...)*
+    !        *CALL* *TRMTOL(...)*
 
     !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
     !        --------------------          used for both input and output.
-    !                             KF_LEG - Number of fields communicated
+
+    !                             KF_FS - Number of fields communicated
 
     !        Implicit arguments :
     !        --------------------
@@ -79,33 +78,33 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
     !     Modifications.
     !     --------------
     !        Original : 95-10-01
-    !        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
+    !        Modified : 97-06-18 G. Mozdzynski - control MPI mailbox use
     !                                            (NCOMBFLEN) for nphase.eq.1
     !        Modified : 99-05-28  D.Salmond - Optimise copies.
     !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
     !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
     !                             passing and buffer packing
     !        G.Mozdzynski: 08-01-01 Cleanup
-    !        Y.Seity   : 07-08-31 add barrier synchronisation under LSYNC_TRANS
+    !        Y.Seity   : 07-08-30 Add barrier synchronisation under LSYNC_TRANS
     !     ------------------------------------------------------------------
 
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPIB
     USE YOMHOOK,                ONLY: LHOOK, DR_HOOK, JPHOOK
-    USE MPL_MODULE,             ONLY: MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK
+    USE MPL_MODULE,             ONLY: MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK
     USE TPM_DISTR,              ONLY: D, NPRTRW, NPROC, MYSETW
     USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR, LMPOFF
 #ifdef USE_RAW_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REAL4, MPI_REAL8
     ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
-    USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
     USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
+    USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
     USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
 
     IMPLICIT NONE
 
-    INTEGER(KIND=JPIM) ,INTENT(IN)  :: KF_LEG
+    INTEGER(KIND=JPIM) ,INTENT(IN)  :: KF_FS
     REAL(KIND=JPRBT), INTENT(IN)           :: PFBUF(:)
     REAL(KIND=JPRBT), INTENT(OUT), POINTER :: PFBUF_IN(:)
 
@@ -116,16 +115,15 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
     INTEGER(KIND=JPIM) :: IERROR
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
-    TYPE(TRMTOLAD_HANDLE), INTENT(IN) :: HTRMTOLAD
-
+    TYPE(TRMTOLAD_HANDLE), INTENT(IN) :: HTRMTOL
 #ifdef USE_RAW_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
 #endif
 
 #ifdef PARKINDTRANS_SINGLE
-#define TRMTOLAD_DTYPE MPI_REAL4
+#define TRMTOL_DTYPE MPI_REAL4
 #else
-#define TRMTOLAD_DTYPE MPI_REAL8
+#define TRMTOL_DTYPE MPI_REAL8
 #endif
 
 #ifdef USE_RAW_MPI
@@ -136,8 +134,8 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
 
     IF (LHOOK) CALL DR_HOOK('TRMTOLAD',0,ZHOOK_HANDLE)
 
-    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRMTOLAD%HFOUBUF_IN),&
-        & 1_JPIB, 2_JPIB*D%NLENGT1B*KF_LEG*C_SIZEOF(PFBUF_IN(1)))
+    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRMTOL%HFOUBUF_IN),&
+        & 1_JPIB, 2_JPIB*D%NLENGT1B*KF_FS*C_SIZEOF(PFBUF_IN(1)))
 
 #ifdef OMPGPU
     !$OMP TARGET DATA MAP(PRESENT,ALLOC:PFBUF,PFBUF_IN)
@@ -148,10 +146,10 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
 
     IF(NPROC > 1) THEN
       DO J=1,NPRTRW
-        ILENS(J) = D%NLTSFTB(J)*2*KF_LEG
-        IOFFS(J) = D%NSTAGT1B(J)*2*KF_LEG
-        ILENR(J) = D%NLTSGTB(J)*2*KF_LEG
-        IOFFR(J) = D%NSTAGT0B(J)*2*KF_LEG
+        ILENS(J) = D%NLTSFTB(J)*2*KF_FS
+        IOFFS(J) = D%NSTAGT1B(J)*2*KF_FS
+        ILENR(J) = D%NLTSGTB(J)*2*KF_FS
+        IOFFR(J) = D%NSTAGT0B(J)*2*KF_FS
       ENDDO
 
       CALL GSTATS(807,0)
@@ -160,7 +158,7 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
       IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
       IF (ILENS(IRANK) /= ILENR(IRANK)) THEN
           WRITE(NERR,*) "ERROR", ILENS(IRANK), ILENR(IRANK)
-          CALL ABORT_TRANS("TRMTOLAD: Error - ILENS(IRANK) /= ILENR(IRANK)")
+          CALL ABORT_TRANS("TRMTOL: Error - ILENS(IRANK) /= ILENR(IRANK)")
       ENDIF
       IF (ILENS(IRANK) > 0) THEN
           FROM_SEND = IOFFS(IRANK) + 1
@@ -212,19 +210,19 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
 #endif
 #endif
 #ifdef USE_RAW_MPI
-      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRMTOLAD_DTYPE, PFBUF_IN, ILENS, IOFFS, &
-        &                TRMTOLAD_DTYPE, LOCAL_COMM,IERROR)
+      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRMTOL_DTYPE, PFBUF_IN, ILENS, IOFFS, &
+        &                TRMTOL_DTYPE, LOCAL_COMM, IERROR)
 #else
       CALL MPL_ALLTOALLV(PSENDBUF=PFBUF, KSENDCOUNTS=ILENR, PRECVBUF=PFBUF_IN, KRECVCOUNTS=ILENS, &
         &                KSENDDISPL=IOFFR, KRECVDISPL=IOFFS, KCOMM=MPL_ALL_MS_COMM, &
         &                CDSTRING='TRMTOLAD:')
 #endif
 #ifdef USE_GPU_AWARE_MPI
-#ifdef ACCGPU
-      !$ACC END HOST_DATA
-#endif
 #ifdef OMPGPU
       !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
@@ -250,8 +248,8 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
 #endif
       CALL GSTATS(807,1)
     ELSE
-      ILEN = 2_JPIB*D%NLTSGTB(MYSETW)*KF_LEG
-      ISTA = 2_JPIB*D%NSTAGT0B(MYSETW)*KF_LEG+1
+      ILEN = 2_JPIB*D%NLTSGTB(MYSETW)*KF_FS
+      ISTA = 2_JPIB*D%NSTAGT0B(MYSETW)*KF_FS+1
       IEND = ISTA+ILEN-1
       CALL GSTATS(1608,0)
 #ifdef OMPGPU
@@ -274,8 +272,7 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
     !$ACC END DATA
 #endif
 
-    IF (LHOOK) CALL DR_HOOK('TRMTOLAD',1,ZHOOK_HANDLE)
-
+    IF (LHOOK) CALL DR_HOOK('TRMTOL',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------
-END SUBROUTINE TRMTOLAD
+  END SUBROUTINE TRMTOLAD
 END MODULE TRMTOLAD_MOD
