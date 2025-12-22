@@ -105,7 +105,7 @@ ecbuild_add_option( FEATURE TRANSI
 # attempt to find HIP
 set(HAVE_CUDA 0)
 set(HAVE_HIP 0)
-if ( NOT HAVE_GPU_HOST )
+if( NOT HAVE_GPU_HOST )
   if( ECTRANS_ENABLE_GPU OR (NOT DEFINED ECTRANS_ENABLE_GPU AND ENABLE_GPU))
     ectrans_find_cuda() # sets "HAVE_CUDA"
     if( NOT HAVE_CUDA )
