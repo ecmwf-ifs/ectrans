@@ -117,6 +117,18 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
 
         case CUFFT_NOT_SUPPORTED:
         return "CUFFT_NOT_SUPPORTED";
+
+        case CUFFT_MISSING_DEPENDENCY:
+        return "CUFFT_MISSING_DEPENDENCY";
+
+        case CUFFT_NVRTC_FAILURE:
+        return "CUFFT_NVRTC_FAILURE";
+
+        case CUFFT_NVJITLINK_FAILURE:
+        return "CUFFT_NVJITLINK_FAILURE";
+
+        case CUFFT_NVSHMEM_FAILURE:
+        return "CUFFT_NVSHMEM_FAILURE";
     }
 
     return "<unknown>";
