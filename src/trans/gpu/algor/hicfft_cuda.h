@@ -118,6 +118,9 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
         case CUFFT_NOT_SUPPORTED:
         return "CUFFT_NOT_SUPPORTED";
 
+// These are only available from 13.0 onwards
+// https://docs.nvidia.com/cuda/archive/12.9.1/cufft/index.html#return-value-cufftresult
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
         case CUFFT_MISSING_DEPENDENCY:
         return "CUFFT_MISSING_DEPENDENCY";
 
@@ -129,6 +132,7 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
 
         case CUFFT_NVSHMEM_FAILURE:
         return "CUFFT_NVSHMEM_FAILURE";
+#endif
 
 // These are deprecated from CUDA 13.0 onwards
 // https://docs.nvidia.com/cuda/cufft/#deprecated-functionality
