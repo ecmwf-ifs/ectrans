@@ -129,6 +129,19 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
 
         case CUFFT_NVSHMEM_FAILURE:
         return "CUFFT_NVSHMEM_FAILURE";
+
+// These are deprecated from CUDA 13.0 onwards
+// https://docs.nvidia.com/cuda/cufft/#deprecated-functionality
+#if defined(CUDART_VERSION) && CUDART_VERSION < 13000
+        case CUFFT_INCOMPLETE_PARAMETER_LIST:
+        return "CUFFT_INCOMPLETE_PARAMETER_LIST";
+
+        case CUFFT_PARSE_ERROR:
+        return "CUFFT_PARSE_ERROR";
+
+        case CUFFT_LICENSE_ERROR:
+        return "CUFFT_LICENSE_ERROR";
+#endif
     }
 
     return "<unknown>";
