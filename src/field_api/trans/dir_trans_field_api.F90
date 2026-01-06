@@ -221,11 +221,13 @@ ENDIF
 ! 2. scalar fields transformation
 
 ! Preliminary checks
-IF (PRESENT(YDFSPSCALAR) .NEQV. PRESENT(YDFSCALAR))  CALL ABOR1("[DIR_TRANS_FIELD_API]  YDFSPSCALAR and YDFSCALAR must be provided together")
+IF (PRESENT(YDFSPSCALAR) .NEQV. PRESENT(YDFSCALAR))  CALL ABOR1("[DIR_TRANS_FIELD_API] YDFSPSCALAR and YDFSCALAR &
+                                                               & must be provided together")
 
 ! Do we have scalar fields?
 IF (PRESENT(YDFSPSCALAR)) THEN
-  IF ((SIZE(YDFSPSCALAR)/= SIZE(YDFSCALAR)))  CALL ABOR1("[DIR_TRANS_FIELD_API] Inconsistent size for YDFSPSCALAR and YDFSCALAR")
+  IF ((SIZE(YDFSPSCALAR)/= SIZE(YDFSCALAR)))  CALL ABOR1("[DIR_TRANS_FIELD_API] Inconsistent size &
+                                                         & for YDFSPSCALAR and YDFSCALAR")
 
   ! Convert list of spectral scalar fields of any dimension into a list of 2d fields
   ALLOCATE(YLGVSCALAR(LG_COUNT(YDFSCALAR)))

@@ -161,10 +161,14 @@ LLUVDER = .FALSE.
 
 ! Preliminary checks
 
-IF (PRESENT(YDFU) .NEQV. PRESENT(YDFV)) CALL ABOR1("[INV_TRANS_FIELD_API]  YDFU and YDFV must be provided together")
-IF (PRESENT(YDFSPDIV) .NEQV. PRESENT(YDFSPVOR)) CALL ABOR1("[INV_TRANS_FIELD_API]  YDFSPDIV and YDFSPVOR must be provided together")
-IF (PRESENT(YDFU) .AND. .NOT. PRESENT(YDFSPVOR)) CALL ABOR1("[INV_TRANS_FIELD_API] YDFU and YDFSPVOR must be provided together")
-IF (PRESENT(YDFU) .AND. .NOT. PRESENT(YDFSPDIV)) CALL ABOR1("[INV_TRANS_FIELD_API] YDFU and YDFSPDIV must be provided together")
+IF (PRESENT(YDFU)      .NEQV. PRESENT(YDFV))     CALL ABOR1("[INV_TRANS_FIELD_API]  YDFU and YDFV &
+                                                           & must be provided together")
+IF (PRESENT(YDFSPDIV)  .NEQV. PRESENT(YDFSPVOR)) CALL ABOR1("[INV_TRANS_FIELD_API]  YDFSPDIV and YDFSPVOR &
+                                                           & must be provided together")
+IF (PRESENT(YDFU) .AND. .NOT. PRESENT(YDFSPVOR)) CALL ABOR1("[INV_TRANS_FIELD_API] YDFU and YDFSPVOR &
+                                                           & must be provided together")
+IF (PRESENT(YDFU) .AND. .NOT. PRESENT(YDFSPDIV)) CALL ABOR1("[INV_TRANS_FIELD_API] YDFU and YDFSPDIV &
+                                                           & must be provided together")
 
 ! Do we have vector fields?
 IF (PRESENT(YDFU)) THEN
@@ -280,11 +284,13 @@ ENDIF
 
 ! Preliminary checks
 
-IF (PRESENT(YDFSPSCALAR) .NEQV. PRESENT(YDFSCALAR)) CALL ABOR1("[INV_TRANS_FIELD_API]  YDFSPSCALAR and YDFSCALAR must be provided together")
+IF (PRESENT(YDFSPSCALAR) .NEQV. PRESENT(YDFSCALAR)) CALL ABOR1("[INV_TRANS_FIELD_API]  YDFSPSCALAR and YDFSCALAR &
+                                                              & must be provided together")
 
 IF (PRESENT(YDFSPSCALAR)) THEN
 
-  IF ((SIZE(YDFSPSCALAR)/= SIZE(YDFSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_API] Inconsistent size for YDFSPSCALAR and YDFSCALAR")
+  IF ((SIZE(YDFSPSCALAR)/= SIZE(YDFSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_API] Inconsistent size & 
+                                                        & for YDFSPSCALAR and YDFSCALAR")
 
   ! Convert list of spectral scalar fields of any domension into a list of 2d fields
   IFLDSPSC = LS_COUNT(YDFSPSCALAR)
