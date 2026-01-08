@@ -329,6 +329,7 @@ endforeach()
 # Add tests for field API interface, using the benchmark program
 # --------------------------------------------------------------------------------------------------
 
+if (HAVE_FIELD_API)
 foreach( benchmark ${benchmarks} )
   # Establish which task/thread parameters to test
   set( ntasks 0 )
@@ -417,10 +418,12 @@ foreach( benchmark ${benchmarks} )
         ectrans_set_test_properties( ${base_title}_nfld10_nlev20_flt )
       endif()
 
-  endforeach()
-    endforeach()
-  endforeach()
-endforeach()
+      endforeach() # callmode
+    endforeach() # omp
+  endforeach() # mpi
+endforeach() # benchmark
+endif(HAVE_FIELD_API)
+
 # --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans LAM benchmark (i.e. etrans), using the benchmark
 # program
