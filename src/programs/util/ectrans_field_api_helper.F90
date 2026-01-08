@@ -1,10 +1,10 @@
 module ectrans_field_api_helper
 
-use field_module, only:field_1rb, field_2rb, field_3rb, field_4rb
-use field_factory_module
 use parkind1, only: jpim, jprb, jprd
-#include "field_basic_type_ptr.h"
-#include "field_api_ectrans.h"
+use field_module, only: field_1rb, field_2rb, field_3rb, field_4rb
+use field_factory_module, only: field_delete, field_new
+use ectrans_field_api_basic_type_mod, only : field_basic_ptr
+use ectrans_field_api_mod, only: make_field
 
 implicit none
 

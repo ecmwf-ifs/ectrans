@@ -7,18 +7,22 @@
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 
-MODULE FIELD_API_BASIC_TYPE_MOD
+MODULE ECTRANS_FIELD_API_BASIC_TYPE_MOD
 
 USE FIELD_BASIC_MODULE, ONLY: FIELD_BASIC
 
 IMPLICIT NONE
 
+PRIVATE
+
+PUBLIC :: FIELD_BASIC_PTR
+
 TYPE FIELD_BASIC_PTR
- ! A pointer to field API field with additional METADA
+ ! A pointer to field API field with additional METADATA
   CLASS (FIELD_BASIC), POINTER :: PTR      ! POINTER TO FIELD_BASIC from field API
   INTEGER, ALLOCATABLE         :: IVSET(:) ! b-set  for spectral fields
   CHARACTER(LEN=10)            :: NAME     ! Name
 END TYPE
 
-END MODULE FIELD_API_BASIC_TYPE_MOD
+END MODULE ECTRANS_FIELD_API_BASIC_TYPE_MOD
 
