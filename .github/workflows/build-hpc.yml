@@ -122,6 +122,10 @@ jobs:
                 cmake_options:
                   - -DENABLE_MPI=ON
                   - ${{ matrix.cmake_options || '' }}
+              ecmwf-ifs/field_api:
+                version: main
+                cmake_options:
+                  - ${{ matrix.cmake_options || '' }}
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
