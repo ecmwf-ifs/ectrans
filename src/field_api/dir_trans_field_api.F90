@@ -90,7 +90,6 @@ REAL(KIND=JPRB):: S
 INTEGER(KIND=JPIM),ALLOCATABLE :: IVSETUV(:)
 INTEGER(KIND=JPIM),ALLOCATABLE :: IVSETSC2(:)
 
-INTEGER(KIND=JPIM) :: ISPUV
 INTEGER(KIND=JPIM) :: IFLDXG
 INTEGER(KIND=JPIM) :: IFLDXL
 INTEGER(KIND=JPIM) :: IFLDSPVOR
@@ -110,7 +109,6 @@ REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS_FIELD_API',0,ZHOOK_HANDLE)
 
-ISPUV = 0
 IFLDXG  = 0
 IFLDXL = 0
 IFLDSPVOR= 0
@@ -152,8 +150,7 @@ IF (PRESENT(YDFU)) THEN
   ENDIF
 
   IUVG = SIZE(YDFU)
-  ISPUV = SIZE(YDFSPVOR)
-
+  
   IUVDIM = 2
 
   ! allocate temporary vector field arrays in spectral space
@@ -207,8 +204,7 @@ IF (PRESENT(YDFU)) THEN
   ENDDO
 ELSE
   ! No vector field provided
-  IUVG = 0
-  ISPUV = 0
+  IUVG = 0  
   ZPGPUV=>NULL()
   ZPSPVOR=>NULL()
   ZPSPDIV=>NULL()
@@ -275,8 +271,7 @@ IF (PRESENT(YDFSPSCALAR)) THEN
   ENDDO
 
 ELSE
-  !No scalar field provided
-  ISPUV = 0
+  !No scalar field provided  
   IFLDXG = 0
   ZPGP2=>NULL()
   ZPSPSC2=>NULL()
