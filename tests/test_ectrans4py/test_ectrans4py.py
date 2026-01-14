@@ -107,12 +107,16 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         offset += nlon
 
     def test_get_legendre_assets(self):
-        nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
+        truncation = 39
+        nlat = 2 * (truncation + 1)
+        nspec = sum([truncation + 2 - im for im in range(truncation + 1)])
+        lons_per_lat = [20 + 4 * i for i in range(nlat // 2)]
+        lons_per_lat = numpy.array(lons_per_lat + lons_per_lat[::-1], dtype=numpy.int32)
         _, weights, _ = ectrans4py.get_legendre_assets(
-            self.gpdims['lat_number'],
-            self.truncation['max'],
+            nlat,
+            truncation,
             nspec,
-            self.gpdims['lon_number_by_lat']
+            lons_per_lat
         )
         weights_sum = sum(weights)
         # The sum of the Gaussian weights should be equal to 1.0
@@ -123,8 +127,8 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         for truncation in [39, 79]:
             nlat = 2 * (truncation + 1)
             nspec = sum([truncation + 2 - im for im in range(truncation + 1)])
-            lons_per_lat = [20 + 4 * i for i in range(nlat)]
-            lons_per_lat = numpy.array(lons_per_lat + lons_per_lat[::-1])
+            lons_per_lat = [20 + 4 * i for i in range(nlat // 2)]
+            lons_per_lat = numpy.array(lons_per_lat + lons_per_lat[::-1], dtype=numpy.int32)
             _, _, _ = ectrans4py.get_legendre_assets(
                 nlat,
                 truncation,
