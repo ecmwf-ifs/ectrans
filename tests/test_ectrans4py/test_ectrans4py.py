@@ -111,7 +111,6 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         _, weights, _ = ectrans4py.get_legendre_assets(
             self.gpdims['lat_number'],
             self.truncation['max'],
-            len(self.gpdims['lon_number_by_lat']),
             nspec,
             self.gpdims['lon_number_by_lat']
         )
@@ -129,7 +128,6 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             _, _, _ = ectrans4py.get_legendre_assets(
                 nlat,
                 truncation,
-                nlat,
                 nspec,
                 lons_per_lat
             )
