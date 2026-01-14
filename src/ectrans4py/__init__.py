@@ -114,11 +114,11 @@ def get_legendre_assets(NLAT, KTRUNC, KSPOLEGL, KLOEN):
     3) PRPNM: associated Legendre polynomials
     """
     return ([NLAT, KTRUNC, KSPOLEGL, KLOEN],
-            [(np.int64, None, IN), # NLAT
-             (np.int64, None, IN), # KTRUNC
-             (np.int64, None, IN), # KSPOLEGL
-             (np.int64, (NLAT,), IN), # KLOEN
-             (np.int64, (NLAT,), OUT), # KNMENG
+            [(np.int32, None, IN), # NLAT
+             (np.int32, None, IN), # KTRUNC
+             (np.int32, None, IN), # KSPOLEGL
+             (np.int32, (NLAT,), IN), # KLOEN
+             (np.int32, (NLAT,), OUT), # KNMENG
              (np.float64, (NLAT,), OUT), # PGW
              (np.float64, (NLAT//2,KSPOLEGL), OUT)], # PRPNM
             None)
