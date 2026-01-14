@@ -108,17 +108,31 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
 
     def test_get_legendre_assets(self):
         nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
-        knmeng, weights, polys = ectrans4py.get_legendre_assets(
+        _, weights, _ = ectrans4py.get_legendre_assets(
             self.gpdims['lat_number'],
             self.truncation['max'],
             len(self.gpdims['lon_number_by_lat']),
             nspec,
-            self.gpdims['lon_number_by_lat'],
-            KNUMMAXRESOL
+            self.gpdims['lon_number_by_lat']
         )
         weights_sum = sum(weights)
         # The sum of the Gaussian weights should be equal to 1.0
         self.assertTrue(abs(weights_sum - 1.0) < EPSILON, f"sum of weights is {weights_sum}")
+
+    def test_get_legendre_assets_multiple(self):
+        # Test we can get Legendre assets with multiple truncations
+        for truncation in [39, 79]:
+            nlat = 2 * (truncation + 1)
+            nspec = sum([truncation + 2 - im for im in range(truncation + 1)])
+            lons_per_lat = [20 + 4 * i for i in range(nlat)]
+            lons_per_lat = numpy.array(lons_per_lat + lons_per_lat[::-1])
+            _, _, _ = ectrans4py.get_legendre_assets(
+                nlat,
+                truncation,
+                nlat,
+                nspec,
+                lons_per_lat
+            )
 
     def test_trans_inq4py(self):
         spectral_data_sizes = ectrans4py.trans_inq4py(
