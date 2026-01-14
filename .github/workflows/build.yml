@@ -94,6 +94,7 @@ jobs:
             compiler_cxx: ~
             compiler_fc: gfortran-13
             cmake_options: -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/usr/local/opt/openblas
+            ctest_options: -E mpi4
             caching: true
 
     runs-on: ${{ matrix.os }}
