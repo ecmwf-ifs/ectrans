@@ -93,7 +93,7 @@ jobs:
             compiler_cc: ~
             compiler_cxx: ~
             compiler_fc: gfortran-13
-            cmake_options: -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/usr/local/opt/openblas
+            cmake_options: -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas
             ctest_options: -E mpi4
             caching: true
 
