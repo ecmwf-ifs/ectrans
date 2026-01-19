@@ -13,7 +13,7 @@ CONTAINS
 SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
  & PSPVOR,PSPDIV,PSPSCALAR,&
  & PSPSC3A,PSPSC3B,PSPSC2,&
- & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
+ & KFLDPTRUV,KFLDPTRSC)
 
 !**** *LTINV_CTLAD* - Control routine for inverse Legandre transform - adj.
 
@@ -33,8 +33,6 @@ SUBROUTINE LTINV_CTLAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,&
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
 !     KFLDPTRUV(:) - field pointer array for vor./div.
 !     KFLDPTRSC(:) - field pointer array for PSPSCALAR
-!     FSPGL_PROC  - external procedure to be executed in fourier space
-!                   before transposition
 
 !     Method.
 !     -------
@@ -72,8 +70,6 @@ REAL(KIND=JPRB) ,OPTIONAL, INTENT(OUT)  :: PSPSC3B(:,:,:)
 REAL(KIND=JPRB) ,OPTIONAL, INTENT(OUT)  :: PSPSC2(:,:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRUV(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN) :: KFLDPTRSC(:)
-EXTERNAL  FSPGL_PROC
-OPTIONAL  FSPGL_PROC
 
 INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILEI2,IDIM1
 
@@ -107,7 +103,7 @@ IF(KF_OUT_LT > 0) THEN
     CALL LTINVAD(IM,JM,KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,ILEI2,IDIM1,&
      & PSPVOR,PSPDIV,PSPSCALAR,&
      & PSPSC3A,PSPSC3B,PSPSC2 , &
-     & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC)
+     & KFLDPTRUV,KFLDPTRSC)
   ENDDO
 #if !(defined(__GFORTRAN__) && __GNUC__ == 10 && __GNUC_MINOR__ <= 2)
 !$OMP END PARALLEL DO

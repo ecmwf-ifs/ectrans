@@ -42,6 +42,7 @@ real(kind=jprd) :: zmaxerrg
 integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
 integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
+integer(kind=jpim), parameter :: noutdump_checksum = 8 ! Unit number for dump_checksum
 
 ! Default parameters
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
@@ -641,9 +642,9 @@ do jstep = 1, iters+iters_warmup
       ! Remove trash at end of last block
       iend = ngptot - nproma * (ngpblks - 1)
       zgp (iend+1:, :, ngpblks) = 0
-      write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
-      call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
-        &                 myproc=myproc, nproma=nproma, ngptotg=ngptotg, zgp=zgp)
+      write(checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
+      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
+        &                     myproc=myproc, nproma=nproma, ngptotg=ngptotg, zgp=zgp)
     endif
   else
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
@@ -657,10 +658,10 @@ do jstep = 1, iters+iters_warmup
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
-      call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
-        &                 myproc=myproc, nproma=nproma, ngptotg=ngptotg, zgpuv=zgpuv, zgp3a=zgp3a, &
-        &                 zgp2=zgp2)
+      write(checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
+      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
+        &                             myproc=myproc, nproma=nproma, ngptotg=ngptotg, zgpuv=zgpuv, zgp3a=zgp3a, &
+        &                             zgp2=zgp2)
     endif
   endif
   call gstats(4,1)
@@ -697,10 +698,10 @@ do jstep = 1, iters+iters_warmup
       &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
 
     if (ldump_checksums) then
-        write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-        call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
-          &                 myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, nspec2g=nspec2g, &
-          &                 zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
+        write(checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
+          &                     myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, nspec2g=nspec2g, &
+          &                     zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     endif
 
   else
@@ -710,10 +711,10 @@ do jstep = 1, iters+iters_warmup
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
 
     if (ldump_checksums) then
-      write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-      call dump_checksums(filename=checksums_filename, noutdump=noutdump, jstep=jstep, &
-        &                 myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
-        &                 zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
+      write(checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+      call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
+        &                          myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
+        &                          zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
     endif
 
   endif
@@ -1452,190 +1453,278 @@ end subroutine dump_gridpoint_field
 
 !===================================================================================================
 
-subroutine dump_checksums(filename, noutdump,                      &
-                        & jstep, myproc, nproma, ngptotg, nspec2g, &
-                        & ivset, ivsetsc, ivsetsc2,                &
-                        & zgp, zgpuv, zgp3a, zgp2,                 &
-                        & zspvor, zspdiv, zspscalar,               &
+subroutine open_dump_checksums_file(filename, noutdump, jstep)
+
+  character(len=*),   intent(in) :: filename
+  integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
+  integer(kind=jpim), intent(in) :: jstep
+  logical :: exist
+
+  exist = .false.
+  if (jstep > 1) inquire(file=trim(filename), exist=exist)
+  if (exist) then
+    write(nout,*) "re-opening ",  trim(filename), noutdump
+    open(noutdump, file=trim(filename), status="old", position="append", action="write")
+  else
+    write(nout,*) "opening ",  trim(filename), noutdump
+    open(noutdump, file=trim(filename), action="write")
+  endif
+
+  write(noutdump,*) "===================="
+  write(noutdump,*) "iteration", jstep
+  write(noutdump,*) "===================="
+
+end subroutine open_dump_checksums_file
+
+!===================================================================================================
+
+subroutine dump_checksums_pgp(filename, noutdump,             &
+                            & jstep, myproc, nproma, ngptotg, &
+                            & zgp)
+
+  character(len=*),   intent(in) :: filename
+  integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
+  integer(kind=jpim), intent(in) :: jstep    ! time step
+  integer(kind=jpim), intent(in) :: myproc   ! mpi rank
+  integer(kind=jpim), intent(in) :: nproma   ! size of nproma
+  integer(kind=jpim), intent(in) :: ngptotg
+  real(kind=jprb), intent(in) :: zgp(:,:,:)
+  integer(kind=jpib) :: icrc
+  integer(kind=jpim) :: jfld
+  real(kind=jprb), allocatable :: gfld(:,:)
+
+  if (myproc == 1) then
+   call open_dump_checksums_file(filename, noutdump, jstep)
+
+   allocate(gfld(ngptotg,1))
+  endif
+
+  icrc = 0
+  do jfld = 1, size(zgp, 2)
+    call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+      &            pgp=zgp(:,jfld:jfld,:))
+    if (myproc == 1) then
+      call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
+      write(noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
+    endif
+  enddo
+
+  if (myproc == 1) then
+    write(nout,*) "close ", noutdump
+    close(noutdump)
+    if (allocated(gfld)) deallocate(gfld)
+  endif
+
+end subroutine dump_checksums_pgp
+
+!===================================================================================================
+
+subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
+                        & jstep, myproc, nproma, ngptotg, &
+                        &  zgpuv, zgp3a, zgp2)
+
+  character(len=*),   intent(in) :: filename
+  integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
+  integer(kind=jpim), intent(in) :: jstep    ! time step
+  integer(kind=jpim), intent(in) :: myproc   ! mpi rank
+  integer(kind=jpim), intent(in) :: nproma   ! size of nproma
+  integer(kind=jpim), intent(in) :: ngptotg
+  real(kind=jprb), intent(in) :: zgpuv(:,:,:,:)
+  real(kind=jprb), intent(in) :: zgp3a(:,:,:,:)
+  real(kind=jprb), intent(in) :: zgp2(:,:,:)
+
+  integer(kind=jpib) :: icrc
+  integer(kind=jpim) :: jlev, jfld
+  real(kind=jprb), allocatable :: gfld(:,:)
+
+  if (myproc == 1) then
+    call open_dump_checksums_file(filename, noutdump, jstep)
+    allocate(gfld(ngptotg,1))
+  endif
+
+  icrc = 0
+  do jfld = 1, size(zgpuv, 3)
+    do jlev = 1, size(zgpuv, 2)
+      call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+        &            pgp=zgpuv(:,jlev:jlev,jfld,:))
+      if (myproc == 1) then
+        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
+        write(noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
+      endif
+    enddo
+  enddo
+
+  icrc = 0
+  do jfld = 1, size(zgp3a, 3)
+    do jlev = 1, size(zgp3a, 2)
+      call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+        &            pgp=zgp3a(:,jlev:jlev,jfld,:))
+      if (myproc == 1) then
+        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
+        write(noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
+      endif
+    enddo
+  enddo
+
+  icrc = 0
+  do jfld = 1, size(zgp2, 2)
+    call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
+      &            pgp=zgp2(:,jfld:jfld,:))
+    if (myproc == 1) then
+      call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
+      write(noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
+    endif
+  enddo
+
+  if (myproc == 1) then
+    write(nout,*) "close ", noutdump
+    close(noutdump)
+    if (allocated(gfld)) deallocate(gfld)
+  endif
+
+end subroutine dump_checksums_pgp_uv_3a_2
+
+!===================================================================================================
+
+subroutine dump_checksums_psp(filename, noutdump,       &
+                        & jstep, myproc,  nspec2g,      &
+                        & ivset, ivsetsc,               &
+                        & zspvor, zspdiv, zspscalar)
+  character(len=*),   intent(in) :: filename
+  integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
+  integer(kind=jpim), intent(in) :: jstep    ! time step
+  integer(kind=jpim), intent(in) :: myproc   ! mpi rank
+  integer(kind=jpim), intent(in) :: nspec2g
+  integer(kind=jpim), intent(in) :: ivset(:)
+  integer(kind=jpim), intent(in) :: ivsetsc(:)
+  real(kind=jprb), intent(in) :: zspvor(:,:)
+  real(kind=jprb), intent(in) :: zspdiv(:,:)
+  real(kind=jprb), intent(in) :: zspscalar(:,:)
+  integer(kind=jpim) :: numfld
+  integer(kind=jpib) :: icrc
+  real(kind=jprb), allocatable :: gspfld(:,:)
+
+  if (myproc == 1) then
+    call open_dump_checksums_file(filename, noutdump, jstep)
+    allocate(gspfld(max(size(ivset), size(ivsetsc)), nspec2g))
+  endif
+
+  numfld = size(ivset)
+  if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspvor)
+    icrc = 0
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
+  endif
+
+  if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspdiv)
+    icrc = 0
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
+  endif
+
+  numfld = size(ivsetsc)
+  if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivsetsc, pspec=zspscalar)
+    icrc = 0
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspscalar", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivsetsc, pspec=zspscalar)
+  endif
+
+  if (myproc == 1) then
+    write(nout,*) "close ", noutdump
+    close(noutdump)
+    if (allocated(gspfld)) deallocate(gspfld)
+  endif
+
+end subroutine dump_checksums_psp
+
+!===================================================================================================
+
+subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
+                        & jstep, myproc, nspec2g, &
+                        & ivset, ivsetsc2,              &
+                        & zspvor, zspdiv,               &
                         & zspsc3a, zspsc2)
   character(len=*),   intent(in) :: filename
   integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
   integer(kind=jpim), intent(in) :: jstep    ! time step
   integer(kind=jpim), intent(in) :: myproc   ! mpi rank
-  integer(kind=jpim), intent(in), optional :: nproma   ! size of nproma
-  integer(kind=jpim), intent(in), optional :: ngptotg
   integer(kind=jpim), intent(in), optional :: nspec2g
   integer(kind=jpim), intent(in), optional :: ivset(:)
-  integer(kind=jpim), intent(in), optional :: ivsetsc(:)
   integer(kind=jpim), intent(in), optional :: ivsetsc2(:)
-  real(kind=jprb), intent(in), optional :: zgp   (:,:,:)
-  real(kind=jprb), intent(in), optional :: zgpuv   (:,:,:,:)
-  real(kind=jprb), intent(in), optional :: zgp3a   (:,:,:,:)
-  real(kind=jprb), intent(in), optional :: zgp2   (:,:,:)
-  real(kind=jprb), intent(in), optional :: zspvor (:,:)
-  real(kind=jprb), intent(in), optional :: zspdiv (:,:)
-  real(kind=jprb), intent(in), optional :: zspscalar (:,:)
-  real(kind=jprb), intent(in), optional :: zspsc3a (:,:,:)
-  real(kind=jprb), intent(in), optional :: zspsc2 (:,:)
+  real(kind=jprb), intent(in), optional :: zspvor(:,:)
+  real(kind=jprb), intent(in), optional :: zspdiv(:,:)
+  real(kind=jprb), intent(in), optional :: zspsc3a(:,:,:)
+  real(kind=jprb), intent(in), optional :: zspsc2(:,:)
+  integer(kind=jpim) :: numfld, jfld
   integer(kind=jpib) :: icrc
-  integer(kind=jpim) :: jlev, jfld
-  real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)
-  logical :: exist = .false.
-  integer(kind=jpib) :: iconfig
 
-  if (present(zgp) .and. present(ngptotg) .and. present(nproma)) then
-    ! call mode 1, grid point
-    iconfig = 1
-  else if (present(zgpuv) .and. present(zgp3a) .and. present(zgp2) .and. present(ngptotg) &
-    &      .and. present(nproma)) then
-    ! call mode 2, grid point
-    iconfig = 2
-  else if (present(zspvor) .and. present(zspdiv) .and. present(zspscalar) .and. present(ivset) &
-    &      .and. present(ivsetsc) .and. present(nspec2g)) then
-    ! call mode 1, spectral
-    iconfig = 3
-  else if (present(zspvor) .and. present(zspdiv) .and. present(zspsc3a) .and. present(zspsc2) &
-    &      .and. present(ivset) .and. present(ivsetsc2) .and. present(nspec2g)) then
-    ! call mode 2, spectral
-    iconfig = 4
+  if (myproc == 1) then
+    call open_dump_checksums_file(filename, noutdump, jstep)
+    allocate(gspfld(max(size(ivset), 1), nspec2g)) ! size(ivsetsc2) is always 1
+  endif
+
+  numfld = size(ivset)
+  if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspvor)
+    icrc = 0
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
   else
-    call abor1("dump_checksums: invalid argument combination")
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
 
   if (myproc == 1) then
-    if (jstep > 1) inquire(file=filename, exist=exist)
-    if (exist) then
-      open(noutdump, file=filename, status="old", position="append", action="write")
+    call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+      &            kvset=ivset, pspec=zspdiv)
+    icrc = 0
+    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
+  else
+    call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
+  endif
+
+  do jfld = 1, size(zspsc3a, 3)
+    if (myproc == 1) then
+      call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+        &            kvset=ivset, pspec=zspsc3a(:,:,jfld))
+      icrc = 0
+      call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+      write(noutdump, '(a,"(",i0,") = ",z16.16)') "zspsc3a", jfld, icrc
     else
-      open(noutdump, file=filename, action="write")
+      call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspsc3a(:,:,jfld))
     endif
+  enddo
 
-    write(noutdump,*) "===================="
-    write(noutdump,*) "iteration", jstep
-    write(noutdump,*) "===================="
-
-    if (iconfig == 1 .or. iconfig == 2) then
-      allocate(gfld(ngptotg,1))
-    endif
-    if (iconfig == 3 .or. iconfig == 4) then
-      allocate(gspfld(1,nspec2g))
-    endif
-  endif
-
-  if (iconfig == 1) then
+  if (myproc == 1) then
+    call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
     icrc = 0
-    do jfld = 1, size(zgp, 2)
-      call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
-        &            pgp=zgp(:,jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
-      endif
-    enddo
-  endif
-
-  if (iconfig == 2) then
-    icrc = 0
-    do jfld = 1, size(zgpuv, 3)
-      do jlev = 1, size(zgpuv, 2)
-        call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
-          &            pgp=zgpuv(:,jlev:jlev,jfld,:))
-        if (myproc == 1) then
-          call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
-        endif
-      enddo
-    enddo
-
-    icrc = 0
-    do jfld = 1, size(zgp3a, 3)
-      do jlev = 1, size(zgp3a, 2)
-        call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
-          &            pgp=zgp3a(:,jlev:jlev,jfld,:))
-        if (myproc == 1) then
-          call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
-        endif
-      enddo
-    enddo
-
-    icrc = 0
-    do jfld = 1, size(zgp2, 2)
-      call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
-        &            pgp=zgp2(:,jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
-      endif
-    enddo
-  endif
-
-  if (iconfig == 3 .or. iconfig == 4) then
-    icrc = 0
-    do jfld = 1, size(ivset, 1)
-      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-        &            pspec=zspvor(jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zspvor", jfld, icrc
-      endif
-    enddo
-
-    icrc = 0
-    do jfld = 1, size(ivset, 1)
-      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-        &            pspec=zspdiv(jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zspdiv", jfld, icrc
-      endif
-    enddo
-  endif
-
-  if (iconfig == 3) then
-    icrc = 0
-    do jfld = 1, size(ivsetsc, 1)
-      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivsetsc(jfld:jfld), kresol=1, &
-        &            pspec=zspscalar(jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zspscalar", jfld, icrc
-      endif
-    enddo
-  endif
-
-  if (iconfig == 4) then
-    icrc = 0
-    do jfld = 1, size(zspsc3a, 3)
-      do jlev = 1, size(ivset, 1)
-        call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jlev:jlev), &
-          &            kresol=1, pspec=zspsc3a(jlev:jlev,:,jfld))
-        if (myproc == 1) then
-          call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zspsc3a", jlev, jfld, icrc
-        endif
-      enddo
-    enddo
-
-    icrc = 0
-    do jfld = 1, size(ivsetsc2, 1)
-      call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivsetsc2(jfld:jfld), kresol=1, &
-        &            pspec=zspsc2(jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64(gspfld(:,:), int(size(gspfld(:,:)) * kind(gspfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zspsc2", jfld, icrc
-      endif
-    enddo
+    call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
+    write(noutdump, '(a," = ",z16.16)') "zspsc2", icrc
+  else
+    call gath_spec(kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
   endif
 
   if (myproc == 1) then
+    write(nout,*) "close ", noutdump
     close(noutdump)
-    if (allocated(gfld))   deallocate(gfld)
     if (allocated(gspfld)) deallocate(gspfld)
   endif
 
-end subroutine dump_checksums
+end subroutine dump_checksums_psp_3a_2
 
 !===================================================================================================
 

@@ -106,14 +106,8 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
         case CUFFT_UNALIGNED_DATA:
         return "CUFFT_UNALIGNED_DATA";
 
-        case CUFFT_INCOMPLETE_PARAMETER_LIST:
-        return "CUFFT_INCOMPLETE_PARAMETER_LIST";
-
         case CUFFT_INVALID_DEVICE:
         return "CUFFT_INVALID_DEVICE";
-
-        case CUFFT_PARSE_ERROR:
-        return "CUFFT_PARSE_ERROR";
 
         case CUFFT_NO_WORKSPACE:
         return "CUFFT_NO_WORKSPACE";
@@ -123,6 +117,35 @@ inline static const char * _fftGetErrorEnum(cufftResult error)
 
         case CUFFT_NOT_SUPPORTED:
         return "CUFFT_NOT_SUPPORTED";
+
+// These are only available from 13.0 onwards
+// https://docs.nvidia.com/cuda/archive/12.9.1/cufft/index.html#return-value-cufftresult
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+        case CUFFT_MISSING_DEPENDENCY:
+        return "CUFFT_MISSING_DEPENDENCY";
+
+        case CUFFT_NVRTC_FAILURE:
+        return "CUFFT_NVRTC_FAILURE";
+
+        case CUFFT_NVJITLINK_FAILURE:
+        return "CUFFT_NVJITLINK_FAILURE";
+
+        case CUFFT_NVSHMEM_FAILURE:
+        return "CUFFT_NVSHMEM_FAILURE";
+#endif
+
+// These are deprecated from CUDA 13.0 onwards
+// https://docs.nvidia.com/cuda/cufft/#deprecated-functionality
+#if defined(CUDART_VERSION) && CUDART_VERSION < 13000
+        case CUFFT_INCOMPLETE_PARAMETER_LIST:
+        return "CUFFT_INCOMPLETE_PARAMETER_LIST";
+
+        case CUFFT_PARSE_ERROR:
+        return "CUFFT_PARSE_ERROR";
+
+        case CUFFT_LICENSE_ERROR:
+        return "CUFFT_LICENSE_ERROR";
+#endif
     }
 
     return "<unknown>";
