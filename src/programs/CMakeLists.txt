@@ -27,7 +27,7 @@ foreach( program ectrans-benchmark )
                                 DEFINITIONS
                                   VERSION="cpu"
         )
-        ectrans_target_fortran_module_directory(TARGET ${program}-cpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-cpu-${prec} )
+        ecbuild_target_fortran_module_directory(TARGET ${program}-cpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-cpu-${prec} )
       endif()
     endforeach( prec)
   endif()
@@ -57,7 +57,7 @@ foreach( program ectrans-benchmark )
                                   VERSION="gpu"
                                   ${util_PRIVATE_DEFINITIONS}
         )
-        ectrans_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
+        ecbuild_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
       endif()
     endforeach( prec )
   endif( HAVE_GPU )
