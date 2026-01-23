@@ -73,6 +73,7 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 IF (LHOOK) CALL DR_HOOK('EASRE1B_MOD:EASRE1B',0,ZHOOK_HANDLE)
 
 !$acc parallel loop collapse(3) private (JM, JGL, JFLD, IPROC, IISTAN) &
+!$acc& present (D, R) &
 !$acc& present (PFFT, D%NSTAGT0B, D%NPNTGTB1, D%NPROCL, D%NUMP, R%NDGL, FOUBUF_IN) &
 !$acc& copyin(KFIELD) default(none)
 DO JM = 1, D%NUMP  !100

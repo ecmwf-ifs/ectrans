@@ -27,7 +27,7 @@ SUBROUTINE DIST_GRID_32(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP)
 !     KPROMA      - required blocking factor for gridpoint input
 !     KFROM(:)    - Processor resposible for distributing each field
 !     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
+!                   first defined resolution (input)
 !     PGP(:,:)  - Local spectral array
 !
 !     Method.

@@ -31,7 +31,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 !     Explicit arguments : All arguments are optional.
 !     --------------------
 !     KRESOL   - resolution tag for which info is required ,default is the
-!                first defined resulution (input)
+!                first defined resolution (input)
 
 !                   MULTI-TRANSFORMS MANAGEMENT
 !     KDEF_RESOL - number or resolutions defined
@@ -425,8 +425,8 @@ ENDIF
 
 IF(PRESENT(PRPNM)) THEN
 
-  IF( .NOT. S%LKEEPRPNM ) THEN
-    CALL ABORT_TRANS('TRANS_INQ: PRPNM REQUIRED BUT S%LKEEPRPNM=F')
+  IF( .NOT. S%LKEEPRPNM .AND. S%LUSEFLT) THEN
+    CALL ABORT_TRANS('TRANS_INQ: PRPNM REQUIRED BUT POLYS. HAVE NOT BEEN KEPT')
   ENDIF
   
   IF(D%LGRIDONLY) THEN

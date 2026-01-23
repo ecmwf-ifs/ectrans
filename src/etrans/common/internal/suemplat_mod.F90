@@ -139,7 +139,7 @@ INTEGER(KIND=JPIM) ::  IPTRLATITUDE, JA, JGL
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
 LOGICAL :: LLFOURIER
-LOGICAL  :: LLDEBUG=.FALSE.
+LOGICAL, PARAMETER  :: LLDEBUG=.FALSE.
 
 !      -----------------------------------------------------------------
 

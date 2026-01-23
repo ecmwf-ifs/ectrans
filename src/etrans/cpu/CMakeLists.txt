@@ -42,16 +42,77 @@ function(generate_backend_sources)
     generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
     list(APPEND outfiles ${outfile})
   endforeach(file_i)
+
   set(${_PAR_OUTPUT} ${outfiles} PARENT_SCOPE)
 endfunction(generate_backend_sources)
 
 set( BUILD_INTERFACE_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include/ectrans )
 
+function(generate_etrans_dummy_sources)
+  set (options)
+  set (oneValueArgs BACKEND DESTINATION OUTPUT)
+  set (multiValueArgs)
+
+  cmake_parse_arguments(_PAR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  set(backend ${_PAR_BACKEND})
+  set(destination ${_PAR_DESTINATION})
+
+  file(MAKE_DIRECTORY ${destination}/external)
+
+  # Build list of interface files to generate dummy sources for
+  ecbuild_list_add_pattern( LIST include_files
+    GLOB etrans/*.h
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/etrans/include
+    QUIET
+  )
+
+  foreach( include_file ${include_files} )
+    cmake_path( GET include_file STEM file_stem )
+    set(dummy_source "${file_stem}.F90")
+
+    # First generate a dummy source file from the interface that just contains an abort
+    file( READ ${include_file} contents )
+    string( REPLACE "END INTERFACE" "" contents "${contents}" )
+    string( REPLACE "INTERFACE" "" contents "${contents}" )
+    string(
+      REPLACE "IMPLICIT NONE" "USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS\nIMPLICIT NONE"
+      contents "${contents}"
+    )
+    string(
+      REPLACE "END SUBROUTINE"
+        "CALL ABORT_TRANS(\"etrans dummy library - you should not be here\")\nEND SUBROUTINE"
+      contents "${contents}"
+    )
+    file( WRITE ${CMAKE_CURRENT_BINARY_DIR}/generated/etrans_dummy/${dummy_source} "${contents}" )
+
+    # Then run the dummy source through the normal backend file generator
+    set(outfile "${destination}/${dummy_source}")
+    ecbuild_debug("Generate ${outfile}")
+    generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_BINARY_DIR}/generated/etrans_dummy/${dummy_source} OUTPUT ${outfile})
+    list(APPEND outfiles ${outfile})
+  endforeach( include_file )
+  set(${_PAR_OUTPUT} ${outfiles} PARENT_SCOPE)
+endfunction(generate_etrans_dummy_sources)
+
 foreach( prec dp sp )
   if( HAVE_${prec} )
 
     generate_backend_includes(BACKEND ${prec} TARGET ectrans_lam_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/etrans/include )
-    generate_backend_sources( BACKEND ${prec} OUTPUT ectrans_lam_${prec}_src  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_lam_${prec})
+
+    if( NOT HAVE_ETRANS )
+      generate_etrans_dummy_sources(
+        BACKEND     ${prec}
+        OUTPUT      ectrans_lam_${prec}_src
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_lam_${prec}
+      )
+    else()
+      generate_backend_sources(
+        BACKEND     ${prec}
+        OUTPUT      ectrans_lam_${prec}_src
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_lam_${prec}
+      )
+    endif()
+
     ecbuild_add_library(
       TARGET           ectrans_lam_${prec}
       LINKER_LANGUAGE  Fortran
@@ -68,30 +129,32 @@ foreach( prec dp sp )
       INSTALL_DIRECTORY module/ectrans
     )
 
-    set( FFTW_LINK PRIVATE )
-    if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
-        ecbuild_warn( "Danger: Both MKL and FFTW are linked in trans_${prec}. "
-                      "No guarantees on link order can be made for the final executable.")
-        set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
-    endif()
-    ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
-    target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
-    target_include_directories( ectrans_lam_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-    target_compile_definitions( ectrans_lam_${prec} PRIVATE WITH_FFTW )
-    # daand: lam transforms don't need lapack
-    #ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
-    #target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
+    if( HAVE_ETRANS )
+      set( FFTW_LINK PRIVATE )
+      if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
+          ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_lam_${prec}. "
+                        "No guarantees on link order can be made for the final executable.")
+          set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
+      endif()
+      ecbuild_debug("target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
+      target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+      target_include_directories( ectrans_lam_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+      target_compile_definitions( ectrans_lam_${prec} PRIVATE WITH_FFTW )
+      # daand: lam transforms don't need lapack
+      #ecbuild_debug("target_link_libraries( ectrans_lam_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
+      #target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
 
-    if( HAVE_OMP )
-      ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-      target_link_libraries( ectrans_lam_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      if( HAVE_OMP )
+        ecbuild_debug("target_link_libraries( ectrans_lam_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
+        target_link_libraries( ectrans_lam_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+      endif()
     endif()
 
     # This interface library is for backward compatibility, and provides the older includes
     ecbuild_add_library( TARGET etrans_${prec} TYPE INTERFACE )
     target_include_directories( etrans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_${prec}> )
     target_include_directories( etrans_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_${prec}> )
-  target_link_libraries( etrans_${prec} INTERFACE ectrans_lam_${prec}) # seems ok to omit fiat, parkind, trans here.
+    target_link_libraries( etrans_${prec} INTERFACE ectrans_lam_${prec} )
   endif()
 endforeach()
 

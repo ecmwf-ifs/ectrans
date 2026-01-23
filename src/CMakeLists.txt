@@ -8,12 +8,10 @@
 
 add_subdirectory( trans )
 add_subdirectory( programs )
-if( HAVE_ETRANS )
-  add_subdirectory(etrans)
-endif()
 if( HAVE_TRANSI )
   add_subdirectory(transi)
 endif()
+add_subdirectory(etrans)
 if(HAVE_ECTRANS4PY)
   add_subdirectory(ectrans4py)
 endif()

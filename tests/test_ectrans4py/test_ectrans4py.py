@@ -106,6 +106,20 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         gpdata[offset:offset+nlon] = gpdata_latlon[i,:nlon]
         offset += nlon
 
+    def test_get_legendre_assets(self):
+        nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
+        knmeng, weights, polys = ectrans4py.get_legendre_assets(
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            nspec,
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL
+        )
+        weights_sum = sum(weights)
+        # The sum of the Gaussian weights should be equal to 1.0
+        self.assertTrue(abs(weights_sum - 1.0) < EPSILON, f"sum of weights is {weights_sum}")
+
     def test_trans_inq4py(self):
         spectral_data_sizes = ectrans4py.trans_inq4py(
             self.gpdims['lat_number'],

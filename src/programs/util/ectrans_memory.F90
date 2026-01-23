@@ -81,7 +81,7 @@ end type
 
 type(allocator_t) :: allocator
 
-character(kind=c_char), pointer, private :: c_label(:)
+character(kind=c_char), pointer, private :: c_label(:) => null()
 
 interface
     function c_allocate_var(bytes) result(ptr) bind(c, name="ectrans_memory_allocate_var")
@@ -114,7 +114,8 @@ interface
         integer(c_int), value :: logging
     end subroutine
 
-    subroutine c_set_logging_fortran_output_unit(output_unit) bind(c, name="ectrans_memory_set_logging_fortran_output_unit")
+    subroutine c_set_logging_fortran_output_unit(output_unit) bind(c, &
+          & name="ectrans_memory_set_logging_fortran_output_unit")
         use iso_c_binding, only: c_int
         integer(c_int), value :: output_unit
     end subroutine
@@ -533,7 +534,7 @@ contains
             use, intrinsic :: iso_c_binding
             character(kind=c_char,len=1), intent(in) :: s(:)
             character(len=:), allocatable :: string
-            integer i, nchars
+            integer :: i, nchars
             do i = 1, size(s)
             if (s(i) == c_null_char) exit
             enddo

@@ -94,7 +94,7 @@ IF (JLOT==0) THEN
 ENDIF
 
 !$ACC DATA PRESENT(ZFFT_L,ZFFT_L_OUT,RALD%NLOENS_LAT,RALD%NOFFSETS_LAT)
-CALL EXECUTE_DIR_FFT(ZFFT_L(:),ZFFT_L_OUT(:),NCUR_RESOL,-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
+CALL EXECUTE_DIR_FFT(ZFFT_L,ZFFT_L_OUT,NCUR_RESOL,-JLOT, &    ! -JLOT to have hicfft make distinction between zonal and meridional direction. Don't worry, abs(JLOT) is used internally ...
     & LOENS=RALD%NLOENS_LAT, &
     & OFFSETS=RALD%NOFFSETS_LAT,ALLOC=ALLOCATOR%PTR)
 !$ACC END DATA

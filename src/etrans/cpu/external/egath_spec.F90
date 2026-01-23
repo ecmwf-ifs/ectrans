@@ -28,7 +28,7 @@ SUBROUTINE EGATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,K
 !     KTO(:)      - Processor responsible for gathering each field
 !     KVSET(:)    - "B-Set" for each field
 !     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
+!                   first defined resolution (input)
 !     PSPEC(:,:)  - Local spectral array
 !     LDZA0IP     - Set to zero imaginary part of first coefficients
 

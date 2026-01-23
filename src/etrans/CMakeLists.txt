@@ -37,6 +37,7 @@ function(generate_file)
     COMMENT "Generating ${output}"
     VERBATIM
   )
+
 endfunction(generate_file)
 
 
@@ -72,7 +73,7 @@ function(generate_backend_includes)
       generate_file(BACKEND ${backend} INPUT ${_PAR_INCLUDE_DIRECTORY}/${file_i} OUTPUT ${outfile})
       list(APPEND outfiles ${outfile})
       string(TOUPPER ${outfile_name_we} OUTFILE_NAME_WE )
-      ecbuild_debug("Generate ${destination}/trans_${backend}/${outfile_name}")
+      ecbuild_debug("Generate ${destination}/etrans_${backend}/${outfile_name}")
       file(WRITE  ${destination}/etrans_${backend}/${outfile_name} "! Automatically generated interface header for backward compatibility of generic symbols !\n")
       file(APPEND ${destination}/etrans_${backend}/${outfile_name} "#if defined(${outfile_name_we})\n")
       file(APPEND ${destination}/etrans_${backend}/${outfile_name} "#undef ${outfile_name_we}\n")
@@ -98,7 +99,6 @@ if( HAVE_CPU)
   add_subdirectory( cpu )
 endif()
 
-# placeholder
 if( HAVE_GPU )
   add_subdirectory( gpu )
 endif()

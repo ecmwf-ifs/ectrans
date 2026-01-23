@@ -13,7 +13,7 @@ MODULE ELTINVAD_MOD
 CONTAINS
 SUBROUTINE ELTINVAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,KLEI2,&
  & PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
- & KFLDPTRUV,KFLDPTRSC,FSPGL_PROC,PSPMEANU,PSPMEANV)
+ & KFLDPTRUV,KFLDPTRSC,PSPMEANU,PSPMEANV)
 
 !**** *ELTINVAD* - Control routine for inverse Legandre transform - adj.
 
@@ -33,8 +33,6 @@ SUBROUTINE ELTINVAD(KF_OUT_LT,KF_UV,KF_SCALARS,KF_SCDERS,KLEI2,&
 !     PSPSCALAR(:,:) - spectral scalarvalued fields (input)
 !     KFLDPTRUV(:) - field pointer array for vor./div.
 !     KFLDPTRSC(:) - field pointer array for PSPSCALAR
-!     FSPGL_PROC  - external procedure to be executed in fourier space
-!                   before transposition  
 
 !     Method.
 !     -------
@@ -93,9 +91,6 @@ REAL(KIND=JPRB)  ,OPTIONAL, INTENT(INOUT) :: PSPMEANV(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KFLDPTRUV(:)
 INTEGER(KIND=JPIM),OPTIONAL,INTENT(IN)    :: KFLDPTRSC(:)
 
-EXTERNAL  FSPGL_PROC
-OPTIONAL  FSPGL_PROC
-
 REAL(KIND=JPRB) :: ZIA(RALD%NDGLSUR+R%NNOEXTZG,KLEI2,D%NUMP)
 REAL(KIND=JPRB) :: ZIA2(KLEI2,RALD%NDGLSUR+R%NNOEXTZG)
 
@@ -137,14 +132,6 @@ ENDIF
 !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JM,IM,JF,JDIM,IINDEX,ZIA2)
 DO JM=1,D%NUMP
   IM = D%MYMS(JM)
-
-!        7.    OPTIONAL COMPUTATIONS IN FOURIER SPACE
-!              --------------------------------------
-
-!commented  IF(PRESENT(FSPGL_PROC)) THEN
-!commented    CALL FSPGL_INT(IM,JM,FSPGL_PROC)
-!commented  ENDIF
-
 
 !*       6.    RECOMBINATION SYMMETRIC/ANTISYMMETRIC PART.
 !              --------------------------------------------

@@ -46,7 +46,7 @@ SUBROUTINE EDIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !     KVSETSC3B(:) - as KVESETSC for PSPSC3B (distribution on first dimension)
 !     KVSETSC2(:) - as KVESETSC for PSPSC2 (distribution on first dimension)
 !     KRESOL   - resolution tag  which is required ,default is the
-!                first defined resulution (input)
+!                first defined resolution (input)
 !     PGP(:,:,:) - gridpoint fields (input)
 !                  PGP need to  dimensioned (NPROMA,IF_GP,NGPBLKS) where
 !                  NPROMA is the blocking factor, IF_GP the total number
