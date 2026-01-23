@@ -85,7 +85,7 @@ foreach( prec dp sp )
         ecbuild_target_fortran_module_directory(
           TARGET            ectrans_lam_gpu_${prec}
           MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
-          INSTALL_DIRECTORY module/ectrans
+          INSTALL_MODULE_DIRECTORY module/ectrans
         )
 
         if( prec STREQUAL sp )
