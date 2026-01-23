@@ -104,7 +104,7 @@ if( HAVE_ETRANS )
                       VERSION="gpu"
                       ${util_PRIVATE_DEFINITIONS}
         )
-        ectrans_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
+        ecbuild_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
       endif()
     endif( )
   endforeach( prec )
