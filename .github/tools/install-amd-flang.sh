@@ -12,7 +12,7 @@
 # See <https://creativecommons.org/publicdomain/zero/1.0/> for
 # details.
 
-VERSION=7.0.5
+VERSION=22.2.0
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
 export AMDFLANG_INSTALL_DIR=$(pwd)/amdflang-install
@@ -44,7 +44,7 @@ done
 
 # Get name of drop based on version
 BASENAME=$(curl -s "https://repo.radeon.com/rocm/misc/flang/" | \
-    grep -oP "rocm-afar-[1-9][0-9]*-drop-{1}.{2}.{3}" | grep "$VERSION" | sort | tail -1)
+    grep -oP "rocm-afar-[1-9][0-9]*-drop-(\d+)\.(\d+)\.(\d+)" | grep "$VERSION" | sort | tail -1)
 
 # Get URL of drop
 URL_SHORT=$(curl -s "https://repo.radeon.com/rocm/misc/flang/" | \
