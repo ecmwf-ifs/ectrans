@@ -555,4 +555,16 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     CONDITION HAVE_ETRANS
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  if( HAVE_GPU )
+    ecbuild_add_test( TARGET ectrans_test_transi_lam_gpu
+      SOURCES   transi/transi_test_lam.c
+      LIBS      ectrans_test_gpu
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      CONDITION HAVE_ETRANS
+      ENVIRONMENT TRANS_USE_MPI=0 )
+    set_tests_properties(ectrans_test_transi_lam_gpu PROPERTIES LABELS gpu)
+  endif()
+
 endif()
