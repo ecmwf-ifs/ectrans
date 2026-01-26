@@ -564,7 +564,7 @@ if( HAVE_TRANSI )
       DEFINITIONS GPU_VERSION
       CONDITION HAVE_ETRANS
       ENVIRONMENT TRANS_USE_MPI=0 )
-    if (TEST ectrans_test_transi_lam_gpu
+    if (TEST ectrans_test_transi_lam_gpu)
       set_tests_properties(ectrans_test_transi_lam_gpu PROPERTIES LABELS gpu)
     endif()
   endif()
