@@ -82,10 +82,10 @@ foreach( prec dp sp )
                                #ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}   # not relevant for LAM
         )
 
-        ectrans_target_fortran_module_directory(
+        ecbuild_target_fortran_module_directory(
           TARGET            ectrans_lam_gpu_${prec}
           MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
-          INSTALL_DIRECTORY module/ectrans
+          INSTALL_MODULE_DIRECTORY module/ectrans
         )
 
         if( prec STREQUAL sp )
