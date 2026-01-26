@@ -53,7 +53,7 @@ URL=https://repo.radeon.com/rocm/misc/flang/${URL_SHORT}
 
 if [ ! -f "${TEMPORARY_FILES}/${URL_SHORT}" ]; then
     echo "Downloading [${URL}]"
-    wget --show-progress -q -P ${TEMPORARY_FILES} "${URL}"
+    wget -q -P ${TEMPORARY_FILES} "${URL}"
 else
     echo "Download already present in ${TEMPORARY_FILES}"
 fi
