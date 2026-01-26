@@ -26,7 +26,7 @@ ecbuild_add_library( TARGET transi_dp
   PRIVATE_DEFINITIONS ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
                       ECTRANS_HAVE_ETRANS=${ectrans_HAVE_ETRANS}
 )
-ectrans_target_fortran_module_directory( TARGET transi_dp
+ecbuild_target_fortran_module_directory( TARGET transi_dp
   MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/module/trans_dp
 )
 
@@ -53,7 +53,7 @@ if( HAVE_GPU )
       $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenACC_Fortran_FLAGS}> )
   endif()
 
-  ectrans_target_fortran_module_directory( TARGET transi_gpu_dp
+  ecbuild_target_fortran_module_directory( TARGET transi_gpu_dp
     MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/module/trans_gpu_dp
   )
 endif()

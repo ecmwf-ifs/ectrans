@@ -23,7 +23,7 @@ USE TPM_GEOMETRY    ,ONLY : G
 
 USE PREPSNM_MOD     ,ONLY : PREPSNM
 USE PRFI2AD_MOD     ,ONLY : PRFI2AD
-USE LDFOU2AD_MOD    ,ONLY : LDFOU2AD
+USE LDFOU2_MOD      ,ONLY : LDFOU2
 USE LEDIRAD_MOD     ,ONLY : LEDIRAD
 USE UVTVDAD_MOD     ,ONLY : UVTVDAD
 USE UPDSPAD_MOD     ,ONLY : UPDSPAD
@@ -57,7 +57,7 @@ USE UPDSPAD_MOD     ,ONLY : UPDSPAD
 !     ----------
 !         PREPSNM  - prepare REPSNM for wavenumber KM
 !         PRFI2AD  - prepares the Fourier work arrays for model variables.
-!         LDFOU2AD - computations in Fourier space
+!         LDFOU2   - computations in Fourier space
 !         LEDIRAD  - direct Legendre transform
 !         UVTVDAD  -
 !         UPDSPAD  - updating of spectral arrays (fields)
@@ -171,7 +171,7 @@ CALL LEDIRAD(KM,KMLOC,IFC,IIFC,IDGLU,KLED2,ZAIA,ZSIA,ZOA1)
 !*       3.    FOURIER SPACE COMPUTATIONS.
 !              ---------------------------
 
-CALL LDFOU2AD(KM,KF_UV,ZAIA,ZSIA)
+CALL LDFOU2(KM,KF_UV,ZAIA,ZSIA)
 
 !     ------------------------------------------------------------------
 

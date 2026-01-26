@@ -81,10 +81,10 @@ foreach( prec dp sp )
       PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes
     )
 
-    ectrans_target_fortran_module_directory(
-      TARGET            ectrans_${prec}
-      MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
-      INSTALL_DIRECTORY module/ectrans
+    ecbuild_target_fortran_module_directory(
+      TARGET                   ectrans_${prec}
+      MODULE_DIRECTORY         ${CMAKE_BINARY_DIR}/module/ectrans
+      INSTALL_MODULE_DIRECTORY module/ectrans
     )
 
     set( FFTW_LINK PRIVATE )

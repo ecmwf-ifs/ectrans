@@ -79,7 +79,6 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !                 SULEG - Compute Legandre polonomial and Gaussian
 !                         Latitudes and Weights
 !                 SUMP_TRANS - Second part of setup of distributed environment
-!                 SUFFT - setup for FFT
 !                 SHAREDMEM_CREATE - create memory buffer for Leg.pol.
 
 !     Author.

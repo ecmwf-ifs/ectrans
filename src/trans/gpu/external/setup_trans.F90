@@ -80,7 +80,6 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !                 SULEG - Compute Legandre polonomial and Gaussian
 !                         Latitudes and Weights
 !                 SUMP_TRANS - Second part of setup of distributed environment
-!                 SUFFT - setup for FFT
 !                 SHAREDMEM_CREATE - create memory buffer for Leg.pol.
 
 !     Author.
@@ -122,7 +121,6 @@ USE SUMP_TRANS_MOD,              ONLY: SUMP_TRANS
 USE SUMP_TRANS_PRELEG_MOD,       ONLY: SUMP_TRANS_PRELEG
 USE SULEG_MOD,                   ONLY: SULEG
 USE PRE_SULEG_MOD,               ONLY: PRE_SULEG
-USE SUFFT_MOD,                   ONLY: SUFFT
 USE ABORT_TRANS_MOD,             ONLY: ABORT_TRANS
 USE SHAREDMEM_MOD,               ONLY: SHAREDMEM_CREATE
 USE YOMHOOK,                     ONLY: LHOOK, DR_HOOK, JPHOOK
@@ -464,8 +462,6 @@ IF( .NOT.LLSPSETUPONLY ) THEN
   CALL SUMP_TRANS
   CALL GSTATS(1802,0)
 
-  ! Initialize Fast Fourier Transform package
-  IF (.NOT.D%LCPNMONLY) CALL SUFFT
   CALL GSTATS(1802,1)
 ELSE
   CALL PRE_SULEG

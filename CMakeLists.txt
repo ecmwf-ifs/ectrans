@@ -8,7 +8,7 @@
 
 cmake_minimum_required( VERSION 3.25 FATAL_ERROR )
 
-find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
+find_package( ecbuild 3.8 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
@@ -64,25 +64,30 @@ ecbuild_add_option( FEATURE SINGLE_PRECISION
                     DEFAULT ON
                     DESCRIPTION "Support for Single Precision" )
 
+# Check DOUBLE_PRECISION or SINGLE_PRECISION is enabled, and if not, abort
+if( (NOT HAVE_DOUBLE_PRECISION) AND (NOT HAVE_SINGLE_PRECISION) )
+  ecbuild_critical("Please enable one or both of the DOUBLE_PRECISION and SINGLE_PRECISION features")
+endif()
+
 if( HAVE_SINGLE_PRECISION )
   set( single "single" )
 endif()
 set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
+ecbuild_add_option( FEATURE CPU
+                    DEFAULT ON
+                    DESCRIPTION "Compile CPU version of ectrans" )
+
 ecbuild_add_option( FEATURE MKL
                     DESCRIPTION "Use MKL for BLAS and/or FFTW"
                     DEFAULT ON
-                    REQUIRED_PACKAGES "MKL QUIET" )
+                    REQUIRED_PACKAGES "MKL QUIET"
+                    CONDITION HAVE_CPU )
 
 if( NOT HAVE_MKL )
     option( FFTW_ENABLE_MKL OFF )
 endif()
-
-ecbuild_add_option( FEATURE CPU
-                    DEFAULT ON
-                    DESCRIPTION "Compile CPU version of ectrans"
-                   )
 
 if( HAVE_CPU )
   ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
@@ -138,9 +143,9 @@ ecbuild_add_option( FEATURE CUTLASS_3XTF32
 
 ecbuild_add_option( FEATURE GPU_AWARE_MPI
                     DEFAULT ON
-                    CONDITION HAVE_GPU
-                    REQUIRED_PACKAGES "MPI COMPONENTS CXX Fortran"
-                    DESCRIPTION "Enable CUDA-aware MPI" )
+                    CONDITION HAVE_GPU AND HAVE_MPI
+                    REQUIRED_PACKAGES "MPI COMPONENTS Fortran"
+                    DESCRIPTION "Enable GPU-aware MPI" )
 
 ecbuild_add_option( FEATURE GPU_GRAPHS_GEMM
                     DEFAULT ON
@@ -159,7 +164,8 @@ else()
 endif()
 ecbuild_add_option( FEATURE GPU_STATIC
                     DEFAULT ${GPU_STATIC_DEFAULT}
-                    DESCRIPTION "Compile GPU library as static library")
+                    DESCRIPTION "Compile GPU library as static library"
+                    CONDITION HAVE_GPU )
 
 ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
@@ -167,7 +173,7 @@ ecbuild_add_option( FEATURE ETRANS
 
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
-		    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
+                    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
 
 

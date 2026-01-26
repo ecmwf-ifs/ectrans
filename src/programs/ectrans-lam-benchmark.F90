@@ -1554,7 +1554,7 @@ subroutine dump_checksums(filename, noutdump, &
   real(kind=jprb), intent(in), optional :: zspc2 (:,:)
 
   integer(kind=jpib) :: icrc
-  integer(kind=jpim) :: jlev, jfld
+  integer(kind=jpim) :: jlev, jfld, numfld
   real(kind=jprb), allocatable :: gfld(:,:)
   real(kind=jprb), allocatable :: gspfld(:,:)
   logical :: exist = .false.
@@ -1572,7 +1572,7 @@ subroutine dump_checksums(filename, noutdump, &
     write(noutdump,*) "===================="
 
     if (present(zgpuv) .or. present(zgp3a) .or. present(zgp2))  allocate(gfld(ngptotg,1))
-    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(1,nspec2g))
+    if (present(sp3d) .or. present(zspc2))  allocate(gspfld(max(size(ivset), 1), nspec2g))
 
   endif
 
@@ -1613,28 +1613,29 @@ subroutine dump_checksums(filename, noutdump, &
     enddo
   endif
   if (present(sp3d)) then
-    icrc = 0
+    numfld = size(ivset)
     do jfld = 1, size (sp3d, 3)
-      do jlev = 1, size (sp3d, 1)
-        call egath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivset(jlev:jlev),kresol=1,pspec=sp3d(jlev:jlev,:,jfld))
-        if (myproc == 1) then
-          call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
-          write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "sp3d", jlev, jfld, icrc
-        endif
-      enddo
+      if (myproc == 1) then
+        call egath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
+          &             kvset=ivset, pspec=sp3d(:,:,jfld))
+        icrc = 0
+        call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
+        write(noutdump, '(a,"(",i0,") = ",z16.16)') "sp3d", jfld, icrc
+      else
+        call egath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=sp3d(:,:,jfld))
+      endif
     enddo
   endif
 
   if (present(zspc2)) then
-    icrc = 0
-
-    do jfld = 1, size (zspc2, 1)
-      call egath_spec(pspecg=gspfld,kfgathg=1,kto=(/1/),kvset=ivsetsc(1:1), kresol=1,pspec=zspc2(jfld:jfld,:))
-      if (myproc == 1) then
-        call crc64 (gspfld (:, :), int (size (gspfld (:, :)) * kind (gspfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zspc2", jfld, icrc
-      endif
-    enddo
+    if (myproc == 1) then
+      call egath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
+      icrc = 0
+      call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
+      write (noutdump, '(a," = ",z16.16)') "zspc2", icrc
+    else
+      call egath_spec(kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
+    endif
   endif
 
   if (myproc == 1) then
