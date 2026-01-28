@@ -2,6 +2,27 @@
 title: Installation
 ---
 
+We currently support two methods for installing ecTrans:
+
+1. Through [Spack](https://github.com/spack/spack).
+2. Manually through CMake.
+
+# 1. Installing ecTrans with Spack
+
+A recipe for building ecTrans is provided in the main [spack-packages repository](https://github.com/spack/spack-packages/tree/develop/repos/spack_repo/builtin/packages/ectrans).
+For most users a simple
+```bash
+spack install ectrans
+```
+should be sufficient. Note that, by default,
+ecTrans' dependency FIAT will be built with fckit support. This is not necessary for ecTrans and
+brings in several other dependencies, so it's recommend to disable it when installing ecTrans:
+```bash
+spack install ectrans %fiat~fckit
+```
+
+# 2. Installing ecTrans manually
+
 ecTrans relies on CMake for building and for unit testing. It follows standard CMake procedures for
 building out-of-source, but below we describe this explicitly for newcomers to CMake.
 
