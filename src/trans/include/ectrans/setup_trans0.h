@@ -51,7 +51,6 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !   Batch size for splitting of vertical field set. This allows one to transform one batch of vertical  
 !   levels at a time rather than transforming all in one go. A value of 0 disables this feature.  
 !   *Default*: `0`  
-!   **Potentially deprecatable.**
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPRGPNS`  
 !   Splitting level in North-South direction in grid-point space.  
 !   *Default*: `1`
