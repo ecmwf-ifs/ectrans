@@ -33,7 +33,6 @@ SUBROUTINE SPECNORM(PNORM,PSPEC,KVSET,KMASTER,KRESOL,PMET)
 !   Dimensions: (number of fields on this MPI task, spectral dimension)  
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSET(:)`  
 !   Array specifying which MPI task each of the fields belongs to.  
-!   Dimensions: (number of global fields)
 !   Dimensions: (number of fields across all MPI tasks)  
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KMASTER`  
 !   The MPI task for whom `PNORM` will contain values.  

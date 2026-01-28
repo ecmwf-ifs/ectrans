@@ -55,7 +55,7 @@ SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP,KSORT)
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSORT(:)`  
 !   Array allowing to rearrange fields in the output array. For each element, specify which  
 !   element you want the field to end up in.  
-!   Dimensions: (second dimension of `PGP`)
+!   Dimensions: (second dimension of `PGP`)  
 !   *Default*: no sorting
 !
 ! ### `INTENT(OUT)` arguments

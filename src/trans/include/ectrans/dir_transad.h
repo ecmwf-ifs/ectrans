@@ -91,10 +91,10 @@ SUBROUTINE DIR_TRANSAD(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 ! ### `OPTIONAL, INTENT(INOUT)` arguments
 !
 ! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPVOR(:,:)`  
-!   Spectral space vorticity.
+!   Spectral space vorticity.  
 !   Dimensions: (vertical levels, spectral coefficients).
 ! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPDIV(:,:)`  
-!   Spectral space divergence.
+!   Spectral space divergence.  
 !   Dimensions: (vertical levels, spectral coefficients).
 ! - `REAL(KIND=JPRB), OPTIONAL, INTENT(INOUT) :: PSPSCALAR(:,:)`  
 !   Spectral space scalar fields (call mode 1).  

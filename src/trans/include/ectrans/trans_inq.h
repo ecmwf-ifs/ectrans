@@ -42,7 +42,7 @@ SUBROUTINE TRANS_INQ(KRESOL,KSPEC,KSPEC2,KSPEC2G,KSPEC2MX,KNUMP,&
 ! ### `OPTIONAL, INTENT(IN)` arguments
 !
 ! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle for which information is required.
+!   Resolution handle for which information is required.  
 !   *Default*: The first defined resolution handle.
 !
 ! ### `OPTIONAL, INTENT(OUT)` arguments

@@ -54,7 +54,7 @@ SUBROUTINE GATH_GRID(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 ! ### `OPTIONAL, INTENT(OUT)` arguments
 !
 ! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGPG(:,:)`  
-!   Array containing gathered fields.
+!   Array containing gathered fields.  
 !   Dimensions: (number of global grid points, number of fields on this MPI task). 
 !   Note that this is optional, because not all tasks may be receiving fields.
 ! end_doc_block
