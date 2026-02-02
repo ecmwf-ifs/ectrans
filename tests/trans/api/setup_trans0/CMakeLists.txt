@@ -10,7 +10,7 @@
 
 # Define list of SETUP_TRANS0 tests
 set( test_list
-  api_test_setup_trans0_eq_regions
+  ectrans_test_trans_api_setup_trans0_eq_regions
 )
 
 # Define additional list setting tests that WILL_FAIL
