@@ -48,7 +48,7 @@ function( generate_api_test_suite )
     # Prevent the Fortran runtime from trying to provide a main program
     target_link_options( ${suite_name}${prec_suffix} PRIVATE ${NO_FORTRAN_MAIN_FLAG} )
 
-    ectrans_target_fortran_module_directory( TARGET ${suite_name}${prec_suffix}
+    ecbuild_target_fortran_module_directory( TARGET ${suite_name}${prec_suffix}
         MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${suite_name}${prec_suffix} )
 
     # Add a test for each MPI configuration
