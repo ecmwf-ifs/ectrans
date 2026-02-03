@@ -7,7 +7,7 @@
 # nor does it submit to any jurisdiction.
 
 # --------------------------------------------------------------------------------------------------
-# First establish which precisions to test
+# First establish which precisions and platforms to test
 # --------------------------------------------------------------------------------------------------
 
 set( precisions "" )
@@ -16,6 +16,14 @@ if( HAVE_DOUBLE_PRECISION )
 endif()
 if( HAVE_SINGLE_PRECISION )
   list( APPEND precisions "sp" )
+endif()
+
+set( platforms )
+if( HAVE_CPU )
+  list( APPEND platforms cpu )
+endif()
+if( HAVE_GPU )
+  list( APPEND platforms gpu )
 endif()
 
 # --------------------------------------------------------------------------------------------------
@@ -88,14 +96,6 @@ endif()
 # --------------------------------------------------------------------------------------------------
 # Add tests for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS
 # --------------------------------------------------------------------------------------------------
-
-set( platforms )
-if( HAVE_CPU )
-  list( APPEND platforms cpu )
-endif()
-if( HAVE_GPU )
-  list( APPEND platforms gpu )
-endif()
 
 foreach( platform ${platforms} )
   
