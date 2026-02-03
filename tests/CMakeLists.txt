@@ -26,14 +26,32 @@ if( HAVE_GPU )
   list( APPEND platforms gpu )
 endif()
 
+set( backends )
+foreach( precision IN LISTS precisions )
+  foreach( platform IN LISTS platforms )
+    list( APPEND backends "${platform}_${precision}" )
+  endforeach()
+endforeach()
+
 # --------------------------------------------------------------------------------------------------
-# Then set the MPI testing configuration
+# Then set the MPI and OpenMP testing configurations
 # --------------------------------------------------------------------------------------------------
 
 set( ntasks 0 )
 if( HAVE_MPI )
   list( APPEND ntasks 1 2 )
 endif()
+set( nthreads 1 )
+if( HAVE_OMP )
+  list( APPEND nthreads 8 )
+endif()
+
+set( mpixomps )
+foreach( ntask IN LISTS ntasks )
+  foreach( nthread IN LISTS nthreads )
+    list( APPEND mpixomps "${ntask}x${nthread}" )
+  endforeach()
+endforeach()
 
 # --------------------------------------------------------------------------------------------------
 # Add a test for installation of ecTrans
