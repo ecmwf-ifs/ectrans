@@ -6,14 +6,11 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-# SETUP_TRANS0 contains no precision-specific code, so for that one we don't generate single- and
-# double-precision versions
-
 # Function for generating a suite of API tests for one external subroutine using CMake's
 # create_test_sourcelist function
 function( generate_api_test_suite )
   set( options )
-  set( oneValueArgs SUITE_NAME)
+  set( oneValueArgs SUITE_NAME )
   set( multiValueArgs TESTS WILL_FAIL_LIST MPIxOMPS BACKENDS )
   cmake_parse_arguments( _PAR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   set( suite_name ${_PAR_SUITE_NAME} )
@@ -24,11 +21,23 @@ function( generate_api_test_suite )
 
   # Add API tests for this suite, with a separate driver executable for each backend
   foreach( backend IN LISTS backends )
+    # Don't include tests which aren't supported by this build
+    if( (backend MATCHES "cpu" AND NOT HAVE_CPU) OR (backend MATCHES "gpu" AND NOT HAVE_GPU) )
+      continue()
+    endif()
+    if( backend MATCHES "sp" AND NOT HAVE_SINGLE_PRECISION )
+      continue()
+    endif()
+    if( backend MATCHES "dp" AND NOT HAVE_DOUBLE_PRECISION )
+      continue()
+    endif()
+
+    # SETUP_TRANS0 is precision and platform-agnostic
     if( suite_name STREQUAL setup_trans0_test_suite )
       set( libs ectrans_common )
       set( suffix "" )
     else()
-      if( backend MATCHES "cpu")
+      if( backend MATCHES "cpu" )
         set( platform_tag "" ) # The CPU library doesn't have a suffix
       elseif( backend MATCHES "gpu" )
         set( platform_tag "_gpu" )
@@ -62,6 +71,10 @@ function( generate_api_test_suite )
       string(REGEX MATCH "^([0-9]+)x([0-9]+)$" _ "${mpixomp}")
       set(mpi "${CMAKE_MATCH_1}")
       set(omp "${CMAKE_MATCH_2}")
+
+      if( (mpi GREATER 0 AND NOT HAVE_MPI) OR (omp GREATER 1 AND NOT HAVE_OMP) )
+        continue()
+      endif()
 
       # Add each test in the test list for this precision and MPI configuration
       foreach( test IN LISTS tests )
