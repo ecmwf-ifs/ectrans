@@ -31,3 +31,11 @@ generate_api_test_suite( SUITE_NAME setup_trans_test_suite
                          WILL_FAIL_LIST ${will_fail_list}
                          MPIxOMPS "0x1" "0x8" "1x1" "1x8" "2x1" "2x8"
                          BACKENDS "cpu_sp" "cpu_dp" "gpu_sp" "gpu_dp" )
+
+# The FLT is not implemented for the GPU backend
+get_property( all_tests DIRECTORY PROPERTY TESTS )
+foreach( test in LISTS all_tests )
+  if( (test MATCHES "flt") AND (test MATCHES "gpu") )
+    set_property( TEST "${test}" PROPERTY DISABLED TRUE )
+  endif()
+endforeach()
