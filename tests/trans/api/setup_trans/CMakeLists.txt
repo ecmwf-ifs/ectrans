@@ -34,7 +34,7 @@ generate_api_test_suite( SUITE_NAME setup_trans_test_suite
 
 # The FLT is not implemented for the GPU backend
 get_property( all_tests DIRECTORY PROPERTY TESTS )
-foreach( test in LISTS all_tests )
+foreach( test IN LISTS all_tests )
   if( (test MATCHES "flt") AND (test MATCHES "gpu") )
     set_property( TEST "${test}" PROPERTY DISABLED TRUE )
   endif()
