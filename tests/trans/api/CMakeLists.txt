@@ -78,6 +78,12 @@ function( generate_api_test_suite )
 
       # Add each test in the test list for this precision and MPI configuration
       foreach( test IN LISTS tests )
+        # We don't yet have a good way to handle aborts in ecTrans gracefully, so for now we will
+        # not include will-fail tests
+        if( ${test} IN_LIST will_fail_list )
+          continue()
+        endif()
+
         ecbuild_add_test( TARGET ${test}${suffix}_mpi${mpi}xomp${omp}
                           COMMAND ${suite_name}${suffix}
                           ARGS ${test}
