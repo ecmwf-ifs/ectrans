@@ -26,8 +26,6 @@ if( HAVE_GPU )
   list( APPEND platforms gpu )
 endif()
 
-set( backends "cpu_sp" "cpu_dp" "gpu_sp" "gpu_dp" )
-
 # --------------------------------------------------------------------------------------------------
 # Then set the MPI and OpenMP testing configurations
 # --------------------------------------------------------------------------------------------------
@@ -40,8 +38,6 @@ set( nthreads 1 )
 if( HAVE_OMP )
   list( APPEND nthreads 8 )
 endif()
-
-set( mpixomps "0x1" "0x8" "1x1" "1x8" "2x1" "2x8" )
 
 # --------------------------------------------------------------------------------------------------
 # Add a test for installation of ecTrans

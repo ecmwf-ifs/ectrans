@@ -21,5 +21,5 @@ set( will_fail_list
 generate_api_test_suite( SUITE_NAME setup_trans0_test_suite
                          TESTS ${test_list}
                          WILL_FAIL_LIST ${will_fail_list}
-                         MPIxOMPS ${mpixomps}
+                         MPIxOMPS "0x1" "0x8" "1x1" "1x8" "2x1" "2x8"
                          BACKENDS _ )
