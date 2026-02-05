@@ -258,11 +258,11 @@ IF (ABS(G%RSTRET-1.0_JPRD)>100._JPRD*EPSILON(1._JPRD)) THEN
   WRITE(NOUT,*) '=== SULEG: Change Gaussian latitudes to the transformed sphere ==='
   INNH=(INN+1)/2
   ZTAN=(1.0_JPRD-G%RSTRET**2)/(1.0_JPRD+G%RSTRET**2)
-! North hemisphere
+  ! North hemisphere
   DO JGL=1,INNH
     ZSTRETMU(JGL)=(ZTAN+REAL(ZLRMUZ(JGL),JPRH))/(1.0_JPRD+ZTAN*REAL(ZLRMUZ(JGL),JPRH))
   ENDDO
-! South hemisphere
+  ! South hemisphere
   DO JGL=1,INNH
     IGL=2*INNH-JGL+1
     ZSTRETMU(IGL)=(ZTAN-REAL(ZLRMUZ(JGL),JPRH))/(1.0_JPRD-ZTAN*REAL(ZLRMUZ(JGL),JPRH))
@@ -366,10 +366,10 @@ IF(.NOT.D%LGRIDONLY) THEN
     ENDDO
   ENDIF
 
-!*       3.2   Computes related arrays
+  !*       3.2   Computes related arrays
 
   DO JGL=1,R%NDGL
-! test cosine differently
+  ! test cosine differently
     ZTHETA = ASIN(ZLRMUZ(JGL))
     ZCOS   = COS(ZTHETA)
     F%R1MU2(JGL)  = ZCOS**2
@@ -378,11 +378,11 @@ IF(.NOT.D%LGRIDONLY) THEN
 !    F%RACTHE(JGL) = 1.0_JPRD/SQRT(1.0_JPRD-ZLRMUZ(JGL)*ZLRMUZ(JGL))/REAL(RA,JPRD)
   ENDDO
 
-!*       3.3   Working arrays
+  !*       3.3   Working arrays
 
-! compute the Legendre polynomials as a function of the z_k (Gaussian Latitudes)
-! this may be faster than calling supolf for each m but uses extra communication
-! and the parallelism is more limited ? Nils
+  ! compute the Legendre polynomials as a function of the z_k (Gaussian Latitudes)
+  ! this may be faster than calling supolf for each m but uses extra communication
+  ! and the parallelism is more limited ? Nils
 
   IF( S%LUSE_BELUSOV .AND. .NOT. C%LREAD_LEGPOL  ) THEN
 
@@ -518,129 +518,129 @@ IF(.NOT.D%LGRIDONLY) THEN
 
   IF(.NOT.C%LREAD_LEGPOL) THEN
 
-! not correct logic
+    ! not correct logic
 
-  DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
+    DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
 
-    IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
+      IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
 
-    ! --------------------anti-symmetric-----------------------
-    ! --------------------anti-symmetric-----------------------
-    ! --------------------anti-symmetric-----------------------
+      ! --------------------anti-symmetric-----------------------
+      ! --------------------anti-symmetric-----------------------
+      ! --------------------anti-symmetric-----------------------
 
-    DO JSETV=1,IPRTRV
-      IMLOC=JMLOC+JSETV-1
-      IM = D%MYMS(IMLOC)
-      ILA = (R%NSMAX-IM+2)/2
-      IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-      ALLOCATE(S%FA(IMLOC)%RPNMA(IDGLU,ILA))  
-    ENDDO
-
-    IF( .NOT. S%LUSE_BELUSOV ) THEN 
-
-      ISREQ = 0
-      IRREQ = 0
-
-      ALLOCATE (ZRCVBUFV(IMAXRECVA,IPRTRV))
-      CALL GSTATS(851,0)
       DO JSETV=1,IPRTRV
-        CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
-        IF( .NOT.LMPOFF )THEN
-          IRREQ = IRREQ+1
-          CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
-           & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
-           & KTAG=ITAG,CDSTRING='SULEG:')
-        ENDIF
-      ENDDO
-      CALL GSTATS(851,1)
-
-      IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
-
-        IMLOC=JMLOC+MYSETV-1
+        IMLOC=JMLOC+JSETV-1
         IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IA  = 1+MOD(R%NSMAX-IM+2,2)
         ILA = (R%NSMAX-IM+2)/2
         IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+        ALLOCATE(S%FA(IMLOC)%RPNMA(IDGLU,ILA))  
+      ENDDO
 
-        ALLOCATE(ZSNDBUFV(IDGLU*ILA))
-      
-        IF(MOD(IMAXN-IM,2) == 0) THEN
-          INMAX=IMAXN+1
-        ELSE
-          INMAX=IMAXN
-        ENDIF
-
-        CALL GSTATS(1251,0)
-        IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
-        DO JGL=1,IDGLU
-          CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=3)
-          DO JI=1,ILA
-            JN=IM+2*(JI-1)+1
-            ZSNDBUFV((JGL-1)*ILA+JI)=ZLPOL(JN)
-          ENDDO
-        ENDDO
-        !$OMP END PARALLEL DO
-        IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
-        CALL GSTATS(1251,1)
-
+      IF( .NOT. S%LUSE_BELUSOV ) THEN 
+  
+        ISREQ = 0
+        IRREQ = 0
+  
+        ALLOCATE (ZRCVBUFV(IMAXRECVA,IPRTRV))
         CALL GSTATS(851,0)
-        DO JSETV=1,NPRTRV
-          CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+        DO JSETV=1,IPRTRV
+          CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
           IF( .NOT.LMPOFF )THEN
-            ISREQ = ISREQ+1
-            CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
-             & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
+            IRREQ = IRREQ+1
+            CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
+            & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
             & KTAG=ITAG,CDSTRING='SULEG:')
           ENDIF
         ENDDO
         CALL GSTATS(851,1)
+  
+        IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
+  
+          IMLOC=JMLOC+MYSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IA  = 1+MOD(R%NSMAX-IM+2,2)
+          ILA = (R%NSMAX-IM+2)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+  
+          ALLOCATE(ZSNDBUFV(IDGLU*ILA))
+        
+          IF(MOD(IMAXN-IM,2) == 0) THEN
+            INMAX=IMAXN+1
+          ELSE
+            INMAX=IMAXN
+          ENDIF
+  
+          CALL GSTATS(1251,0)
+          IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
+          !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
+          DO JGL=1,IDGLU
+            CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=3)
+            DO JI=1,ILA
+              JN=IM+2*(JI-1)+1
+              ZSNDBUFV((JGL-1)*ILA+JI)=ZLPOL(JN)
+            ENDDO
+          ENDDO
+          !$OMP END PARALLEL DO
+          IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
+          CALL GSTATS(1251,1)
+  
+          CALL GSTATS(851,0)
+          DO JSETV=1,NPRTRV
+            CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+            IF( .NOT.LMPOFF )THEN
+              ISREQ = ISREQ+1
+              CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
+              & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
+              & KTAG=ITAG,CDSTRING='SULEG:')
+            ENDIF
+          ENDDO
+          CALL GSTATS(851,1)
+  
+        ENDIF
 
-      ENDIF
+        CALL GSTATS(851,0)
+        IF(IRREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), &
+          & CDSTRING='SUTRLE: SULEG')
+        ENDIF
 
-      CALL GSTATS(851,0)
-      IF(IRREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
+        IF(ISREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), &
+          & CDSTRING='SUTRLE: SULEG')
+        ENDIF
 
-      IF(ISREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
+        IF( NPROC==1.AND.LMPOFF )THEN
+          ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
+        ENDIF
+        CALL GSTATS(851,1)
 
-      IF( NPROC==1.AND.LMPOFF )THEN
-        ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
-      ENDIF
-      CALL GSTATS(851,1)
-
-      CALL GSTATS(1251,0)
-      !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IA  = 1+MOD(R%NSMAX-IM+2,2)
-        ILA = (R%NSMAX-IM+2)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        DO JGL=1,IDGLU
-          DO JI=1,ILA
-            S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
+          IMLOC=JMLOC+JSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IA  = 1+MOD(R%NSMAX-IM+2,2)
+          ILA = (R%NSMAX-IM+2)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+          DO JGL=1,IDGLU
+            DO JI=1,ILA
+              S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+            ENDDO
           ENDDO
         ENDDO
-      ENDDO
-     !$OMP END PARALLEL DO
-      CALL GSTATS(1251,1)
-        
-      IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
-      IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
+        !$OMP END PARALLEL DO
+        CALL GSTATS(1251,1)
+          
+        IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
+        IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
+  
+      ELSE    
 
-    ELSE    
-
-       CALL GSTATS(1251,0)
-       !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
-       DO JSETV=1,IPRTRV
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
           IMLOC=JMLOC+JSETV-1
           IM = D%MYMS(IMLOC)
           ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
@@ -649,148 +649,148 @@ IF(.NOT.D%LGRIDONLY) THEN
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
           DO JI=1,ILA
             DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+              S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
             ENDDO
-          ENDDO
-       ENDDO
-       !$OMP END PARALLEL DO
-       CALL GSTATS(1251,1)
-
-    ENDIF
-
-    ! --------------------symmetric-----------------------
-    ! --------------------symmetric-----------------------
-    ! --------------------symmetric-----------------------
-
-    DO JSETV=1,IPRTRV
-      IMLOC=JMLOC+JSETV-1
-      IM = D%MYMS(IMLOC)
-      ILS = (R%NSMAX-IM+3)/2
-      IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-      ALLOCATE(S%FA(IMLOC)%RPNMS(IDGLU,ILS))  
-    ENDDO
-
-    IF( .NOT. S%LUSE_BELUSOV ) THEN 
-
-      ISREQ = 0
-      IRREQ = 0
-
-      ALLOCATE (ZRCVBUFV(IMAXRECVS,IPRTRV))
-      CALL GSTATS(851,0)
-      DO JSETV=1,IPRTRV
-        CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
-        IF( .NOT.LMPOFF )THEN
-          IRREQ = IRREQ+1
-          CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
-           & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
-           & KTAG=ITAG,CDSTRING='SULEG:')
-        ENDIF
-      ENDDO
-      CALL GSTATS(851,1)
-
-      IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
-
-        IMLOC=JMLOC+MYSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IS  = 1+MOD(R%NSMAX-IM+1,2)
-        ILS = (R%NSMAX-IM+3)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-
-        ALLOCATE(ZSNDBUFV(IDGLU*ILS))
-      
-        IF(MOD(IMAXN-IM,2) == 0) THEN
-          INMAX=IMAXN
-        ELSE
-          INMAX=IMAXN+1
-        ENDIF
-
-        IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
-        CALL GSTATS(1251,0)
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
-        DO JGL=1,IDGLU
-          CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=2)
-          DO JI=1,ILS
-            JN=IM+2*(JI-1)
-            ZSNDBUFV((JGL-1)*ILS+JI)=ZLPOL(JN)
           ENDDO
         ENDDO
         !$OMP END PARALLEL DO
         CALL GSTATS(1251,1)
-        IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
 
+      ENDIF
+
+      ! --------------------symmetric-----------------------
+      ! --------------------symmetric-----------------------
+      ! --------------------symmetric-----------------------
+  
+      DO JSETV=1,IPRTRV
+        IMLOC=JMLOC+JSETV-1
+        IM = D%MYMS(IMLOC)
+        ILS = (R%NSMAX-IM+3)/2
+        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+        ALLOCATE(S%FA(IMLOC)%RPNMS(IDGLU,ILS))  
+      ENDDO
+
+      IF( .NOT. S%LUSE_BELUSOV ) THEN 
+
+        ISREQ = 0
+        IRREQ = 0
+
+        ALLOCATE (ZRCVBUFV(IMAXRECVS,IPRTRV))
         CALL GSTATS(851,0)
-        DO JSETV=1,NPRTRV
-          CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+        DO JSETV=1,IPRTRV
+          CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
           IF( .NOT.LMPOFF )THEN
-            ISREQ = ISREQ+1
-            CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
-             & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
-             & KTAG=ITAG,CDSTRING='SULEG:')
+            IRREQ = IRREQ+1
+            CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
+            & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
+            & KTAG=ITAG,CDSTRING='SULEG:')
           ENDIF
         ENDDO
         CALL GSTATS(851,1)
 
-      ENDIF
+        IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
 
-      CALL GSTATS(851,0)
-      IF(IRREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
+          IMLOC=JMLOC+MYSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IS  = 1+MOD(R%NSMAX-IM+1,2)
+          ILS = (R%NSMAX-IM+3)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
 
-      IF(ISREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
-      IF( NPROC==1.AND.LMPOFF )THEN
-        ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
-      ENDIF
-      CALL GSTATS(851,1)
-
-      CALL GSTATS(1251,0)
-      !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IS  = 1+MOD(R%NSMAX-IM+1,2)
-        ILS = (R%NSMAX-IM+3)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        DO JGL=1,IDGLU
-          DO JI=1,ILS
-            S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
-          ENDDO
-        ENDDO
-    ENDDO
-    !$OMP END PARALLEL DO
-      CALL GSTATS(1251,1)
+          ALLOCATE(ZSNDBUFV(IDGLU*ILS))
         
-      IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
-      IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
+          IF(MOD(IMAXN-IM,2) == 0) THEN
+            INMAX=IMAXN
+          ELSE
+            INMAX=IMAXN+1
+          ENDIF
 
-    ELSE    
-      CALL GSTATS(1251,0)
-      !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IS  = 1+MOD(R%NSMAX-IM+1,2)
-        ILS = (R%NSMAX-IM+3)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        DO JI=1,ILS
+          IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
+          CALL GSTATS(1251,0)
+          !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
           DO JGL=1,IDGLU
-              S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+            CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=2)
+            DO JI=1,ILS
+              JN=IM+2*(JI-1)
+              ZSNDBUFV((JGL-1)*ILS+JI)=ZLPOL(JN)
+            ENDDO
+          ENDDO
+          !$OMP END PARALLEL DO
+          CALL GSTATS(1251,1)
+          IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
+
+          CALL GSTATS(851,0)
+          DO JSETV=1,NPRTRV
+            CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+            IF( .NOT.LMPOFF )THEN
+              ISREQ = ISREQ+1
+              CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
+              & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
+              & KTAG=ITAG,CDSTRING='SULEG:')
+            ENDIF
+          ENDDO
+          CALL GSTATS(851,1)
+
+        ENDIF
+
+        CALL GSTATS(851,0)
+        IF(IRREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), &
+          & CDSTRING='SUTRLE: SULEG')
+        ENDIF
+
+        IF(ISREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), &
+          & CDSTRING='SUTRLE: SULEG')
+        ENDIF
+        IF( NPROC==1.AND.LMPOFF )THEN
+          ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
+        ENDIF
+        CALL GSTATS(851,1)
+
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
+          IMLOC=JMLOC+JSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IS  = 1+MOD(R%NSMAX-IM+1,2)
+          ILS = (R%NSMAX-IM+3)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+          DO JGL=1,IDGLU
+            DO JI=1,ILS
+              S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
+            ENDDO
           ENDDO
         ENDDO
-     END DO
-     !$OMP END PARALLEL DO
-     CALL GSTATS(1251,1)
-        
-  ENDIF
+        !$OMP END PARALLEL DO
+        CALL GSTATS(1251,1)
+          
+        IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
+        IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
 
-  ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
+      ELSE    
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
+          IMLOC=JMLOC+JSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IS  = 1+MOD(R%NSMAX-IM+1,2)
+          ILS = (R%NSMAX-IM+3)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+          DO JI=1,ILS
+            DO JGL=1,IDGLU
+                S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+            ENDDO
+          ENDDO
+        END DO
+        !$OMP END PARALLEL DO
+        CALL GSTATS(1251,1)
+          
+      ENDIF
+
+    ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
 
   ENDIF
 
