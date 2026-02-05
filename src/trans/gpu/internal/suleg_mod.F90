@@ -13,7 +13,7 @@ CONTAINS
 SUBROUTINE SULEG
 !DEC$ OPTIMIZE:1
 
-USE PARKIND_ECTRANS,  ONLY: JPRD, JPIM, JPRBT
+USE PARKIND_ECTRANS,  ONLY: JPRD, JPIM
 USE PARKIND2,         ONLY: JPRH
 USE MPL_MODULE,       ONLY: MPL_BARRIER, JP_NON_BLOCKING_STANDARD, MPL_RECV, MPL_SEND, &
   &                         MPL_WAIT
@@ -369,13 +369,11 @@ IF(.NOT.D%LGRIDONLY) THEN
   !*       3.2   Computes related arrays
 
   DO JGL=1,R%NDGL
-  ! test cosine differently
+    ! test cosine differently
     ZTHETA = ASIN(ZLRMUZ(JGL))
     ZCOS   = COS(ZTHETA)
     F%R1MU2(JGL)  = ZCOS**2
     F%RACTHE(JGL) = 1.0_JPRD/ZCOS/REAL(RA,JPRD)
-!    F%R1MU2(JGL)  = 1.0_JPRD-ZLRMUZ(JGL)*ZLRMUZ(JGL)
-!    F%RACTHE(JGL) = 1.0_JPRD/SQRT(1.0_JPRD-ZLRMUZ(JGL)*ZLRMUZ(JGL))/REAL(RA,JPRD)
   ENDDO
 
   !*       3.3   Working arrays
@@ -517,8 +515,6 @@ IF(.NOT.D%LGRIDONLY) THEN
   CALL GSTATS(1801,2)
 
   IF(.NOT.C%LREAD_LEGPOL) THEN
-
-    ! not correct logic
 
     DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
 
