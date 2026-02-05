@@ -15,9 +15,12 @@ set( test_list
   ectrans_test_trans_api_setup_trans_odd_ndgl
   ectrans_test_trans_api_setup_trans_octahedral
   ectrans_test_trans_api_setup_trans_stretching
+  ectrans_test_trans_api_setup_trans_flt
   ectrans_test_trans_api_setup_trans_all_fftw
   ectrans_test_trans_api_setup_trans_belusov
-  ectrans_test_trans_api_setup_trans_flt
+  ectrans_test_trans_api_setup_trans_gridonly
+  ectrans_test_trans_api_setup_trans_spsetuponly
+  ectrans_test_trans_api_setup_trans_pnmonly
 )
 
 # Declare tests that WILL_FAIL
