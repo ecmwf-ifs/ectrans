@@ -177,7 +177,9 @@ IF (KSPEC2 > 0) THEN
   IF (IFLDR > 0) THEN
     IF (LDIM1_IS_FLD) THEN
       CALL GSTATS(1644,0)
+#ifndef INTEL
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JFLD,JMLOC,JM,IPOSSP,II,JN)
+#endif
       DO JFLD=1,IFLDR
         DO JMLOC=1,KUMPP(MYSETW)
           JM=KALLMS(KPTRMS(MYSETW)+JMLOC-1)
@@ -192,11 +194,15 @@ IF (KSPEC2 > 0) THEN
           ENDDO
         ENDIF
       ENDDO
+#ifndef INTEL
 !$OMP END PARALLEL DO
+#endif
       CALL GSTATS(1644,1)
     ELSE
       CALL GSTATS(1644,0)
+#ifndef INTEL
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JFLD,JMLOC,JM,IPOSSP,II,JN)
+#endif
       DO JFLD=1,IFLDR
         DO JMLOC=1,KUMPP(MYSETW)
           JM=KALLMS(KPTRMS(MYSETW)+JMLOC-1)
@@ -211,7 +217,9 @@ IF (KSPEC2 > 0) THEN
           ENDDO
         ENDIF
       ENDDO
+#ifndef INTEL
 !$OMP END PARALLEL DO
+#endif
       CALL GSTATS(1644,1)
     ENDIF
   ENDIF
@@ -247,7 +255,9 @@ DO JA=1,NPRTRW
           CALL GSTATS(810,1)
           CALL GSTATS(1644,0)
           IF (LDIM1_IS_FLD) THEN
+#ifndef INTEL
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JFLD,JMLOC,JM,IPOSSP,II,JN)
+#endif
             DO JFLD=1,IFLDR
               DO JMLOC=1,KUMPP(JA)
                 JM=KALLMS(KPTRMS(JA)+JMLOC-1)
@@ -262,9 +272,13 @@ DO JA=1,NPRTRW
                 ENDDO
               ENDIF
             ENDDO
+#ifndef INTEL
 !$OMP END PARALLEL DO
+#endif
           ELSE
+#ifndef INTEL
 !$OMP PARALLEL DO SCHEDULE(STATIC) PRIVATE(JFLD,JMLOC,JM,IPOSSP,II,JN)
+#endif
             DO JFLD=1,IFLDR
               DO JMLOC=1,KUMPP(JA)
                 JM=KALLMS(KPTRMS(JA)+JMLOC-1)
@@ -279,7 +293,9 @@ DO JA=1,NPRTRW
                 ENDDO
               ENDIF
             ENDDO
+#ifndef INTEL
 !$OMP END PARALLEL DO
+#endif
           ENDIF
           CALL GSTATS(1644,1)
         ENDIF
