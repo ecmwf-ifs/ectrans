@@ -154,8 +154,8 @@ std::vector<hicfft_plan<Type, Direction>> plan_all(int resol_id, int kfield, int
       int embed[] = {1};
       fftSafeCall(hipfftPlanMany(
           &plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed, 1,
-          is_forward ? dist / 2 : dist, Direction, kfield));
-      newPlans.emplace_back(plan, kfield * offsets[i]);
+          is_forward ? dist / 2 : dist, Direction, abs(kfield)));
+      newPlans.emplace_back(plan, abs(kfield) * offsets[i]);
     }
     fftPlansCache.insert({key, newPlans});
   }

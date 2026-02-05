@@ -67,10 +67,10 @@ ecbuild_add_library(
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
 )
 
-ectrans_target_fortran_module_directory(
-  TARGET            ectrans_gpu_common
-  MODULE_DIRECTORY  ${PROJECT_BINARY_DIR}/module/ectrans
-  INSTALL_DIRECTORY module/ectrans
+ecbuild_target_fortran_module_directory(
+  TARGET                   ectrans_gpu_common
+  MODULE_DIRECTORY         ${PROJECT_BINARY_DIR}/module/ectrans
+  INSTALL_MODULE_DIRECTORY module/ectrans
 )
 
 
@@ -158,10 +158,10 @@ foreach( prec dp sp )
                                ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
         )
 
-        ectrans_target_fortran_module_directory(
-          TARGET            ectrans_gpu_${prec}
-          MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans
-          INSTALL_DIRECTORY module/ectrans
+        ecbuild_target_fortran_module_directory(
+          TARGET                   ectrans_gpu_${prec}
+          MODULE_DIRECTORY         ${CMAKE_BINARY_DIR}/module/ectrans
+          INSTALL_MODULE_DIRECTORY module/ectrans
         )
 
         if( prec STREQUAL sp )

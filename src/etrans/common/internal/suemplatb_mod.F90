@@ -74,7 +74,7 @@ SUBROUTINE SUEMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,&
 !        A.Bogatchev   21-Sep-2010 phasing CY37
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB, JPRD
+USE EC_PARKIND  ,ONLY : JPIM, JPRD
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS

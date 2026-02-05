@@ -8,7 +8,7 @@
 
 cmake_minimum_required( VERSION 3.25 FATAL_ERROR )
 
-find_package( ecbuild 3.4 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
+find_package( ecbuild 3.8 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
@@ -169,10 +169,11 @@ ecbuild_add_option( FEATURE GPU_STATIC
                     DESCRIPTION "Compile GPU library as static library"
                     CONDITION HAVE_GPU )
 
+# Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
 ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
+                    CONDITION NOT HAVE_GPU OR ( HAVE_ACC AND NOT HAVE_GPU_GRAPHS_FFT)
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
-
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
                     CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
