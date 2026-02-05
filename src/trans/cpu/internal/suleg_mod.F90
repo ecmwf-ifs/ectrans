@@ -1,6 +1,6 @@
 ! (C) Copyright 1987- ECMWF.
 ! (C) Copyright 1987- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -72,7 +72,7 @@ USE READ_LEGPOL_MOD   ,ONLY : READ_LEGPOL
 !     Reference.
 !     ----------
 !        ECMWF Research Department documentation of the IFS
-!     
+!
 !     S.L. Belousov, Tables of normalized associated Legendre Polynomials, Pergamon Press (1962)
 !     P.N. Swarztrauber, On computing the points and weights for Gauss-Legendre quadrature,
 !     SIAM J. Sci. Comput. Vol. 24 (3) pp. 945-954 (2002)
@@ -125,7 +125,7 @@ USE READ_LEGPOL_MOD   ,ONLY : READ_LEGPOL
 
 IMPLICIT NONE
 
-!     LOCAL 
+!     LOCAL
 !     ------------------------------------------------------------------
 REAL(KIND=JPRD),ALLOCATABLE :: ZPNMG(:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZFN(:,:)
@@ -201,9 +201,9 @@ IF(.NOT.D%LGRIDONLY) THEN
 ENDIF
 
 ALLOCATE(F%RMU(R%NDGL))
-IF (LLP2) WRITE(NOUT,9) 'F%RMU     ',SIZE(F%RMU ),SHAPE(F%RMU ) 
+IF (LLP2) WRITE(NOUT,9) 'F%RMU     ',SIZE(F%RMU ),SHAPE(F%RMU )
 ALLOCATE(F%RW(R%NDGL))
-IF (LLP2) WRITE(NOUT,9) 'F%RW      ',SIZE(F%RW  ),SHAPE(F%RW  ) 
+IF (LLP2) WRITE(NOUT,9) 'F%RW      ',SIZE(F%RW  ),SHAPE(F%RW  )
 
 
 !*       1.0 Initialize Fourier coefficients for ordinary Legendre polynomials
@@ -214,7 +214,7 @@ IF (LLP2) WRITE(NOUT,9) 'ZFN       ',SIZE(ZFN   ),SHAPE(ZFN   )
 
 
 
-! determines the number of stripes in butterfly NSMAX/IMAXCOLS 
+! determines the number of stripes in butterfly NSMAX/IMAXCOLS
 ! IMAXCOLS = (R%NSMAX - 1)/4 + 1
 ! IMAXCOLS=64 (min flops)
 IMAXCOLS=64
@@ -236,7 +236,7 @@ S%ITHRESHOLD = ITHRESHOLD
 !*       3.1   Gaussian latitudes and weights
 !     ---------------------------------------
 
-!IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) 
+!IF (S%LUSE_BELUSOV.OR.S%LUSEFLT)
 CALL INI_POL(R%NTMAX+3)
 
 IF(.NOT.D%LGRIDONLY) THEN
@@ -310,7 +310,7 @@ IF( S%LDLL ) THEN
   ! we approximate the vicinity to the pole/equator
 
   ZPI = 2.0_JPRD*ASIN(1.0_JPRD)
-  
+
   ZORIG = ASIN(F%RMU(1))
   IF( S%LSHIFTLL )  THEN
     ZINC = ZPI/REAL(INN,JPRD)
@@ -342,7 +342,7 @@ IF( S%LDLL ) THEN
         & (180._JPRD/ZPI)*ASIN(F%RMU(JGL))
     ENDDO
   ENDIF
-  
+
   ALLOCATE(F%RMU2(INMAX))
   IF (LLP2) WRITE(NOUT,9) 'F%RMU2     ',SIZE(F%RMU2 ),SHAPE(F%RMU2 )
   ALLOCATE(F%RACTHE2(INMAX))
@@ -369,13 +369,13 @@ IF(.NOT.D%LGRIDONLY) THEN
   ALLOCATE(S%FA(D%NUMP))
 
   ALLOCATE(F%R1MU2(R%NDGL))
-  IF (LLP2) WRITE(NOUT,9) 'F%R1MU2   ',SIZE(F%R1MU2),SHAPE(F%R1MU2 ) 
+  IF (LLP2) WRITE(NOUT,9) 'F%R1MU2   ',SIZE(F%R1MU2),SHAPE(F%R1MU2 )
   ALLOCATE(F%RACTHE(R%NDGL))
-  IF (LLP2) WRITE(NOUT,9) 'F%RACTHE  ',SIZE(F%RACTHE),SHAPE(F%RACTHE ) 
+  IF (LLP2) WRITE(NOUT,9) 'F%RACTHE  ',SIZE(F%RACTHE),SHAPE(F%RACTHE )
 
   IF( S%LUSE_BELUSOV) THEN
     ALLOCATE(F%RPNM(R%NLEI3,D%NSPOLEGL))
-    IF (LLP2) WRITE(NOUT,9) 'F%RPNM    ',SIZE(F%RPNM),SHAPE(F%RPNM) 
+    IF (LLP2) WRITE(NOUT,9) 'F%RPNM    ',SIZE(F%RPNM),SHAPE(F%RPNM)
     DO JNM=1,D%NSPOLEGL
       F%RPNM(R%NLEI3,JNM) = 0.0_JPRD
     ENDDO
@@ -463,7 +463,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       ILATS=IGL2-IGL1+1
       IF (S%LSOUTHPNM .AND. IHEMIS==1 .AND. ILATSMAX-1 >= ILATS) THEN
         ! I don't know what to do for south pole. But isn't this piece of code
-        ! a dead stuff for poles rows ? 
+        ! a dead stuff for poles rows ?
         CALL ABORT_TRANS('SULEG: WILL BE BROKEN FOR SOUTH HEMISPHERE')
       ENDIF
 
@@ -605,10 +605,10 @@ IF(.NOT.D%LGRIDONLY) THEN
         IM = D%MYMS(IMLOC)
         ILA = (R%NSMAX-IM+2)/2
         IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        ALLOCATE(S%FA(IMLOC)%RPNMA(IDGLU,ILA))  
+        ALLOCATE(S%FA(IMLOC)%RPNMA(IDGLU,ILA))
       ENDDO
 
-      IF( .NOT. S%LUSE_BELUSOV ) THEN 
+      IF( .NOT. S%LUSE_BELUSOV ) THEN
 
         ISREQ = 0
         IRREQ = 0
@@ -636,7 +636,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
 
           ALLOCATE(ZSNDBUFV(IDGLU*ILA))
-        
+
           IF(MOD(IMAXN-IM,2) == 0) THEN
             INMAX=IMAXN+1
           ELSE
@@ -886,10 +886,10 @@ IF(.NOT.D%LGRIDONLY) THEN
         IM = D%MYMS(IMLOC)
         ILS = (R%NSMAX-IM+3)/2
         IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        ALLOCATE(S%FA(IMLOC)%RPNMS(IDGLU,ILS))  
+        ALLOCATE(S%FA(IMLOC)%RPNMS(IDGLU,ILS))
       ENDDO
 
-      IF( .NOT. S%LUSE_BELUSOV ) THEN 
+      IF( .NOT. S%LUSE_BELUSOV ) THEN
 
         ISREQ = 0
         IRREQ = 0
@@ -917,7 +917,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
 
           ALLOCATE(ZSNDBUFV(IDGLU*ILS))
-        
+
           IF(MOD(IMAXN-IM,2) == 0) THEN
             INMAX=IMAXN
           ELSE
@@ -1165,7 +1165,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       DEALLOCATE(ZCLONES)
     ENDIF
 
-    IF( LLP1 .AND. S%LUSEFLT ) THEN    
+    IF( LLP1 .AND. S%LUSEFLT ) THEN
       WRITE(NOUT,*) '=== SULEG: Finished SETUP_BUTTERFLY ==='
     ENDIF
   ENDIF
@@ -1184,7 +1184,7 @@ CALL GSTATS(140,1)
 !     ------------------------------------------------------------------
 9 FORMAT(1X,'ARRAY ',A10,' ALLOCATED ',8I8)
 
-!IF (S%LUSE_BELUSOV.OR.S%LUSEFLT) 
+!IF (S%LUSE_BELUSOV.OR.S%LUSEFLT)
 CALL END_POL
 
 END SUBROUTINE SULEG
