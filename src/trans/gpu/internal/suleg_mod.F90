@@ -521,8 +521,6 @@ IF(.NOT.D%LGRIDONLY) THEN
       IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
 
       ! --------------------anti-symmetric-----------------------
-      ! --------------------anti-symmetric-----------------------
-      ! --------------------anti-symmetric-----------------------
 
       DO JSETV=1,IPRTRV
         IMLOC=JMLOC+JSETV-1
@@ -652,8 +650,6 @@ IF(.NOT.D%LGRIDONLY) THEN
 
       ENDIF
 
-      ! --------------------symmetric-----------------------
-      ! --------------------symmetric-----------------------
       ! --------------------symmetric-----------------------
 
       DO JSETV=1,IPRTRV
