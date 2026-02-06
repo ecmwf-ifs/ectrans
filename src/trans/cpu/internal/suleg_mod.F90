@@ -585,12 +585,21 @@ IF(.NOT.D%LGRIDONLY) THEN
       ALLOCATE(ZCLONES(D%NUMP))
     ENDIF
 
-    DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
+    ! Loop over all zonal wavenumbers I'm responsible for, in strides of NPRTRV
+    ! Every member of the same W set needs exactly the same polynomials
+    ! Rather than have one member from each W set compute all the polynomials and then communicate
+    ! them to the others, each member in the W set is recruited to calculate exactly one polynomial
+    ! E.g. MYSETV=1 computes the first, MYSETV=2 the second, and so on
+    ! This way the cost of precomputing the polynomials is shared among all members of the W set
+    ! Each member then communicates its polynomial to the other members, so they all have a
+    ! complete set
+    DO JMLOC = 1, D%NUMP, NPRTRV
 
       IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
 
       ! --------------------anti-symmetric-----------------------
 
+      ! Allocate antisymmetric polynomials for this batch of NPRTRV zonal wavenumbers
       DO JSETV=1,IPRTRV
         IMLOC=JMLOC+JSETV-1
         IM = D%MYMS(IMLOC)
@@ -604,6 +613,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         ISREQ = 0
         IRREQ = 0
 
+        ! Post receives for all polynomials in this NPRTRV batch
         ALLOCATE (ZRCVBUFV(IMAXRECVA,IPRTRV))
         CALL GSTATS(851,0)
         DO JSETV=1,IPRTRV
@@ -618,7 +628,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         CALL GSTATS(851,1)
 
         IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
-
+          ! Determine properties of the polynomial I'm responsible for
           IMLOC=JMLOC+MYSETV-1
           IM = D%MYMS(IMLOC)
           ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
@@ -634,6 +644,7 @@ IF(.NOT.D%LGRIDONLY) THEN
             INMAX=IMAXN
           ENDIF
 
+          ! Calculate my polynomial with SUPOLF
           CALL GSTATS(1251,0)
           IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
           !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
@@ -648,6 +659,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
           CALL GSTATS(1251,1)
 
+          ! Post sends to the other members of my W set
           CALL GSTATS(851,0)
           DO JSETV=1,NPRTRV
             CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
@@ -676,6 +688,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         ENDIF
         CALL GSTATS(851,1)
 
+        ! Now unpack the polynomials I've received into their respective storage work arrays
         CALL GSTATS(1251,0)
         !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
         DO JSETV=1,IPRTRV
@@ -715,7 +728,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
 
       ELSE
-
+        ! Take the values from the arrays computed earlier with the Belusov algorithm
         CALL GSTATS(1251,0)
         !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
         DO JSETV=1,IPRTRV
@@ -866,6 +879,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
       ! --------------------symmetric-----------------------
 
+      ! Allocate symmetric polynomials for this batch of NPRTRV zonal wavenumbers
       DO JSETV=1,IPRTRV
         IMLOC=JMLOC+JSETV-1
         IM = D%MYMS(IMLOC)
@@ -879,6 +893,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         ISREQ = 0
         IRREQ = 0
 
+        ! Post receives for all polynomials in this NPRTRV batch
         ALLOCATE (ZRCVBUFV(IMAXRECVS,IPRTRV))
         CALL GSTATS(851,0)
         DO JSETV=1,IPRTRV
@@ -893,7 +908,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         CALL GSTATS(851,1)
 
         IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
-
+          ! Determine properties of the polynomial I'm responsible for
           IMLOC=JMLOC+MYSETV-1
           IM = D%MYMS(IMLOC)
           ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
@@ -910,6 +925,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           ENDIF
 
           IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
+          ! Calculate my polynomial with SUPOLF
           CALL GSTATS(1251,0)
           !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
           DO JGL=1,IDGLU
@@ -923,6 +939,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           CALL GSTATS(1251,1)
           IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
 
+          ! Post sends to the other members of my W set
           CALL GSTATS(851,0)
           DO JSETV=1,NPRTRV
             CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
@@ -950,6 +967,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         ENDIF
         CALL GSTATS(851,1)
 
+        ! Now unpack the polynomials I've received into their respective storage work arrays
         CALL GSTATS(1251,0)
         !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
         DO JSETV=1,IPRTRV
@@ -989,6 +1007,7 @@ IF(.NOT.D%LGRIDONLY) THEN
         IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
 
       ELSE
+        ! Take the values from the arrays computed earlier with the Belusov algorithm
         CALL GSTATS(1251,0)
         !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
         DO JSETV=1,IPRTRV
@@ -1137,7 +1156,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           ENDIF
         ENDIF
       ENDIF
-    ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
+    ENDDO ! End of loop over zonal wavenumbers
 
     IF( S%LUSEFLT )THEN
       DEALLOCATE(ZCLONEA)
