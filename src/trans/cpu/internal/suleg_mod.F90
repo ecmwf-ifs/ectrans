@@ -924,9 +924,9 @@ IF(.NOT.D%LGRIDONLY) THEN
             INMAX=IMAXN+1
           ENDIF
 
-          IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
           ! Calculate my polynomial with SUPOLF
           CALL GSTATS(1251,0)
+          IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
           !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
           DO JGL=1,IDGLU
             CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=2)
@@ -936,8 +936,8 @@ IF(.NOT.D%LGRIDONLY) THEN
             ENDDO
           ENDDO
           !$OMP END PARALLEL DO
-          CALL GSTATS(1251,1)
           IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
+          CALL GSTATS(1251,1)
 
           ! Post sends to the other members of my W set
           CALL GSTATS(851,0)
