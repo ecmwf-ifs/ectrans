@@ -85,14 +85,20 @@ function( generate_api_test_suite )
           continue()
         endif()
 
+        set( full_test_name ${test}${suffix}_mpi${mpi}xomp${omp} )
+
         # If this test is in the exclusion list, skip it
+        set( skip_test FALSE )
         foreach( exclude ${excludes} )
-          if( test MATCHES ${exclude} )
-            continue()
+          if( full_test_name MATCHES ${exclude} )
+            set( skip_test TRUE )
           endif()
         endforeach()
+        if( skip_test )
+          continue()
+        endif()
 
-        ecbuild_add_test( TARGET ${test}${suffix}_mpi${mpi}xomp${omp}
+        ecbuild_add_test( TARGET ${full_test_name}
                           COMMAND ${suite_name}${suffix}
                           ARGS ${test}
                           MPI ${mpi}
@@ -100,8 +106,8 @@ function( generate_api_test_suite )
 
         # Declare that this test should fail
         if( ${test} IN_LIST will_fail_list )
-          set_property( TEST ${test}${suffix}_mpi${mpi}xomp${omp} PROPERTY WILL_FAIL TRUE )
-          set_property( TEST ${test}${suffix}_mpi${mpi}xomp${omp} PROPERTY LABELS "will_fail" )
+          set_property( TEST ${full_test_name} PROPERTY WILL_FAIL TRUE )
+          set_property( TEST ${full_test_name} PROPERTY LABELS "will_fail" )
         endif()
       endforeach()
     endforeach()
