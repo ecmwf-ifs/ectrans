@@ -260,6 +260,7 @@ D%LSPLIT = .FALSE.
 D%LCPNMONLY=.FALSE.
 S%LUSE_BELUSOV=.TRUE. ! use Belusov algorithm to compute RPNM array instead of per m
 S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
+S%LUSEFLT=.FALSE. ! Use fast legendre transforms
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
 S%LSHIFTLL = .FALSE. ! shift output lat-lon by 0.5dx, 0.5dy
@@ -412,6 +413,7 @@ ENDIF
 
 IF(PRESENT(CDIO_LEGPOL)) THEN
   IF(NPROC > 1) CALL  ABORT_TRANS('SETUP_TRANS:CDIO_LEGPOL OPTIONS ONLY FOR NPROC=1 ')
+  IF(R%NSMAX > 511 ) S%LUSEFLT = .TRUE. !To save IO and memory
   IF(TRIM(CDIO_LEGPOL) == 'readf' .OR. TRIM(CDIO_LEGPOL) == 'READF' ) THEN
     IF(.NOT.PRESENT(CDLEGPOLFNAME)) CALL  ABORT_TRANS('SETUP_TRANS: CDLEGPOLFNAME ARGUMENT MISSING')
     C%LREAD_LEGPOL = .TRUE.
@@ -436,17 +438,19 @@ IF(PRESENT(CDIO_LEGPOL)) THEN
 ENDIF
 
 IF(PRESENT(LDUSEFLT)) THEN
-  IF (LDUSEFLT) THEN
-    CALL ABORT_TRANS('SETUP_TRANS: LDUSEFLT option is not supported for GPU')
-  ENDIF
+  S%LUSEFLT=LDUSEFLT
 ENDIF
 IF(PRESENT(LDUSERPNM)) THEN
   S%LUSE_BELUSOV=LDUSERPNM
 ENDIF
 IF(PRESENT(LDKEEPRPNM)) THEN
+  IF(S%LUSEFLT) THEN
+    IF(LDKEEPRPNM.AND..NOT.LDUSERPNM) THEN
+      CALL ABORT_TRANS('SETUP_TRANS: LDKEEPRPNM=true with LDUSERPNM=false')
+    ENDIF
+  ENDIF
   S%LKEEPRPNM=LDKEEPRPNM
 ENDIF
-
 !     Setup resolution dependent structures
 !     -------------------------------------
 
