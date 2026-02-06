@@ -132,6 +132,21 @@ END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_OCTAHEDRAL
 
 !---------------------------------------------------------------------------------------------------
 
+! Test SETUP_TRANS with LDSPLIT option enabled
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_LDSPLIT() RESULT(RET) BIND(C)
+  LOGICAL :: LUSE_MPI
+
+  CALL SETUP_TEST(LUSE_MPI)
+
+  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, LDSPLIT=.TRUE.)
+
+  CALL END_TEST(LUSE_MPI)
+
+  RET = 0
+END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_LDSPLIT
+
+!---------------------------------------------------------------------------------------------------
+
 ! Test SETUP_TRANS with stretch factor passed
 INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_STRETCHING() RESULT(RET) BIND(C)
   INTEGER(KIND=JPIM) :: ILOEN(NDGL)

@@ -14,6 +14,7 @@ set( test_list
   ectrans_test_trans_api_setup_trans_basic
   ectrans_test_trans_api_setup_trans_odd_ndgl
   ectrans_test_trans_api_setup_trans_octahedral
+  ectrans_test_trans_api_setup_trans_ldsplit
   ectrans_test_trans_api_setup_trans_stretching
   ectrans_test_trans_api_setup_trans_flt
   ectrans_test_trans_api_setup_trans_all_fftw
