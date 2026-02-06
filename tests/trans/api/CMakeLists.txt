@@ -21,7 +21,7 @@ function( generate_api_test_suite )
   set( excludes ${_PAR_EXCLUDES} )
 
   # Add API tests for this suite, with a separate driver executable for each backend
-  foreach( backend IN LISTS backends )
+  foreach( backend ${backends} )
     # Don't include tests which aren't supported by this build
     if( (backend MATCHES "cpu" AND NOT HAVE_CPU) OR (backend MATCHES "gpu" AND NOT HAVE_GPU) )
       continue()
@@ -68,7 +68,7 @@ function( generate_api_test_suite )
         MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${suite_name}${suffix} )
 
     # Add a test for each MPI x OpenMP configuration
-    foreach( mpixomp IN LISTS mpixomps )
+    foreach( mpixomp ${mpixomps} )
       string(REGEX MATCH "^([0-9]+)x([0-9]+)$" _ "${mpixomp}")
       set(mpi "${CMAKE_MATCH_1}")
       set(omp "${CMAKE_MATCH_2}")
@@ -78,7 +78,7 @@ function( generate_api_test_suite )
       endif()
 
       # Add each test in the test list for this precision and MPI configuration
-      foreach( test IN LISTS tests )
+      foreach( test ${tests} )
         # We don't yet have a good way to handle aborts in ecTrans gracefully, so for now we will
         # not include will-fail tests
         if( ${test} IN_LIST will_fail_list )
@@ -86,7 +86,7 @@ function( generate_api_test_suite )
         endif()
 
         # If this test is in the exclusion list, skip it
-        foreach( exclude IN_LIST excludes )
+        foreach( exclude ${excludes} )
           if( test MATCHES ${exclude} )
             continue()
           endif()
