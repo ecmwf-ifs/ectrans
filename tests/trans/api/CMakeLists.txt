@@ -11,13 +11,14 @@
 function( generate_api_test_suite )
   set( options )
   set( oneValueArgs SUITE_NAME )
-  set( multiValueArgs TESTS WILL_FAIL_LIST MPIxOMPS BACKENDS )
+  set( multiValueArgs TESTS WILL_FAIL_LIST MPIxOMPS BACKENDS EXCLUDES )
   cmake_parse_arguments( _PAR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   set( suite_name ${_PAR_SUITE_NAME} )
   set( tests ${_PAR_TESTS} )
   set( will_fail_list ${_PAR_WILL_FAIL_LIST} )
   set( mpixomps ${_PAR_MPIxOMPS} )
   set( backends ${_PAR_BACKENDS} )
+  set( excludes ${_PAR_EXCLUDES} )
 
   # Add API tests for this suite, with a separate driver executable for each backend
   foreach( backend IN LISTS backends )
@@ -83,6 +84,13 @@ function( generate_api_test_suite )
         if( ${test} IN_LIST will_fail_list )
           continue()
         endif()
+
+        # If this test is in the exclusion list, skip it
+        foreach( exclude IN_LIST excludes )
+          if( test MATCHES ${exclude} )
+            continue()
+          endif()
+        endforeach()
 
         ecbuild_add_test( TARGET ${test}${suffix}_mpi${mpi}xomp${omp}
                           COMMAND ${suite_name}${suffix}
