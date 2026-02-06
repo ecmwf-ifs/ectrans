@@ -12,6 +12,7 @@
 set( test_list
   ectrans_test_trans_api_setup_trans_without_setup_trans0
   ectrans_test_trans_api_setup_trans_basic
+  ectrans_test_trans_api_setup_trans_multiple_resolutions
   ectrans_test_trans_api_setup_trans_odd_ndgl
   ectrans_test_trans_api_setup_trans_octahedral
   ectrans_test_trans_api_setup_trans_ldsplit
