@@ -11,16 +11,17 @@
 function( generate_api_test_suite )
   set( options )
   set( oneValueArgs SUITE_NAME )
-  set( multiValueArgs TESTS WILL_FAIL_LIST MPIxOMPS BACKENDS )
+  set( multiValueArgs TESTS WILL_FAIL_LIST MPIxOMPS BACKENDS EXCLUDES )
   cmake_parse_arguments( _PAR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
   set( suite_name ${_PAR_SUITE_NAME} )
   set( tests ${_PAR_TESTS} )
   set( will_fail_list ${_PAR_WILL_FAIL_LIST} )
   set( mpixomps ${_PAR_MPIxOMPS} )
   set( backends ${_PAR_BACKENDS} )
+  set( excludes ${_PAR_EXCLUDES} )
 
   # Add API tests for this suite, with a separate driver executable for each backend
-  foreach( backend IN LISTS backends )
+  foreach( backend ${backends} )
     # Don't include tests which aren't supported by this build
     if( (backend MATCHES "cpu" AND NOT HAVE_CPU) OR (backend MATCHES "gpu" AND NOT HAVE_GPU) )
       continue()
@@ -67,7 +68,7 @@ function( generate_api_test_suite )
         MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${suite_name}${suffix} )
 
     # Add a test for each MPI x OpenMP configuration
-    foreach( mpixomp IN LISTS mpixomps )
+    foreach( mpixomp ${mpixomps} )
       string(REGEX MATCH "^([0-9]+)x([0-9]+)$" _ "${mpixomp}")
       set(mpi "${CMAKE_MATCH_1}")
       set(omp "${CMAKE_MATCH_2}")
@@ -77,14 +78,27 @@ function( generate_api_test_suite )
       endif()
 
       # Add each test in the test list for this precision and MPI configuration
-      foreach( test IN LISTS tests )
+      foreach( test ${tests} )
         # We don't yet have a good way to handle aborts in ecTrans gracefully, so for now we will
         # not include will-fail tests
         if( ${test} IN_LIST will_fail_list )
           continue()
         endif()
 
-        ecbuild_add_test( TARGET ${test}${suffix}_mpi${mpi}xomp${omp}
+        set( full_test_name ${test}${suffix}_mpi${mpi}xomp${omp} )
+
+        # If this test is in the exclusion list, skip it
+        set( skip_test FALSE )
+        foreach( exclude ${excludes} )
+          if( full_test_name MATCHES ${exclude} )
+            set( skip_test TRUE )
+          endif()
+        endforeach()
+        if( skip_test )
+          continue()
+        endif()
+
+        ecbuild_add_test( TARGET ${full_test_name}
                           COMMAND ${suite_name}${suffix}
                           ARGS ${test}
                           MPI ${mpi}
@@ -92,8 +106,8 @@ function( generate_api_test_suite )
 
         # Declare that this test should fail
         if( ${test} IN_LIST will_fail_list )
-          set_property( TEST ${test}${suffix}_mpi${mpi}xomp${omp} PROPERTY WILL_FAIL TRUE )
-          set_property( TEST ${test}${suffix}_mpi${mpi}xomp${omp} PROPERTY LABELS "will_fail" )
+          set_property( TEST ${full_test_name} PROPERTY WILL_FAIL TRUE )
+          set_property( TEST ${full_test_name} PROPERTY LABELS "will_fail" )
         endif()
       endforeach()
     endforeach()
@@ -101,3 +115,4 @@ function( generate_api_test_suite )
 endfunction( generate_api_test_suite )
 
 add_subdirectory( setup_trans0 )
+add_subdirectory( setup_trans )
