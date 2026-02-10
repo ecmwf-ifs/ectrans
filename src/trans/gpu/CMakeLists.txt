@@ -40,7 +40,8 @@ else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
 
-if( HAVE_GPU_AWARE_MPI AND NOT fiat_HAVE_MPL_F08 )
+# We can't reliably pass GPU buffers directly to MPL routines yet, so for now we should still use raw MPI calls
+if( HAVE_GPU_AWARE_MPI )
   set( USE_RAW_MPI 1 )
 else()
   set( USE_RAW_MPI 0)
