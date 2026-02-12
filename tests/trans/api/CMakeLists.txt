@@ -59,6 +59,7 @@ function( generate_api_test_suite )
                                 ${suite_name}${suffix}.c
                                 ${suite_name}.F90
                                 ${CMAKE_CURRENT_SOURCE_DIR}/../util.F90
+                            LINKER_LANGUAGE Fortran
                             LIBS ${libs} )
 
     # Prevent the Fortran runtime from trying to provide a main program
