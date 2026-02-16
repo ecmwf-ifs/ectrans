@@ -23,6 +23,7 @@ on:
 
 env:
   ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
+  ECTRANS_ARCH: ${{ github.workspace }}/.github/arch
   CTEST_PARALLEL_LEVEL: 1
   CACHE_SUFFIX: v1        # Increase to force new cache to be created
 
@@ -58,7 +59,6 @@ jobs:
               - nvidia/24.5
               - hpcx-openmpi/2.19.0-cuda
               - fftw
-            cmake_options: -DENABLE_ACC=ON -G Ninja
 
           - name: lumi-g cce
             site: lumi
@@ -81,10 +81,6 @@ jobs:
               - buildtools
             output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
             workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
-            cmake_options: >
-              -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
-              -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
-              -DENABLE_OMP=ON
             env_vars:
               - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
@@ -111,7 +107,7 @@ jobs:
               - -DENABLE_ETRANS=ON
               - -DENABLE_GPU_GRAPHS_GEMM=OFF
               - -DENABLE_GPU_GRAPHS_FFT=OFF
-              - ${{ matrix.cmake_options || '' }}
+              - -DCMAKE_TOOLCHAIN_FILE=${ECTRANS_ARCH}/${{ matrix.site }}.cmake
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
@@ -120,7 +116,7 @@ jobs:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
-                  - ${{ matrix.cmake_options || '' }}
+                  - -DCMAKE_TOOLCHAIN_FILE=${ECTRANS_ARCH}/${{ matrix.site }}.cmake
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
