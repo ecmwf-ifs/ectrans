@@ -106,7 +106,6 @@ jobs:
               - -DENABLE_ETRANS=ON
               - -DENABLE_GPU_GRAPHS_GEMM=OFF
               - -DENABLE_GPU_GRAPHS_FFT=OFF
-              - -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/.github/arch/${{ matrix.site }}.cmake
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
@@ -115,7 +114,6 @@ jobs:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
-                  - -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/.github/arch/${{ matrix.site }}.cmake
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
@@ -149,6 +147,8 @@ jobs:
             export CMAKE_TEST_LAUNCHER="srun;-n;1"
             export DR_HOOK_ASSERT_MPI_INITIALIZED=0
             BASEDIR=$PWD
+
+            # Fetch dependencies
             {% for name, options in dependencies.items() %}
                 mkdir -p {{name}}
                 pushd {{name}}
@@ -156,16 +156,10 @@ jobs:
                 git remote add origin ${{ github.server_url }}/{{name}}
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
-                cmake -S . -B build \
-                  {% for name in dependencies %}
-                    {% set org, proj = name.split('/') %}
-                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
-                  {% endfor %}
-                  {{ options['cmake_options']|join(' ') }}
-                cmake --build build
-                cmake --install build --prefix installation
                 popd
             {% endfor %}
+
+            # Fetch ecTrans
             mkdir -p $REPO
             pushd $REPO
             git init
@@ -173,11 +167,29 @@ jobs:
             git fetch origin $SHA
             git reset --hard FETCH_HEAD
             popd
+
+            # Build dependencies
+            {% for name, options in dependencies.items() %}
+                pushd {{name}}
+                cmake -S . -B build \
+                  {% for name in dependencies %}
+                    {% set org, proj = name.split('/') %}
+                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                  {% endfor %}
+                  -DCMAKE_TOOLCHAIN_FILE=$BASEDIR/$REPO/.github/arch/${{ site }}.cmake \
+                  {{ options['cmake_options']|join(' ') }}
+                cmake --build build
+                cmake --install build --prefix installation
+                popd
+            {% endfor %}
+
+            # Build ecTrans
             cmake -S $REPO -B build \
               {% for name in dependencies %}
                 {% set org, proj = name.split('/') %}
                 -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
               {% endfor %}
+              -DCMAKE_TOOLCHAIN_FILE=$BASEDIR/$REPO/.github/arch/${{ site }}.cmake \
               {{ cmake_options|join(' ') }}
             cmake --build build
 
