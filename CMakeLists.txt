@@ -170,6 +170,13 @@ ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
 
+# Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
+if( HAVE_ETRANS AND HAVE_GPU AND HAVE_ACC AND NOT HAVE_GRAPHS_FFT )
+  set( HAVE_ETRANS_GPU 1 )
+else()
+  set( HAVE_ETRANS_GPU 0 )
+endif()
+
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
                     CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION

@@ -99,9 +99,6 @@ if( HAVE_CPU )
   add_subdirectory( cpu )
 endif()
 
-if( HAVE_GPU )
-  # Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
-  if( HAVE_ACC AND NOT HAVE_GPU_GRAPHS_FFT )
-    add_subdirectory( gpu )
-  endif()
+if( HAVE_ETRANS_GPU )
+  add_subdirectory( gpu )
 endif()
