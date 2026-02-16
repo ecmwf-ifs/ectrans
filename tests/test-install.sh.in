@@ -47,7 +47,7 @@ cmake $SOURCE \
   -DECBUILD_2_COMPAT=OFF \
   "$@"
 
-make VERBOSE=1
+cmake --build .
 
 # For some reason these compilers are more stack hungry
 if [[ "@CMAKE_Fortran_COMPILER_ID@" = "LLVMFlang" || \
