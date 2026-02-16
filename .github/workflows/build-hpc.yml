@@ -23,7 +23,6 @@ on:
 
 env:
   ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
-  ECTRANS_ARCH: ${{ github.workspace }}/.github/arch
   CTEST_PARALLEL_LEVEL: 1
   CACHE_SUFFIX: v1        # Increase to force new cache to be created
 
@@ -107,7 +106,7 @@ jobs:
               - -DENABLE_ETRANS=ON
               - -DENABLE_GPU_GRAPHS_GEMM=OFF
               - -DENABLE_GPU_GRAPHS_FFT=OFF
-              - -DCMAKE_TOOLCHAIN_FILE=${ECTRANS_ARCH}/${{ matrix.site }}.cmake
+              - -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/.github/arch/${{ matrix.site }}.cmake
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
@@ -116,7 +115,7 @@ jobs:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
-                  - -DCMAKE_TOOLCHAIN_FILE=${ECTRANS_ARCH}/${{ matrix.site }}.cmake
+                  - -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/.github/arch/${{ matrix.site }}.cmake
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
