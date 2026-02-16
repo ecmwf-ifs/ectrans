@@ -58,6 +58,8 @@ jobs:
               - nvidia/24.5
               - hpcx-openmpi/2.19.0-cuda
               - fftw
+            env_vars:
+              - CMAKE_GENERATOR=Ninja
 
           - name: lumi-g cce
             site: lumi

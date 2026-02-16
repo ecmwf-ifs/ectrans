@@ -9,4 +9,3 @@
 # ECMWF/HPC2020 AC complex, with Nvidia A100 GPUs
 
 set( ENABLE_ACC ON )
-set( CMAKE_GENERATOR "Ninja" )
