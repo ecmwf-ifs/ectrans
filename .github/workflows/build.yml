@@ -35,6 +35,7 @@ jobs:
           - linux clang-18
           - linux nvhpc-25.1
           - linux intel-classic
+          - linux intel-modern
           - macos
 
         include:
@@ -73,6 +74,15 @@ jobs:
             compiler_cc: icc
             compiler_cxx: icpc
             compiler_fc: ifort
+            caching: true
+
+          - name : linux intel-modern
+            os: ubuntu-24.04
+            compiler: intel-modern
+            compiler_cc: icx
+            compiler_cxx: icpx
+            compiler_fc: ifx
+            python-version: '3.11'
             caching: true
 
           - name: macos
@@ -143,9 +153,18 @@ jobs:
         [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
 
     - name: Install Intel oneAPI compiler
-      if: contains( matrix.compiler, 'intel' )
+      if: contains( matrix.compiler, 'intel-classic' )
       run: |
         ${ECTRANS_TOOLS}/install-intel-oneapi.sh
+        source /opt/intel/oneapi/setvars.sh
+        printenv >> $GITHUB_ENV
+        echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
+
+    - name: Install Intel modern compiler
+      if: contains( matrix.compiler, 'intel-modern' )
+      run: |
+        sudo apt update
+        sudo apt install intel-hpckit
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
