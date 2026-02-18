@@ -152,10 +152,24 @@ jobs:
         echo "${NVHPC_DIR}/compilers/bin"                   >> $GITHUB_PATH
         [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
 
-    - name: Install Intel oneAPI compiler
+    - name: Download Intel compiler
+      if: contains( matrix.compiler, 'intel' )
+      run: |
+        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        rm GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        sudo add-apt-repository "deb https://apt.repos.intel.com/oneapi all main"
+
+    - name: Install Intel classic compiler
       if: contains( matrix.compiler, 'intel-classic' )
       run: |
-        ${ECTRANS_TOOLS}/install-intel-oneapi.sh
+        version=2023.2.0
+        sudo apt-get update
+         sudo apt-get install \
+          intel-oneapi-compiler-fortran-$version \
+          intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-$version \
+          intel-oneapi-mpi-devel-2021.10.0 \
+          intel-oneapi-mkl-$version
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
@@ -163,8 +177,8 @@ jobs:
     - name: Install Intel modern compiler
       if: contains( matrix.compiler, 'intel-modern' )
       run: |
-        sudo apt update
-        sudo apt install intel-hpckit
+        sudo apt-get update
+        sudo apt-get install intel-hpckit
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
