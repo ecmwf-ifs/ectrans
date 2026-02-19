@@ -49,7 +49,8 @@ cmake $SOURCE \
 
 make VERBOSE=1
 
-if [[ "@CMAKE_Fortran_COMPILER_ID@" = "LLVMFlang" ]]; then
+if [[ "@CMAKE_Fortran_COMPILER_ID@" = "LLVMFlang" || \
+      "@CMAKE_Fortran_COMPILER_ID@" = "IntelLLVM" ]]; then
   ulimit -s unlimited
 fi
 
