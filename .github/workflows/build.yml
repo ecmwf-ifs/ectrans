@@ -82,6 +82,7 @@ jobs:
             compiler_cc: icx
             compiler_cxx: icpx
             compiler_fc: ifx
+            cmake_options: -DCMAKE_Fortran_FLAGS=-heap-arrays
             python-version: '3.11'
             caching: true
 
