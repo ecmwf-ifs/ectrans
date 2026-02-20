@@ -24,9 +24,6 @@ if( HAVE_DOUBLE_PRECISION )
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
       )
-      if( TEST ${test_name} AND HAVE_OMP )
-        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
-      endif()
     endforeach()
   endif()
 
@@ -54,9 +51,6 @@ if( HAVE_DOUBLE_PRECISION )
         MPI ${mpi}
         OMP 1
       )
-      if( TEST ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp AND HAVE_OMP )
-        target_link_libraries( ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp OpenMP::OpenMP_Fortran )
-      endif()
       set_tests_properties(ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp PROPERTIES LABELS "${platform};Fortran")
 
       ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp
@@ -66,9 +60,6 @@ if( HAVE_DOUBLE_PRECISION )
         MPI ${mpi}
         OMP 1
       )
-      if( TEST ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp AND HAVE_OMP )
-        target_link_libraries( ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp OpenMP::OpenMP_Fortran )
-      endif()
       set_tests_properties(ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp PROPERTIES LABELS "${platform};Fortran")
 
     endforeach() # mpi comm size
@@ -88,9 +79,6 @@ if( HAVE_DOUBLE_PRECISION )
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
       )
-      if( TEST ${test_name} AND HAVE_OMP )
-        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
-      endif()
     endforeach()
   endif()
 
