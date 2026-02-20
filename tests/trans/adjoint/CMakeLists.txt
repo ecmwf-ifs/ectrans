@@ -10,6 +10,13 @@
 
 if( HAVE_DOUBLE_PRECISION )
 
+  ecbuild_add_library(
+    TARGET           adjoint_utils
+    LINKER_LANGUAGE  Fortran
+    SOURCES          utils.F90
+    PUBLIC_LIBS      fiat trans_dp
+  )
+
   # --------------------------------------------------------------------------------------------------
   # Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU
   # version only)
@@ -19,8 +26,8 @@ if( HAVE_DOUBLE_PRECISION )
     foreach( mpi ${ntasks} )
       set( test_name ectrans_test_adjoint_cpu_mpi${mpi}_dp )
       ecbuild_add_test(TARGET ${test_name}
-        SOURCES test_adjoint.F90 utils.F90
-        LIBS trans_dp parkind_dp
+        SOURCES test_adjoint.F90
+        LIBS trans_dp parkind_dp adjoint_utils
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
       )
@@ -42,16 +49,16 @@ if( HAVE_DOUBLE_PRECISION )
 
     foreach( mpi ${ntasks} )
       ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp
-        SOURCES test_dirtrans_adjoint.F90 utils.F90
-        LIBS trans${platform_tag}_dp parkind_dp
+        SOURCES test_dirtrans_adjoint.F90
+        LIBS trans${platform_tag}_dp parkind_dp adjoint_utils
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
       )
 
       ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp
-        SOURCES test_invtrans_adjoint.F90 utils.F90
-        LIBS trans${platform_tag}_dp parkind_dp
+        SOURCES test_invtrans_adjoint.F90
+        LIBS trans${platform_tag}_dp parkind_dp adjoint_utils
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
@@ -69,8 +76,8 @@ if( HAVE_DOUBLE_PRECISION )
     foreach( mpi ${ntasks} )
       set( test_name ectrans_test_gpnorm_trans_adjoint_cpu_mpi${mpi}_dp )
       ecbuild_add_test(TARGET ${test_name}
-        SOURCES test_gpnorm_adjoint.F90 utils.F90
-        LIBS trans_dp parkind_dp
+        SOURCES test_gpnorm_adjoint.F90
+        LIBS trans_dp parkind_dp adjoint_utils
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
       )
