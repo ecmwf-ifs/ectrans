@@ -17,7 +17,7 @@ if( HAVE_DOUBLE_PRECISION )
 
   if( HAVE_CPU )
     foreach( mpi ${ntasks} )
-      set( test_name ectrans_test_adjoint_mpi${mpi}_dp )
+      set( test_name ectrans_test_adjoint_cpu_mpi${mpi}_dp )
       ecbuild_add_test(TARGET ${test_name}
         SOURCES test_adjoint.F90 utils.F90
         LIBS trans_dp parkind_dp
@@ -81,9 +81,9 @@ if( HAVE_DOUBLE_PRECISION )
 
   if( HAVE_CPU )
     foreach( mpi ${ntasks} )
-      set( test_name ectrans_test_gpnorm_trans_adjoint_mpi${mpi}_dp )
+      set( test_name ectrans_test_gpnorm_trans_adjoint_cpu_mpi${mpi}_dp )
       ecbuild_add_test(TARGET ${test_name}
-        SOURCES test_gpnorm_adjoint.F90
+        SOURCES test_gpnorm_adjoint.F90 utils.F90
         LIBS trans_dp parkind_dp
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
