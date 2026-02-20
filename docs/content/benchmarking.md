@@ -117,12 +117,11 @@ As mentioned above, the single most important parameter for determining the prob
 therefore computational cost, of a benchmark of ecTrans is the spectral truncation, controlled with
 the `-t, --truncation` argument. With this single parameter we can construct a scalability
 benchmark. Here we demonstrate an example scalability test carried out on the ECMWF high-performance
-computer ("HPC2020"). This will be a "strong-scaling" test, in which the allocation of computational
-resources is fixed and the problem size is increased. The tests will use 80 nodes and the problem
+computer ("HPC2020"). The tests will use 80 nodes and the problem
 size will be increased using the truncation parameter only. All other arguments to the benchmark
 program are as specified in the previous section.
 
-![A strong scalability benchmark of ecTrans](img/ectrans_scalability.png)
+![A scalability benchmark of ecTrans](img/ectrans_scalability.png)
 
 The figure above shows how the median time of a combined inverse-direct spectral transform scales
 with the truncation parameter. This number is printed at the end of the benchmark program under the
