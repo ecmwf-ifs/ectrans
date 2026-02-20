@@ -40,27 +40,22 @@ if( HAVE_DOUBLE_PRECISION )
       set( platform_tag "_gpu" )
     endif()
 
-    set( trans trans${platform_tag}_dp )
-    set( parkind parkind_dp )
-
     foreach( mpi ${ntasks} )
       ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp
         SOURCES test_dirtrans_adjoint.F90 utils.F90
-        LIBS ${trans} parkind_dp
+        LIBS trans${platform_tag}_dp parkind_dp
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
       )
-      set_tests_properties(ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp PROPERTIES LABELS "${platform};Fortran")
 
       ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp
         SOURCES test_invtrans_adjoint.F90 utils.F90
-        LIBS ${trans} parkind_dp
+        LIBS trans${platform_tag}_dp parkind_dp
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
       )
-      set_tests_properties(ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp PROPERTIES LABELS "${platform};Fortran")
 
     endforeach() # mpi comm size
 
