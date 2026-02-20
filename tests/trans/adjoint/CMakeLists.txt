@@ -19,7 +19,7 @@ if( HAVE_DOUBLE_PRECISION )
     foreach( mpi ${ntasks} )
       set( test_name ectrans_test_adjoint_mpi${mpi}_dp )
       ecbuild_add_test(TARGET ${test_name}
-        SOURCES test_adjoint.F90
+        SOURCES test_adjoint.F90 utils.F90
         LIBS trans_dp parkind_dp
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
@@ -48,7 +48,7 @@ if( HAVE_DOUBLE_PRECISION )
 
     foreach( mpi ${ntasks} )
       ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp
-        SOURCES test_dirtrans_adjoint.F90
+        SOURCES test_dirtrans_adjoint.F90 utils.F90
         LIBS ${trans} parkind_dp
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
@@ -60,7 +60,7 @@ if( HAVE_DOUBLE_PRECISION )
       set_tests_properties(ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_dp PROPERTIES LABELS "${platform};Fortran")
 
       ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_dp
-        SOURCES test_invtrans_adjoint.F90
+        SOURCES test_invtrans_adjoint.F90 utils.F90
         LIBS ${trans} parkind_dp
         LINKER_LANGUAGE Fortran
         MPI ${mpi}

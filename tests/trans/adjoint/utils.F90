@@ -1,0 +1,74 @@
+! (C) Copyright 2026- ECMWF.
+! 
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
+MODULE UTILS
+
+USE PARKIND1, ONLY: JPRB, JPIM
+
+IMPLICIT NONE
+
+PRIVATE
+PUBLIC SCALPRODSP
+
+CONTAINS
+
+FUNCTION SCALPRODSP(PSP1, PSP2, KVSET, KLEVL, KLEVG, KSPEC2, KSPEC2G, KSMAX, KMYPROC) RESULT(PSC)
+  ! Scalar product in spectral space
+  REAL(KIND=JPRB), INTENT(IN) :: PSP1(:,:)
+  REAL(KIND=JPRB), INTENT(IN) :: PSP2(:,:)
+  INTEGER(KIND=JPIM), INTENT(IN) :: KVSET(:)
+  INTEGER(KIND=JPIM), INTENT(IN) :: KLEVL
+  INTEGER(KIND=JPIM), INTENT(IN) :: KLEVG
+  INTEGER(KIND=JPIM), INTENT(IN) :: KSPEC2
+  INTEGER(KIND=JPIM), INTENT(IN) :: KSPEC2G
+  INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX
+  INTEGER(KIND=JPIM), INTENT(IN) :: KMYPROC
+
+  REAL(KIND=JPRB) :: PSC
+
+  INTEGER(KIND=JPIM), ALLOCATABLE :: MYMS(:), NASM0(:)
+  INTEGER(KIND=JPIM) :: JMLOC, IM, JIR, JN, INM, JLEV, NUMP, I
+  REAL(KIND=JPRB) :: ZMFACT, ZSP(KLEVL,KSPEC2), ZSPG(KLEVG,KSPEC2G)
+
+#include "trans_inq.h"
+#include "gath_spec.h"
+
+  ! Get Ms I'm responsible for (MYMS)
+  CALL TRANS_INQ(KNUMP=NUMP)
+  ALLOCATE(MYMS(NUMP))
+  ALLOCATE(NASM0(0:KSMAX))
+  CALL TRANS_INQ(KMYMS=MYMS, KASM0=NASM0)
+
+  PSC = 0.0_JPRB
+  ZSP(:,:) = 0.0_JPRB
+
+  !$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JLEV,JMLOC,IM,ZMFACT,JIR,JN,INM)
+  DO JLEV = 1, KLEVL
+    DO JMLOC = 1, NUMP
+      IM = MYMS(JMLOC)
+      ZMFACT = 1.0_JPRB + REAL(MIN(1, IM), JPRB)
+      DO JIR = 0, MIN(1, IM)
+        DO JN = IM, KSMAX
+          INM = NASM0(IM) + (JN - IM) * 2 + JIR
+          ZSP(JLEV,INM) = PSP1(JLEV,INM) * PSP2(JLEV,INM) * ZMFACT
+        ENDDO
+      ENDDO
+    ENDDO
+  ENDDO
+  !$OMP END PARALLEL DO
+
+  CALL GATH_SPEC(PSPECG=ZSPG, KFGATHG=KLEVG, KTO=(/ (1, I = 1, KLEVG) /), PSPEC=ZSP, KVSET=KVSET)
+
+  IF (KMYPROC == 1) THEN
+    PSC = SUM(ZSPG)
+  ELSE
+    PSC = 0.0_JPRB
+  ENDIF
+END FUNCTION SCALPRODSP
+
+END MODULE UTILS
