@@ -57,14 +57,17 @@ foreach( precision ${precisions} )
         OMP 1
       )
 
-      # Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD
-      ecbuild_add_test(TARGET ectrans_test_gpnorm_trans_adjoint_${platform}_mpi${mpi}_${precision}
-        SOURCES test_gpnorm_adjoint.F90
-        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
-        LINKER_LANGUAGE Fortran
-        MPI ${mpi}
-        OMP 1
-      )
+      # GPNORMTRANS_TL/AD are not yet implemented for GPU
+      if( NOT "${platform}" MATCHES "gpu" )
+        # Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD
+        ecbuild_add_test(TARGET ectrans_test_gpnorm_trans_adjoint_${platform}_mpi${mpi}_${precision}
+          SOURCES test_gpnorm_adjoint.F90
+          LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
+          LINKER_LANGUAGE Fortran
+          MPI ${mpi}
+          OMP 1
+        )
+      endif()
 
     endforeach() # mpi
 
