@@ -44,6 +44,9 @@ use MPL_DATA_MODULE, only: &
   MPLUSERCOMM, &
   LMPLUSERCOMM
 
+use MPL_MPIF, only: &
+  MPI_COMM_WORLD
+
 implicit none
 
 private :: c_ptr
@@ -658,7 +661,11 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   if (is_init .and. mpi_user_comm == last_comm_set) return
 
   ! Confirm that this is called prior to MPL_INIT, to ensure correct setting of global vars.
-  if (is_init) then
+  !
+  ! If it is the case that trans_init has been called prior, then it will have been setup with
+  ! MPI_COMM_WORLD. So therefore in the special case that the mpi_user_comm matches WORLD,
+  ! then there is no issue.
+  if (is_init .and. mpi_user_comm /= MPI_COMM_WORLD) then
     write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
     iret = TRANS_ERROR
     return
