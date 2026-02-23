@@ -16,6 +16,10 @@ foreach( precision ${precisions} )
     SOURCES          utils.F90
     PUBLIC_LIBS      fiat trans_${precision}
   )
+  ecbuild_target_fortran_module_directory(
+    TARGET adjoint_utils_${precision}
+    MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/trans/adjoint/module/adjoint_utils_${precision}
+  )
 
   foreach( platform ${platforms} )
 
