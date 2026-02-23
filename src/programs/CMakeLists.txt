@@ -64,10 +64,11 @@ foreach( program ectrans-benchmark )
 endforeach( program )
 
 if( HAVE_ETRANS )
+  set(program ectrans-lam-benchmark)
   foreach( prec sp dp )
     if( HAVE_${prec} )
-      ecbuild_add_executable( TARGET  ectrans-lam-benchmark-cpu-${prec}
-                              SOURCES ectrans-lam-benchmark.F90
+      ecbuild_add_executable( TARGET  ${program}-cpu-${prec}
+                              SOURCES ${program}.F90
                               LINKER_LANGUAGE Fortran
                               LIBS
                                 fiat
@@ -77,7 +78,36 @@ if( HAVE_ETRANS )
                                 $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                             )
     endif()
-  endforeach()
+  
+    if( HAVE_GPU AND TRUE )
+      list( APPEND util_PRIVATE_DEFINITIONS
+        $<${HAVE_CUDA}:CUDA>
+        $<${HAVE_HIP}:HIP>
+      )
+      list( APPEND util_PRIVATE_LIBRARIES
+        $<${HAVE_CUDA}:CUDA::cudart>
+        $<${HAVE_HIP}:hip::host>
+      )
+      if( HAVE_${prec} )
+        ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
+                    SOURCES ${program}.F90
+                    LINKER_LANGUAGE Fortran
+                    LIBS
+                      fiat
+                      parkind_${prec}
+                      trans_gpu_${prec}
+                      etrans_gpu_${prec}
+                      $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
+                      $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
+                      ${util_PRIVATE_LIBRARIES}
+                    DEFINITIONS
+                      VERSION="gpu"
+                      ${util_PRIVATE_DEFINITIONS}
+        )
+        ecbuild_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
+      endif()
+    endif( )
+  endforeach( prec )
 endif()
 
 # ectrans information tool

@@ -13,7 +13,7 @@ MODULE TPMALD_DIM
 
 ! Module for dimensions.
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+USE EC_PARKIND  ,ONLY : JPIM, JPIB
 
 IMPLICIT NONE
 
@@ -26,6 +26,13 @@ TYPE ALDDIM_TYPE
 INTEGER(KIND=JPIM) :: NDGLSUR       ! Number of rows of latitudes+...
 INTEGER(KIND=JPIM) :: NMSMAX        ! Zonal truncation
 INTEGER(KIND=JPIM) :: NDGUX         ! Number of rows in zone C+I
+
+! arguments to pass to EXECUTE_FFT: kept here to make sure their addresses are constant (necessary for cuda graphs)
+INTEGER(KIND=JPIM) :: NLOENS_LON(1)
+INTEGER(KIND=JPIB) :: NOFFSETS_LON(2)
+INTEGER(KIND=JPIM) :: NLOENS_LAT(1)
+INTEGER(KIND=JPIB) :: NOFFSETS_LAT(2)
+
 END TYPE ALDDIM_TYPE
 
 TYPE(ALDDIM_TYPE),ALLOCATABLE,TARGET :: ALDDIM_RESOL(:)

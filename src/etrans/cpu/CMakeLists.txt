@@ -27,7 +27,7 @@ function(generate_backend_sources)
     internal/*.F90
     external/*.F90
     biper/internal/*.F90
-          biper/external/*.F90
+    biper/external/*.F90
     QUIET
   )
 
@@ -42,6 +42,7 @@ function(generate_backend_sources)
     generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
     list(APPEND outfiles ${outfile})
   endforeach(file_i)
+
   set(${_PAR_OUTPUT} ${outfiles} PARENT_SCOPE)
 endfunction(generate_backend_sources)
 
@@ -96,34 +97,34 @@ endfunction(generate_etrans_dummy_sources)
 foreach( prec dp sp )
   if( HAVE_${prec} )
 
-    generate_backend_includes(BACKEND ${prec} TARGET ectrans_etrans_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/etrans/include )
+    generate_backend_includes(BACKEND ${prec} TARGET ectrans_lam_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/etrans/include )
 
     if( NOT HAVE_ETRANS )
       generate_etrans_dummy_sources(
         BACKEND     ${prec}
-        OUTPUT      ectrans_etrans_${prec}_src
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_etrans_${prec}
+        OUTPUT      ectrans_lam_${prec}_src
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_lam_${prec}
       )
     else()
       generate_backend_sources(
         BACKEND     ${prec}
-        OUTPUT      ectrans_etrans_${prec}_src
-        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_etrans_${prec}
+        OUTPUT      ectrans_lam_${prec}_src
+        DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_lam_${prec}
       )
     endif()
 
     ecbuild_add_library(
-      TARGET           ectrans_etrans_${prec}
+      TARGET           ectrans_lam_${prec}
       LINKER_LANGUAGE  Fortran
-      SOURCES          ${ectrans_etrans_${prec}_src}
+      SOURCES          ${ectrans_lam_${prec}_src}
       PUBLIC_INCLUDES  $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
                        $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}>
-      PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes ectrans_${prec} ectrans_etrans_${prec}_includes
+      PUBLIC_LIBS      fiat ectrans_common ectrans_${prec}_includes ectrans_${prec} ectrans_lam_common ectrans_lam_${prec}_includes
     )
 
     ecbuild_target_fortran_module_directory(
-      TARGET                   ectrans_etrans_${prec}
+      TARGET                   ectrans_lam_${prec}
       MODULE_DIRECTORY         ${CMAKE_BINARY_DIR}/module/ectrans
       INSTALL_MODULE_DIRECTORY module/ectrans
     )
@@ -131,21 +132,21 @@ foreach( prec dp sp )
     if( HAVE_ETRANS )
       set( FFTW_LINK PRIVATE )
       if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
-          ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_etrans_${prec}. "
+          ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_lam_${prec}. "
                         "No guarantees on link order can be made for the final executable.")
           set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
       endif()
-      ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
-      target_link_libraries( ectrans_etrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
-      target_include_directories( ectrans_etrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-      target_compile_definitions( ectrans_etrans_${prec} PRIVATE WITH_FFTW )
+      ecbuild_debug("target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
+      target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+      target_include_directories( ectrans_lam_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+      target_compile_definitions( ectrans_lam_${prec} PRIVATE WITH_FFTW )
       # daand: lam transforms don't need lapack
-      #ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
+      #ecbuild_debug("target_link_libraries( ectrans_lam_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
       #target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
 
       if( HAVE_OMP )
-        ecbuild_debug("target_link_libraries( ectrans_etrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-        target_link_libraries( ectrans_etrans_${prec} PRIVATE OpenMP::OpenMP_Fortran )
+        ecbuild_debug("target_link_libraries( ectrans_lam_${prec} PRIVATE OpenMP::OpenMP_Fortran )")
+        target_link_libraries( ectrans_lam_${prec} PRIVATE OpenMP::OpenMP_Fortran )
       endif()
     endif()
 
@@ -153,7 +154,7 @@ foreach( prec dp sp )
     ecbuild_add_library( TARGET etrans_${prec} TYPE INTERFACE )
     target_include_directories( etrans_${prec} INTERFACE $<BUILD_INTERFACE:${BUILD_INTERFACE_INCLUDE_DIR}/etrans_${prec}> )
     target_include_directories( etrans_${prec} INTERFACE $<INSTALL_INTERFACE:include/ectrans/etrans_${prec}> )
-    target_link_libraries( etrans_${prec} INTERFACE ectrans_etrans_${prec} )
+    target_link_libraries( etrans_${prec} INTERFACE ectrans_lam_${prec} )
   endif()
 endforeach()
 

@@ -1,6 +1,6 @@
 ! (C) Copyright 1987- ECMWF.
 ! (C) Copyright 1987- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -13,7 +13,7 @@ CONTAINS
 SUBROUTINE SULEG
 !DEC$ OPTIMIZE:1
 
-USE PARKIND_ECTRANS,  ONLY: JPRD, JPIM, JPRBT
+USE PARKIND_ECTRANS,  ONLY: JPRD, JPIM
 USE PARKIND2,         ONLY: JPRH
 USE MPL_MODULE,       ONLY: MPL_BARRIER, JP_NON_BLOCKING_STANDARD, MPL_RECV, MPL_SEND, &
   &                         MPL_WAIT
@@ -70,7 +70,7 @@ USE READ_LEGPOL_MOD,  ONLY: READ_LEGPOL
 !     Reference.
 !     ----------
 !        ECMWF Research Department documentation of the IFS
-!     
+!
 !     S.L. Belousov, Tables of normalized associated Legendre Polynomials, Pergamon Press (1962)
 !     P.N. Swarztrauber, On computing the points and weights for Gauss-Legendre quadrature,
 !     SIAM J. Sci. Comput. Vol. 24 (3) pp. 945-954 (2002)
@@ -123,7 +123,7 @@ USE READ_LEGPOL_MOD,  ONLY: READ_LEGPOL
 
 IMPLICIT NONE
 
-!     LOCAL 
+!     LOCAL
 !     ------------------------------------------------------------------
 REAL(KIND=JPRD),ALLOCATABLE :: ZPNMG(:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZFN(:,:)
@@ -187,9 +187,9 @@ IF(.NOT.D%LGRIDONLY) THEN
 ENDIF
 
 ALLOCATE(F%RMU(R%NDGL))
-IF (LLP2) WRITE(NOUT,9) 'F%RMU     ',SIZE(F%RMU ),SHAPE(F%RMU ) 
+IF (LLP2) WRITE(NOUT,9) 'F%RMU     ',SIZE(F%RMU ),SHAPE(F%RMU )
 ALLOCATE(F%RW(R%NDGL))
-IF (LLP2) WRITE(NOUT,9) 'F%RW      ',SIZE(F%RW  ),SHAPE(F%RW  ) 
+IF (LLP2) WRITE(NOUT,9) 'F%RW      ',SIZE(F%RW  ),SHAPE(F%RW  )
 
 
 !*       1.0 Initialize Fourier coefficients for ordinary Legendre polynomials
@@ -200,7 +200,7 @@ IF (LLP2) WRITE(NOUT,9) 'ZFN       ',SIZE(ZFN   ),SHAPE(ZFN   )
 
 
 
-! determines the number of stripes in butterfly NSMAX/IMAXCOLS 
+! determines the number of stripes in butterfly NSMAX/IMAXCOLS
 ! IMAXCOLS = (R%NSMAX - 1)/4 + 1
 ! IMAXCOLS=64 (min flops)
 IMAXCOLS=64
@@ -258,11 +258,11 @@ IF (ABS(G%RSTRET-1.0_JPRD)>100._JPRD*EPSILON(1._JPRD)) THEN
   WRITE(NOUT,*) '=== SULEG: Change Gaussian latitudes to the transformed sphere ==='
   INNH=(INN+1)/2
   ZTAN=(1.0_JPRD-G%RSTRET**2)/(1.0_JPRD+G%RSTRET**2)
-! North hemisphere
+  ! North hemisphere
   DO JGL=1,INNH
     ZSTRETMU(JGL)=(ZTAN+REAL(ZLRMUZ(JGL),JPRH))/(1.0_JPRD+ZTAN*REAL(ZLRMUZ(JGL),JPRH))
   ENDDO
-! South hemisphere
+  ! South hemisphere
   DO JGL=1,INNH
     IGL=2*INNH-JGL+1
     ZSTRETMU(IGL)=(ZTAN-REAL(ZLRMUZ(JGL),JPRH))/(1.0_JPRD-ZTAN*REAL(ZLRMUZ(JGL),JPRH))
@@ -295,7 +295,7 @@ IF( S%LDLL ) THEN
   ! we approximate the vicinity to the pole/equator
 
   ZPI = 2.0_JPRD*ASIN(1.0_JPRD)
-  
+
   ZORIG = ASIN(F%RMU(1))
   IF( S%LSHIFTLL )  THEN
     ZINC = ZPI/REAL(INN,JPRD)
@@ -327,7 +327,7 @@ IF( S%LDLL ) THEN
         & (180._JPRD/ZPI)*ASIN(F%RMU(JGL))
     ENDDO
   ENDIF
-  
+
   ALLOCATE(F%RMU2(INMAX))
   IF (LLP2) WRITE(NOUT,9) 'F%RMU2     ',SIZE(F%RMU2 ),SHAPE(F%RMU2 )
   ALLOCATE(F%RACTHE2(INMAX))
@@ -354,35 +354,33 @@ IF(.NOT.D%LGRIDONLY) THEN
   ALLOCATE(S%FA(D%NUMP))
 
   ALLOCATE(F%R1MU2(R%NDGL))
-  IF (LLP2) WRITE(NOUT,9) 'F%R1MU2   ',SIZE(F%R1MU2),SHAPE(F%R1MU2 ) 
+  IF (LLP2) WRITE(NOUT,9) 'F%R1MU2   ',SIZE(F%R1MU2),SHAPE(F%R1MU2 )
   ALLOCATE(F%RACTHE(R%NDGL))
-  IF (LLP2) WRITE(NOUT,9) 'F%RACTHE  ',SIZE(F%RACTHE),SHAPE(F%RACTHE ) 
+  IF (LLP2) WRITE(NOUT,9) 'F%RACTHE  ',SIZE(F%RACTHE),SHAPE(F%RACTHE )
 
   IF( S%LUSE_BELUSOV) THEN
     ALLOCATE(F%RPNM(R%NLEI3,D%NSPOLEGL))
-    IF (LLP2) WRITE(NOUT,9) 'F%RPNM    ',SIZE(F%RPNM),SHAPE(F%RPNM) 
+    IF (LLP2) WRITE(NOUT,9) 'F%RPNM    ',SIZE(F%RPNM),SHAPE(F%RPNM)
     DO JNM=1,D%NSPOLEGL
       F%RPNM(R%NLEI3,JNM) = 0.0_JPRD
     ENDDO
   ENDIF
 
-!*       3.2   Computes related arrays
+  !*       3.2   Computes related arrays
 
   DO JGL=1,R%NDGL
-! test cosine differently
+    ! test cosine differently
     ZTHETA = ASIN(ZLRMUZ(JGL))
     ZCOS   = COS(ZTHETA)
     F%R1MU2(JGL)  = ZCOS**2
     F%RACTHE(JGL) = 1.0_JPRD/ZCOS/REAL(RA,JPRD)
-!    F%R1MU2(JGL)  = 1.0_JPRD-ZLRMUZ(JGL)*ZLRMUZ(JGL)
-!    F%RACTHE(JGL) = 1.0_JPRD/SQRT(1.0_JPRD-ZLRMUZ(JGL)*ZLRMUZ(JGL))/REAL(RA,JPRD)
   ENDDO
 
-!*       3.3   Working arrays
+  !*       3.3   Working arrays
 
-! compute the Legendre polynomials as a function of the z_k (Gaussian Latitudes)
-! this may be faster than calling supolf for each m but uses extra communication
-! and the parallelism is more limited ? Nils
+  ! compute the Legendre polynomials as a function of the z_k (Gaussian Latitudes)
+  ! this may be faster than calling supolf for each m but uses extra communication
+  ! and the parallelism is more limited ? Nils
 
   IF( S%LUSE_BELUSOV .AND. .NOT. C%LREAD_LEGPOL  ) THEN
 
@@ -450,7 +448,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       ILATS=IGL2-IGL1+1
       IF (S%LSOUTHPNM .AND. IHEMIS==1 .AND. ILATSMAX-1 >= ILATS) THEN
         ! I don't know what to do for south pole. But isn't this piece of code
-        ! a dead stuff for poles rows ? 
+        ! a dead stuff for poles rows ?
         CALL ABORT_TRANS('SULEG: WILL BE BROKEN FOR SOUTH HEMISPHERE')
       ENDIF
 
@@ -518,129 +516,136 @@ IF(.NOT.D%LGRIDONLY) THEN
 
   IF(.NOT.C%LREAD_LEGPOL) THEN
 
-! not correct logic
+    ! Loop over all zonal wavenumbers I'm responsible for, in strides of NPRTRV
+    ! Every member of the same W set needs exactly the same polynomials
+    ! Rather than have one member from each W set compute all the polynomials and then communicate
+    ! them to the others, each member in the W set is recruited to calculate exactly one polynomial
+    ! E.g. MYSETV=1 computes the first, MYSETV=2 the second, and so on
+    ! This way the cost of precomputing the polynomials is shared among all members of the W set
+    ! Each member then communicates its polynomial to the other members, so they all have a
+    ! complete set
+    DO JMLOC = 1, D%NUMP, NPRTRV
 
-  DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP +++++++++++++++++++++++
+      IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
 
-    IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
+      ! --------------------anti-symmetric-----------------------
 
-    ! --------------------anti-symmetric-----------------------
-    ! --------------------anti-symmetric-----------------------
-    ! --------------------anti-symmetric-----------------------
-
-    DO JSETV=1,IPRTRV
-      IMLOC=JMLOC+JSETV-1
-      IM = D%MYMS(IMLOC)
-      ILA = (R%NSMAX-IM+2)/2
-      IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-      ALLOCATE(S%FA(IMLOC)%RPNMA(IDGLU,ILA))  
-    ENDDO
-
-    IF( .NOT. S%LUSE_BELUSOV ) THEN 
-
-      ISREQ = 0
-      IRREQ = 0
-
-      ALLOCATE (ZRCVBUFV(IMAXRECVA,IPRTRV))
-      CALL GSTATS(851,0)
+      ! Allocate antisymmetric polynomials for this batch of NPRTRV zonal wavenumbers
       DO JSETV=1,IPRTRV
-        CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
-        IF( .NOT.LMPOFF )THEN
-          IRREQ = IRREQ+1
-          CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
-           & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
-           & KTAG=ITAG,CDSTRING='SULEG:')
-        ENDIF
-      ENDDO
-      CALL GSTATS(851,1)
-
-      IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
-
-        IMLOC=JMLOC+MYSETV-1
+        IMLOC=JMLOC+JSETV-1
         IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IA  = 1+MOD(R%NSMAX-IM+2,2)
         ILA = (R%NSMAX-IM+2)/2
         IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+        ALLOCATE(S%FA(IMLOC)%RPNMA(IDGLU,ILA))
+      ENDDO
 
-        ALLOCATE(ZSNDBUFV(IDGLU*ILA))
-      
-        IF(MOD(IMAXN-IM,2) == 0) THEN
-          INMAX=IMAXN+1
-        ELSE
-          INMAX=IMAXN
-        ENDIF
+      IF( .NOT. S%LUSE_BELUSOV ) THEN
 
-        CALL GSTATS(1251,0)
-        IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
-        DO JGL=1,IDGLU
-          CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=3)
-          DO JI=1,ILA
-            JN=IM+2*(JI-1)+1
-            ZSNDBUFV((JGL-1)*ILA+JI)=ZLPOL(JN)
-          ENDDO
-        ENDDO
-        !$OMP END PARALLEL DO
-        IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
-        CALL GSTATS(1251,1)
+        ISREQ = 0
+        IRREQ = 0
 
+        ! Post receives for all polynomials in this NPRTRV batch
+        ALLOCATE (ZRCVBUFV(IMAXRECVA,IPRTRV))
         CALL GSTATS(851,0)
-        DO JSETV=1,NPRTRV
-          CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+        DO JSETV=1,IPRTRV
+          CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
           IF( .NOT.LMPOFF )THEN
-            ISREQ = ISREQ+1
-            CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
-             & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
+            IRREQ = IRREQ+1
+            CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
+            & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
             & KTAG=ITAG,CDSTRING='SULEG:')
           ENDIF
         ENDDO
         CALL GSTATS(851,1)
 
-      ENDIF
+        IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
+          ! Determine properties of the polynomial I'm responsible for
+          IMLOC=JMLOC+MYSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IA  = 1+MOD(R%NSMAX-IM+2,2)
+          ILA = (R%NSMAX-IM+2)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
 
-      CALL GSTATS(851,0)
-      IF(IRREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
+          ALLOCATE(ZSNDBUFV(IDGLU*ILA))
 
-      IF(ISREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
+          IF(MOD(IMAXN-IM,2) == 0) THEN
+            INMAX=IMAXN+1
+          ELSE
+            INMAX=IMAXN
+          ENDIF
 
-      IF( NPROC==1.AND.LMPOFF )THEN
-        ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
-      ENDIF
-      CALL GSTATS(851,1)
+          ! Calculate my polynomial with SUPOLF
+          CALL GSTATS(1251,0)
+          IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
+          !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
+          DO JGL=1,IDGLU
+            CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=3)
+            DO JI=1,ILA
+              JN=IM+2*(JI-1)+1
+              ZSNDBUFV((JGL-1)*ILA+JI)=ZLPOL(JN)
+            ENDDO
+          ENDDO
+          !$OMP END PARALLEL DO
+          IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
+          CALL GSTATS(1251,1)
 
-      CALL GSTATS(1251,0)
-      !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IA  = 1+MOD(R%NSMAX-IM+2,2)
-        ILA = (R%NSMAX-IM+2)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        DO JGL=1,IDGLU
-          DO JI=1,ILA
-            S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+          ! Post sends to the other members of my W set
+          CALL GSTATS(851,0)
+          DO JSETV=1,NPRTRV
+            CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+            IF( .NOT.LMPOFF )THEN
+              ISREQ = ISREQ+1
+              CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
+              & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
+              & KTAG=ITAG,CDSTRING='SULEG:')
+            ENDIF
+          ENDDO
+          CALL GSTATS(851,1)
+
+        ENDIF
+
+        CALL GSTATS(851,0)
+        IF(IRREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), CDSTRING='SUTRLE: SULEG')
+        ENDIF
+
+        IF(ISREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), CDSTRING='SUTRLE: SULEG')
+        ENDIF
+
+        IF( NPROC==1.AND.LMPOFF )THEN
+          ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
+        ENDIF
+        CALL GSTATS(851,1)
+
+        ! Now unpack the polynomials I've received into their respective storage work arrays
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
+          IMLOC=JMLOC+JSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IA  = 1+MOD(R%NSMAX-IM+2,2)
+          ILA = (R%NSMAX-IM+2)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+          DO JGL=1,IDGLU
+            DO JI=1,ILA
+              S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+            ENDDO
           ENDDO
         ENDDO
-      ENDDO
-     !$OMP END PARALLEL DO
-      CALL GSTATS(1251,1)
-        
-      IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
-      IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
+        !$OMP END PARALLEL DO
+        CALL GSTATS(1251,1)
 
-    ELSE    
+        IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
+        IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
 
-       CALL GSTATS(1251,0)
-       !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
-       DO JSETV=1,IPRTRV
+      ELSE
+        ! Take the values from the arrays computed earlier with the Belusov algorithm
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
           IMLOC=JMLOC+JSETV-1
           IM = D%MYMS(IMLOC)
           ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
@@ -649,148 +654,149 @@ IF(.NOT.D%LGRIDONLY) THEN
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
           DO JI=1,ILA
             DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+              S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
             ENDDO
-          ENDDO
-       ENDDO
-       !$OMP END PARALLEL DO
-       CALL GSTATS(1251,1)
-
-    ENDIF
-
-    ! --------------------symmetric-----------------------
-    ! --------------------symmetric-----------------------
-    ! --------------------symmetric-----------------------
-
-    DO JSETV=1,IPRTRV
-      IMLOC=JMLOC+JSETV-1
-      IM = D%MYMS(IMLOC)
-      ILS = (R%NSMAX-IM+3)/2
-      IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-      ALLOCATE(S%FA(IMLOC)%RPNMS(IDGLU,ILS))  
-    ENDDO
-
-    IF( .NOT. S%LUSE_BELUSOV ) THEN 
-
-      ISREQ = 0
-      IRREQ = 0
-
-      ALLOCATE (ZRCVBUFV(IMAXRECVS,IPRTRV))
-      CALL GSTATS(851,0)
-      DO JSETV=1,IPRTRV
-        CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
-        IF( .NOT.LMPOFF )THEN
-          IRREQ = IRREQ+1
-          CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
-           & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
-           & KTAG=ITAG,CDSTRING='SULEG:')
-        ENDIF
-      ENDDO
-      CALL GSTATS(851,1)
-
-      IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
-
-        IMLOC=JMLOC+MYSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IS  = 1+MOD(R%NSMAX-IM+1,2)
-        ILS = (R%NSMAX-IM+3)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-
-        ALLOCATE(ZSNDBUFV(IDGLU*ILS))
-      
-        IF(MOD(IMAXN-IM,2) == 0) THEN
-          INMAX=IMAXN
-        ELSE
-          INMAX=IMAXN+1
-        ENDIF
-
-        IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
-        CALL GSTATS(1251,0)
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
-        DO JGL=1,IDGLU
-          CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=2)
-          DO JI=1,ILS
-            JN=IM+2*(JI-1)
-            ZSNDBUFV((JGL-1)*ILS+JI)=ZLPOL(JN)
           ENDDO
         ENDDO
         !$OMP END PARALLEL DO
         CALL GSTATS(1251,1)
-        IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
 
+      ENDIF
+
+      ! --------------------symmetric-----------------------
+
+      ! Allocate symmetric polynomials for this batch of NPRTRV zonal wavenumbers
+      DO JSETV=1,IPRTRV
+        IMLOC=JMLOC+JSETV-1
+        IM = D%MYMS(IMLOC)
+        ILS = (R%NSMAX-IM+3)/2
+        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+        ALLOCATE(S%FA(IMLOC)%RPNMS(IDGLU,ILS))
+      ENDDO
+
+      IF( .NOT. S%LUSE_BELUSOV ) THEN
+
+        ISREQ = 0
+        IRREQ = 0
+
+        ! Post receives for all polynomials in this NPRTRV batch
+        ALLOCATE (ZRCVBUFV(IMAXRECVS,IPRTRV))
         CALL GSTATS(851,0)
-        DO JSETV=1,NPRTRV
-          CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+        DO JSETV=1,IPRTRV
+          CALL SET2PE(IRECV,0,0,MYSETW,JSETV)
           IF( .NOT.LMPOFF )THEN
-            ISREQ = ISREQ+1
-            CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
-             & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
-             & KTAG=ITAG,CDSTRING='SULEG:')
+            IRREQ = IRREQ+1
+            CALL MPL_RECV(ZRCVBUFV(:,JSETV),KSOURCE=NPRCIDS(IRECV), &
+            & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=IRECVREQ(IRREQ),&
+            & KTAG=ITAG,CDSTRING='SULEG:')
           ENDIF
         ENDDO
         CALL GSTATS(851,1)
 
-      ENDIF
+        IF( JMLOC+MYSETV-1 <= D%NUMP )THEN
+          ! Determine properties of the polynomial I'm responsible for
+          IMLOC=JMLOC+MYSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IS  = 1+MOD(R%NSMAX-IM+1,2)
+          ILS = (R%NSMAX-IM+3)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
 
-      CALL GSTATS(851,0)
-      IF(IRREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
+          ALLOCATE(ZSNDBUFV(IDGLU*ILS))
 
-      IF(ISREQ > 0) THEN
-        CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), &
-         & CDSTRING='SUTRLE: SULEG')
-      ENDIF
-      IF( NPROC==1.AND.LMPOFF )THEN
-        ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
-      ENDIF
-      CALL GSTATS(851,1)
+          IF(MOD(IMAXN-IM,2) == 0) THEN
+            INMAX=IMAXN
+          ELSE
+            INMAX=IMAXN+1
+          ENDIF
 
-      CALL GSTATS(1251,0)
-      !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IS  = 1+MOD(R%NSMAX-IM+1,2)
-        ILS = (R%NSMAX-IM+3)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        DO JGL=1,IDGLU
-          DO JI=1,ILS
-            S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
-          ENDDO
-        ENDDO
-    ENDDO
-    !$OMP END PARALLEL DO
-      CALL GSTATS(1251,1)
-        
-      IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
-      IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
-
-    ELSE    
-      CALL GSTATS(1251,0)
-      !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
-        IS  = 1+MOD(R%NSMAX-IM+1,2)
-        ILS = (R%NSMAX-IM+3)/2
-        IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-        DO JI=1,ILS
+          ! Calculate my polynomial with SUPOLF
+          CALL GSTATS(1251,0)
+          IF (.NOT.ALLOCATED(ZLPOL)) ALLOCATE(ZLPOL(0:INMAX))
+          !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JGL,ZLPOL,JI,JN)
           DO JGL=1,IDGLU
-              S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+            CALL SUPOLF(IM,INMAX,ZLRMUZ(ISL+JGL-1),ZLPOL(0:INMAX),KCHEAP=2)
+            DO JI=1,ILS
+              JN=IM+2*(JI-1)
+              ZSNDBUFV((JGL-1)*ILS+JI)=ZLPOL(JN)
+            ENDDO
+          ENDDO
+          !$OMP END PARALLEL DO
+          IF (ALLOCATED(ZLPOL)) DEALLOCATE(ZLPOL)
+          CALL GSTATS(1251,1)
+
+          ! Post sends to the other members of my W set
+          CALL GSTATS(851,0)
+          DO JSETV=1,NPRTRV
+            CALL SET2PE(ISEND,0,0,MYSETW,JSETV)
+            IF( .NOT.LMPOFF )THEN
+              ISREQ = ISREQ+1
+              CALL MPL_SEND(ZSNDBUFV(:),KDEST=NPRCIDS(ISEND), &
+              & KMP_TYPE=JP_NON_BLOCKING_STANDARD,KREQUEST=ISENDREQ(ISREQ),&
+              & KTAG=ITAG,CDSTRING='SULEG:')
+            ENDIF
+          ENDDO
+          CALL GSTATS(851,1)
+
+        ENDIF
+
+        CALL GSTATS(851,0)
+        IF(IRREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=IRECVREQ(1:IRREQ), CDSTRING='SUTRLE: SULEG')
+        ENDIF
+
+        IF(ISREQ > 0) THEN
+          CALL MPL_WAIT(KREQUEST=ISENDREQ(1:ISREQ), CDSTRING='SUTRLE: SULEG')
+        ENDIF
+        IF( NPROC==1.AND.LMPOFF )THEN
+          ZRCVBUFV(1:SIZE(ZSNDBUFV(:)),1)=ZSNDBUFV(:)
+        ENDIF
+        CALL GSTATS(851,1)
+
+        ! Now unpack the polynomials I've received into their respective storage work arrays
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
+          IMLOC=JMLOC+JSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IS  = 1+MOD(R%NSMAX-IM+1,2)
+          ILS = (R%NSMAX-IM+3)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+          DO JGL=1,IDGLU
+            DO JI=1,ILS
+              S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
+            ENDDO
           ENDDO
         ENDDO
-     END DO
-     !$OMP END PARALLEL DO
-     CALL GSTATS(1251,1)
-        
-  ENDIF
+        !$OMP END PARALLEL DO
+        CALL GSTATS(1251,1)
 
-  ENDDO                     ! +++++++++++++++++++++ END JMLOC LOOP +++++++++++++++++++++++
+        IF( ALLOCATED(ZSNDBUFV) ) DEALLOCATE(ZSNDBUFV)
+        IF( ALLOCATED(ZRCVBUFV) ) DEALLOCATE(ZRCVBUFV)
+
+      ELSE
+        ! Take the values from the arrays computed earlier with the Belusov algorithm
+        CALL GSTATS(1251,0)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
+        DO JSETV=1,IPRTRV
+          IMLOC=JMLOC+JSETV-1
+          IM = D%MYMS(IMLOC)
+          ISL = MAX(R%NDGNH-G%NDGLU(IM)+1,1)
+          IS  = 1+MOD(R%NSMAX-IM+1,2)
+          ILS = (R%NSMAX-IM+3)/2
+          IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+          DO JI=1,ILS
+            DO JGL=1,IDGLU
+                S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+            ENDDO
+          ENDDO
+        END DO
+        !$OMP END PARALLEL DO
+        CALL GSTATS(1251,1)
+
+      ENDIF
+    ENDDO ! End of loop over zonal wavenumbers
 
   ENDIF
 

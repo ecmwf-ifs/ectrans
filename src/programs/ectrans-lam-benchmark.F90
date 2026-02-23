@@ -99,6 +99,9 @@ real(kind=jprd) :: zaveave(0:jpmaxstat)
 real(kind=jprb), pointer :: zgp3a (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgpuv   (:,:,:,:) ! Multilevel fields at t and t-dt
 real(kind=jprb), pointer :: zgp2 (:,:,:) ! Single level fields at t and t-dt
+real(kind=jprb), allocatable :: zgp3a_ctg (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable :: zgpuv_ctg   (:,:,:,:) ! Multilevel fields at t and t-dt
+real(kind=jprb), allocatable :: zgp2_ctg (:,:,:) ! Single level fields at t and t-dt
 
 ! Spectral space data structures
 real(kind=jprb), allocatable, target :: sp3d(:,:,:)
@@ -209,6 +212,7 @@ real(kind=jprb) :: zexwn, zeywn
 #include "esetup_trans.h"
 #include "einv_trans.h"
 #include "edir_trans.h"
+#include "etrans_end.h"
 #include "etrans_inq.h"
 #include "especnorm.h"
 #include "egath_grid.h"
@@ -583,6 +587,7 @@ ztloop = timef() / 1000.0_jprd
 !===================================================================================================
 
 do jstep = 1, iters
+
   if( lstats ) call gstats(3,0)
   ztstep(jstep) = timef() / 1000.0_jprd
 
@@ -665,31 +670,39 @@ do jstep = 1, iters
   ztstep2(jstep) = timef() / 1000.0_jprd
 
   if( lstats ) call gstats(5,0)
+  
+  ! take local copies to make them contiguous; this is not the case when derivatives are requested and nproma<ngptot
+  if (lvordiv) allocate(zgpuv_ctg,source=zgpuv(:,:,1:2,:))
+  allocate(zgp3a_ctg,source=zgp3a(:,:,1:nfld,:))
+  allocate(zgp2_ctg,source=zgp2(:,1:1,:))
 
   if (lvordiv) then
     call edir_trans(kresol=1, kproma=nproma, &
-       & pgp2=zgp2(:,1:1,:),                 &
-       & pgpuv=zgpuv(:,:,1:2,:),             &
-       & pgp3a=zgp3a(:,:,1:nfld,:),          &
-       & pspvor=zspvor,                      &
-       & pspdiv=zspdiv,                      &
-       & pspsc2=zspsc2,                      &
-       & pspsc3a=zspsc3a,                    &
-       & kvsetuv=ivset,                      &
-       & kvsetsc2=ivsetsc,                   &
-       & kvsetsc3a=ivset,                    &
-       & pmeanu=zmeanu,                      &
-       & pmeanv=zmeanv)
+      & pgp2=zgp2_ctg,                &
+      & pgpuv=zgpuv_ctg,             &
+      & pgp3a=zgp3a_ctg,          &
+      & pspvor=zspvor,                      &
+      & pspdiv=zspdiv,                      &
+      & pspsc2=zspsc2,                      &
+      & pspsc3a=zspsc3a,                    &
+      & kvsetuv=ivset,                      &
+      & kvsetsc2=ivsetsc,                   &
+      & kvsetsc3a=ivset,                    &
+    & pmeanu=zmeanu,                      &
+    & pmeanv=zmeanv)
   else
 
     call edir_trans(kresol=1, kproma=nproma, &
-       & pgp2=zgp2(:,1:1,:),                 &
-       & pgp3a=zgp3a(:,:,1:nfld,:),          &
-       & pspsc2=zspsc2,                      &
-       & pspsc3a=zspsc3a,                    &
-       & kvsetsc2=ivsetsc,                   &
-       & kvsetsc3a=ivset)
+      & pgp2=zgp2_ctg,                &
+      & pgp3a=zgp3a_ctg,          &
+      & pspsc2=zspsc2,                      &
+      & pspsc3a=zspsc3a,                    &
+      & kvsetsc2=ivsetsc,                   &
+      & kvsetsc3a=ivset)
   endif
+
+  if ( lvordiv ) deallocate(zgpuv_ctg)
+  deallocate(zgp3a_ctg,zgp2_ctg)
 
   if( lstats ) call gstats(5,1)
   
@@ -743,6 +756,7 @@ do jstep = 1, iters
 
   if (lprint_norms) then
     if( lstats ) call gstats(6,0)
+
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     if ( lvordiv ) then
       call especnorm(pspec=zspvor(1:nflevl,:),    pnorm=znormvor, kvset=ivset(1:nflevg))
@@ -969,6 +983,7 @@ write(nout,'(" ")')
 write(nout,'(a)') '======= End of time step stats ======='
 write(nout,'(" ")')
 
+
 if (lstack) then
   ! Gather stack usage statistics
   istack = getstackusage()
@@ -989,11 +1004,19 @@ if (lstack) then
   endif
 endif
 
+
 !===================================================================================================
 ! Cleanup
 !===================================================================================================
 
-! TODO: many more arrays to deallocate
+deallocate(nprcids,numll)
+deallocate(sp3d,zspsc2,zmeanu,zmeanv)
+deallocate(ivset)
+deallocate(zgpuv,zgp3a,zgp2)
+if ( allocated(znormsp) ) deallocate(znormsp,znormsp0,znormvor,znormvor0,znormdiv,znormdiv0,znormt,znormt0)
+deallocate(ztstep,ztstep1,ztstep2)
+
+call etrans_end()
 
 !===================================================================================================
 
@@ -1015,6 +1038,7 @@ endif
 if (luse_mpi) then
   call mpl_end(ldmeminfo=.false.)
 endif
+
 
 !===================================================================================================
 ! Close file
@@ -1353,7 +1377,7 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
   call etrans_inq(kspec2=kspec2)
   allocate(my_kn(kspec2),my_km(kspec2))
   call etrans_inq(knvalue=my_kn,kmvalue=my_km)
-
+  
   ! If rank is responsible for the chosen zonal wavenumber...
   if ( init_type == 'harmonic' ) then
     do ispec=1,nspec2,4
@@ -1373,10 +1397,10 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
     ! set some components to zero because they are unphysical
     do ispec=1,nspec2,4
       if ( my_kn(ispec)== 0 .and. my_km(ispec) == 0 ) field(ispec:ispec+3)=0. ! remove mean value for vorticity and divergence
-      if ( my_kn(ispec)== 0 ) field(ispec+1:ispec+3:2)=0. ! remove sine component on zero-wavenumber
-      if ( my_kn(ispec)== nmsmax ) field(ispec+1:ispec+3:2)=0. ! remove sine component on last-wavenumber
-      if ( my_km(ispec)== 0 ) field(ispec+2:ispec+3)=0. ! remove sine component on zero-wavenumber
-      if ( my_km(ispec)== nsmax ) field(ispec+2:ispec+3)=0. ! remove sine component on last-wavenumber
+      if ( my_kn(ispec)== 0 ) field(ispec+1:ispec+3:2)=0. ! remove sine component on zero meridional wavenumber
+      !if ( my_kn(ispec)== nsmax ) field(ispec+1:ispec+3:2)=0. ! remove sine component on last meridional wavenumber -- must only be zero when nsmax==nlat/2
+      if ( my_km(ispec)== 0 ) field(ispec+2:ispec+3)=0. ! remove sine component on zero zonal wavenumber
+      !if ( my_km(ispec)== nmsmax ) field(ispec+2:ispec+3)=0. ! remove sine component on last meridional wavenumber -- must only be zero when nmsmax==nlon/2
     enddo
 
     ! scale according to wavenumber**2
@@ -1384,7 +1408,9 @@ subroutine initialize_2d_spectral_field(nsmax, nmsmax, field)
       field(ispec)=field(ispec)/(0.01+(my_kn(ispec)/real(nsmax))**2+(my_km(ispec)/real(nmsmax))**2)
     enddo
   endif
-
+  
+  deallocate(my_kn,my_km)
+  
 end subroutine initialize_2d_spectral_field
 
 !===================================================================================================
@@ -1441,7 +1467,6 @@ subroutine dump_gridpoint_field(jstep, myproc, nlat, nproma, ngpblks, fld, fldch
     write (*,*) fldchar,' at iteration ',jstep,':'
     write (*,frmt) fldg
     call flush(6)
-
     deallocate(fldg)
 
   endif
@@ -1521,7 +1546,6 @@ subroutine dump_spectral_field(jstep, myproc, nspec2, nsmax, nmsmax, fld, kvset,
     write (*,*) fldchar,' at iteration ',jstep,':'
     write (*,frmt) fld2g
     call flush(6)
-
     deallocate(fldg)
 
   endif
