@@ -4,16 +4,16 @@
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 !
 
-program test_split_mpi_comm
+PROGRAM TEST_SPLIT_MPI_COMM
 
 USE PARKIND1,        ONLY : JPRM, JPIM
 USE MPL_MODULE,      ONLY : MPL_INIT, MPL_END, MPL_MYRANK, MPL_NPROC, MPL_GATHERV, &
                             MPL_COMM_SPLIT, MPL_SETDFLT_COMM, MPL_COMM
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
-USE mpl_data_module, ONLY : MPLUSERCOMM, LMPLUSERCOMM
-USE mpl_mpif
+USE MPL_DATA_MODULE, ONLY : MPLUSERCOMM, LMPLUSERCOMM
+USE MPL_MPIF
 
-implicit none
+IMPLICIT NONE
 
 #include "setup_trans0.h"
 #include "setup_trans.h"
@@ -21,166 +21,166 @@ implicit none
 #include "dir_trans.h"
 #include "trans_inq.h"
 
-integer(kind=JPIM), parameter, dimension(2) :: truncations = [79, 188]
+INTEGER(KIND=JPIM), PARAMETER, DIMENSION(2) :: TRUNCATIONS = [79, 188]
 
 ! MODE
-integer(kind=JPIM), parameter, dimension(2) :: Ms = [1, 3]
-integer(kind=JPIM), parameter, dimension(2) :: Ns = [2, 4]
+INTEGER(KIND=JPIM), PARAMETER, DIMENSION(2) :: MS = [1, 3]
+INTEGER(KIND=JPIM), PARAMETER, DIMENSION(2) :: NS = [2, 4]
 
 
-integer(kind=JPIM) :: num_spectral_elements, num_grid_points
-integer(kind=JPIM) :: g_num_spectral_elements, g_num_grid_points  ! global
-integer(kind=JPIM) :: local_spectral_coefficient_index
-integer(kind=JPIM) :: ierror
-integer(kind=JPIM) :: i
-integer(kind=JPIM) :: split_num_ranks, split_rank
-integer(kind=JPIM) :: world_num_ranks, world_rank
-integer(kind=JPIM) :: split_colour, split_key
-integer(kind=JPIM) :: split_comm, dummy_comm
-integer(kind=JPIM) :: truncation
-integer(kind=JPIM) :: M, N
-integer(kind=JPIM) :: num_latitudes, num_longitudes
+INTEGER(KIND=JPIM) :: NUM_SPECTRAL_ELEMENTS, NUM_GRID_POINTS
+INTEGER(KIND=JPIM) :: G_NUM_SPECTRAL_ELEMENTS, G_NUM_GRID_POINTS  ! GLOBAL
+INTEGER(KIND=JPIM) :: LOCAL_SPECTRAL_COEFFICIENT_INDEX
+INTEGER(KIND=JPIM) :: IERROR
+INTEGER(KIND=JPIM) :: I
+INTEGER(KIND=JPIM) :: SPLIT_NUM_RANKS, SPLIT_RANK
+INTEGER(KIND=JPIM) :: WORLD_NUM_RANKS, WORLD_RANK
+INTEGER(KIND=JPIM) :: SPLIT_COLOUR, SPLIT_KEY
+INTEGER(KIND=JPIM) :: SPLIT_COMM, DUMMY_COMM
+INTEGER(KIND=JPIM) :: TRUNCATION
+INTEGER(KIND=JPIM) :: M, N
+INTEGER(KIND=JPIM) :: NUM_LATITUDES, NUM_LONGITUDES
 
-! Book-keeping for MPI gather.
-integer(kind=JPIM), allocatable :: displs(:)
-integer(kind=JPIM), allocatable :: grid_partition_sizes(:)
+! Book-keeping for mpi gather.
+INTEGER(KIND=JPIM), ALLOCATABLE :: DISPLS(:)
+INTEGER(KIND=JPIM), ALLOCATABLE :: GRID_PARTITION_SIZES(:)
 
-integer(kind=JPIM), allocatable :: spectral_indices(:)
+INTEGER(KIND=JPIM), ALLOCATABLE :: SPECTRAL_INDICES(:)
 
 ! Fields
-real(kind=JPRM), allocatable :: spectral_field(:,:)
-real(kind=JPRM), allocatable :: grid_point_field(:,:,:)
+REAL(KIND=JPRM), ALLOCATABLE :: SPECTRAL_FIELD(:,:)
+REAL(KIND=JPRM), ALLOCATABLE :: GRID_POINT_FIELD(:,:,:)
 
-! NOTE: 1 Dimensional global field used to write to file output.
-real(kind=JPRM), allocatable :: g_grid_point_field(:)
+! NOTE: 1 dimensional global field used to write to file output.
+REAL(KIND=JPRM), ALLOCATABLE :: G_GRID_POINT_FIELD(:)
 
-character(len=1024) :: filename
+CHARACTER(LEN=1024) :: FILENAME
 
-call MPL_INIT()
-world_num_ranks = MPL_NPROC()
-world_rank = MPL_MYRANK()
+CALL MPL_INIT()
+WORLD_NUM_RANKS = MPL_NPROC()
+WORLD_RANK = MPL_MYRANK()
 
-split_colour = get_split_group(world_rank, world_num_ranks)
-split_key = world_rank
-call MPL_COMM_SPLIT(MPL_COMM, split_colour, split_key, split_comm, ierror)
-call MPL_SETDFLT_COMM(split_comm, dummy_comm)
+SPLIT_COLOUR = GET_SPLIT_GROUP(WORLD_RANK, WORLD_NUM_RANKS)
+SPLIT_KEY = WORLD_RANK
+CALL MPL_COMM_SPLIT(MPL_COMM, SPLIT_COLOUR, SPLIT_KEY, SPLIT_COMM, IERROR)
+CALL MPL_SETDFLT_COMM(SPLIT_COMM, DUMMY_COMM)
 
-split_rank = MPL_MYRANK()
-split_num_ranks = MPL_NPROC()
+SPLIT_RANK = MPL_MYRANK()
+SPLIT_NUM_RANKS = MPL_NPROC()
 
-print*,"=== Rank ", world_rank, ", Setup on group", split_colour, "num ranks = ", split_num_ranks, "==="
+PRINT*,"=== RANK ", WORLD_RANK, ", SETUP ON GROUP", SPLIT_COLOUR, "NUM RANKS = ", SPLIT_NUM_RANKS, "==="
 
-! Assert that the split comm is smaller than WORLD.
-if (split_num_ranks >= world_num_ranks) then
-  print*, "SPLIT = ", split_num_ranks, "TOTAL = ", world_num_ranks
-  call ABORT_TRANS("ERROR: Split communicator not smaller than MPI_COMM_WORLD.")
-end if
+! Assert that the split comm is smaller than world.
+IF (SPLIT_NUM_RANKS >= WORLD_NUM_RANKS) THEN
+  PRINT*, "SPLIT = ", SPLIT_NUM_RANKS, "TOTAL = ", WORLD_NUM_RANKS
+  CALL ABORT_TRANS("ERROR: SPLIT COMMUNICATOR NOT SMALLER THAN MPI_COMM_WORLD.")
+END IF
 
-print*,"=== Local rank ", split_rank, ", on group", split_colour, "size", split_num_ranks, "==="
+PRINT*,"=== LOCAL RANK ", SPLIT_RANK, ", ON GROUP", SPLIT_COLOUR, "SIZE", SPLIT_NUM_RANKS, "==="
 
-call setup_trans0(KPRINTLEV=0, LDMPOFF=.false., &
-!                 Split grid NS            Split spectral
-                  KPRGPNS=split_num_ranks, KPRTRW=split_num_ranks)
+CALL SETUP_TRANS0(KPRINTLEV=1, LDMPOFF=.FALSE., &
+!                 SPLIT GRID NS            SPLIT SPECTRAL
+                  KPRGPNS=SPLIT_NUM_RANKS, KPRTRW=SPLIT_NUM_RANKS)
 
 ! Different transform based on the colour.
-truncation = truncations(split_colour + 1)
+TRUNCATION = TRUNCATIONS(SPLIT_COLOUR + 1)
 
-num_latitudes = 2*(truncation + 1)
-num_longitudes = num_latitudes*2
+NUM_LATITUDES = 2*(TRUNCATION + 1)
+NUM_LONGITUDES = NUM_LATITUDES*2
 
-if (split_rank == 1) print*,"Colour ", split_colour, &
-  " GLOBAL NUM LON =>", num_longitudes, "| LAT =>", num_latitudes
+IF (SPLIT_RANK == 1) PRINT*,"COLOUR ", SPLIT_COLOUR, &
+  " GLOBAL NUM LON =>", NUM_LONGITUDES, "| LAT =>", NUM_LATITUDES
 
-call setup_trans(KSMAX=truncation, KDGL=num_latitudes)
+CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NUM_LATITUDES)
 
 ! Get function space sizes
-call trans_inq(KSPEC2=num_spectral_elements, KGPTOT=num_grid_points)
-call trans_inq(KSPEC2G=g_num_spectral_elements, KGPTOTG=g_num_grid_points)
+CALL TRANS_INQ(KSPEC2=NUM_SPECTRAL_ELEMENTS, KGPTOT=NUM_GRID_POINTS)
+CALL TRANS_INQ(KSPEC2G=G_NUM_SPECTRAL_ELEMENTS, KGPTOTG=G_NUM_GRID_POINTS)
 
-allocate(spectral_field(1, num_spectral_elements))
-allocate(grid_point_field(num_grid_points, 1, 1))
+ALLOCATE(SPECTRAL_FIELD(1, NUM_SPECTRAL_ELEMENTS))
+ALLOCATE(GRID_POINT_FIELD(NUM_GRID_POINTS, 1, 1))
 
 ! Get spectral indices
-allocate(spectral_indices(0:truncation))
-call trans_inq(KASM0=spectral_indices)
+ALLOCATE(SPECTRAL_INDICES(0:TRUNCATION))
+CALL TRANS_INQ(KASM0=SPECTRAL_INDICES)
 
-! select mode
-M = Ms(split_colour + 1)
-N = Ns(split_colour + 1)
-local_spectral_coefficient_index = spectral_indices(M) + 2*(N - M) + 1
+! Select mode
+M = MS(SPLIT_COLOUR + 1)
+N = NS(SPLIT_COLOUR + 1)
+LOCAL_SPECTRAL_COEFFICIENT_INDEX = SPECTRAL_INDICES(M) + 2*(N - M) + 1
 
-spectral_field(:,:) = 0.0
+SPECTRAL_FIELD(:,:) = 0.0
 
-if (local_spectral_coefficient_index > 0) then
-  spectral_field(1,local_spectral_coefficient_index) = 1.0
-end if
+IF (LOCAL_SPECTRAL_COEFFICIENT_INDEX > 0) THEN
+  SPECTRAL_FIELD(1,LOCAL_SPECTRAL_COEFFICIENT_INDEX) = 1.0
+END IF
 
-call inv_trans(PSPSCALAR=spectral_field, PGP=grid_point_field)
+CALL INV_TRANS(PSPSCALAR=SPECTRAL_FIELD, PGP=GRID_POINT_FIELD)
 
 ! -------------- Gather the result on the root (0) and write to file -----------------
 
-! Get counts from each PE.
-allocate(grid_partition_sizes(split_num_ranks))
-grid_partition_sizes = 0
+! Get counts from each pe.
+ALLOCATE(GRID_PARTITION_SIZES(SPLIT_NUM_RANKS))
+GRID_PARTITION_SIZES = 0
 
-call MPL_GATHERV(num_grid_points, KRECVBUF=grid_partition_sizes, KCOMM=split_comm)
+CALL MPL_GATHERV(NUM_GRID_POINTS, KRECVBUF=GRID_PARTITION_SIZES, KCOMM=SPLIT_COMM)
 
-if (split_rank == 1) then
+IF (SPLIT_RANK == 1) THEN
   ! Allocate a global field.
-  allocate(g_grid_point_field(g_num_grid_points))
+  ALLOCATE(G_GRID_POINT_FIELD(G_NUM_GRID_POINTS))
 
   ! Make displacement arrays
-  allocate(displs(split_num_ranks))
-  displs = 0
-  do i=2, split_num_ranks
-    displs(i) = displs(i - 1) + grid_partition_sizes(i - 1)
-  end do
-end if
+  ALLOCATE(DISPLS(SPLIT_NUM_RANKS))
+  DISPLS = 0
+  DO I=2, SPLIT_NUM_RANKS
+    DISPLS(I) = DISPLS(I - 1) + GRID_PARTITION_SIZES(I - 1)
+  END DO
+END IF
 
-call MPL_GATHERV(grid_point_field(:,1,1), PRECVBUF=g_grid_point_field, &
-                 KCOMM=split_comm, &
-                 KRECVCOUNTS=grid_partition_sizes, &
-                 KRECVDISPL=displs)
+CALL MPL_GATHERV(GRID_POINT_FIELD(:,1,1), PRECVBUF=G_GRID_POINT_FIELD, &
+                 KCOMM=SPLIT_COMM, &
+                 KRECVCOUNTS=GRID_PARTITION_SIZES, &
+                 KRECVDISPL=DISPLS)
 
-if (split_rank == 1) then
-  ! Write to file. Can then be plotted using a python script
-  ! such as in the docs: https://sites.ecmwf.int/docs/ectrans/page/usage.html.
+IF (SPLIT_RANK == 1) THEN
+  ! Write to file. can then be plotted using a python script
+  ! Such as in the docs: https://sites.ecmwf.int/docs/ectrans/page/usage.html.
 
-  write(filename, "(A22,I0,A4)") "grid_point_field_trunc_", truncation, ".dat"
-  open(7, file=filename, form="unformatted")
-  write(7) g_grid_point_field(:)
-  close(7)
+  WRITE(FILENAME, "(A22,I0,A4)") "grid_point_field_trunc_", TRUNCATION, ".dat"
+  OPEN(7, FILE=FILENAME, FORM="unformatted")
+  WRITE(7) G_GRID_POINT_FIELD(:)
+  CLOSE(7)
 
-  print*,"Colour", split_colour, "finished and written to file: "//trim(filename)
-end if
+  PRINT*,"Colour", SPLIT_COLOUR, "finished and written to file: "//TRIM(FILENAME)
+END IF
 
-call MPL_END()
+CALL MPL_END()
 
 CONTAINS
 
 ! Get the colour of comm for this rank.
-function get_split_group(rank, world_size) result(group)
-  implicit none
+FUNCTION GET_SPLIT_GROUP(RANK, WORLD_SIZE) RESULT(GROUP)
+  IMPLICIT NONE
 
-  integer(kind=JPIM), intent(in) :: rank
-  integer(kind=JPIM), intent(in) :: world_size
-  ! return
-  integer(kind=JPIM) :: group
+  INTEGER(KIND=JPIM), INTENT(IN) :: RANK
+  INTEGER(KIND=JPIM), INTENT(IN) :: WORLD_SIZE
+  ! RETURN
+  INTEGER(KIND=JPIM) :: GROUP
 
-  real(kind=JPRM) :: rank_ratio
+  REAL(KIND=JPRM) :: RANK_RATIO
 
   ! ----------------------------------------------
   ! Uneven splitting based on a ratio 1:3.
   ! ----------------------------------------------
-  rank_ratio = real(rank, kind=JPRM) / real(world_size, kind=JPRM)
+  RANK_RATIO = REAL(RANK, KIND=JPRM) / REAL(WORLD_SIZE, KIND=JPRM)
 
   ! Split X%
-  if (rank_ratio <= 0.25_jprm) then
-    group = 0
-  else
-    group = 1
-  end if
+  IF (RANK_RATIO <= 0.25_JPRM) THEN
+    GROUP = 0
+  ELSE
+    GROUP = 1
+  END IF
 
-end function get_split_group
+END FUNCTION GET_SPLIT_GROUP
 
-end program
+END PROGRAM
