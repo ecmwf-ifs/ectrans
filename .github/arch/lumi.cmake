@@ -8,12 +8,11 @@
 
 # CSC LUMI-G cluster, with AMD MI250X GPUs
 
-set( OpenMP_C_FLAGS           "-fopenmp" )
-set( OpenMP_CXX_FLAGS         "-fopenmp" )
+set( OpenMP_C_FLAGS "-fopenmp" )
 set( OpenMP_C_LIB_NAMES craymp )
-set( OpenMP_CXX_LIB_NAMES craymp )
-set( OpenMP_Fortran_LIB_NAMES craymp )
+set( OpenMP_Fortran_LIB_NAMES craymp crayacc )
 set( OpenMP_craymp_LIBRARY craymp )
+set( OpenMP_crayacc_LIBRARY crayacc_amdgpu )
+
 set( ENABLE_OMP ON )
 
-set( ECBUILD_Fortran_FLAGS "${ECBUILD_Fortran_FLAGS} -fopenmp" )
