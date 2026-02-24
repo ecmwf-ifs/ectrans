@@ -40,7 +40,7 @@ foreach( precision ${precisions} )
         OMP 1
       )
 
-      # Add tests for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS
+      # Add test for tangent-linear/adjoint correspondence of DIR_TRANS only
       ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_${precision}
         SOURCES test_dirtrans_adjoint.F90
         LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
