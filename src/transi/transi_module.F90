@@ -38,14 +38,12 @@ use MPL_module, only: &
   MPL_INIT, &
   MPL_END, &
   MPL_NPROC, &
-  MPL_MYRANK
+  MPL_MYRANK, &
+  MPL_SETDFLT_COMM, &
+  MPL_COMM
 
 use MPL_DATA_MODULE, only: &
-  MPLUSERCOMM, &
-  LMPLUSERCOMM
-
-use MPL_MPIF, only: &
-  MPI_COMM_WORLD
+  MPL_NUMPROC
 
 implicit none
 
@@ -653,27 +651,27 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   integer(c_int) :: iret
   integer(c_int), value, intent(in) :: mpi_user_comm
 
-  integer(c_int), save :: last_comm_set = -1   ! -1 indicates no comm has been set
+  integer :: dummy_comm
 
   iret = TRANS_SUCCESS
   if (.not. USE_MPI) return
-  ! If MPL_INIT already setup, and the comm coming in is the same, then skip.
-  if (is_init .and. mpi_user_comm == last_comm_set) return
 
   ! Confirm that this is called prior to MPL_INIT, to ensure correct setting of global vars.
   !
-  ! If it is the case that trans_init has been called prior, then it will have been setup with
-  ! MPI_COMM_WORLD. So therefore in the special case that the mpi_user_comm matches WORLD,
-  ! then there is no issue.
-  if (is_init .and. mpi_user_comm /= MPI_COMM_WORLD) then
-    write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
-    iret = TRANS_ERROR
-    return
+  ! If it is the case that trans_init has been called prior, ensure the comm here is the same
+  ! as what has been setup previously.
+  if (MPL_NUMPROC == -1) then
+    ! MPL not yet initialised.
+    CALL MPL_INIT()
+    CALL MPL_SETDFLT_COMM(mpi_user_comm, dummy_comm)
+  else
+    ! MPL already initialised.
+    if (mpi_user_comm /= MPL_COMM) then
+      write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
+      iret = TRANS_ERROR
+      return
+    end if
   end if
-
-  LMPLUSERCOMM = .true.
-  MPLUSERCOMM = mpi_user_comm
-  last_comm_set = mpi_user_comm
 
 end function trans_set_mpi_comm
 
