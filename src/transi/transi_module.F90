@@ -621,7 +621,10 @@ function trans_init() bind(C,name="trans_init") result(iret)
   trans_out = devnull( opened=close_devnull )
 
   if( USE_MPI ) then
-    call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
+    ! MPL may already be setup, if a comm has been set.
+    if (MPL_NUMPROC == -1) then
+      call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
+    end if
     allocate( I_REGIONS(MPL_NPROC()) )
     NPRGPNS = MPL_NPROC()/NPRGPEW
     NPRTRW = MPL_NPROC()/NPRTRV;
@@ -663,7 +666,7 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   if (.not. is_init) then
     ! MPL not yet initialised.
     if (MPL_NUMPROC == -1) then
-      call MPL_INIT()
+      call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
     end if
 
     call MPL_SETDFLT_COMM(mpi_user_comm, dummy_comm)
