@@ -347,8 +347,7 @@ INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_WIND_1() RESULT(RE
 
   CALL DIR_TRANS(PGPUV=ZGPUV, PSPVOR=ZSPVOR, PSPDIV=ZSPDIV, KPROMA=NPROMA)
 
-  ! We pass in constant U and V so vorticity and divergence should both be zero
-  ! As for the scalar, check only the (0,0) mode (global mean) is one and all the rest are zero
+  ! We pass in constant U and V so the resulting vorticity and divergence should both be zero
   ! TODO: for some reason the double precision computation of vorticity and divergence gives
   ! errors more like single precision. This possibly indicates a hard-coded single-precision
   ! value somewhere in the double-precision code path. For now we use a higher tolerance.
