@@ -674,7 +674,6 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   ! Trans already initialised. If it has already been setup with the requested communicator
   ! then there is no issue. Otherwise, the user is attempting to change the comm
   ! mid-run which is not supported.
-  ! NOTE that MPL uses fortran indexing for MPI communicator numbers.
   else if (mpi_user_comm /= MPL_COMM) then
     write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
     iret = TRANS_ERROR
