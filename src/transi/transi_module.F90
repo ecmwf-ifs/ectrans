@@ -34,13 +34,17 @@ use, intrinsic :: iso_fortran_env, only: &
   output_unit, &
   error_unit
 
+use OML_MOD, only: &
+  OML_MY_THREAD
+
 use MPL_module, only: &
   MPL_INIT, &
   MPL_END, &
   MPL_NPROC, &
   MPL_MYRANK, &
   MPL_SETDFLT_COMM, &
-  MPL_COMM
+  MPL_COMM_OML
+  
 
 use MPL_DATA_MODULE, only: &
   MPL_NUMPROC
@@ -674,7 +678,7 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   ! Trans already initialised. If it has already been setup with the requested communicator
   ! then there is no issue. Otherwise, the user is attempting to change the comm
   ! mid-run which is not supported.
-  else if (mpi_user_comm /= MPL_COMM) then
+  else if (mpi_user_comm /= MPL_COMM_OML(OML_MY_THREAD())) then
     write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
     iret = TRANS_ERROR
     return
