@@ -93,6 +93,7 @@ jobs:
             compiler_cc: ~
             compiler_cxx: ~
             compiler_fc: gfortran-13
+            cmake_options: -DMPI_ARGS=--oversubscribe
             caching: true
 
     runs-on: ${{ matrix.os }}
