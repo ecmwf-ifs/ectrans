@@ -1664,13 +1664,14 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
   integer(kind=jpim), intent(in) :: jstep    ! time step
   integer(kind=jpim), intent(in) :: myproc   ! mpi rank
-  integer(kind=jpim), intent(in), optional :: nspec2g
-  integer(kind=jpim), intent(in), optional :: ivset(:)
-  integer(kind=jpim), intent(in), optional :: ivsetsc2(:)
-  real(kind=jprb), intent(in), optional :: zspvor(:,:)
-  real(kind=jprb), intent(in), optional :: zspdiv(:,:)
-  real(kind=jprb), intent(in), optional :: zspsc3a(:,:,:)
-  real(kind=jprb), intent(in), optional :: zspsc2(:,:)
+  integer(kind=jpim), intent(in) :: nspec2g
+  integer(kind=jpim), intent(in) :: ivset(:)
+  integer(kind=jpim), intent(in) :: ivsetsc2(:)
+  real(kind=jprb), intent(in) :: zspvor(:,:)
+  real(kind=jprb), intent(in) :: zspdiv(:,:)
+  real(kind=jprb), intent(in) :: zspsc3a(:,:,:)
+  real(kind=jprb), intent(in):: zspsc2(:,:)
+
   integer(kind=jpim) :: numfld, jfld
   integer(kind=jpib) :: icrc
   real(kind=jprb), allocatable :: gspfld(:,:)
