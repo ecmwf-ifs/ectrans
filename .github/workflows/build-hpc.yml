@@ -58,7 +58,8 @@ jobs:
               - nvidia/24.5
               - hpcx-openmpi/2.19.0-cuda
               - fftw
-            cmake_options: -DENABLE_ACC=ON -G Ninja
+            env_vars:
+              - CMAKE_GENERATOR=Ninja
 
           - name: lumi-g cce
             site: lumi
@@ -72,19 +73,14 @@ jobs:
               #SBATCH --partition=standard-g
               #SBATCH --account={0}
             modules:
-              - CrayEnv
-              - PrgEnv-cray
-              - cce/17.0.1
+              - LUMI/25.03
+              - cce/19.0.0
               - craype-accel-amd-gfx90a
-              - rocm/6.0.3
+              - rocm/6.3.4
               - cray-fftw
               - buildtools
             output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
             workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
-            cmake_options: >
-              -DOpenMP_C_LIB_NAMES=craymp -DOpenMP_CXX_LIB_NAMES=craymp
-              -DOpenMP_Fortran_LIB_NAMES=craymp -DOpenMP_craymp_LIBRARY=craymp
-              -DENABLE_OMP=ON
             env_vars:
               - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
@@ -111,7 +107,6 @@ jobs:
               - -DENABLE_ETRANS=ON
               - -DENABLE_GPU_GRAPHS_GEMM=OFF
               - -DENABLE_GPU_GRAPHS_FFT=OFF
-              - ${{ matrix.cmake_options || '' }}
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
@@ -120,7 +115,6 @@ jobs:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
-                  - ${{ matrix.cmake_options || '' }}
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
@@ -154,6 +148,8 @@ jobs:
             export CMAKE_TEST_LAUNCHER="srun;-n;1"
             export DR_HOOK_ASSERT_MPI_INITIALIZED=0
             BASEDIR=$PWD
+
+            # Fetch dependencies
             {% for name, options in dependencies.items() %}
                 mkdir -p {{name}}
                 pushd {{name}}
@@ -161,16 +157,10 @@ jobs:
                 git remote add origin ${{ github.server_url }}/{{name}}
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
-                cmake -S . -B build \
-                  {% for name in dependencies %}
-                    {% set org, proj = name.split('/') %}
-                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
-                  {% endfor %}
-                  {{ options['cmake_options']|join(' ') }}
-                cmake --build build
-                cmake --install build --prefix installation
                 popd
             {% endfor %}
+
+            # Fetch ecTrans
             mkdir -p $REPO
             pushd $REPO
             git init
@@ -178,11 +168,29 @@ jobs:
             git fetch origin $SHA
             git reset --hard FETCH_HEAD
             popd
+
+            # Build dependencies
+            {% for name, options in dependencies.items() %}
+                pushd {{name}}
+                cmake -S . -B build \
+                  {% for name in dependencies %}
+                    {% set org, proj = name.split('/') %}
+                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                  {% endfor %}
+                  -DCMAKE_TOOLCHAIN_FILE=$BASEDIR/$REPO/.github/arch/{{ site }}.cmake \
+                  {{ options['cmake_options']|join(' ') }}
+                cmake --build build
+                cmake --install build --prefix installation
+                popd
+            {% endfor %}
+
+            # Build ecTrans
             cmake -S $REPO -B build \
               {% for name in dependencies %}
                 {% set org, proj = name.split('/') %}
                 -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
               {% endfor %}
+              -DCMAKE_TOOLCHAIN_FILE=$BASEDIR/$REPO/.github/arch/{{ site }}.cmake \
               {{ cmake_options|join(' ') }}
             cmake --build build
 

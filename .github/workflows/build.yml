@@ -35,6 +35,7 @@ jobs:
           - linux clang-18
           - linux nvhpc-25.1
           - linux intel-classic
+          - linux intel-modern
           - macos
 
         include:
@@ -73,6 +74,16 @@ jobs:
             compiler_cc: icc
             compiler_cxx: icpc
             compiler_fc: ifort
+            caching: true
+
+          - name : linux intel-modern
+            os: ubuntu-24.04
+            compiler: intel-modern
+            compiler_cc: icx
+            compiler_cxx: icpx
+            compiler_fc: ifx
+            cmake_options: -DCMAKE_Fortran_FLAGS=-heap-arrays
+            python-version: '3.11'
             caching: true
 
           - name: macos
@@ -142,10 +153,33 @@ jobs:
         echo "${NVHPC_DIR}/compilers/bin"                   >> $GITHUB_PATH
         [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
 
-    - name: Install Intel oneAPI compiler
+    - name: Download Intel compiler
       if: contains( matrix.compiler, 'intel' )
       run: |
-        ${ECTRANS_TOOLS}/install-intel-oneapi.sh
+        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        rm GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        sudo add-apt-repository "deb https://apt.repos.intel.com/oneapi all main"
+
+    - name: Install Intel classic compiler
+      if: contains( matrix.compiler, 'intel-classic' )
+      run: |
+        version=2023.2.0
+        sudo apt-get update
+         sudo apt-get install \
+          intel-oneapi-compiler-fortran-$version \
+          intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-$version \
+          intel-oneapi-mpi-devel-2021.10.0 \
+          intel-oneapi-mkl-$version
+        source /opt/intel/oneapi/setvars.sh
+        printenv >> $GITHUB_ENV
+        echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
+
+    - name: Install Intel modern compiler
+      if: contains( matrix.compiler, 'intel-modern' )
+      run: |
+        sudo apt-get update
+        sudo apt-get install intel-hpckit
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV

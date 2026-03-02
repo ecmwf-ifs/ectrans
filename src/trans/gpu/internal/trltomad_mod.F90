@@ -20,7 +20,7 @@ MODULE TRLTOMAD_MOD
     TYPE(ALLOCATION_RESERVATION_HANDLE) :: HFOUBUF_IN
   END TYPE
 CONTAINS
-  FUNCTION PREPARE_TRLTOMAD(ALLOCATOR, KF_FS) RESULT(HTRLTOM)
+  FUNCTION PREPARE_TRLTOMAD(ALLOCATOR, KF_FS) RESULT(HTRLTOMAD)
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPIB
     USE TPM_DISTR,              ONLY: D
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, RESERVE
@@ -30,15 +30,16 @@ CONTAINS
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(INOUT) :: ALLOCATOR
     INTEGER(KIND=JPIM), INTENT(IN) :: KF_FS
-    TYPE(TRLTOMAD_HANDLE) :: HTRLTOM
-
+    TYPE(TRLTOMAD_HANDLE) :: HTRLTOMAD
+    INTEGER(KIND=JPIB) :: IALLOC_SZ
     REAL(KIND=JPRBT) :: DUMMY
 
-    HTRLTOM%HFOUBUF_IN = RESERVE(ALLOCATOR, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(DUMMY), "HTRLTOM%HFOUBUF_IN")
+    IALLOC_SZ = 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(DUMMY)
+    HTRLTOMAD%HFOUBUF_IN = RESERVE(ALLOCATOR, IALLOC_SZ, "HTRLTOM%HFOUBUF_IN")
   END FUNCTION
 
-  SUBROUTINE TRLTOMAD(ALLOCATOR,HTRLTOM,PFBUF_IN,PFBUF,KF_FS)
-    !**** *TRLTOM * - transposition in Fourierspace
+  SUBROUTINE TRLTOMAD(ALLOCATOR,HTRLTOMAD,PFBUF_IN,PFBUF,KF_FS)
+    !**** *TRLTOMAD * - transposition in Fourierspace
 
     !     Purpose.
     !     --------
@@ -46,11 +47,11 @@ CONTAINS
     !              over latitudes to partitioning over wave numbers
     !              This is done between inverse Legendre Transform
     !              and inverse FFT.
-    !              This is the inverse routine of TRMTOL.
+    !              This is the inverse routine of TRMTOLAD.
 
     !**   Interface.
     !     ----------
-    !        *CALL* *TRLTOM(...)*
+    !        *CALL* *TRLTOMAD(...)*
 
     !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
     !        --------------------          used for both input and output.
@@ -78,14 +79,14 @@ CONTAINS
     !     Modifications.
     !     --------------
     !        Original : 95-10-01
-    !        Modified : 97-06-18 G. Mozdzynski - control MPI mailbox use
+    !        Modified : 97-06-17 G. Mozdzynski - control MPI mailbox use
     !                                            (NCOMBFLEN) for nphase.eq.1
     !        Modified : 99-05-28  D.Salmond - Optimise copies.
     !        Modified : 00-02-02  M.Hamrud  - Remove NPHASE
     !        D.Salmond : 01-11-23 LIMP_NOOLAP Option for non-overlapping message
     !                             passing and buffer packing
     !        G.Mozdzynski: 08-01-01 Cleanup
-    !        Y.Seity   : 07-08-30 Add barrier synchronisation under LSYNC_TRANS
+    !        Y.Seity   : 07-08-31 add barrier synchronisation under LSYNC_TRANS
     !     ------------------------------------------------------------------
 
     USE PARKIND_ECTRANS,        ONLY: JPIM, JPRBT, JPIB
@@ -93,12 +94,12 @@ CONTAINS
     USE MPL_MODULE,             ONLY: MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK
     USE TPM_DISTR,              ONLY: D, NPRTRW, NPROC, MYSETW
     USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR, LMPOFF
-#if ECTRANS_HAVE_MPI
+#ifdef USE_RAW_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REAL4, MPI_REAL8
     ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
-    USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
+    USE TPM_STATS,              ONLY: GSTATS => GSTATS_NVTX
     USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE ABORT_TRANS_MOD,        ONLY: ABORT_TRANS
 
@@ -115,27 +116,27 @@ CONTAINS
     INTEGER(KIND=JPIM) :: IERROR
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
-    TYPE(TRLTOMAD_HANDLE), INTENT(IN) :: HTRLTOM
-#if ECTRANS_HAVE_MPI
+    TYPE(TRLTOMAD_HANDLE), INTENT(IN) :: HTRLTOMAD
+#ifdef USE_RAW_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
 #endif
 
 #ifdef PARKINDTRANS_SINGLE
-#define TRLTOM_DTYPE MPI_REAL4
+#define TRLTOMAD_DTYPE MPI_REAL4
 #else
-#define TRLTOM_DTYPE MPI_REAL8
+#define TRLTOMAD_DTYPE MPI_REAL8
 #endif
 
-#if ECTRANS_HAVE_MPI
+#ifdef USE_RAW_MPI
     IF(.NOT. LMPOFF) THEN
       LOCAL_COMM%MPI_VAL = MPL_ALL_MS_COMM
     ENDIF
 #endif
 
-    IF (LHOOK) CALL DR_HOOK('TRLTOM',0,ZHOOK_HANDLE)
+    IF (LHOOK) CALL DR_HOOK('TRLTOMAD',0,ZHOOK_HANDLE)
 
-    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRLTOM%HFOUBUF_IN),&
-                  & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(PFBUF_IN(1)))
+    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRLTOMAD%HFOUBUF_IN),&
+        & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(PFBUF_IN(1)))
 
 
 #ifdef OMPGPU
@@ -159,7 +160,7 @@ CONTAINS
       IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
       IF (ILENS(IRANK) /= ILENR(IRANK)) THEN
           WRITE(NERR,*) "ERROR", ILENS(IRANK), ILENR(IRANK)
-          CALL ABORT_TRANS("TRLTOM: Error - ILENS(IRANK) /= ILENR(IRANK)")
+          CALL ABORT_TRANS("TRLTOMAD: Error - ILENS(IRANK) /= ILENR(IRANK)")
       ENDIF
       IF (ILENS(IRANK) > 0) THEN
           FROM_SEND = IOFFS(IRANK) + 1
@@ -204,19 +205,20 @@ CONTAINS
     !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
 #endif
 #endif
-#if ECTRANS_HAVE_MPI
-      CALL MPI_ALLTOALLV(PFBUF,ILENR,IOFFR,TRLTOM_DTYPE,&
-                       & PFBUF_IN,ILENS,IOFFS,TRLTOM_DTYPE,&
-                       & LOCAL_COMM,IERROR)
+#ifdef USE_RAW_MPI
+      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRLTOMAD_DTYPE, PFBUF_IN, ILENS, IOFFS, &
+        &                TRLTOMAD_DTYPE, LOCAL_COMM,IERROR)
 #else
-      CALL ABORT_TRANS("Should not be here: MPI is disabled")
+      CALL MPL_ALLTOALLV(PSENDBUF=PFBUF, KSENDCOUNTS=ILENR, PRECVBUF=PFBUF_IN, KRECVCOUNTS=ILENS, &
+        &                KSENDDISPL=IOFFR, KRECVDISPL=IOFFS, KCOMM=MPL_ALL_MS_COMM, &
+        &                CDSTRING='TRLTOMAD:')
 #endif
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
@@ -244,7 +246,8 @@ CONTAINS
       IEND = ISTA+ILEN-1
       CALL GSTATS(1607,0)
 #ifdef OMPGPU
-      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(IEND,ISTA,PFBUF_IN,PFBUF)
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) &
+      !$OMP SHARED(IEND,ISTA,PFBUF_IN,PFBUF)
 #endif
 #ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) FIRSTPRIVATE(ISTA,IEND)
@@ -263,6 +266,7 @@ CONTAINS
 #endif
 
     IF (LHOOK) CALL DR_HOOK('TRLTOMAD',1,ZHOOK_HANDLE)
+
     !     ------------------------------------------------------------------
-  END SUBROUTINE TRLTOMAD
+END SUBROUTINE TRLTOMAD
 END MODULE TRLTOMAD_MOD

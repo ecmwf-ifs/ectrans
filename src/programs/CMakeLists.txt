@@ -79,7 +79,7 @@ if( HAVE_ETRANS )
                             )
     endif()
   
-    if( HAVE_GPU AND TRUE )
+    if( HAVE_ETRANS_GPU )
       list( APPEND util_PRIVATE_DEFINITIONS
         $<${HAVE_CUDA}:CUDA>
         $<${HAVE_HIP}:HIP>

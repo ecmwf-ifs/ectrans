@@ -40,6 +40,12 @@ else()
   ecbuild_info("warn: HIP and CUDA not found")
 endif()
 
+# We can't reliably pass GPU buffers directly to MPL routines yet, so for now we should still use raw MPI calls
+if( HAVE_GPU_AWARE_MPI )
+  set( USE_RAW_MPI 1 )
+else()
+  set( USE_RAW_MPI 0)
+endif()
 
 set( GPU_LIBRARY_TYPE SHARED )
 if( HAVE_GPU_STATIC )
@@ -148,14 +154,14 @@ foreach( prec dp sp )
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                               $<${HAVE_MPI}:MPI::MPI_Fortran>
+                               $<${USE_RAW_MPI}:MPI::MPI_Fortran>
           PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                                $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
-                               ECTRANS_HAVE_MPI=${ectrans_HAVE_MPI}
+                               $<${USE_RAW_MPI}:USE_RAW_MPI>
         )
 
         ecbuild_target_fortran_module_directory(

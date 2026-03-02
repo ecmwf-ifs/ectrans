@@ -38,8 +38,8 @@ FUNCTION PREPARE_TRMTOLAD(ALLOCATOR, KF_LEG) RESULT(HTRMTOLAD)
     HTRMTOLAD%HFOUBUF_IN = RESERVE(ALLOCATOR, IALLOC_SZ, "HTRMTOLAD%HFOUBUF_IN")
 END FUNCTION
 
-SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
-    !**** *trmtol * - transposition in Fourier space
+SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOLAD,PFBUF_IN,PFBUF,KF_LEG)
+    !**** *TRMTOLAD * - transposition in Fourier space
 
     !     Purpose.
     !     --------
@@ -47,12 +47,12 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
     !              over wave numbers to partitioning over latitudes.
     !              It is called between direct FFT and direct Legendre
     !              transform.
-    !              This routine is the inverse of TRLTOM.
+    !              This routine is the inverse of TRLTOMAD.
 
 
     !**   Interface.
     !     ----------
-    !        *call* *trmtol(...)*
+    !        *CALL* *TRMTOLAD(...)*
 
     !        Explicit arguments : PFBUF  - Fourier coefficient buffer. It is
     !        --------------------          used for both input and output.
@@ -94,7 +94,7 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
     USE MPL_MODULE,             ONLY: MPL_ALLTOALLV, MPL_BARRIER, MPL_ALL_MS_COMM, MPL_MYRANK
     USE TPM_DISTR,              ONLY: D, NPRTRW, NPROC, MYSETW
     USE TPM_GEN,                ONLY: LSYNC_TRANS, NERR, LMPOFF
-#if ECTRANS_HAVE_MPI
+#ifdef USE_RAW_MPI
     USE MPI_F08,                ONLY: MPI_COMM, MPI_REAL4, MPI_REAL8
     ! Missing: MPI_ALLTOALLV on purpose due to cray-mpi bug (see https://github.com/ecmwf-ifs/ectrans/pull/157)
 #endif
@@ -116,19 +116,19 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
     INTEGER(KIND=JPIM) :: IERROR
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
-    TYPE(TRMTOLAD_HANDLE), INTENT(IN) :: HTRMTOL
+    TYPE(TRMTOLAD_HANDLE), INTENT(IN) :: HTRMTOLAD
 
-#if ECTRANS_HAVE_MPI
+#ifdef USE_RAW_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
 #endif
 
 #ifdef PARKINDTRANS_SINGLE
-#define TRMTOL_DTYPE MPI_REAL4
+#define TRMTOLAD_DTYPE MPI_REAL4
 #else
-#define TRMTOL_DTYPE MPI_REAL8
+#define TRMTOLAD_DTYPE MPI_REAL8
 #endif
 
-#if ECTRANS_HAVE_MPI
+#ifdef USE_RAW_MPI
     IF(.NOT. LMPOFF) THEN
       LOCAL_COMM%MPI_VAL = MPL_ALL_MS_COMM
     ENDIF
@@ -136,8 +136,15 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
 
     IF (LHOOK) CALL DR_HOOK('TRMTOLAD',0,ZHOOK_HANDLE)
 
-    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRMTOL%HFOUBUF_IN),&
+    CALL ASSIGN_PTR(PFBUF_IN, GET_ALLOCATION(ALLOCATOR, HTRMTOLAD%HFOUBUF_IN),&
         & 1_JPIB, 2_JPIB*D%NLENGT1B*KF_LEG*C_SIZEOF(PFBUF_IN(1)))
+
+#ifdef OMPGPU
+    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PFBUF,PFBUF_IN)
+#endif
+#ifdef ACCGPU
+    !$ACC DATA PRESENT(PFBUF,PFBUF_IN)
+#endif
 
     IF(NPROC > 1) THEN
       DO J=1,NPRTRW
@@ -153,7 +160,7 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
       IRANK = MPL_MYRANK(MPL_ALL_MS_COMM)
       IF (ILENS(IRANK) /= ILENR(IRANK)) THEN
           WRITE(NERR,*) "ERROR", ILENS(IRANK), ILENR(IRANK)
-          CALL ABORT_TRANS("TRMTOL: ILENS(IRANK) /= ILENR(IRANK)")
+          CALL ABORT_TRANS("TRMTOLAD: Error - ILENS(IRANK) /= ILENR(IRANK)")
       ENDIF
       IF (ILENS(IRANK) > 0) THEN
           FROM_SEND = IOFFS(IRANK) + 1
@@ -197,17 +204,21 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
+#ifdef OMPGPU
+    !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
+#endif
+#ifdef ACCGPU
     !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
 #endif
-
-#if ECTRANS_HAVE_MPI
-      CALL MPI_ALLTOALLV(PFBUF,ILENR,IOFFR,TRMTOL_DTYPE,&
-       & PFBUF_IN,ILENS,IOFFS,TRMTOL_DTYPE,&
-       & LOCAL_COMM,IERROR)
-#else
-      CALL ABORT_TRANS("Should not be here: MPI is disabled")
 #endif
-
+#ifdef USE_RAW_MPI
+      CALL MPI_ALLTOALLV(PFBUF, ILENR, IOFFR, TRMTOLAD_DTYPE, PFBUF_IN, ILENS, IOFFS, &
+        &                TRMTOLAD_DTYPE, LOCAL_COMM,IERROR)
+#else
+      CALL MPL_ALLTOALLV(PSENDBUF=PFBUF, KSENDCOUNTS=ILENR, PRECVBUF=PFBUF_IN, KRECVCOUNTS=ILENS, &
+        &                KSENDDISPL=IOFFR, KRECVDISPL=IOFFS, KCOMM=MPL_ALL_MS_COMM, &
+        &                CDSTRING='TRMTOLAD:')
+#endif
 #ifdef USE_GPU_AWARE_MPI
 #ifdef ACCGPU
       !$ACC END HOST_DATA
@@ -217,7 +228,12 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
 #endif
 #else
     !! this is safe-but-slow fallback for running without GPU-aware MPI
+#ifdef OMPGPU
+    !$OMP TARGET UPDATE TO(PFBUF_IN)
+#endif
+#ifdef ACCGPU
     !$ACC UPDATE DEVICE(PFBUF_IN)
+#endif
 #endif
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(441,0)
@@ -251,7 +267,14 @@ SUBROUTINE TRMTOLAD(ALLOCATOR,HTRMTOL,PFBUF_IN,PFBUF,KF_LEG)
       CALL GSTATS(1608,1)
     ENDIF
 
-    IF (LHOOK) CALL DR_HOOK('TRMTOL',1,ZHOOK_HANDLE)
+#ifdef OMPGPU
+    !$OMP END TARGET DATA
+#endif
+#ifdef ACCGPU
+    !$ACC END DATA
+#endif
+
+    IF (LHOOK) CALL DR_HOOK('TRMTOLAD',1,ZHOOK_HANDLE)
 
     !     ------------------------------------------------------------------
 END SUBROUTINE TRMTOLAD
