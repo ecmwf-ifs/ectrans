@@ -1287,10 +1287,10 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
       case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
       case('-l', '--nlev'); nlev = get_int_value('-l', iarg)
-      case('--vordiv'); lvordiv = .True.
-      case('--scders'); lscders = .True.
-      case('--uvders'); luvder = .True.
-      case('--flt'); luseflt = .True.
+      case('--vordiv'); lvordiv = .true.
+      case('--scders'); lscders = .true.
+      case('--uvders'); luvder = .true.
+      case('--flt'); luseflt = .true.
       case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--npromatr'); npromatr = get_int_value('--npromatr', iarg)
