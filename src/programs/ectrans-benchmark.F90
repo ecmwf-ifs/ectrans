@@ -267,7 +267,6 @@ endif
 ! Compute nprgpns and nprgpew
 ! This version selects most square-like distribution
 ! These will change if leq_regions=.true.
-if (nproc == 0) nproc = 1
 isqr = int(sqrt(real(nproc,jprb)))
 do ja = isqr, nproc
   ib = nproc/ja
