@@ -1673,7 +1673,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   real(kind=jprb), intent(in) :: zspvor(:,:)
   real(kind=jprb), intent(in) :: zspdiv(:,:)
   real(kind=jprb), intent(in) :: zspsc3a(:,:,:)
-  real(kind=jprb), intent(in):: zspsc2(:,:)
+  real(kind=jprb), intent(in) :: zspsc2(:,:)
 
   integer(kind=jpim) :: numfld, jfld
   integer(kind=jpib) :: icrc
