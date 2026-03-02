@@ -1031,8 +1031,11 @@ subroutine parse_grid(cgrid,ndgl,nloen)
   character(len=*), intent(in) :: cgrid
   integer, intent(inout) :: ndgl
   integer, intent(inout), allocatable :: nloen(:)
+
   integer :: ios
   integer :: gaussian_number
+  integer :: i
+
   read(cgrid(2:len_trim(cgrid)),*,IOSTAT=ios) gaussian_number
   if (ios==0) then
     ndgl = 2 * gaussian_number
@@ -1434,6 +1437,7 @@ subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutd
   integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
 
   character(len=10) :: filename
+  integer(kind=jpim) :: ilev
 
   filename = "x.xxxx.dat"
   if (myproc == 1) then
