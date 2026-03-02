@@ -1317,6 +1317,10 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
     iarg = iarg + 1
   end do
 
+  if (icall_mode == 1 .and. ldump_values) then
+    call parsing_failed("The --dump-values option is not compatible with --callmode 1")
+  end if
+
 end subroutine get_command_line_arguments
 !===================================================================================================
 
