@@ -116,10 +116,6 @@ MODULE ANALYTIC_SOLUTIONS_MOD
       ENDDO
     ENDDO
 
-    ! DO ILAT = NFIRSTLAT, NLASTLAT
-    !   WRITE(6,*) ILAT, LEGPOLYS(ILAT, 0, 0), RPNM_FULL(ILAT - NFIRSTLAT + 1, NSMAX + 2)
-    ! ENDDO
-
   END SUBROUTINE BUFFER_LEGENDRE_POLYNOMIALS
 
   !===================================================================================================  

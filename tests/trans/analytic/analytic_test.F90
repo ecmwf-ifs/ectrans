@@ -75,6 +75,8 @@ INTEGER, EXTERNAL :: EC_MPIRANK
 LOGICAL :: LUSE_MPI = .TRUE.
 CHARACTER(LEN=16) :: CGRID = ''
 
+REAL(KIND=JPRB) :: ZMAX_ERROR
+
 !===================================================================================================
 
 #include "setup_trans0.h"
@@ -82,6 +84,7 @@ CHARACTER(LEN=16) :: CGRID = ''
 #include "inv_trans.h"
 #include "dir_trans.h"
 #include "trans_inq.h"
+#include "trans_end.h"
 #include "abor1.intfb.h"
 
 !===================================================================================================
@@ -226,22 +229,20 @@ CALL BUFFER_LEGENDRE_POLYNOMIALS(NSMAX, NDGL)
 !===================================================================================================
 
 ! Loop over all wavenumbers (check actually tested wavenumber inside)
-DO N = 0, NSMAX
-  DO M = 0, N
-    ! DO IMAG_IDX = 0, 1
-      CALL INITIALIZE_SPECTRAL_ARRAY(NSMAX, M, N, ZSPSCALAR)
+DO M = 0, NSMAX
+  DO N = M, NSMAX
+    CALL INITIALIZE_SPECTRAL_ARRAY(NSMAX, M, N, ZSPSCALAR)
 
-      ! Compute analytic solutions
-      ZSPH_ANALYTIC = COMPUTE_ANALYTIC_SOLUTION(NPROMA, NGPBLKS, NGPTOT, M, N)
+    ! Compute analytic solutions
+    ZSPH_ANALYTIC = COMPUTE_ANALYTIC_SOLUTION(NPROMA, NGPBLKS, NGPTOT, M, N)
 
-      ! Do inverse transform
-      CALL INV_TRANS(PSPSCALAR=ZSPSCALAR, KPROMA=NPROMA, KVSETSC=IVSET, PGP=ZGP)
+    ! Do inverse transform
+    CALL INV_TRANS(PSPSCALAR=ZSPSCALAR, KPROMA=NPROMA, KVSETSC=IVSET, PGP=ZGP)
 
-      WRITE(NOUT,*) "Maximum error for (", M, ",", N, ") = ", MAXVAL(ABS(ZGP(:, 1, :) - ZSPH_ANALYTIC(:, :)))
+    ZMAX_ERROR = MAX(ZMAX_ERROR, MAXVAL(ABS(ZGP(:, 1, :) - ZSPH_ANALYTIC(:, :))))
 
-      ! Do direct transform
-      CALL DIR_TRANS(PGP=ZGP, KPROMA=NPROMA, KVSETSC=IVSET, PSPSCALAR=ZSPSCALAR)
-    ! END DO
+    ! Do direct transform
+    CALL DIR_TRANS(PGP=ZGP, KPROMA=NPROMA, KVSETSC=IVSET, PSPSCALAR=ZSPSCALAR)
   END DO
 END DO
 
@@ -252,8 +253,10 @@ END DO
 DEALLOCATE(ZSPH_ANALYTIC, ZGP, ZSPSCALAR)
 
 !===================================================================================================
-! Finalize MPI
+! Finalize
 !===================================================================================================
+
+CALL TRANS_END
 
 IF (LUSE_MPI) THEN
   CALL MPL_END(LDMEMINFO=.FALSE.)
@@ -267,6 +270,15 @@ IF (NPROC > 1) THEN
   IF (MYPROC /= 1) THEN
     CLOSE(UNIT=NOUT)
   ENDIF
+ENDIF
+
+IF (ZMAX_ERROR > RTOLERANCE) THEN
+  WRITE(NERR, '(A)') '*******************************'
+  WRITE(NERR, '(A)') 'Analytic test failed'
+  WRITE(NERR, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' > ', RTOLERANCE
+  WRITE(NERR, '(A)') '*******************************'
+  FLUSH(NERR)
+  CALL ABOR1("Analytic test failed")
 ENDIF
 
 !===================================================================================================
