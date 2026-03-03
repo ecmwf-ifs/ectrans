@@ -64,7 +64,7 @@ jobs:
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
-            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177
+            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177 -DMPI_ARGS=--oversubscribe
             ctest_options: -E memory
             caching: false
 
