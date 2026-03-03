@@ -7,78 +7,78 @@
 ! nor does it submit to any jurisdiction.
 !
 
-program analytic_test
+PROGRAM ANALYTIC_TEST
 
-use parkind1, only: jpim, jprb, jprd, jprm
-use mpl_module
-! use analytic_solutions_mod, only: analytic_init, analytic_end, &
-! & buffer_legendre_polynomials_supolf, &
-! & buffer_legendre_polynomials_ectrans, check_legendre_polynomials, &
-! & compute_analytic_solution, compute_analytic_eastwest_derivative, &
-! & compute_analytic_northsouth_derivative, gelam, gelat, init_check_fields, &
-! & close_check_fields, check_gp_fields, check_sp_fields, compute_analytic_uv, &
-! & compute_analytic_uv_derivative_ew
+USE PARKIND1, ONLY: JPIM, JPRB, JPRD, JPRM
+USE MPL_MODULE
+! USE ANALYTIC_SOLUTIONS_MOD, ONLY: ANALYTIC_INIT, ANALYTIC_END, &
+! & BUFFER_LEGENDRE_POLYNOMIALS_SUPOLF, &
+! & BUFFER_LEGENDRE_POLYNOMIALS_ECTRANS, CHECK_LEGENDRE_POLYNOMIALS, &
+! & COMPUTE_ANALYTIC_SOLUTION, COMPUTE_ANALYTIC_EASTWEST_DERIVATIVE, &
+! & COMPUTE_ANALYTIC_NORTHSOUTH_DERIVATIVE, GELAM, GELAT, INIT_CHECK_FIELDS, &
+! & CLOSE_CHECK_FIELDS, CHECK_GP_FIELDS, CHECK_SP_FIELDS, COMPUTE_ANALYTIC_UV, &
+! & COMPUTE_ANALYTIC_UV_DERIVATIVE_EW
 
-implicit none
+IMPLICIT NONE
 
 ! Output unit numbers
-integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
-integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
+INTEGER(KIND=JPIM), PARAMETER :: NERR     = 0 ! UNIT NUMBER FOR STDERR
+INTEGER(KIND=JPIM), PARAMETER :: NOUT     = 6 ! UNIT NUMBER FOR STDOUT
 
 ! Default parameters
-integer(kind=jpim) :: nsmax   = 21  ! Spectral truncation
-integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields
-logical            :: limag = .false. ! test imaginary part of spectral data
-integer(kind=jpim) :: ndgl ! Number of latitudes
-integer(kind=jpim) :: nspec2
-integer(kind=jpim) :: ngptot
-integer(kind=jpim) :: ngptotg
-integer(kind=jpim) :: nspec2g
-integer(kind=jpim) :: ja
-integer(kind=jpim) :: ib
-integer(kind=jpim) :: jprtrv
-integer(kind=jpim) :: n_regions_ns
-integer(kind=jpim) :: n_regions_ew
+INTEGER(KIND=JPIM) :: NSMAX   = 21  ! Spectral truncation
+INTEGER(KIND=JPIM) :: NFLD    = 1   ! Number of scalar fields
+LOGICAL            :: LIMAG = .FALSE. ! Test imaginary part of spectral data
+INTEGER(KIND=JPIM) :: NDGL ! Number of latitudes
+INTEGER(KIND=JPIM) :: NSPEC2
+INTEGER(KIND=JPIM) :: NGPTOT
+INTEGER(KIND=JPIM) :: NGPTOTG
+INTEGER(KIND=JPIM) :: NSPEC2G
+INTEGER(KIND=JPIM) :: JA
+INTEGER(KIND=JPIM) :: IB
+INTEGER(KIND=JPIM) :: JPRTRV
+INTEGER(KIND=JPIM) :: N_REGIONS_NS
+INTEGER(KIND=JPIM) :: N_REGIONS_EW
 
-integer(kind=jpim), allocatable :: nloen(:)
-integer(kind=jpim) :: myproc
+INTEGER(KIND=JPIM), ALLOCATABLE :: NLOEN(:)
+INTEGER(KIND=JPIM) :: MYPROC
 
 ! Spectral and grid point arrays
-real(kind=jprb), allocatable :: zspscalar(:,:)
-real(kind=jprb), allocatable :: zgp(:,:,:)
+REAL(KIND=JPRB), ALLOCATABLE :: ZSPSCALAR(:,:)
+REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:)
 
 ! Spectral space data structures
-real(kind=jprd), allocatable :: zsph_analytic(:,:)
+REAL(KIND=JPRD), ALLOCATABLE :: ZSPH_ANALYTIC(:,:)
 
-logical :: luseflt = .false. ! Use fast legendre transforms
-real(kind=jprd) :: rtolerance = 1e-9 ! maximum relative lmax error tolerance for
+LOGICAL :: LUSEFLT = .FALSE. ! Use fast legendre transforms
+REAL(KIND=JPRD) :: RTOLERANCE = 1E-9 ! maximum relative lmax error tolerance for
                                      ! passing analytyic solution tests in double precision
                                      ! Value for single precision is set at the beginning
                                      ! of the execution.
 
 ! Verbosity level (-1, 0 or 1)
-integer :: verbosity = -1
+INTEGER :: VERBOSITY = -1
 
-integer(kind=jpim) :: nproc ! Number of procs
-integer(kind=jpim) :: nprgpns ! Grid-point decomp
-integer(kind=jpim) :: nprgpew ! Grid-point decomp
-integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
-integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
-integer(kind=jpim) :: mysetv
+INTEGER(KIND=JPIM) :: NPROC ! Number of procs
+INTEGER(KIND=JPIM) :: NPRGPNS ! Grid-point decomp
+INTEGER(KIND=JPIM) :: NPRGPEW ! Grid-point decomp
+INTEGER(KIND=JPIM) :: NPRTRV = 0 ! Spectral decomp
+INTEGER(KIND=JPIM) :: NPRTRW = 0 ! Spectral decomp
+INTEGER(KIND=JPIM) :: MYSETV
 
-integer(kind=jpim), allocatable :: num_local_levels_all(:), ivset(:)
+INTEGER(KIND=JPIM), ALLOCATABLE :: NUM_LOCAL_LEVELS_ALL(:), IVSET(:)
 
-integer(kind=jpim) :: nfld_local, num_rest
-integer(kind=jpim) :: i
-integer(kind=jpim) :: isqr
-integer(kind=jpim) :: nproma = 0
-integer(kind=jpim) :: ngpblks
-integer(kind=jpim) :: ilev, jlev
-integer(kind=jpim) :: jsetv
-integer(kind=jpim) :: m, n, imag_idx
-integer, external :: ec_mpirank
-logical :: luse_mpi = .true.
-character(len=16) :: cgrid = ''
+INTEGER(KIND=JPIM) :: NFLD_LOCAL, NUM_REST
+INTEGER(KIND=JPIM) :: I
+INTEGER(KIND=JPIM) :: ISQR
+INTEGER(KIND=JPIM) :: NPROMA = 0
+INTEGER(KIND=JPIM) :: NGPBLKS
+INTEGER(KIND=JPIM) :: ILEV, JLEV
+INTEGER(KIND=JPIM) :: JSETV
+INTEGER(KIND=JPIM) :: M, N, IMAG_IDX
+INTEGER, EXTERNAL :: EC_MPIRANK
+LOGICAL :: LUSE_MPI = .TRUE.
+CHARACTER(LEN=16) :: CGRID = ''
 
 !===================================================================================================
 
@@ -91,532 +91,530 @@ character(len=16) :: cgrid = ''
 
 !===================================================================================================
 
-luse_mpi = detect_mpirun()
-if (jprb == jprm) rtolerance = 1e-3 ! tolerance for single precision
+LUSE_MPI = DETECT_MPIRUN()
+IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! tolerance for single precision
 ! Setup
-call get_command_line_arguments(nsmax, cgrid, nfld, luseflt, nproma, verbosity, nprtrv, nprtrw, limag, rtolerance)
-if (cgrid == '') cgrid = cubic_full_grid(nsmax)
-call parse_grid(cgrid, ndgl, nloen)
+CALL GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, LIMAG, RTOLERANCE)
+IF (CGRID == '') CGRID = CUBIC_FULL_GRID(NSMAX)
+CALL PARSE_GRID(CGRID, NDGL, NLOEN)
 
-write(nout,'(a)')'======= ecTrans analytic test ======='
-write(nout,'(a,i0)') 'Spectral truncation: ', nsmax
-write(nout,'(a,a)') 'Grid: ', trim(cgrid)
-write(nout,'(a,i0)') 'Number of scalar fields: ', nfld
+WRITE(NOUT,'(A)') '======= ecTrans analytic test ======='
+WRITE(NOUT,'(A,I0)') 'Spectral truncation: ', NSMAX
+WRITE(NOUT,'(A,A)') 'Grid: ', TRIM(CGRID)
+WRITE(NOUT,'(A,I0)') 'Number of scalar fields: ', NFLD
 
 !===================================================================================================
 
-if (luse_mpi) then
-  call mpl_init(ldinfo=(verbosity >= 1))
-  nproc  = mpl_nproc()
-  myproc = mpl_myrank()
-else
-  nproc = 1
-  myproc = 1
-endif
+IF (LUSE_MPI) THEN
+  CALL MPL_INIT(LDINFO=(VERBOSITY >= 1))
+  NPROC  = MPL_NPROC()
+  MYPROC = MPL_MYRANK()
+ELSE
+  NPROC = 1
+  MYPROC = 1
+ENDIF
 
 !===================================================================================================
 
 ! only output to stdout on pe 1
-if (myproc /= 1) then
-  open(unit=nout, file='/dev/null')
-endif
+IF (MYPROC /= 1) THEN
+  OPEN(UNIT=NOUT, FILE='/dev/null')
+ENDIF
 
 !===================================================================================================
 
 ! Compute nprgpns and nprgpew
 ! This version selects most square-like distribution
-isqr = int(sqrt(real(nproc, jprb)))
-do ja = isqr, nproc
-  ib = nproc / ja
-  if (ja * ib == nproc) then
-    nprgpns = max(ja, ib)
-    nprgpew = min(ja, ib)
-    exit
-  endif
-enddo
+ISQR = INT(SQRT(REAL(NPROC, JPRB)))
+DO JA = ISQR, NPROC
+  IB = NPROC / JA
+  IF (JA * IB == NPROC) THEN
+    NPRGPNS = MAX(JA, IB)
+    NPRGPEW = MIN(JA, IB)
+    EXIT
+  ENDIF
+ENDDO
 
 ! Compute nprtrv and nprtrw if not provided on the command line
-if (nprtrv > 0 .or. nprtrw > 0) then
-  if (nprtrv == 0) nprtrv = nproc / nprtrw
-  if (nprtrw == 0) nprtrw = nproc / nprtrv
-  if (nprtrw * nprtrv /= nproc) call abor1('analytic_test: nprtrw * nprtrv /= nproc')
-else
-  do jprtrv = 4, nproc
-    nprtrv = jprtrv
-    nprtrw = nproc / nprtrv
-    if (nprtrv * nprtrw /= nproc) cycle
-    if (nprtrv > nprtrw) exit
-  enddo
+IF (NPRTRV > 0 .OR. NPRTRW > 0) THEN
+  IF (NPRTRV == 0) NPRTRV = NPROC / NPRTRW
+  IF (NPRTRW == 0) NPRTRW = NPROC / NPRTRV
+  IF (NPRTRW * NPRTRV /= NPROC) CALL ABOR1('ANALYTIC_TEST: NPRTRW * NPRTRV /= NPROC')
+ELSE
+  DO JPRTRV = 4, NPROC
+    NPRTRV = JPRTRV
+    NPRTRW = NPROC / NPRTRV
+    IF (NPRTRV * NPRTRW /= NPROC) CYCLE
+    IF (NPRTRV > NPRTRW) EXIT
+  ENDDO
   ! Go for approx square partition for backup
-  if (nprtrv * nprtrw /= nproc .or. nprtrv > nprtrw) then
-    isqr = int(sqrt(real(nproc, jprb)))
-    do ja = isqr, nproc
-      ib = nproc / ja
-      if (ja * ib == nproc) then
-        nprtrw = max(ja, ib)
-        nprtrv = min(ja, ib)
-        exit
-      endif
-    enddo
-  endif
-endif
+  IF (NPRTRV * NPRTRW /= NPROC .OR. NPRTRV > NPRTRW) THEN
+    ISQR = INT(SQRT(REAL(NPROC, JPRB)))
+    DO JA = ISQR, NPROC
+      IB = NPROC / JA
+      IF (JA * IB == NPROC) THEN
+        NPRTRW = MAX(JA, IB)
+        NPRTRV = MIN(JA, IB)
+        EXIT
+      ENDIF
+    ENDDO
+  ENDIF
+ENDIF
 
 !===================================================================================================
 ! Call ecTrans setup routines
 !===================================================================================================
 
-if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
+CALL SETUP_TRANS0(KOUT=NOUT, KERR=NERR, KPRINTLEV=MERGE(2, 0, VERBOSITY == 1), KPRGPNS=NPRGPNS, KPRGPEW=NPRGPEW, &
+  &               KPRTRW=NPRTRW, LDALLOPERM=.TRUE.,                      &
+  &               LDMPOFF=.NOT.LUSE_MPI, K_REGIONS_NS=N_REGIONS_NS, K_REGIONS_EW=N_REGIONS_EW)
 
-call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1), kprgpns=nprgpns, kprgpew=nprgpew, &
-  &               kprtrw=nprtrw, ldalloperm=.true.,                      &
-  &               ldmpoff=.not.luse_mpi, k_regions_ns=n_regions_ns, k_regions_ew=n_regions_ew)
+CALL SETUP_TRANS(KSMAX=NSMAX, KDGL=NDGL, KLOEN=NLOEN, LDUSEFLT=LUSEFLT)
 
-call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, lduseflt=luseflt)
+CALL TRANS_INQ(KSPEC2=NSPEC2, KSPEC2G=NSPEC2G, KGPTOT=NGPTOT, KGPTOTG=NGPTOTG)
 
-call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
-
-if (nproma == 0) then ! no blocking (default when not specified)
-  nproma = ngptot
-endif
+IF (NPROMA == 0) THEN ! no blocking (default when not specified)
+  NPROMA = NGPTOT
+ENDIF
 
 ! Calculate number of NPROMA blocks
-ngpblks = (ngptot - 1)/nproma+1
+NGPBLKS = (NGPTOT - 1)/NPROMA+1
 
-if (nproc == 1) then
-  mysetv = 1
-else
-  call trans_inq(kmysetv=mysetv)
-endif
+IF (NPROC == 1) THEN
+  MYSETV = 1
+ELSE
+  CALL TRANS_INQ(KMYSETV=MYSETV)
+ENDIF
 
 ! Determine number of local levels for fourier and legendre calculations
 ! based on the values of nfld and nprtrv
-allocate(num_local_levels_all(nprtrv))
-nfld_local = nfld / nprtrv ! Integer division
-num_rest = nfld - nfld_local * nprtrv ! Tail block
-do jsetv = 1, nprtrv
-  num_local_levels_all(jsetv) = nfld_local
-  if (jsetv == nprtrv) then
-    num_local_levels_all(jsetv) = num_local_levels_all(jsetv) + num_rest
-  endif
-enddo
+ALLOCATE(NUM_LOCAL_LEVELS_ALL(NPRTRV))
+NFLD_LOCAL = NFLD / NPRTRV ! INTEGER DIVISION
+NUM_REST = NFLD - NFLD_LOCAL * NPRTRV ! TAIL BLOCK
+DO JSETV = 1, NPRTRV
+  NUM_LOCAL_LEVELS_ALL(JSETV) = NFLD_LOCAL
+  IF (JSETV == NPRTRV) THEN
+    NUM_LOCAL_LEVELS_ALL(JSETV) = NUM_LOCAL_LEVELS_ALL(JSETV) + NUM_REST
+  ENDIF
+ENDDO
 
-nfld_local = num_local_levels_all(mysetv)
+NFLD_LOCAL = NUM_LOCAL_LEVELS_ALL(MYSETV)
 
 !===================================================================================================
 ! Allocate arrays
 !===================================================================================================
 
-allocate(ivset(nfld))
+ALLOCATE(IVSET(NFLD))
 
 ! Compute spectral distribution
-ilev = 0
-do jsetv = 1, nprtrv
-  do jlev = 1, num_local_levels_all(jsetv)
-    ilev = ilev + 1
-    ivset(ilev) = jsetv
-  enddo
-enddo
+ILEV = 0
+DO JSETV = 1, NPRTRV
+  DO JLEV = 1, NUM_LOCAL_LEVELS_ALL(JSETV)
+    ILEV = ILEV + 1
+    IVSET(ILEV) = JSETV
+  ENDDO
+ENDDO
 
-allocate(zspscalar(nfld_local,nspec2))
-allocate(zgp(nproma,nfld,ngpblks))
+ALLOCATE(ZSPSCALAR(NFLD_LOCAL,NSPEC2))
+ALLOCATE(ZGP(NPROMA,NFLD,NGPBLKS))
 
 ! Allocate arrays for analytic solutions
-allocate(zsph_analytic(nproma,ngpblks))
+ALLOCATE(ZSPH_ANALYTIC(NPROMA,NGPBLKS))
 
 ! Compute geographic longitude gelam and latitude gelat:
-! call analytic_init(nproma, ngpblks, ndgl, n_regions_ns, n_regions_ew, nloen)
-! call buffer_legendre_polynomials_supolf(nsmax)
+! CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN)
+! CALL BUFFER_LEGENDRE_POLYNOMIALS_SUPOLF(NSMAX)
 
 !===================================================================================================
 ! Perform tests
 !===================================================================================================
 
 ! Loop over all wavenumbers (check actually tested wavenumber inside)
-do n = 0, nsmax
-  do m = 0, n
-    do imag_idx = 0, 1
-      call initialize_spectral_array(nsmax, m, n, zspscalar)
+DO N = 0, NSMAX
+  DO M = 0, N
+    DO IMAG_IDX = 0, 1
+      CALL INITIALIZE_SPECTRAL_ARRAY(NSMAX, M, N, ZSPSCALAR)
 
       !=================================================================================================
       ! Compute analytic solutions
       !=================================================================================================
 
-      ! call compute_analytic_solution(nproma, ngpblks, nsmax, ngptot, m, n, li, zsph_analytic)
+      ! CALL COMPUTE_ANALYTIC_SOLUTION(NPROMA, NGPBLKS, NSMAX, NGPTOT, M, N, ZSPH_ANALYTIC)
 
       !=================================================================================================
       ! Do inverse transform
       !=================================================================================================
 
-      call inv_trans(pspscalar=zspscalar, kproma=nproma, kvsetsc=ivset, pgp=zgp)
+      CALL INV_TRANS(PSPSCALAR=ZSPSCALAR, KPROMA=NPROMA, KVSETSC=IVSET, PGP=ZGP)
 
       !=================================================================================================
       ! Do direct transform
       !=================================================================================================
 
-      call dir_trans(pgp=zgp, kproma=nproma, kvsetsc=ivset, pspscalar=zspscalar)
-    end do
-  end do
-end do
+      CALL DIR_TRANS(PGP=ZGP, KPROMA=NPROMA, KVSETSC=IVSET, PSPSCALAR=ZSPSCALAR)
+    END DO
+  END DO
+END DO
 
 !===================================================================================================
 ! Cleanup
 !===================================================================================================
 
-deallocate(zsph_analytic, zgp, zspscalar)
+DEALLOCATE(ZSPH_ANALYTIC, ZGP, ZSPSCALAR)
 
 !===================================================================================================
 ! Finalize MPI
 !===================================================================================================
 
-if (luse_mpi) then
-  call mpl_end(ldmeminfo=.false.)
-endif
+IF (LUSE_MPI) THEN
+  CALL MPL_END(LDMEMINFO=.FALSE.)
+ENDIF
 
 !===================================================================================================
 ! Close file
 !===================================================================================================
 
-if (nproc > 1) then
-  if (myproc /= 1) then
-    close(unit=nout)
-  endif
-endif
+IF (NPROC > 1) THEN
+  IF (MYPROC /= 1) THEN
+    CLOSE(UNIT=NOUT)
+  ENDIF
+ENDIF
 
 !===================================================================================================
 
-contains
+CONTAINS
 
 !===================================================================================================
 
-subroutine parse_grid(cgrid,ndgl,nloen)
+SUBROUTINE PARSE_GRID(CGRID,NDGL,NLOEN)
 
-  character(len=*) :: cgrid
-  integer, intent(inout) :: ndgl
-  integer, intent(inout), allocatable :: nloen(:)
-  integer :: ios
-  integer :: gaussian_number
-  read(cgrid(2:len_trim(cgrid)),*,IOSTAT=ios) gaussian_number
-  if (ios==0) then
-    ndgl = 2 * gaussian_number
-    allocate(nloen(ndgl))
-    if (cgrid(1:1) == 'F') then ! Regular Gaussian grid
-      nloen(:) = gaussian_number * 4
-      return
-    endif
-    if (cgrid(1:1) == 'O') then ! Octahedral Gaussian grid
-      do i = 1, ndgl / 2
-        nloen(i) = 20 + 4 * (i - 1)
-        nloen(ndgl - i + 1) = nloen(i)
-      end do
-      return
-    endif
-  endif
-  call parsing_failed("ERROR: Unsupported grid specified: "// trim(cgrid))
+  CHARACTER(LEN=*) :: CGRID
+  INTEGER, INTENT(INOUT) :: NDGL
+  INTEGER, INTENT(INOUT), ALLOCATABLE :: NLOEN(:)
+  INTEGER :: IOS
+  INTEGER :: GAUSSIAN_NUMBER
+  READ(CGRID(2:LEN_TRIM(CGRID)),*,IOSTAT=IOS) GAUSSIAN_NUMBER
+  IF (IOS==0) THEN
+    NDGL = 2 * GAUSSIAN_NUMBER
+    ALLOCATE(NLOEN(NDGL))
+    IF (CGRID(1:1) == 'F') THEN ! Regular Gaussian grid
+      NLOEN(:) = GAUSSIAN_NUMBER * 4
+      RETURN
+    ENDIF
+    IF (CGRID(1:1) == 'O') THEN ! Octahedral Gaussian grid
+      DO I = 1, NDGL / 2
+        NLOEN(I) = 20 + 4 * (I - 1)
+        NLOEN(NDGL - I + 1) = NLOEN(I)
+      END DO
+      RETURN
+    ENDIF
+  ENDIF
+  CALL PARSING_FAILED("ERROR: Unsupported grid specified: "// TRIM(CGRID))
 
-end subroutine
-
-!===================================================================================================
-
-function get_real_value(cname, iarg) result(value)
-
-  real :: value
-  character(len=*), intent(in) :: cname
-  integer, intent(inout) :: iarg
-  character(len=128) :: carg
-  integer :: stat
-
-  carg = get_str_value(cname, iarg)
-  call str2real(carg, value, stat)
-
-  if (stat /= 0) then
-    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
-  end if
-
-end function
+END SUBROUTINE
 
 !===================================================================================================
 
-function get_int_value(cname, iarg) result(value)
+FUNCTION GET_REAL_VALUE(CNAME, IARG) RESULT(VALUE)
 
-  integer :: value
-  character(len=*), intent(in) :: cname
-  integer, intent(inout) :: iarg
-  character(len=128) :: carg
-  integer :: stat
+  REAL :: VALUE
+  CHARACTER(LEN=*), INTENT(IN) :: CNAME
+  INTEGER, INTENT(INOUT) :: IARG
+  CHARACTER(LEN=128) :: CARG
+  INTEGER :: STAT
 
-  carg = get_str_value(cname, iarg)
-  call str2int(carg, value, stat)
+  CARG = GET_STR_VALUE(CNAME, IARG)
+  CALL STR2REAL(CARG, VALUE, STAT)
 
-  if (stat /= 0) then
-    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
-  end if
+  IF (STAT /= 0) THEN
+    CALL PARSING_FAILED("Invalid argument for " // TRIM(CNAME) // ": " // TRIM(CARG))
+  END IF
 
-end function
-
-!===================================================================================================
-
-function get_str_value(cname, iarg) result(value)
-
-  character(len=128) :: value
-  character(len=*), intent(in) :: cname
-  integer, intent(inout) :: iarg
-
-  iarg = iarg + 1
-  call get_command_argument(iarg, value)
-
-  if (value == "") then
-    call parsing_failed("Invalid argument for " // trim(cname) // ": no value provided")
-  end if
-
-end function
+END FUNCTION
 
 !===================================================================================================
 
-subroutine parsing_failed(message)
+FUNCTION GET_INT_VALUE(CNAME, IARG) RESULT(VALUE)
 
-  character(len=*), intent(in) :: message
-  if (luse_mpi) call mpl_init(ldinfo=.false.)
-  if (ec_mpirank() == 0) then
-    write(nerr,"(a)") trim(message)
-    call print_help(unit=nerr)
-  endif
-  if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-  stop
+  INTEGER :: VALUE
+  CHARACTER(LEN=*), INTENT(IN) :: CNAME
+  INTEGER, INTENT(INOUT) :: IARG
+  CHARACTER(LEN=128) :: CARG
+  INTEGER :: STAT
 
-end subroutine
+  CARG = GET_STR_VALUE(CNAME, IARG)
+  CALL STR2INT(CARG, VALUE, STAT)
+
+  IF (STAT /= 0) THEN
+    CALL PARSING_FAILED("Invalid argument for " // TRIM(CNAME) // ": " // TRIM(CARG))
+  END IF
+
+END FUNCTION
 
 !===================================================================================================
 
-subroutine get_command_line_arguments(nsmax, cgrid, nfld, luseflt, nproma, verbosity, nprtrv, nprtrw, limag, rtolerance)
+FUNCTION GET_STR_VALUE(CNAME, IARG) RESULT(VALUE)
 
-  integer, intent(inout) :: nsmax           ! Spectral truncation
-  character(len=16), intent(inout) :: cgrid ! Grid
-  integer, intent(inout) :: nfld            ! Number of scalar fields
-  logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
-  integer, intent(inout) :: nproma          ! NPROMA
-  integer, intent(inout) :: verbosity       ! Level of verbosity
-  integer, intent(inout) :: nprtrv          ! Size of V set (spectral decomposition)
-  integer, intent(inout) :: nprtrw          ! Size of W set (spectral decomposition)
-  logical, intent(inout) :: limag           ! test imaginary part
-  real(jprd), intent(inout) :: rtolerance      ! relative error tolerance for analytic solutions
+  CHARACTER(LEN=128) :: VALUE
+  CHARACTER(LEN=*), INTENT(IN) :: CNAME
+  INTEGER, INTENT(INOUT) :: IARG
 
-  character(len=128) :: carg          ! Storage variable for command line arguments
-  integer            :: iarg = 1      ! Argument index
-  integer            :: stat          ! For storing success status of string->integer conversion
-  integer            :: myproc
+  IARG = IARG + 1
+  CALL GET_COMMAND_ARGUMENT(IARG, VALUE)
 
-  do while (iarg <= command_argument_count())
-    call get_command_argument(iarg, carg)
+  IF (VALUE == "") THEN
+    CALL PARSING_FAILED("Invalid argument for " // TRIM(CNAME) // ": no value provided")
+  END IF
 
-    select case(carg)
+END FUNCTION
+
+!===================================================================================================
+
+SUBROUTINE PARSING_FAILED(MESSAGE)
+
+  CHARACTER(LEN=*), INTENT(IN) :: MESSAGE
+  IF (LUSE_MPI) CALL MPL_INIT(LDINFO=.FALSE.)
+  IF (EC_MPIRANK() == 0) THEN
+    WRITE(NERR,"(A)") TRIM(MESSAGE)
+    CALL PRINT_HELP(UNIT=NERR)
+  ENDIF
+  IF (LUSE_MPI) CALL MPL_END(LDMEMINFO=.FALSE.)
+  STOP
+
+END SUBROUTINE
+
+!===================================================================================================
+
+SUBROUTINE GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, LIMAG, RTOLERANCE)
+
+  INTEGER, INTENT(INOUT) :: NSMAX           ! Spectral truncation
+  CHARACTER(LEN=16), INTENT(INOUT) :: CGRID ! Grid
+  INTEGER, INTENT(INOUT) :: NFLD            ! Number of scalar fields
+  LOGICAL, INTENT(INOUT) :: LUSEFLT         ! Use fast Legendre transforms
+  INTEGER, INTENT(INOUT) :: NPROMA          ! NPROMA
+  INTEGER, INTENT(INOUT) :: VERBOSITY       ! Level of verbosity
+  INTEGER, INTENT(INOUT) :: NPRTRV          ! Size of V set (spectral decomposition)
+  INTEGER, INTENT(INOUT) :: NPRTRW          ! Size of W set (spectral decomposition)
+  LOGICAL, INTENT(INOUT) :: LIMAG           ! test imaginary part
+  REAL(JPRD), INTENT(INOUT) :: RTOLERANCE      ! relative error tolerance for analytic solutions
+
+  CHARACTER(LEN=128) :: CARG          ! Storage variable for command line arguments
+  INTEGER            :: IARG = 1      ! Argument index
+  INTEGER            :: STAT          ! For storing success status of string->integer conversion
+  INTEGER            :: MYPROC
+
+  DO WHILE (IARG <= COMMAND_ARGUMENT_COUNT())
+    CALL GET_COMMAND_ARGUMENT(IARG, CARG)
+
+    SELECT CASE(CARG)
       ! Parse help argument
-      case('-h', '--help')
-        if (luse_mpi) call mpl_init(ldinfo=.false.)
-        if (ec_mpirank()==0) call print_help()
-        if (luse_mpi) call mpl_end(ldmeminfo=.false.)
-        stop
+      CASE('-h', '--help')
+        IF (LUSE_MPI) CALL MPL_INIT(LDINFO=.FALSE.)
+        IF (EC_MPIRANK()==0) CALL PRINT_HELP()
+        IF (LUSE_MPI) CALL MPL_END(LDMEMINFO=.FALSE.)
+        STOP
       ! Parse verbosity argument
-      case('-v')
-        verbosity = 1
+      CASE('-v')
+        VERBOSITY = 1
       ! Parse spectral truncation argument
-      case('-t', '--truncation')
-        nsmax = get_int_value('-t', iarg)
-        if (nsmax < 1) then
-          call parsing_failed("Invalid argument for -t: must be > 0")
-        end if
-      case('-g', '--grid'); cgrid = get_str_value('-g', iarg)
-      case('-f', '--nfld'); nfld = get_int_value('-f', iarg)
-      case('--imaginary'); limag = .true.
-      case('--flt'); luseflt = .True.
-      case('--nproma'); nproma = get_int_value('--nproma', iarg)
-      case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
-      case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
-      case('--tolerance'); rtolerance = get_real_value('--tolerance', iarg)
-      case default
-        call parsing_failed("Unrecognised argument: " // trim(carg))
+      CASE('-t', '--truncation')
+        NSMAX = GET_INT_VALUE('-t', IARG)
+        IF (NSMAX < 1) THEN
+          CALL PARSING_FAILED("Invalid argument for -t: must be > 0")
+        END IF
+      CASE('-g', '--grid'); CGRID = GET_STR_VALUE('-g', IARG)
+      CASE('-f', '--nfld'); NFLD = GET_INT_VALUE('-f', IARG)
+      CASE('--imaginary'); LIMAG = .TRUE.
+      CASE('--flt'); LUSEFLT = .TRUE.
+      CASE('--nproma'); NPROMA = GET_INT_VALUE('--nproma', IARG)
+      CASE('--nprtrv'); NPRTRV = GET_INT_VALUE('--nprtrv', IARG)
+      CASE('--nprtrw'); NPRTRW = GET_INT_VALUE('--nprtrw', IARG)
+      CASE('--tolerance'); RTOLERANCE = GET_REAL_VALUE('--tolerance', IARG)
+      CASE DEFAULT
+        CALL PARSING_FAILED("Unrecognised argument: " // TRIM(CARG))
 
-    end select
-    iarg = iarg + 1
-  end do
+    END SELECT
+    IARG = IARG + 1
+  END DO
 
-end subroutine get_command_line_arguments
-
-!===================================================================================================
-
-function cubic_octahedral_gaussian_grid(nsmax) result(cgrid)
-
-  character(len=16) :: cgrid
-  integer, intent(in) :: nsmax
-  write(cgrid,'(a,i0)') 'O',nsmax+1
-
-end function
+END SUBROUTINE GET_COMMAND_LINE_ARGUMENTS
 
 !===================================================================================================
 
-function cubic_full_grid(nsmax) result(cgrid)
+FUNCTION CUBIC_OCTAHEDRAL_GAUSSIAN_GRID(NSMAX) RESULT(CGRID)
 
-  character(len=16) :: cgrid
-  integer, intent(in) :: nsmax
-  write(cgrid,'(a,i0)') 'F',nsmax+1
+  CHARACTER(LEN=16) :: CGRID
+  INTEGER, INTENT(IN) :: NSMAX
+  WRITE(CGRID,'(A,I0)') 'O',NSMAX+1
 
-end function
-
-!===================================================================================================
-
-subroutine str2int(str, int, stat)
-
-  character(len=*), intent(in) :: str
-  integer, intent(out) :: int
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) int
-
-end subroutine str2int
+END FUNCTION
 
 !===================================================================================================
 
-subroutine str2real(str, real, stat)
+FUNCTION CUBIC_FULL_GRID(NSMAX) RESULT(CGRID)
 
-  character(len=*), intent(in) :: str
-  real, intent(out) :: real
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) real
+  CHARACTER(LEN=16) :: CGRID
+  INTEGER, INTENT(IN) :: NSMAX
+  WRITE(CGRID,'(A,I0)') 'F',NSMAX+1
 
-end subroutine str2real
+END FUNCTION
 
 !===================================================================================================
 
-subroutine print_help(unit)
+SUBROUTINE STR2INT(STR, INT, STAT)
 
-  integer, optional :: unit
-  integer :: nout = 6
-  if (present(unit)) then
-    nout = unit
-  endif
+  CHARACTER(LEN=*), INTENT(IN) :: STR
+  INTEGER, INTENT(OUT) :: INT
+  INTEGER, INTENT(OUT) :: STAT
+  READ(STR, *, IOSTAT=STAT) INT
 
-  write(nout, "(a)") ""
+END SUBROUTINE STR2INT
 
-  if (jprb == jprd) then
-    write(nout, "(a)") "NAME    ectrans-benchmark-dp"
-  else
-    write(nout, "(a)") "NAME    ectrans-benchmark-sp"
-  end if
-  write(nout, "(a)") ""
+!===================================================================================================
 
-  write(nout, "(a)") "DESCRIPTION"
-  write(nout, "(a)") "        This program tests ecTrans by transforming fields back and forth&
+SUBROUTINE STR2REAL(STR, REAL, STAT)
+
+  CHARACTER(LEN=*), INTENT(IN) :: STR
+  REAL, INTENT(OUT) :: REAL
+  INTEGER, INTENT(OUT) :: STAT
+  READ(STR, *, IOSTAT=STAT) REAL
+
+END SUBROUTINE STR2REAL
+
+!===================================================================================================
+
+SUBROUTINE PRINT_HELP(UNIT)
+
+  INTEGER, OPTIONAL :: UNIT
+  INTEGER :: NOUT = 6
+  IF (PRESENT(UNIT)) THEN
+    NOUT = UNIT
+  ENDIF
+
+  WRITE(NOUT, "(A)") ""
+
+  IF (JPRB == JPRD) THEN
+    WRITE(NOUT, "(A)") "NAME    ectrans-benchmark-dp"
+  ELSE
+    WRITE(NOUT, "(A)") "NAME    ectrans-benchmark-sp"
+  END IF
+  WRITE(NOUT, "(A)") ""
+
+  WRITE(NOUT, "(A)") "DESCRIPTION"
+  WRITE(NOUT, "(A)") "        This program tests ecTrans by transforming fields back and forth&
     & between spectral "
-  if (jprb == jprd) then
-    write(nout, "(a)") "        space and grid-point space (double-precision version)"
-  else
-    write(nout, "(a)") "        space and grid-point space (single-precision version)"
-  end if
-  write(nout, "(a)") ""
+  IF (JPRB == JPRD) THEN
+    WRITE(NOUT, "(A)") "        space and grid-point space (double-precision version)"
+  ELSE
+    WRITE(NOUT, "(A)") "        space and grid-point space (single-precision version)"
+  END IF
+  WRITE(NOUT, "(A)") ""
 
-  write(nout, "(a)") "USAGE"
-  if (jprb == jprd) then
-    write(nout, "(a)") "        ectrans-benchmark-dp [options]"
-  else
-    write(nout, "(a)") "        ectrans-benchmark-sp [options]"
-  end if
-  write(nout, "(a)") ""
+  WRITE(NOUT, "(A)") "USAGE"
+  IF (JPRB == JPRD) THEN
+    WRITE(NOUT, "(A)") "        ectrans-benchmark-dp [options]"
+  ELSE
+    WRITE(NOUT, "(A)") "        ectrans-benchmark-sp [options]"
+  END IF
+  WRITE(NOUT, "(A)") ""
 
-  write(nout, "(a)") "OPTIONS"
-  write(nout, "(a)") "    -h, --help          Print this message"
-  write(nout, "(a)") "    -v                  Run with verbose output"
-  write(nout, "(a)") "    -t, --truncation T  Run with this triangular spectral truncation"
-  write(nout, "(a)") "                        (default = 79)"
-  write(nout, "(a)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
-  write(nout, "(a)") "                        If not specified, O<N> is used with N=truncation+1"
-  write(nout, "(a)") "                        (cubic relation)"
-  write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform"
-  write(nout, "(a)") "                        iterations (default = 10)"
-  write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
-  write(nout, "(a)") "    --imaginary         Test imaginary part"
-  write(nout, "(a)") "    --tolerance         Test is passed if largest relative lmax-error is"
-  write(nout, "(a)") "                        smaller than this tolerance (real value)"
-  write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
-  write(nout, "(a)") "    --scders            Compute scalar derivatives (default off)"
-  write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
-  write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
-  write(nout, "(a)") "    --norms             Calculate and print spectral norms of transformed"
-  write(nout, "(a)") "                        fields"
-  write(nout, "(a)") "                        The computation of spectral norms will skew overall"
-  write(nout, "(a)") "                        timings"
-  write(nout, "(a)") "    --nprtrv            Size of V set in spectral decomposition"
-  write(nout, "(a)") "    --nprtrw            Size of W set in spectral decomposition"
-  write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a"
-  write(nout, "(a)") "                        tolerance for correctness checking"
-  write(nout, "(a)") ""
+  WRITE(NOUT, "(A)") "OPTIONS"
+  WRITE(NOUT, "(A)") "    -h, --help          Print this message"
+  WRITE(NOUT, "(A)") "    -v                  Run with verbose output"
+  WRITE(NOUT, "(A)") "    -t, --truncation T  Run with this triangular spectral truncation"
+  WRITE(NOUT, "(A)") "                        (default = 79)"
+  WRITE(NOUT, "(A)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
+  WRITE(NOUT, "(A)") "                        If not specified, O<N> is used with N=truncation+1"
+  WRITE(NOUT, "(A)") "                        (cubic relation)"
+  WRITE(NOUT, "(A)") "    -n, --niter NITER   Run for this many inverse/direct transform"
+  WRITE(NOUT, "(A)") "                        iterations (default = 10)"
+  WRITE(NOUT, "(A)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
+  WRITE(NOUT, "(A)") "    --imaginary         Test imaginary part"
+  WRITE(NOUT, "(A)") "    --tolerance         Test is passed if largest relative lmax-error is"
+  WRITE(NOUT, "(A)") "                        smaller than this tolerance (real value)"
+  WRITE(NOUT, "(A)") "    --vordiv            Also transform vorticity-divergence to wind"
+  WRITE(NOUT, "(A)") "    --scders            Compute scalar derivatives (default off)"
+  WRITE(NOUT, "(A)") "    --flt               Run with fast Legendre transforms (default off)"
+  WRITE(NOUT, "(A)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
+  WRITE(NOUT, "(A)") "    --norms             Calculate and print spectral norms of transformed"
+  WRITE(NOUT, "(A)") "                        fields"
+  WRITE(NOUT, "(A)") "                        The computation of spectral norms will skew overall"
+  WRITE(NOUT, "(A)") "                        timings"
+  WRITE(NOUT, "(A)") "    --nprtrv            Size of V set in spectral decomposition"
+  WRITE(NOUT, "(A)") "    --nprtrw            Size of W set in spectral decomposition"
+  WRITE(NOUT, "(A)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a"
+  WRITE(NOUT, "(A)") "                        tolerance for correctness checking"
+  WRITE(NOUT, "(A)") ""
 
-end subroutine print_help
+END SUBROUTINE PRINT_HELP
 
 !===================================================================================================
 
-subroutine initialize_spectral_array(nsmax, kzonal, ktotal, pspscalar)
+SUBROUTINE INITIALIZE_SPECTRAL_ARRAY(NSMAX, KZONAL, KTOTAL, PSPSCALAR)
 
-  integer,            intent(in)  :: nsmax          ! Spectral truncation
-  integer,            intent(in)  :: kzonal         ! Zonal wavenumber
-  integer,            intent(in)  :: ktotal         ! Total wavenumber
-  real(kind=jprb),    intent(out) :: pspscalar(:,:) ! Input spectral array
+  INTEGER,            INTENT(IN)  :: NSMAX          ! Spectral truncation
+  INTEGER,            INTENT(IN)  :: KZONAL         ! Zonal wavenumber
+  INTEGER,            INTENT(IN)  :: KTOTAL         ! Total wavenumber
+  REAL(KIND=JPRB),    INTENT(OUT) :: PSPSCALAR(:,:) ! Input spectral array
 
-  integer :: jfld
-  integer :: index, num_my_zon_wns
-  integer, allocatable :: my_zon_wns(:), nasm0(:)
+  INTEGER :: JFLD
+  INTEGER :: INDEX, NUM_MY_ZON_WNS
+  INTEGER, ALLOCATABLE :: MY_ZON_WNS(:), NASM0(:)
 
   ! Get zonal wavenumbers this rank is responsible for
-  call trans_inq(knump=num_my_zon_wns)
-  allocate(my_zon_wns(num_my_zon_wns))
-  call trans_inq(kmyms=my_zon_wns)
+  CALL TRANS_INQ(KNUMP=NUM_MY_ZON_WNS)
+  ALLOCATE(MY_ZON_WNS(NUM_MY_ZON_WNS))
+  CALL TRANS_INQ(KMYMS=MY_ZON_WNS)
 
   ! First initialise all spectral coefficients to zero
-  pspscalar(:,:) = 0.0
+  PSPSCALAR(:,:) = 0.0
 
   ! If rank is responsible for the chosen zonal wavenumber...
-  if (any(my_zon_wns == kzonal)) then
+  IF (ANY(MY_ZON_WNS == KZONAL)) THEN
     ! Get array of spectral array addresses (this maps (m, n=m) to array index)
-    allocate(nasm0(0:nsmax))
-    call trans_inq(kasm0=nasm0)
+    ALLOCATE(NASM0(0:NSMAX))
+    CALL TRANS_INQ(KASM0=NASM0)
 
     ! Find out local array index of chosen spherical harmonic
-    index = nasm0(kzonal) + 2 * (ktotal - kzonal)
+    INDEX = NASM0(KZONAL) + 2 * (KTOTAL - KZONAL)
 
     ! Set just that element to a constant value
-    do jfld = 1, size(pspscalar, 1)
-      pspscalar(jfld, index) = 1.0_jprb
-    end do
-  end if
+    DO JFLD = 1, SIZE(PSPSCALAR, 1)
+      PSPSCALAR(JFLD, INDEX) = 1.0_JPRB
+    END DO
+  END IF
 
-end subroutine initialize_spectral_array
+end subroutine INITIALIZE_SPECTRAL_ARRAY
 
 !===================================================================================================
 
-function detect_mpirun() result(lmpi_required)
-  logical :: lmpi_required
-  integer :: ilen
-  integer, parameter :: nvars = 5
-  character(len=32), dimension(nvars) :: cmpirun_detect
-  character(len=4) :: clenv_dr_hook_assert_mpi_initialized
-  integer :: ivar
+FUNCTION DETECT_MPIRUN() RESULT(LMPI_REQUIRED)
+  LOGICAL :: LMPI_REQUIRED
+  INTEGER :: ILEN
+  INTEGER, PARAMETER :: NVARS = 5
+  CHARACTER(LEN=32), DIMENSION(NVARS) :: CMPIRUN_DETECT
+  CHARACTER(LEN=4) :: CLENV_DR_HOOK_ASSERT_MPI_INITIALIZED
+  INTEGER :: IVAR
 
   ! Environment variables that are set when mpirun, srun, aprun, ... are used
-  cmpirun_detect(1) = 'OMPI_COMM_WORLD_SIZE'  ! openmpi
-  cmpirun_detect(2) = 'ALPS_APP_PE'           ! cray pe
-  cmpirun_detect(3) = 'PMI_SIZE'              ! intel
-  cmpirun_detect(4) = 'SLURM_NTASKS'          ! slurm
-  cmpirun_detect(5) = 'ECTRANS_USE_MPI'       ! forced
+  CMPIRUN_DETECT(1) = 'OMPI_COMM_WORLD_SIZE'  ! openmpi
+  CMPIRUN_DETECT(2) = 'ALPS_APP_PE'           ! cray pe
+  CMPIRUN_DETECT(3) = 'PMI_SIZE'              ! intel
+  CMPIRUN_DETECT(4) = 'SLURM_NTASKS'          ! slurm
+  CMPIRUN_DETECT(5) = 'ECTRANS_USE_MPI'       ! forced
 
-  lmpi_required = .false.
-  do ivar = 1, nvars
-    call get_environment_variable(name=trim(cmpirun_detect(ivar)), length=ilen)
-    if (ilen > 0) then
-      lmpi_required = .true.
-      exit ! break
-    endif
-  enddo
-end function
+  LMPI_REQUIRED = .FALSE.
+  DO IVAR = 1, NVARS
+    CALL GET_ENVIRONMENT_VARIABLE(NAME=TRIM(CMPIRUN_DETECT(IVAR)), LENGTH=ILEN)
+    IF (ILEN > 0) THEN
+      LMPI_REQUIRED = .TRUE.
+      EXIT ! break
+    ENDIF
+  ENDDO
+END FUNCTION
 
 !===================================================================================================
 
-end program analytic_test
+END PROGRAM ANALYTIC_TEST
 
 !===================================================================================================
