@@ -17,8 +17,8 @@ USE ANALYTIC_SOLUTIONS_MOD, ONLY: ANALYTIC_INIT, ANALYTIC_END, BUFFER_LEGENDRE_P
 IMPLICIT NONE
 
 ! Output unit numbers
-INTEGER(KIND=JPIM), PARAMETER :: NERR     = 0 ! UNIT NUMBER FOR STDERR
-INTEGER(KIND=JPIM), PARAMETER :: NOUT     = 6 ! UNIT NUMBER FOR STDOUT
+INTEGER(KIND=JPIM), PARAMETER :: NERR     = 0 ! Unit number for stderr
+INTEGER(KIND=JPIM), PARAMETER :: NOUT     = 6 ! Unit number for stdout
 
 ! Default parameters
 INTEGER(KIND=JPIM) :: NSMAX   = 21  ! Spectral truncation
@@ -90,7 +90,7 @@ REAL(KIND=JPRB) :: ZMAX_ERROR
 !===================================================================================================
 
 LUSE_MPI = DETECT_MPIRUN()
-IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! tolerance for single precision
+IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! Tolerance for single precision
 ! Setup
 CALL GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, &
   &                             LIMAG, RTOLERANCE)
