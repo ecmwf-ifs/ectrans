@@ -65,11 +65,10 @@ integer(kind=jpim) :: nprgpew ! Grid-point decomp
 integer(kind=jpim) :: nprtrv = 0 ! Spectral decomp
 integer(kind=jpim) :: nprtrw = 0 ! Spectral decomp
 integer(kind=jpim) :: mysetv
-integer(kind=jpim) :: nindex
 
 integer(kind=jpim), allocatable :: num_local_levels_all(:), ivset(:)
 
-integer(kind=jpim) :: num_local_levs, num_glob_levs, num_rest
+integer(kind=jpim) :: nfld_local, num_rest
 integer(kind=jpim) :: i
 integer(kind=jpim) :: isqr
 integer(kind=jpim) :: nproma = 0
@@ -96,8 +95,13 @@ luse_mpi = detect_mpirun()
 if (jprb == jprm) rtolerance = 1e-3 ! tolerance for single precision
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, nfld, luseflt, nproma, verbosity, nprtrv, nprtrw, limag, rtolerance)
-if (cgrid == '') cgrid = cubic_full_grid(nsmax)!cubic_octahedral_gaussian_grid(nsmax)
+if (cgrid == '') cgrid = cubic_full_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
+
+write(nout,'(a)')'======= ecTrans analytic test ======='
+write(nout,'(a,i0)') 'Spectral truncation: ', nsmax
+write(nout,'(a,a)') 'Grid: ', trim(cgrid)
+write(nout,'(a,i0)') 'Number of scalar fields: ', nfld
 
 !===================================================================================================
 
@@ -187,16 +191,16 @@ endif
 ! Determine number of local levels for fourier and legendre calculations
 ! based on the values of nfld and nprtrv
 allocate(num_local_levels_all(nprtrv))
-num_local_levs = nfld / nprtrv ! Integer division
-num_rest = nfld - num_local_levs * nprtrv ! Tail block
+nfld_local = nfld / nprtrv ! Integer division
+num_rest = nfld - nfld_local * nprtrv ! Tail block
 do jsetv = 1, nprtrv
-  num_local_levels_all(jsetv) = num_local_levs
+  num_local_levels_all(jsetv) = nfld_local
   if (jsetv == nprtrv) then
     num_local_levels_all(jsetv) = num_local_levels_all(jsetv) + num_rest
   endif
 enddo
 
-num_local_levs = num_local_levels_all(mysetv)
+nfld_local = num_local_levels_all(mysetv)
 
 !===================================================================================================
 ! Allocate arrays
@@ -213,51 +217,46 @@ do jsetv = 1, nprtrv
   enddo
 enddo
 
-allocate(zspscalar(num_local_levs,nspec2))
-allocate(zgp(nproma,num_glob_levs,ngpblks))
+allocate(zspscalar(nfld_local,nspec2))
+allocate(zgp(nproma,nfld,ngpblks))
 
 ! Allocate arrays for analytic solutions
 allocate(zsph_analytic(nproma,ngpblks))
 
-! ! Compute geographic longitude gelam and latitude gelat:
+! Compute geographic longitude gelam and latitude gelat:
 ! call analytic_init(nproma, ngpblks, ndgl, n_regions_ns, n_regions_ew, nloen)
 ! call buffer_legendre_polynomials_supolf(nsmax)
 
-! !===================================================================================================
-! ! Perform tests
-! !===================================================================================================
+!===================================================================================================
+! Perform tests
+!===================================================================================================
 
-! ! Loop over all wavenumbers (check actually tested wavenumber inside)
-! do n = 0, nsmax
-!   do m = 0, n
-!     do imag_idx = 0, 1
-!       ! Initialize arrays
-!       zreel(:,:,:)  = 0._jprb
+! Loop over all wavenumbers (check actually tested wavenumber inside)
+do n = 0, nsmax
+  do m = 0, n
+    do imag_idx = 0, 1
+      call initialize_spectral_array(nsmax, m, n, zspscalar)
 
-!       call initialize_spectral_arrays(nsmax, zspscalar, sp3d, m, n, li, nindex)
+      !=================================================================================================
+      ! Compute analytic solutions
+      !=================================================================================================
 
-!       !=================================================================================================
-!       ! Compute analytic solutions
-!       !=================================================================================================
+      ! call compute_analytic_solution(nproma, ngpblks, nsmax, ngptot, m, n, li, zsph_analytic)
 
-!       call compute_analytic_solution(nproma, ngpblks, nsmax, ngptot, m, n, li, zsph_analytic)
+      !=================================================================================================
+      ! Do inverse transform
+      !=================================================================================================
 
-!       !=================================================================================================
-!       ! Do inverse transform
-!       !=================================================================================================
+      call inv_trans(pspscalar=zspscalar, kproma=nproma, kvsetsc=ivset, pgp=zgp)
 
-!       call inv_trans(pspscalar=zspscalar, kproma=nproma, kvsetsc=ivset, pgp=zreel)
+      !=================================================================================================
+      ! Do direct transform
+      !=================================================================================================
 
-!       !=================================================================================================
-!       ! Do direct transform
-!       !=================================================================================================
-
-!       call dir_trans(pgp=zreel, kproma=nproma, kvsetsc=ivset, pspscalar=zspscalar)
-!     end do
-!   end do
-! end do
-
-! write(nout,'("All tests finished.")')
+      call dir_trans(pgp=zgp, kproma=nproma, kvsetsc=ivset, pspscalar=zspscalar)
+    end do
+  end do
+end do
 
 !===================================================================================================
 ! Cleanup
@@ -553,21 +552,14 @@ end subroutine print_help
 
 !===================================================================================================
 
-subroutine initialize_spectral_arrays(nsmax, zsp, sp3d, kzonal, ktotal, kimag, kindex)
+subroutine initialize_spectral_array(nsmax, kzonal, ktotal, pspscalar)
 
-  integer,            intent(in)    :: nsmax       ! Spectral truncation
-  real(kind=jprb),    intent(inout) :: zsp(:,:)    ! Surface pressure
-  real(kind=jprb),    intent(inout) :: sp3d(:,:,:) ! 3D fields
-  integer,            intent(in)    :: kzonal      ! Zonal wavenumber
-  integer,            intent(in)    :: ktotal      ! Total wavenumber
-  logical,            intent(in)    :: kimag       ! test imaginary part
-  integer(kind=jpim), intent(out)   :: kindex      ! return index that was set to 1
+  integer,            intent(in)  :: nsmax          ! Spectral truncation
+  integer,            intent(in)  :: kzonal         ! Zonal wavenumber
+  integer,            intent(in)  :: ktotal         ! Total wavenumber
+  real(kind=jprb),    intent(out) :: pspscalar(:,:) ! Input spectral array
 
-  integer(kind=jpim) :: nflevl
-  integer(kind=jpim) :: nfield
-
-  integer :: i, j
-
+  integer :: jfld
   integer :: index, num_my_zon_wns
   integer, allocatable :: my_zon_wns(:), nasm0(:)
 
@@ -576,55 +568,25 @@ subroutine initialize_spectral_arrays(nsmax, zsp, sp3d, kzonal, ktotal, kimag, k
   allocate(my_zon_wns(num_my_zon_wns))
   call trans_inq(kmyms=my_zon_wns)
 
+  ! First initialise all spectral coefficients to zero
+  pspscalar(:,:) = 0.0
+
   ! If rank is responsible for the chosen zonal wavenumber...
-  if (any(my_zon_wns == kzonal) ) then
+  if (any(my_zon_wns == kzonal)) then
     ! Get array of spectral array addresses (this maps (m, n=m) to array index)
     allocate(nasm0(0:nsmax))
     call trans_inq(kasm0=nasm0)
 
     ! Find out local array index of chosen spherical harmonic
     index = nasm0(kzonal) + 2 * (ktotal - kzonal)
-    if(kimag) index = index + 1
 
-    kindex = index
-  else
-    kindex = -1
-  end if
-
-  nflevl = size(sp3d, 1)
-  nfield = size(sp3d, 3)
-
-  ! First initialize surface pressure
-  call initialize_2d_spectral_field(zsp(1,:), kindex)
-
-  ! Then initialize all of the 3D fields
-  do i = 1, nflevl
-    do j = 1, nfield
-      call initialize_2d_spectral_field(sp3d(i,:,j), kindex)
-    end do
-  end do
-
-end subroutine initialize_spectral_arrays
-
-!===================================================================================================
-
-subroutine initialize_2d_spectral_field(field, kindex)
-
-  real(kind=jprb), intent(inout) :: field(:) ! Field to initialize
-  integer,         intent(out)   :: kindex   ! return index that is set to one for testing result
-
-  ! First initialise all spectral coefficients to zero
-  field(:) = 0.0
-
-  ! If rank is responsible for the chosen zonal wavenumber...
-  if (kindex > 0) then
     ! Set just that element to a constant value
-    field(kindex) = 1.0
-  else
-    return
+    do jfld = 1, size(pspscalar, 1)
+      pspscalar(jfld, index) = 1.0_jprb
+    end do
   end if
 
-end subroutine initialize_2d_spectral_field
+end subroutine initialize_spectral_array
 
 !===================================================================================================
 

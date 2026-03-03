@@ -35,6 +35,7 @@ foreach( precision ${precisions} )
       ecbuild_add_test(
         TARGET ${test_name}
         COMMAND ectrans_test_analytic_${platform}_${precision}
+        ARGS --nfld 100
         MPI ${mpi}
         OMP 1
       )
