@@ -43,8 +43,9 @@ use MPL_module, only: &
   MPL_NPROC, &
   MPL_MYRANK, &
   MPL_SETDFLT_COMM, &
-  MPL_COMM_OML
-  
+  MPL_COMM_OML, &
+  LMPLUSERCOMM, &
+  MPLUSERCOMM
 
 use MPL_DATA_MODULE, only: &
   MPL_NUMPROC
@@ -625,10 +626,7 @@ function trans_init() bind(C,name="trans_init") result(iret)
   trans_out = devnull( opened=close_devnull )
 
   if( USE_MPI ) then
-    ! MPL may already be setup, if a comm has been set.
-    if (MPL_NUMPROC == -1) then
-      call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
-    end if
+    call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
     allocate( I_REGIONS(MPL_NPROC()) )
     NPRGPNS = MPL_NPROC()/NPRGPEW
     NPRTRW = MPL_NPROC()/NPRTRV;
@@ -670,10 +668,12 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   if (.not. is_init) then
     ! MPL not yet initialised.
     if (MPL_NUMPROC == -1) then
-      call MPL_INIT(KOUTPUT=0,KUNIT=trans_out,LDINFO=.False.)
+      ! Set LMPLUSERCOMM and MPLUSERCOMM to be used in MPL_INIT when trans_init() is called
+      LMPLUSERCOMM = .TRUE.
+      MPLUSERCOMM = mpi_user_comm
+    else
+      call MPL_SETDFLT_COMM(mpi_user_comm, dummy_comm)
     end if
-
-    call MPL_SETDFLT_COMM(mpi_user_comm, dummy_comm)
 
   ! Trans already initialised. If it has already been setup with the requested communicator
   ! then there is no issue. Otherwise, the user is attempting to change the comm
