@@ -35,7 +35,8 @@ use, intrinsic :: iso_fortran_env, only: &
   error_unit
 
 use OML_MOD, only: &
-  OML_MY_THREAD
+  OML_MY_THREAD, &
+  OML_GET_NUM_THREADS
 
 use MPL_module, only: &
   MPL_INIT, &
@@ -674,14 +675,23 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
     else
       call MPL_SETDFLT_COMM(mpi_user_comm, dummy_comm)
     end if
+  else
+    ! Trans already initialised. If it has already been setup with the requested communicator
+    ! then there is no issue. Otherwise, the user is attempting to change the comm
+    ! mid-run which is not supported.
+    if (size(MPL_COMM_OML) < OML_GET_NUM_THREADS()) then
+      write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Mismatch in number of OML &
+                               & MPI comms in MPL: size ", size(MPL_COMM_OML), &
+                               "should be = ", OML_GET_NUM_THREADS()
+      iret = TRANS_ERROR
+      return
+    end if
 
-  ! Trans already initialised. If it has already been setup with the requested communicator
-  ! then there is no issue. Otherwise, the user is attempting to change the comm
-  ! mid-run which is not supported.
-  else if (mpi_user_comm /= MPL_COMM_OML(OML_MY_THREAD())) then
-    write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
-    iret = TRANS_ERROR
-    return
+    if (mpi_user_comm /= MPL_COMM_OML(OML_MY_THREAD())) then
+      write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
+      iret = TRANS_ERROR
+      return
+    end if
   end if
 
 end function trans_set_mpi_comm
