@@ -10,6 +10,17 @@
 
 foreach( precision ${precisions} )
 
+  ecbuild_add_library(
+    TARGET           analytic_utils_${precision}
+    LINKER_LANGUAGE  Fortran
+    SOURCES          analytic_utils.F90
+    PUBLIC_LIBS      fiat trans_${precision}
+  )
+  ecbuild_target_fortran_module_directory(
+    TARGET analytic_utils_${precision}
+    MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/trans/analytic/module/analytic_utils_${precision}
+  )
+
   foreach( platform ${platforms} )
 
     if( "${platform}" MATCHES "cpu" )
@@ -22,7 +33,7 @@ foreach( precision ${precisions} )
     ecbuild_add_executable(
       TARGET ectrans_test_analytic_${platform}_${precision}
       SOURCES analytic_test.F90
-      LIBS fiat trans${platform_tag}_${precision} parkind_${precision}
+      LIBS fiat trans${platform_tag}_${precision} parkind_${precision} analytic_utils_${precision}
       LINKER_LANGUAGE Fortran
     )
     ecbuild_target_fortran_module_directory(

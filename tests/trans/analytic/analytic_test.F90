@@ -10,14 +10,9 @@
 PROGRAM ANALYTIC_TEST
 
 USE PARKIND1, ONLY: JPIM, JPRB, JPRD, JPRM
-USE MPL_MODULE
-! USE ANALYTIC_SOLUTIONS_MOD, ONLY: ANALYTIC_INIT, ANALYTIC_END, &
-! & BUFFER_LEGENDRE_POLYNOMIALS_SUPOLF, &
-! & BUFFER_LEGENDRE_POLYNOMIALS_ECTRANS, CHECK_LEGENDRE_POLYNOMIALS, &
-! & COMPUTE_ANALYTIC_SOLUTION, COMPUTE_ANALYTIC_EASTWEST_DERIVATIVE, &
-! & COMPUTE_ANALYTIC_NORTHSOUTH_DERIVATIVE, GELAM, GELAT, INIT_CHECK_FIELDS, &
-! & CLOSE_CHECK_FIELDS, CHECK_GP_FIELDS, CHECK_SP_FIELDS, COMPUTE_ANALYTIC_UV, &
-! & COMPUTE_ANALYTIC_UV_DERIVATIVE_EW
+USE MPL_MODULE, ONLY: MPL_INIT, MPL_NPROC, MPL_MYRANK, MPL_END
+USE ANALYTIC_SOLUTIONS_MOD, ONLY: ANALYTIC_INIT, ANALYTIC_END, BUFFER_LEGENDRE_POLYNOMIALS, &
+  &                               COMPUTE_ANALYTIC_SOLUTION
 
 IMPLICIT NONE
 
@@ -94,7 +89,8 @@ CHARACTER(LEN=16) :: CGRID = ''
 LUSE_MPI = DETECT_MPIRUN()
 IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! tolerance for single precision
 ! Setup
-CALL GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, LIMAG, RTOLERANCE)
+CALL GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, &
+  &                             LIMAG, RTOLERANCE)
 IF (CGRID == '') CGRID = CUBIC_FULL_GRID(NSMAX)
 CALL PARSE_GRID(CGRID, NDGL, NLOEN)
 
@@ -165,9 +161,9 @@ ENDIF
 ! Call ecTrans setup routines
 !===================================================================================================
 
-CALL SETUP_TRANS0(KOUT=NOUT, KERR=NERR, KPRINTLEV=MERGE(2, 0, VERBOSITY == 1), KPRGPNS=NPRGPNS, KPRGPEW=NPRGPEW, &
-  &               KPRTRW=NPRTRW, LDALLOPERM=.TRUE.,                      &
-  &               LDMPOFF=.NOT.LUSE_MPI, K_REGIONS_NS=N_REGIONS_NS, K_REGIONS_EW=N_REGIONS_EW)
+CALL SETUP_TRANS0(KOUT=NOUT, KERR=NERR, KPRINTLEV=MERGE(2, 0, VERBOSITY == 1), KPRGPNS=NPRGPNS, &
+  &               KPRGPEW=NPRGPEW, KPRTRW=NPRTRW, LDALLOPERM=.TRUE., LDMPOFF=.NOT.LUSE_MPI, &
+  &               K_REGIONS_NS=N_REGIONS_NS, K_REGIONS_EW=N_REGIONS_EW)
 
 CALL SETUP_TRANS(KSMAX=NSMAX, KDGL=NDGL, KLOEN=NLOEN, LDUSEFLT=LUSEFLT)
 
@@ -178,7 +174,7 @@ IF (NPROMA == 0) THEN ! no blocking (default when not specified)
 ENDIF
 
 ! Calculate number of NPROMA blocks
-NGPBLKS = (NGPTOT - 1)/NPROMA+1
+NGPBLKS = (NGPTOT - 1) / NPROMA + 1
 
 IF (NPROC == 1) THEN
   MYSETV = 1
@@ -215,15 +211,15 @@ DO JSETV = 1, NPRTRV
   ENDDO
 ENDDO
 
-ALLOCATE(ZSPSCALAR(NFLD_LOCAL,NSPEC2))
-ALLOCATE(ZGP(NPROMA,NFLD,NGPBLKS))
+ALLOCATE(ZSPSCALAR(NFLD_LOCAL, NSPEC2))
+ALLOCATE(ZGP(NPROMA, NFLD, NGPBLKS))
 
 ! Allocate arrays for analytic solutions
-ALLOCATE(ZSPH_ANALYTIC(NPROMA,NGPBLKS))
+ALLOCATE(ZSPH_ANALYTIC(NPROMA, NGPBLKS))
 
-! Compute geographic longitude gelam and latitude gelat:
-! CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN)
-! CALL BUFFER_LEGENDRE_POLYNOMIALS_SUPOLF(NSMAX)
+! Compute geographic longitude GELAM and latitude GELAT:
+CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN)
+CALL BUFFER_LEGENDRE_POLYNOMIALS(NSMAX, NDGL)
 
 !===================================================================================================
 ! Perform tests
@@ -235,22 +231,13 @@ DO N = 0, NSMAX
     DO IMAG_IDX = 0, 1
       CALL INITIALIZE_SPECTRAL_ARRAY(NSMAX, M, N, ZSPSCALAR)
 
-      !=================================================================================================
       ! Compute analytic solutions
-      !=================================================================================================
+      ZSPH_ANALYTIC = COMPUTE_ANALYTIC_SOLUTION(NPROMA, NGPBLKS, NGPTOT, M, N)
 
-      ! CALL COMPUTE_ANALYTIC_SOLUTION(NPROMA, NGPBLKS, NSMAX, NGPTOT, M, N, ZSPH_ANALYTIC)
-
-      !=================================================================================================
       ! Do inverse transform
-      !=================================================================================================
-
       CALL INV_TRANS(PSPSCALAR=ZSPSCALAR, KPROMA=NPROMA, KVSETSC=IVSET, PGP=ZGP)
 
-      !=================================================================================================
       ! Do direct transform
-      !=================================================================================================
-
       CALL DIR_TRANS(PGP=ZGP, KPROMA=NPROMA, KVSETSC=IVSET, PSPSCALAR=ZSPSCALAR)
     END DO
   END DO
@@ -385,7 +372,8 @@ END SUBROUTINE
 
 !===================================================================================================
 
-SUBROUTINE GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, LIMAG, RTOLERANCE)
+SUBROUTINE GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, &
+  &                                   NPRTRW, LIMAG, RTOLERANCE)
 
   INTEGER, INTENT(INOUT) :: NSMAX           ! Spectral truncation
   CHARACTER(LEN=16), INTENT(INOUT) :: CGRID ! Grid
