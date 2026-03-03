@@ -183,7 +183,7 @@ integer(kind=jpim) :: iend
 integer(kind=jpim) :: ierr
 integer :: icall_mode = 2
 integer :: inum_wind_fields, inum_sc_3d_fields, inum_sc_2d_fields, itotal_fields
-integer :: ipgp_start, ipgp_end, ipgpuv_start, ipgpuv_end
+integer :: ipgp_start, ipgp_end, ipgpuv_start, ipgpuv_end, islice
 
 real(kind=jprb), allocatable :: global_field(:,:)
 
@@ -676,10 +676,20 @@ do jstep = 1, iters+iters_warmup
     if (myproc == 1) then
       allocate(global_field(ngptotg,1))
     endif
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,1,:), 'U', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,2,:), 'V', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp2(:,1:1,:), 'S', noutdump)
-    call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp3a(:,nflevg:nflevg,1,:), 'T', noutdump)
+    if (icall_mode == 1) then
+      islice = (ipgpuv_end - 1) * nflevg
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp(:,islice:islice,:), 'U', noutdump)
+      islice = ipgpuv_end * nflevg
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp(:,islice:islice,:), 'V', noutdump)
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp(:,ipgp_end:ipgp_end,:), 'S', noutdump)
+      islice = ipgp_end - 1
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp(:,islice:islice,:), 'T', noutdump)
+    else
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,1,:), 'U', noutdump)
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgpuv(:,nflevg:nflevg,2,:), 'V', noutdump)
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp2(:,1:1,:), 'S', noutdump)
+      call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp3a(:,nflevg:nflevg,1,:), 'T', noutdump)
+    endif
     if (myproc == 1) then
       deallocate(global_field)
     endif
@@ -1315,10 +1325,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
     end select
     iarg = iarg + 1
   end do
-
-  if (icall_mode == 1 .and. ldump_values) then
-    call parsing_failed("The --dump-values option is not compatible with --callmode 1")
-  end if
 
 end subroutine get_command_line_arguments
 !===================================================================================================
