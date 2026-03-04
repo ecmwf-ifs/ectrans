@@ -109,6 +109,7 @@ ZN(0) = REAL(F%RN(ISMAX+3),JPRB)
 IF(KM == 0) THEN
   DO J=1,KFIELD
     IR = 2*J-1
+    II = IR+1
     DO JI=2,ISMAX+3-KM
       PU(JI,IR) = +&
        &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PVOR(JI+1,IR)-&
@@ -116,6 +117,9 @@ IF(KM == 0) THEN
       PV(JI,IR) = -&
        &ZN(JI+1)*ZEPSNM(JI)*ZLAPIN(JI+1)*PDIV(JI+1,IR)+&
        &ZN(JI-2)*ZEPSNM(JI-1)*ZLAPIN(JI-1)*PDIV(JI-1,IR)
+      ! Imaginary components are always zero for KM = 0
+      PU(JI,II) = 0.0_JPRB
+      PV(JI,II) = 0.0_JPRB
     ENDDO
   ENDDO
 
