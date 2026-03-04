@@ -142,6 +142,34 @@ MODULE ANALYTIC_UTILS
 
   END FUNCTION COMPUTE_ANALYTIC_SOLUTION
 
+  !====================================================================================================
+  ! Compute the maximum error between two blocked grid point arrays.
+  ! This is needed when comparing arrays that have a partially filled <NPROMA tail block.
+  !====================================================================================================
+
+  FUNCTION COMPUTE_MAX_ERROR(KGPTOT, KPROMA, PGP, PSPH_ANALYTIC) RESULT(MAX_ERROR)
+
+    IMPLICIT NONE
+
+    INTEGER(KIND=JPIM), INTENT(IN) :: KGPTOT
+    INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA
+    REAL(KIND=JPRB), DIMENSION(:, :) :: PGP
+    REAL(KIND=JPRD), DIMENSION(:, :) :: PSPH_ANALYTIC
+    REAL(KIND=JPRD) :: MAX_ERROR
+
+    INTEGER(KIND=JPIM) :: JKGLO, IEND, IBL, JROF
+
+    MAX_ERROR = 0.0_JPRD
+
+    DO JKGLO = 1, KGPTOT, KPROMA
+      IEND = MIN(KPROMA, KGPTOT - JKGLO + 1)
+      IBL = (JKGLO - 1) / KPROMA + 1
+      DO JROF = 1, IEND
+        MAX_ERROR = MAX(MAX_ERROR, ABS(PGP(JROF, IBL) - PSPH_ANALYTIC(JROF, IBL)))
+      ENDDO
+    ENDDO
+  END FUNCTION COMPUTE_MAX_ERROR
+
   !===================================================================================================
 
 END MODULE ANALYTIC_UTILS
