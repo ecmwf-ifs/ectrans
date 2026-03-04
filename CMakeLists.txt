@@ -43,6 +43,7 @@ ecbuild_find_package( NAME fiat REQUIRED )
 
 # Inherit MPI feature from FIAT (if you don't want MPI, rebuild FIAT with ENABLE_MPI=OFF)
 set( HAVE_MPI ${fiat_HAVE_MPI} )
+set( ectrans_HAVE_MPI ${HAVE_MPI} ) # also needed as more specific alias to HAVE_MPI
 
 ecbuild_add_option( FEATURE OMP
                     DEFAULT ON

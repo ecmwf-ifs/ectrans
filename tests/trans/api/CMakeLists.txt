@@ -6,6 +6,29 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+# Check whether we have feenableexcept and fedisableexcept for controlling individual floating-point exceptions
+cmake_push_check_state(RESET)
+include(CheckSymbolExists)
+  set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+  if(UNIX)
+    set(CMAKE_REQUIRED_LIBRARIES m)
+  endif()
+  check_symbol_exists(feenableexcept "fenv.h" HAVE_FEENABLEEXCEPT)
+  check_symbol_exists(fedisableexcept "fenv.h" HAVE_FEDISABLEEXCEPT)
+  if( HAVE_FEENABLEEXCEPT )
+      set( HAVE_FEENABLEEXCEPT 1 )
+  else()
+      set( HAVE_FEENABLEEXCEPT 0 )
+  endif()
+  if( HAVE_FEDISABLEEXCEPT )
+      set( HAVE_FEDISABLEEXCEPT 1 )
+  else()
+      set( HAVE_FEDISABLEEXCEPT 0 )
+  endif()
+cmake_pop_check_state()
+
+
+
 # Function for generating a suite of API tests for one external subroutine using CMake's
 # create_test_sourcelist function
 function( generate_api_test_suite )
@@ -59,8 +82,10 @@ function( generate_api_test_suite )
                                 ${suite_name}${suffix}.c
                                 ${suite_name}.F90
                                 ${CMAKE_CURRENT_SOURCE_DIR}/../util.F90
+                                ${CMAKE_CURRENT_SOURCE_DIR}/../fpe_trapping.cc
                             LINKER_LANGUAGE Fortran
-                            LIBS ${libs} )
+                            LIBS ${libs}
+                            DEFINITIONS HAVE_FEENABLEEXCEPT=${HAVE_FEENABLEEXCEPT} HAVE_FEDISABLEEXCEPT=${HAVE_FEDISABLEEXCEPT} )
 
     # Prevent the Fortran runtime from trying to provide a main program
     target_link_options( ${suite_name}${suffix} PRIVATE ${NO_FORTRAN_MAIN_FLAG} )
@@ -117,3 +142,4 @@ endfunction( generate_api_test_suite )
 
 add_subdirectory( setup_trans0 )
 add_subdirectory( setup_trans )
+add_subdirectory( vordiv_to_uv )
