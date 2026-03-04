@@ -1,9 +1,10 @@
-MODULE ANALYTIC_SOLUTIONS_MOD
+MODULE ANALYTIC_UTILS
 
-  USE PARKIND1, ONLY: JPIM, JPRD
+  USE PARKIND1, ONLY: JPIM, JPRD, JPRB
 
   REAL(KIND=JPRD) :: Z_PI = 4.0_JPRD * ATAN(1.0_JPRD)
-  REAL(KIND=JPRD), ALLOCATABLE :: ZMU(:), LEGPOLYS(:, :, :), GELAM(:, :), GELAT(:, :)
+  REAL(KIND=JPRD), ALLOCATABLE :: ZMU(:), GELAM(:, :), GELAT(:, :)
+  REAL(KIND=JPRD), ALLOCATABLE :: PLEGPOLYS(:, :)
   INTEGER(KIND=JPIM), ALLOCATABLE :: NLATIDXS(:, :)
   INTEGER(KIND=JPIM) :: NFIRSTLAT, NLASTLAT
 
@@ -17,7 +18,7 @@ MODULE ANALYTIC_SOLUTIONS_MOD
   ! global latitude index. This is used later to retrieve the corresponding Legendre polynomial.
   !===================================================================================================
 
-  SUBROUTINE ANALYTIC_INIT(KPROMA, KGPBLKS, KDGL, K_REGIONS_NS, K_REGIONS_EW, KLOEN)
+  SUBROUTINE ANALYTIC_INIT(KPROMA, KGPBLKS, KDGL, K_REGIONS_NS, K_REGIONS_EW, KLOEN, KSMAX)
 
     IMPLICIT NONE
 
@@ -27,6 +28,7 @@ MODULE ANALYTIC_SOLUTIONS_MOD
     INTEGER(KIND=JPIM), INTENT(IN) :: K_REGIONS_NS
     INTEGER(KIND=JPIM), INTENT(IN) :: K_REGIONS_EW
     INTEGER(KIND=JPIM), DIMENSION(KDGL), INTENT(IN) :: KLOEN
+    INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX
 
     INTEGER(KIND=JPIM) :: NPTRFLOFF, MY_REGION_NS, MY_REGION_EW
     INTEGER(KIND=JPIM) :: JGLAT, IOFF, ILAT, ISTLON, IENDLON, JLON, JROF, IBL
@@ -53,7 +55,7 @@ MODULE ANALYTIC_SOLUTIONS_MOD
         ZLON = REAL(JLON - 1, JPRD) * 2.0_JPRD * Z_PI / REAL(KLOEN(JGLAT), JPRD)
         GELAM(JROF, IBL) = ZLON ! Longitude
         GELAT(JROF, IBL) = ZLAT ! Latitude
-        NLATIDXS(JROF, IBL) = JGLAT
+        NLATIDXS(JROF, IBL) = JGLAT - NFIRSTLAT + 1 ! Latitude of this (JROF, IBL) relative to NFIRSTLAT
         JROF = JROF + 1
         IF (JROF > KPROMA) THEN
           JROF = 1
@@ -64,61 +66,37 @@ MODULE ANALYTIC_SOLUTIONS_MOD
 
   END SUBROUTINE ANALYTIC_INIT
 
-  !===================================================================================================  
-  ! Load the Legendre polynomials into the helper array LEGPOLYS
+  !===================================================================================================
+  ! Compute the Legendre polynomials for all latitudes and total wavenumbers at the given zonal
+  ! wavenumber.
   !===================================================================================================
 
-  SUBROUTINE BUFFER_LEGENDRE_POLYNOMIALS(NSMAX, NDGL)
+  SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS(KZONAL, KSMAX)
 
-    USE PARKIND1, ONLY: JPRB
+    USE TPM_POL, ONLY: INI_POL, END_POL
+    USE SUPOLF_MOD, ONLY: SUPOLF
 
     IMPLICIT NONE
 
-    INTEGER(KIND=JPIM), INTENT(IN) :: NSMAX
-    INTEGER(KIND=JPIM), INTENT(IN) :: NDGL
+    INTEGER(KIND=JPIM), INTENT(IN) :: KZONAL
+    INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX
 
-    REAL(KIND=JPRB), DIMENSION(NDGL / 2, (NSMAX + 2) * (NSMAX + 3) / 2) :: RPNM
-    REAL(KIND=JPRB), DIMENSION(NDGL, (NSMAX + 2) * (NSMAX + 3) / 2) :: RPNM_FULL
-    INTEGER(KIND=JPIM) :: JNM, JN, JNINV, JM, ILAT
+    INTEGER(KIND=JPIM) :: JGLAT
 
-    ALLOCATE(LEGPOLYS(NFIRSTLAT:NLASTLAT, 0:NSMAX, 0:NSMAX))
-    LEGPOLYS = 0.0
+    IF (ALLOCATED(PLEGPOLYS)) DEALLOCATE(PLEGPOLYS)
+    ALLOCATE(PLEGPOLYS(NLASTLAT - NFIRSTLAT + 1, 0:KSMAX))
 
-    CALL TRANS_INQ(PRPNM=RPNM)
+    CALL INI_POL(KSMAX)
 
-    DO ILAT = 1, NDGL / 2
-      JNM = 0
-      DO JM = 0, NSMAX + 1
-        DO JNINV = JM, NSMAX + 1
-          JN = NSMAX + 1 - JNINV + JM
-          JNM = JNM + 1
-          IF (MOD(JM + JN, 2) == 0) THEN
-            RPNM_FULL(ILAT,            JNM) = RPNM(ILAT, JNM)
-            RPNM_FULL(NDGL - ILAT + 1, JNM) = RPNM(ILAT, JNM)
-          ELSE
-            RPNM_FULL(ILAT,            JNM) = RPNM(ILAT, JNM)
-            RPNM_FULL(NDGL - ILAT + 1, JNM) = -RPNM(ILAT, JNM)
-          ENDIF
-        ENDDO
-      ENDDO
+    DO JGLAT = NFIRSTLAT, NLASTLAT
+      CALL SUPOLF(KZONAL, KSMAX, ZMU(JGLAT), PLEGPOLYS(JGLAT - NFIRSTLAT + 1, :))
     ENDDO
 
-    DO ILAT = NFIRSTLAT, NLASTLAT
-      JNM = 0
-      DO JM = 0, NSMAX + 1
-        DO JNINV = JM, NSMAX + 1
-          JN = NSMAX + 1 - JNINV + JM
-          JNM = JNM + 1
-          IF (JM <= NSMAX .AND. JN <= NSMAX) THEN
-            LEGPOLYS(ILAT, JM, JN) = RPNM_FULL(ILAT - NFIRSTLAT + 1, JNM)
-          ENDIF
-        ENDDO
-      ENDDO
-    ENDDO
+    CALL END_POL
 
-  END SUBROUTINE BUFFER_LEGENDRE_POLYNOMIALS
+  END SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS
 
-  !===================================================================================================  
+  !===================================================================================================
   ! Deallocate the helper arrays used for the analytic solutions.
   !===================================================================================================
 
@@ -127,7 +105,7 @@ MODULE ANALYTIC_SOLUTIONS_MOD
     IMPLICIT NONE
 
     DEALLOCATE(ZMU, NLATIDXS, GELAM, GELAT)
-    DEALLOCATE(LEGPOLYS)
+    DEALLOCATE(PLEGPOLYS)
 
   END SUBROUTINE ANALYTIC_END
 
@@ -154,10 +132,10 @@ MODULE ANALYTIC_SOLUTIONS_MOD
       IBL  = (JKGLO - 1) / KPROMA + 1
       DO JROF = 1, IEND
         IF (KZONAL == 0) THEN
-          PSPH_ANALYTIC(JROF, IBL) = LEGPOLYS(NLATIDXS(JROF, IBL), KZONAL, KTOTAL)
+          PSPH_ANALYTIC(JROF, IBL) = PLEGPOLYS(NLATIDXS(JROF, IBL), KTOTAL)
         ELSE
           PSPH_ANALYTIC(JROF, IBL) = 2.0_JPRD * COS(KZONAL * GELAM(JROF, IBL)) * &
-            & LEGPOLYS(NLATIDXS(JROF, IBL), KZONAL, KTOTAL)
+            & PLEGPOLYS(NLATIDXS(JROF, IBL), KTOTAL)
         ENDIF
       ENDDO
     ENDDO
@@ -166,4 +144,4 @@ MODULE ANALYTIC_SOLUTIONS_MOD
 
   !===================================================================================================
 
-END MODULE ANALYTIC_SOLUTIONS_MOD
+END MODULE ANALYTIC_UTILS

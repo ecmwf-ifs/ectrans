@@ -11,8 +11,7 @@ PROGRAM ANALYTIC_TEST
 
 USE PARKIND1, ONLY: JPIM, JPRB, JPRD, JPRM
 USE MPL_MODULE, ONLY: MPL_INIT, MPL_NPROC, MPL_MYRANK, MPL_END
-USE ANALYTIC_SOLUTIONS_MOD, ONLY: ANALYTIC_INIT, ANALYTIC_END, BUFFER_LEGENDRE_POLYNOMIALS, &
-  &                               COMPUTE_ANALYTIC_SOLUTION
+USE ANALYTIC_UTILS, ONLY: ANALYTIC_INIT, PREPARE_LEGENDRE_POLYNOMIALS, COMPUTE_ANALYTIC_SOLUTION, ANALYTIC_END
 
 IMPLICIT NONE
 
@@ -221,15 +220,19 @@ ALLOCATE(ZGP(NPROMA, NFLD, NGPBLKS))
 ALLOCATE(ZSPH_ANALYTIC(NPROMA, NGPBLKS))
 
 ! Compute geographic longitude GELAM and latitude GELAT:
-CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN)
-CALL BUFFER_LEGENDRE_POLYNOMIALS(NSMAX, NDGL)
+CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN, NSMAX)
 
 !===================================================================================================
 ! Perform tests
 !===================================================================================================
 
+ZMAX_ERROR = 0.0_JPRB
+
 ! Loop over all wavenumbers (check actually tested wavenumber inside)
 DO M = 0, NSMAX
+  ! Prepare Legendre polynomials for this zonal wavenumber
+  CALL PREPARE_LEGENDRE_POLYNOMIALS(M, NSMAX)
+
   DO N = M, NSMAX
     CALL INITIALIZE_SPECTRAL_ARRAY(NSMAX, M, N, ZSPSCALAR)
 
@@ -279,6 +282,11 @@ IF (ZMAX_ERROR > RTOLERANCE) THEN
   WRITE(NERR, '(A)') '*******************************'
   FLUSH(NERR)
   CALL ABOR1("Analytic test failed")
+ELSE
+  WRITE(NOUT, '(A)') '*******************************'
+  WRITE(NOUT, '(A)') 'Analytic test passed'
+  WRITE(NOUT, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' <= ', RTOLERANCE
+  WRITE(NOUT, '(A)') '*******************************'
 ENDIF
 
 !===================================================================================================
