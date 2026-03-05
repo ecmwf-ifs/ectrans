@@ -297,6 +297,10 @@ if( HAVE_ETRANS )
 
 endif()
 
+# --------------------------------------------------------------------------------------------------
+# Add test for split-communicator compatibility of ecTrans
+# --------------------------------------------------------------------------------------------------
+
 if( HAVE_CPU AND HAVE_MPI )
   ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
     SOURCES trans/test_split_mpi_comm.F90
