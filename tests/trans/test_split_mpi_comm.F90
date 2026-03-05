@@ -9,7 +9,7 @@ PROGRAM TEST_SPLIT_MPI_COMM
 USE PARKIND1,        ONLY : JPRM, JPIM
 USE MPL_MODULE,      ONLY : MPL_INIT, MPL_END, MPL_MYRANK, MPL_NPROC, MPL_COMM_SPLIT, MPL_SETDFLT_COMM, MPL_COMM
 USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
-USE MPL_DATA_MODULE, ONLY : MPLUSERCOMM, LMPLUSERCOMM
+
 USE MPL_MPIF
 
 IMPLICIT NONE
@@ -123,7 +123,7 @@ IF (SPLIT_RANK == 1) THEN
 
   ! Write to file. can then be plotted using a python script
   ! Such as in the docs: https://sites.ecmwf.int/docs/ectrans/page/usage.html.
-  WRITE(FILENAME, "(A22,I0,A4)") "grid_point_field_trunc_", TRUNCATION, ".dat"
+  WRITE(FILENAME, "(A,I0,A4)") "grid_point_field_trunc_", TRUNCATION, ".dat"
   OPEN(7, FILE=FILENAME, FORM="unformatted")
   WRITE(7) G_GRID_POINT_FIELD(:,1)
   CLOSE(7)

@@ -680,7 +680,7 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
     ! then there is no issue. Otherwise, the user is attempting to change the comm
     ! mid-run which is not supported.
     if (size(MPL_COMM_OML) < OML_GET_NUM_THREADS()) then
-      write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Mismatch in number of OML &
+      write(error_unit,'(A,I0,A,I0)') "trans_set_mpi_comm: ERROR: Mismatch in number of OML &
                                & MPI comms in MPL: size ", size(MPL_COMM_OML), &
                                "should be = ", OML_GET_NUM_THREADS()
       iret = TRANS_ERROR
