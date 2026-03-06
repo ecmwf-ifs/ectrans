@@ -142,4 +142,5 @@ endfunction( generate_api_test_suite )
 
 add_subdirectory( setup_trans0 )
 add_subdirectory( setup_trans )
+add_subdirectory( dir_trans )
 add_subdirectory( vordiv_to_uv )
