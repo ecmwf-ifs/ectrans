@@ -301,10 +301,19 @@ endif()
 # Add test for split-communicator compatibility of ecTrans
 # --------------------------------------------------------------------------------------------------
 
+# It doesn't really matter which precision we use for this test, as long as we use one that's
+# actually available
+if( HAVE_SINGLE_PRECISION )
+  set( trans_lib trans_sp )
+  set( parkind_lib parkind_sp )
+else()
+  set( trans_lib trans_dp )
+  set( parkind_lib parkind_dp )
+endif()
 if( HAVE_CPU AND HAVE_MPI )
   ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
     SOURCES trans/test_split_mpi_comm.F90
-    LIBS trans_sp parkind_sp
+    LIBS ${trans_lib} ${parkind_lib}
     LINKER_LANGUAGE Fortran
     MPI 4
     OMP 1
