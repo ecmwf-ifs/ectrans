@@ -287,7 +287,7 @@ IF (ZMAX_ERROR > RTOLERANCE) THEN
   CALL ABOR1("Analytic test failed")
 ELSE
   WRITE(NOUT, '(A)') '*******************************'
-  WRITE(NERR, '(A,I0)') 'Analytic test passed for task ', MYPROC
+  WRITE(NOUT, '(A,I0)') 'Analytic test passed for task ', MYPROC
   WRITE(NOUT, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' <= ', RTOLERANCE
   WRITE(NOUT, '(A)') '*******************************'
 ENDIF
