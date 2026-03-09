@@ -507,9 +507,9 @@ SUBROUTINE PRINT_HELP(UNIT)
   WRITE(NOUT, "(A)") ""
 
   IF (JPRB == JPRD) THEN
-    WRITE(NOUT, "(A)") "NAME    ectrans-benchmark-dp"
+    WRITE(NOUT, "(A)") "NAME    ectrans_test_analytic_" // VERSION // "_dp"
   ELSE
-    WRITE(NOUT, "(A)") "NAME    ectrans-benchmark-sp"
+    WRITE(NOUT, "(A)") "NAME    ectrans_test_analytic_" // VERSION // "_sp"
   END IF
   WRITE(NOUT, "(A)") ""
 
@@ -525,9 +525,9 @@ SUBROUTINE PRINT_HELP(UNIT)
 
   WRITE(NOUT, "(A)") "USAGE"
   IF (JPRB == JPRD) THEN
-    WRITE(NOUT, "(A)") "        ectrans-benchmark-dp [options]"
+    WRITE(NOUT, "(A)") "        ectrans_test_analytic_" // VERSION // "_dp [options]"
   ELSE
-    WRITE(NOUT, "(A)") "        ectrans-benchmark-sp [options]"
+    WRITE(NOUT, "(A)") "        ectrans_test_analytic_" // VERSION // "_sp [options]"
   END IF
   WRITE(NOUT, "(A)") ""
 

@@ -35,6 +35,7 @@ foreach( precision ${precisions} )
       SOURCES analytic_test.F90
       LIBS fiat trans${platform_tag}_${precision} parkind_${precision} analytic_utils_${precision}
       LINKER_LANGUAGE Fortran
+      DEFINITIONS VERSION="${platform}"
     )
     ecbuild_target_fortran_module_directory(
       TARGET ectrans_test_analytic_${platform}_${precision}
