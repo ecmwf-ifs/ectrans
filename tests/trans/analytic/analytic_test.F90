@@ -261,6 +261,7 @@ DEALLOCATE(ZSPH_ANALYTIC, ZGP, ZSPSCALAR)
 ! Finalize
 !===================================================================================================
 
+CALL ANALYTIC_END
 CALL TRANS_END
 
 IF (LUSE_MPI) THEN
