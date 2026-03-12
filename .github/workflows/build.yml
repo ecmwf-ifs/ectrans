@@ -46,6 +46,7 @@ jobs:
             compiler_cc: gcc-13
             compiler_cxx: g++-13
             compiler_fc: gfortran-13
+            cmake_options: -DBLA_VENDOR=Generic
             ctest_options: -E memory
             caching: true
 
@@ -55,6 +56,7 @@ jobs:
             compiler_cc: clang-18
             compiler_cxx: clang++-18
             compiler_fc: gfortran-14
+            cmake_options: -DBLA_VENDOR=Generic
             ctest_options: -E memory
             caching: true
 
@@ -64,7 +66,7 @@ jobs:
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
-            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177 -DMPI_ARGS=--oversubscribe
+            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177 -DMPI_ARGS=--oversubscribe -DBLA_VENDOR=Generic
             ctest_options: -E memory
             caching: false
 
@@ -74,6 +76,7 @@ jobs:
             compiler_cc: icc
             compiler_cxx: icpc
             compiler_fc: ifort
+            cmake_options: -DBLA_VENDOR=Generic
             caching: true
 
           - name : linux intel-modern
@@ -82,7 +85,7 @@ jobs:
             compiler_cc: icx
             compiler_cxx: icpx
             compiler_fc: ifx
-            cmake_options: -DCMAKE_Fortran_FLAGS=-heap-arrays
+            cmake_options: -DCMAKE_Fortran_FLAGS=-heap-arrays -DBLA_VENDOR=Generic
             python-version: '3.11'
             caching: true
 
@@ -93,7 +96,7 @@ jobs:
             compiler_cc: ~
             compiler_cxx: ~
             compiler_fc: gfortran-13
-            cmake_options: -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas
+            cmake_options: -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas -DBLA_VENDOR=OpenBLAS
             ctest_options: -E mpi4
             caching: true
 
@@ -198,8 +201,14 @@ jobs:
         echo "FFTW_ROOT=${DEPS_DIR}/fftw" >> $GITHUB_ENV
 
     - name: Install OpenBLAS
+      if: contains( matrix.os, 'macos' )
       shell: bash -eux {0}
       run: ${ECTRANS_TOOLS}/install-openblas.sh
+
+    - name: Install reference BLAS/LAPACK
+      if: contains( matrix.os, 'ubuntu' )
+      shell: bash -eux {0}
+      run: ${ECTRANS_TOOLS}/install-ref-blas-lapack.sh
 
     - name: Set Build & Test Environment
       run: |
@@ -222,7 +231,7 @@ jobs:
         dependency_branch: develop
         dependency_cmake_options: |
           ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
-        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DBLA_VENDOR=OpenBLAS"
+        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools
