@@ -46,7 +46,8 @@ use MPL_module, only: &
   MPL_SETDFLT_COMM, &
   MPL_COMM_OML, &
   LMPLUSERCOMM, &
-  MPLUSERCOMM
+  MPLUSERCOMM, &
+  MPL_COMM_COMPARE
 
 use MPL_DATA_MODULE, only: &
   MPL_NUMPROC
@@ -658,6 +659,7 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
   integer(c_int), value, intent(in) :: mpi_user_comm
 
   integer :: dummy_comm
+  integer(c_int) :: MPL_COMM_COMPARE_RESULT, MPL_COMM_COMPARE_ERROR
 
   iret = TRANS_SUCCESS
   if (.not. USE_MPI) return
@@ -687,8 +689,15 @@ function trans_set_mpi_comm(mpi_user_comm) bind(C,name="trans_set_mpi_comm") res
       return
     end if
 
-    if (mpi_user_comm /= MPL_COMM_OML(OML_MY_THREAD())) then
-      write(error_unit,'(A)') "trans_set_mpi_comm: ERROR: Must be called prior to trans_init."
+    CALL MPL_COMM_COMPARE(mpi_user_comm, MPL_COMM_OML(OML_MY_THREAD()), MPL_COMM_COMPARE_RESULT, MPL_COMM_COMPARE_ERROR)
+    IF (MPL_COMM_COMPARE_ERROR /= 0 .OR. MPL_COMM_COMPARE_RESULT > 1) THEN
+      ! The communicators are not identical (MPL_COMM_COMPARE_RESULT=0) and not congruent (MPL_COMM_COMPARE_RESULT=1)
+      write(error_unit,'(A)') "trans_set_mpi_comm: ERROR:&
+          & trans_set_mpi_comm must be called prior to trans_init."
+      write(error_unit,'(A,I0,A)') "                          &
+          & Previously initialised with a different MPI communicator (",MPL_COMM_OML(OML_MY_THREAD()),")"
+      write(error_unit,'(A,I0,A)') "                          &
+          & Changing the communicator mid-run to a non-congruent one (",mpi_user_comm,") is not supported."
       iret = TRANS_ERROR
       return
     end if

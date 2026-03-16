@@ -39,7 +39,7 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ### Find (optional) dependencies
 
-ecbuild_find_package( NAME fiat REQUIRED )
+ecbuild_find_package( NAME fiat VERSION 1.3.0 REQUIRED )
 
 # Inherit MPI feature from FIAT (if you don't want MPI, rebuild FIAT with ENABLE_MPI=OFF)
 set( HAVE_MPI ${fiat_HAVE_MPI} )
