@@ -141,8 +141,6 @@ jobs:
 
             BASEDIR=$PWD
 
-            source $BASEDIR/$REPO/.github/arch/{{ toolchain }}/env.sh
-
             {% for var in "${{ join(matrix.env_vars, ',') }}".split(',') %}
               export {{var}}
             {% endfor %}
@@ -169,6 +167,8 @@ jobs:
             git fetch origin $SHA
             git reset --hard FETCH_HEAD
             popd
+
+            source $BASEDIR/$REPO/.github/arch/{{ toolchain }}/env.sh
 
             # Build dependencies
             {% for name, options in dependencies.items() %}
