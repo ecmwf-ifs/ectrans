@@ -128,7 +128,7 @@ foreach( benchmark ${benchmarks} )
     # Add the checksum test, but don't include GPU results because we know those aren't bit-reproducible
     ecbuild_add_test( TARGET compare_checksums
       COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py"
-      ARGS "." ${ntasks_joined} ${nthreads_joined} "-E gpu"
+      ARGS "." ${ntasks_joined} ${nthreads_joined} -E gpu
     )
     set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
   endif()
