@@ -14,7 +14,7 @@
 toload=""
 module_load() {
   echo "+ module load $*"
-  toload="$toload $*"
+  module load $*
 }
 module_unload() {
   echo "+ module unload $*"
@@ -31,4 +31,6 @@ module_load craype-accel-amd-gfx90a
 module_load rocm/6.3.4
 module_load cray-fftw
 module_load buildtools
+module_load craype
+module_load cray-mpich/8.1.32
 
