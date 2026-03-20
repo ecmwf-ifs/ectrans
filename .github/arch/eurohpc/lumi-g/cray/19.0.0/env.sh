@@ -25,6 +25,7 @@ module_unload() {
 module --force purge
 
 # Load modules
+module_load PrgEnv-cray/8.6.0
 module_load LUMI/25.03
 module_load cce/19.0.0
 module_load craype-accel-amd-gfx90a
