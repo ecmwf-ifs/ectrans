@@ -65,7 +65,7 @@ def compare_checksums(folder_path, ntasks, nthreads, exclude=""):
                 return False
     percentage = int(100.0 * (success_count / total_count))
     if error_count > 0:
-        print(f"{percentage}% comparison passed, {colors.FAILURE}{error_count} comparisons failed out of "
+        print(f"{percentage}% comparisons passed, {colors.FAILURE}{error_count} comparisons failed out of "
               f"{total_count}{colors.ENDC}")
 
         print("The following checksum files do not match their mpi0_omp1 references:")
