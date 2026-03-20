@@ -35,3 +35,7 @@ module_load prgenv/nvidia
 module_load nvidia/24.5
 module_load hpcx-openmpi/2.19.0-cuda
 module_load fftw
+module_load intel-mkl
+
+# Even for nvhpc, we use MKL to ensure bit-reproducibility for CPU builds
+export MKL_CBWR=AUTO,STRICT
