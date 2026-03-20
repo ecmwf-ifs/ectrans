@@ -34,6 +34,7 @@ def compare_checksums(folder_path, ntasks, nthreads, exclude=""):
     # Build list of all mpi0_omp1 checksum files
     reference_files = glob(os.path.join(folder_path, "*mpi0_omp1*.checksums"))
     if exclude:
+        print(f"Excluding tests that match \"{exclude}\"")
         reference_files = [f for f in reference_files if exclude not in f]
     if len(reference_files) == 0:
         print("No reference checksum files found (mpi0_omp1)")
