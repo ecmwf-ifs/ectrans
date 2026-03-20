@@ -9,10 +9,10 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-import sys
 import os
 import filecmp
 from glob import glob
+import argparse
 
 class colors:
     SUCCESS = '\033[94m'
@@ -75,14 +75,17 @@ def compare_checksums(folder_path, ntasks, nthreads):
     return error_count == 0
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python compare_checksums.py <folder_path> <ntasks list> <nthreads list>")
-        exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("folder_path", help="Path to the folder containing checksum files")
+    parser.add_argument("ntasks", help="Comma-separated list of ntasks values to compare (e.g., '1,2,4')")
+    parser.add_argument("nthreads", help="Comma-separated list of nthreads values to compare (e.g., '1,2,4')")
+    args = parser.parse_args()
+
+    folder = args.folder_path
+    ntasks = args.ntasks.split(",")
+    nthreads = args.nthreads.split(",")
+
+    if compare_checksums(folder, ntasks, nthreads):
+        exit(0)
     else:
-        folder = sys.argv[1]
-        ntasks = sys.argv[2].split(",")
-        nthreads = sys.argv[3].split(",")
-        if compare_checksums(folder, ntasks, nthreads):
-            exit(0)
-        else:
-            exit(1)
+        exit(1)
