@@ -16,11 +16,6 @@ export PATH=$SCRIPTDIR:$PATH
 
 os=$(uname)
 case "$os" in
-    Darwin)
-      echo "Installing reference Netlib LAPACK via brew"
-      brew ls --versions lapack || brew install lapack
-      exit
-    ;;
     Linux)
       echo "Installing reference Netlib BLAS/LAPACK via apt-get"
       sudo apt-get install libblas-dev liblapack-dev
@@ -29,4 +24,3 @@ case "$os" in
     *)
     ;;
 esac
-
