@@ -39,3 +39,8 @@ module_load intel-mkl
 
 # Even for nvhpc, we use MKL to ensure bit-reproducibility for CPU builds
 export MKL_CBWR=AUTO,STRICT
+
+# Get path this env.sh file is located in:
+ARCH_DIR="$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )"
+export CMAKE_TOOLCHAIN_FILE=${ARCH_DIR}/toolchain.cmake
+

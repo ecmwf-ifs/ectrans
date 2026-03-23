@@ -179,7 +179,6 @@ jobs:
                     {% set org, proj = name.split('/') %}
                     -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
                   {% endfor %}
-                  -DCMAKE_TOOLCHAIN_FILE=$BASEDIR/$REPO/.github/arch/{{ toolchain }}/toolchain.cmake \
                   {{ options['cmake_options']|join(' ') }}
                 cmake --build build
                 cmake --install build --prefix installation
@@ -192,7 +191,6 @@ jobs:
                 {% set org, proj = name.split('/') %}
                 -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
               {% endfor %}
-              -DCMAKE_TOOLCHAIN_FILE=$BASEDIR/$REPO/.github/arch/{{ toolchain }}/toolchain.cmake \
               {{ cmake_options|join(' ') }}
             cmake --build build
 

@@ -35,3 +35,7 @@ module_load buildtools
 module_load craype
 module_load cray-mpich/8.1.32
 
+# Get path this env.sh file is located in:
+ARCH_DIR="$( cd "$( dirname "${BASH_SOURCE[0]:-${(%):-%x}}" )" && pwd )"
+export CMAKE_TOOLCHAIN_FILE=${ARCH_DIR}/toolchain.cmake
+
