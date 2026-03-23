@@ -138,7 +138,7 @@ foreach( benchmark ${benchmarks} )
     foreach( omp ${nthreads} )
       # This test suite assumes a 4-core machine (e.g. Github runner) so we don't want to
       # oversubscribe the cores
-      if( ${mpi} MATCHES "4" AND ${omp} GREATER "1" )
+      if( "${mpi}" STREQUAL "4" AND ${omp} GREATER "1" )
         continue()
       endif()
 
@@ -249,7 +249,7 @@ if( HAVE_ETRANS )
         foreach( omp ${nthreads} )
           # This test suite assumes a 4-core machine (e.g. Github runner) so we don't want to
           # oversubscribe the cores
-          if( ${mpi} MATCHES "4" AND ${omp} GREATER "1" )
+          if( "${mpi}" STREQUAL "4" AND "${omp}" GREATER "1" )
             continue()
           endif()
 
