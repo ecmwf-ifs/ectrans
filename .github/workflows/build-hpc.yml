@@ -44,7 +44,7 @@ jobs:
           - name: ac-ops intel
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
-            toolchain: ecmwf/hpc2020/default
+            arch: ecmwf/hpc2020/intel/2023.2.0/hpcx-openmpi/2.9.0
             sbatch_options: |
               #SBATCH --time=00:30:00
               #SBATCH --nodes=1
@@ -59,7 +59,7 @@ jobs:
           - name: ac-gpu nvhpc
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
-            toolchain: ecmwf/hpc2020/nvidia/24.5/hpcx-openmpi/2.19.0-cuda
+            arch: ecmwf/hpc2020/nvidia/24.5/hpcx-openmpi/2.19.0-cuda
             sbatch_options: |
               #SBATCH --time=00:30:00
               #SBATCH --nodes=1
@@ -75,7 +75,7 @@ jobs:
             site: lumi
             troika_user_secret: LUMI_CI_SSH_USER
             account_secret: LUMI_CI_PROJECT
-            toolchain: eurohpc/lumi-g/cray/19.0.0
+            arch: eurohpc/lumi-g/cray/19.0.0
             sbatch_options: |
               #SBATCH --time=01:10:00
               #SBATCH --nodes=1
@@ -106,7 +106,7 @@ jobs:
           workdir: ${{ format(matrix.workdir, secrets[matrix.account_secret]) || '' }}
           template_data: |
             site: ${{ matrix.site }}
-            toolchain: ${{ matrix.toolchain }}
+            arch: ${{ matrix.arch }}
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_ETRANS=ON
@@ -169,7 +169,7 @@ jobs:
             git reset --hard FETCH_HEAD
             popd
 
-            source $BASEDIR/$REPO/.github/arch/{{ toolchain }}/env.sh
+            source $BASEDIR/$REPO/.github/arch/{{ arch }}/env.sh
 
             # Build dependencies
             {% for name, options in dependencies.items() %}
