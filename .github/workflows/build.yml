@@ -96,7 +96,7 @@ jobs:
             compiler_cc: ~
             compiler_cxx: ~
             compiler_fc: gfortran-13
-            cmake_options: -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas -DBLA_VENDOR=OpenBLAS
+            cmake_options: -DMPI_ARGS=--oversubscribe -DBLA_VENDOR=Generic
             ctest_options: -E mpi4
             caching: true
 
@@ -200,13 +200,7 @@ jobs:
         ${ECTRANS_TOOLS}/install-fftw.sh --version 3.3.10 --with-single --prefix ${DEPS_DIR}/fftw
         echo "FFTW_ROOT=${DEPS_DIR}/fftw" >> $GITHUB_ENV
 
-    - name: Install OpenBLAS
-      if: contains( matrix.os, 'macos' )
-      shell: bash -eux {0}
-      run: ${ECTRANS_TOOLS}/install-openblas.sh
-
     - name: Install reference BLAS/LAPACK
-      if: contains( matrix.os, 'ubuntu' )
       shell: bash -eux {0}
       run: ${ECTRANS_TOOLS}/install-ref-blas-lapack.sh
 
