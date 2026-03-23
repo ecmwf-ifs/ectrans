@@ -97,7 +97,6 @@ jobs:
             compiler_cxx: ~
             compiler_fc: gfortran-13
             cmake_options: -DMPI_ARGS=--oversubscribe -DBLA_VENDOR=Generic
-            ctest_options: -E mpi4
             caching: true
 
     runs-on: ${{ matrix.os }}
