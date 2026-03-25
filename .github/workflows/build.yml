@@ -98,7 +98,7 @@ jobs:
             compiler_fc: gfortran-13
             cmake_options: >
               -DMPI_ARGS=--oversubscribe -DCMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas -DBLA_VENDOR=OpenBLAS
-              -DECTRANS_CHECKSUM_TEST_EXCLUDES=npromatr20,nfld0
+              -DECTRANS_CHECKSUM_TEST_EXCLUDES="npromatr20,nfld0"
             caching: true
 
     runs-on: ${{ matrix.os }}
