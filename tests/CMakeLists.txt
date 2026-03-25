@@ -125,10 +125,16 @@ foreach( benchmark ${benchmarks} )
     configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
     list( JOIN ntasks "," ntasks_joined )
     list( JOIN nthreads "," nthreads_joined )
+    # We exclude GPU results from the checksum comparison for now, as it's not guaranteed to pass
+    set( excludes "gpu" )
+    if( DEFINED ECTRANS_CHECKSUM_TEST_EXCLUDES )
+      # Exclude any other checksum comparisons the user specifies
+      set( excludes "${excludes},${ECTRANS_CHECKSUM_TEST_EXCLUDES}" )
+    endif()
     # Add the checksum test, but don't include GPU results because we know those aren't bit-reproducible
     ecbuild_add_test( TARGET compare_checksums
       COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py"
-      ARGS "." ${ntasks_joined} ${nthreads_joined} -E gpu
+      ARGS "." ${ntasks_joined} ${nthreads_joined} -E ${excludes}
     )
     set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
   endif()
