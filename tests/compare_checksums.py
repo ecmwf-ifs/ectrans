@@ -19,7 +19,7 @@ class colors:
     FAILURE = '\033[91m'
     ENDC = '\033[0m'
 
-def compare_checksums(folder_path, ntasks, nthreads, exclude=""):
+def compare_checksums(folder_path, ntasks, nthreads, excludes=[]):
     if not os.path.isdir(folder_path):
         print(f"Error: '{folder_path}' is not a valid directory.")
         return False
@@ -33,7 +33,7 @@ def compare_checksums(folder_path, ntasks, nthreads, exclude=""):
 
     # Build list of all mpi0_omp1 checksum files
     reference_files = glob(os.path.join(folder_path, "*mpi0_omp1*.checksums"))
-    if exclude:
+    for exclude in excludes:
         print(f"Excluding tests that match \"{exclude}\"")
         reference_files = [f for f in reference_files if exclude not in f]
     if len(reference_files) == 0:
@@ -82,15 +82,19 @@ if __name__ == "__main__":
     parser.add_argument("folder_path", help="Path to the folder containing checksum files")
     parser.add_argument("ntasks", help="Comma-separated list of ntasks values to compare (e.g., '1,2,4')")
     parser.add_argument("nthreads", help="Comma-separated list of nthreads values to compare (e.g., '1,2,4')")
-    parser.add_argument("-E", "--exclude", help="Pattern to exclude from comparison (e.g., gpu)", default="")
+    parser.add_argument(
+        "-E", "--excludes",
+        help="Comma-separated list of patterns to exclude from comparison (e.g., 'gpu,npromatr20')",
+        default=""
+    )
     args = parser.parse_args()
 
     folder = args.folder_path
     ntasks = args.ntasks.split(",")
     nthreads = args.nthreads.split(",")
-    exclude = args.exclude
+    excludes = args.excludes.split(",") if args.excludes else []
 
-    if compare_checksums(folder, ntasks, nthreads, exclude=exclude):
+    if compare_checksums(folder, ntasks, nthreads, excludes=excludes):
         exit(0)
     else:
         exit(1)
