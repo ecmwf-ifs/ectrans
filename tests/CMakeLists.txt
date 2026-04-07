@@ -76,97 +76,10 @@ add_test( NAME ectrans_test_install
 add_subdirectory( trans/api )
 
 # --------------------------------------------------------------------------------------------------
-# Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined (CPU
-# version only)
+# Add adjoint tests
 # --------------------------------------------------------------------------------------------------
 
-if( HAVE_CPU )
-  foreach( precision ${precisions} )
-    foreach( mpi ${ntasks} )
-      set( test_name ectrans_test_adjoint_mpi${mpi}_${precision} )
-      ecbuild_add_test(TARGET ${test_name}
-        SOURCES trans/test_adjoint.F90
-        LIBS trans_${precision} parkind_${precision}
-        LINKER_LANGUAGE Fortran
-        MPI ${mpi}
-      )
-      if( TEST ${test_name} AND HAVE_OMP )
-        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
-      endif()
-    endforeach()
-  endforeach()
-endif()
-
-# --------------------------------------------------------------------------------------------------
-# Add tests for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS
-# --------------------------------------------------------------------------------------------------
-
-foreach( platform ${platforms} )
-
-  if( "${platform}" MATCHES "cpu" )
-    set( platform_tag "" )
-  endif()
-  if( "${platform}" MATCHES "gpu" )
-    set( platform_tag "_gpu" )
-  endif()
-
-  if( HAVE_DOUBLE_PRECISION )
-    set( trans trans${platform_tag}_dp )
-    set( parkind parkind_dp )
-  else()
-    set( trans trans${platform_tag}_sp )
-    set( parkind parkind_sp )
-  endif()
-
-  foreach( mpi ${ntasks} )
-    ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}
-      SOURCES trans/test_dirtrans_adjoint.F90
-      LIBS ${trans} ${parkind}
-      LINKER_LANGUAGE Fortran
-      MPI ${mpi}
-      OMP 1
-    )
-    if( TEST ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} AND HAVE_OMP )
-      target_link_libraries( ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} OpenMP::OpenMP_Fortran )
-    endif()
-    set_tests_properties(ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi} PROPERTIES LABELS "${platform};Fortran")
-
-    ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}
-      SOURCES trans/test_invtrans_adjoint.F90
-      LIBS ${trans} ${parkind}
-      LINKER_LANGUAGE Fortran
-      MPI ${mpi}
-      OMP 1
-    )
-    if( TEST ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} AND HAVE_OMP )
-      target_link_libraries( ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} OpenMP::OpenMP_Fortran )
-    endif()
-    set_tests_properties(ectrans_test_invtrans_adjoint_${platform}_mpi${mpi} PROPERTIES LABELS "${platform};Fortran")
-
-  endforeach() # mpi comm size
-
-endforeach() # platform
-
-# --------------------------------------------------------------------------------------------------
-# Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD (CPU version only)
-# --------------------------------------------------------------------------------------------------
-
-if( HAVE_CPU )
-  foreach( precision ${precisions} )
-    foreach( mpi ${ntasks} )
-      set( test_name ectrans_test_gpnorm_trans_adjoint_mpi${mpi}_${precision} )
-      ecbuild_add_test(TARGET ${test_name}
-        SOURCES trans/test_gpnorm_adjoint.F90
-        LIBS trans_${precision} parkind_${precision}
-        LINKER_LANGUAGE Fortran
-        MPI ${mpi}
-      )
-      if( TEST ${test_name} AND HAVE_OMP )
-        target_link_libraries( ${test_name} OpenMP::OpenMP_Fortran )
-      endif()
-    endforeach()
-  endforeach()
-endif()
+add_subdirectory( trans/adjoint )
 
 # --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans, using the benchmark program
@@ -484,6 +397,29 @@ if( HAVE_ETRANS )
 endif()
 
 # --------------------------------------------------------------------------------------------------
+# Add test for split-communicator compatibility of ecTrans
+# --------------------------------------------------------------------------------------------------
+
+# It doesn't really matter which precision we use for this test, as long as we use one that's
+# actually available
+if( HAVE_SINGLE_PRECISION )
+  set( trans_lib trans_sp )
+  set( parkind_lib parkind_sp )
+else()
+  set( trans_lib trans_dp )
+  set( parkind_lib parkind_dp )
+endif()
+if( HAVE_CPU AND HAVE_MPI )
+  ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
+    SOURCES trans/test_split_mpi_comm.F90
+    LIBS ${trans_lib} ${parkind_lib}
+    LINKER_LANGUAGE Fortran
+    MPI 4
+    OMP 1
+  )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
 
@@ -630,7 +566,20 @@ if( HAVE_TRANSI )
     CONDITION HAVE_ETRANS
     ENVIRONMENT TRANS_USE_MPI=0 )
 
-  if( HAVE_GPU )
+  if( HAVE_MPI )
+    # Test ectrans_test_transi_split_comm requires MPI C
+    find_package( MPI COMPONENTS C )
+    if ( MPI_C_FOUND )
+      ecbuild_add_test( TARGET ectrans_test_transi_split_comm
+        SOURCES   transi/transi_test_split_comm.c
+        LIBS      ectrans_test MPI::MPI_C
+        MPI 2
+        LINKER_LANGUAGE C
+        ENVIRONMENT TRANS_USE_MPI=1 )
+    endif()
+  endif()
+
+  if( HAVE_ETRANS_GPU )
     ecbuild_add_test( TARGET ectrans_test_transi_lam_gpu
       SOURCES   transi/transi_test_lam.c
       LIBS      ectrans_test_gpu

@@ -39,11 +39,11 @@ ecbuild_enable_fortran( REQUIRED NO_MODULE_DIRECTORY )
 
 ### Find (optional) dependencies
 
-ecbuild_find_package( NAME fiat REQUIRED )
+ecbuild_find_package( NAME fiat VERSION 1.3.0 REQUIRED )
 
 # Inherit MPI feature from FIAT (if you don't want MPI, rebuild FIAT with ENABLE_MPI=OFF)
 set( HAVE_MPI ${fiat_HAVE_MPI} )
-set( ectrans_HAVE_MPI ${fiat_HAVE_MPI} )
+set( ectrans_HAVE_MPI ${HAVE_MPI} ) # also needed as more specific alias to HAVE_MPI
 
 ecbuild_add_option( FEATURE OMP
                     DEFAULT ON
@@ -169,11 +169,21 @@ ecbuild_add_option( FEATURE GPU_STATIC
                     DESCRIPTION "Compile GPU library as static library"
                     CONDITION HAVE_GPU )
 
-# Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
 ecbuild_add_option( FEATURE ETRANS
                     DEFAULT OFF
-                    CONDITION NOT HAVE_GPU OR ( HAVE_ACC AND NOT HAVE_GPU_GRAPHS_FFT)
                     DESCRIPTION "Include Limited-Area-Model Transforms" )
+
+# Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
+set( HAVE_ETRANS_GPU 0 )
+if( HAVE_ETRANS AND HAVE_GPU )
+  if( HAVE_ACC AND NOT HAVE_GRAPHS_FFT )
+    set( HAVE_ETRANS_GPU 1 )
+  else()
+    ecbuild_warn( "ETRANS and GPU features requested, but ACC and GRAPHS_FFT also requested."
+                  "The GPU version of etrans only supports OpenACC at the moment, with FFT graphs disabled." )
+  endif()
+endif()
+
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
                     CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION

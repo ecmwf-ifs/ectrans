@@ -47,7 +47,13 @@ cmake $SOURCE \
   -DECBUILD_2_COMPAT=OFF \
   "$@"
 
-make VERBOSE=1
+cmake --build . --verbose --parallel 1
+
+# For some reason these compilers are more stack hungry
+if [[ "@CMAKE_Fortran_COMPILER_ID@" = "LLVMFlang" || \
+      "@CMAKE_Fortran_COMPILER_ID@" = "IntelLLVM" ]]; then
+  ulimit -s unlimited
+fi
 
 if [ -f bin/main_dp ]; then
   bin/main_dp

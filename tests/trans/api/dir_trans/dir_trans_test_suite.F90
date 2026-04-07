@@ -1,0 +1,436 @@
+! (C) Copyright 2025- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
+MODULE DIR_TRANS_TEST_SUITE
+
+USE PARKIND1, ONLY: JPIM, JPRB, JPRD
+USE MPL_MODULE, ONLY: MPL_INIT, MPL_NPROC, MPL_MYRANK, MPL_ALLREDUCE, MPL_END
+
+IMPLICIT NONE
+
+#include "setup_trans0.h"
+#include "setup_trans.h"
+#include "trans_inq.h"
+#include "dist_grid.h"
+#include "dir_trans.h"
+#include "trans_end.h"
+
+! Spectral truncation used for all tests below
+INTEGER(KIND=JPIM), PARAMETER :: JPTRUNCATION = 79
+
+! Number of latitudes used for all tests below
+INTEGER(KIND=JPIM), PARAMETER :: JPNGDL = 2 * (JPTRUNCATION + 1)
+
+! Tolerance for "close to zero"
+REAL(KIND=JPRB), PARAMETER :: PPTOLERANCE = 100.0_JPRB * EPSILON(1.0_JPRB)
+
+! JPPROMA blocking factor
+INTEGER(KIND=JPIM), PARAMETER :: JPPROMA = 16
+
+! Earth radius in metres
+REAL(KIND=JPRD), PARAMETER :: PPEARTH_RADIUS = 6371229.0_JPRD
+
+LOGICAL :: LUSE_MPI
+
+CONTAINS
+
+!---------------------------------------------------------------------------------------------------
+
+! Approximate equality check for reals
+ELEMENTAL LOGICAL FUNCTION APPROX_EQ(PA, PB, PTOL) RESULT(KRET)
+  REAL(KIND=JPRB), INTENT(IN) :: PA
+  REAL(KIND=JPRB), INTENT(IN) :: PB
+  REAL(KIND=JPRB), INTENT(IN), OPTIONAL :: PTOL
+
+  IF (PRESENT(PTOL)) THEN
+    KRET = ABS(PA - PB) < PTOL
+  ELSE
+    KRET = ABS(PA - PB) < PPTOLERANCE
+  END IF
+END FUNCTION APPROX_EQ
+
+! Initialise global field with all ones and distribute it
+FUNCTION GET_INPUT_FIELD(KMY_PROC, KGPTOTG, KGPBLKS, KFIELDS) RESULT(PGP)
+  INTEGER(KIND=JPIM), INTENT(IN) :: KMY_PROC
+  INTEGER(KIND=JPIM), INTENT(IN) :: KGPTOTG
+  INTEGER(KIND=JPIM), INTENT(IN) :: KGPBLKS
+  INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS
+
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGPG(:,:), PGP(:,:,:)
+  INTEGER(KIND=JPIM) :: I
+
+  ! Initialise global field
+  IF (KMY_PROC == 1) THEN
+    ALLOCATE(ZGPG(KGPTOTG,KFIELDS))
+
+    ! Set all of the input to one
+    ZGPG(:,:) = 1.0_JPRB
+  ENDIF
+
+  ! Initialise distributed fields
+  ALLOCATE(PGP(JPPROMA,KFIELDS,KGPBLKS))
+
+  ! Distribute field from first task to other tasks
+  IF (KMY_PROC == 1) THEN
+    CALL DIST_GRID(PGPG=ZGPG, KFDISTG=KFIELDS, KFROM=[(1, I = 1, KFIELDS)], PGP=PGP, KPROMA=JPPROMA)
+  ELSE
+    CALL DIST_GRID(KFDISTG=KFIELDS, KFROM=[(1, I = 1, KFIELDS)], PGP=PGP, KPROMA=JPPROMA)
+  ENDIF
+
+  IF (KMY_PROC == 1) DEALLOCATE(ZGPG)
+END FUNCTION GET_INPUT_FIELD
+
+FUNCTION ROTATIONAL_WIND(KGPBLKS, K_REGIONS_NS, K_REGIONS_EW) RESULT(PGP)
+
+  INTEGER(KIND=JPIM), INTENT(IN) :: KGPBLKS
+  INTEGER(KIND=JPIM), INTENT(IN) :: K_REGIONS_NS
+  INTEGER(KIND=JPIM), INTENT(IN) :: K_REGIONS_EW
+
+  REAL(KIND=JPRB), ALLOCATABLE :: PGP(:,:,:)
+
+  INTEGER(KIND=JPIM) :: IPTRFLOFF, IMY_REGION_NS, IMY_REGION_EW
+  INTEGER(KIND=JPIM), DIMENSION(K_REGIONS_NS) :: IFRSTLAT, ILSTLAT
+  REAL(KIND=JPRD) :: ZMU(JPNGDL)
+  INTEGER(KIND=JPIM), DIMENSION(JPNGDL + K_REGIONS_NS - 1, K_REGIONS_EW) :: NSTA, NONL
+  INTEGER(KIND=JPIM) :: ILAT, IFIRSTLAT, ILASTLAT, IBL, JROF, JGLAT, ISTLON, IENDLON, JLON
+  REAL(KIND=JPRB) :: ZLAT
+
+  CALL TRANS_INQ(KPTRFLOFF=IPTRFLOFF, KMY_REGION_NS=IMY_REGION_NS, KFRSTLAT=IFRSTLAT, &
+    &            KLSTLAT=ILSTLAT, PMU=ZMU, KMY_REGION_EW=IMY_REGION_EW, KSTA=NSTA, KONL=NONL)
+  ILAT = IPTRFLOFF
+  IFIRSTLAT = IFRSTLAT(IMY_REGION_NS)
+  ILASTLAT = ILSTLAT(IMY_REGION_NS)
+
+  ALLOCATE(PGP(JPPROMA, 2, KGPBLKS))
+
+  IBL = 1
+  JROF = 1
+  DO JGLAT = IFIRSTLAT, ILASTLAT
+    ZLAT = ASIN(ZMU(JGLAT))
+    ILAT = ILAT + 1
+    ISTLON = NSTA(ILAT, IMY_REGION_EW)
+    IENDLON = ISTLON - 1 + NONL(ILAT, IMY_REGION_EW)
+    DO JLON = ISTLON, IENDLON
+      PGP(JROF, 1, IBL) = COS(ZLAT) ! U = A * COS(THETA)
+      PGP(JROF, 2, IBL) = 0.0_JPRB ! V = 0
+      JROF = JROF + 1
+      IF (JROF > JPPROMA) THEN
+        JROF = 1
+        IBL  = IBL + 1
+      ENDIF
+    ENDDO
+  ENDDO
+
+END FUNCTION ROTATIONAL_WIND
+
+! Determine if this task handles the m=0 mode
+LOGICAL FUNCTION HAVE_M0_MODE()
+  INTEGER :: NUM_MY_ZON_WNS
+  INTEGER, ALLOCATABLE :: MY_ZON_WNS(:)
+
+  CALL TRANS_INQ(KNUMP=NUM_MY_ZON_WNS)
+  ALLOCATE(MY_ZON_WNS(NUM_MY_ZON_WNS))
+  CALL TRANS_INQ(KMYMS=MY_ZON_WNS)
+
+  HAVE_M0_MODE = ANY(MY_ZON_WNS == 0)
+END FUNCTION HAVE_M0_MODE
+
+! Setup fixture
+SUBROUTINE SETUP_TEST(KSPEC2, KGPTOTG, KGPTOT, KGPBLKS, KMY_PROC, K_REGIONS_NS, K_REGIONS_EW)
+  USE UTIL, ONLY: DETECT_MPIRUN
+
+  INTEGER(KIND=JPIM), INTENT(OUT) :: KSPEC2
+  INTEGER(KIND=JPIM), INTENT(OUT) :: KGPTOTG
+  INTEGER(KIND=JPIM), INTENT(OUT) :: KGPTOT
+  INTEGER(KIND=JPIM), INTENT(OUT) :: KGPBLKS
+  INTEGER(KIND=JPIM), INTENT(OUT) :: KMY_PROC
+  INTEGER(KIND=JPIM), INTENT(OUT) :: K_REGIONS_NS
+  INTEGER(KIND=JPIM), INTENT(OUT) :: K_REGIONS_EW
+
+  INTEGER(KIND=JPIM) :: ILOEN(JPNGDL)
+  INTEGER(KIND=JPIM) :: I
+  INTEGER(KIND=JPIM) :: IPROC
+
+  ! Set up MPI
+  LUSE_MPI = DETECT_MPIRUN()
+  IF (LUSE_MPI) THEN
+    CALL MPL_INIT
+    IPROC = MPL_NPROC()
+    KMY_PROC = MPL_MYRANK()
+  ELSE
+    IPROC = 1
+    KMY_PROC = 1
+  ENDIF
+
+  CALL SETUP_TRANS0(LDMPOFF=.NOT. LUSE_MPI, KPRGPNS=IPROC, KPRGPEW=1, KPRTRW=IPROC, &
+    &               K_REGIONS_NS=K_REGIONS_NS, K_REGIONS_EW=K_REGIONS_EW, PRAD=PPEARTH_RADIUS)
+
+  ! Define octahedral grid
+  DO I = 1, JPTRUNCATION + 1
+    ILOEN(I) = 20 + 4 * I
+    ILOEN(JPNGDL - I + 1) = ILOEN(I)
+  END DO
+
+  CALL SETUP_TRANS(KSMAX=JPTRUNCATION, KDGL=JPNGDL, KLOEN=ILOEN)
+
+  CALL TRANS_INQ(KSPEC2=KSPEC2, KGPTOTG=KGPTOTG, KGPTOT=KGPTOT)
+
+  ! Number of JPPROMA blocks
+  KGPBLKS = (KGPTOT - 1) / JPPROMA + 1
+END SUBROUTINE SETUP_TEST
+
+! Tear down fixture
+SUBROUTINE CLEANUP_TEST
+
+  CALL TRANS_END
+
+  IF (LUSE_MPI) THEN
+    CALL MPL_END(LDMEMINFO=.FALSE.)
+  ENDIF
+END SUBROUTINE CLEANUP_TEST
+
+!---------------------------------------------------------------------------------------------------
+
+! NOTES:
+! - For now there is only a very primitive correctness check. For scalar fields we set the input to
+!   one and check that only the (0,0) mode (global mean) is one and all the rest are zero. For wind
+!  fields we set the input to one and check that vorticity and divergence are both zero.
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 1 and just one scalar field
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_1_SCALAR_1() RESULT(KRET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:), ZSPSCALAR(:,:)
+  INTEGER(KIND=JPIM) :: ISPEC2, IGPTOTG, IGPTOT, IMY_PROC, IGPBLKS, I_REGIONS_NS, I_REGIONS_EW
+
+  ! Set up everything
+  CALL SETUP_TEST(ISPEC2, IGPTOTG, IGPTOT, IGPBLKS, IMY_PROC, I_REGIONS_NS, I_REGIONS_EW)
+  ZGP = GET_INPUT_FIELD(IMY_PROC, IGPTOTG, IGPBLKS, 1)
+  ALLOCATE(ZSPSCALAR(1,ISPEC2))
+
+  CALL DIR_TRANS(PGP=ZGP, PSPSCALAR=ZSPSCALAR, KPROMA=JPPROMA)
+
+  ! Check only the (0,0) mode (global mean) is one and all the rest are zero
+  IF (HAVE_M0_MODE()) THEN
+    KRET = MERGE(0, 1, APPROX_EQ(ZSPSCALAR(1,1), 1.0_JPRB) .AND. &
+      &         ALL(APPROX_EQ(ZSPSCALAR(1,2:), 0.0_JPRB)))
+  ELSE
+    KRET = MERGE(0, 1, ALL(APPROX_EQ(ZSPSCALAR, 0.0_JPRB)))
+  ENDIF
+
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(KRET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZSPSCALAR, ZGP)
+  CALL CLEANUP_TEST
+END FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_1_SCALAR_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 1 and 1-level wind fields
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_1_WIND_1() RESULT(KRET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:), ZSPVOR(:,:), ZSPDIV(:,:)
+  INTEGER(KIND=JPIM) :: ISPEC2, IGPTOTG, IGPTOT, IMY_PROC, IGPBLKS, I_REGIONS_NS, I_REGIONS_EW
+  REAL(KIND=JPRB) :: ZCORRECT_VORTICITY_VALUE
+
+  ! Set up everything
+  CALL SETUP_TEST(ISPEC2, IGPTOTG, IGPTOT, IGPBLKS, IMY_PROC, I_REGIONS_NS, I_REGIONS_EW)
+  ZGP = ROTATIONAL_WIND(IGPBLKS, I_REGIONS_NS, I_REGIONS_EW)
+  ALLOCATE(ZSPVOR(1,ISPEC2))
+  ALLOCATE(ZSPDIV(1,ISPEC2))
+
+  CALL DIR_TRANS(PGP=ZGP, PSPVOR=ZSPVOR, PSPDIV=ZSPDIV, KPROMA=JPPROMA)
+
+  IF (HAVE_M0_MODE()) THEN
+    ! epsilon_{m=0}^{n=1} = sqrt((n^2 - m^2)/(4n^2 - 1)) = sqrt(1/3)
+    ZCORRECT_VORTICITY_VALUE = 2.0_JPRB * SQRT(1.0_JPRB / 3.0_JPRB) / PPEARTH_RADIUS
+
+    ! Check all criteria
+    KRET = 0
+
+    ! Check divergence is all zero
+    IF (ANY(.NOT. APPROX_EQ(ZSPDIV, 0.0_JPRB))) KRET = 1
+
+     ! Check all irrelevant vorticity modes are zero
+    IF (ANY(.NOT. APPROX_EQ(ZSPVOR(1,1:2), 0.0_JPRB))) KRET = 1
+
+    ! Check selected harmonic has the correct value
+    IF (.NOT. APPROX_EQ(ZSPVOR(1,3), ZCORRECT_VORTICITY_VALUE)) KRET = 1
+  ELSE
+    KRET = MERGE(0, 1, ALL(APPROX_EQ(ZSPVOR, 0.0_JPRB) .AND. ALL(APPROX_EQ(ZSPDIV, 0.0_JPRB))))
+  ENDIF
+
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(KRET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZSPDIV, ZSPVOR, ZGP)
+  CALL CLEANUP_TEST
+END FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_1_WIND_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 1 and 1-level wind fields and 1 scalar field
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_1_WIND_1_SCALAR_1() RESULT(KRET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:), ZSPVOR(:,:), ZSPDIV(:,:), ZSPSCALAR(:,:)
+  INTEGER(KIND=JPIM) :: ISPEC2, IGPTOTG, IGPTOT, IMY_PROC, IGPBLKS, I_REGIONS_NS, I_REGIONS_EW
+  REAL(KIND=JPRB) :: ZCORRECT_VORTICITY_VALUE
+
+  ! Set up everything
+  CALL SETUP_TEST(ISPEC2, IGPTOTG, IGPTOT, IGPBLKS, IMY_PROC, I_REGIONS_NS, I_REGIONS_EW)
+  ALLOCATE(ZGP(JPPROMA, 3, IGPBLKS))
+  ALLOCATE(ZSPVOR(1,ISPEC2))
+  ALLOCATE(ZSPDIV(1,ISPEC2))
+  ALLOCATE(ZSPSCALAR(1,ISPEC2))
+  ZGP(:,1:2,:) = ROTATIONAL_WIND(IGPBLKS, I_REGIONS_NS, I_REGIONS_EW)
+  ZGP(:,3:3,:) = GET_INPUT_FIELD(IMY_PROC, IGPTOTG, IGPBLKS, 1)
+
+  CALL DIR_TRANS(PGP=ZGP, PSPVOR=ZSPVOR, PSPDIV=ZSPDIV, PSPSCALAR=ZSPSCALAR, KPROMA=JPPROMA)
+
+  IF (HAVE_M0_MODE()) THEN
+    ! epsilon_{m=0}^{n=1} = sqrt((n^2 - m^2)/(4n^2 - 1)) = sqrt(1/3)
+    ZCORRECT_VORTICITY_VALUE = 2.0_JPRB * SQRT(1.0_JPRB / 3.0_JPRB) / PPEARTH_RADIUS
+
+    ! Check all criteria
+    KRET = 0
+
+    ! Check all non-(0,0) modes of the scalar field are zero
+    IF (.NOT. ALL(APPROX_EQ(ZSPSCALAR(1,2:), 0.0_JPRB))) KRET = 1
+
+    ! Check the (0,0) mode is one
+    IF (.NOT. APPROX_EQ(ZSPSCALAR(1,1), 1.0_JPRB)) KRET = 1
+
+    ! Check divergence is all zero
+    IF (ANY(.NOT. APPROX_EQ(ZSPDIV, 0.0_JPRB))) KRET = 1
+
+     ! Check all irrelevant vorticity modes are zero
+    IF (ANY(.NOT. APPROX_EQ(ZSPVOR(1,1:2), 0.0_JPRB))) KRET = 1
+
+    ! Check selected harmonic has the correct value
+    IF (.NOT. APPROX_EQ(ZSPVOR(1,3), ZCORRECT_VORTICITY_VALUE)) KRET = 1
+  ELSE
+    IF (ALL(APPROX_EQ(ZSPVOR, 0.0_JPRB)) .AND. ALL(APPROX_EQ(ZSPDIV, 0.0_JPRB)) .AND. &
+      & ALL(APPROX_EQ(ZSPSCALAR, 0.0_JPRB))) THEN
+      KRET = 0
+    ELSE
+      KRET = 1
+    END IF
+  ENDIF
+
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(KRET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZSPSCALAR, ZSPDIV, ZSPVOR, ZGP)
+  CALL CLEANUP_TEST
+END FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_1_WIND_1_SCALAR_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 2 and just one "3A" scalar field
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_PGP3A_1() RESULT(KRET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGP3A(:,:,:,:), ZSPSC3A(:,:,:)
+  INTEGER(KIND=JPIM) :: ISPEC2, IGPTOTG, IGPTOT, IMY_PROC, IGPBLKS, I_REGIONS_NS, I_REGIONS_EW
+
+  ! Set up everything
+  CALL SETUP_TEST(ISPEC2, IGPTOTG, IGPTOT, IGPBLKS, IMY_PROC, I_REGIONS_NS, I_REGIONS_EW)
+  ALLOCATE(ZGP3A(JPPROMA,1,1,IGPBLKS))
+  ZGP3A(:,1,:,:) = GET_INPUT_FIELD(IMY_PROC, IGPTOTG, IGPBLKS, 1)
+  ALLOCATE(ZSPSC3A(1,ISPEC2,1))
+
+  CALL DIR_TRANS(PGP3A=ZGP3A, PSPSC3A=ZSPSC3A, KPROMA=JPPROMA)
+
+  ! Check only the (0,0) mode (global mean) is one and all the rest are zero
+  IF (HAVE_M0_MODE()) THEN
+    KRET = MERGE(0, 1, APPROX_EQ(ZSPSC3A(1,1,1), 1.0_JPRB) .AND. &
+      &         ALL(APPROX_EQ(ZSPSC3A(1,2:,1), 0.0_JPRB)))
+  ELSE
+    KRET = MERGE(0, 1, ALL(APPROX_EQ(ZSPSC3A, 0.0_JPRB)))
+  ENDIF
+
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(KRET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZSPSC3A, ZGP3A)
+  CALL CLEANUP_TEST
+END FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_PGP3A_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 2 and just one "3B" scalar field
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_PGP3B_1() RESULT(KRET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGP3B(:,:,:,:), ZSPSC3B(:,:,:)
+  INTEGER(KIND=JPIM) :: ISPEC2, IGPTOTG, IGPTOT, IMY_PROC, IGPBLKS, I_REGIONS_NS, I_REGIONS_EW
+
+  ! Set up everything
+  CALL SETUP_TEST(ISPEC2, IGPTOTG, IGPTOT, IGPBLKS, IMY_PROC, I_REGIONS_NS, I_REGIONS_EW)
+  ALLOCATE(ZGP3B(JPPROMA,1,1,IGPBLKS))
+  ZGP3B(:,1,:,:) = GET_INPUT_FIELD(IMY_PROC, IGPTOTG, IGPBLKS, 1)
+  ALLOCATE(ZSPSC3B(1,ISPEC2,1))
+
+  CALL DIR_TRANS(PGP3B=ZGP3B, PSPSC3B=ZSPSC3B, KPROMA=JPPROMA)
+
+  ! Check only the (0,0) mode (global mean) is one and all the rest are zero
+  IF (HAVE_M0_MODE()) THEN
+    KRET = MERGE(0, 1, APPROX_EQ(ZSPSC3B(1,1,1), 1.0_JPRB) .AND. &
+      &         ALL(APPROX_EQ(ZSPSC3B(1,2:,1), 0.0_JPRB)))
+  ELSE
+    KRET = MERGE(0, 1, ALL(APPROX_EQ(ZSPSC3B, 0.0_JPRB)))
+  ENDIF
+
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(KRET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZSPSC3B, ZGP3B)
+  CALL CLEANUP_TEST
+END FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_PGP3B_1
+
+!---------------------------------------------------------------------------------------------------
+
+! Test DIR_TRANS with call mode 2 and 1-level wind fields
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_WIND_1() RESULT(KRET) BIND(C)
+  REAL(KIND=JPRB), ALLOCATABLE :: ZGPUV(:,:,:,:), ZSPVOR(:,:), ZSPDIV(:,:)
+  INTEGER(KIND=JPIM) :: ISPEC2, IGPTOTG, IGPTOT, IMY_PROC, IGPBLKS, I_REGIONS_NS, I_REGIONS_EW
+  REAL(KIND=JPRB) :: ZCORRECT_VORTICITY_VALUE
+
+  ! Set up everything
+  CALL SETUP_TEST(ISPEC2, IGPTOTG, IGPTOT, IGPBLKS, IMY_PROC, I_REGIONS_NS, I_REGIONS_EW)
+  ALLOCATE(ZGPUV(JPPROMA,1,2,IGPBLKS))
+  ZGPUV(:,1,:,:) = ROTATIONAL_WIND(IGPBLKS, I_REGIONS_NS, I_REGIONS_EW)
+  ALLOCATE(ZSPVOR(1,ISPEC2))
+  ALLOCATE(ZSPDIV(1,ISPEC2))
+
+  CALL DIR_TRANS(PGPUV=ZGPUV, PSPVOR=ZSPVOR, PSPDIV=ZSPDIV, KPROMA=JPPROMA)
+
+  IF (HAVE_M0_MODE()) THEN
+    ! epsilon_{m=0}^{n=1} = sqrt((n^2 - m^2)/(4n^2 - 1)) = sqrt(1/3)
+    ZCORRECT_VORTICITY_VALUE = 2.0_JPRB * SQRT(1.0_JPRB / 3.0_JPRB) / PPEARTH_RADIUS
+
+    ! Check all criteria
+    KRET = 0
+
+    ! Check divergence is all zero
+    IF (ANY(.NOT. APPROX_EQ(ZSPDIV, 0.0_JPRB))) KRET = 1
+
+     ! Check all irrelevant vorticity modes are zero
+    IF (ANY(.NOT. APPROX_EQ(ZSPVOR(1,1:2), 0.0_JPRB))) KRET = 1
+
+    ! Check selected harmonic has the correct value
+    IF (.NOT. APPROX_EQ(ZSPVOR(1,3), ZCORRECT_VORTICITY_VALUE)) KRET = 1
+  ELSE
+    KRET = MERGE(0, 1, ALL(APPROX_EQ(ZSPVOR, 0.0_JPRB) .AND. ALL(APPROX_EQ(ZSPDIV, 0.0_JPRB))))
+  ENDIF
+
+  IF (LUSE_MPI) CALL MPL_ALLREDUCE(KRET, CDOPER="MAX")
+
+  ! Tear down everything
+  DEALLOCATE(ZSPDIV, ZSPVOR, ZGPUV)
+  CALL CLEANUP_TEST
+END FUNCTION ECTRANS_TEST_TRANS_API_DIR_TRANS_CALL_MODE_2_WIND_1
+
+!---------------------------------------------------------------------------------------------------
+
+END MODULE DIR_TRANS_TEST_SUITE

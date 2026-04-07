@@ -189,6 +189,23 @@ int trans_use_mpi(_bool);
  */
 int trans_init(void);
 
+/*!
+  @brief Set user-provided MPI communicator to be used by the trans library
+
+  @note Advanced feature
+
+  By default, the trans library will use its own MPI communicator (typically
+  based on MPI_COMM_WORLD) when MPI support is enabled. This routine allows
+  the caller to provide an alternative communicator that will be used by
+  all subsequent trans operations.
+
+  This function needs to be called before trans_init() or trans_setup(), and
+  ONLY if the default communicator needs to be changed.
+
+  @param[in] mpi_user_comm MPI communicator handle provided by the user.
+ */
+int trans_set_mpi_comm(int mpi_user_comm);
+
 int trans_set_read(struct Trans_t*, const char* filepath);
 int trans_set_write(struct Trans_t*, const char* filepath);
 int trans_set_cache(struct Trans_t*, const void*, size_t);

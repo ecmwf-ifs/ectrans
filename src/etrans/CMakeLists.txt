@@ -95,10 +95,10 @@ endfunction(generate_backend_includes)
 
 add_subdirectory( common )
 
-if( HAVE_CPU)
+if( HAVE_CPU )
   add_subdirectory( cpu )
 endif()
 
-if( HAVE_GPU )
+if( HAVE_ETRANS_GPU )
   add_subdirectory( gpu )
 endif()

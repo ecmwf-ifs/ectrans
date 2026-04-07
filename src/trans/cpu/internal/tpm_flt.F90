@@ -53,7 +53,6 @@ INTEGER(KIND=JPIM) :: ITHRESHOLD
 INTEGER(KIND=JPIM) :: NDGNHD ! dual set dimension
 INTEGER(KIND=JPIM) :: NDLON  ! dual number of longitudes
 INTEGER(KIND=JPIM) :: NDGL   ! dual number of latitudes
-LOGICAL :: LSYM
 TYPE(FMM_TYPE),POINTER :: FMM_INTI ! FMM interpolation
 
 END TYPE FLT_TYPE_WRAP
