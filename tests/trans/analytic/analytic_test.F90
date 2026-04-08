@@ -215,7 +215,7 @@ ALLOCATE(ZGP(NPROMA, NFLD, NGPBLKS))
 ALLOCATE(ZSPH_ANALYTIC(NPROMA, NGPBLKS))
 
 ! Compute geographic longitude GELAM and latitude GELAT:
-CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN, NSMAX)
+CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN)
 
 !===================================================================================================
 ! Perform tests
