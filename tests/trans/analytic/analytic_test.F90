@@ -20,15 +20,17 @@ IMPLICIT NONE
 INTEGER(KIND=JPIM), PARAMETER :: NERR = 0 ! Unit number for stderr
 INTEGER(KIND=JPIM), PARAMETER :: NOUT = 6 ! Unit number for stdout
 
-! Default parameters
+! Fixed parameters
 INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 95 ! Spectral truncation
 CHARACTER(LEN=16), PARAMETER :: CGRID = 'O96' ! octahedral grid matching truncation = 95
-INTEGER(KIND=JPIM), PARAMETER :: NPROMA = 16
 INTEGER, PARAMETER :: VERBOSITY = -1 ! Verbosity level (-1, 0 or 1)
 LOGICAL, PARAMETER :: LUSEFLT = .FALSE. ! Use fast legendre transforms
-REAL(KIND=JPRD), PARAMETER :: RTOLERANCE = 1E-9
 
+! Default parameters
+INTEGER(KIND=JPIM) :: NPROMA = 16
+REAL(KIND=JPRD) :: RTOLERANCE = 1E-9
 INTEGER(KIND=JPIM) :: NFLD = 1   ! Number of scalar fields
+
 INTEGER(KIND=JPIM) :: NDGL ! Number of latitudes
 INTEGER(KIND=JPIM) :: NSPEC2
 INTEGER(KIND=JPIM) :: NGPTOT
