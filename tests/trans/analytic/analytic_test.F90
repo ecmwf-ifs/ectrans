@@ -474,7 +474,7 @@ SUBROUTINE INITIALIZE_SPECTRAL_ARRAY(NSMAX, KZONAL, KTOTAL, PSPSCALAR)
   CALL TRANS_INQ(KMYMS=MY_ZON_WNS)
 
   ! First initialise all spectral coefficients to zero
-  PSPSCALAR(:,:) = 0.0
+  PSPSCALAR(:,:) = 0.0_JPRB
 
   ! If rank is responsible for the chosen zonal wavenumber...
   IF (ANY(MY_ZON_WNS == KZONAL)) THEN
