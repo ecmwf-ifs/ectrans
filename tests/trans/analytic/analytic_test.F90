@@ -21,7 +21,8 @@ INTEGER(KIND=JPIM), PARAMETER :: NERR     = 0 ! Unit number for stderr
 INTEGER(KIND=JPIM), PARAMETER :: NOUT     = 6 ! Unit number for stdout
 
 ! Default parameters
-INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 21 ! Spectral truncation
+INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 95 ! Spectral truncation
+CHARACTER(LEN=16), PARAMETER :: CGRID = 'O96' ! octahedral grid matching truncation = 95
 INTEGER(KIND=JPIM), PARAMETER :: NPROMA = 16
 INTEGER, PARAMETER :: VERBOSITY = -1 ! Verbosity level (-1, 0 or 1)
 LOGICAL, PARAMETER :: LUSEFLT = .FALSE. ! Use fast legendre transforms
@@ -67,7 +68,7 @@ INTEGER(KIND=JPIM) :: JSETV
 INTEGER(KIND=JPIM) :: M, N, IMAG_IDX
 INTEGER, EXTERNAL :: EC_MPIRANK
 LOGICAL :: LUSE_MPI = .TRUE.
-CHARACTER(LEN=16) :: CGRID
+
 
 REAL(KIND=JPRB) :: ZMAX_ERROR
 
@@ -87,7 +88,6 @@ LUSE_MPI = DETECT_MPIRUN()
 IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! Tolerance for single precision
 ! Setup
 CALL GET_COMMAND_LINE_ARGUMENTS(NFLD)
-CGRID = CUBIC_FULL_GRID(NSMAX)
 CALL PARSE_GRID(CGRID, NDGL, NLOEN)
 
 WRITE(NOUT,'(A)') '======= ecTrans analytic test ======='
@@ -320,25 +320,6 @@ END SUBROUTINE
 
 !===================================================================================================
 
-FUNCTION GET_REAL_VALUE(CNAME, IARG) RESULT(VALUE)
-
-  REAL :: VALUE
-  CHARACTER(LEN=*), INTENT(IN) :: CNAME
-  INTEGER, INTENT(INOUT) :: IARG
-  CHARACTER(LEN=128) :: CARG
-  INTEGER :: STAT
-
-  CARG = GET_STR_VALUE(CNAME, IARG)
-  CALL STR2REAL(CARG, VALUE, STAT)
-
-  IF (STAT /= 0) THEN
-    CALL PARSING_FAILED("Invalid argument for " // TRIM(CNAME) // ": " // TRIM(CARG))
-  END IF
-
-END FUNCTION
-
-!===================================================================================================
-
 FUNCTION GET_INT_VALUE(CNAME, IARG) RESULT(VALUE)
 
   INTEGER :: VALUE
@@ -421,26 +402,6 @@ END SUBROUTINE GET_COMMAND_LINE_ARGUMENTS
 
 !===================================================================================================
 
-FUNCTION CUBIC_OCTAHEDRAL_GAUSSIAN_GRID(NSMAX) RESULT(CGRID)
-
-  CHARACTER(LEN=16) :: CGRID
-  INTEGER, INTENT(IN) :: NSMAX
-  WRITE(CGRID,'(A,I0)') 'O',NSMAX+1
-
-END FUNCTION
-
-!===================================================================================================
-
-FUNCTION CUBIC_FULL_GRID(NSMAX) RESULT(CGRID)
-
-  CHARACTER(LEN=16) :: CGRID
-  INTEGER, INTENT(IN) :: NSMAX
-  WRITE(CGRID,'(A,I0)') 'F',NSMAX+1
-
-END FUNCTION
-
-!===================================================================================================
-
 SUBROUTINE STR2INT(STR, INT, STAT)
 
   CHARACTER(LEN=*), INTENT(IN) :: STR
@@ -449,17 +410,6 @@ SUBROUTINE STR2INT(STR, INT, STAT)
   READ(STR, *, IOSTAT=STAT) INT
 
 END SUBROUTINE STR2INT
-
-!===================================================================================================
-
-SUBROUTINE STR2REAL(STR, REAL, STAT)
-
-  CHARACTER(LEN=*), INTENT(IN) :: STR
-  REAL, INTENT(OUT) :: REAL
-  INTEGER, INTENT(OUT) :: STAT
-  READ(STR, *, IOSTAT=STAT) REAL
-
-END SUBROUTINE STR2REAL
 
 !===================================================================================================
 
