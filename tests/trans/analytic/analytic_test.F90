@@ -28,7 +28,7 @@ LOGICAL, PARAMETER :: LUSEFLT = .FALSE. ! Use fast legendre transforms
 
 ! Default parameters
 INTEGER(KIND=JPIM) :: NPROMA = 16
-REAL(KIND=JPRD) :: RTOLERANCE = 1E-9
+REAL(KIND=JPRD) :: ZTOLERANCE = 1E-9 ! Tolerance of absolute error
 INTEGER(KIND=JPIM) :: NFLD = 1   ! Number of scalar fields
 
 INTEGER(KIND=JPIM) :: NDGL ! Number of latitudes
@@ -86,7 +86,7 @@ REAL(KIND=JPRB) :: ZMAX_ERROR
 !===================================================================================================
 
 LUSE_MPI = DETECT_MPIRUN()
-IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! Tolerance for single precision
+IF (JPRB == JPRM) ZTOLERANCE = 1E-3 ! Tolerance for single precision
 ! Setup
 CALL GET_COMMAND_LINE_ARGUMENTS(NFLD)
 CALL PARSE_GRID(CGRID, NDGL, NLOEN)
@@ -272,17 +272,17 @@ IF (NPROC > 1) THEN
   ENDIF
 ENDIF
 
-IF (ZMAX_ERROR > RTOLERANCE) THEN
+IF (ZMAX_ERROR > ZTOLERANCE) THEN
   WRITE(NERR, '(A)') '*******************************'
   WRITE(NERR, '(A,I0)') 'Analytic test failed for task ', MYPROC
-  WRITE(NERR, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' > ', RTOLERANCE
+  WRITE(NERR, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' > ', ZTOLERANCE
   WRITE(NERR, '(A)') '*******************************'
   FLUSH(NERR)
   CALL ABOR1("Analytic test failed")
 ELSE
   WRITE(NOUT, '(A)') '*******************************'
   WRITE(NOUT, '(A,I0)') 'Analytic test passed for task ', MYPROC
-  WRITE(NOUT, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' <= ', RTOLERANCE
+  WRITE(NOUT, '(1E9.2,A3,1E9.2)') ZMAX_ERROR, ' <= ', ZTOLERANCE
   WRITE(NOUT, '(A)') '*******************************'
 ENDIF
 
