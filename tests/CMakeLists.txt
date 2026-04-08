@@ -76,7 +76,7 @@ add_test( NAME ectrans_test_install
 add_subdirectory( trans/adjoint )
 
 # --------------------------------------------------------------------------------------------------
-# Add adjoint tests
+# Add analytic tests
 # --------------------------------------------------------------------------------------------------
 
 add_subdirectory( trans/analytic )
