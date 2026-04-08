@@ -17,8 +17,8 @@ USE ANALYTIC_UTILS, ONLY: ANALYTIC_INIT, PREPARE_LEGENDRE_POLYNOMIALS, COMPUTE_A
 IMPLICIT NONE
 
 ! Output unit numbers
-INTEGER(KIND=JPIM), PARAMETER :: NERR     = 0 ! Unit number for stderr
-INTEGER(KIND=JPIM), PARAMETER :: NOUT     = 6 ! Unit number for stdout
+INTEGER(KIND=JPIM), PARAMETER :: NERR = 0 ! Unit number for stderr
+INTEGER(KIND=JPIM), PARAMETER :: NOUT = 6 ! Unit number for stdout
 
 ! Default parameters
 INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 95 ! Spectral truncation
@@ -28,7 +28,7 @@ INTEGER, PARAMETER :: VERBOSITY = -1 ! Verbosity level (-1, 0 or 1)
 LOGICAL, PARAMETER :: LUSEFLT = .FALSE. ! Use fast legendre transforms
 REAL(KIND=JPRD), PARAMETER :: RTOLERANCE = 1E-9
 
-INTEGER(KIND=JPIM) :: NFLD    = 1   ! Number of scalar fields
+INTEGER(KIND=JPIM) :: NFLD = 1   ! Number of scalar fields
 INTEGER(KIND=JPIM) :: NDGL ! Number of latitudes
 INTEGER(KIND=JPIM) :: NSPEC2
 INTEGER(KIND=JPIM) :: NGPTOT
@@ -68,7 +68,6 @@ INTEGER(KIND=JPIM) :: JSETV
 INTEGER(KIND=JPIM) :: M, N, IMAG_IDX
 INTEGER, EXTERNAL :: EC_MPIRANK
 LOGICAL :: LUSE_MPI = .TRUE.
-
 
 REAL(KIND=JPRB) :: ZMAX_ERROR
 
