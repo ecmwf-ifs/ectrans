@@ -21,8 +21,8 @@ INTEGER(KIND=JPIM), PARAMETER :: NERR = 0 ! Unit number for stderr
 INTEGER(KIND=JPIM), PARAMETER :: NOUT = 6 ! Unit number for stdout
 
 ! Fixed parameters
-INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 95 ! Spectral truncation
-CHARACTER(LEN=16), PARAMETER :: CGRID = 'O96' ! octahedral grid matching truncation = 95
+INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 21 ! Spectral truncation
+CHARACTER(LEN=16), PARAMETER :: CGRID = 'F22' ! full grid matching truncation = 21
 INTEGER, PARAMETER :: VERBOSITY = -1 ! Verbosity level (-1, 0 or 1)
 LOGICAL, PARAMETER :: LUSEFLT = .FALSE. ! Use fast legendre transforms
 
