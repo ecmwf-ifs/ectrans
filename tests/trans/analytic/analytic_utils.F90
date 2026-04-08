@@ -12,11 +12,11 @@ MODULE ANALYTIC_UTILS
 
   CONTAINS
 
-  !===================================================================================================
+  !=================================================================================================
   ! Compute with the help of TRANS_INQ the geographic longitude GELAM and latitude GELAT.
   ! Also create a helper array NLATIDXS(NPROMA, NGPBLKS) which contains for each blocked point the
   ! global latitude index. This is used later to retrieve the corresponding Legendre polynomial.
-  !===================================================================================================
+  !=================================================================================================
 
   SUBROUTINE ANALYTIC_INIT(KPROMA, KGPBLKS, KDGL, K_REGIONS_NS, K_REGIONS_EW, KLOEN)
 
@@ -37,8 +37,8 @@ MODULE ANALYTIC_UTILS
 
     ALLOCATE(ZMU(KDGL), NLATIDXS(KPROMA, KGPBLKS), GELAM(KPROMA, KGPBLKS), GELAT(KPROMA, KGPBLKS))
 
-    CALL TRANS_INQ(KPTRFLOFF=NPTRFLOFF, KMY_REGION_NS=MY_REGION_NS, KMY_REGION_EW=MY_REGION_EW, KFRSTLAT=NFRSTLAT, &
-      &            KLSTLAT=NLSTLAT, KSTA=NSTA, KONL=NONL, PMU=ZMU)
+    CALL TRANS_INQ(KPTRFLOFF=NPTRFLOFF, KMY_REGION_NS=MY_REGION_NS, KMY_REGION_EW=MY_REGION_EW, &
+      &            KFRSTLAT=NFRSTLAT, KLSTLAT=NLSTLAT, KSTA=NSTA, KONL=NONL, PMU=ZMU)
 
     ILAT = NPTRFLOFF
     IBL  = 1
@@ -54,7 +54,8 @@ MODULE ANALYTIC_UTILS
         ZLON = REAL(JLON - 1, JPRD) * 2.0_JPRD * Z_PI / REAL(KLOEN(JGLAT), JPRD)
         GELAM(JROF, IBL) = ZLON ! Longitude
         GELAT(JROF, IBL) = ZLAT ! Latitude
-        NLATIDXS(JROF, IBL) = JGLAT - NFIRSTLAT + 1 ! Latitude of this (JROF, IBL) relative to NFIRSTLAT
+        NLATIDXS(JROF, IBL) = JGLAT - NFIRSTLAT + 1 ! Latitude of this (JROF, IBL) relative to
+                                                    ! NFIRSTLAT
         JROF = JROF + 1
         IF (JROF > KPROMA) THEN
           JROF = 1
@@ -65,10 +66,10 @@ MODULE ANALYTIC_UTILS
 
   END SUBROUTINE ANALYTIC_INIT
 
-  !===================================================================================================
+  !=================================================================================================
   ! Compute the Legendre polynomials for all latitudes and total wavenumbers at the given zonal
   ! wavenumber.
-  !===================================================================================================
+  !=================================================================================================
 
   SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS(KZONAL, KSMAX)
 
@@ -95,9 +96,9 @@ MODULE ANALYTIC_UTILS
 
   END SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS
 
-  !===================================================================================================
+  !=================================================================================================
   ! Deallocate the helper arrays used for the analytic solutions.
-  !===================================================================================================
+  !=================================================================================================
 
   SUBROUTINE ANALYTIC_END()
 
@@ -108,10 +109,10 @@ MODULE ANALYTIC_UTILS
 
   END SUBROUTINE ANALYTIC_END
 
-  !====================================================================================================
-  ! Compute analytic solution for a specific total wavenumber n and zonal wavenumber m by going through
-  ! all points and using the point-wise function analytic_spherical_harmonic_point.
-  !====================================================================================================
+  !=================================================================================================
+  ! Compute analytic solution for a specific total wavenumber n and zonal wavenumber m by going
+  ! through all points and using the point-wise function analytic_spherical_harmonic_point.
+  !=================================================================================================
 
   FUNCTION COMPUTE_ANALYTIC_SOLUTION(KPROMA, KGPBLKS, KGPTOT, KZONAL, KTOTAL) RESULT(PSPH_ANALYTIC)
 
@@ -141,10 +142,10 @@ MODULE ANALYTIC_UTILS
 
   END FUNCTION COMPUTE_ANALYTIC_SOLUTION
 
-  !====================================================================================================
+  !=================================================================================================
   ! Compute the maximum error between two blocked grid point arrays.
   ! This is needed when comparing arrays that have a partially filled <NPROMA tail block.
-  !====================================================================================================
+  !=================================================================================================
 
   FUNCTION COMPUTE_MAX_ERROR(KGPTOT, KPROMA, PGP1, PGP2) RESULT(MAX_ERROR)
 
@@ -169,6 +170,6 @@ MODULE ANALYTIC_UTILS
     ENDDO
   END FUNCTION COMPUTE_MAX_ERROR
 
-  !===================================================================================================
+  !=================================================================================================
 
 END MODULE ANALYTIC_UTILS

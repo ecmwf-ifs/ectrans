@@ -109,14 +109,14 @@ ENDIF
 
 !===================================================================================================
 
-! only output to stdout on pe 1
+! Only output to stdout on task 1
 IF (MYPROC /= 1) THEN
   OPEN(UNIT=NOUT, FILE='/dev/null')
 ENDIF
 
 !===================================================================================================
 
-! Compute nprgpns and nprgpew
+! Compute NPRGPNS and NPRGPEW
 ! This version selects most square-like distribution
 ISQR = INT(SQRT(REAL(NPROC, JPRB)))
 DO JA = ISQR, NPROC
@@ -128,7 +128,7 @@ DO JA = ISQR, NPROC
   ENDIF
 ENDDO
 
-! Compute nprtrv and nprtrw if not provided above
+! Compute NPRTRV and NPRTRW if not provided above
 IF (NPRTRV > 0 .OR. NPRTRW > 0) THEN
   IF (NPRTRV == 0) NPRTRV = NPROC / NPRTRW
   IF (NPRTRW == 0) NPRTRW = NPROC / NPRTRV
@@ -182,8 +182,8 @@ ENDIF
 ! Determine number of local levels for fourier and legendre calculations
 ! based on the values of nfld and nprtrv
 ALLOCATE(NUM_LOCAL_LEVELS_ALL(NPRTRV))
-NFLD_LOCAL = NFLD / NPRTRV ! INTEGER DIVISION
-NUM_REST = NFLD - NFLD_LOCAL * NPRTRV ! TAIL BLOCK
+NFLD_LOCAL = NFLD / NPRTRV ! Integer division
+NUM_REST = NFLD - NFLD_LOCAL * NPRTRV ! Tail block
 DO JSETV = 1, NPRTRV
   NUM_LOCAL_LEVELS_ALL(JSETV) = NFLD_LOCAL
   IF (JSETV == NPRTRV) THEN
@@ -214,7 +214,7 @@ ALLOCATE(ZGP(NPROMA, NFLD, NGPBLKS))
 ! Allocate arrays for analytic solutions
 ALLOCATE(ZSPH_ANALYTIC(NPROMA, NGPBLKS))
 
-! Compute geographic longitude GELAM and latitude GELAT:
+! Compute geographic longitude GELAM and latitude GELAT
 CALL ANALYTIC_INIT(NPROMA, NGPBLKS, NDGL, N_REGIONS_NS, N_REGIONS_EW, NLOEN)
 
 !===================================================================================================
