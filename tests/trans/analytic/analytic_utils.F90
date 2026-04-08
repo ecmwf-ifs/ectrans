@@ -3,10 +3,21 @@ MODULE ANALYTIC_UTILS
   USE PARKIND1, ONLY: JPIM, JPRD, JPRB
 
   REAL(KIND=JPRD), PARAMETER :: PP_PI = 4.0_JPRD * ATAN(1.0_JPRD)
-  REAL(KIND=JPRD), ALLOCATABLE :: ZMU(:), GELAM(:, :), GELAT(:, :)
-  REAL(KIND=JPRD), ALLOCATABLE :: PLEGPOLYS(:, :)
-  INTEGER(KIND=JPIM), ALLOCATABLE :: NLATIDXS(:, :)
-  INTEGER(KIND=JPIM) :: NFIRSTLAT, NLASTLAT
+
+  TYPE, PUBLIC :: ANALYTIC_GENERATOR
+    REAL(KIND=JPRD), ALLOCATABLE :: ZMU(:), GELAM(:, :), GELAT(:, :)
+    REAL(KIND=JPRD), ALLOCATABLE :: PLEGPOLYS(:, :)
+    INTEGER(KIND=JPIM), ALLOCATABLE :: NLATIDXS(:, :)
+    INTEGER(KIND=JPIM) :: NFIRSTLAT, NLASTLAT
+  CONTAINS
+    PROCEDURE :: PREPARE_LEGENDRE_POLYNOMIALS
+    PROCEDURE :: COMPUTE_ANALYTIC_SOLUTION
+    FINAL :: ANALYTIC_GENERATOR_DESTRUCTOR
+  END TYPE ANALYTIC_GENERATOR
+
+  INTERFACE ANALYTIC_GENERATOR
+    MODULE PROCEDURE :: ANALYTIC_GENERATOR_CONSTRUCTOR
+  END INTERFACE ANALYTIC_GENERATOR
 
 #include "trans_inq.h"
 
@@ -18,7 +29,8 @@ MODULE ANALYTIC_UTILS
   ! global latitude index. This is used later to retrieve the corresponding Legendre polynomial.
   !=================================================================================================
 
-  SUBROUTINE ANALYTIC_INIT(KPROMA, KGPBLKS, KDGL, K_REGIONS_NS, K_REGIONS_EW, KLOEN)
+  FUNCTION ANALYTIC_GENERATOR_CONSTRUCTOR(KPROMA, KGPBLKS, KDGL, K_REGIONS_NS, K_REGIONS_EW, &
+      &                                   KLOEN) RESULT(THIS)
 
     IMPLICIT NONE
 
@@ -29,33 +41,36 @@ MODULE ANALYTIC_UTILS
     INTEGER(KIND=JPIM), INTENT(IN) :: K_REGIONS_EW
     INTEGER(KIND=JPIM), DIMENSION(KDGL), INTENT(IN) :: KLOEN
 
+    TYPE(ANALYTIC_GENERATOR) :: THIS
+
     INTEGER(KIND=JPIM) :: NPTRFLOFF, MY_REGION_NS, MY_REGION_EW
     INTEGER(KIND=JPIM) :: JGLAT, IOFF, ILAT, ISTLON, IENDLON, JLON, JROF, IBL
     INTEGER(KIND=JPIM), DIMENSION(K_REGIONS_NS) :: NFRSTLAT, NLSTLAT
     INTEGER(KIND=JPIM), DIMENSION(KDGL + K_REGIONS_NS - 1, K_REGIONS_EW) :: NSTA, NONL
     REAL(KIND=JPRD) :: ZLAT, ZLON
 
-    ALLOCATE(ZMU(KDGL), NLATIDXS(KPROMA, KGPBLKS), GELAM(KPROMA, KGPBLKS), GELAT(KPROMA, KGPBLKS))
+    ALLOCATE(THIS%ZMU(KDGL), THIS%GELAM(KPROMA, KGPBLKS), THIS%GELAT(KPROMA, KGPBLKS))
+    ALLOCATE(THIS%NLATIDXS(KPROMA, KGPBLKS))
 
     CALL TRANS_INQ(KPTRFLOFF=NPTRFLOFF, KMY_REGION_NS=MY_REGION_NS, KMY_REGION_EW=MY_REGION_EW, &
-      &            KFRSTLAT=NFRSTLAT, KLSTLAT=NLSTLAT, KSTA=NSTA, KONL=NONL, PMU=ZMU)
+      &            KFRSTLAT=NFRSTLAT, KLSTLAT=NLSTLAT, KSTA=NSTA, KONL=NONL, PMU=THIS%ZMU)
 
     ILAT = NPTRFLOFF
     IBL  = 1
     JROF = 1
-    NFIRSTLAT = NFRSTLAT(MY_REGION_NS)
-    NLASTLAT = NLSTLAT(MY_REGION_NS)
-    DO JGLAT = NFIRSTLAT, NLASTLAT
-      ZLAT = ASIN(ZMU(JGLAT))
+    THIS%NFIRSTLAT = NFRSTLAT(MY_REGION_NS)
+    THIS%NLASTLAT = NLSTLAT(MY_REGION_NS)
+    DO JGLAT = THIS%NFIRSTLAT, THIS%NLASTLAT
+      ZLAT = ASIN(THIS%ZMU(JGLAT))
       ILAT = ILAT + 1
       ISTLON = NSTA(ILAT, MY_REGION_EW)
       IENDLON = ISTLON - 1 + NONL(ILAT, MY_REGION_EW)
       DO JLON = ISTLON, IENDLON
         ZLON = REAL(JLON - 1, JPRD) * 2.0_JPRD * PP_PI / REAL(KLOEN(JGLAT), JPRD)
-        GELAM(JROF, IBL) = ZLON ! Longitude
-        GELAT(JROF, IBL) = ZLAT ! Latitude
-        NLATIDXS(JROF, IBL) = JGLAT - NFIRSTLAT + 1 ! Latitude of this (JROF, IBL) relative to
-                                                    ! NFIRSTLAT
+        THIS%GELAM(JROF, IBL) = ZLON ! Longitude
+        THIS%GELAT(JROF, IBL) = ZLAT ! Latitude
+        THIS%NLATIDXS(JROF, IBL) = JGLAT - THIS%NFIRSTLAT + 1 ! Latitude of this (JROF, IBL)
+                                                              ! relative to NFIRSTLAT
         JROF = JROF + 1
         IF (JROF > KPROMA) THEN
           JROF = 1
@@ -64,32 +79,33 @@ MODULE ANALYTIC_UTILS
       ENDDO
     ENDDO
 
-  END SUBROUTINE ANALYTIC_INIT
+  END FUNCTION ANALYTIC_GENERATOR_CONSTRUCTOR
 
   !=================================================================================================
   ! Compute the Legendre polynomials for all latitudes and total wavenumbers at the given zonal
   ! wavenumber.
   !=================================================================================================
 
-  SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS(KZONAL, KSMAX)
+  SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS(THIS, KZONAL, KSMAX)
 
     USE TPM_POL, ONLY: INI_POL, END_POL
     USE SUPOLF_MOD, ONLY: SUPOLF
 
     IMPLICIT NONE
 
+    CLASS(ANALYTIC_GENERATOR), INTENT(INOUT) :: THIS
     INTEGER(KIND=JPIM), INTENT(IN) :: KZONAL
     INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX
 
     INTEGER(KIND=JPIM) :: JGLAT
 
-    IF (ALLOCATED(PLEGPOLYS)) DEALLOCATE(PLEGPOLYS)
-    ALLOCATE(PLEGPOLYS(NLASTLAT - NFIRSTLAT + 1, 0:KSMAX))
+    IF (ALLOCATED(THIS%PLEGPOLYS)) DEALLOCATE(THIS%PLEGPOLYS)
+    ALLOCATE(THIS%PLEGPOLYS(THIS%NLASTLAT - THIS%NFIRSTLAT + 1, 0:KSMAX))
 
     CALL INI_POL(KSMAX)
 
-    DO JGLAT = NFIRSTLAT, NLASTLAT
-      CALL SUPOLF(KZONAL, KSMAX, ZMU(JGLAT), PLEGPOLYS(JGLAT - NFIRSTLAT + 1, :))
+    DO JGLAT = THIS%NFIRSTLAT, THIS%NLASTLAT
+      CALL SUPOLF(KZONAL, KSMAX, THIS%ZMU(JGLAT), THIS%PLEGPOLYS(JGLAT - THIS%NFIRSTLAT + 1, :))
     ENDDO
 
     CALL END_POL
@@ -97,27 +113,16 @@ MODULE ANALYTIC_UTILS
   END SUBROUTINE PREPARE_LEGENDRE_POLYNOMIALS
 
   !=================================================================================================
-  ! Deallocate the helper arrays used for the analytic solutions.
-  !=================================================================================================
-
-  SUBROUTINE ANALYTIC_END()
-
-    IMPLICIT NONE
-
-    DEALLOCATE(ZMU, NLATIDXS, GELAM, GELAT)
-    DEALLOCATE(PLEGPOLYS)
-
-  END SUBROUTINE ANALYTIC_END
-
-  !=================================================================================================
   ! Compute analytic solution for a specific total wavenumber n and zonal wavenumber m by going
   ! through all points and using the point-wise function analytic_spherical_harmonic_point.
   !=================================================================================================
 
-  FUNCTION COMPUTE_ANALYTIC_SOLUTION(KPROMA, KGPBLKS, KGPTOT, KZONAL, KTOTAL) RESULT(PSPH_ANALYTIC)
+  FUNCTION COMPUTE_ANALYTIC_SOLUTION(THIS, KPROMA, KGPBLKS, KGPTOT, KZONAL, KTOTAL) &
+      & RESULT(PSPH_ANALYTIC)
 
     IMPLICIT NONE
 
+    CLASS(ANALYTIC_GENERATOR), INTENT(IN) :: THIS
     INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA
     INTEGER(KIND=JPIM), INTENT(IN) :: KGPBLKS
     INTEGER(KIND=JPIM), INTENT(IN) :: KGPTOT
@@ -132,15 +137,30 @@ MODULE ANALYTIC_UTILS
       IBL  = (JKGLO - 1) / KPROMA + 1
       DO JROF = 1, IEND
         IF (KZONAL == 0) THEN
-          PSPH_ANALYTIC(JROF, IBL) = PLEGPOLYS(NLATIDXS(JROF, IBL), KTOTAL)
+          PSPH_ANALYTIC(JROF, IBL) = THIS%PLEGPOLYS(THIS%NLATIDXS(JROF, IBL), KTOTAL)
         ELSE
-          PSPH_ANALYTIC(JROF, IBL) = 2.0_JPRD * COS(KZONAL * GELAM(JROF, IBL)) * &
-            & PLEGPOLYS(NLATIDXS(JROF, IBL), KTOTAL)
+          PSPH_ANALYTIC(JROF, IBL) = 2.0_JPRD * COS(KZONAL * THIS%GELAM(JROF, IBL)) * &
+            & THIS%PLEGPOLYS(THIS%NLATIDXS(JROF, IBL), KTOTAL)
         ENDIF
       ENDDO
     ENDDO
 
   END FUNCTION COMPUTE_ANALYTIC_SOLUTION
+
+  !=================================================================================================
+  ! Deallocate the helper arrays used for the analytic solutions.
+  !=================================================================================================
+
+  SUBROUTINE ANALYTIC_GENERATOR_DESTRUCTOR(THIS)
+
+    IMPLICIT NONE
+
+    TYPE(ANALYTIC_GENERATOR), INTENT(INOUT) :: THIS
+
+    DEALLOCATE(THIS%ZMU, THIS%NLATIDXS, THIS%GELAM, THIS%GELAT)
+    IF (ALLOCATED(THIS%PLEGPOLYS)) DEALLOCATE(THIS%PLEGPOLYS)
+
+  END SUBROUTINE ANALYTIC_GENERATOR_DESTRUCTOR
 
   !=================================================================================================
   ! Compute the maximum error between two blocked grid point arrays.
