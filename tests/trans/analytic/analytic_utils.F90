@@ -13,7 +13,7 @@ MODULE ANALYTIC_UTILS
   CONTAINS
 
   !===================================================================================================
-  ! Compute with the help of TRANS_INQ the geographic longitude GELAM and latitude GELAM.
+  ! Compute with the help of TRANS_INQ the geographic longitude GELAM and latitude GELAT.
   ! Also create a helper array NLATIDXS(NPROMA, NGPBLKS) which contains for each blocked point the
   ! global latitude index. This is used later to retrieve the corresponding Legendre polynomial.
   !===================================================================================================
