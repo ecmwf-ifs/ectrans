@@ -21,9 +21,13 @@ INTEGER(KIND=JPIM), PARAMETER :: NERR     = 0 ! Unit number for stderr
 INTEGER(KIND=JPIM), PARAMETER :: NOUT     = 6 ! Unit number for stdout
 
 ! Default parameters
-INTEGER(KIND=JPIM) :: NSMAX   = 21  ! Spectral truncation
+INTEGER(KIND=JPIM), PARAMETER :: NSMAX = 21 ! Spectral truncation
+INTEGER(KIND=JPIM), PARAMETER :: NPROMA = 16
+INTEGER, PARAMETER :: VERBOSITY = -1 ! Verbosity level (-1, 0 or 1)
+LOGICAL, PARAMETER :: LUSEFLT = .FALSE. ! Use fast legendre transforms
+REAL(KIND=JPRD), PARAMETER :: RTOLERANCE = 1E-9
+
 INTEGER(KIND=JPIM) :: NFLD    = 1   ! Number of scalar fields
-LOGICAL            :: LIMAG = .FALSE. ! Test imaginary part of spectral data
 INTEGER(KIND=JPIM) :: NDGL ! Number of latitudes
 INTEGER(KIND=JPIM) :: NSPEC2
 INTEGER(KIND=JPIM) :: NGPTOT
@@ -45,15 +49,6 @@ REAL(KIND=JPRB), ALLOCATABLE :: ZGP(:,:,:)
 ! Spectral space data structures
 REAL(KIND=JPRD), ALLOCATABLE :: ZSPH_ANALYTIC(:,:)
 
-LOGICAL :: LUSEFLT = .FALSE. ! Use fast legendre transforms
-REAL(KIND=JPRD) :: RTOLERANCE = 1E-9 ! maximum relative lmax error tolerance for
-                                     ! passing analytyic solution tests in double precision
-                                     ! Value for single precision is set at the beginning
-                                     ! of the execution.
-
-! Verbosity level (-1, 0 or 1)
-INTEGER :: VERBOSITY = -1
-
 INTEGER(KIND=JPIM) :: NPROC ! Number of procs
 INTEGER(KIND=JPIM) :: NPRGPNS ! Grid-point decomp
 INTEGER(KIND=JPIM) :: NPRGPEW ! Grid-point decomp
@@ -66,14 +61,13 @@ INTEGER(KIND=JPIM), ALLOCATABLE :: NUM_LOCAL_LEVELS_ALL(:), IVSET(:)
 INTEGER(KIND=JPIM) :: NFLD_LOCAL, NUM_REST
 INTEGER(KIND=JPIM) :: I
 INTEGER(KIND=JPIM) :: ISQR
-INTEGER(KIND=JPIM) :: NPROMA = 16
 INTEGER(KIND=JPIM) :: NGPBLKS
 INTEGER(KIND=JPIM) :: ILEV, JLEV
 INTEGER(KIND=JPIM) :: JSETV
 INTEGER(KIND=JPIM) :: M, N, IMAG_IDX
 INTEGER, EXTERNAL :: EC_MPIRANK
 LOGICAL :: LUSE_MPI = .TRUE.
-CHARACTER(LEN=16) :: CGRID = ''
+CHARACTER(LEN=16) :: CGRID
 
 REAL(KIND=JPRB) :: ZMAX_ERROR
 
@@ -92,9 +86,8 @@ REAL(KIND=JPRB) :: ZMAX_ERROR
 LUSE_MPI = DETECT_MPIRUN()
 IF (JPRB == JPRM) RTOLERANCE = 1E-3 ! Tolerance for single precision
 ! Setup
-CALL GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, NPRTRW, &
-  &                             LIMAG, RTOLERANCE)
-IF (CGRID == '') CGRID = CUBIC_FULL_GRID(NSMAX)
+CALL GET_COMMAND_LINE_ARGUMENTS(NFLD)
+CGRID = CUBIC_FULL_GRID(NSMAX)
 CALL PARSE_GRID(CGRID, NDGL, NLOEN)
 
 WRITE(NOUT,'(A)') '======= ecTrans analytic test ======='
@@ -134,7 +127,7 @@ DO JA = ISQR, NPROC
   ENDIF
 ENDDO
 
-! Compute nprtrv and nprtrw if not provided on the command line
+! Compute nprtrv and nprtrw if not provided above
 IF (NPRTRV > 0 .OR. NPRTRW > 0) THEN
   IF (NPRTRV == 0) NPRTRV = NPROC / NPRTRW
   IF (NPRTRW == 0) NPRTRW = NPROC / NPRTRV
@@ -397,19 +390,9 @@ END SUBROUTINE
 
 !===================================================================================================
 
-SUBROUTINE GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBOSITY, NPRTRV, &
-  &                                   NPRTRW, LIMAG, RTOLERANCE)
+SUBROUTINE GET_COMMAND_LINE_ARGUMENTS(NFLD)
 
-  INTEGER, INTENT(INOUT) :: NSMAX           ! Spectral truncation
-  CHARACTER(LEN=16), INTENT(INOUT) :: CGRID ! Grid
   INTEGER, INTENT(INOUT) :: NFLD            ! Number of scalar fields
-  LOGICAL, INTENT(INOUT) :: LUSEFLT         ! Use fast Legendre transforms
-  INTEGER, INTENT(INOUT) :: NPROMA          ! NPROMA
-  INTEGER, INTENT(INOUT) :: VERBOSITY       ! Level of verbosity
-  INTEGER, INTENT(INOUT) :: NPRTRV          ! Size of V set (spectral decomposition)
-  INTEGER, INTENT(INOUT) :: NPRTRW          ! Size of W set (spectral decomposition)
-  LOGICAL, INTENT(INOUT) :: LIMAG           ! test imaginary part
-  REAL(JPRD), INTENT(INOUT) :: RTOLERANCE      ! relative error tolerance for analytic solutions
 
   CHARACTER(LEN=128) :: CARG          ! Storage variable for command line arguments
   INTEGER            :: IARG = 1      ! Argument index
@@ -426,23 +409,7 @@ SUBROUTINE GET_COMMAND_LINE_ARGUMENTS(NSMAX, CGRID, NFLD, LUSEFLT, NPROMA, VERBO
         IF (EC_MPIRANK()==0) CALL PRINT_HELP()
         IF (LUSE_MPI) CALL MPL_END(LDMEMINFO=.FALSE.)
         STOP
-      ! Parse verbosity argument
-      CASE('-v')
-        VERBOSITY = 1
-      ! Parse spectral truncation argument
-      CASE('-t', '--truncation')
-        NSMAX = GET_INT_VALUE('-t', IARG)
-        IF (NSMAX < 1) THEN
-          CALL PARSING_FAILED("Invalid argument for -t: must be > 0")
-        END IF
-      CASE('-g', '--grid'); CGRID = GET_STR_VALUE('-g', IARG)
       CASE('-f', '--nfld'); NFLD = GET_INT_VALUE('-f', IARG)
-      CASE('--imaginary'); LIMAG = .TRUE.
-      CASE('--flt'); LUSEFLT = .TRUE.
-      CASE('--nproma'); NPROMA = GET_INT_VALUE('--nproma', IARG)
-      CASE('--nprtrv'); NPRTRV = GET_INT_VALUE('--nprtrv', IARG)
-      CASE('--nprtrw'); NPRTRW = GET_INT_VALUE('--nprtrw', IARG)
-      CASE('--tolerance'); RTOLERANCE = GET_REAL_VALUE('--tolerance', IARG)
       CASE DEFAULT
         CALL PARSING_FAILED("Unrecognised argument: " // TRIM(CARG))
 
@@ -533,31 +500,7 @@ SUBROUTINE PRINT_HELP(UNIT)
 
   WRITE(NOUT, "(A)") "OPTIONS"
   WRITE(NOUT, "(A)") "    -h, --help          Print this message"
-  WRITE(NOUT, "(A)") "    -v                  Run with verbose output"
-  WRITE(NOUT, "(A)") "    -t, --truncation T  Run with this triangular spectral truncation"
-  WRITE(NOUT, "(A)") "                        (default = 79)"
-  WRITE(NOUT, "(A)") "    -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>"
-  WRITE(NOUT, "(A)") "                        If not specified, O<N> is used with N=truncation+1"
-  WRITE(NOUT, "(A)") "                        (cubic relation)"
-  WRITE(NOUT, "(A)") "    -n, --niter NITER   Run for this many inverse/direct transform"
-  WRITE(NOUT, "(A)") "                        iterations (default = 10)"
   WRITE(NOUT, "(A)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
-  WRITE(NOUT, "(A)") "    --imaginary         Test imaginary part"
-  WRITE(NOUT, "(A)") "    --tolerance         Test is passed if largest relative lmax-error is"
-  WRITE(NOUT, "(A)") "                        smaller than this tolerance (real value)"
-  WRITE(NOUT, "(A)") "    --vordiv            Also transform vorticity-divergence to wind"
-  WRITE(NOUT, "(A)") "    --scders            Compute scalar derivatives (default off)"
-  WRITE(NOUT, "(A)") "    --flt               Run with fast Legendre transforms (default off)"
-  WRITE(NOUT, "(A)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
-  WRITE(NOUT, "(A)") "    --norms             Calculate and print spectral norms of transformed"
-  WRITE(NOUT, "(A)") "                        fields"
-  WRITE(NOUT, "(A)") "                        The computation of spectral norms will skew overall"
-  WRITE(NOUT, "(A)") "                        timings"
-  WRITE(NOUT, "(A)") "    --nprtrv            Size of V set in spectral decomposition"
-  WRITE(NOUT, "(A)") "    --nprtrw            Size of W set in spectral decomposition"
-  WRITE(NOUT, "(A)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a"
-  WRITE(NOUT, "(A)") "                        tolerance for correctness checking"
-  WRITE(NOUT, "(A)") ""
 
 END SUBROUTINE PRINT_HELP
 
