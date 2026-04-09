@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# (C) Copyright 2025 ECMWF.
+# (C) Copyright 2026 ECMWF.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -17,13 +17,13 @@ export PATH=$SCRIPTDIR:$PATH
 os=$(uname)
 case "$os" in
     Darwin)
-      echo "Installing OpenBLAS via brew"
-      brew ls --versions openblas || brew install openblas
+      echo "Installing reference Netlib BLAS/LAPACK via brew"
+      brew ls --versions lapack || brew install lapack
       exit
     ;;
     Linux)
-      echo "Installing OpenBLAS via apt-get"
-      sudo apt-get install libopenblas-dev
+      echo "Installing reference Netlib BLAS/LAPACK via apt-get"
+      sudo apt-get install libblas-dev liblapack-dev
       exit
     ;;
     *)

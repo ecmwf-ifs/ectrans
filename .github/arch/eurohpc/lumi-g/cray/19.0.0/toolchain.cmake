@@ -6,6 +6,15 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-# ECMWF/HPC2020 AC complex, with Nvidia A100 GPUs
+# CSC LUMI-G cluster, with AMD MI250X GPUs
 
-set( ENABLE_ACC ON )
+set( OpenMP_C_FLAGS "-fopenmp" )
+set( OpenMP_C_LIB_NAMES craymp )
+set( OpenMP_Fortran_LIB_NAMES craymp crayacc )
+set( OpenMP_craymp_LIBRARY craymp )
+set( OpenMP_crayacc_LIBRARY crayacc_amdgpu )
+
+set( ENABLE_GPU ON )
+set( ENABLE_OMP ON )
+set( ENABLE_GPU_GRAPHS_GEMM OFF )
+set( ENABLE_GPU_GRAPHS_FFT OFF )

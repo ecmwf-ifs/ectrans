@@ -32,7 +32,7 @@ endif()
 
 set( ntasks 0 )
 if( HAVE_MPI )
-  list( APPEND ntasks 1 2 )
+  list( APPEND ntasks 1 4 )
 endif()
 set( nthreads 1 )
 if( HAVE_OMP )
@@ -119,7 +119,7 @@ foreach( benchmark ${benchmarks} )
   set( ntasks 0 )
   set( nthreads 1 )
   if( HAVE_MPI )
-    list( APPEND ntasks 1 2 )
+    list( APPEND ntasks 1 4 )
   endif()
   if( ${benchmark} MATCHES "cpu" )
     if( HAVE_OMP )
@@ -131,9 +131,16 @@ foreach( benchmark ${benchmarks} )
     configure_file( compare_checksums.py ${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py @ONLY )
     list( JOIN ntasks "," ntasks_joined )
     list( JOIN nthreads "," nthreads_joined )
+    # We exclude GPU results from the checksum comparison for now, as it's not guaranteed to pass
+    set( excludes "gpu" )
+    if( DEFINED ECTRANS_CHECKSUM_TEST_EXCLUDES )
+      # Exclude any other checksum comparisons the user specifies
+      set( excludes "${excludes},${ECTRANS_CHECKSUM_TEST_EXCLUDES}" )
+    endif()
+    # Add the checksum test, but don't include GPU results because we know those aren't bit-reproducible
     ecbuild_add_test( TARGET compare_checksums
       COMMAND "${CMAKE_CURRENT_BINARY_DIR}/compare_checksums.py"
-      ARGS "." ${ntasks_joined} ${nthreads_joined}
+      ARGS "." ${ntasks_joined} ${nthreads_joined} -E ${excludes}
     )
     set_tests_properties( compare_checksums PROPERTIES FIXTURES_REQUIRED checksum_tests )
   endif()
@@ -141,6 +148,12 @@ foreach( benchmark ${benchmarks} )
   # Add test for each parameter combination
   foreach( mpi ${ntasks} )
     foreach( omp ${nthreads} )
+      # This test suite assumes a 4-core machine (e.g. Github runner) so we don't want to
+      # oversubscribe the cores
+      if( "${mpi}" STREQUAL "4" AND ${omp} GREATER "1" )
+        continue()
+      endif()
+
       # TCO47 truncation
       set( t 47 )
       set( grid O48 )
@@ -246,6 +259,12 @@ if( HAVE_ETRANS )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
+          # This test suite assumes a 4-core machine (e.g. Github runner) so we don't want to
+          # oversubscribe the cores
+          if( "${mpi}" STREQUAL "4" AND "${omp}" GREATER "1" )
+            continue()
+          endif()
+
           set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
 
           ecbuild_add_test( TARGET ${base_title}_nfld0

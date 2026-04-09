@@ -35,7 +35,7 @@ while [ $# != 0 ]; do
 done
 
 os=$(uname)
-OMPIVER=4.1.1
+OMPIVER=5.0.7
 MPICHVER=3.4.2
 
 if [ ! -z ${mpi_version+x} ]; then
@@ -62,6 +62,9 @@ case "$os" in
             openmpi)
                 brew ls --versions openmpi || brew install openmpi
                 echo "localhost slots=72" >> $(brew --prefix)/etc/openmpi-default-hostfile
+                echo "localhost slots=72" >> $(brew --prefix)/etc/prte-default-hostfile
+                echo "rmaps_default_mapping_policy=:oversubscribe" >> $(brew --prefix)/etc/prte-mca-params.conf
+
                 # workaround for open-mpi/omp#7516
                 echo "setting the mca gds to hash..."
                 echo "gds = hash" >> $(brew --prefix)/etc/pmix-mca-params.conf
@@ -123,7 +126,8 @@ case "$os" in
                   echo "libmpi.so found -- nothing to build."
                 else
                   echo "Downloading openmpi source..."
-                  wget --no-check-certificate https://www.open-mpi.org/software/ompi/v4.1/downloads/openmpi-$OMPIVER.tar.gz
+                  OMPI_MAJOR_MINOR=$(echo $OMPIVER | sed 's/\([0-9]*\.[0-9]*\).*/\1/')
+                  wget --no-check-certificate https://www.open-mpi.org/software/ompi/v${OMPI_MAJOR_MINOR}/downloads/openmpi-$OMPIVER.tar.gz
                   tar -zxf openmpi-$OMPIVER.tar.gz
                   rm openmpi-$OMPIVER.tar.gz
                   echo "Configuring and building openmpi..."
@@ -133,6 +137,7 @@ case "$os" in
                   ${SCRIPTDIR}/reduce-output.sh make install
                   MPI_INSTALLED=true
                   echo "localhost slots=72" >> ${PREFIX}/etc/openmpi-default-hostfile
+                  echo "rmaps_default_mapping_policy=:oversubscribe" >> ${PREFIX}/etc/prte-mca-params.conf
                   cd -
                   rm -rf openmpi-$OMPIVER
                 fi
