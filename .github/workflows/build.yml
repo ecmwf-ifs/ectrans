@@ -174,8 +174,7 @@ jobs:
         sudo apt-get update
          sudo apt-get install \
           intel-oneapi-compiler-fortran-$version \
-          intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-$version \
-          intel-oneapi-mpi-devel-2021.10.0
+          intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-$version
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
