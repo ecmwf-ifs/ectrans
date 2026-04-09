@@ -66,7 +66,7 @@ jobs:
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
-            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177 -DMPI_ARGS=--oversubscribe -DBLA_VENDOR=Generic
+            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177 -DBLA_VENDOR=Generic
             ctest_options: -E memory
             caching: false
 
@@ -97,7 +97,7 @@ jobs:
             compiler_cxx: ~
             compiler_fc: gfortran-13
             cmake_options: >-
-              -DMPI_ARGS=--oversubscribe -DBLAS_LIBRARIES=/opt/homebrew/opt/lapack/lib/libblas.dylib
+              -DBLAS_LIBRARIES=/opt/homebrew/opt/lapack/lib/libblas.dylib
               "-DLAPACK_LIBRARIES=/opt/homebrew/opt/lapack/lib/libblas.dylib;/opt/homebrew/opt/lapack/lib/liblapack.dylib"
               -DBLA_VENDOR=Generic
             caching: true
