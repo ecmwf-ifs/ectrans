@@ -1726,13 +1726,8 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
     endif
-  enddo
 
-  icrc = 0
-  do jfld = 1, size(ivset, 1)
-    call gath_spec(pspecg=gspfld, kfgathg=1, kto=(/1/), kvset=ivset(jfld:jfld), kresol=1, &
-      &            pspec=zspdiv(jfld:jfld,:))
-    if (myproc == 1) then
+  if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspdiv)
   icrc = 0
