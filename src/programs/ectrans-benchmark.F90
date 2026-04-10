@@ -1277,6 +1277,7 @@ subroutine print_help(unit)
    & tolerance for correctness checking"
   write(nout, "(a)") "    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory) &
    & to allocate fields for GPU version"
+  write(nout, "(a)") "    --field-api         Use the field api interface of ecTrans"
   write(nout, "(a)") "    --callmode          The call mode for INV_TRANS and DIR_TRANS (1 or 2)"
   write(nout, "(a)") "                        Call mode 1 uses arrays PSPVOR, PSPDIV, PSPSCALAR and&
    & PGP"
