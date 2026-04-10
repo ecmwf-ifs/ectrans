@@ -32,7 +32,7 @@ foreach(platform ${platforms})
           PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/field_api/include/ectrans>
                            $<INSTALL_INTERFACE:include/ectrans> )
 
-      ectrans_target_fortran_module_directory(
+      ecbuild_target_fortran_module_directory(
           TARGET            ectrans_field_api_${platform_tag}${prec}
           MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_field_api_${platform_tag}${prec}
           INSTALL_DIRECTORY module/ectrans_field_api_${platform_tag}${prec} )
