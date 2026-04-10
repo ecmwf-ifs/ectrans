@@ -6,6 +6,5 @@ CMakeLists.txt.user*
 .nfs*
 build/*
 install/*
-env.sh
 *.DS_Store
 *.py[co~]
