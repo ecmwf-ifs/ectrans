@@ -223,7 +223,7 @@ jobs:
         dependencies: |
           ecmwf/ecbuild
           ecmwf-ifs/fiat
-          ecmwf-ifs/field_api
+          ecmwf-ifs/field_api@v0.3.9
         dependency_branch: develop
         dependency_cmake_options: |
           ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
