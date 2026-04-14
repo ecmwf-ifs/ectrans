@@ -14,7 +14,7 @@ INTERFACE
 SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
     & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
     & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,& 
-    & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL,KPROC,&
+    & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL,&
     & LDACC, &
     & FSPGL_PROC)
 
@@ -40,7 +40,6 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !       KGPTOT         - Number of total grid points
 !       KFLEVG         - Number of levels
 !       KFLEVL         - Number of local levels
-!       KPROC          - Processor ID
 !       LDACC          - Field data on device
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
@@ -77,7 +76,6 @@ INTEGER(KIND=JPIM),   INTENT(IN)            :: KPROMA
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPBLKS
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVG
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KPROC
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVL
 LOGICAL,              INTENT(IN), OPTIONAL  :: LDACC
 PROCEDURE (FSPGL_INTF),           OPTIONAL  :: FSPGL_PROC
