@@ -111,8 +111,6 @@ jobs:
               - -DENABLE_MPI=ON
               - -DENABLE_ETRANS=ON
               - -DENABLE_FIELD_API=ON
-              - -DENABLE_GPU_GRAPHS_GEMM=OFF
-              - -DENABLE_GPU_GRAPHS_FFT=OFF
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
