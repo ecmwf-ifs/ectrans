@@ -10,7 +10,7 @@
 
 SUBROUTINE DIR_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
                              & YDFU, YDFV, YDFSCALAR, &
-                             & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KPROC,&
+                             & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL,&
                              & LDACC)
 
 
@@ -40,7 +40,6 @@ SUBROUTINE DIR_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !       KGPTOT         - Number of total grid points
 !       KFLEVG         - Number of levels
 !       KFLEVL         - Number of local levels
-!       KPROC          - Processor ID
 !       LDACC          - Field and temporary data on the device
 
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
@@ -62,7 +61,6 @@ INTEGER(KIND=JPIM), INTENT(IN) ::KGPBLKS
 INTEGER(KIND=JPIM), INTENT(IN) ::KGPTOT
 INTEGER(KIND=JPIM), INTENT(IN) :: KFLEVG
 INTEGER(KIND=JPIM), INTENT(IN) :: KFLEVL
-INTEGER(KIND=JPIM), INTENT(IN) :: KPROC
 LOGICAL, INTENT(IN), OPTIONAL  :: LDACC
 
 ! Local variables
