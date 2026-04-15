@@ -10,8 +10,7 @@
 
 SUBROUTINE DIR_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
                              & YDFU, YDFV, YDFSCALAR, &
-                             & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL, &
-                             & LDACC)
+                             & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL)
 
 
 !**** *DIR_TRANS_FIELD_API* - Field API interface to direct spectral transform
@@ -40,7 +39,7 @@ SUBROUTINE DIR_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !       KGPTOT         - Number of total grid points
 !       KFLEVG         - Number of levels
 !       KFLEVL         - Number of local levels
-!       LDACC          - Field and temporary data on the device
+!       KRESOL         - 
 
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY : FIELD_BASIC_PTR
@@ -62,7 +61,6 @@ INTEGER(KIND=JPIM), INTENT(IN) ::KGPTOT
 INTEGER(KIND=JPIM), INTENT(IN) :: KFLEVG
 INTEGER(KIND=JPIM), INTENT(IN) :: KFLEVL
 INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
-LOGICAL, INTENT(IN), OPTIONAL  :: LDACC
 
 ! Local variables
 
@@ -100,6 +98,7 @@ INTEGER(KIND=JPIM) :: IOFFSET
 INTEGER(KIND=JPIM) :: JLEV      ! Level counter
 INTEGER(KIND=JPIM) :: JFLD      ! Field counter
 INTEGER(KIND=JPIM) :: C
+LOGICAL            :: LDACC     ! INDICATING IF WE ARE RUNNING ON THE GPU
 REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
 
 #include "dir_trans.h"
@@ -119,6 +118,10 @@ ID = 0
 IOFFSET = 0
 JLEV = 0
 JFLD = 0
+
+! We are still relying on DIR_TRANS, which require to have all the data are on CPU.
+! So we force using data on the host 
+LDACC = .FALSE.
 
 ! 1. Vector fields transformation to spectral space
 
@@ -162,12 +165,6 @@ IF (PRESENT(YDFU)) THEN
   ! allocate 'b-set' for vector fields
   ALLOCATE(IVSETUV(KFLEVG))
 
-
-! temporary copies on gpu
-   if ( LDACC ) THEN
-    !$ACC ENTER DATA CREATE(ZPSPVOR,ZPSPDIV,ZPGPUV)
-  ENDIF
-
   IOFFSET = 0
   C = LG(YDFU, YLGVU, LDACC, .TRUE.)
   C = LG(YDFV, YLGVV, LDACC, .TRUE.)
@@ -178,21 +175,11 @@ IF (PRESENT(YDFU)) THEN
         ID = JLEV + (JFLD -1) * KFLEVG
         ZZ2_1=>YLGVU(ID)%P
         ZZ2_2=>YLGVV(ID)%P
-        IF (LDACC) THEN
-          !$ACC KERNELS PRESENT(ZPGPUV,ZZ2_1,ZZ2_2)
-          ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:) = ZZ2_1(:,:)
-          ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:) = ZZ2_2(:,:)
-          !$ACC END KERNELS
-        ELSE
-          ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:) = ZZ2_1(:,:)
-          ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:) = ZZ2_2(:,:)
-        ENDIF
+
+        ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:) = ZZ2_1(:,:)
+        ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:) = ZZ2_2(:,:)
       ENDDO
     ENDDO
-
-    IF (LDACC) THEN
-    !$ACC UPDATE SELF(ZPGPUV)
-    ENDIF
 
   DO JFLD=1,IUVG
     DO JLEV=1,KFLEVG
@@ -228,7 +215,6 @@ IF (PRESENT(YDFSPSCALAR)) THEN
   IFLDSPSC = LS_COUNT(YDFSPSCALAR)
   ALLOCATE(YLSPVSCALAR(IFLDSPSC))
 
-
   ! count the number of fields present on the processor
   C = LS(YDFSPSCALAR, YLSPVSCALAR, LDACC,.TRUE.)
   IFLDXL = 0
@@ -244,26 +230,12 @@ IF (PRESENT(YDFSPSCALAR)) THEN
   ! allocate 'b-set' for scalar fields
   ALLOCATE(IVSETSC2(IFLDXG))
 
-  ! temporary copies on gpu
-   if ( LDACC ) THEN
-    !$ACC ENTER DATA CREATE(ZPSPSC2,ZPGP2)
-  ENDIF
-
   ! Copy list of scalar fields into temporary arrays (2d copy thanks to field_view)
   C = LG(YDFSCALAR, YLGVSCALAR, LDACC,.TRUE.)
   DO JFLD=1, IFLDXG
     ZZ2_1=>YLGVSCALAR(JFLD)%P
-    IF (LDACC) THEN
-      !$ACC KERNELS PRESENT(ZPGP2,ZZ2_1)
-      ZPGP2(:,JFLD,:) = ZZ2_1(:,:)
-      !$ACC END KERNELS
-    ELSE
-      ZPGP2(:,JFLD,:) = ZZ2_1(:,:)
-    ENDIF
-  ENDDO
-    IF (LDACC) THEN
-    !$ACC UPDATE SELF(ZPGP2)
-    ENDIF
+    ZPGP2(:,JFLD,:) = ZZ2_1(:,:)  
+  ENDDO   
   
   DO JFLD=1, IFLDXG
     IVSETSC2(JFLD) = YLGVSCALAR(JFLD)%IVSET
@@ -294,10 +266,7 @@ ENDIF
 
 ! copy spectral vorticity and divergence
 IF (IUVG>0) THEN
-    IF (LDACC) THEN
-    !$ACC UPDATE SELF(ZPSPVOR,ZPSPDIV)
-    ENDIF
-
+  
     C = LS(YDFSPVOR, YLSPVVOR, LDACC, .FALSE.)
     C = LS(YDFSPDIV, YLSPVDIV, LDACC, .FALSE.)
 
@@ -305,64 +274,29 @@ IF (IUVG>0) THEN
       IF (ASSOCIATED(YLSPVVOR(JFLD)%P)) THEN
         ZZ1_1=>YLSPVVOR(JFLD)%P
         ZZ1_2=>YLSPVDIV(JFLD)%P
-        IF (LDACC) THEN
-         !$ACC KERNELS PRESENT(ZPSPVOR,ZPSPDIV,ZZ1_1,ZZ1_2)
-          ZZ1_1(:) = ZPSPVOR(JFLD,:)
-          ZZ1_2(:) = ZPSPDIV(JFLD,:)
-          !$ACC END KERNELS
-        ELSE
-          ZZ1_1(:) = ZPSPVOR(JFLD,:)
-          ZZ1_2(:) = ZPSPDIV(JFLD,:)
-        ENDIF
+        ZZ1_1(:) = ZPSPVOR(JFLD,:)
+        ZZ1_2(:) = ZPSPDIV(JFLD,:)     
       ENDIF
-      ENDDO
-
+    ENDDO
 ENDIF
 
 ! copy spectral scalar fields
  IF (IFLDSPSC > 0) THEN
-
-   IF (LDACC) THEN
-   !$ACC UPDATE SELF(ZPSPSC2)
-   ENDIF
 
    C = LS(YDFSPSCALAR, YLSPVSCALAR, LDACC,.FALSE.)
    ID = 1
    DO JFLD = 1, IFLDSPSC
       IF (ASSOCIATED(YLSPVSCALAR(JFLD)%P)) THEN
         ZZ1_1=>YLSPVSCALAR(JFLD)%P
-        IF (LDACC) THEN
-          !$ACC KERNELS PRESENT(ZPSPSC2,ZZ1_1)
-           ZZ1_1(:) = ZPSPSC2(ID,:)
-          !$ACC END KERNELS
-        ELSE
-           ZZ1_1(:) = ZPSPSC2(ID,:)
-        ENDIF
+        ZZ1_1(:) = ZPSPSC2(ID,:)
         ID = ID + 1
       ENDIF
    ENDDO
   ENDIF
+
 ! 5. Final cleanup
 
 ! delete temporary arrays
-
- IF ( LDACC ) THEN
-  IF (ASSOCIATED(ZPSPVOR))  THEN
-      !$ACC EXIT DATA DELETE(ZPSPVOR)
-  ENDIF
-  IF (ASSOCIATED(ZPSPDIV)) THEN
-   !$ACC EXIT DATA DELETE(ZPSPDIV)
-  ENDIF
-  IF (ASSOCIATED(ZPGPUV)) THEN
-     !$ACC EXIT DATA DELETE(ZPGPUV)
-  ENDIF
-  IF (ASSOCIATED(ZPSPSC2)) THEN
-   !$ACC EXIT DATA DELETE(ZPSPSC2)
-  ENDIF
-  IF (ASSOCIATED(ZPGP2)) THEN
-     !$ACC EXIT DATA DELETE(ZPGP2)
-  ENDIF
-ENDIF
 
 IF (ASSOCIATED(ZPSPVOR)) DEALLOCATE(ZPSPVOR)
 IF (ASSOCIATED(ZPSPDIV)) DEALLOCATE(ZPSPDIV)

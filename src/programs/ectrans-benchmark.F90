@@ -132,7 +132,6 @@ logical :: lsyncstats = .false.
 logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
-logical :: llacc = .false.      ! retrieve data on device
 logical :: lfield_api = .false. ! use field API interface
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
@@ -228,7 +227,6 @@ real(kind=jprb), allocatable :: global_field(:,:)
 luse_mpi = detect_mpirun()
 if (VERSION == "gpu") then
   lpinning = .true.
-  llacc = .true.
 endif
 
 ! Setup
@@ -450,7 +448,6 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("lvordiv    ",l1)') lvordiv
   write(nout,'("lscders    ",l1)') lscders
   write(nout,'("luvder     ",l1)') luvder
-  write(nout,'("llacc      ",l1)') llacc
   write(nout,'("lfield_api ",l1)') lfield_api
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
@@ -682,8 +679,7 @@ do jstep = 1, iters+iters_warmup
                             & ydfscalar_ns=ylf%scalar_ns, ydfscalar_ew=ylf%scalar_ew, &
                             & ydfvor=ylf%vor, ydfdiv=ylf%div, &
                             & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, &
-                            & kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
-                            & ldacc=llacc)
+                            & kgptot=ngptot, kflevg=nflevg, kflevl=nflevl)
       call synchost_rdonly_wrapped_fields(ywflds)
 #else
       call abor1('ectrans_benchmark: No field API support')
@@ -765,8 +761,7 @@ do jstep = 1, iters+iters_warmup
 #if USE_FIELD_API
       call dir_trans_field_api (ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
                             &   ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
-                            &   kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl,&
-                            &   ldacc=llacc)
+                            &   kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl)
       call synchost_rdonly_wrapped_fields(ywflds)
 #ifdef FIELD_API_CLAMP
       ! clamp small spectral values to ensure bit reproductibility with field Api interface
