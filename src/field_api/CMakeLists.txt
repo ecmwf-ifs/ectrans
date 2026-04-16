@@ -43,7 +43,7 @@ foreach(platform ${platforms})
           INSTALL_DIRECTORY module/ectrans_field_api_${platform_tag}${prec} )
 
         if (HAVE_GPU AND HAVE_ACC)
-            target_link_libraries( ectrans_field_api_${platform_tag}${prec} PRIVATE OpenACC::OpenACC_Fortran )
+            target_link_libraries( ectrans_field_api_${platform_tag}${prec} )
         endif()
      endif()
 

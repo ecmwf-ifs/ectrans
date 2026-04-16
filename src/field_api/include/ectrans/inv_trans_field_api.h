@@ -1,28 +1,27 @@
 ! (C) Copyright 2001- ECMWF.
 ! (C) Copyright 2001- Meteo-France.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
-! 
+!
 
 INTERFACE
 
 
 SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
     & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-    & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,& 
-    & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL, &
-    & LDACC, &
+    & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,&
+    & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL,&
     & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
 
 !     Purpose.
 !     --------
-!        Allow to call INV_TRANS with a list of fields from field API                            
+!        Allow to call INV_TRANS with a list of fields from field API
 
 !**   Interface.
 !     ----------
@@ -31,16 +30,15 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !     Explicit arguments :
 !     --------------------
 !      input
-!       YDFSPVOR(:)    - List of spectral vector fields (vorticity) 
+!       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields 
+!       YDFSPSCALAR(:) - List of spectral scalar fields
 !       KSPEC          - Number of spectral coefficients
 !       KPROMA         - Blocking factor
 !       KGPBLKS        - Number of blocks
 !       KGPTOT         - Number of total grid points
 !       KFLEVG         - Number of levels
 !       KFLEVL         - Number of local levels
-!       LDACC          - Field data on device
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
@@ -78,7 +76,6 @@ INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVG
 INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVL
 INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
-LOGICAL,              INTENT(IN), OPTIONAL  :: LDACC
 PROCEDURE(FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 
 END SUBROUTINE INV_TRANS_FIELD_API
