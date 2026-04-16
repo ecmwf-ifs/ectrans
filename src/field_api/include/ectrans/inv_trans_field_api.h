@@ -11,11 +11,12 @@
 INTERFACE
 
 
-SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-    & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-    & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,&
-    & KRESOL,&
-    & FSPGL_PROC)
+SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV,               &
+                             & YDFSCALAR, YDFU, YDFV,                        &
+                             & YDFVOR,YDFDIV,                                &
+                             & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
+                             & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
 
@@ -30,23 +31,24 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !     Explicit arguments :
 !     --------------------
 !      input
+!       KRESOL           The resolution identifier
+!       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields!      
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
 !      output
+!       YDFSCALAR(:)   - List of grid-point scalar fields
 !       YDFU(:)        - List of grid-point vector fields (u)
 !       YDFV(:)        - List of grid-point vector fields (v)
 !       YDFVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDFDIV(:)      - List of grid-point vector fields (divergence)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
-!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
-
+!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
+                             
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR
 USE PARKIND1, ONLY : JPIM, JPRB

@@ -10,10 +10,9 @@
 
 INTERFACE
 
-SUBROUTINE DIR_TRANS_FIELD_API( YDFU, YDFV, YDFSCALAR, &
-                              & YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-                              & KRESOL)
-
+SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,
+                             & YDFSCALAR,YDFU, YDFV, &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV)
 
 !**** *DIR_TRANS_FIELD_API* - Field API interface to direct spectral transform
 
@@ -28,14 +27,14 @@ SUBROUTINE DIR_TRANS_FIELD_API( YDFU, YDFV, YDFSCALAR, &
 !     Explicit arguments :
 !     --------------------
 !  input
+!       KRESOL         - Resolution tag
+!       YDFSCALAR(:)   - List of grid-point scalar fields
 !       YDFU(:)        - List of grid-point vector fields (u)
 !       YDFV(:)        - List of grid-point vector fields (v)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
 !  output
+!       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields
-!       KRESOL         - Resolution tag
 !    
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR

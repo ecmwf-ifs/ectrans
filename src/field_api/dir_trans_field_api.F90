@@ -8,10 +8,9 @@
 ! nor does it submit to any jurisdiction.
 !
 
-SUBROUTINE DIR_TRANS_FIELD_API( YDFU, YDFV, YDFSCALAR, &
-                                & YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-                                & KRESOL)
-
+SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,                &
+                             & YDFSCALAR, YDFU, YDFV, &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV)
 
 !**** *DIR_TRANS_FIELD_API* - Field API interface to direct spectral transform
 
@@ -25,16 +24,20 @@ SUBROUTINE DIR_TRANS_FIELD_API( YDFU, YDFV, YDFSCALAR, &
 
 !     Explicit arguments :
 !     --------------------
-!      input
-!       YDFU(:)        - List of grid-point vector fields (u)
-!       YDFV(:)        - List of grid-point vector fields (v)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       KRESOL         - 
 !      output
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
 !       YDFSPSCALAR(:) - List of spectral scalar fields
-!     
+!      input
+!       KRESOL         -
+!       YDFSCALAR(:)   - List of grid-point scalar fields
+!       YDFU(:)        - List of grid-point vector fields (u)
+!       YDFV(:)        - List of grid-point vector fields (v)
+!      output
+!       YDFSPSCALAR(:) - List of spectral scalar fields
+!       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
+!       YDFSPDIV(:)    - List of spectral vector fields (divergence)
+!
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY : FIELD_BASIC_PTR
 USE PARKIND1  ,ONLY : JPIM,JPRB
@@ -43,18 +46,15 @@ USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW
 
 IMPLICIT NONE
 
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU(:),YDFV(:)
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)
+INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
+TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:), YDFU(:), YDFV(:)
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSPSCALAR(:), YDFSPVOR(:), YDFSPDIV(:)
 
-TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)
-TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSPSCALAR(:)
-
-
-TYPE(FIELD_VIEW), ALLOCATABLE  :: YLFVGU(:), YLFVGV(:)
 TYPE(FIELD_VIEW), ALLOCATABLE  :: YLFVGSCALAR(:)
+TYPE(FIELD_VIEW), ALLOCATABLE  :: YLFVGU(:), YLFVGV(:)
 
-TYPE(FIELD_VIEW), ALLOCATABLE  :: YLFVSVOR(:), YLFVSDIV(:)
 TYPE(FIELD_VIEW), ALLOCATABLE  :: YLFVSSCALAR(:)
+TYPE(FIELD_VIEW), ALLOCATABLE  :: YLFVSVOR(:), YLFVSDIV(:)
 
 INTEGER, PARAMETER :: FIELD_TYPE = 0
 
@@ -62,7 +62,6 @@ INTEGER(KIND=JPIM) :: IFIELD
 INTEGER(KIND=JPIM) :: NFIELD_UV, NFIELD_SCALAR
 
 #include "dir_trans_field_view.h"
-INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
 
 REAL(KIND=JPHOOK)  :: ZHOOK_HANDLE
 

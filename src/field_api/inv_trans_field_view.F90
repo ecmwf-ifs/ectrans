@@ -8,12 +8,12 @@
 ! nor does it submit to any jurisdiction.
 !
 
-SUBROUTINE INV_TRANS_FIELD_VIEW(YDSPSCALAR, YDSPVOR, YDSPDIV, &
-                                 & YDGPSCALAR, YDGPU, YDGPV,     &
-                                 & YDGPVOR,YDGPDIV, &
-                                 & YDGPU_EW, YDGPV_EW, YDGPSCALAR_NS, YDGPSCALAR_EW,&
-                                 & KRESOL, &
-                                 & FSPGL_PROC)
+SUBROUTINE INV_TRANS_FIELD_VIEW(KRESOL, &
+                               & YDSPSCALAR, YDSPVOR, YDSPDIV, &
+                               & YDGPSCALAR, YDGPU, YDGPV,     &
+                               & YDGPVOR,YDGPDIV, &
+                               & YDGPSCALAR_NS, YDGPSCALAR_EW, YDGPU_EW, YDGPV_EW&
+                               & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_VIEW* - Field API interface to inverse spectral transform
 
@@ -28,24 +28,24 @@ SUBROUTINE INV_TRANS_FIELD_VIEW(YDSPSCALAR, YDSPVOR, YDSPDIV, &
 !     Explicit arguments :
 !     --------------------
 !      input
+!       KRESOL           The resolution identifier
+!       YDSPSCALAR(:) - List of spectral scalar fields
 !       YDSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDSPSCALAR(:) - List of spectral scalar fields
-!       KRESOL           The resolution identifier
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
 !      output
+!       YDGPSCALAR(:)   - List of grid-point scalar fields
 !       YDGPU(:)        - List of grid-point vector fields (u)
 !       YDGPV(:)        - List of grid-point vector fields (v)
 !       YDGPVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDGPDIV(:)      - List of grid-point vector fields (divergence)
-!       YDGPSCALAR(:)   - List of grid-point scalar fields
-!       YDGPU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
-!       YDGPV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDGPSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDGPSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
-
+!       YDGPU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDGPV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
+                               
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW
 USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW_GET_DATA_PTR, GET_NPROMA, GET_NFLD, GET_NSPEC2, GET_NBLK
@@ -55,18 +55,18 @@ USE PARKIND1, ONLY : JPIM, JPRB
 IMPLICIT NONE
 
 #include "fspgl_intf.h"
-
-TYPE(FIELD_VIEW),INTENT(IN)  :: YDSPVOR(:), YDSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
+INTEGER(KIND=JPIM),   INTENT(IN) :: KRESOL
 TYPE(FIELD_VIEW),INTENT(IN)  :: YDSPSCALAR(:)                  ! SPECTRAL SCALAR FIELDS (IN)
+TYPE(FIELD_VIEW),INTENT(IN)  :: YDSPVOR(:), YDSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
 
+TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPU(:),YDGPV(:)                 ! GRID VECTOR FIELDS     (OUT)
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPVOR(:),YDGPDIV(:)             ! GRID VECTOR FIELDS :VORTICITY AND DIVERGENCE     (OUT)
-TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
 
-TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPU_EW(:),YDGPV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPSCALAR_EW(:), YDGPSCALAR_NS(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
+TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPU_EW(:),YDGPV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 
-INTEGER(KIND=JPIM),   INTENT(IN) :: KRESOL
+
 PROCEDURE (FSPGL_INTF), POINTER, OPTIONAL, INTENT(IN)  :: FSPGL_PROC
 
 ! Local variables
@@ -130,7 +130,7 @@ IF (LHOOK) CALL DR_HOOK('INV_TRANS_FIELD_VIEW',0,ZHOOK_HANDLE)
 
 
 NFIELD_UV           = SIZE(YDGPU)
-NFIELD_SCALAR       = SIZE(YDGPSCALAR) 
+NFIELD_SCALAR       = SIZE(YDGPSCALAR)
 NPROMA              = GET_NPROMA(YDGPU, YDGPV, YDGPSCALAR)
 NBLK                = GET_NBLK(YDGPU, YDGPV, YDGPSCALAR)
 NFIELD_TOTAL_UV     = GET_NFLD(YDGPU)
@@ -184,10 +184,10 @@ IF (SIZE(YDGPU) > 0) THEN
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
     CALL ABOR1("[INV_TRANS_FIELD_API] inconsistent number of field_view for vectors")
   ENDIF
-  
+
   KFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
   IUVG = SIZE(YDGPU)
-  
+
   LLUVDER  = .FALSE.
   LLVORGP = .FALSE.
   LLDIVGP = .FALSE.
@@ -226,7 +226,7 @@ IF (SIZE(YDGPU) > 0) THEN
 
   ! allocate 'b-set' for vector fields
   ALLOCATE(IVSETUV(KFLEVG))
- 
+
   C = LS(YDSPVOR, YLSPVVOR)
   C = LS(YDSPDIV, YLSPVDIV)
 
@@ -263,7 +263,7 @@ ENDIF
 
 IF (SIZE(YDSPSCALAR) > 0) THEN
 
-  IF ((SIZE(YDSPSCALAR)/= SIZE(YDGPSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_API] Inconsistent size & 
+  IF ((SIZE(YDSPSCALAR)/= SIZE(YDGPSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_API] Inconsistent size &
                                                         & for YDSPSCALAR and YDGPSCALAR")
 
   ! Convert list of spectral scalar fields of any domension into a list of 2d fields
@@ -308,7 +308,7 @@ IF (SIZE(YDSPSCALAR) > 0) THEN
       ID = ID + 1
     ENDIF
   ENDDO
-  
+
  ! compute ´b-set´ for scalar-fields
   C = LG(YDGPSCALAR, YLGVSCALAR)
    DO JFLD=1, IFLDXG
@@ -426,9 +426,9 @@ IF (IUVG>0) THEN
       DO JLEV=1,KFLEVG
         ID = JLEV + (JFLD -1) * KFLEVG
         ZZ2_1=>YLGVU_EW(ID)%P
-        ZZ2_2=>YLGVV_EW(ID)%P       
+        ZZ2_2=>YLGVV_EW(ID)%P
         ZZ2_1(:,:) =  ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:)
-        ZZ2_2(:,:) =  ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:)        
+        ZZ2_2(:,:) =  ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:)
       ENDDO
     ENDDO
   ENDIF
@@ -438,8 +438,8 @@ IF (IFLDXG > 0) THEN
   ! copy spectral scalar fields
     C = LG(YDGPSCALAR, YLGVSCALAR)
     DO JFLD=1, IFLDXG
-      ZZ2_1=>YLGVSCALAR(JFLD)%P(:,:)     
-      ZZ2_1(:,:) = ZPGP2(:,JFLD,:)     
+      ZZ2_1=>YLGVSCALAR(JFLD)%P(:,:)
+      ZZ2_1(:,:) = ZPGP2(:,JFLD,:)
     ENDDO
 
   ! copy spectral scalar fields derivatives
@@ -452,7 +452,7 @@ IF (IFLDXG > 0) THEN
         ZZ2_1=>YLGVSCALAR_NS(JFLD)%P
         ZZ2_2=>YLGVSCALAR_EW(JFLD)%P
         ZZ2_1(:,:) = ZPGP2(:, JFLD+IFLDXG,:)
-        ZZ2_2(:,:) = ZPGP2(:, JFLD+(2*IFLDXG),:)    
+        ZZ2_2(:,:) = ZPGP2(:, JFLD+(2*IFLDXG),:)
       ENDDO
 
   ENDIF

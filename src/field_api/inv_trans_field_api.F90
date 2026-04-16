@@ -8,10 +8,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
-SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-                             & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-                             & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,&
-                             & KRESOL, &
+SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV,               &
+                             & YDFSCALAR, YDFU, YDFV,                        &
+                             & YDFVOR,YDFDIV,                                &
+                             & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
                              & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
@@ -27,23 +28,23 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !     Explicit arguments :
 !     --------------------
 !      input
+!       KRESOL           The resolution identifier
+!       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields
-!       KRESOL           The resolution identifier
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
 !      output
+!       YDFSCALAR(:)   - List of grid-point scalar fields
 !       YDFU(:)        - List of grid-point vector fields (u)
 !       YDFV(:)        - List of grid-point vector fields (v)
 !       YDFVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDFDIV(:)      - List of grid-point vector fields (divergence)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
-!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
+!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY : FIELD_BASIC_PTR
@@ -55,17 +56,17 @@ IMPLICIT NONE
 
 #include "fspgl_intf.h"
 
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
+INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPSCALAR(:)                  ! SPECTRAL SCALAR FIELDS (IN)
+TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
 
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFU(:),YDFV(:)                 ! GRID VECTOR FIELDS     (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFVOR(:),YDFDIV(:)             ! GRID VECTOR FIELDS :VORTICITY AND DIVERGENCE     (OUT)
-TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
 
-TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 
-INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
 PROCEDURE (FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 
 ! Local variables
@@ -117,19 +118,19 @@ IF (PRESENT(YDFSCALAR)) THEN
   NFIELD_SCALAR = SIZE(YDFSCALAR)
 ENDIF
 IF (PRESENT(YDFU_EW) .AND. PRESENT(YDFV_EW))    THEN
-  NFIELD_UVDER = NFIELD_UV 
+  NFIELD_UVDER = NFIELD_UV
 ENDIF
 
 IF (PRESENT(YDFDIV)) THEN
-    NFIELD_DIVGP = NFIELD_UV   
+    NFIELD_DIVGP = NFIELD_UV
 ENDIF
 
 IF (PRESENT(YDFVOR)) THEN
-    NFIELD_VORGP = NFIELD_UV   
+    NFIELD_VORGP = NFIELD_UV
 ENDIF
 
 IF (PRESENT(YDFSCALAR_NS) .AND. PRESENT(YDFSCALAR_EW)) THEN
-    NFIELD_SCDER = NFIELD_SCALAR  
+    NFIELD_SCDER = NFIELD_SCALAR
 ENDIF
 
 ALLOCATE(YLFVSVOR(NFIELD_UV))
