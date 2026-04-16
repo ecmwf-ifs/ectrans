@@ -8,10 +8,11 @@
 ! nor does it submit to any jurisdiction.
 !
 
-SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-                             & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-                             & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,&
-                             & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL, &
+SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV,               &
+                             & YDFSCALAR, YDFU, YDFV,                        &
+                             & YDFVOR,YDFDIV,                                &
+                             & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
                              & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
@@ -27,56 +28,44 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !     Explicit arguments :
 !     --------------------
 !      input
+!       KRESOL           The resolution identifier
+!       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields
-!       KSPEC          - Number of spectral coefficients
-!       KPROMA         - Blocking factor
-!       KGPBLKS        - Number of blocks
-!       KGPTOT         - Number of total grid points
-!       KFLEVG         - Number of levels
-!       KFLEVL         - Number of local levels
-!       KRESOL           The resolution identifier
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
 !      output
+!       YDFSCALAR(:)   - List of grid-point scalar fields
 !       YDFU(:)        - List of grid-point vector fields (u)
 !       YDFV(:)        - List of grid-point vector fields (v)
 !       YDFVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDFDIV(:)      - List of grid-point vector fields (divergence)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
-!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
+!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY : FIELD_BASIC_PTR
-USE ECTRANS_FIELD_API_MOD, ONLY : SPEC_VIEW, GRID_VIEW, LS_COUNT, LG_COUNT, LS, LG
+USE ECTRANS_FIELD_API_MOD, ONLY : SPEC_VIEW, GRID_VIEW, LS_COUNT, LG_COUNT, LS, LG, GET_LAYOUT_S, GET_LAYOUT_G
 USE PARKIND1, ONLY : JPIM, JPRB
 
 IMPLICIT NONE
 
 #include "fspgl_intf.h"
 
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPSCALAR(:)                  ! SPECTRAL SCALAR FIELDS (IN)
-
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU(:),YDFV(:)                 ! GRID VECTOR FIELDS     (OUT)
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFVOR(:),YDFDIV(:)             ! GRID VECTOR FIELDS :VORTICITY AND DIVERGENCE     (OUT)
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
-
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
-
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KSPEC
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KPROMA
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPBLKS
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVG
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVL
 INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
+TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPSCALAR(:)                  ! SPECTRAL SCALAR FIELDS (IN)
+TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
+
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSCALAR(:)                    ! GRID SCALAR FIELDS     (OUT)
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFU(:),YDFV(:)                 ! GRID VECTOR FIELDS     (OUT)
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFVOR(:),YDFDIV(:)             ! GRID VECTOR FIELDS :VORTICITY AND DIVERGENCE     (OUT)
+
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
+
 PROCEDURE (FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 
 ! Local variables
@@ -127,12 +116,28 @@ LOGICAL                     :: LLDIVGP                                ! INDICATI
 LOGICAL                     :: LLUVDER                                ! INDICATING IF E-W DERIVATIVES OF U AND V ARE REQ.
 LOGICAL                     :: LDACC                                  ! INDICATING IF WE ARE RUNNING ON THE GPU
 REAL(KIND=JPHOOK)           :: ZHOOK_HANDLE
+INTEGER(KIND=JPIM)          :: NSPEC2
+INTEGER(KIND=JPIM)          :: NBLK
+INTEGER(KIND=JPIM)          :: KGPTOT
+INTEGER(KIND=JPIM)          :: NFLEVG
 
 #include "inv_trans.h"
 #include "abor1.intfb.h"
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('INV_TRANS_FIELD_API',0,ZHOOK_HANDLE)
+
+NBLK = 0 
+NPROMA = 0 
+NSPEC2 = 0
+
+GET_LAYOUT_G(YDGPU, NBLK, NPROMA)
+GET_LAYOUT_G(YDGPV, NBLK, NPROMA)
+GET_LAYOUT_G(YDGPSCALAR,NBLK, NPROMA)
+GET_LAYOUT_S(YDSPVOR, NSPEC2)
+GET_LAYOUT_S(YDSPDIV, NSPEC2)
+GET_LAYOUT_S(YDSPSCALAR, NSPEC2)
+GET_LAYOUT_S(YSPVOR, NSPEC2)
 
 IFLDXG= 0
 IFLDXL= 0
@@ -159,7 +164,7 @@ IF (PRESENT(FSPGL_PROC)) THEN
 ENDIF
 
 ! We are still relying on DIR_TRANS, which require to have all the data are on CPU.
-! So we force using data on the host 
+! So we force using data on the host
 LDACC = .FALSE.
 
 ! 1. Vector fields transformation to grid space
@@ -193,12 +198,10 @@ IF (PRESENT(YDFU)) THEN
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
     CALL ABOR1("[INV_TRANS_FIELD_API] inconsistent number of field_view for vectors")
   ENDIF
-  IF (((SIZE (YLGVU) / SIZE (YDFU)) /= KFLEVG) .OR. ((SIZE (YLSPVVOR) / SIZE (YDFSPVOR)) /= KFLEVL)) THEN
-    CALL ABOR1("[INV_TRANS_FIELD_API] inconsistent kflevg or kflevl")
-  ENDIF
 
+  NFLEVG = SIZE (YLGVU) / SIZE (YDFU)
   IUVG = SIZE(YDFU)
-  
+
   LLUVDER  = .FALSE.
   LLVORGP = .FALSE.
   LLDIVGP = .FALSE.
@@ -229,15 +232,15 @@ IF (PRESENT(YDFU)) THEN
   ENDIF
 
   ! allocate temporary vector field arrays in spectral space
-  ALLOCATE(ZPSPVOR(IFLDSPVOR,KSPEC))
-  ALLOCATE(ZPSPDIV(IFLDSPVOR,KSPEC))
+  ALLOCATE(ZPSPVOR(IFLDSPVOR,NSPEC2))
+  ALLOCATE(ZPSPDIV(IFLDSPVOR,NSPEC2))
 
   ! allocate temporary vector field array in grid space
-  ALLOCATE(ZPGPUV(KPROMA,KFLEVG, IUVG * IUVDIM,KGPBLKS))
+  ALLOCATE(ZPGPUV(NPROMA,NFLEVG, IUVG * IUVDIM,NBLK))
 
   ! allocate 'b-set' for vector fields
-  ALLOCATE(IVSETUV(KFLEVG))
- 
+  ALLOCATE(IVSETUV(NFLEVG))
+
   C = LS(YDFSPVOR, YLSPVVOR, LDACC, .TRUE.)
   C = LS(YDFSPDIV, YLSPVDIV, LDACC, .TRUE.)
 
@@ -254,8 +257,8 @@ IF (PRESENT(YDFU)) THEN
   ! Initialize b-set for vector fields data
   C = LG(YDFU, YLGVU, LDACC, .TRUE.)
   DO JFLD=1,IUVG
-    DO JLEV=1,KFLEVG
-     ID = JLEV + (JFLD -1) * KFLEVG
+    DO JLEV=1,NFLEVG
+     ID = JLEV + (JFLD -1) * NFLEVG
      IF (JFLD .EQ. 1) IVSETUV(JLEV) = YLGVU(ID)%IVSET
      IF (IVSETUV(JLEV) .NE. YLGVU(ID)%IVSET) CALL ABOR1("[INV_TRANS_FIELD_API] ivsetuv inconsistent with ylgvu%ivset")
     ENDDO
@@ -277,7 +280,7 @@ IF (PRESENT(YDFSPSCALAR) .NEQV. PRESENT(YDFSCALAR)) CALL ABOR1("[INV_TRANS_FIELD
 
 IF (PRESENT(YDFSPSCALAR)) THEN
 
-  IF ((SIZE(YDFSPSCALAR)/= SIZE(YDFSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_API] Inconsistent size & 
+  IF ((SIZE(YDFSPSCALAR)/= SIZE(YDFSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_API] Inconsistent size &
                                                         & for YDFSPSCALAR and YDFSCALAR")
 
   ! Convert list of spectral scalar fields of any domension into a list of 2d fields
@@ -304,10 +307,10 @@ IF (PRESENT(YDFSPSCALAR)) THEN
  ENDIF
 
 ! Allocate scalar field array in spectral space
-  ALLOCATE(ZPSPSC2(IFLDXL,KSPEC))
+  ALLOCATE(ZPSPSC2(IFLDXL,NSPEC2))
 
 ! Allocate scalar field array in grid space
-  ALLOCATE(ZPGP2(KPROMA,IFLDXG * ISCDIM,KGPBLKS))
+  ALLOCATE(ZPGP2(NPROMA,IFLDXG * ISCDIM,NBLK))
 
 ! allocate 'b-set' for scalar fields
   ALLOCATE(IVSETSC2(IFLDXG))
@@ -322,7 +325,7 @@ IF (PRESENT(YDFSPSCALAR)) THEN
       ID = ID + 1
     ENDIF
   ENDDO
-  
+
  ! compute ´b-set´ for scalar-fields
   C = LG(YDFSCALAR, YLGVSCALAR, LDACC,.TRUE.)
    DO JFLD=1, IFLDXG
@@ -343,42 +346,42 @@ IF (ASSOCIATED(ZPGP2) .AND. ASSOCIATED(ZPGPUV)) THEN
         CALL INV_TRANS(PSPVOR=ZPSPVOR,PSPDIV=ZPSPDIV,PGPUV=ZPGPUV,KVSETUV=IVSETUV, &
                      & PSPSC2=ZPSPSC2,PGP2=ZPGP2,KVSETSC2=IVSETSC2, &
                      & LDSCDERS=LLSCDERS, LDVORGP=LLVORGP, LDDIVGP=LLDIVGP, LDUVDER=LLUVDER,  &
-                     & KPROMA=KPROMA, FSPGL_PROC=FSPGL_PROC, KRESOL=KRESOL)
+                     & KPROMA=NPROMA, FSPGL_PROC=FSPGL_PROC, KRESOL=KRESOL)
     ELSE
         CALL INV_TRANS(PSPVOR=ZPSPVOR,PSPDIV=ZPSPDIV,PGPUV=ZPGPUV,KVSETUV=IVSETUV, &
                      & PSPSC2=ZPSPSC2,PGP2=ZPGP2, KVSETSC2=IVSETSC2, &
                      & LDSCDERS=LLSCDERS, LDVORGP=LLVORGP, LDDIVGP=LLDIVGP, LDUVDER=LLUVDER,  &
-                     & KPROMA=KPROMA, KRESOL=KRESOL)
+                     & KPROMA=NPROMA, KRESOL=KRESOL)
     ENDIF
 ELSE IF (ASSOCIATED(ZPGP2)) THEN
     IF (LLFSPGL_PROC) THEN
         CALL INV_TRANS(PSPSC2=ZPSPSC2,PGP2=ZPGP2,KVSETSC2=IVSETSC2, &
                      & LDSCDERS=LLSCDERS, LDVORGP=LLVORGP, LDDIVGP=LLDIVGP, LDUVDER=LLUVDER,  &
-                     & KPROMA=KPROMA, FSPGL_PROC=FSPGL_PROC, KRESOL=KRESOL)
+                     & KPROMA=NPROMA, FSPGL_PROC=FSPGL_PROC, KRESOL=KRESOL)
     ELSE
         CALL INV_TRANS(PSPSC2=ZPSPSC2,PGP2=ZPGP2, KVSETSC2=IVSETSC2, &
                      & LDSCDERS=LLSCDERS, LDVORGP=LLVORGP, LDDIVGP=LLDIVGP, LDUVDER=LLUVDER,  &
-                     & KPROMA=KPROMA, KRESOL=KRESOL)
+                     & KPROMA=NPROMA, KRESOL=KRESOL)
     ENDIF
 ELSE IF (ASSOCIATED(ZPGPUV)) THEN
     IF (LLFSPGL_PROC) THEN
         CALL INV_TRANS(PSPVOR=ZPSPVOR,PSPDIV=ZPSPDIV,PGPUV=ZPGPUV,KVSETUV=IVSETUV, &
                      & LDSCDERS=LLSCDERS, LDVORGP=LLVORGP, LDDIVGP=LLDIVGP, LDUVDER=LLUVDER,  &
-                     & KPROMA=KPROMA, FSPGL_PROC=FSPGL_PROC, KRESOL=KRESOL)
+                     & KPROMA=NPROMA, FSPGL_PROC=FSPGL_PROC, KRESOL=KRESOL)
     ELSE
         CALL INV_TRANS(PSPVOR=ZPSPVOR,PSPDIV=ZPSPDIV,PGPUV=ZPGPUV,KVSETUV=IVSETUV, &
                      & LDSCDERS=LLSCDERS, LDVORGP=LLVORGP, LDDIVGP=LLDIVGP, LDUVDER=LLUVDER,  &
-                     & KPROMA=KPROMA, KRESOL=KRESOL)
+                     & KPROMA=NPROMA, KRESOL=KRESOL)
     ENDIF
 ENDIF
 
 ! 4. Copy back temporary array data into grid-point fields
 
 ! remove garbage at the end of arrays
-IEND = KGPTOT - KPROMA * (KGPBLKS - 1)
+IEND = KGPTOT - NPROMA * (NBLK - 1)
 
-IF (IUVG>0) ZPGPUV (IEND+1:, :, :, KGPBLKS) = 0
-IF (IFLDXG>0)  ZPGP2 (IEND+1:, :, KGPBLKS) = 0
+IF (IUVG>0) ZPGPUV (IEND+1:, :, :, NBLK) = 0
+IF (IFLDXG>0)  ZPGP2 (IEND+1:, :, NBLK) = 0
 
 ! copy vector fields
 
@@ -389,8 +392,8 @@ IF (IUVG>0) THEN
   IF (LLVORGP) THEN
       C = LG(YDFVOR, YLGVVOR, LDACC, .FALSE.)
       DO JFLD=1,IUVG
-        DO JLEV=1,KFLEVG
-          ID = JLEV + (JFLD -1) * KFLEVG
+        DO JLEV=1,NFLEVG
+          ID = JLEV + (JFLD -1) * NFLEVG
           ZZ2_1=>YLGVVOR(ID)%P
           ZZ2_1(:,:) = ZPGPUV(:, JLEV,JFLD+IOFFSET*IUVG,:)
         ENDDO
@@ -404,8 +407,8 @@ IF (IUVG>0) THEN
 
       C = LG(YDFDIV, YLGVDIV, LDACC, .FALSE.)
       DO JFLD=1,IUVG
-        DO JLEV=1,KFLEVG
-          ID = JLEV + (JFLD -1) * KFLEVG
+        DO JLEV=1,NFLEVG
+          ID = JLEV + (JFLD -1) * NFLEVG
           ZZ2_1=>YLGVDIV(ID)%P
           ZZ2_1(:,:) = ZPGPUV(:, JLEV,JFLD+IOFFSET*IUVG,:)
           ENDDO
@@ -420,8 +423,8 @@ IF (IUVG>0) THEN
 
 
   DO JFLD=1,IUVG
-    DO JLEV=1,KFLEVG
-      ID = JLEV + (JFLD -1) * KFLEVG
+    DO JLEV=1,NFLEVG
+      ID = JLEV + (JFLD -1) * NFLEVG
       ZZ2_1=>YLGVU(ID)%P
       ZZ2_2=>YLGVV(ID)%P
       ZZ2_1(:,:) =  ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:)
@@ -437,12 +440,12 @@ IF (IUVG>0) THEN
     C = LG(YDFV_EW, YLGVV_EW, LDACC, .FALSE.)
 
     DO JFLD=1,IUVG
-      DO JLEV=1,KFLEVG
-        ID = JLEV + (JFLD -1) * KFLEVG
+      DO JLEV=1,NFLEVG
+        ID = JLEV + (JFLD -1) * NFLEVG
         ZZ2_1=>YLGVU_EW(ID)%P
-        ZZ2_2=>YLGVV_EW(ID)%P       
+        ZZ2_2=>YLGVV_EW(ID)%P
         ZZ2_1(:,:) =  ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:)
-        ZZ2_2(:,:) =  ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:)        
+        ZZ2_2(:,:) =  ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:)
       ENDDO
     ENDDO
   ENDIF
@@ -452,8 +455,8 @@ IF (IFLDXG > 0) THEN
   ! copy spectral scalar fields
     C = LG(YDFSCALAR, YLGVSCALAR, LDACC,.FALSE.)
     DO JFLD=1, IFLDXG
-      ZZ2_1=>YLGVSCALAR(JFLD)%P(:,:)     
-      ZZ2_1(:,:) = ZPGP2(:,JFLD,:)     
+      ZZ2_1=>YLGVSCALAR(JFLD)%P(:,:)
+      ZZ2_1(:,:) = ZPGP2(:,JFLD,:)
     ENDDO
 
   ! copy spectral scalar fields derivatives
@@ -466,7 +469,7 @@ IF (IFLDXG > 0) THEN
         ZZ2_1=>YLGVSCALAR_NS(JFLD)%P
         ZZ2_2=>YLGVSCALAR_EW(JFLD)%P
         ZZ2_1(:,:) = ZPGP2(:, JFLD+IFLDXG,:)
-        ZZ2_2(:,:) = ZPGP2(:, JFLD+(2*IFLDXG),:)    
+        ZZ2_2(:,:) = ZPGP2(:, JFLD+(2*IFLDXG),:)
       ENDDO
 
   ENDIF

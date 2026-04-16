@@ -11,11 +11,12 @@
 INTERFACE
 
 
-SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-    & YDFU, YDFV, YDFVOR,YDFDIV,YDFSCALAR, &
-    & YDFU_EW, YDFV_EW, YDFSCALAR_NS, YDFSCALAR_EW,&
-    & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL,&
-    & FSPGL_PROC)
+SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV,               &
+                             & YDFSCALAR, YDFU, YDFV,                        &
+                             & YDFVOR,YDFDIV,                                &
+                             & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
+                             & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
 
@@ -30,28 +31,23 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !     Explicit arguments :
 !     --------------------
 !      input
+!       KRESOL           The resolution identifier
+!       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields
-!       KSPEC          - Number of spectral coefficients
-!       KPROMA         - Blocking factor
-!       KGPBLKS        - Number of blocks
-!       KGPTOT         - Number of total grid points
-!       KFLEVG         - Number of levels
-!       KFLEVL         - Number of local levels
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
 !      output
+!       YDFSCALAR(:)   - List of grid-point scalar fields
 !       YDFU(:)        - List of grid-point vector fields (u)
 !       YDFV(:)        - List of grid-point vector fields (v)
 !       YDFVOR(:)      - List of grid-point vector fields (vorticity)
 !       YDFDIV(:)      - List of grid-point vector fields (divergence)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
-!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
+!       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
+!       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR
@@ -69,12 +65,7 @@ TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    !
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KSPEC
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KPROMA
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPBLKS
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVG
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KFLEVL
+
 INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
 PROCEDURE(FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 

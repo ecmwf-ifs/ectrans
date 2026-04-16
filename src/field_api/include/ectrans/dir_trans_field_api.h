@@ -10,10 +10,9 @@
 
 INTERFACE
 
-SUBROUTINE DIR_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
-    & YDFU, YDFV, YDFSCALAR, &
-    & KSPEC, KPROMA, KGPBLKS, KGPTOT, KFLEVG, KFLEVL, KRESOL)
-
+SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,
+                             & YDFSCALAR,YDFU, YDFV, &
+                             & YDFSPSCALAR, YDFSPVOR,YDFSPDIV)
 
 !**** *DIR_TRANS_FIELD_API* - Field API interface to direct spectral transform
 
@@ -27,39 +26,28 @@ SUBROUTINE DIR_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 
 !     Explicit arguments :
 !     --------------------
-!      output
-!       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
-!       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields
-!      input
+!  input
+!       KRESOL         - Resolution tag
+!       YDFSCALAR(:)   - List of grid-point scalar fields
 !       YDFU(:)        - List of grid-point vector fields (u)
 !       YDFV(:)        - List of grid-point vector fields (v)
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       KSPEC          - Number of spectral coefficients
-!       KPROMA         - Blocking factor
-!       KGPBLKS        - Number of blocks
-!       KGPTOT         - Number of total grid points
-!       KFLEVG         - Number of levels
-!       KFLEVL         - Number of local levels
-
+!  output
+!       YDFSPSCALAR(:) - List of spectral scalar fields
+!       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
+!       YDFSPDIV(:)    - List of spectral vector fields (divergence)
+!
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPSCALAR(:)
 
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU(:),YDFV(:)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)
 
-INTEGER(KIND=JPIM), INTENT(IN) ::KSPEC
-INTEGER(KIND=JPIM), INTENT(IN) ::KPROMA
-INTEGER(KIND=JPIM), INTENT(IN) ::KGPBLKS
-INTEGER(KIND=JPIM), INTENT(IN) ::KGPTOT
-INTEGER(KIND=JPIM), INTENT(IN) :: KFLEVG
-INTEGER(KIND=JPIM), INTENT(IN) :: KFLEVL
-INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)
+TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSPSCALAR(:)
 
+INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
 
 END SUBROUTINE DIR_TRANS_FIELD_API
 END INTERFACE
