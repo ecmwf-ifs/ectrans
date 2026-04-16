@@ -703,7 +703,7 @@ do jstep = 1, iters+iters_warmup
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
-      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump,             &
+      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump_checksum, &
                             & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
                             & zgp=zgp)
     else
@@ -711,7 +711,7 @@ do jstep = 1, iters+iters_warmup
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump,             &
+      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
                                     & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
                                     & zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
@@ -794,13 +794,13 @@ do jstep = 1, iters+iters_warmup
     write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
     if (icall_mode == 1) then
-        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump,                   &
-                              & jstep=jstep, myproc=myproc,                                       &
+        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
+                              & jstep=jstep, myproc=myproc, &
                               & ivset=ivset, ivsetsc=ivsetsc, nspec2g=nspec2g, &
                               & zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     else
-        call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump,                   &
-                                   & jstep=jstep, myproc=myproc,                                       &
+        call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+                                   & jstep=jstep, myproc=myproc, &
                                    & ivset=ivset, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
         &                 zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
     endif
