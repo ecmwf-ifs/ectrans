@@ -10,7 +10,7 @@
 
 INTERFACE
 
-SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,
+SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,               &
                              & YDFSCALAR,YDFU, YDFV, &
                              & YDFSPSCALAR, YDFSPVOR,YDFSPDIV)
 

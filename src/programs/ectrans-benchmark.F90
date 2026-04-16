@@ -675,10 +675,11 @@ do jstep = 1, iters+iters_warmup
 #if USE_FIELD_API
       call inv_trans_field_api (kresol = 1, &
                               & ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, &
-                              & ydfscalar=ylf%scalar,ydfu=ylf%u, ydfv=ylf%v &
+                              & ydfscalar=ylf%scalar,ydfu=ylf%u, ydfv=ylf%v, &
                               & ydfvor=ylf%vor, ydfdiv=ylf%div, &
                               & ydfscalar_ns=ylf%scalar_ns, ydfscalar_ew=ylf%scalar_ew, &
-                              & ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
+                              & ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew,&
+                              & kgptot = ngptot)
       call synchost_rdonly_wrapped_fields(ywflds)
 #else
       call abor1('ectrans_benchmark: No field API support')
@@ -758,10 +759,9 @@ do jstep = 1, iters+iters_warmup
 
     if (lfield_api) then
 #if USE_FIELD_API
-      call dir_trans_field_api (kresol = 1 &,
+      call dir_trans_field_api (kresol = 1, &
                                &ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
-                               &ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv
-                               )
+                               &ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
       call synchost_rdonly_wrapped_fields(ywflds)
 #ifdef FIELD_API_CLAMP
       ! clamp small spectral values to ensure bit reproductibility with field Api interface
