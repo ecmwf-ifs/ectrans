@@ -162,7 +162,7 @@ INTEGER(KIND=JPIM) :: ID
 INTEGER(KIND=JPIM) :: IOFFSET
 INTEGER(KIND=JPIM) :: JLEV      ! Level counter
 INTEGER(KIND=JPIM) :: JFLD      ! Field counter
-
+LOGICAL  :: LDACC
 #include "dir_trans.h"
 #include "abor1.intfb.h"
 
