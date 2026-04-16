@@ -759,9 +759,9 @@ do jstep = 1, iters+iters_warmup
 
     if (lfield_api) then
 #if USE_FIELD_API
-      call dir_trans_field_api (ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
-                            &   ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
-                            &   kspec=nspec2, kproma=nproma, kgpblks=ngpblks, kgptot=ngptot, kflevg=nflevg, kflevl=nflevl)
+      call dir_trans_field_api ( ydfu=ylf%u, ydfv=ylf%v, ydfscalar=ylf%scalar, &
+                               & ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, ydfspscalar=ylf%spscalar, &
+                               kresol = 1)
       call synchost_rdonly_wrapped_fields(ywflds)
 #ifdef FIELD_API_CLAMP
       ! clamp small spectral values to ensure bit reproductibility with field Api interface
