@@ -678,8 +678,7 @@ do jstep = 1, iters+iters_warmup
                             & ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew, &
                             & ydfscalar_ns=ylf%scalar_ns, ydfscalar_ew=ylf%scalar_ew, &
                             & ydfvor=ylf%vor, ydfdiv=ylf%div, &
-                            & kspec=nspec2, kproma=nproma, kgpblks=ngpblks, &
-                            & kgptot=ngptot, kflevg=nflevg, kflevl=nflevl)
+                            & kresol = 1)
       call synchost_rdonly_wrapped_fields(ywflds)
 #else
       call abor1('ectrans_benchmark: No field API support')

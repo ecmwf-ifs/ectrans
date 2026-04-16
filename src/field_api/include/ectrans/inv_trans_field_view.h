@@ -32,7 +32,8 @@ SUBROUTINE INV_TRANS_FIELD_API(YDFSPVOR,YDFSPDIV,YDFSPSCALAR, &
 !      input
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       YDFSPSCALAR(:) - List of spectral scalar fields!      
+!       YDFSPSCALAR(:) - List of spectral scalar fields
+!     
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
@@ -62,7 +63,6 @@ TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    !
 
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
-
 
 INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
 PROCEDURE(FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC

@@ -25,7 +25,7 @@ IMPLICIT NONE
 ! Arguments
 TYPE(FIELD_VIEW),   INTENT(IN)           :: YDGPSCALAR(:), YDGPU(:), YDGPV(:)
 TYPE(FIELD_VIEW),   INTENT(INOUT)        :: YDSPSCALAR(:), YDSPVOR(:), YDSPDIV(:)
-INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
+INTEGER(KIND=JPIM), INTENT(IN) :: KRESOL
 
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 
@@ -70,8 +70,6 @@ INTEGER(KIND=JPIM) :: JLEV      ! Level counter
 INTEGER(KIND=JPIM) :: JFLD      ! Field counter
 
 INTEGER(KIND=JPIM) :: KFLEVG
-
-LOGICAL  :: LDACC
 #include "dir_trans.h"
 #include "abor1.intfb.h"
 
@@ -97,9 +95,7 @@ IOFFSET = 0
 JLEV = 0
 JFLD = 0
 
-! We are still relying on DIR_TRANS, which require to have all the data are on CPU.
-! So we force using data on the host 
-LDACC = .FALSE.
+
 
 ! 1. Vector fields transformation to spectral space
 
@@ -287,7 +283,7 @@ IF (ALLOCATED(YLGVV))       DEALLOCATE(YLGVV)
 IF (ALLOCATED(YLGVSCALAR))  DEALLOCATE(YLGVSCALAR)
 
 
-IF (LHOOK) CALL DR_HOOK('DIR_TRANS_FIELD_API',1,ZHOOK_HANDLE)
+IF (LHOOK) CALL DR_HOOK('DIR_TRANS_FIELD_VIEW',1,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
 
 END SUBROUTINE DIR_TRANS_FIELD_VIEW
