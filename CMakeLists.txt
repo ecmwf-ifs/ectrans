@@ -194,7 +194,6 @@ ectrans_find_lapack()
 
 ecbuild_add_option( FEATURE FIELD_API
                     DEFAULT OFF
-                    CONDITION HAVE_GPU_STATIC
                     DESCRIPTION "Compile field API interface to ectrans"
                     REQUIRED_PACKAGES "field_api"
                    )
