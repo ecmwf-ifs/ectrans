@@ -167,8 +167,9 @@ IF (PRESENT(FSPGL_PROC)) THEN
   ENDIF
 ENDIF
 
-! We are still relying on DIR_TRANS, which require to have all the data are on CPU.
-! So we force using data on the host
+! We are still relying on INV_TRANS, which require to have all the data are on CPU.
+! So we force using data on the host 
+
 LDACC = .FALSE.
 
 ! 1. Vector fields transformation to grid space
@@ -188,7 +189,7 @@ IF (PRESENT(YDFU) .AND. .NOT. PRESENT(YDFSPDIV)) CALL ABOR1("[INV_TRANS_FIELD_AP
 IF (PRESENT(YDFU)) THEN
 
   IF ((SIZE(YDFU)/= SIZE(YDFV)).OR.(SIZE(YDFU)/= SIZE(YDFSPDIV)).OR.(SIZE(YDFU)/= SIZE(YDFSPVOR))) THEN
-    CALL ABOR1("[INV_TRANS_FIELD_API] The vector arrays have inconsitent sizes: YDFU, YDFV, YDFSPDIV, YDFSPVOR")
+    CALL ABOR1("[INV_TRANS_FIELD_API] The vector arrays have inconsistent sizes: YDFU, YDFV, YDFSPDIV, YDFSPVOR")
   ENDIF
 
   ! Convert list of spectral vector fields into a list of 2d FIELD_VIEW

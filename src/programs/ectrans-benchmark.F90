@@ -671,8 +671,9 @@ do jstep = 1, iters+iters_warmup
   ztstep1(jstep) = timef()
   call gstats(4,0)
 
-   if (lfield_api) then
+  if (lfield_api) then
 #if USE_FIELD_API
+
       call inv_trans_field_api (kresol = 1, &
                               & ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, &
                               & ydfscalar=ylf%scalar,ydfu=ylf%u, ydfv=ylf%v, &
@@ -682,18 +683,18 @@ do jstep = 1, iters+iters_warmup
                               & kgptot = ngptot)
       call synchost_rdonly_wrapped_fields(ywflds)
 #else
-      call abor1('ectrans_benchmark: No field API support')
+    call abor1('ectrans_benchmark: No field API support')
 #endif
   else if (icall_mode == 1) then
-      call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
-        &            kvsetuv=ivset, kvsetsc=ivsetsc, &
-        &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
-        &            kproma=nproma)
+    call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
+      &            kvsetuv=ivset, kvsetsc=ivsetsc, &
+      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
+      &            kproma=nproma)
   else
-      call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
-        &            pgp3a=zgp3a, pgp2=zgp2, &
-        &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
-        &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
+    call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
+      &            pgp3a=zgp3a, pgp2=zgp2, &
+      &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
+      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
   endif
 
   if (ldump_checksums) then
@@ -703,7 +704,7 @@ do jstep = 1, iters+iters_warmup
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
-      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump,             &
+      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump_checksum, &
                             & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
                             & zgp=zgp)
     else
@@ -711,7 +712,7 @@ do jstep = 1, iters+iters_warmup
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump,             &
+      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
                                     & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
                                     & zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
@@ -757,31 +758,29 @@ do jstep = 1, iters+iters_warmup
 
   call gstats(5,0)
 
-    if (lfield_api) then
+  if (lfield_api) then
 #if USE_FIELD_API
       call dir_trans_field_api (kresol = 1, &
                                &ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
                                &ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
       call synchost_rdonly_wrapped_fields(ywflds)
 #ifdef FIELD_API_CLAMP
-      ! clamp small spectral values to ensure bit reproductibility with field Api interface
-      ! Only activated in dp, with nvhpc and on cpu
-      if (jprb == jprd) then
-        write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
-  if (icall_mode == 1) then
-           if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon) zspsc2 = 0
-           if (associated(zspsc3a)) where (abs(zspsc3a) < clamp_epsilon) zspsc3a = 0
-        else
-           if (associated(zspscalar)) where (abs(zspscalar) < clamp_epsilon) zspscalar = 0
-        endif
+    ! clamp small spectral values to ensure bit reproductibility with field Api interface
+    ! Only activated in dp, with nvhpc and on cpu
+    if (jprb == jprd) then
+      write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
+      if (icall_mode == 1) then
+        if (associated(zspsc2)) where (abs(zspsc2) < clamp_epsilon) zspsc2 = 0
+        if (associated(zspsc3a)) where (abs(zspsc3a) < clamp_epsilon) zspsc3a = 0
+      else
+        if (associated(zspscalar)) where (abs(zspscalar) < clamp_epsilon) zspscalar = 0
       endif
+    endif
 #endif
-
 #else
-      call abor1('ectrans_benchmark: No field API support')
+    call abor1('ectrans_benchmark: No field API support')
 #endif
-
-else if (icall_mode == 1) then
+  else if (icall_mode == 1) then
     call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
       &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
   else
@@ -792,21 +791,20 @@ else if (icall_mode == 1) then
 
  endif
 
-    if (ldump_checksums) then
-      write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+  if (ldump_checksums) then
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
     if (icall_mode == 1) then
-        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump,                   &
-                              & jstep=jstep, myproc=myproc,                                       &
+        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
+                              & jstep=jstep, myproc=myproc, &
                               & ivset=ivset, ivsetsc=ivsetsc, nspec2g=nspec2g, &
                               & zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     else
-        call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump,                   &
-                                   & jstep=jstep, myproc=myproc,                                       &
+        call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+                                   & jstep=jstep, myproc=myproc, &
                                    & ivset=ivset, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
         &                 zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
     endif
-
   endif
   call gstats(5,1)
 
@@ -1589,9 +1587,9 @@ subroutine dump_checksums_pgp(filename, noutdump,             &
   integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
   integer(kind=jpim), intent(in) :: jstep    ! time step
   integer(kind=jpim), intent(in) :: myproc   ! mpi rank
-  integer(kind=jpim), intent(in):: nproma   ! size of nproma
+  integer(kind=jpim), intent(in) :: nproma   ! size of nproma
   integer(kind=jpim), intent(in) :: ngptotg
-  real(kind=jprb), intent(in) :: zgp   (:,:,:)
+  real(kind=jprb), intent(in) :: zgp(:,:,:)
   integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jfld
   real(kind=jprb), allocatable :: gfld(:,:)
@@ -1608,14 +1606,14 @@ subroutine dump_checksums_pgp(filename, noutdump,             &
       &            pgp=zgp(:,jfld:jfld,:))
     if (myproc == 1) then
       call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-      write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
+      write(noutdump, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
     endif
   enddo
 
   if (myproc == 1) then
     write(nout,*) "close ", noutdump
     close(noutdump)
-    if (allocated(gfld))   deallocate(gfld)
+    if (allocated(gfld)) deallocate(gfld)
   endif
 
 end subroutine dump_checksums_pgp
@@ -1632,9 +1630,9 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
   integer(kind=jpim), intent(in) :: myproc   ! mpi rank
   integer(kind=jpim), intent(in) :: nproma   ! size of nproma
   integer(kind=jpim), intent(in) :: ngptotg
-  real(kind=jprb), intent(in) :: zgpuv   (:,:,:,:)
-  real(kind=jprb), intent(in) :: zgp3a   (:,:,:,:)
-  real(kind=jprb), intent(in) :: zgp2   (:,:,:)
+  real(kind=jprb), intent(in) :: zgpuv(:,:,:,:)
+  real(kind=jprb), intent(in) :: zgp3a(:,:,:,:)
+  real(kind=jprb), intent(in) :: zgp2(:,:,:)
 
   integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
@@ -1652,7 +1650,7 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
         &            pgp=zgpuv(:,jlev:jlev,jfld,:))
       if (myproc == 1) then
         call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
+        write(noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
       endif
     enddo
   enddo
@@ -1664,7 +1662,7 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
         &            pgp=zgp3a(:,jlev:jlev,jfld,:))
       if (myproc == 1) then
         call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write (noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
+        write(noutdump, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
       endif
     enddo
   enddo
@@ -1675,14 +1673,14 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
       &            pgp=zgp2(:,jfld:jfld,:))
     if (myproc == 1) then
       call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write (noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
-      endif
-    enddo
+      write(noutdump, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
+    endif
+  enddo
 
   if (myproc == 1) then
     write(nout,*) "close ", noutdump
     close(noutdump)
-    if (allocated(gfld))   deallocate(gfld)
+    if (allocated(gfld)) deallocate(gfld)
   endif
 
 end subroutine dump_checksums_pgp_uv_3a_2
@@ -1716,22 +1714,22 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspvor)
-  icrc = 0
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
-    endif
+  endif
 
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspdiv)
-  icrc = 0
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspdiv", icrc
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
-    endif
+  endif
 
   numfld = size(ivsetsc)
   if (myproc == 1) then
@@ -1784,12 +1782,12 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspvor)
-  icrc = 0
+    icrc = 0
     call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspvor", icrc
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
-    endif
+  endif
 
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
@@ -1813,14 +1811,14 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
     endif
   enddo
 
-       if (myproc == 1) then
+  if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
-   icrc = 0
+    icrc = 0
     call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
     write(noutdump, '(a," = ",z16.16)') "zspsc2", icrc
   else
     call gath_spec(kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
-     endif
+  endif
 
   if (myproc == 1) then
     write(nout,*) "close ", noutdump
