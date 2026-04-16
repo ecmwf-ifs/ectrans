@@ -110,7 +110,6 @@ jobs:
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_ETRANS=ON
-              - -DENABLE_GPU_STATIC=ON
               - -DENABLE_FIELD_API=ON
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
