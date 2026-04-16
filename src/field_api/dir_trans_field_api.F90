@@ -132,7 +132,7 @@ IF (PRESENT(YDFU) .NEQV. PRESENT(YDFV)) CALL ABOR1("[DIR_TRANS_FIELD_API] YDFU a
 IF (PRESENT(YDFU)) THEN
 
   IF ((SIZE(YDFU)/= SIZE(YDFV)).OR.(SIZE(YDFU)/= SIZE(YDFSPDIV)).OR.(SIZE(YDFU)/= SIZE(YDFSPVOR))) THEN
-     CALL ABOR1("[DIR_TRANS_FIELD_API] The vector arrays have inconsitent sizes: YDFU, YDFV, YDFSPDIV, YDFSPVOR")
+     CALL ABOR1("[DIR_TRANS_FIELD_API] The vector arrays have inconsistent sizes: YDFU, YDFV, YDFSPDIV, YDFSPVOR")
   ENDIF
 
   ! Convert list of spectral vector fields into a list of 2d FIELD_VIEW
