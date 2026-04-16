@@ -22,3 +22,4 @@ set(ECBUILD_C_FLAGS_BIT "-g -O2 -diag-disable=10441")
 set(ECBUILD_CXX_FLAGS_BIT "-g -O2 -diag-disable=10441")
 
 set(ENABLE_GPU OFF)
+set(ENABLE_FIELD_API ON)

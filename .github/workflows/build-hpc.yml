@@ -91,6 +91,7 @@ jobs:
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
               - CMAKE_BUILD_PARALLEL_LEVEL=1
             ctest_options: -E compare_checksums # We don't bother with reproducibility checks on LUMI
+            unsupported_deps: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -110,7 +111,6 @@ jobs:
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_ETRANS=ON
-              - -DENABLE_FIELD_API=ON
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:
@@ -121,6 +121,7 @@ jobs:
                   - -DENABLE_MPI=ON
               ecmwf-ifs/field_api:
                 version: v0.3.9
+            unsupported_deps: ${{ matrix.unsupported_deps || '' }}
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
@@ -128,7 +129,9 @@ jobs:
             # Cleanup function
             cleanup() {
               {% for name in dependencies.keys() %}
-                rm -r {{name}}
+                {% if name not in unsupported_deps %}
+                  rm -r {{name}}
+                {% endif %}
               {% endfor %}
 
               rm -r $REPO
@@ -154,6 +157,7 @@ jobs:
 
             # Fetch dependencies
             {% for name, options in dependencies.items() %}
+              {% if name not in unsupported_deps %}
                 mkdir -p {{name}}
                 pushd {{name}}
                 git init
@@ -161,6 +165,7 @@ jobs:
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
                 popd
+              {% endif %}
             {% endfor %}
 
             # Fetch ecTrans
@@ -176,23 +181,29 @@ jobs:
 
             # Build dependencies
             {% for name, options in dependencies.items() %}
+              {% if name not in unsupported_deps %}
                 pushd {{name}}
                 cmake -S . -B build \
                   {% for name in dependencies %}
-                    {% set org, proj = name.split('/') %}
-                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                    {% if name not in unsupported_deps %}
+                      {% set org, proj = name.split('/') %}
+                      -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                    {% endif %}
                   {% endfor %}
                   {{ options['cmake_options']|join(' ') }}
                 cmake --build build
                 cmake --install build --prefix installation
                 popd
+              {% endif %}
             {% endfor %}
 
             # Build ecTrans
             cmake -S $REPO -B build \
               {% for name in dependencies %}
-                {% set org, proj = name.split('/') %}
-                -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                {% if name not in unsupported_deps %}
+                  {% set org, proj = name.split('/') %}
+                  -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                {% endif %}
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build
