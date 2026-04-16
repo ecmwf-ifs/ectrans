@@ -158,7 +158,7 @@ IF (PRESENT(FSPGL_PROC)) THEN
   ENDIF
 ENDIF
 
-! We are still relying on DIR_TRANS, which require to have all the data are on CPU.
+! We are still relying on INV_TRANS, which require to have all the data are on CPU.
 ! So we force using data on the host 
 LDACC = .FALSE.
 
