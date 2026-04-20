@@ -100,6 +100,7 @@ INTEGER(KIND=JPIM) :: NFIELD_UVDER, NFIELD_DIVGP, NFIELD_SCDER, NFIELD_VORGP
 REAL(KIND=JPHOOK)           :: ZHOOK_HANDLE
 
 #include "inv_trans.h"
+#include "inv_trans_field_view.h"
 #include "abor1.intfb.h"
 
 !     ------------------------------------------------------------------
@@ -182,10 +183,10 @@ DO IFIELD=1,NFIELD_SCDER
 ENDDO
 
 CALL INV_TRANS_FIELD_VIEW(KRESOL, &
-                        & YLFVSVOR,YLFVSDIV,YLFVSSCALAR, &
-                        & YLFVGU, YLFVGV, YLFVGVOR,YLFVGDIV,YLFVGSCALAR, &
-                        & YLFVGU_EW, YLFVGV_EW, YLFVGSCALAR_NS, YLFVGSCALAR_EW,&
-                        & KGPTOT, &
+                        & YLFVSSCALAR, YLFVSVOR, YLFVSDIV, &
+                        & YLFVGSCALAR, YLFVGU, YLFVGV, &
+                        & YLFVGVOR, YLFVGDIV, &
+                        & YLFVGSCALAR_NS, YLFVGSCALAR_EW, YLFVGU_EW, YLFVGV_EW, &
                         & FSPGL_PROC)
 
 DEALLOCATE(YLFVSVOR)

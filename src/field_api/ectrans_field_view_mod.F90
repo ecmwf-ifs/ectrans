@@ -239,6 +239,11 @@ END FUNCTION
 
 
 FUNCTION GET_NSPEC2_1(LIST) RESULT(NSPEC2)
+  ! Return the maximum spectral dimension (NSPEC2) found in LIST.
+  ! Spectral fields follow these shape conventions:
+  !   rank 1: (NSPEC)                  -> NSPEC2 = EXTENTS(1)
+  !   rank 2: (NLEVS, NSPEC)           -> NSPEC2 = EXTENTS(2)
+  !   rank 3: (NLEVS, NSPEC, NFIELDS)  -> NSPEC2 = EXTENTS(2)
   TYPE(FIELD_VIEW), INTENT(IN) :: LIST(:)
   INTEGER(C_INT) :: NSPEC2
   INTEGER :: I
@@ -248,8 +253,10 @@ FUNCTION GET_NSPEC2_1(LIST) RESULT(NSPEC2)
       NSPEC2 = MAX(NSPEC2, LIST(I)%EXTENTS(1))
     ELSE IF (LIST(I)%RANK == 2) THEN
       NSPEC2 = MAX(NSPEC2, LIST(I)%EXTENTS(2))
+    ELSE IF (LIST(I)%RANK == 3) THEN
+      NSPEC2 = MAX(NSPEC2, LIST(I)%EXTENTS(2))
     ELSE
-      CALL ABOR1("GET_NSPEC2 FAILURE: RANK MUST BE <= 2")      
+      CALL ABOR1("GET_NSPEC2 FAILURE: RANK MUST BE <= 3")
     ENDIF
   ENDDO
 END FUNCTION
