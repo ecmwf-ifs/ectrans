@@ -39,15 +39,15 @@ SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,                &
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
 !
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY : FIELD_BASIC_PTR
-USE ECTRANS_FIELD_API_MOD, ONLY: SPEC_VIEW, GRID_VIEW, LS_COUNT, LG_COUNT, LS, LG, GET_LAYOUT_S, GET_LAYOUT_G
+USE ECTRANS_FIELD_API_MOD, ONLY: FIELD_GRID, FIELD_SPEC, SPEC_VIEW, GRID_VIEW, LS_COUNT, LG_COUNT, LS, LG, &
+                               & GET_LAYOUT_S, GET_LAYOUT_G, IVSET_PTR
 USE PARKIND1  ,ONLY : JPIM,JPRB, JPRD
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), INTENT(IN), OPTIONAL :: KRESOL
-TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:), YDFU(:), YDFV(:)
-TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSPSCALAR(:), YDFSPVOR(:), YDFSPDIV(:)
+TYPE(FIELD_GRID),INTENT(IN), OPTIONAL  :: YDFSCALAR(:), YDFU(:), YDFV(:)
+TYPE(FIELD_SPEC),INTENT(INOUT), OPTIONAL  :: YDFSPSCALAR(:), YDFSPVOR(:), YDFSPDIV(:)
 
 ! Local variables
 
@@ -73,6 +73,8 @@ REAL(KIND=JPRB):: S
 ! b-set for dir-trans
 INTEGER(KIND=JPIM),ALLOCATABLE :: IVSETUV(:)
 INTEGER(KIND=JPIM),ALLOCATABLE :: IVSETSC2(:)
+TYPE(IVSET_PTR), ALLOCATABLE :: IVSETUV_LIST(:)
+TYPE(IVSET_PTR), ALLOCATABLE :: IVSETSC_LIST(:)
 
 INTEGER(KIND=JPIM) :: NSPEC2
 INTEGER(KIND=JPIM) :: NPROMA
@@ -130,11 +132,12 @@ LDACC = .FALSE.
 
 ! 1. Vector fields transformation to spectral space
 
-! Preliminary checks
-IF (PRESENT(YDFU) .NEQV. PRESENT(YDFV)) CALL ABOR1("[DIR_TRANS_FIELD_API] YDFU and YDFV must be provided together")
-
 ! Do we have vector fields?
 IF (PRESENT(YDFU)) THEN
+
+  IF (.NOT. PRESENT(YDFV))     CALL ABOR1("[DIR_TRANS_FIELD_API] YDFU and YDFV must be provided together for vector transform")
+  IF (.NOT. PRESENT(YDFSPVOR)) CALL ABOR1("[DIR_TRANS_FIELD_API] YDFSPVOR must be provided for vector transform")
+  IF (.NOT. PRESENT(YDFSPDIV)) CALL ABOR1("[DIR_TRANS_FIELD_API] YDFSPDIV must be provided for vector transform")
 
   IF ((SIZE(YDFU)/= SIZE(YDFV)).OR.(SIZE(YDFU)/= SIZE(YDFSPDIV)).OR.(SIZE(YDFU)/= SIZE(YDFSPVOR))) THEN
      CALL ABOR1("[DIR_TRANS_FIELD_API] The vector arrays have inconsistent sizes: YDFU, YDFV, YDFSPDIV, YDFSPVOR")
@@ -164,29 +167,36 @@ IF (PRESENT(YDFU)) THEN
   ! allocate temporary vector field array in grid space
   ALLOCATE(ZPGPUV(NPROMA,NFLEVG, IUVG * IUVDIM,NBLK))
 
-  ! allocate 'b-set' for vector fields
-  ALLOCATE(IVSETUV(NFLEVG))
+  ! For LG we need the ivset of each grid point field,
+  ! so we extract a matching list from the spectral fields.
+  ALLOCATE(IVSETUV_LIST(IUVG))
+  DO JFLD=1,IUVG
+    IVSETUV_LIST(JFLD)%PTR => YDFSPVOR(JFLD)%IVSET
+  ENDDO
 
-  IOFFSET = 0
-  C = LG(YDFU, YLGVU, LDACC, .TRUE.)
-  C = LG(YDFV, YLGVV, LDACC, .TRUE.)
+  C = LG(YDFU, YLGVU, IVSETUV_LIST, LDACC, .TRUE.)
+  C = LG(YDFV, YLGVV, IVSETUV_LIST, LDACC, .TRUE.)
 
   ! Copy list of 2d views of grid point vector fields into temporary arrays
-    DO JFLD=1,IUVG
-      DO JLEV=1,NFLEVG
-        ID = JLEV + (JFLD -1) * NFLEVG
-        ZZ2_1=>YLGVU(ID)%P
-        ZZ2_2=>YLGVV(ID)%P
-
-        ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:) = ZZ2_1(:,:)
-        ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:) = ZZ2_2(:,:)
-      ENDDO
-    ENDDO
-
+  IOFFSET = 0
   DO JFLD=1,IUVG
     DO JLEV=1,NFLEVG
       ID = JLEV + (JFLD -1) * NFLEVG
-      IF (JFLD .EQ. 1) IVSETUV(JLEV) = YLGVU(ID)%IVSET
+      ZZ2_1=>YLGVU(ID)%P
+      ZZ2_2=>YLGVV(ID)%P
+
+      ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:) = ZZ2_1(:,:)
+      ZPGPUV(:,JLEV,JFLD+(IOFFSET+1)*IUVG,:) = ZZ2_2(:,:)
+    ENDDO
+  ENDDO
+
+  ALLOCATE(IVSETUV(NFLEVG))
+  DO JFLD=1,IUVG
+    DO JLEV=1,NFLEVG
+      ID = JLEV + (JFLD -1) * NFLEVG
+      IF (JFLD .EQ. 1) THEN
+        IVSETUV(JLEV) = YLGVU(ID)%IVSET
+      ENDIF
       IF (IVSETUV(JLEV) .NE. YLGVV(ID)%IVSET)  CALL ABOR1("[DIR_TRANS_FIELD_API] ivsetuv inconsistent with ylgvv%ivset")
     ENDDO
   ENDDO
@@ -229,17 +239,19 @@ IF (PRESENT(YDFSPSCALAR)) THEN
   ! Allocate temporary scalar field array in grid space
   ALLOCATE(ZPGP2(NPROMA,IFLDXG,NBLK))
 
-  ! allocate 'b-set' for scalar fields
-  ALLOCATE(IVSETSC2(IFLDXG))
+  ! For LG we need the ivset of each grid point field,
+  ! so we extract a matching list from the spectral fields
+  ALLOCATE(IVSETSC_LIST(SIZE(YDFSPSCALAR)))
+  DO JFLD=1,SIZE(YDFSPSCALAR)
+    IVSETSC_LIST(JFLD)%PTR => YDFSPSCALAR(JFLD)%IVSET
+  ENDDO
 
   ! Copy list of scalar fields into temporary arrays (2d copy thanks to field_view)
-  C = LG(YDFSCALAR, YLGVSCALAR, LDACC,.TRUE.)
+  C = LG(YDFSCALAR, YLGVSCALAR, IVSETSC_LIST, LDACC,.TRUE.)
+  ALLOCATE(IVSETSC2(IFLDXG))
   DO JFLD=1, IFLDXG
     ZZ2_1=>YLGVSCALAR(JFLD)%P
     ZPGP2(:,JFLD,:) = ZZ2_1(:,:)
-  ENDDO
-
-  DO JFLD=1, IFLDXG
     IVSETSC2(JFLD) = YLGVSCALAR(JFLD)%IVSET
   ENDDO
 
