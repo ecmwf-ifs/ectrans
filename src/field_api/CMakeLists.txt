@@ -28,7 +28,6 @@ foreach(platform ${platforms})
           LINKER_LANGUAGE  Fortran
           SOURCES          ectrans_field_view_mod.F90
                            ectrans_field_api_mod.F90
-                           ectrans_field_api_basic_type_mod.F90
                            dir_trans_field_api.F90
                            inv_trans_field_api.F90
                            dir_trans_field_view.F90
