@@ -181,11 +181,11 @@ static int ectrans_test_fedisableexcept(unsigned int excepts) {
 }
 
 extern "C" {
-void ectrans_test_enable_fpe() {
-    char* ECTRANS_TEST_ENABLE_FPE = getenv("ECTRANS_TEST_ENABLE_FPE");
-    // Don't enable FPE trapping if the environment variable ECTRANS_TEST_ENABLE_FPE is set to "0",
+void ectrans_enable_fpe() {
+    char* ECTRANS_ENABLE_FPE = getenv("ECTRANS_ENABLE_FPE");
+    // Don't enable FPE trapping if the environment variable ECTRANS_ENABLE_FPE is set to "0",
     // to allow for easier debugging of tests when desired without having to modify the code.
-    if (ECTRANS_TEST_ENABLE_FPE != nullptr && std::strcmp(ECTRANS_TEST_ENABLE_FPE, "0") == 0) {
+    if (ECTRANS_ENABLE_FPE != nullptr && std::strcmp(ECTRANS_ENABLE_FPE, "0") == 0) {
         return;
     }
     struct sigaction sa;

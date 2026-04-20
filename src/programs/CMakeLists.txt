@@ -9,11 +9,18 @@
 #foreach( program ectrans-benchmark ectrans-benchmark-ifs )
 foreach( program ectrans-benchmark )
 
+  ## TODO: Improve ectrans_checksum_mod.F90 to be precision independent (independent of parkind1 module).
+  #        Since this module uses trans functions like gath_grid, gath_spec,
+  #        this can only be made independent of precision when we have a dispatch library that can call
+  #        the correct version of these functions for the precision of the input data.
+  #        For now, we include this module in the ectrans-benchmark programs.
   list( APPEND util_src
-    util/ectrans_memory.F90
-    util/ectrans_memory.c
+    util/ectrans_checksum_mod.F90
   )
 
+  ## NOTE: ectrans_field_api_helper is precision-dependent but only needed in ectrans-benchmark for now.
+  #        It can only be made into a precision-independent module if field_api itself can
+  #        be made independent of parkind1, not defining fields like FIELD_3RB (needing JPRB).
   if (HAVE_FIELD_API)
     list(APPEND util_src util/ectrans_field_api_helper.F90)
   endif()
@@ -27,6 +34,7 @@ foreach( program ectrans-benchmark )
                                 LIBS
                                   fiat
                                   parkind_${prec}
+                                  ectrans_util_cpu
                                   trans_${prec}
                                   $<${HAVE_FIELD_API}:ectrans_field_api_${prec}>
                                 DEFINITIONS
@@ -43,10 +51,6 @@ foreach( program ectrans-benchmark )
       $<${HAVE_CUDA}:CUDA>
       $<${HAVE_HIP}:HIP>
     )
-    list( APPEND util_PRIVATE_LIBRARIES
-      $<${HAVE_CUDA}:CUDA::cudart>
-      $<${HAVE_HIP}:hip::host>
-    )
     foreach( prec dp sp )
       if( HAVE_${prec} )
         ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
@@ -55,14 +59,11 @@ foreach( program ectrans-benchmark )
                                 LIBS
                                   fiat
                                   parkind_${prec}
+                                  ectrans_util
                                   trans_gpu_${prec}
-                                  $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
-                                  $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                                  ${util_PRIVATE_LIBRARIES}
                                   $<${HAVE_FIELD_API}:ectrans_field_api_gpu_${prec}>
                                 DEFINITIONS
                                   VERSION="gpu"
-                                  ${util_PRIVATE_DEFINITIONS}
                                   USE_FIELD_API=${HAVE_FIELD_API}
         )
         ecbuild_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
@@ -81,6 +82,7 @@ if( HAVE_ETRANS )
                               LIBS
                                 fiat
                                 parkind_${prec}
+                                ectrans_util_cpu
                                 trans_${prec}
                                 etrans_${prec}
                                 $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
@@ -88,14 +90,6 @@ if( HAVE_ETRANS )
     endif()
   
     if( HAVE_ETRANS_GPU )
-      list( APPEND util_PRIVATE_DEFINITIONS
-        $<${HAVE_CUDA}:CUDA>
-        $<${HAVE_HIP}:HIP>
-      )
-      list( APPEND util_PRIVATE_LIBRARIES
-        $<${HAVE_CUDA}:CUDA::cudart>
-        $<${HAVE_HIP}:hip::host>
-      )
       if( HAVE_${prec} )
         ecbuild_add_executable( TARGET  ${program}-gpu-${prec}
                     SOURCES ${program}.F90
@@ -103,14 +97,11 @@ if( HAVE_ETRANS )
                     LIBS
                       fiat
                       parkind_${prec}
+                      ectrans_util
                       trans_gpu_${prec}
                       etrans_gpu_${prec}
-                      $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
-                      $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                      ${util_PRIVATE_LIBRARIES}
                     DEFINITIONS
                       VERSION="gpu"
-                      ${util_PRIVATE_DEFINITIONS}
         )
         ecbuild_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
       endif()

@@ -6,6 +6,7 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
+add_subdirectory( util )
 add_subdirectory( trans )
 add_subdirectory( programs )
 if( HAVE_TRANSI )
