@@ -16,7 +16,7 @@ set -e
 set -u
 set -o pipefail
 
-version=26.3
+version=26.1
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
 export NVHPC_INSTALL_DIR=$(pwd)/nvhpc-install
