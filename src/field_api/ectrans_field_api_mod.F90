@@ -146,48 +146,59 @@ FUNCTION MAKE_FIELD_GRID_4RB(YLF,NAME)
   MAKE_FIELD_GRID_4RB%DIM_V = 1
 END FUNCTION MAKE_FIELD_GRID_4RB
 
-SUBROUTINE LG2RB(LG2RBV,YLF)
+SUBROUTINE LG2RB(LG2RBV,YLF,IVSET)
   ! Creation of a list of GRID_VIEW encapsulating the layer of an input FIELD_2RB field
   ! Given YLF dimensioned(NPROMA, NBLKS) as input,
   ! the output list size will contain one element, its view beeing dimensioned(NPROMA, NBLKS)
   CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (GRID_VIEW), INTENT(INOUT) :: LG2RBV (:)
-  INTEGER(KIND=JPIM), POINTER :: IVSET(:)
+  INTEGER(KIND=JPIM), POINTER, INTENT(IN) :: IVSET(:)
   REAL(KIND=JPRB), POINTER :: ZZ2 (:,:)
 
-  CALL GET_IVSET(YLF, IVSET)
   CALL FIELD_VIEW_GET_DATA_PTR(YLF, ZZ2)
 
   IF (SIZE(LG2RBV) /= 1 ) CALL ABOR1("Error - incorrect size for LG2RBV")
 
   LG2RBV (1)%P => ZZ2(:,:)
-  LG2RBV (1)%IVSET = IVSET(1)
   CALL COPY_NAME(YLF,LG2RBV(1)%NAME)
+  IF (ASSOCIATED(IVSET)) THEN
+    LG2RBV (1)%IVSET = IVSET(1)
+  ELSE
+    LG2RBV (1)%IVSET = 1 ! default value when IVSET is not provided
+  ENDIF
 END SUBROUTINE LG2RB
 
-SUBROUTINE LG3RB(LG3RBV,YLF)
+SUBROUTINE LG3RB(LG3RBV,YLF,IVSET)
   ! Creation of a list of GRID_VIEW encapsulating the layers of an input FIELD_3RB field
   ! Given YLF dimensioned(NPROMA, NLEVS, NBLKS) as input,
   ! the output list size will contain  (NLEVS) elements, their view beeing dimensioned(NPROMA, NBLKS)
   CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (GRID_VIEW), INTENT(INOUT) :: LG3RBV (:)
+  INTEGER(KIND=JPIM), POINTER, INTENT(IN) :: IVSET(:)
 
-  INTEGER(KIND=JPIM), POINTER :: IVSET(:)
   REAL(KIND=JPRB), POINTER :: ZZ3 (:,:,:)
   INTEGER(KIND=JPIM) :: JLEV, JCOUNT
 
-  CALL GET_IVSET(YLF, IVSET)
   CALL FIELD_VIEW_GET_DATA_PTR(YLF, ZZ3)
 
   IF (SIZE(LG3RBV) /= SIZE (ZZ3, 2) ) CALL ABOR1("Error - incorrect size for LG3RBV")
 
+  IF (ASSOCIATED(IVSET)) THEN
+    IF (SIZE(IVSET) /= SIZE(ZZ3, 2)) THEN
+      CALL ABOR1("Error - LG3RB: incorrect size for IVSET: SIZE(IVSET) = " // TRIM(TO_STR(SIZE(IVSET))) &
+        // " but SIZE(ZZ3, 2) = " // TRIM(TO_STR(SIZE(ZZ3, 2))))
+    END IF
+  END IF
 
   JCOUNT = 1
   DO JLEV = LBOUND (ZZ3, 2), UBOUND (ZZ3, 2)
     LG3RBV (JCOUNT)%P => ZZ3 (:, JLEV, :)
-    LG3RBV (JCOUNT)%IVSET = IVSET(JLEV)
     CALL COPY_NAME(YLF,LG3RBV(JCOUNT)%NAME)
-
+    IF (ASSOCIATED(IVSET)) THEN
+      LG3RBV (JCOUNT)%IVSET = IVSET(JLEV)
+    ELSE
+      LG3RBV (JCOUNT)%IVSET = 1 ! default value when IVSET is not provided
+    ENDIF
     JCOUNT = JCOUNT + 1
   ENDDO
 CONTAINS
@@ -198,30 +209,40 @@ CONTAINS
   END FUNCTION
 END SUBROUTINE LG3RB
 
-SUBROUTINE LG4RB(LG4RBV, YLF)
+SUBROUTINE LG4RB(LG4RBV, YLF, IVSET)
   ! Creation of a list of GRID_VIEW encapsulating the layers of an input FIELD_4RB field
   ! Given YLF dimensioned(NPROMA, NLEVS, NFIELDS, NBLKS) as input,
   ! the output list size will contain  (NLEVS*NFIELDS) elementa, their view beeing dimensioned(NPROMA, NBLKS)
 
   CLASS (FIELD_VIEW), INTENT(IN), POINTER :: YLF
   TYPE (GRID_VIEW), INTENT(INOUT) :: LG4RBV (:)
+  INTEGER(KIND=JPIM), POINTER, INTENT(IN) :: IVSET(:)
 
-  INTEGER(KIND=JPIM), POINTER :: IVSET(:)
   REAL(KIND=JPRB), POINTER :: ZZ4 (:,:,:,:)
   INTEGER(KIND=JPIM) :: JLEV, JFLD, JCOUNT
 
-  CALL GET_IVSET(YLF, IVSET)
   CALL FIELD_VIEW_GET_DATA_PTR(YLF, ZZ4)
 
   IF (SIZE(LG4RBV) /= SIZE (ZZ4, 2) * SIZE (ZZ4, 3) ) CALL ABOR1("Error - incorrect size for LG4RBV")
+
+  IF (ASSOCIATED(IVSET)) THEN
+    IF (SIZE(IVSET) /= SIZE(ZZ4, 2)) THEN
+      CALL ABOR1("Error - LG4RB: incorrect size for IVSET: SIZE(IVSET) = " // TRIM(TO_STR(SIZE(IVSET))) &
+        // " but SIZE(ZZ4, 2) = " // TRIM(TO_STR(SIZE(ZZ4, 2))))
+    END IF
+  END IF
 
   JCOUNT = 1
 
   DO JFLD = LBOUND (ZZ4, 3), UBOUND (ZZ4, 3)
     DO JLEV = LBOUND (ZZ4, 2), UBOUND (ZZ4, 2)
       LG4RBV (JCOUNT)%P => ZZ4(:, JLEV, JFLD, :)
-      LG4RBV (JCOUNT)%IVSET = IVSET(JLEV)
       CALL COPY_NAME(YLF,LG4RBV(JCOUNT)%NAME)
+      IF (ASSOCIATED(IVSET)) THEN
+        LG4RBV (JCOUNT)%IVSET = IVSET(JLEV)
+      ELSE
+        LG4RBV (JCOUNT)%IVSET = 1 ! default value when IVSET is not provided
+      ENDIF
       JCOUNT = JCOUNT + 1
     ENDDO
   ENDDO
@@ -233,19 +254,30 @@ CONTAINS
   END FUNCTION
 END SUBROUTINE LG4RB
 
-FUNCTION LG(YLFL,LGV) RESULT(IOFF)
+FUNCTION LG(YLFL,LGV,IVSET) RESULT(IOFF)
   ! Creation of a list of GRID_VIEW from a list YLFL of FIELD_VIEW
+  ! For each field of YLFL, the IVSET of the matching spectral field can be provided
+  ! through the optional IVSET argument. If IVSET is not provided, the IVSET of the
+  ! generated GRID_VIEW is set to a default value (1).
   TYPE (FIELD_VIEW),TARGET, INTENT(IN) :: YLFL (:)      ! input list of FIELD_VIEW
   TYPE (GRID_VIEW), INTENT(INOUT), OPTIONAL :: LGV (:) ! output list of GRID_VIEW
+  TYPE (IVSET_PTR), INTENT(IN), OPTIONAL :: IVSET(:)
 
   CLASS (FIELD_VIEW), POINTER:: YLF
+  INTEGER(KIND=JPIM), POINTER :: IVSET_NULL(:)
   INTEGER(KIND=JPIM) :: IOFF
   INTEGER(KIND=JPIM) :: ILEN, JFLD
   LOGICAL :: LGV_PROVIDED
 
   LGV_PROVIDED = .FALSE.
+  IVSET_NULL => NULL()
 
   IF (PRESENT(LGV)) LGV_PROVIDED = .TRUE.
+  IF (PRESENT(LGV)) THEN
+    IF (PRESENT(IVSET)) THEN
+      IF (SIZE(YLFL) /= SIZE(IVSET)) CALL ABOR1("LG FAILURE: SIZE(YLFL) /= SIZE(IVSET)")
+    ENDIF
+  ENDIF
 
   IOFF = 0
   ILEN = -1
@@ -260,13 +292,31 @@ FUNCTION LG(YLFL,LGV) RESULT(IOFF)
         ILEN = 1
       CASE (2)
         ILEN = 1
-        IF (LGV_PROVIDED) CALL LG2RB(LGV(IOFF+1:IOFF+ILEN),YLF)
+        IF (LGV_PROVIDED) THEN
+          IF (PRESENT(IVSET)) THEN
+            CALL LG2RB(LGV(IOFF+1:IOFF+ILEN),YLF,IVSET(JFLD)%PTR)
+          ELSE
+            CALL LG2RB(LGV(IOFF+1:IOFF+ILEN),YLF,IVSET_NULL)
+          ENDIF
+        ENDIF
       CASE(3)
         ILEN = YLF%EXTENTS(2)
-        IF (LGV_PROVIDED) CALL LG3RB(LGV (IOFF+1:IOFF+ILEN),YLF)
+        IF (LGV_PROVIDED) THEN
+          IF (PRESENT(IVSET)) THEN
+            CALL LG3RB(LGV (IOFF+1:IOFF+ILEN),YLF,IVSET(JFLD)%PTR)
+          ELSE
+            CALL LG3RB(LGV (IOFF+1:IOFF+ILEN),YLF,IVSET_NULL)
+          ENDIF
+        ENDIF
       CASE(4)
         ILEN =  YLF%EXTENTS(2) * YLF%EXTENTS(3)
-        IF (LGV_PROVIDED) CALL LG4RB(LGV (IOFF+1:IOFF+ILEN),YLF)
+        IF (LGV_PROVIDED) THEN
+          IF (PRESENT(IVSET)) THEN
+            CALL LG4RB(LGV (IOFF+1:IOFF+ILEN),YLF,IVSET(JFLD)%PTR)
+          ELSE
+            CALL LG4RB(LGV (IOFF+1:IOFF+ILEN),YLF,IVSET_NULL)
+          ENDIF
+        ENDIF
       CASE DEFAULT
         CALL ABOR1("LG FAILURE: CLASS UNKNOWN")
     END SELECT
