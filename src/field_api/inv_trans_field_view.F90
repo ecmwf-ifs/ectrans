@@ -244,7 +244,7 @@ IF (SIZE(YDGPU) > 0) THEN
   C = LG(YDGPU, YLGVU)
   DO JFLD=1,IUVG
     DO JLEV=1,KFLEVG
-     ID = JLEV + (JFLD - NBLK) * KFLEVG
+     ID = JLEV + (JFLD - 1) * KFLEVG
      IF (JFLD .EQ. 1) IVSETUV(JLEV) = YLGVU(ID)%IVSET
      IF (IVSETUV(JLEV) .NE. YLGVU(ID)%IVSET) CALL ABOR1("[INV_TRANS_FIELD_API] ivsetuv inconsistent with ylgvu%ivset")
     ENDDO
