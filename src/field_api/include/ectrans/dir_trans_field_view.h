@@ -12,7 +12,7 @@ INTERFACE
 
 SUBROUTINE DIR_TRANS_FIELD_VIEW(KRESOL,                       &
                               & YDGPSCALAR, YDGPU, YDGPV,     &
-                              & YDSPSCALAR, YDSPVOR, YDSPDIV, &
+                              & YDSPSCALAR, YDSPVOR, YDSPDIV  &
                                )
 USE EC_PARKIND, ONLY : JPIM
 USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW

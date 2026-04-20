@@ -12,7 +12,7 @@ SUBROUTINE INV_TRANS_FIELD_VIEW(KRESOL, &
                                & YDSPSCALAR, YDSPVOR, YDSPDIV, &
                                & YDGPSCALAR, YDGPU, YDGPV,     &
                                & YDGPVOR,YDGPDIV, &
-                               & YDGPSCALAR_NS, YDGPSCALAR_EW, YDGPU_EW, YDGPV_EW&
+                               & YDGPSCALAR_NS, YDGPSCALAR_EW, YDGPU_EW, YDGPV_EW, &
                                & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_VIEW* - Field API interface to inverse spectral transform
