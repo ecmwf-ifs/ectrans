@@ -42,12 +42,7 @@ foreach(platform ${platforms})
           TARGET            ectrans_field_api_${platform_tag}${prec}
           MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_field_api_${platform_tag}${prec}
           INSTALL_DIRECTORY module/ectrans_field_api_${platform_tag}${prec} )
-
-        if (HAVE_GPU AND HAVE_ACC)
-            target_link_libraries( ectrans_field_api_${platform_tag}${prec} )
-        endif()
-     endif()
-
+    endif()
   endforeach()
 endforeach()
 

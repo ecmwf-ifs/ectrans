@@ -10,7 +10,7 @@
 
 INTERFACE
 
-SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,
+SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,               &
                              & YDFSCALAR,YDFU, YDFV, &
                              & YDFSPSCALAR, YDFSPVOR,YDFSPDIV)
 
@@ -35,7 +35,7 @@ SUBROUTINE DIR_TRANS_FIELD_API(KRESOL,
 !       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!    
+!
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR
 USE PARKIND1  ,ONLY : JPIM     ,JPRB

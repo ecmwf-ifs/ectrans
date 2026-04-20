@@ -13,6 +13,7 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
                              & YDFSCALAR, YDFU, YDFV,                        &
                              & YDFVOR,YDFDIV,                                &
                              & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
+                             & KGPTOT,                                       &
                              & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
@@ -32,6 +33,7 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
 !       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
+!       KGPTOT         - Number of total grid points
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
@@ -66,6 +68,8 @@ TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFVOR(:),YDFDIV(:)           
 
 TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(INOUT), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
+
+INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
 
 PROCEDURE (FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 
@@ -113,21 +117,21 @@ NFIELD_VORGP = 0
 
 IF (PRESENT(YDFU) .AND. PRESENT(YDFV)) THEN
   NFIELD_UV = SIZE(YDFU)
-ENDIF
+  ENDIF
 IF (PRESENT(YDFSCALAR)) THEN
   NFIELD_SCALAR = SIZE(YDFSCALAR)
 ENDIF
-IF (PRESENT(YDFU_EW) .AND. PRESENT(YDFV_EW))    THEN
+  IF (PRESENT(YDFU_EW) .AND. PRESENT(YDFV_EW))    THEN
   NFIELD_UVDER = NFIELD_UV
-ENDIF
+ ENDIF
 
-IF (PRESENT(YDFDIV)) THEN
+  IF (PRESENT(YDFDIV)) THEN
     NFIELD_DIVGP = NFIELD_UV
-ENDIF
+  ENDIF
 
-IF (PRESENT(YDFVOR)) THEN
+  IF (PRESENT(YDFVOR)) THEN
     NFIELD_VORGP = NFIELD_UV
-ENDIF
+  ENDIF
 
 IF (PRESENT(YDFSCALAR_NS) .AND. PRESENT(YDFSCALAR_EW)) THEN
     NFIELD_SCDER = NFIELD_SCALAR
@@ -181,6 +185,7 @@ CALL INV_TRANS_FIELD_VIEW(YLFVSVOR,YLFVSDIV,YLFVSSCALAR, &
                           & YLFVGU, YLFVGV, YLFVGVOR,YLFVGDIV,YLFVGSCALAR, &
                           & YLFVGU_EW, YLFVGV_EW, YLFVGSCALAR_NS, YLFVGSCALAR_EW,&
                           & KRESOL, &
+                          & KGPTOT, &
                           & FSPGL_PROC)
 
 DEALLOCATE(YLFVSVOR)

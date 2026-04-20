@@ -16,6 +16,7 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
                              & YDFSCALAR, YDFU, YDFV,                        &
                              & YDFVOR,YDFDIV,                                &
                              & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
+                             & KGPTOT,                                       &
                              & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
@@ -35,6 +36,7 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
 !       YDFSPSCALAR(:) - List of spectral scalar fields
 !       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDFSPDIV(:)    - List of spectral vector fields (divergence)
+!       KGPTOT         - Number of total grid points
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
@@ -48,13 +50,14 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
 !       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
 !       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
-                             
+
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_API_BASIC_TYPE_MOD, ONLY: FIELD_BASIC_PTR
 USE PARKIND1, ONLY : JPIM, JPRB
 
 #include "fspgl_intf.h"
 
+INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSPSCALAR(:)                  ! SPECTRAL SCALAR FIELDS (IN)
 
@@ -65,8 +68,7 @@ TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    !
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_BASIC_PTR),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 
-
-INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
+INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
 PROCEDURE(FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 
 END SUBROUTINE INV_TRANS_FIELD_API
