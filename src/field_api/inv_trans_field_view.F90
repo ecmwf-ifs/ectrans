@@ -376,7 +376,7 @@ ENDIF
 ! 4. Copy back temporary array data into grid-point fields
 
 ! remove garbage at the end of arrays
-IEND = NBLK - NPROMA * (NBLK - 1)
+IEND = KGPTOT - NPROMA * (NBLK - 1)
 
 IF (IUVG>0) ZPGPUV (IEND+1:, :, :, NBLK) = 0
 IF (IFLDXG>0)  ZPGP2 (IEND+1:, :, NBLK) = 0
