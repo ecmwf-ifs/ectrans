@@ -187,6 +187,7 @@ CALL INV_TRANS_FIELD_VIEW(KRESOL, &
                         & YLFVGSCALAR, YLFVGU, YLFVGV, &
                         & YLFVGVOR, YLFVGDIV, &
                         & YLFVGSCALAR_NS, YLFVGSCALAR_EW, YLFVGU_EW, YLFVGV_EW, &
+                        & KGPTOT, &
                         & FSPGL_PROC)
 
 DEALLOCATE(YLFVSVOR)

@@ -13,6 +13,7 @@ SUBROUTINE INV_TRANS_FIELD_VIEW(KRESOL, &
                                & YDGPSCALAR, YDGPU, YDGPV,     &
                                & YDGPVOR,YDGPDIV, &
                                & YDGPSCALAR_NS, YDGPSCALAR_EW, YDGPU_EW, YDGPV_EW, &
+                               & KGPTOT, &
                                & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_VIEW* - Field API interface to inverse spectral transform
@@ -32,6 +33,7 @@ SUBROUTINE INV_TRANS_FIELD_VIEW(KRESOL, &
 !       YDSPSCALAR(:) - List of spectral scalar fields
 !       YDSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDSPDIV(:)    - List of spectral vector fields (divergence)
+!       KGPTOT         - Number of total grid points
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
@@ -66,6 +68,7 @@ TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPVOR(:),YDGPDIV(:)             ! GRID VECT
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPSCALAR_EW(:), YDGPSCALAR_NS(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPU_EW(:),YDGPV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 
+INTEGER(KIND=JPIM),   INTENT(IN) :: KGPTOT
 
 PROCEDURE (FSPGL_INTF), POINTER, OPTIONAL, INTENT(IN)  :: FSPGL_PROC
 
