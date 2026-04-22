@@ -224,6 +224,28 @@ END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_ALL_FFTW
 
 !---------------------------------------------------------------------------------------------------
 
+! Test SETUP_TRANS with FFT992 selected explicitly
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_FFT992() RESULT(RET) BIND(C)
+  INTEGER(KIND=JPIM) :: ILOEN(NDGL)
+  INTEGER(KIND=JPIM) :: I
+
+  CALL SETUP_TEST
+
+  ! Define octahedral grid
+  DO I = 1, TRUNCATION + 1
+    ILOEN(I) = 20 + 4 * I
+    ILOEN(NDGL - I + 1) = ILOEN(I)
+  END DO
+
+  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, KLOEN=ILOEN, LDUSEFFTW=.FALSE.)
+
+  CALL END_TEST
+
+  RET = 0
+END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_FFT992
+
+!---------------------------------------------------------------------------------------------------
+
 ! Test SETUP_TRANS with Belusov algorithm
 INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_BELUSOV() RESULT(RET) BIND(C)
   INTEGER(KIND=JPIM) :: ILOEN(NDGL)

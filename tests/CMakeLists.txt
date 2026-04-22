@@ -707,6 +707,15 @@ if( HAVE_TRANSI )
     LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
 
+  if( HAVE_FFT992 )
+    ecbuild_add_test( TARGET ectrans_test_transi_lonlat_fft992
+      SOURCES     transi/transi_test_lonlat.c
+      LIBS        ectrans_test
+      DEFINITIONS TRANSI_TEST_FFT_BACKEND=TRANS_FFT992
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=0 )
+  endif()
+
   ecbuild_add_test( TARGET ectrans_test_transi_io
     SOURCES   transi/transi_test_io.c
     LIBS      ectrans_test

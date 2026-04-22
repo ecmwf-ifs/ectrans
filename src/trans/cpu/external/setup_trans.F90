@@ -108,8 +108,11 @@ USE, INTRINSIC :: ISO_C_BINDING, ONLY:  C_PTR, C_ASSOCIATED, C_SIZE_T
 USE TPM_GEN,               ONLY: NOUT, MSETUP0, NCUR_RESOL, NDEF_RESOL, NMAX_RESOL, NPRINTLEV, &
   &                              LENABLED, NERR
 USE TPM_DIM,               ONLY: R
-USE TPM_DISTR,             ONLY: D, NPROC
+USE TPM_DISTR,             ONLY: D, NPROC, MYSETW
 USE TPM_GEOMETRY,          ONLY: G
+#ifdef WITH_FFT992
+USE TPM_FFT992,            ONLY: T992, FFT992_RESOL
+#endif
 USE TPM_FFTW,              ONLY: TW, FFTW_RESOL, INIT_PLANS_FFTW
 USE TPM_FLT,               ONLY: S, FLT_RESOL
 USE TPM_CTL,               ONLY: C
@@ -159,7 +162,7 @@ INTEGER(C_SIZE_T) ,OPTIONAL,INTENT(IN) :: KLEGPOLPTR_LEN
 !ifndef INTERFACE
 
 ! Local variables
-INTEGER(KIND=JPIM) :: JGL, JRES, IDEF_RESOL, I_BACKEND
+INTEGER(KIND=JPIM) :: JGL, JRES, IDEF_RESOL, I_BACKEND, IGLG, ILATS
 
 LOGICAL :: LLP1,LLP2, LLSPSETUPONLY
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
@@ -203,6 +206,9 @@ ENDIF
 ! Initialise global-transform, CPU backend-specific structures
 IF (.NOT. ALLOCATED(FFTW_RESOL)) ALLOCATE(FFTW_RESOL(NMAX_RESOL))
 IF (.NOT. ALLOCATED(FLT_RESOL)) ALLOCATE(FLT_RESOL(NMAX_RESOL))
+#ifdef WITH_FFT992
+IF (.NOT. ALLOCATED(FFT992_RESOL)) ALLOCATE(FFT992_RESOL(NMAX_RESOL))
+#endif
 
 ! Determine backend
 I_BACKEND = MERGE(JP_BACKEND_CPU_DP, JP_BACKEND_CPU_SP, JPRB == JPRD)
@@ -236,6 +242,9 @@ S%LUSE_BELUSOV=.TRUE. ! use Belusov algorithm to compute RPNM array instead of p
 S%LKEEPRPNM=.FALSE. ! Keep Legendre polonomials (RPNM)
 S%LUSEFLT=.FALSE. ! Use fast legendre transforms
 TW%LALL_FFTW=.FALSE. ! transform fields one at a time
+#ifdef WITH_FFT992
+T992%LFFT992=.FALSE.
+#endif
 LLSPSETUPONLY = .FALSE. ! Only create distributed spectral setup
 S%LDLL = .FALSE. ! use mapping to/from second set of latitudes
 S%LSHIFTLL = .FALSE. ! shift output lat-lon by 0.5dx, 0.5dy
@@ -341,8 +350,13 @@ IF(PRESENT(LDPNMONLY)) THEN
 ENDIF
 
 IF(PRESENT(LDUSEFFTW)) THEN
-  WRITE(NOUT,*) 'LDUSEFFTW option provided to SETUP_TRANS'
-  WRITE(NOUT,*) 'FFTW is now mandatory so this option is deprecated'
+#ifdef WITH_FFT992
+  T992%LFFT992=.NOT.LDUSEFFTW
+#else
+  IF(.NOT.LDUSEFFTW) THEN
+    CALL ABORT_TRANS('SETUP_TRANS: FFT992 backend requested but FFT992 is not enabled in this build')
+  ENDIF
+#endif
 ENDIF
 
 ! Setup distribution independent dimensions
@@ -418,7 +432,31 @@ IF( .NOT.LLSPSETUPONLY ) THEN
 
 ! Initialize Fast Fourier Transform package
   IF (.NOT. D%LCPNMONLY .AND. .NOT. D%LGRIDONLY) THEN
-    CALL INIT_PLANS_FFTW(R%NDLON)
+#ifdef WITH_FFT992
+    IF( T992%LFFT992 ) THEN
+      ALLOCATE(T992%TRIGS(R%NDLON+R%NNOEXTZL,D%NDGL_FS))
+      ALLOCATE(T992%NFAX(19,D%NDGL_FS))
+      ALLOCATE(T992%LUSEFFT992(D%NDGL_FS))
+      T992%LUSEFFT992(:)=.FALSE.
+
+      ILATS=0
+      DO JGL=1,D%NDGL_FS
+        IGLG = D%NPTRLS(MYSETW)+JGL-1
+        IF (G%NLOEN(IGLG)+R%NNOEXTZL > 1) THEN
+          CALL SET99B(T992%TRIGS(1,JGL),T992%NFAX(1,JGL),G%NLOEN(IGLG)+R%NNOEXTZL,T992%LUSEFFT992(JGL))
+          IF(.NOT.T992%LUSEFFT992(JGL)) ILATS=ILATS+1
+        ENDIF
+      ENDDO
+
+      IF( ILATS > 0 ) THEN
+        CALL INIT_PLANS_FFTW(R%NDLON+R%NNOEXTZL)
+      ENDIF
+    ELSE
+#endif
+      CALL INIT_PLANS_FFTW(R%NDLON+R%NNOEXTZL)
+#ifdef WITH_FFT992
+    ENDIF
+#endif
   ENDIF
   CALL GSTATS(1802,1)
 ELSE
