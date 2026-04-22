@@ -19,7 +19,7 @@ on:
 env:
   ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
   CTEST_PARALLEL_LEVEL: 1
-  CACHE_SUFFIX: v1        # Increase to force new cache to be created
+  CACHE_SUFFIX: v2        # Increase to force new cache to be created
 
 jobs:
   ci:
