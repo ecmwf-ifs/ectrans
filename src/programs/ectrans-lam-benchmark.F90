@@ -1653,9 +1653,7 @@ subroutine dump_checksums(filename, noutdump, &
         call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
         write(noutdump, '(a,"(",i0,") = ",z16.16)') "sp3d", jfld, icrc
       else
-        if (size(sp3d) > 0) then
-          call egath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=sp3d(:,:,jfld))
-        endif
+        call egath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=sp3d(:,:,jfld))
       endif
     enddo
   endif
