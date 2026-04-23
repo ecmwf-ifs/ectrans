@@ -37,9 +37,10 @@ foreach( program ectrans-benchmark )
         ecbuild_target_fortran_module_directory(TARGET ${program}-cpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-cpu-${prec} )
 
         if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
-             # clamp small spectral values to ensure bit reproductibility with field Api interface
-             # Only activated in dp, with nvhpc and on cpu
-             target_compile_definitions(${program}-cpu-${prec} PRIVATE "FIELD_API_CLAMP")
+          # clamp small spectral values to ensure bit reproductibility with field Api interface
+          # Only activated in dp, with nvhpc and on cpu
+          target_compile_definitions( ${program}-cpu-${prec} PRIVATE "FIELD_API_CLAMP" )
+          ecbuild_warn( "NPROMA tail block clamping enabled to ensure reproducibility with NVHPC" )
         endif()
 
       endif()
