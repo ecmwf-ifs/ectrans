@@ -173,8 +173,10 @@ ENDIF
 ! Transposition
 
 CALL GSTATS(158,0)
-CALL TRGTOL(ZGTF(LBOUND(ZGTF,1):UBOUND(ZGTF,1),LBOUND(ZGTF,2):UBOUND(ZGTF,2)),KF_FS,KF_GP,KF_SCALARS_G,IVSET,KPTRGP,&
- & PGP,PGPUV,PGP3A,PGP3B,PGP2)
+! The trivial use of LBOUND and UBOUND when addressing was added to overcome a NVHPC 26 run-time
+! problem when ZGTF is a zero-sized array, see #386. Please do not remove.
+CALL TRGTOL(ZGTF(LBOUND(ZGTF, 1):UBOUND(ZGTF, 1),LBOUND(ZGTF, 2):UBOUND(ZGTF, 2)), KF_FS, KF_GP, &
+  &         KF_SCALARS_G, IVSET, KPTRGP, PGP, PGPUV, PGP3A, PGP3B, PGP2)
 CALL GSTATS(158,1)
 CALL GSTATS(106,0)
 
@@ -211,8 +213,10 @@ DO JGL=1,D%NDGL_FS
   ENDIF
 
 ! Save Fourier data in FOUBUF_IN
-
-  CALL FOURIER_OUT(ZGTF(LBOUND(ZGTF,1):UBOUND(ZGTF,1),LBOUND(ZGTF,2):UBOUND(ZGTF,2)),KF_FS,IGL)
+  ! The trivial use of LBOUND and UBOUND when addressing was added to overcome a NVHPC 26 run-time
+  ! problem when ZGTF is a zero-sized array, see #386. Please do not remove.
+  CALL FOURIER_OUT(ZGTF(LBOUND(ZGTF, 1):UBOUND(ZGTF, 1),LBOUND(ZGTF, 2):UBOUND(ZGTF, 2)), KF_FS, &
+    &              IGL)
 ENDDO
 !$OMP END PARALLEL DO
 CALL GSTATS(1640,1)
