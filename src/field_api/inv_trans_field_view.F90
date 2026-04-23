@@ -13,7 +13,6 @@ SUBROUTINE INV_TRANS_FIELD_VIEW(KRESOL, &
                                & YDGPSCALAR, YDGPU, YDGPV,     &
                                & YDGPVOR,YDGPDIV, &
                                & YDGPSCALAR_NS, YDGPSCALAR_EW, YDGPU_EW, YDGPV_EW, &
-                               & KGPTOT, &
                                & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_VIEW* - Field API interface to inverse spectral transform
@@ -33,7 +32,6 @@ SUBROUTINE INV_TRANS_FIELD_VIEW(KRESOL, &
 !       YDSPSCALAR(:) - List of spectral scalar fields
 !       YDSPVOR(:)    - List of spectral vector fields (vorticity)
 !       YDSPDIV(:)    - List of spectral vector fields (divergence)
-!       KGPTOT         - Number of total grid points
 !       FSPGL_PROC     - procedure to be executed in fourier space
 !                        before transposition
 
@@ -52,6 +50,7 @@ USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW
 USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW_GET_DATA_PTR, GET_NPROMA, GET_NFLD, GET_NSPEC2, GET_NBLK, GET_IVSET
 USE ECTRANS_FIELD_API_MOD, ONLY : SPEC_VIEW, GRID_VIEW, LS_COUNT, LG_COUNT, LS, LG, IVSET_PTR
+USE TPM_DISTR, ONLY : DISTR_RESOL
 USE PARKIND1, ONLY : JPIM, JPRB
 
 IMPLICIT NONE
@@ -67,8 +66,6 @@ TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPVOR(:),YDGPDIV(:)             ! GRID VECT
 
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPSCALAR_EW(:), YDGPSCALAR_NS(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 TYPE(FIELD_VIEW),INTENT(INOUT)  :: YDGPU_EW(:),YDGPV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
-
-INTEGER(KIND=JPIM),   INTENT(IN) :: KGPTOT
 
 PROCEDURE (FSPGL_INTF), POINTER, OPTIONAL, INTENT(IN)  :: FSPGL_PROC
 
@@ -120,7 +117,8 @@ LOGICAL                     :: LLSCDERS                               ! INDICATI
 LOGICAL                     :: LLVORGP                                ! INDICATING IF GRID-POINT VORTICITY IS REQ.
 LOGICAL                     :: LLDIVGP                                ! INDICATING IF GRID-POINT DIVERGENCE IS REQ.
 LOGICAL                     :: LLUVDER                                ! INDICATING IF E-W DERIVATIVES OF U AND V ARE REQ.
-INTEGER(KIND=JPIM)          :: KFLEVG
+INTEGER(KIND=JPIM)          :: NFLEVG
+INTEGER(KIND=JPIM)          :: NGPTOT
 
 INTEGER(KIND=JPIM) :: NFIELD_UV, NFIELD_SCALAR
 INTEGER(KIND=JPIM) :: NPROMA, NBLK, NFIELD_TOTAL_UV, NFIELD_TOTAL_SCALAR, NSPEC2
@@ -154,7 +152,7 @@ IOFFSET= 0
 JLEV= 0
 JFLD= 0
 IEND= 0
-KFLEVG = 0
+NFLEVG = 0
 LLSCDERS  = .FALSE.
 LLVORGP = .FALSE.
 LLDIVGP = .FALSE.
@@ -190,7 +188,7 @@ IF (SIZE(YDGPU) > 0) THEN
     CALL ABOR1("[INV_TRANS_FIELD_API] inconsistent number of field_view for vectors")
   ENDIF
 
-  KFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
+  NFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
   IUVG = SIZE(YDGPU)
 
   LLUVDER  = .FALSE.
@@ -227,7 +225,7 @@ IF (SIZE(YDGPU) > 0) THEN
   ALLOCATE(ZPSPDIV(IFLDSPVOR,NSPEC2))
 
   ! allocate temporary vector field array in grid space
-  ALLOCATE(ZPGPUV(NPROMA,KFLEVG, IUVG * IUVDIM,NBLK))
+  ALLOCATE(ZPGPUV(NPROMA,NFLEVG, IUVG * IUVDIM,NBLK))
 
   ! For LG we need the ivset of each grid point field,
   ! so we extract a matching list from the spectral fields.
@@ -251,10 +249,10 @@ IF (SIZE(YDGPU) > 0) THEN
 
   ! Initialize b-set for vector fields data
   C = LG(YDGPU, YLGVU, IVSETUV_LIST)
-  ALLOCATE(IVSETUV(KFLEVG))
+  ALLOCATE(IVSETUV(NFLEVG))
   DO JFLD=1,IUVG
-    DO JLEV=1,KFLEVG
-      ID = JLEV + (JFLD - 1) * KFLEVG
+    DO JLEV=1,NFLEVG
+      ID = JLEV + (JFLD - 1) * NFLEVG
       IF (JFLD .EQ. 1) THEN
         IVSETUV(JLEV) = YLGVU(ID)%IVSET
       ENDIF
@@ -376,10 +374,13 @@ ELSE IF (ASSOCIATED(ZPGPUV)) THEN
     ENDIF
 ENDIF
 
+! Get NGPTOT from TPM_DISTR module's DIST_RESOL(KRESOL)
+NGPTOT = DISTR_RESOL(KRESOL)%NGPTOT
+
 ! 4. Copy back temporary array data into grid-point fields
 
 ! remove garbage at the end of arrays
-IEND = KGPTOT - NPROMA * (NBLK - 1)
+IEND = NGPTOT - NPROMA * (NBLK - 1)
 
 IF (IUVG>0) ZPGPUV (IEND+1:, :, :, NBLK) = 0
 IF (IFLDXG>0)  ZPGP2 (IEND+1:, :, NBLK) = 0
@@ -393,8 +394,8 @@ IF (IUVG>0) THEN
   IF (LLVORGP) THEN
       C = LG(YDGPVOR, YLGVVOR, IVSETUV_LIST)
       DO JFLD=1,IUVG
-        DO JLEV=1,KFLEVG
-          ID = JLEV + (JFLD -1) * KFLEVG
+        DO JLEV=1,NFLEVG
+          ID = JLEV + (JFLD -1) * NFLEVG
           ZZ2_1=>YLGVVOR(ID)%P
           ZZ2_1(:,:) = ZPGPUV(:, JLEV,JFLD+IOFFSET*IUVG,:)
         ENDDO
@@ -407,8 +408,8 @@ IF (IUVG>0) THEN
   IF (LLDIVGP) THEN
       C = LG(YDGPDIV, YLGVDIV, IVSETUV_LIST)
       DO JFLD=1,IUVG
-        DO JLEV=1,KFLEVG
-          ID = JLEV + (JFLD -1) * KFLEVG
+        DO JLEV=1,NFLEVG
+          ID = JLEV + (JFLD -1) * NFLEVG
           ZZ2_1=>YLGVDIV(ID)%P
           ZZ2_1(:,:) = ZPGPUV(:, JLEV,JFLD+IOFFSET*IUVG,:)
           ENDDO
@@ -423,8 +424,8 @@ IF (IUVG>0) THEN
 
 
   DO JFLD=1,IUVG
-    DO JLEV=1,KFLEVG
-      ID = JLEV + (JFLD -1) * KFLEVG
+    DO JLEV=1,NFLEVG
+      ID = JLEV + (JFLD -1) * NFLEVG
       ZZ2_1=>YLGVU(ID)%P
       ZZ2_2=>YLGVV(ID)%P
       ZZ2_1(:,:) =  ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:)
@@ -440,8 +441,8 @@ IF (IUVG>0) THEN
     C = LG(YDGPV_EW, YLGVV_EW, IVSETUV_LIST)
 
     DO JFLD=1,IUVG
-      DO JLEV=1,KFLEVG
-        ID = JLEV + (JFLD -1) * KFLEVG
+      DO JLEV=1,NFLEVG
+        ID = JLEV + (JFLD -1) * NFLEVG
         ZZ2_1=>YLGVU_EW(ID)%P
         ZZ2_2=>YLGVV_EW(ID)%P
         ZZ2_1(:,:) =  ZPGPUV(:,JLEV,JFLD+IOFFSET*IUVG,:)
