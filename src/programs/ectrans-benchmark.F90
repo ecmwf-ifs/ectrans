@@ -98,9 +98,6 @@ real(kind=jprb), pointer :: zgp(:,:,:)
 real(kind=jprb), pointer :: zgpuv(:,:,:,:)
 real(kind=jprb), pointer :: zgp3a(:,:,:,:)
 real(kind=jprb), pointer :: zgp2(:,:,:)
-#ifdef FIELD_API_CLAMP
-real(kind=jprb)    :: clamp_epsilon = 1E-14
-#endif
 
 logical :: lstack = .false. ! Output stack info
 
@@ -762,19 +759,6 @@ do jstep = 1, iters+iters_warmup
                                &ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
                                &ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
       call synchost_rdonly_wrapped_fields(ywflds)
-#ifdef FIELD_API_CLAMP
-    ! clamp small spectral values to ensure bit reproductibility with field Api interface
-    ! Only activated in dp, with nvhpc and on cpu
-    if (jprb == jprd) then
-      write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
-      if (icall_mode == 1) then
-        if (associated(zspscalar)) where (abs(zspscalar) < clamp_epsilon) zspscalar = 0
-      else
-        if (associated(zspsc2))    where (abs(zspsc2) < clamp_epsilon) zspsc2 = 0
-        if (associated(zspsc3a))   where (abs(zspsc3a) < clamp_epsilon) zspsc3a = 0
-      endif
-    endif
-#endif
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
