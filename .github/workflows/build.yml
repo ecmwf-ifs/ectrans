@@ -60,9 +60,9 @@ jobs:
             ctest_options: -E memory
             caching: true
 
-          - name: linux nvhpc-25.11
+          - name: linux nvhpc-26.3
             os: ubuntu-24.04
-            compiler: nvhpc-25.11
+            compiler: nvhpc-26.3
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
