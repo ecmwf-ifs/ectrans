@@ -230,7 +230,7 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
   ! Create field lists in ylf from field API objects in ywflds
 
   type(wrapped_fields), intent(in) :: ywflds       !input fields api objects
-  type(fields_lists), intent(inout), target :: ylf ! output field lists
+  type(fields_lists), intent(inout) :: ylf ! output field lists
   integer(kind=jpim), optional, intent(in) :: kvsetuv(:)     ! 'b-set' for vector fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc(:)     ! 'b-set' for scalar fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc2(:)    ! 'b-set' for surfacic fields
