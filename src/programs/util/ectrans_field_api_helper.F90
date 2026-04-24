@@ -22,27 +22,31 @@ type wrapped_fields
   ! in the subroutines wrap_benchmark_fields and wrap_benchmark_fields_zgp
 
   ! Set of field api object to be transformed in the spectral transforms
-  class (field_3rb), pointer :: spscalar3      ! spectral scalar fields
-  class (field_2rb), pointer :: spscalar2      ! spectral surfacic scalar fields
-  class (field_2rb), pointer :: spscalar       ! spectral scalar fields as a single field
+  class(field_3rb), pointer :: spscalar3 => null()  ! spectral scalar fields
+  class(field_2rb), pointer :: spscalar2 => null()  ! spectral surfacic scalar fields
+  class(field_2rb), pointer :: spscalar  => null()  ! spectral scalar fields as a single field
 
-  class (field_2rb), pointer :: spvor, spdiv   ! spectral vorticity and divergence
+  class(field_2rb), pointer :: spvor => null()      ! spectral vorticity
+  class(field_2rb), pointer :: spdiv => null()      ! spectral divergence
 
-  class (field_3rb), pointer :: vor, div       ! grid-point vorticity and divergence
-  class (field_3rb), pointer :: u, v           ! grid-point u and v fields
-  class (field_3rb), pointer :: u_ew, v_ew     ! grid-point u and derivatives
+  class(field_3rb), pointer :: vor => null()        ! grid-point vorticity
+  class(field_3rb), pointer :: div => null()        ! grid-point divergence
+  class(field_3rb), pointer :: u => null()          ! grid-point u field
+  class(field_3rb), pointer :: v => null()          ! grid-point v field
+  class(field_3rb), pointer :: u_ew => null()       ! grid-point u derivative
+  class(field_3rb), pointer :: v_ew => null()       ! grid-point v derivative
 
-  class (field_4rb), pointer :: scalar3        ! grid-point scalar fields
-  class (field_4rb), pointer :: scalar3_ew     ! grid-point scalar fields derivatives ew
-  class (field_4rb), pointer :: scalar3_ns     ! grid-point scalar fields derivatives ns
+  class(field_4rb), pointer :: scalar => null()     ! grid-point scalar fields
+  class(field_4rb), pointer :: scalar3_ew => null() ! grid-point scalar fields derivatives ew
+  class(field_4rb), pointer :: scalar3_ns => null() ! grid-point scalar fields derivatives ns
 
-  class (field_3rb), pointer :: scalar2        ! grid-point surfacic scalar fields
-  class (field_3rb), pointer :: scalar2_ew     ! grid-point surfacic scalar fields derivatives ew
-  class (field_3rb), pointer :: scalar2_ns     ! grid-point surfacic scalar fields derivatives ns
+  class(field_3rb), pointer :: scalar2 => null()    ! grid-point surfacic scalar fields
+  class(field_3rb), pointer :: scalar2_ew => null() ! grid-point surfacic scalar fields derivatives ew
+  class(field_3rb), pointer :: scalar2_ns => null() ! grid-point surfacic scalar fields derivatives ns
 
-  class (field_3rb), pointer :: scalar         ! grid-point scalar fields as a single field
-  class (field_3rb), pointer :: scalar_ew      ! grid-point scalar fields derivatives ew
-  class (field_3rb), pointer :: scalar_ns      ! grid-point scalar fields derivatives ns
+  class(field_3rb), pointer :: scalar => null()     ! grid-point scalar fields as a single field
+  class(field_3rb), pointer :: scalar_ew => null()  ! grid-point scalar fields derivatives ew
+  class(field_3rb), pointer :: scalar_ns => null()  ! grid-point scalar fields derivatives ns
 end type wrapped_fields
 
 type fields_lists
@@ -375,38 +379,5 @@ subroutine synchost_rdonly_wrapped_fields(ywflds)
   if (associated(ywflds%scalar_ns)) call ywflds%scalar_ns%sync_host_rdonly()
 
 end subroutine synchost_rdonly_wrapped_fields
-
-
-subroutine nullify_wrapped_fields(ywflds)
-
-    ! Nullify all pointers in ywflds
-
-  type(wrapped_fields), intent(inout) :: ywflds
-
-  nullify(ywflds%spvor)
-  nullify(ywflds%spdiv)
-  nullify(ywflds%spscalar)
-  nullify(ywflds%spscalar3)
-  nullify(ywflds%spscalar2)
-
-  nullify(ywflds%u)
-  nullify(ywflds%v)
-  nullify(ywflds%u_ew)
-  nullify(ywflds%v_ew)
-  nullify(ywflds%vor)
-  nullify(ywflds%div)
-
-  nullify(ywflds%scalar3)
-  nullify(ywflds%scalar3_ew)
-  nullify(ywflds%scalar3_ns)
-
-  nullify(ywflds%scalar2)
-  nullify(ywflds%scalar2_ew)
-  nullify(ywflds%scalar2_ns)
-
-  nullify(ywflds%scalar)
-  nullify(ywflds%scalar_ew)
-  nullify(ywflds%scalar_ns)
-end subroutine nullify_wrapped_fields
 
 end module ectrans_field_api_helper
