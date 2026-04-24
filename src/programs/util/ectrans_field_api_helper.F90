@@ -36,7 +36,7 @@ type wrapped_fields
   class(field_3rb), pointer :: u_ew => null()       ! grid-point u derivative
   class(field_3rb), pointer :: v_ew => null()       ! grid-point v derivative
 
-  class(field_4rb), pointer :: scalar => null()     ! grid-point scalar fields
+  class(field_4rb), pointer :: scalar3 => null()    ! grid-point scalar fields
   class(field_4rb), pointer :: scalar3_ew => null() ! grid-point scalar fields derivatives ew
   class(field_4rb), pointer :: scalar3_ns => null() ! grid-point scalar fields derivatives ns
 
