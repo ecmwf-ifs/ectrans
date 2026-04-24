@@ -460,6 +460,14 @@ if( HAVE_CPU AND HAVE_MPI )
       OMP 1
     )
   endif()
+
+  ecbuild_add_test(TARGET ectrans_test_init_mpi_ranks
+    SOURCES trans/test_init_mpi_ranks.F90
+    LIBS ${trans_lib} ${parkind_lib}
+    LINKER_LANGUAGE Fortran
+    MPI 4
+    OMP 1
+  )
 endif()
 
 # --------------------------------------------------------------------------------------------------
