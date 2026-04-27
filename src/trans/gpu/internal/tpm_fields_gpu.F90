@@ -20,7 +20,7 @@ SAVE
 
 TYPE FIELDS_GPU_TYPE
 ! ptr to hipblas handle
-TYPE(C_PTR) :: handle
+TYPE(C_PTR) :: HANDLE
 
 ! scratch arrays for ltinv and ltdir and associated dimension variables
 REAL(KIND=JPRBT),ALLOCATABLE :: ZAA(:)  !! JPRL for 1/2

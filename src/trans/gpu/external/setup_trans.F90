@@ -577,8 +577,8 @@ IF( .NOT.D%LGRIDONLY ) THEN
   !$OMP TARGET ENTER DATA MAP(TO:G,G%NDGLU,G%NMEN,G%NLOEN)
 #endif
 
-  FG%handle = C_NULL_PTR
-  CALL HIP_BLAS_CREATE(FG%handle)
+  FG%HANDLE = C_NULL_PTR
+  CALL HIP_BLAS_CREATE(FG%HANDLE)
   WRITE(NOUT,*) '===GPU arrays successfully allocated'
 
   ! TODO: This might be good idea - those polynomials are not needed
