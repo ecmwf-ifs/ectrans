@@ -268,7 +268,9 @@ void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
 extern "C" {
 
 void hipblasCreate_wrapper(hipblasHandle_t *handle) {
-  HICBLAS_CHECK(hipblasCreate(handle));
+  hipblasHandle_t local_handle;
+  HICBLAS_CHECK(hipblasCreate(&local_handle));
+  *handle = local_handle;
 }
 
 void hipblasDestroy_wrapper(hipblasHandle_t *handle) {
