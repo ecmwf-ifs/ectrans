@@ -266,11 +266,20 @@ void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
 } // namespace
 
 extern "C" {
+
+void hipblasCreate_wrapper(hipblasHandle_t *handle) {
+  HICBLAS_CHECK(hipblasCreate(handle));
+}
+
+void hipblasDestroy_wrapper(hipblasHandle_t *handle) {
+  HICBLAS_CHECK(hipblasDestroy(*handle));
+}
+
 void hipblas_dgemm_wrapper(char transa, char transb, int m, int n, int k,
                            double alpha, const double *A, int lda, int tda,
                            const double *B, int ldb, int tdb, double beta,
                            double *C, int ldc, int tdc, int batchCount,
-                           size_t stream, void *growing_allocator, hipblasHandle_t handle) {
+                           size_t stream, void *growing_allocator, hipblasHandle_t *handle) {
 
   hipblasOperation_t op_t1 = HIPBLAS_OP_N, op_t2 = HIPBLAS_OP_N;
 
@@ -279,10 +288,10 @@ void hipblas_dgemm_wrapper(char transa, char transb, int m, int n, int k,
   if (transb == 'T' || transb == 't')
     op_t2 = HIPBLAS_OP_T;
 
-  HICBLAS_CHECK(hipblasSetStream(handle, *(hipStream_t *)stream));
+  HICBLAS_CHECK(hipblasSetStream(*handle, *(hipStream_t *)stream));
 
   HICBLAS_CHECK(hipblasDgemmStridedBatched(
-      handle, op_t1, op_t2, m, n, k, &alpha, (const double *)A, lda, tda,
+      *handle, op_t1, op_t2, m, n, k, &alpha, (const double *)A, lda, tda,
       (const double *)B, ldb, tdb, &beta, (double *)C, ldc, tdc, batchCount));
 }
 
@@ -290,7 +299,7 @@ void hipblas_sgemm_wrapper(char transa, char transb, int m, int n, int k,
                            float alpha, const float *A, int lda, int tda,
                            const float *B, int ldb, int tdb, float beta,
                            float *C, int ldc, int tdc, int batchCount,
-                           void *growing_allocator, hipblasHandle_t handle) {
+                           void *growing_allocator, hipblasHandle_t *handle) {
 
   hipblasOperation_t op_t1 = HIPBLAS_OP_N, op_t2 = HIPBLAS_OP_N;
 
@@ -300,7 +309,7 @@ void hipblas_sgemm_wrapper(char transa, char transb, int m, int n, int k,
     op_t2 = HIPBLAS_OP_T;
 
   HICBLAS_CHECK(hipblasSgemmStridedBatched(
-      handle, op_t1, op_t2, m, n, k, &alpha, (const float *)A, lda,
+      *handle, op_t1, op_t2, m, n, k, &alpha, (const float *)A, lda,
       tda, (const float *)B, ldb, tdb, &beta, (float *)C, ldc, tdc,
       batchCount));
 }
@@ -310,7 +319,7 @@ void hipblas_sgemm_wrapper_grouped(
     const int *k, float alpha, const float *A, int lda, const int64_t *offsetsA,
     const float *B, const int *ldb, const int64_t *offsetsB, float beta,
     float *C, int ldc, const int64_t *offsetsC, int batchCount, size_t stream,
-    void *growing_allocator, hipblasHandle_t handle) {
+    void *growing_allocator, hipblasHandle_t *handle) {
 #ifdef USE_CUTLASS
   cutlass_sgemm_wrapper_grouped(resol_id, blas_id, transa, transb, m, n, k,
                                 alpha, A, lda, offsetsA, B, ldb, offsetsB, beta,
@@ -320,7 +329,7 @@ void hipblas_sgemm_wrapper_grouped(
   hipblas_sgemm_wrapper_grouped(resol_id, blas_id, transa, transb, m, n, k,
                                 alpha, A, lda, offsetsA, B, ldb, offsetsB, beta,
                                 C, ldc, offsetsC, batchCount,
-                                *(hipStream_t *)stream, growing_allocator, handle);
+                                *(hipStream_t *)stream, growing_allocator, *handle);
 #endif
 }
 
@@ -332,11 +341,11 @@ void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
                                    const int64_t *offsetsB, double beta,
                                    double *C, int ldc, const int64_t *offsetsC,
                                    int batchCount, size_t stream,
-                                   void *growing_allocator, hipblasHandle_t handle) {
+                                   void *growing_allocator, hipblasHandle_t *handle) {
   hipblas_dgemm_wrapper_grouped(resol_id, blas_id, transa, transb, m, n, k,
                                 alpha, A, lda, offsetsA, B, ldb, offsetsB, beta,
                                 C, ldc, offsetsC, batchCount,
-                                *(hipStream_t *)stream, growing_allocator, handle);
+                                *(hipStream_t *)stream, growing_allocator, *handle);
 }
 
 void clean_gemm(int resol_id) {
