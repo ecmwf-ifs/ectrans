@@ -186,6 +186,7 @@ character(len=256) :: checksums_filename
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
+logical :: lalloperm = .true.
 
 character(len=16)   :: cgrid = ''
 character(len=128)  :: cchecksums_path = ''
@@ -228,7 +229,7 @@ endif
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, &
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  &                             lpinning,lfield_api, icall_mode, ldump_checksums, cchecksums_path)
+  &                             lpinning, lfield_api, icall_mode, ldump_checksums, cchecksums_path, lalloperm)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -392,7 +393,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1), kpromatr=npromatr, &
   &               kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw, ldsync_trans=lsync_trans,  &
-  &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi,         &
+  &               ldeq_regions=leq_regions, ldalloperm=lalloperm, ldmpoff=.not.luse_mpi,         &
   &               kopt_memory_tr=nopt_mem_tr)
 call gstats(1, 1)
 
@@ -444,6 +445,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("lscders    ",l1)') lscders
   write(nout,'("luvder     ",l1)') luvder
   write(nout,'("lfield_api ",l1)') lfield_api
+  write(nout,'("lalloperm  ",l1)') lalloperm
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -1136,6 +1138,36 @@ end subroutine str2int
 
 !===================================================================================================
 
+subroutine str2logical(str, logical, stat)
+
+  character(len=*), intent(in) :: str
+  logical, intent(out) :: logical
+  integer, intent(out) :: stat
+  read(str, *, iostat=stat) logical
+
+end subroutine str2logical
+
+!===================================================================================================
+
+function get_logical_value(cname, iarg) result(value)
+
+  logical :: value
+  character(len=*), intent(in) :: cname
+  integer, intent(inout) :: iarg
+  character(len=128) :: carg
+  integer :: stat
+
+  carg = get_str_value(cname, iarg)
+  call str2logical(carg, value, stat)
+
+  if (stat /= 0) then
+    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
+  end if
+
+end function
+
+!===================================================================================================
+
 function get_int_value(cname, iarg) result(value)
 
   integer :: value
@@ -1280,7 +1312,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   lscders, luvder, luseflt, nopt_mem_tr, nproma, npromatr, &
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
-  &                                   cchecksums_path)
+  &                                   cchecksums_path, lalloperm)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1316,6 +1348,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
                                             ! 2: pspvor, pspdiv, pspsc3a, pspsc2, pgpuv, pgp3a, pgp2
 
   character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
+  logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
 
@@ -1380,6 +1413,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
           if (icall_mode < 1 .or. icall_mode > 2) then
             call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
+      case('--alloperm'); lalloperm = get_logical_value('--alloperm', iarg)
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 

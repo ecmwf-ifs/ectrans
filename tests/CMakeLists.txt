@@ -203,6 +203,17 @@ foreach( benchmark ${benchmarks} )
         )
         ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
 
+        # Check it works with LALLOPERM=F (cpu only)
+        if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "2" AND ${omp} MATCHES "1")
+          ecbuild_add_test( TARGET ${base_title}_lalloperm_f
+              COMMAND ${benchmark}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --alloperm .FALSE. --dump-checksums ${base_title}_lalloperm_f ${base_args}
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${base_title}_lalloperm_f )
+        endif()
+
         # Check it works with 10 3D scalar fields, 20 levels, and NPROMATR=20 (feature only works for CPU)
         if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "1" )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_npromatr20
@@ -408,6 +419,17 @@ if( HAVE_ETRANS )
               OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld10_nlev20_nproma16 )
+
+          # Check it works with LALLOPERM=F (cpu only)
+          if( ${omp} MATCHES "1")
+            ecbuild_add_test( TARGET ${base_title}_lalloperm_f
+                COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_lalloperm_f
+                MPI ${mpi}
+                OMP ${omp}
+            )
+            ectrans_set_test_properties( ${base_title}_lalloperm_f )
+          endif()
+
         endforeach()
       endforeach()
     endif()
