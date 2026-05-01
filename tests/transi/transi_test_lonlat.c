@@ -18,10 +18,6 @@
 
 static bool check_values = false;
 
-#ifndef TRANSI_TEST_FFT_BACKEND
-#define TRANSI_TEST_FFT_BACKEND TRANS_FFTW
-#endif
-
 // ----------------------------------------------------------------------------
 
 void test_gptosptogp(int nlon, int nlat, int nsmax)

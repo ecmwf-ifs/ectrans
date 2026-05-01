@@ -33,10 +33,10 @@ TYPE FFTB_PLAN
 END TYPE FFTB_PLAN
 
 TYPE FFTB_TYPE
-  INTEGER(KIND=JPIM) :: NDLON ! maximum number of points on a latitude
+  INTEGER(KIND=JPIM) :: NDLON=0 ! maximum number of points on a latitude
   REAL(KIND=JPRBT)   ,ALLOCATABLE :: TRIGS(:,:) ! list of trigonometric function values (PO2)
   INTEGER(KIND=JPIM),ALLOCATABLE :: NFAX(:,:)  ! list of factors of truncation (PO2)
-  INTEGER(KIND=JPIM)             :: NLAT_COUNT ! number of lats requiring bluestein FFT
+  INTEGER(KIND=JPIM)             :: NLAT_COUNT=0 ! number of lats requiring bluestein FFT
   INTEGER(KIND=JPIM),ALLOCATABLE :: NLATS(:)   ! the latitude lengths of these latitudes
   TYPE(FFTB_PLAN),ALLOCATABLE :: FFTB(:)
 END TYPE FFTB_TYPE
@@ -216,7 +216,6 @@ ELSE
   DO K=1,KLOT
     PDAT(K,N) =PDAT(K,N) + ZX0(K)
   ENDDO
-
 ENDIF
 
 DEALLOCATE(ZY)
@@ -379,6 +378,8 @@ DO JLAT=1,TB%NLAT_COUNT
 ENDDO
 IF( ALLOCATED(TB%NLATS) ) DEALLOCATE(TB%NLATS)
 IF( ALLOCATED(TB%FFTB)  ) DEALLOCATE(TB%FFTB)
+TB%NDLON = 0
+TB%NLAT_COUNT = 0
 
 RETURN
 END SUBROUTINE BLUESTEIN_TERM

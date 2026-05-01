@@ -5,7 +5,7 @@ ecTrans is a library for performing efficient and scalable spectral transformati
 
 After co-development as part of the [Integrated Forecasting System (IFS)](https://www.ecmwf.int/en/forecasts/documentation-and-support/changes-ecmwf-model) atmospheric model of the [European Centre for Medium-Range Weather Forecasts](https://www.ecmwf.int/) for several decades, ecTrans became a standalone software package in 2022. It constitutes one of the most important and expensive parts of the IFS and neatly encapsulates both computational and communicational paradigms and bottlenecks exhibited by the IFS model as a whole.
 
-ecTrans primarily targets conventional CPU platforms, requiring FFTW- and BLAS-implementing libraries. It can also operate efficiently on GPU accelerators making use of offloading directives (either OpenACC or OpenMP) and vendor library routines (cuBLAS/cuFFT or hipBLAS/hipFFT). ecTrans performs efficiently and stably on Nvidia platforms but is currently less mature on AMD platforms.
+ecTrans primarily targets conventional CPU platforms. It requires a BLAS-implementing library, and uses either the built-in FFT992 library or optionally an FFTW-compatible library for FFTs. It can also operate efficiently on GPU accelerators making use of offloading directives (either OpenACC or OpenMP) and vendor library routines (cuBLAS/cuFFT or hipBLAS/hipFFT). ecTrans performs efficiently and stably on Nvidia platforms but is currently less mature on AMD platforms.
 
 To learn more about ecTrans, please consult the [documentation](https://sites.ecmwf.int/docs/ectrans/page/index.html) (which is under construction).
 

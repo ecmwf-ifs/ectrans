@@ -25,9 +25,15 @@ function(generate_backend_sources)
           external/*.F90
     QUIET
   )
+  if ( NOT HAVE_FFTW )
+    list( REMOVE_ITEM files "internal/tpm_fftw.F90")
+  endif()
 
   set(outfiles)
   foreach(file_i ${files})
+    if( NOT HAVE_FFTW AND file_i STREQUAL "internal/tpm_fftw.F90" )
+      continue()
+    endif()
     get_filename_component(outfile_name    ${file_i} NAME)
     get_filename_component(outfile_name_we ${file_i} NAME_WE)
     get_filename_component(outfile_ext     ${file_i} EXT)
@@ -63,21 +69,22 @@ foreach( prec dp sp )
       INSTALL_MODULE_DIRECTORY module/ectrans
     )
 
-    set( FFTW_LINK PRIVATE )
-    if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
-        ecbuild_warn( "Danger: Both MKL and FFTW are linked in trans_${prec}. "
-                      "No guarantees on link order can be made for the final executable.")
-        set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
+    if( HAVE_FFTW )
+      set( FFTW_LINK PRIVATE )
+      if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
+          ecbuild_warn( "Danger: Both MKL and FFTW are linked in trans_${prec}. "
+                        "No guarantees on link order can be made for the final executable.")
+          set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
+      endif()
+      ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
+      target_link_libraries( ectrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+      target_include_directories( ectrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+      target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFTW )
     endif()
-    ecbuild_debug("target_link_libraries( trans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
-    target_link_libraries( ectrans_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
-    target_include_directories( ectrans_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
     if( HAVE_FFT992 )
       ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE fft992_${prec} )")
       target_link_libraries( ectrans_${prec} PRIVATE fft992_${prec} )
       target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFT992 )
-    else()
-      target_compile_definitions( ectrans_${prec} PRIVATE WITH_FFTW )
     endif()
     ecbuild_debug("target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
     target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )
