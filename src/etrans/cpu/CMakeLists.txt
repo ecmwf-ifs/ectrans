@@ -33,6 +33,9 @@ function(generate_backend_sources)
 
   set(outfiles)
   foreach(file_i ${files})
+    if( NOT HAVE_FFTW AND file_i STREQUAL "internal/tpm_fftw.F90" )
+      continue()
+    endif()
     get_filename_component(outfile_name    ${file_i} NAME)
     get_filename_component(outfile_name_we ${file_i} NAME_WE)
     get_filename_component(outfile_ext     ${file_i} EXT)
@@ -130,16 +133,18 @@ foreach( prec dp sp )
     )
 
     if( HAVE_ETRANS )
-      set( FFTW_LINK PRIVATE )
-      if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
-          ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_lam_${prec}. "
-                        "No guarantees on link order can be made for the final executable.")
-          set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
+      if( HAVE_FFTW )
+        set( FFTW_LINK PRIVATE )
+        if( LAPACK_LIBRARIES MATCHES "mkl" AND NOT FFTW_LIBRARIES MATCHES "mkl" )
+            ecbuild_warn( "Danger: Both MKL and FFTW are linked in ectrans_lam_${prec}. "
+                          "No guarantees on link order can be made for the final executable.")
+            set( FFTW_LINK PUBLIC ) # Attempt anyway to give FFTW precedence
+        endif()
+        ecbuild_debug("target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
+        target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
+        target_include_directories( ectrans_lam_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
+        target_compile_definitions( ectrans_lam_${prec} PRIVATE WITH_FFTW )
       endif()
-      ecbuild_debug("target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )")
-      target_link_libraries( ectrans_lam_${prec} ${FFTW_LINK} ${FFTW_LIBRARIES} )
-      target_include_directories( ectrans_lam_${prec} PRIVATE ${FFTW_INCLUDE_DIRS} )
-      target_compile_definitions( ectrans_lam_${prec} PRIVATE WITH_FFTW )
       # daand: lam transforms don't need lapack
       #ecbuild_debug("target_link_libraries( ectrans_lam_${prec} PRIVATE ${LAPACK_LIBRARIES} )")
       #target_link_libraries( ectrans_${prec} PRIVATE ${LAPACK_LIBRARIES} )

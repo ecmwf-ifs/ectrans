@@ -26,8 +26,13 @@ set( test_list
   ectrans_test_trans_api_setup_trans_write_read_legpoly
 )
 
+if( NOT HAVE_FFTW )
+  list( REMOVE_ITEM test_list ectrans_test_trans_api_setup_trans_all_fftw )
+endif()
+
 if( HAVE_FFT992 )
   list( APPEND test_list ectrans_test_trans_api_setup_trans_fft992 )
+  list( APPEND test_list ectrans_test_trans_api_setup_trans_fft992_supported_grid )
 endif()
 
 # Declare tests that WILL_FAIL

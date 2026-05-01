@@ -16,6 +16,10 @@
 
 #include "ectrans/transi.h"
 
+#ifndef TRANSI_TEST_FFT_BACKEND
+#define TRANSI_TEST_FFT_BACKEND TRANS_FFTW
+#endif
+
 #define TRANS_CHECK( CALL ) do {\
   int errcode = CALL;\
   if( errcode != TRANS_SUCCESS) {\

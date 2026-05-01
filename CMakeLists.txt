@@ -81,11 +81,24 @@ ecbuild_add_option( FEATURE MKL
                     REQUIRED_PACKAGES "MKL QUIET"
                     CONDITION HAVE_CPU )
 
+ecbuild_add_option( FEATURE FFTW
+                    DEFAULT ON
+                    DESCRIPTION "Use FFTW for CPU Fourier transforms"
+                    CONDITION HAVE_CPU )
+
+ecbuild_add_option( FEATURE FFT992
+                    DEFAULT OFF
+                    DESCRIPTION "Build separate FFT992 FFT implementation" )
+
+if( HAVE_CPU AND NOT HAVE_FFTW AND NOT HAVE_FFT992 )
+  ecbuild_critical("CPU builds require at least one Fourier backend: enable FFTW or FFT992")
+endif()
+
 if( NOT HAVE_MKL )
     option( FFTW_ENABLE_MKL OFF )
 endif()
 
-if( HAVE_CPU )
+if( HAVE_CPU AND HAVE_FFTW )
   ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double single )
 endif()
 
@@ -188,10 +201,6 @@ ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
                     CONDITION HAVE_ETRANS AND NOT (HAVE_DOUBLE_PRECISION AND HAVE_SINGLE_PRECISION)
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
-
-ecbuild_add_option( FEATURE FFT992
-                    DEFAULT OFF
-                    DESCRIPTION "Build separate FFT992 FFT implementation" )
 
 ectrans_find_lapack()
 
