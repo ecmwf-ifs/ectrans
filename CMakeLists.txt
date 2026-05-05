@@ -190,7 +190,11 @@ ecbuild_add_option( FEATURE ECTRANS4PY
 ectrans_find_lapack()
 
 ### Add sources
-include( ectrans_compile_options )
+ecbuild_override_compiler_flags(
+  COMPILE_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ectrans_compile_flags.cmake
+  INHERIT_ECBUILD_FLAGS
+)
+include( ectrans_contiguous_workaround )
 add_subdirectory( src )
 
 ### Add tests
