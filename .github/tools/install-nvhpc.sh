@@ -99,7 +99,7 @@ fi
 # Allow for oversubscription. For open-mpi >= v5.0
 echo "rmaps_default_mapping_policy=:oversubscribe" >> ${MPI_HOME}/etc/prte-mca-params.conf
 
-# Allow for oversubscriptoin. For open-mpi < v5.0 only (older nvhpc versions)
+# Allow for oversubscription. For open-mpi < v5.0 only (older nvhpc versions)
 echo "localhost slots=72" >> ${MPI_HOME}/etc/openmpi-default-hostfile
 
 
