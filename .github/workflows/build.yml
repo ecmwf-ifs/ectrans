@@ -66,7 +66,7 @@ jobs:
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
-            cmake_options: -DCMAKE_CXX_FLAGS=--diag_suppress177 -DBLA_VENDOR=Generic
+            cmake_options: -DBLA_VENDOR=Generic
             ctest_options: -E memory
             caching: false
 
@@ -104,6 +104,16 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
+    - name: System info
+      shell: bash -eux {0}
+      run: |
+        if [[ "${{ matrix.os }}" =~ macos ]]; then
+          system_profiler SPHardwareDataType -detailLevel mini
+          sysctl machdep.cpu
+        else
+          sed '/^$/q' /proc/cpuinfo
+        fi
+
     - name: Checkout Repository
       uses: actions/checkout@v2
 
@@ -159,7 +169,6 @@ jobs:
         source /opt/nvhpc/env.sh
         echo "${NVHPC_DIR}/compilers/bin"                   >> $GITHUB_PATH
         [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
-
     - name: Download Intel compiler
       if: contains( matrix.compiler, 'intel' )
       run: |
@@ -173,7 +182,7 @@ jobs:
       run: |
         version=2023.2.0
         sudo apt-get update
-         sudo apt-get install \
+        sudo apt-get install \
           intel-oneapi-compiler-fortran-$version \
           intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-$version
         source /opt/intel/oneapi/setvars.sh
@@ -213,6 +222,24 @@ jobs:
         # Add mpirun to path for testing
         [ -z ${MPI_HOME+x} ] || echo "${MPI_HOME}/bin" >> $GITHUB_PATH
 
+        if [[ "${{ matrix.compiler }}" =~ "nvhpc" ]]; then
+          # Add a -tp=haswell flag, which is needed to avoid nvfortran errors of "Error during math dispatching processing..."
+          # It seems the compiler detects an incompatible target processor on some of the runners,
+          # in particular -tp=znver4 seems incompatible with "AMD EPYC 9V74 80-Core Processor" as shown by /proc/cpuinfo
+          NVHPC_TARGET_FLAG="-tp=haswell"
+          CFLAGS="${CFLAGS:+$CFLAGS }${NVHPC_TARGET_FLAG}"
+          CXXFLAGS="${CXXFLAGS:+$CXXFLAGS }${NVHPC_TARGET_FLAG}"
+          FFLAGS="${FFLAGS:+$FFLAGS }${NVHPC_TARGET_FLAG}"
+          FCFLAGS="${FCFLAGS:+$FCFLAGS }${NVHPC_TARGET_FLAG}"
+
+          # supress "warning #177: variable x was declared but never referenced
+          CXXFLAGS="${CXXFLAGS} --diag_suppress=177"
+        fi
+
+        [ -z ${CFLAGS+x}   ] || echo "CFLAGS=${CFLAGS}"     >> $GITHUB_ENV
+        [ -z ${CXXFLAGS+x} ] || echo "CXXFLAGS=${CXXFLAGS}" >> $GITHUB_ENV
+        [ -z ${FFLAGS+x}   ] || echo "FFLAGS=${FFLAGS}"     >> $GITHUB_ENV
+        [ -z ${FCFLAGS+x}  ] || echo "FCFLAGS=${FCFLAGS}"   >> $GITHUB_ENV
 
     - name: Build & Test
       id: build-test
