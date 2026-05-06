@@ -158,6 +158,7 @@ jobs:
         ${ECTRANS_TOOLS}/install-nvhpc.sh --prefix /opt/nvhpc
         source /opt/nvhpc/env.sh
         echo "${NVHPC_DIR}/compilers/bin"                   >> $GITHUB_PATH
+        [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
 
     - name: Download Intel compiler
       if: contains( matrix.compiler, 'intel' )
@@ -186,6 +187,7 @@ jobs:
         sudo apt-get install intel-oneapi-toolkit
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
+        [ -z ${I_MPI_ROOT+x} ] || echo "MPI_HOME=${I_MPI_ROOT}" >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
 
     - name: Install MPI
