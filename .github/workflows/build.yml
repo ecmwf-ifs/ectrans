@@ -183,7 +183,7 @@ jobs:
       if: contains( matrix.compiler, 'intel-modern' )
       run: |
         sudo apt-get update
-        sudo apt-get install intel-hpckit
+        sudo apt-get install intel-oneapi-toolkit
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
