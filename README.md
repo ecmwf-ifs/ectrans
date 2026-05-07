@@ -20,7 +20,7 @@ Requirements
 
 Generally, ecTrans has the following requirements:
 - [CMake](https://cmake.org/) >= 3.25
-- [ecBuild](https://github.com/ecmwf/ecbuild) >= 3.8
+- [ecBuild](https://github.com/ecmwf/ecbuild) >= 3.14
 - C, C++, and Fortran compilers. Officially we support:
   - Classic Intel (i.e. ifort and icc) >= 19.0.5
   - LLVM Intel (i.e. ifx) >= 2023.2.0
