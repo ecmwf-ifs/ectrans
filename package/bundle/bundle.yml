@@ -17,7 +17,7 @@ projects :
         version : develop
         cmake   : ENABLE_DR_HOOK_NVTX=OFF ENAMBLE_OMP=ON
 
-    - ectrans-dwarf :
+    - ectrans :
         dir     : $PWD
         require : fiat
         cmake   : ENABLE_MKL=OFF WITH_FFTW=OFF ENABLE_FFTW=OFF ENABLE_GPU=OFF
@@ -52,25 +52,30 @@ options :
         help : Enable use of FFTW to handle FFT calls
         cmake : ENABLE_ETRANS=ON
 
-    - with-gpu:
+    - with-gpu-acc:
         help  : Compile GPU libraries as well as CPU libraries
         cmake : >
             ENABLE_GPU=ON ENABLE_ACC=ON
 
-    - with-gpu-mpi:
+    - with-gpu-omp:
+        help  : Compile GPU libraries as well as CPU libraries
+        cmake : >
+            ENABLE_GPU=ON ENABLE_OMP=ON
+
+    - without-gpu-mpi:
         help  : Use GPU-aware MPI for communication
         cmake : >
-            ENABLE_GPU_AWARE_MPI=ON
+            ENABLE_GPU_AWARE_MPI=OFF
 
     - with-cutlass:
         help  : Use CUTLASS header library for GEMM kernels
         cmake : >
             ENABLE_CUTLASS=ON
 
-    - with-graphs-gemm:
-        help  : Use CUTLASS header library for GEMM kernels
+    - without-gpu-graphs:
+        help  : Do not use graphs for either GEMM or FFT operations
         cmake : >
-            ENABLE_GPU_GRAPHS_GEMM=ON
+            ENABLE_GPU_GRAPHS_GEMM=OFF ENABLE_GPU_GRAPHS_FFT=OFF
 
     - without-cutlass-3XTF32: # default on
         help  : Deactivate 3XTF32 usage on compatible hardware
