@@ -46,6 +46,29 @@ Installing ecTrans
 
 Please consult the [documentation](https://sites.ecmwf.int/docs/ectrans/page/installation.html).
 
+## bundle build, text to be moved to sites.ecmwf.int/[]/installation.html
+Build using ecTrans bundle
+
+Another way of building ecTrans is to use the bundle definition included in `package/bundle`:
+
+    $ ./package/bundle/ectrans-bundle create  --bundle package/bundle/bundle.yml # Checks out dependency packages into "source" directory
+    $ ./package/bundle/ectrans-bundle build [--build-type=<build-type>] [--arch=<path-to-arch>] [--option]
+
+The bundle also facilitates setting environment variables and compiler flags relevant to certain architectures by specifying the corresponding arch file at the build step. For example, to build on the ECMWF Atos system using Intel compilers and the hpcx-openmpi `MPI` library:
+
+`--arch=package/bundle/arch/ecmwf/hpc2020/intel/2021.4.0/hpcx-openmpi/2.9.0`
+or equivalently
+`--arch ecmwf/hpc2020/intel/2021.4.0/hpcx-openmpi/2.9.0`
+
+A number of options can also be configured during the bundle build step, including:
+ - `--without-mpi` - Disable MPI
+ - `--without-single-precision` - Only build double-precision variant of ecTrans
+All options can be seen at the end of the `package/bundle/bundle.yml` file.
+
+ Finally, additional `CMake` options can also be set during the bundle build step:
+
+`--cmake="OPTION=<arg>"`
+
 Reporting Bugs
 --------------
 
