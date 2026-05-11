@@ -2,10 +2,11 @@
 title: Installation
 ---
 
-We currently support two methods for installing ecTrans:
+We currently support three methods for installing ecTrans:
 
 1. Through [Spack](https://github.com/spack/spack).
 2. Manually through CMake.
+3. Through [ecBundle](https://github.com/ecmwf/ecbundle) (develop branch only until the next release).
 
 # 1. Installing ecTrans with Spack
 
@@ -152,3 +153,58 @@ ctest
 ```
 If any of the tests fail, please let us know by
 [raising an issue](https://github.com/ecmwf-ifs/ectrans/issues)!
+
+# 3. Installing ecTrans through ecBundle
+
+@note
+This functionality is available in the develop branch only at this stage, until the next release of
+ecTrans is made.
+@endnote
+
+[ecBundle](https://github.com/ecmwf/ecbundle) is a package developed by ECMWF for "bundling"
+separate CMake projects into one, with simple commands for fetching source code and building the
+unified project. The unified project is defined in a bundle YAML file, usually called `bundle.yml`.
+This defines all of the separate CMake repositories, their git versions (e.g. a branch or commit
+hash), URLs for fetching those repositories, and defines any command line arguments that can be used
+to enable or disable certain CMake features.
+
+ecTrans comes with a bundle in the `package` subdirectory. To build ecTrans in this
+manner, simply call the "create" step to first fetch the source code required (including ecTrans'
+dependencies ecBuild and FIAT):
+
+```bash
+./package/bundle/ectrans-bundle create --bundle package/bundle/bundle.yml
+```
+
+This checks out dependency packages into a directory, by default `source` in the same directory as
+`bundle.yml`.
+
+You can then build ecTrans by calling the `build` subcommand:
+
+```bash
+./package/bundle/ectrans-bundle build [--build-type=<build-type>] [--arch=<path-to-arch>] [--any --other --options]
+```
+
+The build type refers to the CMake build type (`BIT`, `RELEASE` etc.). The `arch` option allows one
+to specify environment and toolchain files for the platform on which you would like to build. For
+example, archs for ECMWF's current HPC system are provided in
+`package/bundle/ectrans-bundle/arch/ecmwf/hpc2020`. To build on the ECMWF Atos system using Intel
+compilers and the hpcx-openmpi `MPI` library, use:
+
+```bash
+--arch=package/bundle/arch/ecmwf/hpc2020/intel/2021.4.0/hpcx-openmpi/2.9.0
+```
+
+or equivalently
+
+```bash
+--arch ecmwf/hpc2020/intel/2021.4.0/hpcx-openmpi/2.9.0
+```
+
+Following these one may provide additional arguments to enable or disable certain features, such as
+`--without-mpi` (disable MPI), `--without-single-precision` (only build double-precision variant of
+ecTrans) etc. These are all defined in `bundle.yml`.
+
+ Finally, additional `CMake` options can also be set during the bundle build step:
+
+`--cmake="OPTION=<arg>"`
