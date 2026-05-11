@@ -173,16 +173,15 @@ manner, simply call the "create" step to first fetch the source code required (i
 dependencies ecBuild and FIAT):
 
 ```bash
-./package/bundle/ectrans-bundle create --bundle package/bundle/bundle.yml
+./package/bundle/ectrans-bundle create --bundle ./package/bundle/bundle.yml --src-dir=./package/bundle/source
 ```
 
-This checks out dependency packages into a directory, by default `source` in the same directory as
-`bundle.yml`.
+This checks out dependency packages into a directory `source` in the same directory as `bundle.yml`.
 
 You can then build ecTrans by calling the `build` subcommand:
 
 ```bash
-./package/bundle/ectrans-bundle build [--build-type=<build-type>] [--arch=<path-to-arch>] [--any --other --options]
+./package/bundle/ectrans-bundle build --build-dir=./package/bundle/build --src-dir=./package/bundle/source [--build-type=<build-type>] [--arch=<path-to-arch>] [--any --other --options]
 ```
 
 The build type refers to the CMake build type (`BIT`, `RELEASE` etc.). The `arch` option allows one
@@ -208,3 +207,6 @@ ecTrans) etc. These are all defined in `bundle.yml`.
  Finally, additional `CMake` options can also be set during the bundle build step:
 
 `--cmake="OPTION=<arg>"`
+
+Once the build completes you can navigate to the build directory and run `ctest`. This will execute
+a combined test suite for all packages in the bundle (in this case FIAT and ecTrans).
