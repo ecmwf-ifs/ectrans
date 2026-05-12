@@ -162,7 +162,8 @@ REAL(KIND=JPRD),ALLOCATABLE :: ZLFPOL(:,:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZLPOL(:)
 
 TYPE(CLONE),ALLOCATABLE :: ZCLONEA(:),ZCLONES(:)
-
+LOGICAL :: LLDOUBLE
+LOGICAL :: LLCACHEDGEMM
 LOGICAL :: LLP1,LLP2
 
 ! For latitudes on the stretched geometry
@@ -181,6 +182,7 @@ ZEPS = 1000._JPRD*EPSILON(ZEPS)
 ZEPS_INT_DEC = 1.0E-7_JPRD
 !ZEPS_INT_DEC = 1.0E-5_JPRD
 
+LLDOUBLE = (JPRB == JPRD)
 IHEMIS=1
 IF (S%LSOUTHPNM) IHEMIS=2
 LLP1 = NPRINTLEV>0
@@ -690,7 +692,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
         ! Now unpack the polynomials I've received into their respective storage work arrays
         CALL GSTATS(1251,0)
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI,LLCACHEDGEMM)
         DO JSETV=1,IPRTRV
           IMLOC=JMLOC+JSETV-1
           IM = D%MYMS(IMLOC)
@@ -698,6 +700,22 @@ IF(.NOT.D%LGRIDONLY) THEN
           IA  = 1+MOD(R%NSMAX-IM+2,2)
           ILA = (R%NSMAX-IM+2)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
+          LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
+
+          IF (LLCACHEDGEMM) THEN
+            IF (ALLOCATED(S%RPNMA_DGEMM)) THEN
+              IF (SIZE(S%RPNMA_DGEMM,1) /= IDGLU .OR. &
+                  SIZE(S%RPNMA_DGEMM,2) /= ILA) THEN
+                DEALLOCATE(S%RPNMA_DGEMM)
+              ENDIF
+            ENDIF
+
+            IF (.NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+            ENDIF
+          ENDIF
+
           IF( S%LUSEFLT .AND. ILA > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMA)
             ALLOCATE(S%FA(IMLOC)%RPNMDA(IDGLU,ILA))
@@ -710,6 +728,9 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JGL=1,IDGLU
                 DO JI=1,ILA
                   S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+                  IF (LLCACHEDGEMM) THEN
+                    S%RPNMA_DGEMM(JGL,ILA-JI+1)=REAL(ZRCVBUFV((JGL-1)*ILA+JI,JSETV),JPRD)
+                  ENDIF
                 ENDDO
               ENDDO
             ENDIF
@@ -717,6 +738,9 @@ IF(.NOT.D%LGRIDONLY) THEN
             DO JGL=1,IDGLU
               DO JI=1,ILA
                 S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+                IF (LLCACHEDGEMM) THEN
+                  S%RPNMA_DGEMM(JGL,ILA-JI+1)=REAL(ZRCVBUFV((JGL-1)*ILA+JI,JSETV),JPRD)
+                ENDIF
               ENDDO
             ENDDO
           ENDIF
@@ -730,7 +754,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       ELSE
         ! Take the values from the arrays computed earlier with the Belusov algorithm
         CALL GSTATS(1251,0)
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IA,ILA,IDGLU,JGL,JI,LLCACHEDGEMM)
         DO JSETV=1,IPRTRV
           IMLOC=JMLOC+JSETV-1
           IM = D%MYMS(IMLOC)
@@ -738,6 +762,22 @@ IF(.NOT.D%LGRIDONLY) THEN
           IA  = 1+MOD(R%NSMAX-IM+2,2)
           ILA = (R%NSMAX-IM+2)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
+          LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
+
+          IF (LLCACHEDGEMM) THEN
+            IF (ALLOCATED(S%RPNMA_DGEMM)) THEN
+              IF (SIZE(S%RPNMA_DGEMM,1) /= IDGLU .OR. &
+                  SIZE(S%RPNMA_DGEMM,2) /= ILA) THEN
+                DEALLOCATE(S%RPNMA_DGEMM)
+              ENDIF
+            ENDIF
+
+            IF (.NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+            ENDIF
+          ENDIF
+
           IF( S%LUSEFLT .AND. ILA > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMA)
             ALLOCATE(S%FA(IMLOC)%RPNMDA(IDGLU,ILA))
@@ -750,6 +790,9 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JI=1,ILA
                 DO JGL=1,IDGLU
                   S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                  IF (LLCACHEDGEMM) THEN
+                    S%RPNMA_DGEMM(JGL,JI) = REAL(F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2),JPRD)
+                  ENDIF
                 ENDDO
               ENDDO
             ENDIF
@@ -757,6 +800,9 @@ IF(.NOT.D%LGRIDONLY) THEN
             DO JI=1,ILA
               DO JGL=1,IDGLU
                 S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                IF (LLCACHEDGEMM) THEN
+                  S%RPNMA_DGEMM(JGL,JI) = REAL(F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2),JPRD)
+                ENDIF
               ENDDO
             ENDDO
           END IF
@@ -969,7 +1015,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
         ! Now unpack the polynomials I've received into their respective storage work arrays
         CALL GSTATS(1251,0)
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI,LLCACHEDGEMM)
         DO JSETV=1,IPRTRV
           IMLOC=JMLOC+JSETV-1
           IM = D%MYMS(IMLOC)
@@ -977,6 +1023,22 @@ IF(.NOT.D%LGRIDONLY) THEN
           IS  = 1+MOD(R%NSMAX-IM+1,2)
           ILS = (R%NSMAX-IM+3)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
+          LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
+
+          IF (LLCACHEDGEMM) THEN
+            IF (ALLOCATED(S%RPNMS_DGEMM)) THEN
+              IF (SIZE(S%RPNMS_DGEMM,1) /= IDGLU .OR. &
+                  SIZE(S%RPNMS_DGEMM,2) /= ILS) THEN
+                DEALLOCATE(S%RPNMS_DGEMM)
+              ENDIF
+            ENDIF
+
+            IF (.NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+            ENDIF
+          ENDIF
+
           IF( S%LUSEFLT .AND. ILS > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMS)
             ALLOCATE(S%FA(IMLOC)%RPNMDS(IDGLU,ILS))
@@ -989,6 +1051,9 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JGL=1,IDGLU
                 DO JI=1,ILS
                   S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
+                  IF (LLCACHEDGEMM) THEN
+                    S%RPNMS_DGEMM(JGL,ILS-JI+1)=REAL(ZRCVBUFV((JGL-1)*ILS+JI,JSETV),JPRD)
+                  ENDIF
                 ENDDO
               ENDDO
             ENDIF
@@ -996,6 +1061,9 @@ IF(.NOT.D%LGRIDONLY) THEN
             DO JGL=1,IDGLU
               DO JI=1,ILS
                 S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
+                IF (LLCACHEDGEMM) THEN
+                  S%RPNMS_DGEMM(JGL,ILS-JI+1)=REAL(ZRCVBUFV((JGL-1)*ILS+JI,JSETV),JPRD)
+                ENDIF
               ENDDO
             ENDDO
           ENDIF
@@ -1009,7 +1077,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       ELSE
         ! Take the values from the arrays computed earlier with the Belusov algorithm
         CALL GSTATS(1251,0)
-        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI)
+        !$OMP PARALLEL DO SCHEDULE(DYNAMIC,1) PRIVATE(JSETV,IMLOC,IM,ISL,IS,ILS,IDGLU,JGL,JI,LLCACHEDGEMM)
         DO JSETV=1,IPRTRV
           IMLOC=JMLOC+JSETV-1
           IM = D%MYMS(IMLOC)
@@ -1017,6 +1085,22 @@ IF(.NOT.D%LGRIDONLY) THEN
           IS  = 1+MOD(R%NSMAX-IM+1,2)
           ILS = (R%NSMAX-IM+3)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
+          LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
+
+          IF (LLCACHEDGEMM) THEN
+            IF (ALLOCATED(S%RPNMS_DGEMM)) THEN
+              IF (SIZE(S%RPNMS_DGEMM,1) /= IDGLU .OR. &
+                  SIZE(S%RPNMS_DGEMM,2) /= ILS) THEN
+                DEALLOCATE(S%RPNMS_DGEMM)
+              ENDIF
+            ENDIF
+
+            IF (.NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+            ENDIF
+          ENDIF
+
           IF( S%LUSEFLT .AND. ILS > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMS)
             ALLOCATE(S%FA(IMLOC)%RPNMDS(IDGLU,ILS))
@@ -1029,6 +1113,9 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JI=1,ILS
                 DO JGL=1,IDGLU
                   S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+                  IF (LLCACHEDGEMM) THEN
+                    S%RPNMS_DGEMM(JGL,JI) = REAL(F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2),JPRD)
+                  ENDIF
                 ENDDO
               ENDDO
             ENDIF
@@ -1036,6 +1123,9 @@ IF(.NOT.D%LGRIDONLY) THEN
             DO JI=1,ILS
               DO JGL=1,IDGLU
                 S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+                IF (LLCACHEDGEMM) THEN
+                  S%RPNMS_DGEMM(JGL,JI) = REAL(F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2),JPRD)
+                ENDIF
               ENDDO
             ENDDO
           END IF

@@ -114,48 +114,54 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
  
 !*       1. ANTISYMMETRIC PART.
 
-  IFLD=0
-  DO JK=1,KFC,ISKIP
-    IFLD=IFLD+1
-    DO J=1,KDGLU
-      ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
-    ENDDO
-  ENDDO
-  
   IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
+
     IF (LLDOUBLE) THEN
+
+       IFLD=0
+       DO JK=1,KFC,ISKIP
+         IFLD=IFLD+1
+         DO J=1,KDGLU
+           ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
+         ENDDO
+       ENDDO
+
        CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZB,KDGLU,0._JPRD,ZCA,ILA)
+
     ELSE
-       IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
+
+       IF(KM>=1)THEN
+
+          IFLD=0
+          DO JK=1,KFC,ISKIP
+            IFLD=IFLD+1
+            DO J=1,KDGLU
+              ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
+            ENDDO
+          ENDDO
+
           CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCA,ILA)
-       ELSE
-          BLOCK
-             REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCA_D(:,:), ZRPNMA(:,:)
-             INTEGER(KIND=JPIM) :: I1, I2, I3, I4
 
-             I1 = size(S%FA(KMLOC)%RPNMA(:,1))
-             I2 = size(S%FA(KMLOC)%RPNMA(1,:))
-             ALLOCATE(ZRPNMA(I1,I2))
-             ALLOCATE(ZB_D(KDGLU,KIFC))
-             ALLOCATE(ZCA_D((R%NTMAX-KM+2)/2,KIFC))
+       ELSE
+
+          BLOCK
+             REAL(KIND=JPRD) :: ZB_D(KDGLU,KIFC)
+             REAL(KIND=JPRD) :: ZCA_D(ILA,KIFC)
              IFLD=0
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
                 DO J=1,KDGLU
-                   ZB_D(J,IFLD)=ZB(J,IFLD)
+                   ZB_D(J,IFLD)=REAL(PAIA(JK,J),JPRD)*PW(ISL+J-1)
                 ENDDO
              ENDDO
-             DO I3=1,I1
-                DO I4=1,I2
-                   ZRPNMA(I3,I4) = S%FA(KMLOC)%RPNMA(I3,I4)
-                END DO
-             END DO
-             CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
+
+             CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%RPNMA_DGEMM,KDGLU,&
                   &ZB_D,KDGLU,0._JPRD,ZCA_D,ILA)
+
              IFLD=0
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
@@ -163,15 +169,23 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
                    ZCA(J,IFLD) = ZCA_D(J,IFLD)
                 ENDDO
              ENDDO
-             DEALLOCATE(ZRPNMA)
-             DEALLOCATE(ZB_D)
-             DEALLOCATE(ZCA_D)
           END BLOCK
+
        END IF
     ENDIF
+
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
 
   ELSE
+
+     IFLD=0
+     DO JK=1,KFC,ISKIP
+       IFLD=IFLD+1
+       DO J=1,KDGLU
+         ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
+       ENDDO
+     ENDDO
+
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',0,ZHOOK_HANDLE)
      CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_A,KIFC,ZB,ZCA,KM)
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',1,ZHOOK_HANDLE)
@@ -187,49 +201,54 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   
 !*       1.3      SYMMETRIC PART.
 
-  
-  IFLD=0
-  DO JK=1,KFC,ISKIP
-    IFLD=IFLD+1
-    DO J=1,KDGLU
-      ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
-    ENDDO
-  ENDDO
-  
   IF(ILS <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
 
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
+
     IF (LLDOUBLE) THEN
+
+       IFLD=0
+       DO JK=1,KFC,ISKIP
+         IFLD=IFLD+1
+         DO J=1,KDGLU
+           ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
+         ENDDO
+       ENDDO
+
        CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZB,KDGLU,0._JPRD,ZCS,ILS)
+
     ELSE
-       IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
+
+       IF(KM>=1)THEN
+
+          IFLD=0
+          DO JK=1,KFC,ISKIP
+            IFLD=IFLD+1
+            DO J=1,KDGLU
+              ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
+            ENDDO
+          ENDDO
+
           CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCS,ILS)
-       ELSE
-          BLOCK
-             REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCS_D(:,:), ZRPNMS(:,:)
-             INTEGER(KIND=JPIM) :: I1, I2, I3, I4
 
-             I1 = size(S%FA(KMLOC)%RPNMS(:,1))
-             I2 = size(S%FA(KMLOC)%RPNMS(1,:))
-             ALLOCATE(ZRPNMS(I1,I2))
-             ALLOCATE(ZB_D(KDGLU,KIFC))
-             ALLOCATE(ZCS_D((R%NTMAX-KM+3)/2,KIFC))
+       ELSE
+
+          BLOCK
+             REAL(KIND=JPRD) :: ZB_D(KDGLU,KIFC)
+             REAL(KIND=JPRD) :: ZCS_D(ILS,KIFC)
              IFLD=0
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
                 DO J=1,KDGLU
-                   ZB_D(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
+                   ZB_D(J,IFLD)=REAL(PSIA(JK,J),JPRD)*PW(ISL+J-1)
                 ENDDO
              ENDDO
-             DO I3=1,I1
-                DO I4=1,I2
-                   ZRPNMS(I3,I4) = S%FA(KMLOC)%RPNMS(I3,I4)
-                END DO
-             END DO
-             CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
-                  &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
+
+             CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%RPNMS_DGEMM,KDGLU,&
+                     &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
+
              IFLD=0
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
@@ -237,18 +256,27 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
                    ZCS(J,IFLD) = ZCS_D(J,IFLD)
                 ENDDO
              ENDDO
-             DEALLOCATE(ZRPNMS)
-             DEALLOCATE(ZB_D)
-             DEALLOCATE(ZCS_D)
           END BLOCK
+
        END IF
     ENDIF
+
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
     
   ELSE
+
+     IFLD=0
+     DO JK=1,KFC,ISKIP
+       IFLD=IFLD+1
+       DO J=1,KDGLU
+         ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
+       ENDDO
+     ENDDO
+
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',0,ZHOOK_HANDLE)
      CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_S,KIFC,ZB,ZCS,KM)
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',1,ZHOOK_HANDLE)
+
   ENDIF
 
   IFLD=0
