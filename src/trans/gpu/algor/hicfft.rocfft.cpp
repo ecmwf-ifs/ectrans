@@ -252,7 +252,6 @@ void run_group_graph(typename Type::real *data_real,
     for (auto &plan : plans) // set the streams
       plan.set_stream(stream);
 
-#if HIPGPU
     // now create the graph
     HIC_CHECK(hipStreamBeginCapture(stream, hipStreamCaptureModeGlobal));
     for (auto &plan : plans) {
@@ -262,24 +261,6 @@ void run_group_graph(typename Type::real *data_real,
     HIC_CHECK(hipStreamEndCapture(stream, &my_graph));
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
-#endif
-#if CUDAGPU
-    // now create the graph
-    hipGraph_t new_graph;
-    hipGraphCreate(&new_graph, 0);
-    for (auto &plan : plans) {
-      HIC_CHECK(hipStreamBeginCapture(stream, hipStreamCaptureModeGlobal));
-      plan.exec(data_real, data_complex);
-      hipGraph_t my_graph;
-      HIC_CHECK(hipStreamEndCapture(stream, &my_graph));
-      hipGraphNode_t my_node;
-      HIC_CHECK(
-          hipGraphAddChildGraphNode(&my_node, new_graph, nullptr, 0, my_graph));
-    }
-    hipGraphExec_t instance;
-    HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
-    HIC_CHECK(hipGraphDestroy(new_graph));
-#endif
     HIC_CHECK(hipStreamDestroy(stream));
 
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(
