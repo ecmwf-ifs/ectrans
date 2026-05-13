@@ -9,18 +9,6 @@
 # Tests for adjoint functionality
 
 foreach( precision ${precisions} )
-
-  ecbuild_add_library(
-    TARGET           adjoint_utils_${precision}
-    LINKER_LANGUAGE  Fortran
-    SOURCES          utils.F90
-    PUBLIC_LIBS      fiat trans_${precision}
-  )
-  ecbuild_target_fortran_module_directory(
-    TARGET adjoint_utils_${precision}
-    MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/trans/adjoint/module/adjoint_utils_${precision}
-  )
-
   foreach( platform ${platforms} )
 
     if( "${platform}" MATCHES "cpu" )
@@ -30,11 +18,22 @@ foreach( precision ${precisions} )
       set( platform_tag "_gpu" )
     endif()
 
+    ecbuild_add_library(
+      TARGET           adjoint_utils${platform_tag}_${precision}
+      LINKER_LANGUAGE  Fortran
+      SOURCES          utils.F90
+      PUBLIC_LIBS      fiat trans${platform_tag}_${precision}
+    )
+    ecbuild_target_fortran_module_directory(
+      TARGET adjoint_utils${platform_tag}_${precision}
+      MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/tests/trans/adjoint/module/adjoint_utils${platform_tag}_${precision}
+    )
+
     foreach( mpi ${ntasks} )
       # Add a test for tangent-linear/adjoint correspondence of INV_TRANS and DIR_TRANS combined
       ecbuild_add_test(TARGET ectrans_test_adjoint_${platform}_mpi${mpi}_${precision}
         SOURCES test_adjoint.F90
-        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
+        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils${platform_tag}_${precision}
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
@@ -43,7 +42,7 @@ foreach( precision ${precisions} )
       # Add test for tangent-linear/adjoint correspondence of DIR_TRANS only
       ecbuild_add_test(TARGET ectrans_test_dirtrans_adjoint_${platform}_mpi${mpi}_${precision}
         SOURCES test_dirtrans_adjoint.F90
-        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
+        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils${platform_tag}_${precision}
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
@@ -52,7 +51,7 @@ foreach( precision ${precisions} )
       # Add test for tangent-linear/adjoint correspondence of INV_TRANS only
       ecbuild_add_test(TARGET ectrans_test_invtrans_adjoint_${platform}_mpi${mpi}_${precision}
         SOURCES test_invtrans_adjoint.F90
-        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
+        LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils${platform_tag}_${precision}
         LINKER_LANGUAGE Fortran
         MPI ${mpi}
         OMP 1
@@ -63,7 +62,7 @@ foreach( precision ${precisions} )
         # Add a test for tangent-linear/adjoint correspondence of GPNORM_TRANSTL/AD
         ecbuild_add_test(TARGET ectrans_test_gpnorm_trans_adjoint_${platform}_mpi${mpi}_${precision}
           SOURCES test_gpnorm_adjoint.F90
-          LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils_${precision}
+          LIBS trans${platform_tag}_${precision} parkind_${precision} adjoint_utils${platform_tag}_${precision}
           LINKER_LANGUAGE Fortran
           MPI ${mpi}
           OMP 1

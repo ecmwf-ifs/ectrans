@@ -59,7 +59,7 @@ jobs:
           - name: ac-gpu nvhpc
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
-            arch: ecmwf/hpc2020/nvidia/24.5/hpcx-openmpi/2.19.0-cuda
+            arch: ecmwf/hpc2020/nvhpc/24.5/hpcx-openmpi/2.19.0-cuda
             sbatch_options: |
               #SBATCH --time=00:30:00
               #SBATCH --nodes=1
@@ -91,6 +91,7 @@ jobs:
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
               - CMAKE_BUILD_PARALLEL_LEVEL=1
             ctest_options: -E compare_checksums # We don't bother with reproducibility checks on LUMI
+            unsupported_dependency: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -118,6 +119,9 @@ jobs:
                 version: develop
                 cmake_options:
                   - -DENABLE_MPI=ON
+              ecmwf-ifs/field_api:
+                version: v0.3.9
+            unsupported_dependency: ${{ matrix.unsupported_dependency || '' }}
           template: |
             REPO=${{ github.event.pull_request.head.repo.full_name || github.repository }}
             SHA=${{ github.event.pull_request.head.sha || github.sha }}
@@ -125,7 +129,9 @@ jobs:
             # Cleanup function
             cleanup() {
               {% for name in dependencies.keys() %}
-                rm -r {{name}}
+                {% if name != unsupported_dependency %}
+                  rm -r {{name}}
+                {% endif %}
               {% endfor %}
 
               rm -r $REPO
@@ -151,6 +157,7 @@ jobs:
 
             # Fetch dependencies
             {% for name, options in dependencies.items() %}
+              {% if name != unsupported_dependency %}
                 mkdir -p {{name}}
                 pushd {{name}}
                 git init
@@ -158,6 +165,7 @@ jobs:
                 git fetch origin {{options['version']}}
                 git reset --hard FETCH_HEAD
                 popd
+              {% endif %}
             {% endfor %}
 
             # Fetch ecTrans
@@ -169,27 +177,33 @@ jobs:
             git reset --hard FETCH_HEAD
             popd
 
-            source $BASEDIR/$REPO/.github/arch/{{ arch }}/env.sh
+            source $BASEDIR/$REPO/package/bundle/arch/{{ arch }}/env.sh
 
             # Build dependencies
             {% for name, options in dependencies.items() %}
+              {% if name != unsupported_dependency %}
                 pushd {{name}}
                 cmake -S . -B build \
                   {% for name in dependencies %}
-                    {% set org, proj = name.split('/') %}
-                    -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                    {% if name != unsupported_dependency %}
+                      {% set org, proj = name.split('/') %}
+                      -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                    {% endif %}
                   {% endfor %}
                   {{ options['cmake_options']|join(' ') }}
                 cmake --build build
                 cmake --install build --prefix installation
                 popd
+              {% endif %}
             {% endfor %}
 
             # Build ecTrans
             cmake -S $REPO -B build \
               {% for name in dependencies %}
-                {% set org, proj = name.split('/') %}
-                -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                {% if name != unsupported_dependency %}
+                  {% set org, proj = name.split('/') %}
+                  -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                {% endif %}
               {% endfor %}
               {{ cmake_options|join(' ') }}
             cmake --build build

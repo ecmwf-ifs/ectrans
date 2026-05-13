@@ -8,7 +8,7 @@
 
 cmake_minimum_required( VERSION 3.25 FATAL_ERROR )
 
-find_package( ecbuild 3.8 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
+find_package( ecbuild 3.14 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
@@ -190,7 +190,11 @@ ecbuild_add_option( FEATURE ECTRANS4PY
 ectrans_find_lapack()
 
 ### Add sources
-include( ectrans_compile_options )
+ecbuild_override_compiler_flags(
+  COMPILE_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ectrans_compile_flags.cmake
+  INHERIT_ECBUILD_FLAGS
+)
+include( ectrans_contiguous_workaround )
 add_subdirectory( src )
 
 ### Add tests
