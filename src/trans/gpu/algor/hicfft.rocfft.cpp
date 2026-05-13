@@ -1,4 +1,3 @@
-#include "hicfft.h"
 #include "hicfft_rocfft.h"
 
 #include <algorithm>
