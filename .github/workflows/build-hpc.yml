@@ -61,7 +61,7 @@ jobs:
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/nvhpc/24.5/hpcx-openmpi/2.19.0-cuda
             sbatch_options: |
-              #SBATCH --time=00:45:00
+              #SBATCH --time=01:00:00
               #SBATCH --nodes=1
               #SBATCH --ntasks=4
               #SBATCH --cpus-per-task=32
