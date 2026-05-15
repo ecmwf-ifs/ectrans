@@ -219,7 +219,7 @@ IF (PRESENT(YDFU)) THEN
   ! Output derivatives of vector fields
   IF (PRESENT(YDFU_EW) .AND. PRESENT(YDFV_EW))    THEN
     LLUVDER = .TRUE.
-    IUVDIM = 5
+    IUVDIM = IUVDIM + 2
     ALLOCATE(YLGVU_EW(LG_COUNT(YDFU_EW)))
     ALLOCATE(YLGVV_EW(LG_COUNT(YDFV_EW)))
  ENDIF
@@ -227,14 +227,14 @@ IF (PRESENT(YDFU)) THEN
   ! Output divergence of vector fields
   IF (PRESENT(YDFDIV)) THEN
     LLDIVGP = .TRUE.
-    IUVDIM = 5
+    IUVDIM = IUVDIM + 1
     ALLOCATE(YLGVDIV(LG_COUNT(YDFDIV)))
   ENDIF
 
   ! Output vorticity of vector fields
   IF (PRESENT(YDFVOR)) THEN
     LLVORGP = .TRUE.
-    IUVDIM = 6
+    IUVDIM = IUVDIM + 1
     ALLOCATE(YLGVVOR(LG_COUNT(YDFVOR)))
   ENDIF
 

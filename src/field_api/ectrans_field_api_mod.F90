@@ -531,7 +531,7 @@ DO JFLD = 1, SIZE (YLFL)
         CALL ABOR1("LS not implemeted for FIELD_4RB")
     CLASS DEFAULT
         ! Skip the spectral field as it is not present on this processor
-        ILEN = 1
+        ILEN = 0
   END SELECT
 
   IOFF = IOFF + ILEN
