@@ -4,7 +4,12 @@ CMakeLists.txt.user*
 *.sublime-workspace
 *.swp
 .nfs*
-build/*
+build*
 install/*
 *.DS_Store
 *.py[co~]
+source/*
+ecbundle
+/env.sh
+
+

@@ -37,7 +37,7 @@ extern "C" void linux_trbk(void);
 static int ectrans_test_feenableexcept(unsigned int excepts) {
     return ::feenableexcept(excepts);
 }
-static int ectrans_test_fedisableexcept(unsigned int excepts) {
+[[maybe_unused]] static int ectrans_test_fedisableexcept(unsigned int excepts) {
     return ::fedisableexcept(excepts);
 }
 #elif defined(__APPLE__)
@@ -64,7 +64,7 @@ static int ectrans_test_feenableexcept(unsigned int excepts) {
 
     return ::fesetenv(&fenv) ? -1 : old_excepts;
 }
-static int ectrans_test_fedisableexcept(unsigned int excepts) {
+[[maybe_unused]] static int ectrans_test_fedisableexcept(unsigned int excepts) {
     static fenv_t fenv;
     unsigned int new_excepts = excepts & FE_ALL_EXCEPT;
     unsigned int old_excepts;   // all previous masks
@@ -204,3 +204,4 @@ void ectrans_test_enable_fpe() {
     ectrans_test_feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
 }
 }
+

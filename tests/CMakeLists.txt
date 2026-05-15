@@ -429,13 +429,17 @@ else()
   set( parkind_lib parkind_dp )
 endif()
 if( HAVE_CPU AND HAVE_MPI )
-  ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
-    SOURCES trans/test_split_mpi_comm.F90
-    LIBS ${trans_lib} ${parkind_lib}
-    LINKER_LANGUAGE Fortran
-    MPI 4
-    OMP 1
-  )
+  if (fiat_VERSION VERSION_LESS 2.0 )
+    ecbuild_warn("Skipping test ectrans_test_split_mpi_comm for fiat version < 2.0; see https://github.com/ecmwf-ifs/fiat/pull/72")
+  else()
+    ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
+      SOURCES trans/test_split_mpi_comm.F90
+      LIBS ${trans_lib} ${parkind_lib}
+      LINKER_LANGUAGE Fortran
+      MPI 4
+      OMP 1
+    )
+  endif()
 endif()
 
 # --------------------------------------------------------------------------------------------------

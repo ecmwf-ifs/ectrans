@@ -79,13 +79,29 @@ echo "+ ${TEMPORARY_FILES}/${FOLDER}/install"
 #rm -rf "${TEMPORARY_FILES}/${FOLDER}"
 
 NVHPC_VERSION=$(basename "${NVHPC_INSTALL_DIR}"/Linux_$(uname -m)/*.*/)
+NVHPC_DIR=${NVHPC_INSTALL_DIR}/Linux_$(uname -m)/${NVHPC_VERSION}
 
 # Use gcc which is available in PATH
-${NVHPC_INSTALL_DIR}/Linux_$(uname -m)/${NVHPC_VERSION}/compilers/bin/makelocalrc \
-  -x ${NVHPC_INSTALL_DIR}/Linux_$(uname -m)/${NVHPC_VERSION}/compilers/bin \
+${NVHPC_DIR}/compilers/bin/makelocalrc \
+  -x ${NVHPC_DIR}/compilers/bin \
   -gcc $(which gcc) \
   -gpp $(which g++) \
   -g77 $(which gfortran)
+
+# Locate the bundled OpenMPI prefix. From 25.x the comm_libs/mpi symlink points
+# at hpcx (a bin-only directory), so we derive the real prefix from the location
+# of openmpi-default-hostfile and fall back to comm_libs/mpi for older releases.
+MPI_HOME=$(dirname $(dirname $(find ${NVHPC_DIR}/comm_libs -name openmpi-default-hostfile -path '*/etc/*' 2>/dev/null | head -1)))
+if [ -z "${MPI_HOME}" ] || [ ! -d "${MPI_HOME}" ]; then
+    MPI_HOME=${NVHPC_DIR}/comm_libs/mpi
+fi
+
+# Allow for oversubscription. For open-mpi >= v5.0
+echo "rmaps_default_mapping_policy=:oversubscribe" >> ${MPI_HOME}/etc/prte-mca-params.conf
+
+# Allow for oversubscription. For open-mpi < v5.0 only (older nvhpc versions)
+echo "localhost slots=72" >> ${MPI_HOME}/etc/openmpi-default-hostfile
+
 
 cat > ${NVHPC_INSTALL_DIR}/env.sh << EOF
 ### Variables
@@ -99,7 +115,7 @@ export NVHPC_LIBRARY_PATH=\${NVHPC_DIR}/compilers/lib
 export LD_LIBRARY_PATH=\${NVHPC_LIBRARY_PATH}
 
 ### MPI
-export MPI_HOME=\${NVHPC_DIR}/comm_libs/mpi
+export MPI_HOME=${MPI_HOME}
 export PATH=\${MPI_HOME}/bin:\${PATH}
 EOF
 
