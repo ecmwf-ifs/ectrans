@@ -12,7 +12,7 @@
 # See <https://creativecommons.org/publicdomain/zero/1.0/> for
 # details.
 
-version=25.1
+version=25.11
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
 export NVHPC_INSTALL_DIR=$(pwd)/nvhpc-install
@@ -101,7 +101,7 @@ echo "rmaps_default_mapping_policy=:oversubscribe" >> ${MPI_HOME}/etc/prte-mca-p
 
 # Allow for oversubscription. For open-mpi < v5.0 only (older nvhpc versions)
 echo "localhost slots=72" >> ${MPI_HOME}/etc/openmpi-default-hostfile
-
+echo "hwloc_base_binding_policy = core:overload-allowed" >> ${MPI_HOME}/etc/openmpi-mca-params.conf
 
 cat > ${NVHPC_INSTALL_DIR}/env.sh << EOF
 ### Variables
