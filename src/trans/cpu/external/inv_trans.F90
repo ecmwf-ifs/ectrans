@@ -104,6 +104,11 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 if no derivatives, 3 times that with der.)
+!     LPGP_ON_GPU    - optional device-residency hint for PGP, PGPUV,
+!                      PGP3A, PGP3B and PGP2. If present and true, the GPU
+!                      path assumes the corresponding present array is
+!                      already resident on device and skips the associated
+!                      host/device synchronization. Ignored on the CPU path.
 !     Method.
 !     -------
 
