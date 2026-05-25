@@ -1283,6 +1283,8 @@ subroutine print_help(unit)
    & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
   write(nout, "(a)") "                        See&
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
+  write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
+   & buffers (default = off, equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
@@ -1413,7 +1415,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
           if (icall_mode < 1 .or. icall_mode > 2) then
             call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
-      case('--alloperm'); lalloperm = get_logical_value('--alloperm', iarg)
+      case('--deallocate-foubuf-temps'); lalloperm = .false.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 

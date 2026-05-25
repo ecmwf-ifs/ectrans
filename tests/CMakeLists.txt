@@ -207,7 +207,7 @@ foreach( benchmark ${benchmarks} )
         if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "2" AND ${omp} MATCHES "1")
           ecbuild_add_test( TARGET ${base_title}_lalloperm_f
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --alloperm .FALSE. --dump-checksums ${base_title}_lalloperm_f ${base_args}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --deallocate-foubuf-temps --dump-checksums ${base_title}_lalloperm_f ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -423,7 +423,7 @@ if( HAVE_ETRANS )
           # Check it works with LALLOPERM=F (cpu only)
           if( ${omp} MATCHES "1")
             ecbuild_add_test( TARGET ${base_title}_lalloperm_f
-                COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --alloperm .FALSE. --dump-checksums ${base_title}_lalloperm_f
+                COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --deallocate-foubuf-temps --dump-checksums ${base_title}_lalloperm_f
                 MPI ${mpi}
                 OMP ${omp}
             )

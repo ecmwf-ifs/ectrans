@@ -1188,7 +1188,7 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
       case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
       case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
       case('-c', '--check'); ncheck = get_int_value('-c', iarg)
-      case('--alloperm'); lalloperm = get_logical_value('--alloperm', iarg)
+      case('--deallocate-foubuf-temps'); lalloperm = .false.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1334,6 +1334,8 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --nprtrw            Size of Wave set in spectral decomposition"
   write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
    & tolerance for correctness checking"
+  write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
+   & buffers (default = off, equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"
