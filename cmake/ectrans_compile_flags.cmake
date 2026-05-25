@@ -42,6 +42,22 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM" )
 elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
   ecbuild_add_fortran_flags( "-march=core-avx2 -no-fma" BUILD BIT )
   ecbuild_add_fortran_flags( "-fast-transcendentals -fp-model precise -fp-speculation=safe" )
+  ecbuild_add_fortran_flags( "-heap-arrays 32" )
   set( NO_FORTRAN_MAIN_FLAG "-nofor-main" )
 endif()
 
+ecbuild_add_fortran_flags( "-O3 -DNDEBUG" NAME base_release BUILD RELEASE )
+ecbuild_add_c_flags( "-O3 -DNDEBUG" NAME base_release BUILD RELEASE )
+ecbuild_add_cxx_flags( "-O3 -DNDEBUG" NAME base_release BUILD RELEASE )
+
+ecbuild_add_fortran_flags( "-O2 -DNDEBUG" NAME base_bit BUILD BIT )
+ecbuild_add_c_flags( "-O2 -DNDEBUG" NAME base_bit BUILD BIT )
+ecbuild_add_cxx_flags( "-O2 -DNDEBUG" NAME base_bit BUILD BIT )
+
+ecbuild_add_fortran_flags( "-g -O0"   NAME base_debug BUILD DEBUG )
+ecbuild_add_c_flags( "-g -O0"   NAME base_debug BUILD DEBUG )
+ecbuild_add_cxx_flags( "-g -O0"   NAME base_debug BUILD DEBUG )
+
+ecbuild_add_fortran_flags( "-g -O2 -DNDEBUG" NAME base_relwithdebinfo BUILD RELWITHDEBINFO )
+ecbuild_add_c_flags( "-g -O2 -DNDEBUG" NAME base_relwithdebinfo BUILD RELWITHDEBINFO )
+ecbuild_add_cxx_flags( "-g -O2 -DNDEBUG" NAME base_relwithdebinfo BUILD RELWITHDEBINFO )
