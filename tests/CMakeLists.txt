@@ -423,7 +423,7 @@ if( HAVE_ETRANS )
           # Check it works with LALLOPERM=F (cpu only)
           if( ${omp} MATCHES "1")
             ecbuild_add_test( TARGET ${base_title}_lalloperm_f
-                COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_lalloperm_f
+                COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --alloperm .FALSE. --dump-checksums ${base_title}_lalloperm_f
                 MPI ${mpi}
                 OMP ${omp}
             )
