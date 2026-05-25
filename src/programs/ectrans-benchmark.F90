@@ -1138,36 +1138,6 @@ end subroutine str2int
 
 !===================================================================================================
 
-subroutine str2logical(str, logical, stat)
-
-  character(len=*), intent(in) :: str
-  logical, intent(out) :: logical
-  integer, intent(out) :: stat
-  read(str, *, iostat=stat) logical
-
-end subroutine str2logical
-
-!===================================================================================================
-
-function get_logical_value(cname, iarg) result(value)
-
-  logical :: value
-  character(len=*), intent(in) :: cname
-  integer, intent(inout) :: iarg
-  character(len=128) :: carg
-  integer :: stat
-
-  carg = get_str_value(cname, iarg)
-  call str2logical(carg, value, stat)
-
-  if (stat /= 0) then
-    call parsing_failed("Invalid argument for " // trim(cname) // ": " // trim(carg))
-  end if
-
-end function
-
-!===================================================================================================
-
 function get_int_value(cname, iarg) result(value)
 
   integer :: value
