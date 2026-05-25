@@ -1305,7 +1305,7 @@ subroutine print_help(unit)
   write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
    & tolerance for correctness checking"
   write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
-   & buffers (default = off, equivalent to LALLOPERM=.FALSE.)"
+   & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"

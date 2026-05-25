@@ -1254,7 +1254,7 @@ subroutine print_help(unit)
   write(nout, "(a)") "                        See&
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
   write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
-   & buffers (default = off, equivalent to LALLOPERM=.FALSE.)"
+   & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
