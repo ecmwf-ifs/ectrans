@@ -67,7 +67,7 @@ jobs:
               #SBATCH --cpus-per-task=32
               #SBATCH --gpus-per-task=1
               #SBATCH --mem=200G
-              #SBATCH --qos=dg
+              #SBATCH --qos=ng
             env_vars:
               - CMAKE_GENERATOR=Ninja
 
