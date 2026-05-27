@@ -40,8 +40,9 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM" OR CMAKE_Fortran_COMPILER_
   ecbuild_add_fortran_flags( "-fp-model precise -fp-speculation=safe" )
   ecbuild_add_fortran_flags( "-heap-arrays 32" )
   set( NO_FORTRAN_MAIN_FLAG "-nofor-main" )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
-  ecbuild_add_fortran_flags( "-fast-transcendentals" )
+  if( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
+    ecbuild_add_fortran_flags( "-fast-transcendentals" )
+  endif()
 endif()
 
 ecbuild_add_fortran_flags( "-O3 -DNDEBUG" NAME base_release BUILD RELEASE )
