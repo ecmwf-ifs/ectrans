@@ -232,19 +232,15 @@ jobs:
           # It seems the compiler detects an incompatible target processor on some of the runners,
           # in particular -tp=znver4 seems incompatible with "AMD EPYC 9V74 80-Core Processor" as shown by /proc/cpuinfo
           NVHPC_TARGET_FLAG="-tp=haswell"
-          CFLAGS="${CFLAGS:+$CFLAGS }${NVHPC_TARGET_FLAG}"
-          CXXFLAGS="${CXXFLAGS:+$CXXFLAGS }${NVHPC_TARGET_FLAG}"
-          FFLAGS="${FFLAGS:+$FFLAGS }${NVHPC_TARGET_FLAG}"
-          FCFLAGS="${FCFLAGS:+$FCFLAGS }${NVHPC_TARGET_FLAG}"
+          echo "set( ECBUILD_Fortran_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
+          echo "set( ECBUILD_C_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
+          echo "set( ECBUILD_CXX_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
 
           # supress "warning #177: variable x was declared but never referenced
-          CXXFLAGS="${CXXFLAGS} --diag_suppress=177"
-        fi
+          # CXXFLAGS="${CXXFLAGS} --diag_suppress=177"
 
-        [ -z ${CFLAGS+x}   ] || echo "CFLAGS=${CFLAGS}"     >> $GITHUB_ENV
-        [ -z ${CXXFLAGS+x} ] || echo "CXXFLAGS=${CXXFLAGS}" >> $GITHUB_ENV
-        [ -z ${FFLAGS+x}   ] || echo "FFLAGS=${FFLAGS}"     >> $GITHUB_ENV
-        [ -z ${FCFLAGS+x}  ] || echo "FCFLAGS=${FCFLAGS}"   >> $GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=$PWD/toolchain.cmake" >> $GITHUB_ENV
+        fi
 
     - name: Build & Test
       id: build-test
