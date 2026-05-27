@@ -11,14 +11,14 @@
 # Not needed for most
 set( NO_FORTRAN_MAIN_FLAG "" )
 
-if( CMAKE_Fortran_COMPILER_ID MATCHES "XL" )
+if( CMAKE_Fortran_COMPILER_ID STREQUAL "XL" )
   ecbuild_add_fortran_flags( "-qextname -qnobindcextname" )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "GNU" )
+elseif( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
   # gfortran 10 has become stricter with argument matching
   if( NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 10 )
     ecbuild_add_fortran_flags( "-fallow-argument-mismatch" )
   endif()
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
+elseif( CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" )
   ecbuild_add_fortran_flags( "-Mlarge_arrays" )
 
   # should really be part of configuration, or ecbuild default?
@@ -27,7 +27,7 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   ecbuild_add_fortran_flags( "-gopt -fast"     BUILD RELWITHDEBINFO )
 
   set( NO_FORTRAN_MAIN_FLAG "-Mnomain")
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+elseif( CMAKE_Fortran_COMPILER_ID STREQUAL "Cray" )
   # A module named ... has already been directly or indirectly use associated into this scope
   ecbuild_add_fortran_flags( "-hnomessage=878" )
   # Module ... has no public objects declared in the module, therefore nothing can be use associated
@@ -35,12 +35,12 @@ elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
   ecbuild_add_fortran_flags( "-hnomessage=867" )
   # An OpenMP parallel construct in a target region is limited to a single thread.
   ecbuild_add_fortran_flags( "-M7256" )
-elseif( CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM" OR CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
+elseif( CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM" OR CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" )
   ecbuild_add_fortran_flags( "-march=core-avx2 -no-fma" BUILD BIT )
   ecbuild_add_fortran_flags( "-fp-model precise -fp-speculation=safe" )
   ecbuild_add_fortran_flags( "-heap-arrays 32" )
   set( NO_FORTRAN_MAIN_FLAG "-nofor-main" )
-  if( CMAKE_Fortran_COMPILER_ID MATCHES "Intel" )
+  if( CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" )
     ecbuild_add_fortran_flags( "-fast-transcendentals" )
   endif()
 endif()
