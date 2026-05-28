@@ -233,11 +233,8 @@ jobs:
           # in particular -tp=znver4 seems incompatible with "AMD EPYC 9V74 80-Core Processor" as shown by /proc/cpuinfo
           NVHPC_TARGET_FLAG="-tp=haswell"
           echo "set( ECBUILD_Fortran_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
-          echo "set( ECBUILD_C_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
-          echo "set( ECBUILD_CXX_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
-
-          # supress "warning #177: variable x was declared but never referenced
-          # CXXFLAGS="${CXXFLAGS} --diag_suppress=177"
+          echo "set( ECBUILD_C_FLAGS ${NVHPC_TARGET_FLAG} )"       >> $PWD/toolchain.cmake
+          echo "set( ECBUILD_CXX_FLAGS ${NVHPC_TARGET_FLAG} )"     >> $PWD/toolchain.cmake
 
           echo "CMAKE_TOOLCHAIN_FILE=$PWD/toolchain.cmake" >> $GITHUB_ENV
         fi
