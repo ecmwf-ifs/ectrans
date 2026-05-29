@@ -79,7 +79,7 @@ REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IFLD, J, JK
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, IFLD, J, JK
 INTEGER(KIND=JPIM) :: ITHRESHOLD
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
@@ -100,7 +100,6 @@ IA  = 1+MOD(R%NTMAX-KM+2,2)
 IS  = 1+MOD(R%NTMAX-KM+1,2)
 ILA = (R%NTMAX-KM+2)/2
 ILS = (R%NTMAX-KM+3)/2
-ISL = KSL
 
 IF(KM == 0)THEN
   ISKIP = 2
@@ -120,13 +119,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
     IF (LLDOUBLE) THEN
 
-       IFLD=0
-       DO JK=1,KFC,ISKIP
-         IFLD=IFLD+1
-         DO J=1,KDGLU
-           ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
-         ENDDO
-       ENDDO
+      ZB = PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PAIA, PW)
 
        CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
             &ZB,KDGLU,0._JPRD,ZCA,ILA)
@@ -135,13 +128,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
        IF(KM>=1)THEN
 
-          IFLD=0
-          DO JK=1,KFC,ISKIP
-            IFLD=IFLD+1
-            DO J=1,KDGLU
-              ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
-            ENDDO
-          ENDDO
+        ZB = PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PAIA, PW)
 
           CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCA,ILA)
@@ -155,7 +142,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
                 DO J=1,KDGLU
-                   ZB_D(J,IFLD)=REAL(PAIA(JK,J),JPRD)*PW(ISL+J-1)
+                   ZB_D(J,IFLD)=REAL(PAIA(JK,J),JPRD)*PW(KSL+J-1)
                 ENDDO
              ENDDO
 
@@ -178,13 +165,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
 
   ELSE
 
-     IFLD=0
-     DO JK=1,KFC,ISKIP
-       IFLD=IFLD+1
-       DO J=1,KDGLU
-         ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
-       ENDDO
-     ENDDO
+    ZB = PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PAIA, PW)
 
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',0,ZHOOK_HANDLE)
      CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_A,KIFC,ZB,ZCA,KM)
@@ -206,14 +187,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
 
     IF (LLDOUBLE) THEN
-
-       IFLD=0
-       DO JK=1,KFC,ISKIP
-         IFLD=IFLD+1
-         DO J=1,KDGLU
-           ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
-         ENDDO
-       ENDDO
+      ZB = PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PSIA, PW)
 
        CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
             &ZB,KDGLU,0._JPRD,ZCS,ILS)
@@ -221,14 +195,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
     ELSE
 
        IF(KM>=1)THEN
-
-          IFLD=0
-          DO JK=1,KFC,ISKIP
-            IFLD=IFLD+1
-            DO J=1,KDGLU
-              ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
-            ENDDO
-          ENDDO
+        ZB = PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PSIA, PW)
 
           CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
                &ZB,KDGLU,0._JPRM,ZCS,ILS)
@@ -242,7 +209,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
                 DO J=1,KDGLU
-                   ZB_D(J,IFLD)=REAL(PSIA(JK,J),JPRD)*PW(ISL+J-1)
+                   ZB_D(J,IFLD)=REAL(PSIA(JK,J),JPRD)*PW(KSL+J-1)
                 ENDDO
              ENDDO
 
@@ -264,14 +231,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
     
   ELSE
-
-     IFLD=0
-     DO JK=1,KFC,ISKIP
-       IFLD=IFLD+1
-       DO J=1,KDGLU
-         ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
-       ENDDO
-     ENDDO
+    ZB = PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PSIA, PW)
 
      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',0,ZHOOK_HANDLE)
      CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_S,KIFC,ZB,ZCS,KM)
@@ -296,4 +256,33 @@ ENDIF
 !     ------------------------------------------------------------------
 
 END SUBROUTINE LEDIR
+
+FUNCTION PACK_FOR_GEMM(KM, KFC, KDGLU, KSL, PIN, PW) RESULT(POUT)
+
+USE PARKIND1, ONLY: JPRB, JPIM
+
+IMPLICIT NONE
+
+INTEGER(KIND=JPIM), INTENT(IN) :: KM
+INTEGER(KIND=JPIM), INTENT(IN) :: KFC
+INTEGER(KIND=JPIM), INTENT(IN) :: KDGLU
+INTEGER(KIND=JPIM), INTENT(IN) :: KSL
+REAL(KIND=JPRB), INTENT(IN) :: PIN(:, :)
+REAL(KIND=JPRB), INTENT(IN) :: PW(:)
+REAL(KIND=JPRB) :: POUT(:, :)
+
+INTEGER(KIND=JPIM) :: ISKIP, IFLD, JK, J
+
+ISKIP = MERGE(2, 1, KM == 0)
+
+IFLD = 0
+DO JK = 1, KFC, ISKIP
+  IFLD = IFLD + 1
+  DO J = 1, KDGLU
+    POUT(J, IFLD) = PIN(JK, J) * REAL(PW(KSL + J - 1), JPRB)
+  ENDDO
+ENDDO
+
+END FUNCTION PACK_FOR_GEMM
+
 END MODULE LEDIR_MOD
