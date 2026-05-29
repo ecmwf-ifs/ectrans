@@ -703,17 +703,9 @@ IF(.NOT.D%LGRIDONLY) THEN
 
           LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
 
-          IF (LLCACHEDGEMM) THEN
-            IF (ALLOCATED(S%RPNMA_DGEMM)) THEN
-              IF (SIZE(S%RPNMA_DGEMM,1) /= IDGLU .OR. &
-                  SIZE(S%RPNMA_DGEMM,2) /= ILA) THEN
-                DEALLOCATE(S%RPNMA_DGEMM)
-              ENDIF
-            ENDIF
 
-            IF (.NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
-              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
-            ENDIF
+          IF (LLCACHEDGEMM .AND. .NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+            ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
           ENDIF
 
           IF( S%LUSEFLT .AND. ILA > ITHRESHOLD ) THEN
@@ -765,17 +757,9 @@ IF(.NOT.D%LGRIDONLY) THEN
 
           LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
 
-          IF (LLCACHEDGEMM) THEN
-            IF (ALLOCATED(S%RPNMA_DGEMM)) THEN
-              IF (SIZE(S%RPNMA_DGEMM,1) /= IDGLU .OR. &
-                  SIZE(S%RPNMA_DGEMM,2) /= ILA) THEN
-                DEALLOCATE(S%RPNMA_DGEMM)
-              ENDIF
-            ENDIF
 
-            IF (.NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
-              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
-            ENDIF
+          IF (LLCACHEDGEMM .AND. .NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+            ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
           ENDIF
 
           IF( S%LUSEFLT .AND. ILA > ITHRESHOLD ) THEN
@@ -1026,17 +1010,9 @@ IF(.NOT.D%LGRIDONLY) THEN
 
           LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
 
-          IF (LLCACHEDGEMM) THEN
-            IF (ALLOCATED(S%RPNMS_DGEMM)) THEN
-              IF (SIZE(S%RPNMS_DGEMM,1) /= IDGLU .OR. &
-                  SIZE(S%RPNMS_DGEMM,2) /= ILS) THEN
-                DEALLOCATE(S%RPNMS_DGEMM)
-              ENDIF
-            ENDIF
 
-            IF (.NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
-              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
-            ENDIF
+          IF (LLCACHEDGEMM .AND. .NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+            ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
           ENDIF
 
           IF( S%LUSEFLT .AND. ILS > ITHRESHOLD ) THEN
@@ -1088,17 +1064,8 @@ IF(.NOT.D%LGRIDONLY) THEN
 
           LLCACHEDGEMM = (.NOT. LLDOUBLE) .AND. (IM == 0)
 
-          IF (LLCACHEDGEMM) THEN
-            IF (ALLOCATED(S%RPNMS_DGEMM)) THEN
-              IF (SIZE(S%RPNMS_DGEMM,1) /= IDGLU .OR. &
-                  SIZE(S%RPNMS_DGEMM,2) /= ILS) THEN
-                DEALLOCATE(S%RPNMS_DGEMM)
-              ENDIF
-            ENDIF
-
-            IF (.NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
-              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
-            ENDIF
+          IF (LLCACHEDGEMM .AND. .NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+            ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
           ENDIF
 
           IF( S%LUSEFLT .AND. ILS > ITHRESHOLD ) THEN
