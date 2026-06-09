@@ -727,7 +727,7 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JI=1,ILA
                 S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
                 IF (LLCACHEDGEMM) THEN
-                  S%RPNMA_DGEMM(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+                  S%RPNMA_DGEMM(JGL,ILA-JI+1) = REAL(S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1), JPRD)
                 ENDIF
               ENDDO
             ENDDO
@@ -777,7 +777,7 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JGL=1,IDGLU
                 S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
                 IF (LLCACHEDGEMM) THEN
-                  S%RPNMA_DGEMM(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                  S%RPNMA_DGEMM(JGL,JI) = REAL(S%FA(IMLOC)%RPNMA(JGL,JI), JPRD)
                 ENDIF
               ENDDO
             ENDDO
@@ -1026,7 +1026,7 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JI=1,ILS
                 S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
                 IF (LLCACHEDGEMM) THEN
-                  S%RPNMS_DGEMM(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
+                  S%RPNMS_DGEMM(JGL,ILS-JI+1) = REAL(S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1), JPRD)
                 ENDIF
               ENDDO
             ENDDO
@@ -1076,7 +1076,7 @@ IF(.NOT.D%LGRIDONLY) THEN
               DO JGL=1,IDGLU
                 S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
                 IF (LLCACHEDGEMM) THEN
-                  S%RPNMS_DGEMM(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+                  S%RPNMS_DGEMM(JGL,JI) = REAL(S%FA(IMLOC)%RPNMS(JGL,JI), JPRD)
                 ENDIF
               ENDDO
             ENDDO
