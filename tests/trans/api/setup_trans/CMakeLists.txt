@@ -23,6 +23,7 @@ set( test_list
   ectrans_test_trans_api_setup_trans_gridonly
   ectrans_test_trans_api_setup_trans_spsetuponly
   ectrans_test_trans_api_setup_trans_pnmonly
+  ectrans_test_trans_api_setup_trans_write_read_legpoly
 )
 
 # Declare tests that WILL_FAIL
