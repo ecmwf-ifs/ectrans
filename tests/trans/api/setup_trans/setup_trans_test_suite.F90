@@ -15,7 +15,6 @@ IMPLICIT NONE
 #include "setup_trans0.h"
 #include "setup_trans.h"
 #include "trans_end.h"
-#include "abor1.h"
 
 ! Spectral truncation used for all tests below
 INTEGER(KIND=JPIM), PARAMETER :: TRUNCATION = 79
@@ -297,6 +296,8 @@ INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY() RESULT(
 
   INTEGER(KIND=JPIM) :: IPROC_TEST_NAME
   CHARACTER(LEN=20) :: CLLEGPOLFNAME
+
+#include "abor1.intfb.h"
 
   CALL SETUP_TEST(LCALL_SETUP_TRANS0=.FALSE.)
   IF (NPROC > 1) THEN
