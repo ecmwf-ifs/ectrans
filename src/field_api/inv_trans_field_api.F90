@@ -137,13 +137,21 @@ NBLK = 0
 NPROMA = 0 
 NSPEC2 = 0
 
-CALL GET_LAYOUT_G(YDFU, NBLK, NPROMA)
-CALL GET_LAYOUT_G(YDFV, NBLK, NPROMA)
-CALL GET_LAYOUT_G(YDFSCALAR,NBLK, NPROMA)
-CALL GET_LAYOUT_S(YDFSPVOR, NSPEC2)
-CALL GET_LAYOUT_S(YDFSPDIV, NSPEC2)
-CALL GET_LAYOUT_S(YDFSPSCALAR, NSPEC2)
-CALL GET_LAYOUT_S(YDFSPVOR, NSPEC2)
+IF (PRESENT(YDFU)) CALL GET_LAYOUT_G(YDFU, NBLK, NPROMA)
+IF (PRESENT(YDFV)) CALL GET_LAYOUT_G(YDFV, NBLK, NPROMA)
+IF (PRESENT(YDFSCALAR)) CALL GET_LAYOUT_G(YDFSCALAR,NBLK, NPROMA)
+IF (PRESENT(YDFSPVOR)) CALL GET_LAYOUT_S(YDFSPVOR, NSPEC2)
+IF (PRESENT(YDFSPDIV)) CALL GET_LAYOUT_S(YDFSPDIV, NSPEC2)
+IF (PRESENT(YDFSPSCALAR)) CALL GET_LAYOUT_S(YDFSPSCALAR, NSPEC2)
+IF (PRESENT(YDFSPVOR)) CALL GET_LAYOUT_S(YDFSPVOR, NSPEC2)
+
+! Assert that NBLK, NPROMA and NSPEC2 are properly valued after getting the field(s) layout
+IF (.NOT.(NBLK > 0))    CALL ABOR1("[INV_TRANS_FIELD_API] NBLK must be strictly positive. &
+                                        &  One or more field arguments might be missing.")
+IF (.NOT.(NPROMA > 0))  CALL ABOR1("[INV_TRANS_FIELD_API] NPROMA must be strictly positive. &
+                                        &  One or more field arguments might be missing.")
+IF (.NOT.(NSPEC2 > 0))  CALL ABOR1("[INV_TRANS_FIELD_API] NSPEC2 must be strictly positive. &
+                                        &  One or more field arguments might be missing.")
 
 IFLDXG= 0
 IFLDXL= 0
