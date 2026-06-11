@@ -68,7 +68,7 @@ REAL(KIND=JPRBT) ,ALLOCATABLE :: ZBUF(:)
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: IBUFA(:)
 !     ------------------------------------------------------------------
 
-IRBYTES = INT(STORAGE_SIZE(1.0_JPRB) / 8, JPIM)
+IRBYTES = INT(STORAGE_SIZE(1.0_JPRBT) / 8, JPIM)
 IIBYTES = 4
 IDUM = 3141
 
