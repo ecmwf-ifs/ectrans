@@ -45,21 +45,25 @@ def compare_checksums(folder_path, ntasks, nthreads, excludes=[]):
         if os.path.isfile(file_name):
             print(f"{file_name}")
             found = False
-            for mpi in ntasks:
-                for omp in nthreads:
-                    other_file_name = file_name.replace("mpi0_omp1", f"mpi{mpi}_omp{omp}")
-                    if other_file_name == file_name:
-                        continue
-                    if os.path.isfile(other_file_name):
-                        total_count += 1
-                        found = True
-                        if (filecmp.cmp(file_name, other_file_name)):
-                            print(f"    {other_file_name} ...{colors.SUCCESS}Passed{colors.ENDC}")
-                            success_count += 1
-                        else:
-                            print(f"    {other_file_name} ...***{colors.FAILURE}Failed{colors.ENDC}")
-                            error_count += 1
-                            failed_list.append((file_name, other_file_name))
+            for method in ["","_field_api"]:
+                for mpi in ntasks:
+                    for omp in nthreads:
+                        other_file_name = file_name.replace("mpi0_omp1", f"mpi{mpi}_omp{omp}")
+                        other_file_name = other_file_name.replace("field_api_nfld", "nfld")
+                        other_file_name = other_file_name.replace("_nfld", f"{method}_nfld")
+                        
+                        if other_file_name == file_name:
+                            continue
+                        if os.path.isfile(other_file_name):
+                            total_count += 1
+                            found = True
+                            if (filecmp.cmp(file_name, other_file_name)):
+                                print(f"    {other_file_name} ...{colors.SUCCESS}Passed{colors.ENDC}")
+                                success_count += 1
+                            else:
+                                print(f"    {other_file_name} ...***{colors.FAILURE}Failed{colors.ENDC}")
+                                error_count += 1
+                                failed_list.append((file_name, other_file_name))
             if not found:
                 print("No comparison found")
                 return False

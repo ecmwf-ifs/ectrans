@@ -9,7 +9,6 @@
 
 program ectrans_benchmark
 
-!
 ! Spectral transform test
 !
 ! This test performs spectral to real and real to spectral transforms repeated in
@@ -26,11 +25,17 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
-
 use ectrans_memory, only : allocator
 
-implicit none
+#if USE_FIELD_API
+USE ectrans_field_api_helper, only : wrapped_fields, fields_lists, &
+                                   & wrap_benchmark_fields, wrap_benchmark_fields_zgp, &
+                                   & create_fields_lists, &
+                                   & delete_wrapped_fields,delete_fields_lists, &
+                                   & synchost_rdonly_wrapped_fields
+#endif
 
+implicit none
 ! Number of points in top/bottom latitudes
 integer(kind=jpim), parameter :: min_octa_points = 20
 
@@ -122,6 +127,7 @@ logical :: lsyncstats = .false.
 logical :: lstatscpu = .false.
 logical :: lstats_mem = .false.
 logical :: lxml_stats = .false.
+logical :: lfield_api = .false. ! use field API interface
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
@@ -168,6 +174,11 @@ integer(kind=jpim) :: iprtrv
 integer(kind=jpim) :: iprtrw
 integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 
+#if USE_FIELD_API
+type(wrapped_fields) :: ywflds
+type(fields_lists) :: ylf
+#endif
+
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
@@ -175,6 +186,7 @@ character(len=256) :: checksums_filename
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
+logical :: lalloperm = .true.
 
 character(len=16)   :: cgrid = ''
 character(len=128)  :: cchecksums_path = ''
@@ -193,6 +205,10 @@ real(kind=jprb), allocatable :: global_field(:,:)
 #include "setup_trans.h"
 #include "inv_trans.h"
 #include "dir_trans.h"
+#if USE_FIELD_API
+#include "inv_trans_field_api.h"
+#include "dir_trans_field_api.h"
+#endif
 #include "trans_inq.h"
 #include "gath_grid.h"
 #include "gath_spec.h"
@@ -213,7 +229,7 @@ endif
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, &
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  &                             lpinning, icall_mode, ldump_checksums, cchecksums_path)
+  &                             lpinning, lfield_api, icall_mode, ldump_checksums, cchecksums_path, lalloperm)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -377,7 +393,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1), kpromatr=npromatr, &
   &               kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw, ldsync_trans=lsync_trans,  &
-  &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi,         &
+  &               ldeq_regions=leq_regions, ldalloperm=lalloperm, ldmpoff=.not.luse_mpi,         &
   &               kopt_memory_tr=nopt_mem_tr)
 call gstats(1, 1)
 
@@ -404,6 +420,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'(" ")')
   write(nout,'(a)')'======= Start of runtime parameters ======='
   write(nout,'(" ")')
+  write(nout,'("call_mode  ",i0)') icall_mode
   write(nout,'("nsmax      ",i0)') nsmax
   write(nout,'("grid       ",a)') trim(cgrid)
   write(nout,'("ndgl       ",i0)') ndgl
@@ -427,6 +444,8 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("lvordiv    ",l1)') lvordiv
   write(nout,'("lscders    ",l1)') lscders
   write(nout,'("luvder     ",l1)') luvder
+  write(nout,'("lfield_api ",l1)') lfield_api
+  write(nout,'("lalloperm  ",l1)') lalloperm
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -526,6 +545,20 @@ else
   call allocator%allocate('zgp3a', zgp3a, [nproma,nflevg,inum_sc_3d_fields,ngpblks])
   call allocator%allocate('zgp2', zgp2, [nproma,inum_sc_2d_fields,ngpblks])
 endif
+
+#if USE_FIELD_API
+if (lfield_api) then
+  if (icall_mode == 1) then
+    call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
+      &                            zspvor, zspdiv, zspscalar, zgp)
+    call create_fields_lists(ywflds, ylf, kvsetuv=ivset, kvsetsc=ivsetsc)
+  else
+    call wrap_benchmark_fields(ywflds, lvordiv, lscders, luvder, 1, 1, nfld, zspvor, zspdiv, &
+      &                        zspsc3a, zspsc2, zgpuv, zgp3a, zgp2)
+    call create_fields_lists(ywflds, ylf, kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc=ivset)
+  endif
+endif
+#endif
 
 !===================================================================================================
 ! Allocate norm arrays
@@ -631,38 +664,51 @@ do jstep = 1, iters+iters_warmup
 
   ztstep1(jstep) = timef()
   call gstats(4,0)
-  if (icall_mode == 1) then
+
+  if (lfield_api) then
+#if USE_FIELD_API
+    call inv_trans_field_api(kresol=1, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
+      &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
+      &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
+      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew, &
+      &                      kgptot = ngptot)
+    call synchost_rdonly_wrapped_fields(ywflds)
+#else
+    call abor1('ectrans_benchmark: No field API support')
+#endif
+  else if (icall_mode == 1) then
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
       &            kvsetuv=ivset, kvsetsc=ivsetsc, &
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
       &            kproma=nproma)
-
-    if (ldump_checksums) then
-      ! Remove trash at end of last block
-      iend = ngptot - nproma * (ngpblks - 1)
-      zgp (iend+1:, :, ngpblks) = 0
-      write(checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
-      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
-        &                     myproc=myproc, nproma=nproma, ngptotg=ngptotg, zgp=zgp)
-    endif
   else
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
       &            pgp3a=zgp3a, pgp2=zgp2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
+  endif
 
-    if (ldump_checksums) then
+  if (ldump_checksums) then
+    ! Remove trash at end of last block
+    iend = ngptot - nproma * (ngpblks - 1)
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
+    if (icall_mode == 1) then
       ! Remove trash at end of last block
-      iend = ngptot - nproma * (ngpblks - 1)
+      zgp (iend+1:, :, ngpblks) = 0
+      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump_checksum, &
+                            & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
+                            & zgp=zgp)
+    else
+      ! Remove trash at end of last block
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      write(checksums_filename,'(A)') trim(cchecksums_path)//'_inv_trans.checksums'
-      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
-        &                             myproc=myproc, nproma=nproma, ngptotg=ngptotg, zgpuv=zgpuv, zgp3a=zgp3a, &
-        &                             zgp2=zgp2)
+      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+                                    & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
+                                    & zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
   endif
+
   call gstats(4,1)
 
   ztstep1(jstep) = (timef() - ztstep1(jstep))/1000.0_jprd
@@ -702,30 +748,38 @@ do jstep = 1, iters+iters_warmup
   ztstep2(jstep) = timef()
 
   call gstats(5,0)
-  if (icall_mode == 1) then
+
+  if (lfield_api) then
+#if USE_FIELD_API
+    call dir_trans_field_api(kresol=1, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
+      &                      ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
+    call synchost_rdonly_wrapped_fields(ywflds)
+#else
+    call abor1('ectrans_benchmark: No field API support')
+#endif
+  else if (icall_mode == 1) then
     call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
       &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
-
-    if (ldump_checksums) then
-        write(checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
-          &                     myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, nspec2g=nspec2g, &
-          &                     zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
-    endif
-
   else
     call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
       &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
       &            pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
+  endif
 
-    if (ldump_checksums) then
-      write(checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
-      call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, jstep=jstep, &
-        &                          myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
-        &                          zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
+  if (ldump_checksums) then
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+
+    if (icall_mode == 1) then
+      call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
+        &                     jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, &
+        &                     nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
+    else
+      call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+        &                          jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, &
+        &                          nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, &
+        &                          zspsc2=zspsc2)
     endif
-
   endif
   call gstats(5,1)
 
@@ -977,6 +1031,12 @@ endif
 !===================================================================================================
 ! Cleanup
 !===================================================================================================
+#if USE_FIELD_API
+if (lfield_api) then
+  call delete_wrapped_fields(ywflds)
+  call delete_fields_lists(ylf)
+endif
+#endif
 
 call allocator%deallocate('zspvor', zspvor)
 call allocator%deallocate('zspdiv', zspdiv)
@@ -1185,6 +1245,7 @@ subroutine print_help(unit)
    & tolerance for correctness checking"
   write(nout, "(a)") "    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory) &
    & to allocate fields for GPU version"
+  write(nout, "(a)") "    --field-api         Use the field api interface of ecTrans"
   write(nout, "(a)") "    --callmode          The call mode for INV_TRANS and DIR_TRANS (1 or 2)"
   write(nout, "(a)") "                        Call mode 1 uses arrays PSPVOR, PSPDIV, PSPSCALAR and&
    & PGP"
@@ -1192,6 +1253,8 @@ subroutine print_help(unit)
    & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
   write(nout, "(a)") "                        See&
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
+  write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
+   & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
@@ -1220,8 +1283,8 @@ end subroutine
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, &
   &                                   lscders, luvder, luseflt, nopt_mem_tr, nproma, npromatr, &
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
-  &                                   nprtrw, ncheck, lpinning, icall_mode, ldump_checksums, &
-  &                                   cchecksums_path)
+  &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
+  &                                   cchecksums_path, lalloperm)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1251,11 +1314,13 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
                                             ! tolerance for correctness checking
   logical, intent(inout) :: lpinning        ! Use memory-pinning (a.k.a. page-locked memory) to allocate fields for GPU version
+  logical, intent(inout) :: lfield_api
   integer, intent(inout) :: icall_mode      ! The call mode for inv_trans and dir_trans
                                             ! 1: pspvor, pspdiv, pspscalar, pgp
                                             ! 2: pspvor, pspdiv, pspsc3a, pspsc2, pgpuv, pgp3a, pgp2
 
   character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
+  logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
 
@@ -1314,11 +1379,13 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
       case('-c', '--check'); ncheck = get_int_value('-c', iarg)
       case('--no-pinning'); lpinning = .False.
+      case('--field-api'); lfield_api = .True.
       case('--callmode')
           icall_mode = get_int_value('--callmode', iarg)
-          if (icall_mode /= 1 .and. icall_mode /= 2) then
+          if (icall_mode < 1 .or. icall_mode > 2) then
             call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
+      case('--deallocate-foubuf-temps'); lalloperm = .false.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 

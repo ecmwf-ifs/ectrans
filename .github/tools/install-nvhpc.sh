@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Install NVHPC
 # https://github.com/nemequ/pgi-travis
@@ -12,7 +12,11 @@
 # See <https://creativecommons.org/publicdomain/zero/1.0/> for
 # details.
 
-version=25.1
+set -e
+set -u
+set -o pipefail
+
+version=26.3
 
 TEMPORARY_FILES="${TMPDIR:-/tmp}"
 export NVHPC_INSTALL_DIR=$(pwd)/nvhpc-install
@@ -55,11 +59,22 @@ if [ -d "${NVHPC_INSTALL_DIR}" ]; then
     fi
 fi
 
-# Example download URL for version 21.9
-#    https://developer.download.nvidia.com/hpc-sdk/21.9/nvhpc_2020_219_Linux_x86_64_cuda_11.0.tar.gz
 
-ver="$(echo $version | tr -d . )"
-URL=$(curl -s "https://developer.nvidia.com/nvidia-hpc-sdk-$ver-downloads" | grep -oP "https://developer.download.nvidia.com/hpc-sdk/([0-9]{2}\.[0-9]+)/nvhpc_([0-9]{4})_([0-9]+)_Linux_$(uname -m)_cuda_([0-9\.]+).tar.gz" | sort | tail -1)
+MAJOR_VER="${version%%.*}"
+if [ "$MAJOR_VER" -lt 26 ]; then
+    echo "Major version < 26"
+    # Example download URL for version 21.9
+    #    https://developer.download.nvidia.com/hpc-sdk/21.9/nvhpc_2020_219_Linux_x86_64_cuda_11.0.tar.gz
+
+    ver="$(echo $version | tr -d . )"
+    URL=$(curl -s "https://developer.nvidia.com/nvidia-hpc-sdk-$ver-downloads" | grep -oP "https://developer.download.nvidia.com/hpc-sdk/([0-9]{2}\.[0-9]+)/nvhpc_([0-9]{4})_([0-9]+)_Linux_$(uname -m)_cuda_([0-9\.]+).tar.gz" | sort | tail -1)
+else
+    echo "Major version >= 26"
+    # Example download URL for version 26.1
+    #    https://developer.download.nvidia.com/hpc-sdk/26.1/nvhpc_2026_261_Linux_x86_64_cuda_13.1.tar.gz
+    #    https://developer.nvidia.com/hpc-sdk/releases/26.1
+    URL=$(curl -s "https://developer.nvidia.com/hpc-sdk/releases/$version" | grep -oP "https://developer.download.nvidia.com/hpc-sdk/([0-9]{2}\.[0-9]+)/nvhpc_([0-9]{4})_([0-9]+)_Linux_$(uname -m)_cuda_([0-9\.]+).tar.gz" | sort | tail -1)
+fi
 FOLDER="$(basename "$(echo "${URL}" | grep -oP '[^/]+$')" .tar.gz)"
 
 if [ ! -d "${TEMPORARY_FILES}/${FOLDER}" ]; then
@@ -101,7 +116,7 @@ echo "rmaps_default_mapping_policy=:oversubscribe" >> ${MPI_HOME}/etc/prte-mca-p
 
 # Allow for oversubscription. For open-mpi < v5.0 only (older nvhpc versions)
 echo "localhost slots=72" >> ${MPI_HOME}/etc/openmpi-default-hostfile
-
+echo "hwloc_base_binding_policy = core:overload-allowed" >> ${MPI_HOME}/etc/openmpi-mca-params.conf
 
 cat > ${NVHPC_INSTALL_DIR}/env.sh << EOF
 ### Variables
@@ -121,3 +136,4 @@ EOF
 
 cat ${NVHPC_INSTALL_DIR}/env.sh
 
+date '+%Y.%m.%d-%H:%M:%S' > install.timestamp

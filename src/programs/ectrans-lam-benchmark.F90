@@ -200,6 +200,7 @@ integer(kind=jpim) :: iend = 0
 logical :: ldump_values = .false.
 logical :: ldump_checksums = .false.
 logical :: luse_mpi = .true.
+logical :: lalloperm = .true.
 integer, external :: ec_mpirank
 
 character(len=128)  :: cchecksums_path = ''
@@ -228,7 +229,7 @@ luse_mpi = detect_mpirun()
 ! Setup
 call get_command_line_arguments(nlon, nlat, nsmax, nmsmax, iters, nfld, nlev, lvordiv, lscders, luvders, &
                               & nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, lmeminfo, &
-                              & nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path)
+                              & nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path, lalloperm)
 ! derived defaults
 if ( nsmax == 0 ) nsmax = nlat/2-1
 if ( nmsmax == 0 ) nmsmax = nlon/2-1
@@ -351,7 +352,7 @@ if( lstats ) call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1),                &
   &               kmax_resol=nmax_resol, kpromatr=0, kprgpns=nprgpns, kprgpew=nprgpew, &
   &               kprtrw=nprtrw, ldsync_trans=lsync_trans,               &
-  &               ldalloperm=.true., ldmpoff=.not.luse_mpi)
+  &               ldalloperm=lalloperm, ldmpoff=.not.luse_mpi)
 if( lstats ) call gstats(1, 1)
 
 if( lstats ) call gstats(2, 0)
@@ -402,6 +403,7 @@ if (verbosity >= 0) then
   write(nout,'("lvordiv   ",l)') lvordiv
   write(nout,'("lscders   ",l)') lscders
   write(nout,'("luvders   ",l)') luvders
+  write(nout,'("lalloperm ",l)') lalloperm
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -1110,7 +1112,8 @@ end subroutine
 subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
   &                                   iters, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, &
-  &                                   lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path)
+  &                                   lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path, &
+  &                                   lalloperm)
 
   integer, intent(inout) :: nlon            ! Zonal dimension
   integer, intent(inout) :: nlat            ! Meridional dimension
@@ -1136,6 +1139,7 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
   integer, intent(inout) :: ncheck          ! The multiplier of the machine epsilon used as a
                                             ! tolerance for correctness checking
   character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
+  logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
   integer            :: stat          ! For storing success status of string->integer conversion
@@ -1184,6 +1188,7 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
       case('--nprtrv'); nprtrv = get_int_value('--nprtrv', iarg)
       case('--nprtrw'); nprtrw = get_int_value('--nprtrw', iarg)
       case('-c', '--check'); ncheck = get_int_value('-c', iarg)
+      case('--deallocate-foubuf-temps'); lalloperm = .false.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1299,6 +1304,8 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --nprtrw            Size of Wave set in spectral decomposition"
   write(nout, "(a)") "    -c, --check VALUE   The multiplier of the machine epsilon used as a&
    & tolerance for correctness checking"
+  write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
+   & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values       Output gridpoint fields in unformatted binary file"

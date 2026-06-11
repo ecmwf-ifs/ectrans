@@ -12,7 +12,7 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & FSPGL_PROC,&
  & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
- & PGP,PGPUV,PGP3A,PGP3B,PGP2)
+ & PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU)
 
 !**** *INV_TRANS* - Inverse spectral transform.
 
@@ -104,6 +104,11 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 if no derivatives, 3 times that with der.)
+!     LPGP_ON_GPU    - optional device-residency hint for PGP, PGPUV,
+!                      PGP3A, PGP3B and PGP2. If present and true, the GPU
+!                      path assumes the corresponding present array is
+!                      already resident on device and skips the associated
+!                      host/device synchronization. Ignored on the CPU path.
 !     Method.
 !     -------
 
@@ -168,6 +173,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGPUV(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP2(:,:,:)
+LOGICAL        ,OPTIONAL    ,INTENT(IN) :: LPGP_ON_GPU
 
 !ifndef INTERFACE
 
@@ -214,7 +220,8 @@ IF(PRESENT(KVSETUV)) THEN
   IF_UV_PAR = 2
   DO J=1,IF_UV_G
     IF(KVSETUV(J) > NPRTRV .OR. KVSETUV(J) < 1) THEN
-      WRITE(NERR,*) 'INV_TRANS:KVSETUV(J) > NPRTRV ',J,KVSETUV(J),NPRTRV
+      WRITE(NERR,'(A,I0,A,I0,A,I0,A)') 'INV_TRANS:KVSETUV(J) > NPRTRV OR KVSETUV(J) < 1 &
+        &(J=',J,',KVSETUV(J)=',KVSETUV(J),', NPRTRV=',NPRTRV,')'
       CALL ABORT_TRANS('INV_TRANS:KVSETUV TOO LONG OR CONTAINS VALUES OUTSIDE RANGE')
     ENDIF
     IF(KVSETUV(J) == MYSETV) THEN

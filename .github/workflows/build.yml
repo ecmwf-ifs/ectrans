@@ -19,7 +19,7 @@ on:
 env:
   ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
   CTEST_PARALLEL_LEVEL: 1
-  CACHE_SUFFIX: v1        # Increase to force new cache to be created
+  CACHE_SUFFIX: v2        # Increase to force new cache to be created
 
 jobs:
   ci:
@@ -33,7 +33,7 @@ jobs:
         name:
           - linux gnu-13
           - linux clang-18
-          - linux nvhpc-25.1
+          - linux nvhpc-26.3
           - linux intel-classic
           - linux intel-modern
           - macos
@@ -60,9 +60,9 @@ jobs:
             ctest_options: -E memory
             caching: true
 
-          - name: linux nvhpc-25.1
+          - name: linux nvhpc-26.3
             os: ubuntu-24.04
-            compiler: nvhpc-25.1
+            compiler: nvhpc-26.3
             compiler_cc: nvc
             compiler_cxx: nvc++
             compiler_fc: nvfortran
@@ -113,6 +113,11 @@ jobs:
         else
           sed '/^$/q' /proc/cpuinfo
         fi
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.11
 
     - name: Checkout Repository
       uses: actions/checkout@v2
@@ -227,19 +232,12 @@ jobs:
           # It seems the compiler detects an incompatible target processor on some of the runners,
           # in particular -tp=znver4 seems incompatible with "AMD EPYC 9V74 80-Core Processor" as shown by /proc/cpuinfo
           NVHPC_TARGET_FLAG="-tp=haswell"
-          CFLAGS="${CFLAGS:+$CFLAGS }${NVHPC_TARGET_FLAG}"
-          CXXFLAGS="${CXXFLAGS:+$CXXFLAGS }${NVHPC_TARGET_FLAG}"
-          FFLAGS="${FFLAGS:+$FFLAGS }${NVHPC_TARGET_FLAG}"
-          FCFLAGS="${FCFLAGS:+$FCFLAGS }${NVHPC_TARGET_FLAG}"
+          echo "set( ECBUILD_Fortran_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
+          echo "set( ECBUILD_C_FLAGS ${NVHPC_TARGET_FLAG} )"       >> $PWD/toolchain.cmake
+          echo "set( ECBUILD_CXX_FLAGS ${NVHPC_TARGET_FLAG} )"     >> $PWD/toolchain.cmake
 
-          # supress "warning #177: variable x was declared but never referenced
-          CXXFLAGS="${CXXFLAGS} --diag_suppress=177"
+          echo "CMAKE_TOOLCHAIN_FILE=$PWD/toolchain.cmake" >> $GITHUB_ENV
         fi
-
-        [ -z ${CFLAGS+x}   ] || echo "CFLAGS=${CFLAGS}"     >> $GITHUB_ENV
-        [ -z ${CXXFLAGS+x} ] || echo "CXXFLAGS=${CXXFLAGS}" >> $GITHUB_ENV
-        [ -z ${FFLAGS+x}   ] || echo "FFLAGS=${FFLAGS}"     >> $GITHUB_ENV
-        [ -z ${FCFLAGS+x}  ] || echo "FCFLAGS=${FCFLAGS}"   >> $GITHUB_ENV
 
     - name: Build & Test
       id: build-test
@@ -252,10 +250,11 @@ jobs:
         dependencies: |
           ecmwf/ecbuild
           ecmwf-ifs/fiat
+          ecmwf-ifs/field_api@refs/tags/v0.3.9
         dependency_branch: develop
         dependency_cmake_options: |
           ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
-        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF"
+        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools

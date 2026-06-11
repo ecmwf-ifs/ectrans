@@ -10,7 +10,7 @@
 
 SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 & LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
-& PGP,PGPUV,PGP3A,PGP3B,PGP2)
+& PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU)
 
 
 !**** *DIR_TRANS* - Direct spectral transform (from grid-point to spectral).
@@ -89,6 +89,11 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 )
+!     LPGP_ON_GPU    - optional device-residency hint for PGP, PGPUV,
+!                      PGP3A, PGP3B and PGP2. If present and true, the GPU
+!                      path assumes the corresponding present array is
+!                      already resident on device and skips the associated
+!                      host/device synchronization. Ignored on the CPU path.
 !
 !     Method.
 !     -------
@@ -147,6 +152,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGPUV(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP2(:,:,:)
+LOGICAL        ,OPTIONAL    ,INTENT(IN) :: LPGP_ON_GPU
 
 !ifndef INTERFACE
 

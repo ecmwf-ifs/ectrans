@@ -46,7 +46,7 @@ jobs:
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/intel/2023.2.0/hpcx-openmpi/2.9.0
             sbatch_options: |
-              #SBATCH --time=00:30:00
+              #SBATCH --time=00:45:00
               #SBATCH --nodes=1
               #SBATCH --ntasks=4
               #SBATCH --cpus-per-task=32
@@ -61,13 +61,13 @@ jobs:
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/nvhpc/24.5/hpcx-openmpi/2.19.0-cuda
             sbatch_options: |
-              #SBATCH --time=00:30:00
+              #SBATCH --time=01:30:00
               #SBATCH --nodes=1
               #SBATCH --ntasks=4
               #SBATCH --cpus-per-task=32
               #SBATCH --gpus-per-task=1
               #SBATCH --mem=200G
-              #SBATCH --qos=dg
+              #SBATCH --qos=ng
             env_vars:
               - CMAKE_GENERATOR=Ninja
 
@@ -111,6 +111,7 @@ jobs:
             cmake_options:
               - -DENABLE_MPI=ON
               - -DENABLE_ETRANS=ON
+              - -DENABLE_FIELD_API=ON
             ctest_options: ${{ matrix.ctest_options || '' }}
             dependencies:
               ecmwf/ecbuild:

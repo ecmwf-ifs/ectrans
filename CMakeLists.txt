@@ -189,6 +189,12 @@ ecbuild_add_option( FEATURE ECTRANS4PY
 
 ectrans_find_lapack()
 
+ecbuild_add_option( FEATURE FIELD_API
+                    DEFAULT OFF
+                    DESCRIPTION "Compile field API interface to ectrans"
+                    REQUIRED_PACKAGES "field_api"
+                   )
+
 ### Add sources
 ecbuild_override_compiler_flags(
   COMPILE_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ectrans_compile_flags.cmake
