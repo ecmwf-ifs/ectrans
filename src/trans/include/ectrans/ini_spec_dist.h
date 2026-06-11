@@ -13,47 +13,55 @@ SUBROUTINE INI_SPEC_DIST(KSMAX,KTMAX,KPRTRW,KMYSETW,KASM0,KSPOLEGL,KPROCM,&
                     &KUMPP,KSPEC,KSPEC2,KSPEC2MX,KPOSSP,KMYMS,KPTRMS,KALLMS)
 
 
-!**** *INI_SPEC_DIST* - Initialize spectral wave distribution
-
-!     Purpose.
-!     --------
-!     Initialize arrays controlling spectral wave distribution
-
-!**   Interface.
-!     ----------
-!     CALL INI_SPEC_DIST(...)
-
-!     Explicit arguments : 
-!     --------------------
-!           KSMAX    - spectral truncation required
-!           KTMAX    - Overtruncation for KSMAX (input)
-!           KPRTRW   - Number of processors in A-direction (input)
-!           KMYSETW  - A-set for present processor (input)
-!           KASM0    - Offsets for spectral waves (output)
-!           KSPOLEGL - Local version of NSPOLEG (output)
-!           KPROCM   - Where a certain spectral wave belongs  (output)
-!           KUMPP    - Number of spectral waves on this PE (output)
-!           KSPEC    - Local version on NSPEC (output)
-!           KSPEC2   - Local version on NSPEC2 (output)
-!           KSPEC2MX - Maximum KSPEC2 across PEs (output)
-!           KPOSSP   - Global spectral fields partitioning (output)
-!           KMYMS    - This PEs spectral zonal wavenumbers (output)
-!           KPTRMS   - Pointer to the first wave number of a given a-set (output)
-!           KALLMS   - Wave numbers for all wave-set concatenated together
-!                      to give all wave numbers in wave-set order (output)
-
-!        Implicit arguments : NONE
-!        --------------------
-
-!     Method.
-!     -------
-!        See documentation
-
-!     Externals.  SUWAVEDI
-!     ----------  
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! begin_doc_block
+! ## `INI_SPEC_DIST`
+!
+! ### Signature
+!
+! ```f90
+! SUBROUTINE INI_SPEC_DIST(KSMAX, KTMAX, KPRTRW, KMYSETW, KASM0, KSPOLEGL, KPROCM, KUMPP, KSPEC, &
+!   &                      KSPEC2, KSPEC2MX, KPOSSP, KMYMS, KPTRMS, KALLMS)
+! ```
+!
+! ### Purpose
+!
+! This subroutine initializes the arrays controlling spectral wave distribution.
+!
+! ### `INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX`  
+!   Spectral truncation required.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KTMAX`  
+!   Overtruncation for KSMAX.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KPRTRW`  
+!   Number of processors in A-direction.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KMYSETW`  
+!   A-set for present processor.
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KASM0`  
+!   Offsets for spectral waves.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KSPOLEGL`  
+!   Local version of NSPOLEG.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KPROCM`  
+!   Where a certain spectral wave belongs.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KUMPP`  
+!   Number of spectral waves on this task.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KSPEC`  
+!   Local version of NSPEC.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KSPEC2`
+!   Local version of NSPEC2.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KSPEC2MX`  
+!   Maximum KSPEC2 across tasks.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KPOSSP`  
+!   Global spectral fields partitioning.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KMYMS`  
+!   This task's spectral zonal wavenumbers.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KPTRMS`  
+!   Pointer to the first wave number of a given A-set.
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KALLMS`  
+!   Wave numbers for all wave-set concatenated together to give all wave numbers in wave-set order.
+! end_doc_block
 
 USE EC_PARKIND, ONLY: JPIM
 IMPLICIT NONE
