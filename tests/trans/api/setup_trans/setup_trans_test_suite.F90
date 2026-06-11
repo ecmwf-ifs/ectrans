@@ -309,7 +309,7 @@ INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY() RESULT(
   ! Build file name for Legendre polynomials, unique to this test
   IPROC_TEST_NAME = MERGE(1, 0, LUSE_MPI)
   CPREC = MERGE("dp", "sp", JPRB == JPRD)
-  WRITE(CLLEGPOLFNAME, "(A,A,I1,A,I0)") &
+  WRITE(CLLEGPOLFNAME, "(A,A,A,I1,A,I0)") &
     & "legpols_" // CPREC // "_mpi", IPROC_TEST_NAME, "xomp", OML_MAX_THREADS()
 
   ! First write the polynomial to disk
