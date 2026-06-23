@@ -62,7 +62,17 @@ USE SHAREDMEM_MOD, ONLY : SHAREDMEM_ASSOCIATE
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), PARAMETER :: JPIBUFL = 4
-INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 5
+
+! 8 * 4 = 32 bytes for header
+! Layout:
+! 1. Polynomial type: 8 bytes / 2 ints ("LEGPOLBF" or "LEGPOL  ")
+! 2. Spectral truncation: 4 bytes / 1 int
+! 3. Number of northern latitudes: 4 bytes / 1 int
+! 4. Size of real numbers in bytes: 4 bytes / 1 int
+! 5. Version of ecTrans used to generate polynomials: 4 bytes / 1 int (packed version integer)
+! 6. Empty in case of future use: 4 bytes / 1 int
+! 7. Empty in case of future use: 4 bytes / 1 int
+INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 8
 
 INTEGER(KIND=JPIM) :: IRBYTES,IIBYTES,JMLOC,IPRTRV,IMLOC,IM,ILA,ILS
 INTEGER(KIND=JPIM) :: IDGLU,ISIZE,IBYTES,IRET,IFILE,JSETV,IDUM,JGL,II,IDGLU2

@@ -20,6 +20,7 @@ USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE TPM_CTL, ONLY : C
 USE BUTTERFLY_ALG_MOD, ONLY : CLONE, PACK_BUTTERFLY_STRUCT
 USE BYTES_IO_MOD, ONLY : JPBYTES_IO_SUCCESS, BYTES_IO_CLOSE, BYTES_IO_OPEN, BYTES_IO_WRITE
+USE ECTRANS_VERSION_MOD, ONLY: ECTRANS_VERSION_INT
 
 !**** *WRITE_LEGPOL * - write out Leg.Pol. and assocciated arrays to file
 
@@ -60,7 +61,17 @@ USE BYTES_IO_MOD, ONLY : JPBYTES_IO_SUCCESS, BYTES_IO_CLOSE, BYTES_IO_OPEN, BYTE
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM), PARAMETER :: JPIBUFL = 4
-INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 5
+
+! 8 * 4 = 32 bytes for header
+! Layout:
+! 1. Polynomial type: 8 bytes / 2 ints ("LEGPOLBF" or "LEGPOL  ")
+! 2. Spectral truncation: 4 bytes / 1 int
+! 3. Number of northern latitudes: 4 bytes / 1 int
+! 4. Size of real numbers in bytes: 4 bytes / 1 int
+! 5. Version of ecTrans used to generate polynomials: 4 bytes / 1 int (packed version integer)
+! 6. Empty in case of future use: 4 bytes / 1 int
+! 7. Empty in case of future use: 4 bytes / 1 int
+INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 8
 
 INTEGER(KIND=JPIM) :: IRBYTES,IIBYTES,JMLOC,IPRTRV,IMLOC,IM,ILA,ILS,IFILE,JSETV
 INTEGER(KIND=JPIM) :: IDGLU,ISIZE,IBYTES,IRET,IBUF(JPIBUFL),IHEADER(JPHEADER),IDUM,JGL,II
@@ -86,6 +97,9 @@ ENDIF
 IHEADER(3) = R%NSMAX
 IHEADER(4) = R%NDGNH
 IHEADER(5) = IRBYTES
+IHEADER(6) = ECTRANS_VERSION_INT()
+IHEADER(7) = 0 ! unused for now
+IHEADER(8) = 0 ! unused for now
 CALL BYTES_IO_WRITE(IFILE,IHEADER,JPHEADER*IIBYTES,IRET)
 IF ( IRET < JPBYTES_IO_SUCCESS ) CALL ABORT_TRANS('WRITE_LEGPOL: BYTES_IO_WRITE FAILED')
 ALLOCATE(IBUFA(2*R%NDGNH))
