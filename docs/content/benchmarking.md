@@ -38,7 +38,7 @@ see the full set by running one of the benchmark programs with the `--help` opti
 NAME    ectrans-benchmark-cpu-sp
 
 DESCRIPTION
-        This program tests ecTrans by transforming fields back and forth between spectral
+        This program tests ecTrans by transforming fields back and forth between spectral 
         space and grid-point space (single-precision version)
 
 USAGE
@@ -51,6 +51,7 @@ OPTIONS
     -g, --grid GRID     Run with this grid. Possible values: O<N>, F<N>
                         If not specified, O<N> is used with N=truncation+1 (cubic relation)
     -n, --niter NITER   Run for this many inverse/direct transform iterations (default = 10)
+    --niter-warmup      Number of warm up iterations, for which timing statistics should be ignored (default = 3)
     -f, --nfld NFLD     Number of scalar fields (default = 1)
     -l, --nlev NLEV     Number of vertical levels (default = 1)
     --vordiv            Also transform vorticity-divergence to wind
@@ -58,15 +59,25 @@ OPTIONS
     --uvders            Compute uv East-West derivatives (default off). Only when also --vordiv is given
     --flt               Run with fast Legendre transforms (default off)
     --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)
+    --npromatr NPROMATR Perform transforms in blocks of size NPROMATR rather than all at once
     --norms             Calculate and print spectral norms of transformed fields
                         The computation of spectral norms will skew overall timings
     --meminfo           Show diagnostic information from FIAT's ec_meminfo subroutine on memory usage, thread-binding etc.
     --nprtrv            Size of V set in spectral decomposition
     --nprtrw            Size of W set in spectral decomposition
     -c, --check VALUE   The multiplier of the machine epsilon used as a tolerance for correctness checking
+    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory)  to allocate fields for GPU version
+    --field-api         Use the field api interface of ecTrans
+    --callmode          The call mode for INV_TRANS and DIR_TRANS (1 or 2)
+                        Call mode 1 uses arrays PSPVOR, PSPDIV, PSPSCALAR and PGP
+                        Call mode 2 uses arrays PSPVOR, PSPDIV, PSPSC3A, PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2
+                        See https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)
+    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)
 
 DEBUGGING
-    --dump-values       Output gridpoint fields in unformatted binary file
+    --dump-values             Output gridpoint fields in unformatted binary file
+    --dump-checksums FILENAME Output CRC64 checksums of fields in text file named FILENAME
+
 ```
 
 Some of these options (e.g. `-nprtrv`) require a detailed understanding of how fields are

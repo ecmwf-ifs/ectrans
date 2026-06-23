@@ -6,8 +6,6 @@ Different build-time features of ecTrans are enabled or disabled through CMake's
 functionality. Here we list all of the features which can be enabled by passing
 `-DENABLE_<feature name>=ON` (and disabled by specifying `OFF`).
 
-- `MPI`: Enable Message Passing Interface functionality, required for distributed-memory
-  parallelism.
 - `OMP`: Enable OpenMP parallelism. Default `ON`. (Note: currently this controls both OpenMP multithreading for the
   CPU version of ecTrans but also OpenMP offloading for the GPU version. In future we may split
   these into two separate features.)
@@ -34,3 +32,11 @@ functionality. Here we list all of the features which can be enabled by passing
 - `ETRANS`: Build limited-area version of ecTrans ("etrans"). Default `OFF`.
 - `ECTRANS4PY`: Build ectrans4py Python interface to ecTrans. Requires `ETRANS` and
   `DOUBLE_PRECISION` to be enabled. Default `OFF`.
+- `FIELD_API`: Build experimental FIELD API - ecTrans interface library
+
+Deprecated features:
+- `MPI`: Enable MPI parallelism. ecTrans is supposed to carry out all message passing through
+  FIAT's MPI wrapper, MPI, rather than by calling MPI directly. This feature was therefore
+  redundant and was removed in version 1.8.0. To use ecTrans without MPI, instead configure FIAT
+  with `ENABLE_MPI=OFF`. Note that, for now, the GPU version of ecTrans still requires an MPI
+  library, but a search for an MPI library is triggered by the `GPU_AWARE_MPI` feature.
