@@ -188,6 +188,10 @@ ALLOCATE(ZMAXGPN(IF_FS))
 ! Compute number of fields belonging to each V set (IVSETS) and local-to-global indexing array
 ! (IVSETG)
 ALLOCATE(IVSETS(NPRTRV))
+IVSETS(:)=0
+DO J=1,KFIELDS
+  IVSETS(IVSET(J))=IVSETS(IVSET(J))+1
+ENDDO
 ALLOCATE(IVSETG(NPRTRV,MAXVAL(IVSETS(:))))
 IVSETG(:,:)=0
 IVSETS(:)=0
