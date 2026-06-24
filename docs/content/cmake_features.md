@@ -35,6 +35,7 @@ functionality. Here we list all of the features which can be enabled by passing
 - `FIELD_API`: Build experimental FIELD API - ecTrans interface library
 
 Deprecated features:
+
 - `MPI`: Enable MPI parallelism. ecTrans is supposed to carry out all message passing through
   FIAT's MPI wrapper, MPI, rather than by calling MPI directly. This feature was therefore
   redundant and was removed in version 1.8.0. To use ecTrans without MPI, instead configure FIAT
