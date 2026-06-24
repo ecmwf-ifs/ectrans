@@ -18,11 +18,11 @@ functionality. Here we list all of the features which can be enabled by passing
   enabled. Default `ON`.
 - `GPU`: Enable GPU build of ecTrans. Requires `ACC` or `OMP` to be enabled. Default `OFF`.
 - `CUTLASS`: Use Nvidia's CUTLASS library to accelerate the Legendre transform BLAS operations.
-  Requires `GPU` and `CUDA` to be enabled. Default `OFF`.
+  Requires `GPU` to be enabled and CUDA to be found. Default `OFF`.
 - `CUTLASS_3XTF32`: Use 3XTF32 kernel to accelerate the Legendre transform GEMM. Requires
-  `SINGLE_PRECISION` and `CUTLASS` to be enabled. Default `ON`.
+  `SINGLE_PRECISION` to be enabled and CUTLASS to be found. Default `ON`.
 - `GPU_AWARE_MPI`: Use direct GPU-GPU communication for the transpose routines. Requires `GPU` to be
-  enabled. Default `ON`.
+  enabled and MPI to be found. Default `ON`.
 - `GPU_GRAPHS_GEMM`: Enable graph optimisation of Legendre transform GEMM kernels. Requires `GPU` to
   be enabled. Default `ON`.
 - `GPU_GRAPHS_FFT`: Enable graph optimisation of FFT kernels. Requires `GPU` to be enabled. Default
@@ -32,7 +32,7 @@ functionality. Here we list all of the features which can be enabled by passing
 - `ETRANS`: Build limited-area version of ecTrans ("etrans"). Default `OFF`.
 - `ECTRANS4PY`: Build ectrans4py Python interface to ecTrans. Requires `ETRANS` and
   `DOUBLE_PRECISION` to be enabled. Default `OFF`.
-- `FIELD_API`: Build experimental FIELD API - ecTrans interface library
+- `FIELD_API`: Build experimental FIELD API - ecTrans interface library. Default `OFF`.
 
 Deprecated features:
 
