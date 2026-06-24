@@ -95,7 +95,7 @@ ENDIF
 
 ! Prepare header
 IHEADER(1:5) = TRANSFER('ECTRANS_LEGPOL_START', IHEADER(1:5))
-IHEADER(6) = z'12345678' ! Byte-order-marker
+IHEADER(6) = INT(z'12345678', JPIM) ! Byte-order-marker
 IHEADER(7) = JP_LEGPOLY_VERSION ! Version of the polynomial file
 IHEADER(8) = ECTRANS_VERSION_INT()
 IHEADER(9:10) = TRANSFER('LEGPOL  ',IHEADER(9:10))
