@@ -20,6 +20,7 @@ USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
 USE TPM_CTL,         ONLY: C
 USE BYTES_IO_MOD,    ONLY: JPBYTES_IO_SUCCESS, BYTES_IO_CLOSE, BYTES_IO_OPEN, BYTES_IO_WRITE
 USE ECTRANS_VERSION_MOD, ONLY: ECTRANS_VERSION_INT
+USE TPM_GEN,         ONLY: JP_LEGPOLY_VERSION
 
 !**** *WRITE_LEGPOL * - write out Leg.Pol. and assocciated arrays to file
 
@@ -61,16 +62,20 @@ IMPLICIT NONE
 
 INTEGER(KIND=JPIM), PARAMETER :: JPIBUFL = 4
 
-! 8 * 4 = 32 bytes for header
+! Size of header in 4-byte integers
 ! Layout:
-! 1. Polynomial type: 8 bytes / 2 ints ("LEGPOLBF" or "LEGPOL  ")
-! 2. Spectral truncation: 4 bytes / 1 int
-! 3. Number of northern latitudes: 4 bytes / 1 int
-! 4. Size of real numbers in bytes: 4 bytes / 1 int
-! 5. Version of ecTrans used to generate polynomials: 4 bytes / 1 int (packed version integer)
-! 6. Empty in case of future use: 4 bytes / 1 int
-! 7. Empty in case of future use: 4 bytes / 1 int
-INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 8
+! 1. 20 bytes: the string "ECTRANS_LEGPOL_START" indicating the start of the header
+! 2. 4 bytes: byte-order-marker indicating endianness of this platform
+! 3. 4 bytes: version of the polynomial file
+! 4. 4 bytes: version of ecTrans as packed integer
+! 5. 8 bytes: polynomial type (one of the strings "LEGPOLBF" or "LEGPOL  ")
+! 6. 4 bytes: spectral truncation
+! 7. 4 bytes: number of northern latitudes
+! 8. 4 bytes: size of real numbers in bytes
+! 9. 32 bytes: padding reserved in case of future use
+! 10. 20 bytes: the string "ECTRANS_LEGPOL_FINAL"
+! Total: 104 bytes
+INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 8 * 104 / STORAGE_SIZE(1_JPIM)
 
 INTEGER(KIND=JPIM) :: IRBYTES,IIBYTES,JMLOC,IPRTRV,IMLOC,IM,ILA,ILS,IFILE,JSETV
 INTEGER(KIND=JPIM) :: IDGLU,ISIZE,IBYTES,IRET,IBUF(JPIBUFL),IHEADER(JPHEADER),IDUM,JGL,II
@@ -88,13 +93,18 @@ IF(C%CIO_TYPE == 'file') THEN
   IF ( IRET < JPBYTES_IO_SUCCESS ) CALL ABORT_TRANS('WRITE_LEGPOL: BYTES_IO_OPEN FAILED')
 ENDIF
 
-IHEADER(1:2) = TRANSFER('LEGPOL  ',IBUF(1:2))
-IHEADER(3) = R%NSMAX
-IHEADER(4) = R%NDGNH
-IHEADER(5) = IRBYTES
-IHEADER(6) = ECTRANS_VERSION_INT()
-IHEADER(7) = 0 ! unused for now
-IHEADER(8) = 0 ! unused for now
+! Prepare header
+IHEADER(1:5) = TRANSFER('ECTRANS_LEGPOL_START', IHEADER(1:5))
+IHEADER(6) = z'12345678' ! Byte-order-marker
+IHEADER(7) = JP_LEGPOLY_VERSION ! Version of the polynomial file
+IHEADER(8) = ECTRANS_VERSION_INT()
+IHEADER(9:10) = TRANSFER('LEGPOL  ',IHEADER(9:10))
+IHEADER(11) = R%NSMAX
+IHEADER(12) = R%NDGNH
+IHEADER(13) = IRBYTES
+IHEADER(14:21) = 0 ! Unused for now
+IHEADER(22:26) = TRANSFER('ECTRANS_LEGPOL_FINAL', IHEADER(22:26))
+
 CALL BYTES_IO_WRITE(IFILE,IHEADER,JPHEADER*IIBYTES,IRET)
 IF ( IRET < JPBYTES_IO_SUCCESS ) CALL ABORT_TRANS('WRITE_LEGPOL: BYTES_IO_WRITE FAILED')
 ALLOCATE(IBUFA(2*R%NDGNH))
