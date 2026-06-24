@@ -11,7 +11,6 @@
 
 SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL,LPGP_ON_GPU)
 
-
 !**** *GPNORM_TRANS* - calculate grid-point norms
 
 !     Purpose.
@@ -171,6 +170,7 @@ ASSOCIATE(F_RW=>F%RW, D_NSTAGTF=>D%NSTAGTF, D_NPTRLS=>D%NPTRLS, G_NLOEN=>G%NLOEN
 IF_GP=KFIELDS
 IF_SCALARS_G=KFIELDS
 
+! Compute V-set distribution and number of fields belonging to me
 IF_FS=0
 DO J=1,KFIELDS
   IVSET(J)=MOD(J-1,NPRTRV)+1
@@ -178,13 +178,14 @@ DO J=1,KFIELDS
     IF_FS=IF_FS+1
   ENDIF
 ENDDO
+
 ALLOCATE(ZAVE(IF_FS,R%NDGL))
 ALLOCATE(ZMINGL(IF_FS,R%NDGL))
 ALLOCATE(ZMAXGL(IF_FS,R%NDGL))
 ALLOCATE(ZMINGPN(IF_FS))
 ALLOCATE(ZMAXGPN(IF_FS))
 
-! Compute number of fields belonging to each V set (IVSETS) and local to global indexing array
+! Compute number of fields belonging to each V set (IVSETS) and local-to-global indexing array
 ! (IVSETG)
 ALLOCATE(IVSETS(NPRTRV))
 ALLOCATE(IVSETG(NPRTRV,MAXVAL(IVSETS(:))))
@@ -339,6 +340,7 @@ DO JF=1,IF_FS
   ENDDO
 ENDDO
 
+! If local mins / maxs are provided by user, just load them into the work arrays
 IF (LDAVE_ONLY) THEN
 #ifdef OMPGPU
   !$OMP TARGET DATA MAP(TO:PMIN,PMAX)
@@ -365,6 +367,7 @@ IF (LDAVE_ONLY) THEN
 #ifdef ACCGPU
   !$ACC END DATA
 #endif
+! Else take my locally computed values and fill the corresponding sections of ZMING / ZMAXG
 ELSE ! LDAVE_ONLY
 #ifdef OMPGPU
   !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO
@@ -388,11 +391,13 @@ CALL GSTATS(815,0)
 
 IF (MYSETV==1) THEN
   DO JSETV=2,NPRTRV
+    ! Determine size of data to receive from this V set
     IF (LDAVE_ONLY) THEN
       ILEN=IEND*IVSETS(JSETV)+2*KFIELDS
     ELSE
       ILEN=(IEND+2)*IVSETS(JSETV)
     ENDIF
+
     IF (ILEN > 0) THEN
       ALLOCATE(ZRCV(ILEN))
       CALL SET2PE(IPROC,0,0,MYSETW,JSETV)
@@ -450,7 +455,7 @@ IF (MYSETV==1) THEN
           ZMING(IVSETG(JSETV,JF))=REAL(ZRCV((JF-1)*(IEND+2)+IEND+1),JPRB)
           ZMAXG(IVSETG(JSETV,JF))=REAL(ZRCV((JF-1)*(IEND+2)+IEND+2),JPRB)
         ENDDO
-      ELSE
+      ELSE ! .NOT. LDAVE_ONLY
 #ifdef OMPGPU
         !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO PRIVATE(IGL)
 #endif
@@ -481,16 +486,16 @@ IF (MYSETV==1) THEN
       !$ACC END DATA
 #endif
       DEALLOCATE(ZRCV)
-    ENDIF
-  ENDDO
-
+    ENDIF ! ILEN > 0
+  ENDDO ! JSETV=2,NPRTRV
 ELSE ! MYSETV==1
-
+  ! Determine size of data to send to first V set
   IF (LDAVE_ONLY) THEN
     ILEN=IEND*IVSETS(MYSETV)+2*KFIELDS
   ELSE
     ILEN=(IEND+2)*IVSETS(MYSETV)
   ENDIF
+
   IF (ILEN > 0) THEN
     CALL SET2PE(IPROC,0,0,MYSETW,1)
     ALLOCATE(ZSND(ILEN))
@@ -515,7 +520,7 @@ ELSE ! MYSETV==1
         ZSND((JF-1)*(IEND+2)+IEND+1)=ZMING(IVSETG(MYSETV,JF))
         ZSND((JF-1)*(IEND+2)+IEND+2)=ZMAXG(IVSETG(MYSETV,JF))
       ENDDO
-    ELSE
+    ELSE ! .NOT. LDAVE_ONLY
 #ifdef OMPGPU
       !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO PRIVATE(IGL)
 #endif
@@ -585,11 +590,14 @@ IF (MYSETV == 1) THEN
     DO JSETW=2,NPRTRW
       IBEG=1
       IEND=D%NULTPP(JSETW)
+
+      ! Determine size of data to receive from this W set
       IF (LDAVE_ONLY) THEN
         ILEN=IEND*KFIELDS+2*KFIELDS
       ELSE
         ILEN=(IEND+2)*KFIELDS
       ENDIF
+
       IF (ILEN > 0) THEN
         ALLOCATE(ZRCV(ILEN))
         CALL SET2PE(IPROC,0,0,JSETW,1)
@@ -683,11 +691,13 @@ IF (MYSETV == 1) THEN
     ENDDO
   ELSE ! MYSETW == 1
 
+    ! Determine size of data to send to first W set
     IF (LDAVE_ONLY) THEN
       ILEN=IEND*KFIELDS+2*KFIELDS
     ELSE
       ILEN=(IEND+2)*KFIELDS
     ENDIF
+
     IF (ILEN > 0) THEN
       CALL SET2PE(IPROC,0,0,1,1)
       ALLOCATE(ZSND(ILEN))
@@ -778,6 +788,7 @@ ENDIF
 
 CALL GSTATS(815,1)
 
+! Finally, load final values into output arrays, copying back to host at the end
 IF (MYSETW == 1 .AND. MYSETV == 1) THEN
 #ifdef OMPGPU
   !$OMP TARGET DATA MAP(TOFROM:PAVE,PMIN,PMAX)
