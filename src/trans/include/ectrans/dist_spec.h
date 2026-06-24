@@ -12,41 +12,65 @@ INTERFACE
 SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
  & LDIM1_IS_FLD,KSMAX,KSORT)
 
-!**** *DIST_SPEC* - Distribute global spectral array among processors
-
-!     Purpose.
-!     --------
-!        Interface routine for distributing spectral array
-
-!**   Interface.
-!     ----------
-!     CALL DIST__SPEC(...)
-
-!     Explicit arguments : 
-!     -------------------- 
-!     PSPECG(:,:) - Global spectral array
-!     KFDISTG     - Global number of fields to be distributed
-!     KFROM(:)    - Processor resposible for distributing each field
-!     KVSET(:)    - "B-Set" for each field
-!     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
-!     PSPEC(:,:)  - Local spectral array
+! begin_doc_block
+! ## `DIST_SPEC`
 !
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  DIST_SPEC_CONTROL - control routine
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE DIST_SPEC(PSPECG, KFDISTG, KFROM, KVSET, KRESOL, PSPEC, LDIM1_IS_FLD, KSMAX, KSORT)
+! ```
+!
+! ### Purpose
+!
+! This subroutine distributes a global spectral array among MPI tasks according to the specified
+! distribution parameters.
+!
+! ### `INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(IN) :: KFDISTG`  
+!   The global number of fields to be distributed.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFROM(:)`  
+!   Array which, for each field to be distributed, which MPI task is responsible for distributing
+!   the field.  
+!   Dimensions: (KFDISTG).
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPECG(:,:)`  
+!   Global spectral array to be distributed.  
+!   Dimensions: (number of fields, number of spectral coefficients) (flipped if `LDIM1_IS_FLD` is  
+!  `.FALSE.`).  
+!   Note that this is optional, because some tasks may only receive fields (and so they wouldn't  
+!   have any fields to offer through `PSPECG`).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSET(:)`  
+!   Array which, for each field to be distributed, which "V-set" the field belongs to.  
+!   Dimensions: (KFDISTG).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.  
+!   *Default*: `1` (i.e. first resolution handle)
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDIM1_IS_FLD`  
+!   If `.TRUE.`, the first dimension of `PSPECG` and `PSPEC` corresponds to fields and the second  
+!   dimension corresponds to spectral coefficients. If `.FALSE.`, the first dimension  
+!   corresponds to spectral coefficients and the second dimension corresponds to fields.  
+!   *Default*: `.TRUE.`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSMAX`  
+!   Maximum total wavenumber of the spectral transform. If not provided, it is inferred from the  
+!   resolution handle `KRESOL`.  
+!   *Default*: inferred from `KRESOL`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSORT(:)`  
+!   Array which, for each field to be distributed, specifies the sorting order of the spectral  
+!   coefficients.  
+!   Dimensions: (KFDISTG).  
+!   *Default*: no sorting
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPEC(:,:)`  
+!   Local spectral array on each MPI task after distribution.  
+!   Dimensions: (number of fields on this MPI task, number of spectral coefficients on this MPI  
+!   task).
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
