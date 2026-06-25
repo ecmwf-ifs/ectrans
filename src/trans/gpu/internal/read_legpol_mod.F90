@@ -73,9 +73,10 @@ INTEGER(KIND=JPIM), PARAMETER :: JPIBUFL = 4
 ! 6. 4 bytes: spectral truncation
 ! 7. 4 bytes: number of northern latitudes
 ! 8. 4 bytes: size of real numbers in bytes
-! 9. 32 bytes: padding reserved in case of future use
-! 10. 20 bytes: the string "ECTRANS_LEGPOL_FINAL"
-! Total: 104 bytes
+! 9. 8 bytes: total size of data section in bytes
+! 10. 32 bytes: padding reserved in case of future use
+! 11. 20 bytes: the string "ECTRANS_LEGPOL_FINAL" indicating the end of the header
+! Total: 112 bytes
 INTEGER(KIND=JPIM), PARAMETER :: JPHEADER = 8 * 104 / STORAGE_SIZE(1_JPIM)
 
 INTEGER(KIND=JPIM) :: IRBYTES,IIBYTES,JMLOC,IPRTRV,IMLOC,IM,ILA,ILS
@@ -135,7 +136,7 @@ IRBYTES = IHEADER(13)
 IF (IRBYTES /= INT(STORAGE_SIZE(1.0_JPRB) / 8, JPIM)) THEN
   CALL ABORT_TRANS('READ_LEGPOL: precision mismatch between file and build')
 ENDIF
-CL_HEADER = TRANSFER(IHEADER(22:26), CL_HEADER)
+CL_HEADER = TRANSFER(IHEADER(24:28), CL_HEADER)
 IF (CL_HEADER /= 'ECTRANS_LEGPOL_FINAL') THEN
   WRITE(NERR,*) 'READ_LEGPOL:  MALFORMED FINAL HEADER MARKER ', CL_HEADER
   CALL ABORT_TRANS('READ_LEGPOL:  MALFORMED FINAL HEADER MARKER')
