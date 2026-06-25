@@ -178,7 +178,7 @@ DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
     ILA = (R%NSMAX-IM+2)/2
     ILS = (R%NSMAX-IM+3)/2
     IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-! Anti-symmetric
+    ! Anti-symmetric
     IF( S%LUSEFLT .AND. ILA > S%ITHRESHOLD) THEN
       IF(C%CIO_TYPE == 'file') THEN
         CALL BYTES_IO_READ(IFILE,IBUF,JPIBUFL*IIBYTES,IRET)
@@ -217,7 +217,7 @@ DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
         CALL SHAREDMEM_ASSOCIATE(C%STORAGE,IDGLU,ILA,S%FA(IMLOC)%RPNMA,ADVANCE=.TRUE.)
       ENDIF
     ENDIF
-! Symmetric
+    ! Symmetric
     IF( S%LUSEFLT .AND. ILS > S%ITHRESHOLD) THEN
       IF(C%CIO_TYPE == 'file') THEN
         CALL BYTES_IO_READ(IFILE,IBUF,JPIBUFL*IIBYTES,IRET)

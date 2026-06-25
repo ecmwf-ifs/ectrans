@@ -126,7 +126,7 @@ DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
     ILA = (R%NSMAX-IM+2)/2
     ILS = (R%NSMAX-IM+3)/2
     IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-! Anti-symmetric
+    ! Anti-symmetric
     ISIZE = IDGLU*ILA
     IBYTES = ISIZE*IRBYTES
     ALLOCATE(ZBUF(ISIZE))
@@ -137,7 +137,7 @@ DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
       CALL ABORT_TRANS('WRITE_LEGPOL:BYTES_IO_WRITE FAILED')
     ENDIF
     DEALLOCATE(ZBUF)
-! Symmetric
+    ! Symmetric
     ISIZE = IDGLU*ILS
     IBYTES = ISIZE*IRBYTES
     ALLOCATE(ZBUF(ISIZE))

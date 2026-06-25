@@ -173,7 +173,7 @@ DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
     ILA = (R%NSMAX-IM+2)/2
     ILS = (R%NSMAX-IM+3)/2
     IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
-! Anti-symmetric
+    ! Anti-symmetric
     IF(C%CIO_TYPE == 'file') THEN
       ISIZE = IDGLU*ILA
       ALLOCATE(ZBUF(ISIZE))
@@ -189,7 +189,7 @@ DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
     ELSE
       CALL SHAREDMEM_ASSOCIATE(C%STORAGE,IDGLU,ILA,S%FA(IMLOC)%RPNMA,ADVANCE=.TRUE.)
     ENDIF
-! Symmetric
+    ! Symmetric
     IF(C%CIO_TYPE == 'file') THEN
       ISIZE = IDGLU*ILS
       IBYTES = ISIZE*IRBYTES
