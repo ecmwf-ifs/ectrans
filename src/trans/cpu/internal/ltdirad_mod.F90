@@ -164,7 +164,7 @@ IIFC = IFC
 IF(KM == 0)THEN
   IIFC = IFC/2
 ENDIF
-CALL LEDIRAD(KM,KMLOC,IFC,IIFC,IDGLU,KLED2,ZAIA,ZSIA,ZOA1)
+CALL LEDIRAD(KM,KMLOC,IFC,IIFC,IDGLU,ZAIA,ZSIA,ZOA1)
 
 !     ------------------------------------------------------------------
 
