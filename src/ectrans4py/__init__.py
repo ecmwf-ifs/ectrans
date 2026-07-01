@@ -5,17 +5,19 @@ ectrans4py:
 
 A Python interface to spectral transforms from ecTrans, using cTypesForFortran for the Fortran/Python binding.
 
-Two interfaces are provided:
+Two interfaces are provided, sharing one geometry inquiry (``trans_inq4py``) and
+one set of Legendre assets (``get_legendre_assets``):
 
 * Serial (single task): the LAM/Gaussian wrappers ``sp2gp_*``/``gp2sp_*``,
-  ``trans_inq4py``, ``etrans_inq4py``, ``get_legendre_assets``.
+  ``etrans_inq4py``, ``get_legendre_assets``, and ``trans_inq4py`` with
+  ``KRESOL<=0`` (it self-initialises from the grid parameters).
 * Distributed-memory (MPI): initialise with ``mpl_init4py`` (attaches to an
   existing communicator, e.g. mpi4py), set up the processor grid/resolution with
   ``setup_trans0_4py``/``setup_trans_4py`` (``LDSPLIT=.TRUE.``), query the local
-  geometry with ``trans_inq_dist4py``, transform local arrays with the
-  ``*_dist4py`` routines, move data with ``dist_spec``/``gath_spec``/
-  ``dist_grid``/``gath_grid``, and compute global norms with ``specnorm4py``/
-  ``gpnorm_trans4py``.
+  geometry with ``trans_inq4py`` passing the returned ``KRESOL``, transform local
+  arrays with the ``*_dist4py`` routines, move data with ``dist_spec``/
+  ``gath_spec``/``dist_grid``/``gath_grid``, and compute global norms with
+  ``specnorm4py``/``gpnorm_trans4py``.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -128,7 +130,8 @@ def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
     Returns:\n
     1) KNMENG: cut-off zonal wavenumber
     2) PGW: Gaussian weights
-    3) PRPNM: associated Legendre polynomials
+    3) PMU: sines of the Gaussian latitudes
+    4) PRPNM: associated Legendre polynomials
     """
     return ([KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL],
             [(np.int64, None, IN),
@@ -138,6 +141,7 @@ def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
              (np.int64, (KSLOEN,), IN),
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), OUT),
+             (_REAL, (KSLOEN,), OUT),
              (_REAL, (KSLOEN,), OUT),
              (_REAL, (KSLOEN//2,KSPOLEGL), OUT)],
             None)
@@ -186,31 +190,52 @@ def etrans_inq4py(KSIZEI, KSIZEJ,
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def trans_inq4py(KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
+def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
     """
-    Simplified wrapper to TRANS_INQ.
+    Wrapper to TRANS_INQ: extract the geometry of a resolution.
+
+    Serves both the serial and the distributed setup through KRESOL:
+    * KRESOL <= 0: self-initialise serially (single task) from the grid parameters
+      (KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL); local sizes equal global.
+    * KRESOL >  0: inquire the resolution already set up by setup_trans_4py (after the
+      parallel setup_trans0_4py); the local sizes are this task's partition and the
+      grid parameters are unused.
 
     Args:\n
-    1) KSIZEJ: number of latitudes in grid-point space
-    2) KTRUNC: troncature
-    3) KSLOEN: Size of KLOEN
-    4) KLOEN: number of points on each latitude row
-    5) KNUMMAXRESOL: maximum number of troncatures handled
+    1) KRESOL: resolution tag from setup_trans_4py, or <=0 to self-initialise
+    2) KSIZEJ: number of Gaussian latitudes (sizes KNMENG, PMU, PGW)
+    3) KTRUNC: troncature                         (self-init only)
+    4) KSLOEN: Size of KLOEN                       (self-init only)
+    5) KLOEN: number of points on each latitude row (self-init only)
+    6) KNUMMAXRESOL: maximum number of troncatures handled (self-init only)
 
     Returns:\n
-    1) KGPTOT: number of gridpoints
-    2) KSPEC: number of spectral coefficients
-    3) KNMENG: cut-off zonal wavenumber
+    1) KGPTOT: local number of gridpoints
+    2) KSPEC: local number of spectral coefficients
+    3) KSPEC2: local number of (doubled) spectral coefficients
+    4) KGPTOTG: global number of gridpoints
+    5) KSPEC2G: global number of (doubled) spectral coefficients
+    6) KSMAX: spectral truncation T
+    7) KNMENG: cut-off zonal wavenumber (per latitude)
+    8) PMU: sines of the Gaussian latitudes (global, length KSIZEJ)
+    9) PGW: Gaussian weights (global, length KSIZEJ)
     """
-    return ([KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL],
+    return ([KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL],
             [(np.int64, None, IN),
+             (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), IN),
              (np.int64, None, IN),
              (np.int64, None, OUT),
              (np.int64, None, OUT),
-             (np.int64, (KSLOEN,), OUT)],
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, (KSIZEJ,), OUT),
+             (_REAL, (KSIZEJ,), OUT),
+             (_REAL, (KSIZEJ,), OUT)],
             None)
 
 
@@ -508,30 +533,6 @@ def setup_trans_4py(KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT):
              (bool, None, IN),
              (bool, None, IN),
              (np.int64, None, OUT)],
-            None)
-
-
-@treatReturnCode
-@ctypesFF()
-@addReturnCode
-def trans_inq_dist4py(KRESOL, KDGL):
-    """Extract geometry for a resolution.
-
-    Returns: (kgptot, kspec, kspec2, kgptotg, kspec2g, ksmax, PMU, PGW)
-    where PMU=sin(Gaussian latitudes) and PGW=Gaussian weights (length KDGL).
-    Local sizes (kgptot/kspec/kspec2) are this task's partition.
-    """
-    return ([KRESOL, KDGL],
-            [(np.int64, None, IN),
-             (np.int64, None, IN),
-             (np.int64, None, OUT),
-             (np.int64, None, OUT),
-             (np.int64, None, OUT),
-             (np.int64, None, OUT),
-             (np.int64, None, OUT),
-             (np.int64, None, OUT),
-             (_REAL, (KDGL,), OUT),
-             (_REAL, (KDGL,), OUT)],
             None)
 
 
