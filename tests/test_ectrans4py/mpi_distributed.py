@@ -25,6 +25,9 @@ size = comm.Get_size()
 ectrans4py.init_env(unlimited_stack=False)
 ectrans4py.mpl_init4py()
 
+# field-data dtype matches the loaded build precision (float32 for sp, float64 for dp)
+REAL = getattr(ectrans4py, "_REAL", np.float64)
+
 # --- small analytic full Gaussian grid: NDGL=32 latitudes, 64 longitudes, T21 ---
 NDGL = 32
 KSMAX = 21
@@ -59,7 +62,7 @@ check(comm.allreduce(kgptot, op=MPI.SUM) == kgptotg, "local kgptot do not sum to
 # --- (0,0) coefficient -> constant grid field --------------------------------
 nfld = 1
 kfrom = np.ones(nfld, dtype=np.int64)
-specg = np.zeros((nfld, kspec2g), dtype=np.float64)
+specg = np.zeros((nfld, kspec2g), dtype=REAL)
 if rank == 0:
     specg[0, 0] = 1.0                       # (m=0, n=0) real part -> constant field
 sloc = ectrans4py.dist_spec4py(kspec2g, kspec2, nfld, kfrom, specg)
