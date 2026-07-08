@@ -1,4 +1,5 @@
 module ectrans_checksum_mod
+  use ec_checksum_mod, only : fletcher16_hex
   use iso_c_binding, only : c_ptr, c_null_ptr
 
 implicit none
@@ -200,14 +201,13 @@ subroutine write_iteration_separator(this,iteration)
 end subroutine write_iteration_separator
 
 subroutine write_checksums_pgp(this, zgp)
-  use parkind1, only : jprb, jpib, jpim
-  use ectrans_log_mod, only : nout
+  use parkind1, only : jprb, jpim
   implicit none
   class(ectrans_checksum_file_writer), intent(inout) :: this
   real(kind=jprb), intent(in) :: zgp(:,:,:)
-  integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jfld
   real(kind=jprb), pointer :: gfld(:,:)
+  character(len=4) :: checksum_hex
 
   integer(kind=jpim) :: nproma   ! size of nproma
   integer(kind=jpim) :: ngptotg
@@ -224,13 +224,12 @@ subroutine write_checksums_pgp(this, zgp)
     call get_buffer(gfld, [ngptotg, 1])
   endif
 
-  icrc = 0
   do jfld = 1, size(zgp, 2)
     call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
       &            pgp=zgp(:,jfld:jfld,:))
     if (myproc == 1) then
-      call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-      write(this%file_unit, '(a," (",i0,") = ",z16.16)') "zgp", jfld, icrc
+      checksum_hex = fletcher16_hex(gfld(:,:))
+      write(this%file_unit, '(a," | ",a," (",i0,")")') checksum_hex, "zgp", jfld
     endif
   enddo
 
@@ -239,17 +238,16 @@ end subroutine write_checksums_pgp
 !===================================================================================================
 
 subroutine write_checksums_pgp_uv_3a_2(this, zgpuv, zgp3a, zgp2)
-  use parkind1, only : jprb, jpib, jpim
-  use ectrans_log_mod, only : nout
+  use parkind1, only : jprb, jpim
   implicit none
   class(ectrans_checksum_file_writer), intent(inout) :: this
   real(kind=jprb), intent(in) :: zgpuv(:,:,:,:)
   real(kind=jprb), intent(in) :: zgp3a(:,:,:,:)
   real(kind=jprb), intent(in) :: zgp2(:,:,:)
 
-  integer(kind=jpib) :: icrc
   integer(kind=jpim) :: jlev, jfld
   real(kind=jprb), pointer :: gfld(:,:)
+  character(len=4) :: checksum_hex
 
   integer(kind=jpim) :: myproc
   integer(kind=jpim) :: nproma   ! size of nproma
@@ -267,37 +265,34 @@ subroutine write_checksums_pgp_uv_3a_2(this, zgpuv, zgp3a, zgp2)
     call get_buffer(gfld, [ngptotg, 1])
   endif
 
-  icrc = 0
   do jfld = 1, size(zgpuv, 3)
     do jlev = 1, size(zgpuv, 2)
       call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
         &            pgp=zgpuv(:,jlev:jlev,jfld,:))
       if (myproc == 1) then
-        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write(this%file_unit, '(a," (",i0,", ",i0,") = ",z16.16)') "zgpuv", jlev, jfld, icrc
+        checksum_hex = fletcher16_hex(gfld(:,:))
+        write(this%file_unit, '(a," | ",a," (",i0,", ",i0,")")') checksum_hex, "zgpuv", jlev, jfld
       endif
     enddo
   enddo
 
-  icrc = 0
   do jfld = 1, size(zgp3a, 3)
     do jlev = 1, size(zgp3a, 2)
       call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
         &            pgp=zgp3a(:,jlev:jlev,jfld,:))
       if (myproc == 1) then
-        call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-        write(this%file_unit, '(a," (",i0,", ",i0,") = ",z16.16)') "zgp3a", jlev, jfld, icrc
+        checksum_hex = fletcher16_hex(gfld(:,:))
+        write(this%file_unit, '(a," | ",a," (",i0,", ",i0,")")') checksum_hex, "zgp3a", jlev, jfld
       endif
     enddo
   enddo
 
-  icrc = 0
   do jfld = 1, size(zgp2, 2)
     call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
       &            pgp=zgp2(:,jfld:jfld,:))
     if (myproc == 1) then
-      call crc64(gfld(:,:), int(size(gfld(:,:)) * kind(gfld), 8), icrc)
-      write(this%file_unit, '(a," (",i0,") = ",z16.16)') "zgp2", jfld, icrc
+      checksum_hex = fletcher16_hex(gfld(:,:))
+      write(this%file_unit, '(a," | ",a," (",i0,")")') checksum_hex, "zgp2", jfld
     endif
   enddo
 
@@ -306,8 +301,7 @@ end subroutine write_checksums_pgp_uv_3a_2
 !===================================================================================================
 
 subroutine write_checksums_psp(this, ivset, ivsetsc, zspvor, zspdiv, zspscalar)
-  use parkind1, only : jprb, jpib, jpim
-  use ectrans_log_mod, only : nout
+  use parkind1, only : jprb, jpim
   implicit none
   class(ectrans_checksum_file_writer), intent(inout) :: this
 
@@ -317,8 +311,8 @@ subroutine write_checksums_psp(this, ivset, ivsetsc, zspvor, zspdiv, zspscalar)
   real(kind=jprb), intent(in) :: zspdiv(:,:)
   real(kind=jprb), intent(in) :: zspscalar(:,:)
   integer(kind=jpim) :: numfld, i
-  integer(kind=jpib) :: icrc
   real(kind=jprb), pointer :: gspfld(:,:)
+  character(len=4) :: checksum_hex
 
   integer(kind=jpim) :: myproc
   integer(kind=jpim) :: nspec2g
@@ -338,9 +332,8 @@ subroutine write_checksums_psp(this, ivset, ivsetsc, zspvor, zspdiv, zspscalar)
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspvor)
-    icrc = 0
-    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
-    write(this%file_unit, '(a," = ",z16.16)') "zspvor", icrc
+    checksum_hex = fletcher16_hex(gspfld(1:numfld,:))
+    write(this%file_unit, '(a," | ",a)') checksum_hex, "zspvor"
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
@@ -348,9 +341,8 @@ subroutine write_checksums_psp(this, ivset, ivsetsc, zspvor, zspdiv, zspscalar)
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspdiv)
-    icrc = 0
-    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
-    write(this%file_unit, '(a," = ",z16.16)') "zspdiv", icrc
+    checksum_hex = fletcher16_hex(gspfld(1:numfld,:))
+    write(this%file_unit, '(a," | ",a)') checksum_hex, "zspdiv"
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
   endif
@@ -359,9 +351,8 @@ subroutine write_checksums_psp(this, ivset, ivsetsc, zspvor, zspdiv, zspscalar)
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivsetsc, pspec=zspscalar)
-    icrc = 0
-    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
-    write(this%file_unit, '(a," = ",z16.16)') "zspscalar", icrc
+    checksum_hex = fletcher16_hex(gspfld(1:numfld,:))
+    write(this%file_unit, '(a," | ",a)') checksum_hex, "zspscalar"
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivsetsc, pspec=zspscalar)
   endif
@@ -374,8 +365,7 @@ subroutine write_checksums_psp_3a_2(this,  &
                         & ivset, ivsetsc2,              &
                         & zspvor, zspdiv,               &
                         & zspsc3a, zspsc2)
-  use parkind1, only : jprb, jpib, jpim
-  use ectrans_log_mod, only : nout
+  use parkind1, only : jprb, jpim
   implicit none
   class(ectrans_checksum_file_writer), intent(inout) :: this
   integer(kind=jpim), intent(in) :: ivset(:)
@@ -386,11 +376,11 @@ subroutine write_checksums_psp_3a_2(this,  &
   real(kind=jprb), intent(in) :: zspsc2(:,:)
 
   integer(kind=jpim) :: numfld, jfld, i
-  integer(kind=jpib) :: icrc
   integer(kind=jpim) :: myproc
   integer(kind=jpim) :: nspec2g
 
   real(kind=jprb), pointer :: gspfld(:,:)
+  character(len=4) :: checksum_hex
 #include "gath_spec.h"
 #include "trans_inq.h"
 
@@ -406,9 +396,8 @@ subroutine write_checksums_psp_3a_2(this,  &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspvor)
-    icrc = 0
-    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
-    write(this%file_unit, '(a," = ",z16.16)') "zspvor", icrc
+    checksum_hex = fletcher16_hex(gspfld(1:numfld,:))
+    write(this%file_unit, '(a," | ",a)') checksum_hex, "zspvor"
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
@@ -416,9 +405,8 @@ subroutine write_checksums_psp_3a_2(this,  &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspdiv)
-    icrc = 0
-    call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
-    write(this%file_unit, '(a," = ",z16.16)') "zspdiv", icrc
+    checksum_hex = fletcher16_hex(gspfld(1:numfld,:))
+    write(this%file_unit, '(a," | ",a)') checksum_hex, "zspdiv"
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
   endif
@@ -427,9 +415,8 @@ subroutine write_checksums_psp_3a_2(this,  &
     if (myproc == 1) then
       call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
         &            kvset=ivset, pspec=zspsc3a(:,:,jfld))
-      icrc = 0
-      call crc64(gspfld(1:numfld,:), int(size(gspfld(1:numfld,:)) * kind(gspfld), 8), icrc)
-      write(this%file_unit, '(a,"(",i0,") = ",z16.16)') "zspsc3a", jfld, icrc
+      checksum_hex = fletcher16_hex(gspfld(1:numfld,:))
+      write(this%file_unit, '(a," | ",a,"(",i0,")")') checksum_hex, "zspsc3a", jfld
     else
       call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspsc3a(:,:,jfld))
     endif
@@ -437,9 +424,8 @@ subroutine write_checksums_psp_3a_2(this,  &
 
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
-    icrc = 0
-    call crc64(gspfld(1,:), int(size(gspfld(1,:)) * kind(gspfld), 8), icrc)
-    write(this%file_unit, '(a," = ",z16.16)') "zspsc2", icrc
+    checksum_hex = fletcher16_hex(gspfld(1,:))
+    write(this%file_unit, '(a," | ",a)') checksum_hex, "zspsc2"
   else
     call gath_spec(kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
   endif

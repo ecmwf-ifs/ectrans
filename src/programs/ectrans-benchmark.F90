@@ -971,7 +971,7 @@ subroutine print_help(unit)
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
-  write(nout, "(a)") "    --dump-checksums FILENAME Output CRC64 checksums of fields in text file named FILENAME"
+  write(nout, "(a)") "    --dump-checksums FILENAME Output checksums of fields in text file named FILENAME"
   write(nout, "(a)") "                              Checksums are written only during warmup iterations (see --niter-warmup)"
   write(nout, "(a)") ""
 
@@ -1000,7 +1000,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   integer, intent(inout) :: npromatr        ! block size for field-blocking
   integer, intent(inout) :: verbosity       ! Level of verbosity
   logical, intent(inout) :: ldump_values    ! Dump values of grid point fields for debugging
-  logical, intent(inout) :: ldump_checksums ! Dump CRC checksums
+  logical, intent(inout) :: ldump_checksums ! Dump checksums
   logical, intent(inout) :: lprint_norms    ! Calculate and print spectral norms of fields
   logical, intent(inout) :: lmeminfo        ! Show information from FIAT ec_meminfo routine at the
                                             ! end
