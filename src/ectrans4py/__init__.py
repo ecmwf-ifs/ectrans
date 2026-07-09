@@ -619,14 +619,15 @@ def mpl_end4py():
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def setup_trans0_4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL):
+def setup_trans0_4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF):
     """Parallel resolution-independent setup (processor grid). Returns (k_regions_ns, k_regions_ew)."""
-    return ([KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL],
+    return ([KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (bool, None, IN),
              (np.int64, None, IN),
+             (bool, None, IN),
              (np.int64, None, OUT),
              (np.int64, None, OUT)],
             None)
