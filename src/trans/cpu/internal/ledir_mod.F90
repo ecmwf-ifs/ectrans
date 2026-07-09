@@ -237,7 +237,7 @@ IFLD = 0
 DO JK = 1, KFC, KSKIP
   IFLD = IFLD + 1
   DO J = 1, KDGLU
-    POUT(J, IFLD) = PIN(JK, J) * REAL(PW(KSL + J - 1), JPRB)
+    POUT(J, IFLD) = REAL(PIN(JK, J) * PW(KSL + J - 1), JPRB)
   ENDDO
 ENDDO
 
