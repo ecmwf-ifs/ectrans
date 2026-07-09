@@ -125,8 +125,9 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
         IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 1, ZHOOK_HANDLE)
       ELSE
         BLOCK
-          REAL(KIND=JPRD) :: ZB_D(KDGLU,KIFC)
-          REAL(KIND=JPRD) :: ZCA_D(ILA,KIFC)
+          REAL(KIND=JPRD), ALLOCATABLE :: ZB_D(:,:), ZCA_D(:,:)
+
+          ALLOCATE(ZB_D(KDGLU,KIFC), ZCA_D(ILA,KIFC))
 
           CALL PACK_FOR_GEMM_JPRD(ISKIP, KFC, KIFC, KDGLU, KSL, PAIA, PW, ZB_D)
 
@@ -136,6 +137,8 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 1, ZHOOK_HANDLE)
 
           ZCA(:,:) = ZCA_D(:,:)
+
+          DEALLOCATE(ZB_D, ZCA_D)
         END BLOCK
       END IF
     ENDIF
@@ -167,8 +170,9 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
         IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 1, ZHOOK_HANDLE)
       ELSE
         BLOCK
-          REAL(KIND=JPRD) :: ZB_D(KDGLU,KIFC)
-          REAL(KIND=JPRD) :: ZCS_D(ILS,KIFC)
+          REAL(KIND=JPRD), ALLOCATABLE :: ZB_D(:,:), ZCS_D(:,:)
+
+          ALLOCATE(ZB_D(KDGLU,KIFC), ZCS_D(ILS,KIFC))
 
           CALL PACK_FOR_GEMM_JPRD(ISKIP, KFC, KIFC, KDGLU, KSL, PSIA, PW, ZB_D)
 
@@ -178,6 +182,8 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
           IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 1, ZHOOK_HANDLE)
 
           ZCS(:,:) = ZCS_D(:,:)
+
+          DEALLOCATE(ZB_D, ZCS_D)
         END BLOCK
       END IF
     ENDIF
