@@ -802,20 +802,20 @@ do jstep = 1, iters
       endif
       if ( lvordiv ) then
         if ( nfld > 0 ) then
-          write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                & " | zspdiv max err="e10.3," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+          write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+                & " | zspdiv max err=",e10.3," | zspsc3a max err=",e10.3," | zspsc2 max err=",e10.3)') &
                 &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(4), zmaxerr(1)
         else
-          write(nout,'("time step ",i6," took", f8.4," | zspvor max err="e10.3,&
-                & " | zspdiv max err="e10.3," | zspsc2 max err="e10.3)') &
+          write(nout,'("time step ",i6," took", f8.4," | zspvor max err=",e10.3,&
+                & " | zspdiv max err=",e10.3," | zspsc2 max err=",e10.3)') &
                 &  jstep, ztstep(jstep), zmaxerr(3), zmaxerr(2), zmaxerr(1)
         endif
       else
         if ( nfld > 0 ) then
-          write(nout,'("time step ",i6," took", f8.4," | zspsc3a max err="e10.3," | zspsc2 max err="e10.3)') &
+          write(nout,'("time step ",i6," took", f8.4," | zspsc3a max err=",e10.3," | zspsc2 max err=",e10.3)') &
                 &  jstep, ztstep(jstep), zmaxerr(4), zmaxerr(1)
         else
-          write(nout,'("time step ",i6," took", f8.4," | zspsc2 max err="e10.3)') &
+          write(nout,'("time step ",i6," took", f8.4," | zspsc2 max err=",e10.3)') &
                 &  jstep, ztstep(jstep), zmaxerr(1)
         endif
       endif
