@@ -1,6 +1,6 @@
 This directory contains the internal `ectrans_util` support library used by test code and benchmark-style programs in this repository.
 
-It is not installed and is not intended to be installed as part of the public ectrans package. The build definition in [CMakeLists.txt](/Users/willem/work/ectrans/src/util/CMakeLists.txt) marks both utility library variants with `NOINSTALL`, and the target is treated as repository-internal tooling rather than a downstream API.
+It is not installed and is not intended to be installed as part of the public ectrans package. The build definition in [CMakeLists.txt](./CMakeLists.txt) marks both utility library variants with `NOINSTALL`, and the target is treated as repository-internal tooling rather than a downstream API.
 
 The main consumers are the programs under `src/programs` and the test code under `tests`, where these modules provide common setup, argument parsing, logging, timing, MPI detection, memory handling, and a few convenience helpers.
 

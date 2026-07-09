@@ -27,7 +27,7 @@ end subroutine
 subroutine ectrans_log_end()
   use ectrans_mpi_mod, only : ectrans_mpi_world_rank
   implicit none
-  if (ectrans_mpi_world_rank() /= 1) then
+  if (ectrans_mpi_world_rank() > 0) then
     close(unit=nout)
   endif
 end subroutine

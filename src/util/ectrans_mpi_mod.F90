@@ -24,7 +24,7 @@ subroutine ectrans_mpi_detect()
   use mpl_mpif, only : mpi_comm_world
   implicit none
   integer(kind=int32) :: ilen
-  integer(kind=int32), parameter :: nvars = 4
+  integer(kind=int32), parameter :: nvars = 5
   character(len=32), dimension(nvars) :: cmpirun_detect
   character(len=4) :: clenv
   integer(kind=int32) :: ivar
@@ -38,7 +38,8 @@ subroutine ectrans_mpi_detect()
   cmpirun_detect(1) = 'OMPI_COMM_WORLD_SIZE'  ! openmpi
   cmpirun_detect(2) = 'ALPS_APP_PE'           ! cray pe
   cmpirun_detect(3) = 'PMI_SIZE'              ! intel
-  cmpirun_detect(4) = 'SLURM_STEP_NUM_TASKS'  ! slurm
+  cmpirun_detect(4) = 'SLURM_NTASKS'          ! slurm
+  cmpirun_detect(5) = 'SLURM_STEP_NUM_TASKS'  ! slurm (step)
 
   ectrans_mpi_enabled_ = .false.
   do ivar = 1, nvars

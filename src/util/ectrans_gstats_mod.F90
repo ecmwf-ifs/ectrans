@@ -49,9 +49,7 @@ function ectrans_gstats_new_region(category,description) result(gstats_id)
     return
   endif
   gstats_id = new_gstats_id()
-  if (present(category)) then
-    category_local = category(1:max(3,len_trim(category)))
-  else
+    category_local = category(1:min(3,len(category)))
     category_local = ''
   end if
   if (present(description)) then

@@ -49,7 +49,7 @@ subroutine ectrans_program_init(verbosity, pinning, gstats_config)
   end if
 
   if (ectrans_mpi_enabled()) then
-    call mpl_init(ldinfo=(verbosity>=1))
+    call mpl_init(ldinfo=(iverbosity>=1))
     if (ectrans_mpi_world_size() /= mpl_numproc) then
       call abor1fl('ectrans_program_mod.F90',__LINE__,'Mismatch in detected MPI world size between ectrans_mpi_mod and MPL')
     endif
@@ -73,7 +73,7 @@ subroutine ectrans_program_init(verbosity, pinning, gstats_config)
       integer(kind=jpim) :: jproc
       allocate(nprcids(nproc))
       nprcids = [(jproc, jproc=1,nproc)]
-      call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(verbosity>=1))
+      call mpl_buffer_method(kmp_type=mp_type, kmbx_size=mbx_size, kprocids=nprcids, ldinfo=(iverbosity>=1))
     end block
   endif
 
@@ -84,7 +84,7 @@ subroutine ectrans_program_init(verbosity, pinning, gstats_config)
   !===================================================================================================
   ! Setup allocation strategy
   !===================================================================================================
-  if (iverbosity >= 1 .and. ectrans_mpi_world_rank() == 1) then
+  if (iverbosity >= 1 .and. ectrans_mpi_world_rank() == 0) then
     call allocator%set_logging(.true.)
     call allocator%set_logging_output_unit(nout)
   endif

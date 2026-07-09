@@ -155,7 +155,6 @@ subroutine open_file(this, filename, append)
     if (verbosity >= 1) then
       write(nout,'(A,A,A,I0)') "ectrans_checksum_file_writer opened for append : ", this%file_name, ' unit=', this%file_unit
     endif
-    write(nout,'(A,A,A,I0)') "ectrans_checksum_file_writer re-opened for append : ", this%file_name, ' unit=', this%file_unit
   else
     open(newunit=this%file_unit, file=this%file_name, action="write")
     if (verbosity >= 1) then
