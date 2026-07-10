@@ -118,7 +118,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   DO JK=1,KFC,ISKIP
     IFLD=IFLD+1
     DO J=1,KDGLU
-      ZB(J,IFLD)=PAIA(JK,ISL+J-1)*PW(ISL+J-1)
+      ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
     ENDDO
   ENDDO
   
@@ -192,7 +192,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
   DO JK=1,KFC,ISKIP
     IFLD=IFLD+1
     DO J=1,KDGLU
-      ZB(J,IFLD)=PSIA(JK,ISL+J-1)*REAL(PW(ISL+J-1),JPRB)
+      ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
     ENDDO
   ENDDO
   
@@ -220,7 +220,7 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
              DO JK=1,KFC,ISKIP
                 IFLD=IFLD+1
                 DO J=1,KDGLU
-                   ZB_D(J,IFLD)=PSIA(JK,ISL+J-1)*REAL(PW(ISL+J-1),JPRB)
+                   ZB_D(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
                 ENDDO
              ENDDO
              DO I3=1,I1
