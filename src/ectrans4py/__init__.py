@@ -482,7 +482,93 @@ def sp2gp_fft1d4py(KSIZES, KTRUNC, PSPEC, KSIZEG):
              (_REAL, (KSIZEG,), OUT)],
             None)
 
-__version__ = ectrans_version().strip()
+# ---------------------------------------------------------------------------
+# Adjoint distributed spectral transforms on LOCAL arrays
+# adj(INV_TRANS) = S^T != S^T W = DIR_TRANS (differ by Gaussian weights W).
+# Inner-product convention: <INV_TRANS x, y>_Euclid = <x, INV_TRANSAD y>_mfold
+#   where _Euclid is the unweighted grid sum and _mfold applies factor 2 for m>0.
+# ---------------------------------------------------------------------------
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP):
+    """Adjoint of inv_trans_scalar_dist4py (INV_TRANSAD): grid-point seed -> spectral result.
+    PGP (KFLD, KGPTOT) IN; returns PSPEC (KFLD, KSPEC2).
+    Note: adj(INV_TRANS) = S^T != DIR_TRANS = S^T W (differ by Gaussian weights W)."""
+    return (
+        [KSPEC2, KGPTOT, KFLD, PGP],
+        [
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (_REAL, (KFLD, KGPTOT), IN),
+            (_REAL, (KFLD, KSPEC2), OUT),
+        ],
+        None,
+    )
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPEC):
+    """Adjoint of dir_trans_scalar_dist4py (DIR_TRANSAD): spectral seed -> grid result.
+    PSPEC (KFLD, KSPEC2) IN; returns PGP (KFLD, KGPTOT)."""
+    return (
+        [KSPEC2, KGPTOT, KFLD, PSPEC],
+        [
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (_REAL, (KFLD, KSPEC2), IN),
+            (_REAL, (KFLD, KGPTOT), OUT),
+        ],
+        None,
+    )
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGPU, PGPV):
+    """Adjoint of inv_trans_uv_dist4py (INV_TRANSAD): grid u,v seeds -> spectral vor,div.
+    PGPU, PGPV (KFLD, KGPTOT) IN; returns PSPVOR, PSPDIV (KFLD, KSPEC2)."""
+    return (
+        [KSPEC2, KGPTOT, KFLD, PGPU, PGPV],
+        [
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (_REAL, (KFLD, KGPTOT), IN),
+            (_REAL, (KFLD, KGPTOT), IN),
+            (_REAL, (KFLD, KSPEC2), OUT),
+            (_REAL, (KFLD, KSPEC2), OUT),
+        ],
+        None,
+    )
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV):
+    """Adjoint of dir_trans_uv_dist4py (DIR_TRANSAD): spectral vor,div seeds -> grid u,v.
+    PSPVOR, PSPDIV (KFLD, KSPEC2) IN; returns PGPU, PGPV (KFLD, KGPTOT)."""
+    return (
+        [KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV],
+        [
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (_REAL, (KFLD, KSPEC2), IN),
+            (_REAL, (KFLD, KSPEC2), IN),
+            (_REAL, (KFLD, KGPTOT), OUT),
+            (_REAL, (KFLD, KGPTOT), OUT),
+        ],
+        None,
+    )
 
 
 # === distributed-memory (MPI) interface ===
