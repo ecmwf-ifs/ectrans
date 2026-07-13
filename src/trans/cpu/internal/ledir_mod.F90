@@ -9,6 +9,10 @@
 !
 
 MODULE LEDIR_MOD
+
+PRIVATE
+PUBLIC LEDIR
+
 CONTAINS
 SUBROUTINE LEDIR(KM,KMLOC,KFC,KIFC,KSL,KDGLU,PAIA,PSIA,POA1,PW)
 
@@ -65,7 +69,6 @@ USE ECTRANS_BLAS_MOD, ONLY : GEMM
 
 IMPLICIT NONE
 
-
 !     DUMMY ARGUMENTS
 INTEGER(KIND=JPIM), INTENT(IN)  :: KM
 INTEGER(KIND=JPIM), INTENT(IN)  :: KMLOC
@@ -79,8 +82,7 @@ REAL(KIND=JPRB),    INTENT(IN)  :: PSIA(:,:),   PAIA(:,:)
 REAL(KIND=JPRB),    INTENT(OUT) :: POA1(:,:)
 
 !     LOCAL VARIABLES
-INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, ISL, IFLD, J, JK
-INTEGER(KIND=JPIM) :: ITHRESHOLD
+INTEGER(KIND=JPIM) :: IA, ILA, ILS, IS, ISKIP, IFLD, J, JK
 REAL(KIND=JPRB)    :: ZB(KDGLU,KIFC), ZCA((R%NTMAX-KM+2)/2,KIFC), ZCS((R%NTMAX-KM+3)/2,KIFC)
 LOGICAL, PARAMETER :: LLDOUBLE = (JPRB == JPRD)
 CHARACTER(LEN=1) :: CLX
@@ -100,81 +102,97 @@ IA  = 1+MOD(R%NTMAX-KM+2,2)
 IS  = 1+MOD(R%NTMAX-KM+1,2)
 ILA = (R%NTMAX-KM+2)/2
 ILS = (R%NTMAX-KM+3)/2
-ISL = KSL
 
-IF(KM == 0)THEN
-  ISKIP = 2
-ELSE
-  ISKIP = 1
-ENDIF
+ISKIP = MERGE(2, 1, KM == 0)
 
 IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
-
-  ITHRESHOLD=S%ITHRESHOLD
- 
-!*       1. ANTISYMMETRIC PART.
-
-  IFLD=0
-  DO JK=1,KFC,ISKIP
-    IFLD=IFLD+1
-    DO J=1,KDGLU
-      ZB(J,IFLD)=PAIA(JK,J)*PW(ISL+J-1)
-    ENDDO
-  ENDDO
-  
-  IF(ILA <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
-
-    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',0,ZHOOK_HANDLE)
+  !*       1. ANTISYMMETRIC PART.
+  IF (ILA <= S%ITHRESHOLD .OR. .NOT. S%LUSEFLT) THEN
     IF (LLDOUBLE) THEN
-       CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMA,KDGLU,&
-            &ZB,KDGLU,0._JPRD,ZCA,ILA)
+      CALL PACK_FOR_GEMM(ISKIP, KFC, KIFC, KDGLU, KSL, PAIA, PW, 'A', ZB)
+
+      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 0, ZHOOK_HANDLE)
+      CALL GEMM('T', 'N', ILA, KIFC, KDGLU, 1.0_JPRD, S%FA(KMLOC)%RPNMA, KDGLU, ZB, KDGLU, &
+        &       0._JPRD, ZCA, ILA)
+      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 1, ZHOOK_HANDLE)
     ELSE
-       IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
-          CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMA,KDGLU,&
-               &ZB,KDGLU,0._JPRM,ZCA,ILA)
-       ELSE
-          BLOCK
-             REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCA_D(:,:), ZRPNMA(:,:)
-             INTEGER(KIND=JPIM) :: I1, I2, I3, I4
+      IF (KM >= 1) THEN
+        CALL PACK_FOR_GEMM(ISKIP, KFC, KIFC, KDGLU, KSL, PAIA, PW, 'A', ZB)
 
-             I1 = size(S%FA(KMLOC)%RPNMA(:,1))
-             I2 = size(S%FA(KMLOC)%RPNMA(1,:))
-             ALLOCATE(ZRPNMA(I1,I2))
-             ALLOCATE(ZB_D(KDGLU,KIFC))
-             ALLOCATE(ZCA_D((R%NTMAX-KM+2)/2,KIFC))
-             IFLD=0
-             DO JK=1,KFC,ISKIP
-                IFLD=IFLD+1
-                DO J=1,KDGLU
-                   ZB_D(J,IFLD)=ZB(J,IFLD)
-                ENDDO
-             ENDDO
-             DO I3=1,I1
-                DO I4=1,I2
-                   ZRPNMA(I3,I4) = S%FA(KMLOC)%RPNMA(I3,I4)
-                END DO
-             END DO
-             CALL GEMM('T','N',ILA,KIFC,KDGLU,1.0_JPRD,ZRPNMA,KDGLU,&
-                  &ZB_D,KDGLU,0._JPRD,ZCA_D,ILA)
-             IFLD=0
-             DO JK=1,KFC,ISKIP
-                IFLD=IFLD+1
-                DO J=1,ILA
-                   ZCA(J,IFLD) = ZCA_D(J,IFLD)
-                ENDDO
-             ENDDO
-             DEALLOCATE(ZRPNMA)
-             DEALLOCATE(ZB_D)
-             DEALLOCATE(ZCA_D)
-          END BLOCK
-       END IF
+        IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 0, ZHOOK_HANDLE)
+        CALL GEMM('T', 'N', ILA, KIFC, KDGLU, 1.0_JPRM, S%FA(KMLOC)%RPNMA, KDGLU, ZB, KDGLU, &
+              &   0._JPRM, ZCA, ILA)
+        IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 1, ZHOOK_HANDLE)
+      ELSE
+        BLOCK
+          REAL(KIND=JPRD), ALLOCATABLE :: ZB_D(:,:), ZCA_D(:,:)
+
+          ALLOCATE(ZB_D(KDGLU,KIFC), ZCA_D(ILA,KIFC))
+
+          CALL PACK_FOR_GEMM_JPRD(ISKIP, KFC, KIFC, KDGLU, KSL, PAIA, PW, 'A', ZB_D)
+
+          IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 0, ZHOOK_HANDLE)
+          CALL GEMM('T', 'N', ILA, KIFC, KDGLU, 1.0_JPRD, S%RPNMA_DGEMM, KDGLU, ZB_D, KDGLU, &
+              &       0._JPRD, ZCA_D, ILA)
+          IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1', 1, ZHOOK_HANDLE)
+
+          ZCA(:,:) = ZCA_D(:,:)
+
+          DEALLOCATE(ZB_D, ZCA_D)
+        END BLOCK
+      END IF
     ENDIF
-    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_1',1,ZHOOK_HANDLE)
-
   ELSE
-     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',0,ZHOOK_HANDLE)
-     CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_A,KIFC,ZB,ZCA,KM)
-     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1',1,ZHOOK_HANDLE)
+
+    CALL PACK_FOR_GEMM(ISKIP, KFC, KIFC, KDGLU, KSL, PAIA, PW, 'A', ZB)
+
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1', 0, ZHOOK_HANDLE)
+    CALL MULT_BUTM('T', S%FA(KMLOC)%YBUT_STRUCT_A, KIFC, ZB, ZCA, KM)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_1', 1, ZHOOK_HANDLE)
+  ENDIF
+
+  !*       1.3      SYMMETRIC PART.
+  IF (ILS <= S%ITHRESHOLD .OR. .NOT. S%LUSEFLT) THEN
+    IF (LLDOUBLE) THEN
+      CALL PACK_FOR_GEMM(ISKIP, KFC, KIFC, KDGLU, KSL, PSIA, PW, 'S', ZB)
+
+      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 0, ZHOOK_HANDLE)
+      CALL GEMM('T', 'N', ILS, KIFC, KDGLU, 1.0_JPRD, S%FA(KMLOC)%RPNMS, KDGLU, ZB, KDGLU, &
+        &       0._JPRD, ZCS, ILS)
+      IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 1, ZHOOK_HANDLE)
+    ELSE
+      IF (KM >= 1) THEN
+        CALL PACK_FOR_GEMM(ISKIP, KFC, KIFC, KDGLU, KSL, PSIA, PW, 'S', ZB)
+
+        IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 0, ZHOOK_HANDLE)
+        CALL GEMM('T', 'N', ILS, KIFC, KDGLU, 1.0_JPRM, S%FA(KMLOC)%RPNMS, KDGLU, ZB, KDGLU, &
+          &       0._JPRM, ZCS, ILS)
+        IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 1, ZHOOK_HANDLE)
+      ELSE
+        BLOCK
+          REAL(KIND=JPRD), ALLOCATABLE :: ZB_D(:,:), ZCS_D(:,:)
+
+          ALLOCATE(ZB_D(KDGLU,KIFC), ZCS_D(ILS,KIFC))
+
+          CALL PACK_FOR_GEMM_JPRD(ISKIP, KFC, KIFC, KDGLU, KSL, PSIA, PW, 'S', ZB_D)
+
+          IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 0, ZHOOK_HANDLE)
+          CALL GEMM('T', 'N', ILS, KIFC, KDGLU, 1.0_JPRD, S%RPNMS_DGEMM, KDGLU, ZB_D, KDGLU, &
+            &       0._JPRD, ZCS_D, ILS)
+          IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2', 1, ZHOOK_HANDLE)
+
+          ZCS(:,:) = ZCS_D(:,:)
+
+          DEALLOCATE(ZB_D, ZCS_D)
+        END BLOCK
+      END IF
+    ENDIF
+  ELSE
+    CALL PACK_FOR_GEMM(ISKIP, KFC, KIFC, KDGLU, KSL, PSIA, PW, 'S', ZB)
+
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2', 0, ZHOOK_HANDLE)
+    CALL MULT_BUTM('T', S%FA(KMLOC)%YBUT_STRUCT_S, KIFC, ZB, ZCS, KM)
+    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2', 1, ZHOOK_HANDLE)
   ENDIF
 
   IFLD=0
@@ -183,77 +201,6 @@ IF (KIFC > 0 .AND. KDGLU > 0 ) THEN
     DO J=1,ILA
       POA1(IA+(J-1)*2,JK) = ZCA(J,IFLD)
     ENDDO
-  ENDDO
-  
-!*       1.3      SYMMETRIC PART.
-
-  
-  IFLD=0
-  DO JK=1,KFC,ISKIP
-    IFLD=IFLD+1
-    DO J=1,KDGLU
-      ZB(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
-    ENDDO
-  ENDDO
-  
-  IF(ILS <= ITHRESHOLD .OR. .NOT.S%LUSEFLT) THEN
-
-    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',0,ZHOOK_HANDLE)
-    IF (LLDOUBLE) THEN
-       CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,S%FA(KMLOC)%RPNMS,KDGLU,&
-            &ZB,KDGLU,0._JPRD,ZCS,ILS)
-    ELSE
-       IF(KM>=1)THEN ! DGEM for the mean to improve mass conservation
-          CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRM,S%FA(KMLOC)%RPNMS,KDGLU,&
-               &ZB,KDGLU,0._JPRM,ZCS,ILS)
-       ELSE
-          BLOCK
-             REAL(KIND=JPRD), allocatable :: ZB_D(:,:), ZCS_D(:,:), ZRPNMS(:,:)
-             INTEGER(KIND=JPIM) :: I1, I2, I3, I4
-
-             I1 = size(S%FA(KMLOC)%RPNMS(:,1))
-             I2 = size(S%FA(KMLOC)%RPNMS(1,:))
-             ALLOCATE(ZRPNMS(I1,I2))
-             ALLOCATE(ZB_D(KDGLU,KIFC))
-             ALLOCATE(ZCS_D((R%NTMAX-KM+3)/2,KIFC))
-             IFLD=0
-             DO JK=1,KFC,ISKIP
-                IFLD=IFLD+1
-                DO J=1,KDGLU
-                   ZB_D(J,IFLD)=PSIA(JK,J)*REAL(PW(ISL+J-1),JPRB)
-                ENDDO
-             ENDDO
-             DO I3=1,I1
-                DO I4=1,I2
-                   ZRPNMS(I3,I4) = S%FA(KMLOC)%RPNMS(I3,I4)
-                END DO
-             END DO
-             CALL GEMM('T','N',ILS,KIFC,KDGLU,1.0_JPRD,ZRPNMS,KDGLU,&
-                  &ZB_D,KDGLU,0._JPRD,ZCS_D,ILS)
-             IFLD=0
-             DO JK=1,KFC,ISKIP
-                IFLD=IFLD+1
-                DO J=1,ILS
-                   ZCS(J,IFLD) = ZCS_D(J,IFLD)
-                ENDDO
-             ENDDO
-             DEALLOCATE(ZRPNMS)
-             DEALLOCATE(ZB_D)
-             DEALLOCATE(ZCS_D)
-          END BLOCK
-       END IF
-    ENDIF
-    IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'GEMM_2',1,ZHOOK_HANDLE)
-    
-  ELSE
-     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',0,ZHOOK_HANDLE)
-     CALL MULT_BUTM('T',S%FA(KMLOC)%YBUT_STRUCT_S,KIFC,ZB,ZCS,KM)
-     IF (LHOOK) CALL DR_HOOK('LEDIR_'//CLX//'BUTM_2',1,ZHOOK_HANDLE)
-  ENDIF
-
-  IFLD=0
-  DO JK=1,KFC,ISKIP
-    IFLD=IFLD+1
     DO J=1,ILS
       POA1(IS+(J-1)*2,JK) = ZCS(J,IFLD)
     ENDDO
@@ -268,4 +215,77 @@ ENDIF
 !     ------------------------------------------------------------------
 
 END SUBROUTINE LEDIR
+
+SUBROUTINE PACK_FOR_GEMM(KSKIP, KFC, KIFC, KDGLU, KSL, PIN, PW, CDSYMM_OR_ANTI, POUT)
+
+USE PARKIND1, ONLY: JPIM, JPRB, JPRD
+
+IMPLICIT NONE
+
+INTEGER(KIND=JPIM), INTENT(IN) :: KSKIP
+INTEGER(KIND=JPIM), INTENT(IN) :: KFC
+INTEGER(KIND=JPIM), INTENT(IN) :: KIFC
+INTEGER(KIND=JPIM), INTENT(IN) :: KDGLU
+INTEGER(KIND=JPIM), INTENT(IN) :: KSL
+REAL(KIND=JPRB), INTENT(IN) :: PIN(:, :)
+REAL(KIND=JPRD), INTENT(IN) :: PW(:)
+CHARACTER(LEN=1), INTENT(IN) :: CDSYMM_OR_ANTI
+REAL(KIND=JPRB), INTENT(OUT) :: POUT(KDGLU, KIFC)
+
+INTEGER(KIND=JPIM) :: IFLD, JK, J
+
+IFLD = 0
+DO JK = 1, KFC, KSKIP
+  IFLD = IFLD + 1
+  DO J = 1, KDGLU
+    ! This IF statement was introduced to match the previous behaviour of LEDIR
+    ! I think the difference in the anti and symm paths was a mistake so at some point this should
+    ! be removed, but that change will not be bit-identical (though it will be scientifically
+    ! neutral)
+    IF (CDSYMM_OR_ANTI == 'A') THEN
+      POUT(J, IFLD) = REAL(REAL(PIN(JK, J), JPRD) * PW(KSL + J - 1), JPRB)
+    ELSE
+      POUT(J, IFLD) = PIN(JK, J) * REAL(PW(KSL + J - 1), JPRB)
+    END IF
+  ENDDO
+ENDDO
+
+END SUBROUTINE PACK_FOR_GEMM
+
+SUBROUTINE PACK_FOR_GEMM_JPRD(KSKIP, KFC, KIFC, KDGLU, KSL, PIN, PW, CDSYMM_OR_ANTI, POUT)
+
+USE PARKIND1, ONLY: JPIM, JPRB, JPRD
+
+IMPLICIT NONE
+
+INTEGER(KIND=JPIM), INTENT(IN) :: KSKIP
+INTEGER(KIND=JPIM), INTENT(IN) :: KFC
+INTEGER(KIND=JPIM), INTENT(IN) :: KIFC
+INTEGER(KIND=JPIM), INTENT(IN) :: KDGLU
+INTEGER(KIND=JPIM), INTENT(IN) :: KSL
+REAL(KIND=JPRB), INTENT(IN) :: PIN(:, :)
+REAL(KIND=JPRD), INTENT(IN) :: PW(:)
+CHARACTER(LEN=1), INTENT(IN) :: CDSYMM_OR_ANTI
+REAL(KIND=JPRD), INTENT(OUT) :: POUT(KDGLU, KIFC)
+
+INTEGER(KIND=JPIM) :: IFLD, JK, J
+
+IFLD = 0
+DO JK = 1, KFC, KSKIP
+  IFLD = IFLD + 1
+  DO J = 1, KDGLU
+    ! This IF statement was introduced to match the previous behaviour of LEDIR
+    ! I think the difference in the anti and symm paths was a mistake so at some point this should
+    ! be removed, but that change will not be bit-identical (though it will be scientifically
+    ! neutral)
+    IF (CDSYMM_OR_ANTI == 'A') THEN
+      POUT(J, IFLD) = REAL(REAL(REAL(PIN(JK, J), JPRD) * PW(KSL + J - 1), JPRB),JPRD)
+    ELSE
+      POUT(J, IFLD) = REAL(PIN(JK, J) * REAL(PW(KSL + J - 1), JPRB), JPRD)
+    END IF
+  ENDDO
+ENDDO
+
+END SUBROUTINE PACK_FOR_GEMM_JPRD
+
 END MODULE LEDIR_MOD

@@ -162,7 +162,7 @@ REAL(KIND=JPRD),ALLOCATABLE :: ZLFPOL(:,:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZLPOL(:)
 
 TYPE(CLONE),ALLOCATABLE :: ZCLONEA(:),ZCLONES(:)
-
+LOGICAL :: LLDOUBLE
 LOGICAL :: LLP1,LLP2
 
 ! For latitudes on the stretched geometry
@@ -181,6 +181,7 @@ ZEPS = 1000._JPRD*EPSILON(ZEPS)
 ZEPS_INT_DEC = 1.0E-7_JPRD
 !ZEPS_INT_DEC = 1.0E-5_JPRD
 
+LLDOUBLE = (JPRB == JPRD)
 IHEMIS=1
 IF (S%LSOUTHPNM) IHEMIS=2
 LLP1 = NPRINTLEV>0
@@ -719,6 +720,11 @@ IF(.NOT.D%LGRIDONLY) THEN
                 S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+              S%RPNMA_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMA(:,:), JPRD)
+            ENDIF
           ENDIF
         ENDDO
         !$OMP END PARALLEL DO
@@ -759,6 +765,11 @@ IF(.NOT.D%LGRIDONLY) THEN
                 S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+              S%RPNMA_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMA(:,:), JPRD)
+            ENDIF
           END IF
         ENDDO
         !$OMP END PARALLEL DO
@@ -998,6 +1009,11 @@ IF(.NOT.D%LGRIDONLY) THEN
                 S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+              S%RPNMS_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMS(:,:), JPRD)
+            ENDIF
           ENDIF
         ENDDO
         !$OMP END PARALLEL DO
@@ -1038,6 +1054,11 @@ IF(.NOT.D%LGRIDONLY) THEN
                 S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+              S%RPNMS_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMS(:,:), JPRD)
+            ENDIF
           END IF
         END DO
         !$OMP END PARALLEL DO
