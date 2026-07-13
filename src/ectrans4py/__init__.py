@@ -513,6 +513,33 @@ def inv_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
+def inv_trans_scalar_ders_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW):
+    """Adjoint of inv_trans_scalar_ders_dist4py (INV_TRANSAD, LDSCDERS=.TRUE.):
+    grid value seed PGP, N-S derivative seed PGPNS, E-W derivative seed PGPEW
+    (each (KFLD, KGPTOT)) IN; returns the accumulated spectral result PSPEC
+    (KFLD, KSPEC2). Exposes the real INV_TRANSAD's own LDSCDERS support (the
+    derivative adjoint is already implemented in ecTrans -- this wrapper adds no
+    new transform maths, only passes the seeds through in the field order
+    inv_trans_scalar_ders_dist4py itself uses: values | N-S | E-W).
+    Note: adj(INV_TRANS) = S^T != DIR_TRANS = S^T W (differ by Gaussian weights W)."""
+    return (
+        [KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW],
+        [
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (np.int64, None, IN),
+            (_REAL, (KFLD, KGPTOT), IN),
+            (_REAL, (KFLD, KGPTOT), IN),
+            (_REAL, (KFLD, KGPTOT), IN),
+            (_REAL, (KFLD, KSPEC2), OUT),
+        ],
+        None,
+    )
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
 def dir_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPEC):
     """Adjoint of dir_trans_scalar_dist4py (DIR_TRANSAD): spectral seed -> grid result.
     PSPEC (KFLD, KSPEC2) IN; returns PGP (KFLD, KGPTOT)."""
