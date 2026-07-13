@@ -148,6 +148,40 @@ ENDDO
 END SUBROUTINE INV_TRANS_SCALAR_DIST4PY_AD
 
 
+SUBROUTINE INV_TRANS_SCALAR_DERS_DIST4PY_AD(KRETURNCODE, KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW, PSPEC)
+! Adjoint of INV_TRANS_SCALAR_DERS_DIST4PY (INV_TRANSAD, LDSCDERS=.TRUE.): grid-point
+! value seed PGP, N-S derivative seed PGPNS, E-W derivative seed PGPEW (all IN) ->
+! spectral PSPEC (OUT), the adjoint accumulating all three contributions in a single
+! call (matches the real INV_TRANSAD's own LDSCDERS support -- the derivative adjoint
+! is "transpose of the i*m / associated-Legendre-recurrence rescale, then the ordinary
+! Legendre-transform adjoint", already implemented internally by INV_TRANSAD; this
+! wrapper only exposes the existing LDSCDERS argument, it adds no new transform maths).
+! INV_TRANSAD *appends* to the spectral output arrays (PRFI1BAD), so ZSP must be
+! zeroed first (same convention as INV_TRANS_SCALAR_DIST4PY_AD).
+USE ISO_FORTRAN_ENV, ONLY: INT64
+USE PARKIND1, ONLY: JPIM, JPRB
+IMPLICIT NONE
+INTEGER(KIND=INT64), INTENT(OUT) :: KRETURNCODE
+INTEGER(KIND=INT64), INTENT(IN)  :: KSPEC2, KGPTOT, KFLD
+REAL(KIND=JPRB), DIMENSION(KGPTOT, KFLD), INTENT(IN)  :: PGP, PGPNS, PGPEW ! INPUT: seeds
+REAL(KIND=JPRB), DIMENSION(KSPEC2, KFLD), INTENT(OUT) :: PSPEC             ! OUTPUT: spectral result
+REAL(KIND=JPRB) :: ZSP(KFLD, KSPEC2)
+REAL(KIND=JPRB) :: ZGP(KGPTOT, 3*KFLD, 1)
+INTEGER(KIND=JPIM) :: JL
+#include "inv_transad.h"
+KRETURNCODE = 0
+ZSP(:,:) = 0.0_JPRB  ! zero before INV_TRANSAD: PRFI1BAD appends to spectral output
+! field order (see inv_trans.h / INV_TRANS_SCALAR_DERS_DIST4PY): values | N-S | E-W
+ZGP(:, 1:KFLD,          1) = PGP  (:, :)
+ZGP(:, KFLD+1:2*KFLD,   1) = PGPNS(:, :)
+ZGP(:, 2*KFLD+1:3*KFLD, 1) = PGPEW(:, :)
+CALL INV_TRANSAD(PSPSCALAR=ZSP, PGP=ZGP, LDSCDERS=.TRUE., KPROMA=INT(KGPTOT,JPIM))
+DO JL = 1, KFLD
+  PSPEC(:, JL) = ZSP(JL, :)
+ENDDO
+END SUBROUTINE INV_TRANS_SCALAR_DERS_DIST4PY_AD
+
+
 SUBROUTINE DIR_TRANS_SCALAR_DIST4PY_AD(KRETURNCODE, KSPEC2, KGPTOT, KFLD, PSPEC, PGP)
 ! Adjoint of DIR_TRANS_SCALAR_DIST4PY (DIR_TRANSAD): spectral seed PSPEC (IN) -> grid PGP (OUT).
 ! Inner-product identity: <DIR_TRANS u, v>_mfold = <u, DIR_TRANSAD v>_Euclid
