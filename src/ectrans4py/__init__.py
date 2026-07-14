@@ -164,8 +164,8 @@ def etrans_inq4py(KSIZEI, KSIZEJ,
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
-             (np.float64, None, IN),
-             (np.float64, None, IN),
+             (_REAL, None, IN),
+             (_REAL, None, IN),
              (np.int64, None, OUT),
              (np.int64, None, OUT)],
             None)
@@ -252,12 +252,12 @@ def sp2gp_lam4py(KSIZEI, KSIZEJ,
              (np.int64, None, IN),
              (bool, None, IN),
              (bool, None, IN),
-             (np.float64, None, IN),
-             (np.float64, None, IN),
-             (np.float64, (KSIZE,), IN),
-             (np.float64, (KSIZEI * KSIZEJ,), OUT),
-             (np.float64, (KSIZEI * KSIZEJ,), OUT),
-             (np.float64, (KSIZEI * KSIZEJ,), OUT)],
+             (_REAL, None, IN),
+             (_REAL, None, IN),
+             (_REAL, (KSIZE,), IN),
+             (_REAL, (KSIZEI * KSIZEJ,), OUT),
+             (_REAL, (KSIZEI * KSIZEJ,), OUT),
+             (_REAL, (KSIZEI * KSIZEJ,), OUT)],
             None)
 
 
@@ -304,11 +304,11 @@ def gp2sp_lam4py(KSIZE,
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
-             (np.float64, None, IN),
-             (np.float64, None, IN),
+             (_REAL, None, IN),
+             (_REAL, None, IN),
              (bool, None, IN),
-             (np.float64, (KSIZEI * KSIZEJ,), IN),
-             (np.float64, (KSIZE,), OUT)],
+             (_REAL, (KSIZEI * KSIZEJ,), IN),
+             (_REAL, (KSIZE,), OUT)],
             None)
 
 
@@ -364,10 +364,10 @@ def sp2gp_gauss4py(KSIZEJ,
              (np.int64, None, IN),
              (bool, None, IN),
              (bool, None, IN),
-             (np.float64, (KSIZE,), IN),
-             (np.float64, (KGPTOT,), OUT),
-             (np.float64, (KGPTOT,), OUT),
-             (np.float64, (KGPTOT,), OUT)],
+             (_REAL, (KSIZE,), IN),
+             (_REAL, (KGPTOT,), OUT),
+             (_REAL, (KGPTOT,), OUT),
+             (_REAL, (KGPTOT,), OUT)],
             None)
 
 
@@ -417,8 +417,8 @@ def gp2sp_gauss4py(KSPEC,
              (np.int64, (KSLOEN,), IN),
              (np.int64, None, IN),
              (bool, None, IN),
-             (np.float64, (KSIZE,), IN),
-             (np.float64, (KSPEC,), OUT)],
+             (_REAL, (KSIZE,), IN),
+             (_REAL, (KSPEC,), OUT)],
             None)
 
 
@@ -440,9 +440,9 @@ def sp2gp_fft1d4py(KSIZES, KTRUNC, PSPEC, KSIZEG):
     return ([KSIZES, KTRUNC, PSPEC, KSIZEG],
             [(np.int64, None, IN),
              (np.int64, None, IN),
-             (np.float64, (KSIZES,), IN),
+             (_REAL, (KSIZES,), IN),
              (np.int64, None, IN),
-             (np.float64, (KSIZEG,), OUT)],
+             (_REAL, (KSIZEG,), OUT)],
             None)
 
 __version__ = ectrans_version().strip()
