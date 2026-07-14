@@ -58,3 +58,13 @@ jobs:
 
           # Delegate the contiguous-block check to Python for robust normalization.
           python3 "$GITHUB_WORKSPACE/.github/tools/check-license-header.py" "${files_to_check[@]}"
+
+      - name: Show expected license header
+        # Only runs if the check above failed, to remind contributors of the header.
+        if: failure()
+        shell: bash
+        run: |
+          echo "The required license header (with {comment} replaced by the"
+          echo "comment character appropriate to each file type) is:"
+          echo
+          cat "$GITHUB_WORKSPACE/.github/tools/license-header.template"
