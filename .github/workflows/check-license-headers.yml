@@ -1,0 +1,60 @@
+name: check-license-headers
+
+# Verify that newly added source files carry the ECMWF Apache-2.0 license header.
+on:
+  pull_request: ~
+
+jobs:
+  check-license-headers:
+    name: check-license-headers
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history so we can diff against the PR base commit
+          fetch-depth: 0
+
+      - name: Check license headers on newly added files
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Only these top-level folders are considered.
+          in_scope_dir() {
+            case "$1" in
+              cmake/*|src/*|tests/*) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          # Only these file types are considered (Fortran, CMake, C/C++, headers, Python).
+          in_scope_type() {
+            case "$1" in
+              *.F90|*.f90|*.F|*.f|*.f77|*.F77|*.inc) return 0 ;;   # Fortran
+              *.cmake|*/CMakeLists.txt|CMakeLists.txt) return 0 ;;  # CMake
+              *.c|*.cpp|*.cc|*.cxx) return 0 ;;                     # C/C++
+              *.h|*.hpp|*.hh|*.hxx) return 0 ;;                     # Headers
+              *.py) return 0 ;;                                     # Python
+              *) return 1 ;;
+            esac
+          }
+
+          # Collect files added in this PR (status = Added only), then filter to scope.
+          files_to_check=()
+          while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            in_scope_dir "$f" || continue
+            in_scope_type "$f" || continue
+            [[ -f "$f" ]] || continue
+            files_to_check+=("$f")
+          done < <(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")
+
+          echo "Checking ${#files_to_check[@]} newly added file(s)."
+
+          # Delegate the contiguous-block check to Python for robust normalization.
+          python3 "$GITHUB_WORKSPACE/.github/tools/check-license-header.py" "${files_to_check[@]}"
