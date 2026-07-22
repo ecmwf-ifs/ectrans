@@ -98,7 +98,7 @@ INTEGER(KIND=JPIM) :: INDIC(KPROCA),ILAST(KPROCA)
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IA, ILAT, ISTART, IMEDIAP,IRESTM, JA,  JLTLOC
 
-LOGICAL :: LLSPLIT,LLFOURIER
+LOGICAL :: LLSPLIT
 
 !      -----------------------------------------------------------------
 
@@ -107,10 +107,8 @@ LOGICAL :: LLSPLIT,LLFOURIER
 !              -----------------------------------------
 
 LLSPLIT = .FALSE.
-LLFOURIER = .TRUE.
 
-CALL SUMPLATB(1,KDGL,KPROCA,G%NLOEN,LLSPLIT,LLFOURIER,&
- &IMEDIAP,IRESTM,INDIC,ILAST)
+CALL SUMPLATB(1, KDGL, KPROCA, G%NLOEN, LLSPLIT, IMEDIAP, IRESTM, INDIC, ILAST)
 
 !      -----------------------------------------------------------------
 

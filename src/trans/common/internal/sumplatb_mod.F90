@@ -10,8 +10,7 @@
 
 MODULE SUMPLATB_MOD
 CONTAINS
-SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
-                    &KMEDIAP,KRESTM,KINDIC,KLAST)
+SUBROUTINE SUMPLATB(KDGSA, KDGL, KPROCA, KLOENG, LDSPLIT, KMEDIAP, KRESTM, KINDIC, KLAST)
 
 !**** *SUMPLATB * - Routine to initialize parallel environment
 
@@ -31,7 +30,6 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 !                          KPROCA     -number of processors in A direction
 !                          KLOENG     -actual number of longitudes per latitude.
 !                          LDSPLIT    -true for latitudes shared between sets
-!                          LDFOURIER  -true for fourier space partitioning
 
 !     Explicit arguments - output:
 !     --------------------
@@ -66,10 +64,9 @@ SUBROUTINE SUMPLATB(KDGSA,KDGL,KPROCA,KLOENG,LDSPLIT,LDFOURIER,&
 !     ------------------------------------------------------------------
 
 
-USE EC_PARKIND  ,ONLY : JPIM, JPIB, JPRD
+USE EC_PARKIND  ,ONLY : JPIM, JPIB
 
 IMPLICIT NONE
-
 
 !     * DUMMY:
 INTEGER(KIND=JPIM),INTENT(IN)  :: KDGSA
@@ -77,7 +74,6 @@ INTEGER(KIND=JPIM),INTENT(IN)  :: KDGL
 INTEGER(KIND=JPIM),INTENT(IN)  :: KPROCA
 INTEGER(KIND=JPIM),INTENT(IN)  :: KLOENG(KDGSA:KDGL)
 LOGICAL,INTENT(IN)  :: LDSPLIT
-LOGICAL,INTENT(IN)  :: LDFOURIER
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KMEDIAP
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KRESTM
 INTEGER(KIND=JPIM),INTENT(OUT)  :: KINDIC(KPROCA)
@@ -92,7 +88,6 @@ INTEGER(KIND=JPIM) :: ICOMP, IGL, JA, JGL, ILAST, IREST, IA
 INTEGER(KIND=JPIM) :: ITOT_TOP, ITOT_BOT, IGL_TOP, IGL_BOT
 INTEGER(KIND=JPIB) :: IMEDIA,ITOT
 
-!REAL(KIND=JPRD) :: ZLG
 LOGICAL   :: LLDONE,LLSIMPLE
 
 !      -----------------------------------------------------------------
@@ -102,25 +97,8 @@ LOGICAL   :: LLDONE,LLSIMPLE
 
 !     * Computation of KMEDIAP and KRESTM.
 
-IF( LDFOURIER )THEN
+ICOST(1:KDGL) = KLOENG(1:KDGL)
 
-! DO JGL=1,KDGL
-!   ZLG=LOG(REAL(KLOENG(JGL),JPRD))
-!   ICOST(JGL)=KLOENG(JGL)*ZLG*SQRT(ZLG)
-! ENDDO
-
-  DO JGL=1,KDGL
-    ICOST(JGL)=KLOENG(JGL)
-  ENDDO
-
-ELSE
-
-  DO JGL=1,KDGL
-    ICOST(JGL)=KLOENG(JGL)
-  ENDDO
-
-ENDIF
-  
 IMEDIA = SUM(ICOST(KDGSA:KDGL))
 KMEDIAP = IMEDIA / KPROCA
 KRESTM = IMEDIA - KMEDIAP * KPROCA
