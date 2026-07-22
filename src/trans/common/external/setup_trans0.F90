@@ -31,6 +31,7 @@ SUBROUTINE SETUP_TRANS0(KOUT,KERR,KPRINTLEV,KMAX_RESOL,KPROMATR,&
 !     KERR - Unit number for error messages [0]
 !     KPRINTLEV - level of output to KOUT, 0->no output,1->normal,2->debug [0]
 !     KMAX_RESOL - maximum number of different resolutions for this run [1]
+!     KPROMATR - field packet size for transforms [0]
 !     KPRGPNS - splitting level in N-S direction in grid-point space [1]
 !     KPRGPEW - splitting level in E-W direction in grid-point space [1]
 !     KPRTRW  - splitting level in wave direction in spectral space [1]
