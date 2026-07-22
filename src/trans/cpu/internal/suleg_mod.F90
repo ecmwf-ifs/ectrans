@@ -762,7 +762,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           ELSE
             DO JI=1,ILA
               DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMA(JGL,JI) = FPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                S%FA(IMLOC)%RPNMA(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
               ENDDO
             ENDDO
 
