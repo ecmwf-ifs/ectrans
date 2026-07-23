@@ -1,0 +1,82 @@
+{
+  "cmake": {
+    "version": "3.31.6"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-O3 -DNDEBUG",
+      "flags": "",
+      "id": "Clang",
+      "path": "/usr/lib/llvm-18/bin/clang",
+      "version": "18.1.3"
+    },
+    "cxx": {
+      "build_type_flags": "-O3 -DNDEBUG",
+      "flags": "",
+      "id": "Clang",
+      "path": "/usr/lib/llvm-18/bin/clang",
+      "version": "18.1.3"
+    },
+    "fortran": {
+      "build_type_flags": "-O3 -DNDEBUG -funroll-all-loops -finline-functions",
+      "flags": "",
+      "id": "GNU",
+      "path": "/usr/bin/x86_64-linux-gnu-gfortran-14",
+      "version": "14.2.0"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/ecbuild/lib/cmake/ecbuild",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "fftw": {
+      "cflags": "-fPIC -march=x86-64-v3 -ffp-contract=off -fno-fast-math",
+      "library_paths": [
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3.so.3.6.10",
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3f.so.3.6.10"
+      ],
+      "root": "/home/runner/work/_temp/deps/fftw",
+      "vendor": "FFTW",
+      "version": null
+    },
+    "fiat": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/fiat/lib/cmake/fiat",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "field_api": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/field_api/lib/cmake/field_api",
+      "vendor": "ECMWF",
+      "version": "v0.3.9"
+    },
+    "lapack": {
+      "library_paths": [
+        "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+        "/usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0"
+      ],
+      "root": "/usr",
+      "vendor": "Netlib",
+      "version": "3.12.0"
+    },
+    "mpi": {
+      "library_paths": [
+        "/home/runner/work/_temp/deps/openmpi/lib/libmpi.so.40.40.7"
+      ],
+      "root": "/home/runner/work/_temp/deps/openmpi",
+      "vendor": "Open MPI",
+      "version": "5.0.7"
+    }
+  },
+  "system": {
+    "cpu_info": "processor\t: 0\nvendor_id\t: GenuineIntel\ncpu family\t: 6\nmodel\t\t: 106\nmodel name\t: Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz\nstepping\t: 6\nmicrocode\t: 0xffffffff\ncpu MHz\t\t: 3491.691\ncache size\t: 49152 KB\nphysical id\t: 0\nsiblings\t: 4\ncore id\t\t: 0\ncpu cores\t: 2\napicid\t\t: 0\ninitial apicid\t: 0\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 27\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq vmx ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch tpr_shadow ept vpid ept_ad fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves vnmi avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq la57 rdpid fsrm arch_capabilities\nvmx flags\t: vnmi invvpid ept_x_only ept_ad ept_1gb ept_5level tsc_offset vtpr ept vpid unrestricted_guest ept_mode_based_exec tsc_scaling\nbugs\t\t: spectre_v1 spectre_v2 spec_store_bypass swapgs mmio_stale_data retbleed bhi spectre_v2_user its its_native_only\nbogomips\t: 5586.87\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 46 bits physical, 57 bits virtual\npower management:",
+    "loaded_modules": [],
+    "processor": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+    "runner_arch": "X64",
+    "runner_os": "Linux"
+  }
+}

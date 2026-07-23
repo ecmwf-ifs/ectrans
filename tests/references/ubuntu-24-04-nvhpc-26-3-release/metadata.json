@@ -1,0 +1,85 @@
+{
+  "cmake": {
+    "version": "3.31.6"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-fast -O3 -DNDEBUG",
+      "flags": "",
+      "id": "NVHPC",
+      "path": "/opt/nvhpc/Linux_x86_64/26.3/compilers/bin/nvc",
+      "version": "26.3.0"
+    },
+    "cxx": {
+      "build_type_flags": "-fast -O3 -DNDEBUG",
+      "flags": "",
+      "id": "NVHPC",
+      "path": "/opt/nvhpc/Linux_x86_64/26.3/compilers/bin/nvc++",
+      "version": "26.3.0"
+    },
+    "fortran": {
+      "build_type_flags": "-fast -O3",
+      "flags": "",
+      "id": "NVHPC",
+      "path": "/opt/nvhpc/Linux_x86_64/26.3/compilers/bin/nvfortran",
+      "version": "26.3.0"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/ecbuild/lib/cmake/ecbuild",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "fftw": {
+      "cflags": "-fPIC -march=x86-64-v3 -Kieee -Mnofma",
+      "library_paths": [
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3.so.3.6.10",
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3f.so.3.6.10"
+      ],
+      "root": "/home/runner/work/_temp/deps/fftw",
+      "vendor": "FFTW",
+      "version": null
+    },
+    "fiat": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/fiat/lib/cmake/fiat",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "field_api": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/field_api/lib/cmake/field_api",
+      "vendor": "ECMWF",
+      "version": "v0.3.9"
+    },
+    "lapack": {
+      "library_paths": [
+        "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+        "/usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0"
+      ],
+      "root": "/usr",
+      "vendor": "Netlib",
+      "version": "3.12.0"
+    },
+    "mpi": {
+      "library_paths": [
+        "/opt/nvhpc/Linux_x86_64/26.3/comm_libs/13.1/hpcx/hpcx-2.25.1/ompi/lib/libmpi.so.40.30.8",
+        "/opt/nvhpc/Linux_x86_64/26.3/comm_libs/13.1/hpcx/hpcx-2.25.1/ompi/lib/libmpi_mpifh.so.40.30.1",
+        "/opt/nvhpc/Linux_x86_64/26.3/comm_libs/13.1/hpcx/hpcx-2.25.1/ompi/lib/libmpi_usempi_ignore_tkr.so.40.30.1",
+        "/opt/nvhpc/Linux_x86_64/26.3/comm_libs/13.1/hpcx/hpcx-2.25.1/ompi/lib/libmpi_usempif08.so.40.30.1"
+      ],
+      "root": "/opt/nvhpc/Linux_x86_64/26.3/comm_libs/13.1/hpcx/hpcx-2.25.1/ompi",
+      "vendor": "Open MPI",
+      "version": "4.1"
+    }
+  },
+  "system": {
+    "cpu_info": "processor\t: 0\nvendor_id\t: AuthenticAMD\ncpu family\t: 25\nmodel\t\t: 1\nmodel name\t: AMD EPYC 7763 64-Core Processor\nstepping\t: 1\nmicrocode\t: 0xffffffff\ncpu MHz\t\t: 3242.744\ncache size\t: 512 KB\nphysical id\t: 0\nsiblings\t: 4\ncore id\t\t: 0\ncpu cores\t: 2\napicid\t\t: 0\ninitial apicid\t: 0\nfpu\t\t: yes\nfpu_exception\t: yes\ncpuid level\t: 13\nwp\t\t: yes\nflags\t\t: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves user_shstk clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload umip vaes vpclmulqdq rdpid fsrm\nbugs\t\t: sysret_ss_attrs null_seg spectre_v1 spectre_v2 spec_store_bypass srso spectre_v2_user tsa\nbogomips\t: 4890.84\nTLB size\t: 2560 4K pages\nclflush size\t: 64\ncache_alignment\t: 64\naddress sizes\t: 48 bits physical, 48 bits virtual\npower management:",
+    "loaded_modules": [],
+    "processor": "AMD EPYC 7763 64-Core Processor",
+    "runner_arch": "X64",
+    "runner_os": "Linux"
+  }
+}
