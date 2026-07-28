@@ -72,11 +72,11 @@
       "version": "5.0.9"
     }
   },
+  "environment": {},
   "system": {
-    "cpu_info": "Hardware:\n\n    Hardware Overview:\n\n      Model Name: Apple Virtual Machine 1\n      Model Identifier: VirtualMac2,1\n      Model Number: VM0001LL/A\n      Chip: Apple M1 (Virtual)\n      Total Number of Cores: 3\n      Memory: 7 GB\n      System Firmware Version: mBoot-18000.121.3\n      OS Loader Version: 11881.140.96.701.1\nmachdep.cpu.brand_string: Apple M1 (Virtual)",
+    "arch": "ARM64",
     "loaded_modules": [],
-    "processor": "Apple M1 (Virtual)",
-    "runner_arch": "ARM64",
-    "runner_os": "macOS"
+    "os": "macOS",
+    "processor": "Apple M1 (Virtual)"
   }
 }
