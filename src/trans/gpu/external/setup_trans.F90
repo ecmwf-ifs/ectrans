@@ -100,7 +100,7 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
-USE PARKIND1,        ONLY: JPIM, JPRB, JPRD, JPIB
+USE PARKIND1,        ONLY: JPIM, JPRD, JPIB
 USE PARKIND_ECTRANS, ONLY: JPRBT
 
 !ifndef INTERFACE
@@ -126,7 +126,7 @@ USE SHAREDMEM_MOD,               ONLY: SHAREDMEM_CREATE
 USE YOMHOOK,                     ONLY: LHOOK, DR_HOOK, JPHOOK
 #ifdef ACCGPU
 USE OPENACC,                     ONLY: ACC_DEVICE_KIND, ACC_GET_DEVICE_TYPE, ACC_GET_NUM_DEVICES, &
-  &                                    ACC_SET_DEVICE_NUM, ACC_GET_DEVICE_NUM
+  &                                    ACC_SET_DEVICE_NUM
 #endif
 
 !endif INTERFACE
@@ -163,7 +163,6 @@ INTEGER(C_SIZE_T) ,OPTIONAL,INTENT(IN) :: KLEGPOLPTR_LEN
 ! Local variables
 INTEGER(KIND=JPIM) :: JGL, JRES, IDEF_RESOL
 INTEGER(KIND=JPIM) :: JMLOC, KM, ILA, ILS, KDGLU, JN
-INTEGER(KIND=JPIM) :: IMLOC0(1)
 
 LOGICAL :: LLP1, LLP2, LLSPSETUPONLY
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
@@ -171,7 +170,7 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 #ifdef ACCGPU
 INTEGER(ACC_DEVICE_KIND) :: IDEVTYPE
 #endif
-INTEGER :: INUMDEVS, IDEV, MYGPU
+INTEGER :: INUMDEVS, MYGPU
 
 REAL(KIND=JPRBT), POINTER :: LOCAL_ARR(:,:)
 !     ------------------------------------------------------------------
