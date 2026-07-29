@@ -642,7 +642,7 @@ do jstep = 1, iters
     call dump_checksums(filename = cchecksums_path, noutdump = noutdump,                 &
                       & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
                       & ivset = ivset, ivsetsc = ivsetsc,                                   &
-                      & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
+                      & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgp3a, zgp2 = zgp2)
   endif
 
   ztstep1(jstep) = (timef() / 1000.0_jprd - ztstep1(jstep))
