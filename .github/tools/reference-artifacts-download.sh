@@ -14,6 +14,10 @@
 
 set -euo pipefail
 
+export GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-ecmwf-ifs/ectrans}"
+export GITHUB_SERVER_URL="${GITHUB_SERVER_URL:-https://github.com}"
+export RUNNER_TEMP="${RUNNER_TEMP:-${PWD}}"
+
 if [[ $# -ne 6 ]]; then
   echo "Usage: $(basename "$0") WORKFLOW_FILE BRANCH HEAD_SHA ARTIFACT_NAME MATRIX_NAME BUILD_TYPE" >&2
   exit 2
@@ -42,6 +46,27 @@ PY
 
 rm -rf "${update_dir}" "${reused_dir}"
 
+matching_job_hint() {
+  local run_id=$1
+
+  gh run view "${run_id}" --repo "${GITHUB_REPOSITORY}" --json jobs \
+    | jq -r --arg name "${matrix_name}" --arg build_type "${build_type}" '
+        .jobs[]
+        | select((.name | contains($name)) and (.name | contains($build_type)))
+        | [(.databaseId | tostring), .url, .name, .status, (.conclusion // "")]
+        | @tsv
+      ' \
+    | head -n 1
+}
+
+artifact_download_url() {
+  local run_id=$1
+
+  gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts" \
+    --jq ".artifacts[] | select(.name == \"${artifact_name}\") | .archive_download_url" \
+    | head -n 1
+}
+
 runs_json=$(gh run list \
   --repo "${GITHUB_REPOSITORY}" \
   --workflow "${workflow_file}" \
@@ -56,14 +81,14 @@ import sys
 
 head_sha = sys.argv[1]
 for run in json.loads(os.environ["RUNS_JSON"]):
-    if run.get("status") == "completed" and run.get("headSha") == head_sha:
-        print(run["databaseId"])
+  if run.get("headSha") == head_sha:
+    print(run["databaseId"])
 PY
 )
 
 if [[ -z "${run_ids}" ]]; then
   {
-    echo "::error title=Reference workflow run not found::No completed ${workflow_file} workflow run was found for PR head ${head_sha}."
+    echo "::error title=Reference workflow run not found::No ${workflow_file} workflow run was found for PR head ${head_sha}."
     echo "Run or rerun the workflow for branch ${branch}: ${workflow_branch_url}"
     echo "GitHub CLI: gh workflow run ${workflow_file} --repo ${GITHUB_REPOSITORY} --ref ${branch}"
   } >&2
@@ -71,37 +96,52 @@ if [[ -z "${run_ids}" ]]; then
 fi
 
 for run_id in ${run_ids}; do
+  run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+  archive_download_url=$(artifact_download_url "${run_id}" || true)
+
+  echo "Checking reference artifact ${artifact_name} from run ${run_id}: ${run_url}" >&2
+  if [[ -n "${archive_download_url}" ]]; then
+    echo "Artifact download URL: ${archive_download_url}" >&2
+  else
+    echo "Artifact download URL: unavailable before gh run download" >&2
+  fi
+  echo "Download target directory: ${reused_dir}" >&2
+
   rm -rf "${reused_dir}"
   mkdir -p "${reused_dir}"
   if ! gh run download "${run_id}" --repo "${GITHUB_REPOSITORY}" --name "${artifact_name}" --dir "${reused_dir}"; then
+    echo "Artifact ${artifact_name} was not downloaded from run ${run_id}." >&2
     continue
   fi
 
   cp -a "${reused_dir}" "${update_dir}"
+  echo "Downloaded artifact ${artifact_name} to ${reused_dir}" >&2
+  echo "Reference files are available at ${update_dir}" >&2
   exit 0
 done
 
+# Diagnostic information for the user to rerun the workflow or matrix job that should produce the artifact.
+
 latest_run_id=$(printf '%s\n' ${run_ids} | head -n 1)
 run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${latest_run_id}"
-job_hint=$(gh run view "${latest_run_id}" --repo "${GITHUB_REPOSITORY}" --json jobs \
-  | jq -r --arg name "${matrix_name}" --arg build_type "${build_type}" '
-      .jobs[]
-      | select((.name | contains($name)) and (.name | contains($build_type)))
-      | "\(.databaseId)\t\(.url)\t\(.name)"
-    ' \
-  | head -n 1)
+
+job_hint=$(matching_job_hint "${latest_run_id}")
 
 {
   echo "::error title=Reference artifact not found::No reusable artifact named ${artifact_name} was found for PR head ${head_sha}."
-  echo "Rerun the job that produces ${artifact_name}, then rerun this workflow."
+  echo "Rerun this workflow after the job that produces ${artifact_name} has uploaded the artifact."
   echo "Workflow for this branch: ${workflow_branch_url}"
   echo "Most recent matching run: ${run_url}"
-  echo "GitHub CLI: gh run rerun ${latest_run_id} --repo ${GITHUB_REPOSITORY}"
   if [[ -n "${job_hint}" ]]; then
-    IFS=$'\t' read -r job_id job_url job_name <<<"${job_hint}"
+    IFS=$'\t' read -r job_id job_url job_name job_status job_conclusion <<<"${job_hint}"
     echo "Matching matrix job: ${job_name}"
+    echo "Job status: ${job_status}${job_conclusion:+ (${job_conclusion})}"
     echo "Job URL: ${job_url}"
-    echo "GitHub CLI, one job: gh run rerun ${latest_run_id} --repo ${GITHUB_REPOSITORY} --job ${job_id}"
+    if [[ "${job_status}" == "completed" ]]; then
+      echo "GitHub CLI, one job: gh run rerun ${latest_run_id} --repo ${GITHUB_REPOSITORY} --job ${job_id}"
+    fi
+  else
+    echo "GitHub CLI: gh run rerun ${latest_run_id} --repo ${GITHUB_REPOSITORY}"
   fi
 } >&2
 exit 1
