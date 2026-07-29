@@ -98,9 +98,6 @@ real(kind=jprb), pointer :: zgp(:,:,:)
 real(kind=jprb), pointer :: zgpuv(:,:,:,:)
 real(kind=jprb), pointer :: zgp3a(:,:,:,:)
 real(kind=jprb), pointer :: zgp2(:,:,:)
-#ifdef FIELD_API_CLAMP
-real(kind=jprb)    :: clamp_epsilon = 1E-14
-#endif
 
 logical :: lstack = .false. ! Output stack info
 
