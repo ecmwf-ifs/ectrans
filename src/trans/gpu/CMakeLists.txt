@@ -133,14 +133,6 @@ foreach( prec dp sp )
         generate_backend_includes(BACKEND gpu_${prec} TARGET ectrans_gpu_${prec}_includes DESTINATION ${BUILD_INTERFACE_INCLUDE_DIR} INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/src/trans/include )
         generate_backend_sources( BACKEND gpu_${prec} OUTPUT ectrans_gpu_${prec}_src  DESTINATION ${GENERATED_SOURCE_DIR})
 
-        #if( NOT ${CMAKE_BUILD_TYPE_CAPS} STREQUAL DEBUG )
-        set_source_files_properties( ${GENERATED_SOURCE_DIR}/internal/ftinv_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
-        ecbuild_info("warn: special compile flags ftinv_mod.F90")
-        set_source_files_properties( ${GENERATED_SOURCE_DIR}/internal/ftdir_mod.F90 PROPERTIES COMPILE_OPTIONS "-O2" )
-        ecbuild_info("warn: special compile flags ftdir_mod.F90")
-        #endif()
-
-
         ecbuild_add_library(
           TARGET               ectrans_gpu_${prec}
           TYPE                 ${GPU_LIBRARY_TYPE}

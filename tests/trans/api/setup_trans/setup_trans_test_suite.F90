@@ -288,4 +288,50 @@ END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_PNMONLY
 
 !---------------------------------------------------------------------------------------------------
 
+! Test SETUP_TRANS works with Legendre polynomials written to and read from disk
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY() RESULT(RET) BIND(C)
+  USE PARKIND1, ONLY: JPRB, JPRD
+  USE MPL_MODULE, ONLY: MPL_END
+  USE OML_MOD, ONLY: OML_MAX_THREADS
+
+  INTEGER(KIND=JPIM) :: IPROC_TEST_NAME
+  CHARACTER(LEN=64) :: CLLEGPOLFNAME
+  CHARACTER(LEN=2) :: CPREC
+
+#include "abor1.intfb.h"
+
+  CALL SETUP_TEST(LCALL_SETUP_TRANS0=.FALSE.)
+  IF (NPROC > 1) THEN
+    CALL ABOR1("ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY: Test does not support" // &
+      &        " running with > 1 tasks")
+  ENDIF
+
+  ! Build file name for Legendre polynomials, unique to this test
+  IPROC_TEST_NAME = MERGE(1, 0, LUSE_MPI)
+  CPREC = MERGE("dp", "sp", JPRB == JPRD)
+  WRITE(CLLEGPOLFNAME, "(A,A,A,I1,A,I0)") &
+    & "legpols_" // CPREC // "_mpi", IPROC_TEST_NAME, "xomp", OML_MAX_THREADS()
+
+  ! First write the polynomial to disk
+  CALL SETUP_TRANS0(LDMPOFF=.TRUE.)
+  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, CDIO_LEGPOL="WRITEF", &
+    &              CDLEGPOLFNAME=TRIM(CLLEGPOLFNAME))
+  CALL TRANS_END
+
+  ! Now setup, reading Legendre polynomials from disk
+  CALL SETUP_TRANS0(LDMPOFF=.TRUE.)
+  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, CDIO_LEGPOL="READF", &
+    &              CDLEGPOLFNAME=TRIM(CLLEGPOLFNAME))
+
+  CALL TRANS_END
+
+  IF (LUSE_MPI) THEN
+    CALL MPL_END(LDMEMINFO=.FALSE.)
+  ENDIF
+
+  RET = 0
+END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY
+
+!---------------------------------------------------------------------------------------------------
+
 END MODULE SETUP_TRANS_TEST_SUITE

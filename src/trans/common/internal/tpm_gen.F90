@@ -47,4 +47,6 @@ INTEGER(KIND=JPIM) :: NSTACK_MEMORY_TR = 0
 LOGICAL, ALLOCATABLE :: LENABLED(:)   ! true: the resolution is enabled (it has been
                                       ! initialised and has not been released afterward) 
 
+INTEGER(KIND=JPIM), PARAMETER :: JP_LEGPOLY_VERSION = 1  ! Version of Legendre polynomial data files
+
 END MODULE TPM_GEN

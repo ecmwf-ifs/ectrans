@@ -189,6 +189,7 @@ character(len=256) :: checksums_filename
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
+logical :: lalloperm = .true.
 
 character(len=16)   :: cgrid = ''
 character(len=128)  :: cchecksums_path = ''
@@ -231,7 +232,7 @@ endif
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, &
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  &                             lpinning,lfield_api, icall_mode, ldump_checksums, cchecksums_path)
+  &                             lpinning, lfield_api, icall_mode, ldump_checksums, cchecksums_path, lalloperm)
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -395,7 +396,7 @@ if (verbosity >= 1) write(nout,'(a)')'======= Setup ecTrans ======='
 call gstats(1, 0)
 call setup_trans0(kout=nout, kerr=nerr, kprintlev=merge(2, 0, verbosity == 1), kpromatr=npromatr, &
   &               kprgpns=nprgpns, kprgpew=nprgpew, kprtrw=nprtrw, ldsync_trans=lsync_trans,  &
-  &               ldeq_regions=leq_regions, ldalloperm=.true., ldmpoff=.not.luse_mpi,         &
+  &               ldeq_regions=leq_regions, ldalloperm=lalloperm, ldmpoff=.not.luse_mpi,         &
   &               kopt_memory_tr=nopt_mem_tr)
 call gstats(1, 1)
 
@@ -447,6 +448,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("lscders    ",l1)') lscders
   write(nout,'("luvder     ",l1)') luvder
   write(nout,'("lfield_api ",l1)') lfield_api
+  write(nout,'("lalloperm  ",l1)') lalloperm
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -551,14 +553,12 @@ endif
 if (lfield_api) then
     call nullify_wrapped_fields(ywflds)
     if (icall_mode == 1) then
-        call wrap_benchmark_fields_zgp(ywflds,lvordiv, lscders, luvder, &
-                                     & nflevg, 1 + nflevg * nfld,  &
+    call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
                                      & zspvor, zspdiv, zspscalar, zgp)
         call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc=ivsetsc)
     else
-        call wrap_benchmark_fields(ywflds,lvordiv, lscders, luvder, &
-                                 & 1, 1, nfld, &
-                                 & zspvor, zspdiv, zspsc3a, zspsc2, zgpuv,zgp3a, zgp2)
+    call wrap_benchmark_fields(ywflds, lvordiv, lscders, luvder, 1, 1, nfld, zspvor, zspdiv, &
+      &                        zspsc3a, zspsc2, zgpuv, zgp3a, zgp2)
         call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc2=ivsetsc2, kvsetsc=ivset)
     endif
   endif
@@ -671,12 +671,11 @@ do jstep = 1, iters+iters_warmup
 
   if (lfield_api) then
 #if USE_FIELD_API
-      call inv_trans_field_api (kresol = 1, &
-                              & ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv, &
-                              & ydfscalar=ylf%scalar,ydfu=ylf%u, ydfv=ylf%v, &
-                              & ydfvor=ylf%vor, ydfdiv=ylf%div, &
-                              & ydfscalar_ns=ylf%scalar_ns, ydfscalar_ew=ylf%scalar_ew, &
-                              & ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
+    call inv_trans_field_api(kresol=1, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
+      &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
+      &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
+      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew, &
+      &                      kgptot = ngptot)
       call synchost_rdonly_wrapped_fields(ywflds)
 #else
     call abor1('ectrans_benchmark: No field API support')
@@ -756,23 +755,9 @@ do jstep = 1, iters+iters_warmup
 
   if (lfield_api) then
 #if USE_FIELD_API
-      call dir_trans_field_api (kresol = 1, &
-                               &ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
+    call dir_trans_field_api(kresol=1, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
                                &ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
       call synchost_rdonly_wrapped_fields(ywflds)
-#ifdef FIELD_API_CLAMP
-    ! clamp small spectral values to ensure bit reproductibility with field Api interface
-    ! Only activated in dp, with nvhpc and on cpu
-    if (jprb == jprd) then
-      write(nout,*) "clamp using clamp_epsilon = ", clamp_epsilon
-      if (icall_mode == 1) then
-        if (associated(zspscalar)) where (abs(zspscalar) < clamp_epsilon) zspscalar = 0
-      else
-        if (associated(zspsc2))    where (abs(zspsc2) < clamp_epsilon) zspsc2 = 0
-        if (associated(zspsc3a))   where (abs(zspsc3a) < clamp_epsilon) zspsc3a = 0
-      endif
-    endif
-#endif
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
@@ -784,22 +769,20 @@ do jstep = 1, iters+iters_warmup
       &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
       &            pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
+  endif
 
- endif
-
-  if (ldump_checksums) then
-    write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+    if (ldump_checksums) then
+      write(checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
     if (icall_mode == 1) then
         call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
-                              & jstep=jstep, myproc=myproc, &
-                              & ivset=ivset, ivsetsc=ivsetsc, nspec2g=nspec2g, &
-                              & zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
+        &                     jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, &
+        &                     nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     else
         call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
-                                   & jstep=jstep, myproc=myproc, &
-                                   & ivset=ivset, ivsetsc2=ivsetsc2, nspec2g=nspec2g, &
-        &                 zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, zspsc2=zspsc2)
+        &                          jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, &
+        &                          nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, &
+        &                          zspsc2=zspsc2)
     endif
   endif
   call gstats(5,1)
@@ -1274,6 +1257,8 @@ subroutine print_help(unit)
    & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
   write(nout, "(a)") "                        See&
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
+  write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
+   & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
@@ -1303,7 +1288,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   lscders, luvder, luseflt, nopt_mem_tr, nproma, npromatr, &
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
-  &                                   cchecksums_path)
+  &                                   cchecksums_path, lalloperm)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1339,6 +1324,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
                                             ! 2: pspvor, pspdiv, pspsc3a, pspsc2, pgpuv, pgp3a, pgp2
 
   character(len=128), intent(inout) :: cchecksums_path ! path to export checksum files
+  logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
 
@@ -1403,6 +1389,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
           if (icall_mode < 1 .or. icall_mode > 2) then
             call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
+      case('--deallocate-foubuf-temps'); lalloperm = .false.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 

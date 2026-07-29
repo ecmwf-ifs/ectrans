@@ -227,8 +227,8 @@ ELSE
 
   DO JN = KM + ISTART + 4, KNSMAX, IINC
     IF (ABS(DDPOL(JN-4)) > ZSCALE) THEN
-      DDPOL(JN-4:JN-1) = DDPOL(JN-4:JN-1) / ZSCALE
-      ICORR(JN-4:KNSMAX) = ICORR(JN-4:KNSMAX) - 1
+      DDPOL(JN-4:JN-1:IINC) = DDPOL(JN-4:JN-1:IINC) / ZSCALE
+      ICORR(JN-4:KNSMAX:IINC) = ICORR(JN-4:KNSMAX:IINC) - 1
     ENDIF
 
     ! P_{m,n} = ( (mu^2 - f_1(n-2)) * P_{m,n-2} - f_2(n_4) * P_{m,n-4} ) / f_2(n_2)

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Install NVHPC
 # https://github.com/nemequ/pgi-travis
@@ -11,6 +11,10 @@
 # waived all copyright and related or neighboring rights to this work.
 # See <https://creativecommons.org/publicdomain/zero/1.0/> for
 # details.
+
+set -e
+set -u
+set -o pipefail
 
 version=26.3
 
@@ -55,11 +59,22 @@ if [ -d "${NVHPC_INSTALL_DIR}" ]; then
     fi
 fi
 
-# Example download URL for version 21.9
-#    https://developer.download.nvidia.com/hpc-sdk/21.9/nvhpc_2020_219_Linux_x86_64_cuda_11.0.tar.gz
 
-ver="$(echo $version | tr -d . )"
-URL=$(curl -s "https://developer.nvidia.com/nvidia-hpc-sdk-$ver-downloads" | grep -oP "https://developer.download.nvidia.com/hpc-sdk/([0-9]{2}\.[0-9]+)/nvhpc_([0-9]{4})_([0-9]+)_Linux_$(uname -m)_cuda_([0-9\.]+).tar.gz" | sort | tail -1)
+MAJOR_VER="${version%%.*}"
+if [ "$MAJOR_VER" -lt 26 ]; then
+    echo "Major version < 26"
+    # Example download URL for version 21.9
+    #    https://developer.download.nvidia.com/hpc-sdk/21.9/nvhpc_2020_219_Linux_x86_64_cuda_11.0.tar.gz
+
+    ver="$(echo $version | tr -d . )"
+    URL=$(curl -s "https://developer.nvidia.com/nvidia-hpc-sdk-$ver-downloads" | grep -oP "https://developer.download.nvidia.com/hpc-sdk/([0-9]{2}\.[0-9]+)/nvhpc_([0-9]{4})_([0-9]+)_Linux_$(uname -m)_cuda_([0-9\.]+).tar.gz" | sort | tail -1)
+else
+    echo "Major version >= 26"
+    # Example download URL for version 26.1
+    #    https://developer.download.nvidia.com/hpc-sdk/26.1/nvhpc_2026_261_Linux_x86_64_cuda_13.1.tar.gz
+    #    https://developer.nvidia.com/hpc-sdk/releases/26.1
+    URL=$(curl -s "https://developer.nvidia.com/hpc-sdk/releases/$version" | grep -oP "https://developer.download.nvidia.com/hpc-sdk/([0-9]{2}\.[0-9]+)/nvhpc_([0-9]{4})_([0-9]+)_Linux_$(uname -m)_cuda_([0-9\.]+).tar.gz" | sort | tail -1)
+fi
 FOLDER="$(basename "$(echo "${URL}" | grep -oP '[^/]+$')" .tar.gz)"
 
 if [ ! -d "${TEMPORARY_FILES}/${FOLDER}" ]; then
@@ -79,13 +94,29 @@ echo "+ ${TEMPORARY_FILES}/${FOLDER}/install"
 #rm -rf "${TEMPORARY_FILES}/${FOLDER}"
 
 NVHPC_VERSION=$(basename "${NVHPC_INSTALL_DIR}"/Linux_$(uname -m)/*.*/)
+NVHPC_DIR=${NVHPC_INSTALL_DIR}/Linux_$(uname -m)/${NVHPC_VERSION}
 
 # Use gcc which is available in PATH
-${NVHPC_INSTALL_DIR}/Linux_$(uname -m)/${NVHPC_VERSION}/compilers/bin/makelocalrc \
-  -x ${NVHPC_INSTALL_DIR}/Linux_$(uname -m)/${NVHPC_VERSION}/compilers/bin \
+${NVHPC_DIR}/compilers/bin/makelocalrc \
+  -x ${NVHPC_DIR}/compilers/bin \
   -gcc $(which gcc) \
   -gpp $(which g++) \
   -g77 $(which gfortran)
+
+# Locate the bundled OpenMPI prefix. From 25.x the comm_libs/mpi symlink points
+# at hpcx (a bin-only directory), so we derive the real prefix from the location
+# of openmpi-default-hostfile and fall back to comm_libs/mpi for older releases.
+MPI_HOME=$(dirname $(dirname $(find ${NVHPC_DIR}/comm_libs -name openmpi-default-hostfile -path '*/etc/*' 2>/dev/null | head -1)))
+if [ -z "${MPI_HOME}" ] || [ ! -d "${MPI_HOME}" ]; then
+    MPI_HOME=${NVHPC_DIR}/comm_libs/mpi
+fi
+
+# Allow for oversubscription. For open-mpi >= v5.0
+echo "rmaps_default_mapping_policy=:oversubscribe" >> ${MPI_HOME}/etc/prte-mca-params.conf
+
+# Allow for oversubscription. For open-mpi < v5.0 only (older nvhpc versions)
+echo "localhost slots=72" >> ${MPI_HOME}/etc/openmpi-default-hostfile
+echo "hwloc_base_binding_policy = core:overload-allowed" >> ${MPI_HOME}/etc/openmpi-mca-params.conf
 
 cat > ${NVHPC_INSTALL_DIR}/env.sh << EOF
 ### Variables
@@ -99,9 +130,10 @@ export NVHPC_LIBRARY_PATH=\${NVHPC_DIR}/compilers/lib
 export LD_LIBRARY_PATH=\${NVHPC_LIBRARY_PATH}
 
 ### MPI
-export MPI_HOME=\${NVHPC_DIR}/comm_libs/mpi
+export MPI_HOME=${MPI_HOME}
 export PATH=\${MPI_HOME}/bin:\${PATH}
 EOF
 
 cat ${NVHPC_INSTALL_DIR}/env.sh
 
+date '+%Y.%m.%d-%H:%M:%S' > install.timestamp

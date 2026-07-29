@@ -29,19 +29,11 @@ foreach( program ectrans-benchmark )
                                   parkind_${prec}
                                   trans_${prec}
                                   $<${HAVE_FIELD_API}:ectrans_field_api_${prec}>
-                                  $<$<AND:${HAVE_FIELD_API},${HAVE_ACC}>:OpenACC::OpenACC_Fortran>
                                 DEFINITIONS
                                   VERSION="cpu"
                                   USE_FIELD_API=${HAVE_FIELD_API}
         )
         ecbuild_target_fortran_module_directory(TARGET ${program}-cpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-cpu-${prec} )
-
-        if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
-             # clamp small spectral values to ensure bit reproductibility with field Api interface
-             # Only activated in dp, with nvhpc and on cpu
-             target_compile_definitions(${program}-cpu-${prec} PRIVATE "FIELD_API_CLAMP")
-        endif()
-
       endif()
     endforeach( prec)
   endif()

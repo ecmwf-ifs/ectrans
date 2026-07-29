@@ -15,6 +15,32 @@ License
 ecTrans is distributed under the Apache License Version 2.0.
 See `LICENSE` file for details.
 
+Requirements
+------------
+
+Generally, ecTrans has the following requirements:
+- [CMake](https://cmake.org/) >= 3.25
+- [ecBuild](https://github.com/ecmwf/ecbuild) >= 3.14
+- C, C++, and Fortran compilers. Officially we support:
+  - Classic Intel (i.e. ifort and icc) >= 19.0.5
+  - LLVM Intel (i.e. ifx) >= 2023.2.0
+  - GNU Compiler Collection >= 8.5.0
+  - NVHPC >= 22.11
+  - Cray Compiler Environment >= 19.0.0
+  - AMD ROCm AFAR >= 22.3.0
+  Earlier versions may work just fine, but without the means to test these versions, we cannot offer
+  support.
+- [FIAT](https://github.com/ecmwf-ifs/fiat) >= 2.0.0 (earlier versions are likely to work, but we
+  only offer support for the latest version of FIAT, since it is straightforward to build.)
+- A library implementing standard BLAS routines
+
+Builds targeting CPU execution have the following additional requirement:
+- An FFTW-compatible library, such as [FFTW itself](https://www.fftw.org/) or Intel MKL.
+
+Builds targeting GPU execution have the following additional requirements:
+- A compiler compatible with OpenACC offload or OpenMP offload.
+- CUDA or HIP.
+
 Installing ecTrans
 ------------------
 
@@ -28,5 +54,5 @@ Please report bugs using a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/i
 Contributing
 ------------
 
-Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) to the develop branch (not the main branch) with your contribution. All contributors to the pull request need to sign the [contributors license agreement (CLA)](https://bol-claassistant.ecmwf.int/ecmwf-ifs/ectrans).
+Contributions to ecTrans are welcome. In order to do so, please open a [GitHub issue](https://github.com/ecmwf-ifs/ectrans/issues) where a feature request or bug can be discussed. Then create a [pull request](https://github.com/ecmwf-ifs/ectrans/pulls) to the develop branch (not the main branch) with your contribution. All contributors to the pull request need to agree to the [contributors license agreement (CLA)](contributor_license_agreement.md).
 

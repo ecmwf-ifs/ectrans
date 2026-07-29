@@ -1,0 +1,94 @@
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+---
+### Bundle
+
+name    : ectrans-bundle
+version : 0.0.0
+cmake   : CMAKE_LINK_DEPENDS_NO_SHARED=ON
+
+projects :
+
+    - ecbuild : 
+        git     : https://github.com/ecmwf/ecbuild
+        version : master
+        bundle  : false
+
+    - fiat :
+        git     : https://github.com/ecmwf-ifs/fiat 
+        version : develop
+        cmake   : ENABLE_DR_HOOK_NVTX=OFF ENAMBLE_OMP=ON
+
+    - ectrans :
+        dir     : $PWD
+        require : fiat
+        cmake   : ENABLE_MKL=OFF WITH_FFTW=OFF ENABLE_FFTW=OFF ENABLE_GPU=OFF
+
+options :
+
+    - without-single-precision :
+        help  : Disable single precision build of the libraries and dwarf
+        cmake : ENABLE_SINGLE_PRECISION=OFF ENABLE_DOUBLE_PRECISION=ON
+
+    - without-double-precision :
+        help  : Disable double precision build of the libraries and dwarf
+        cmake : ENABLE_SINGLE_PRECISION=ON ENABLE_DOUBLE_PRECISION=OFF
+
+    - without-mpi :
+        help  : Disable MPI
+        cmake : ENABLE_MPI=OFF
+
+    - without-omp :
+        help  : Disable OpenMP
+        cmake : ENABLE_OMP=OFF
+
+    - with-mkl :
+        help : Enable use of MKL for BLAS and FFT calls
+        cmake : ENABLE_MKL=ON
+
+    - with-fftw :
+        help : Enable use of FFTW to handle FFT calls
+        cmake : ENABLE_FFTW=ON WITH_FFTW=ON
+
+    - with-etrans :
+        help : Enable use of FFTW to handle FFT calls
+        cmake : ENABLE_ETRANS=ON
+
+    - with-gpu-acc:
+        help  : Compile GPU libraries as well as CPU libraries
+        cmake : >
+            ENABLE_GPU=ON ENABLE_ACC=ON
+
+    - with-gpu-omp:
+        help  : Compile GPU libraries as well as CPU libraries
+        cmake : >
+            ENABLE_GPU=ON ENABLE_OMP=ON
+
+    - without-gpu-mpi:
+        help  : Use GPU-aware MPI for communication
+        cmake : >
+            ENABLE_GPU_AWARE_MPI=OFF
+
+    - with-cutlass:
+        help  : Use CUTLASS header library for GEMM kernels
+        cmake : >
+            ENABLE_CUTLASS=ON
+
+    - without-gpu-graphs:
+        help  : Do not use graphs for either GEMM or FFT operations
+        cmake : >
+            ENABLE_GPU_GRAPHS_GEMM=OFF ENABLE_GPU_GRAPHS_FFT=OFF
+
+    - without-cutlass-3XTF32: # default on
+        help  : Deactivate 3XTF32 usage on compatible hardware
+        cmake : >
+            ENABLE_CUTLASS_3XTF32=OFF
+    - with-static-linking :
+        help  : Build static libraries by default
+        cmake : BUILD_SHARED_LIBS=OFF

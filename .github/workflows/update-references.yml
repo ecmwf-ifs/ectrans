@@ -1,0 +1,26 @@
+name: update-references
+
+# Placeholder workflow used to register update-references.yml on the default
+# branch. Run this workflow from a branch that contains the real implementation.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to update
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  noop:
+    name: Placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain placeholder
+        run: |
+          echo "This is a placeholder workflow on the default branch."
+          echo "Run update-references.yml with --ref pointing to a branch that contains the real implementation."
+          echo "Requested PR number: ${{ inputs.pr_number }}"

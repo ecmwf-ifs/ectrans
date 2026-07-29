@@ -16,20 +16,13 @@ IMPLICIT NONE
 
 SAVE
 
-
 TYPE FLT_TYPE
 INTEGER(KIND=JPIM) :: NSPOLEGL
 INTEGER(KIND=JPIM) :: NDGNH
-INTEGER(KIND=JPIM) :: INS2
-INTEGER(KIND=JPIM) :: INA2
 REAL(KIND=JPRBT) ,POINTER :: RPNMS(:,:) ! Legendre polynomials
 REAL(KIND=JPRBT) ,POINTER :: RPNMA(:,:) ! Legendre polynomials
 REAL(KIND=JPRD) ,POINTER :: RPNMDS(:,:) ! Legendre polynomials
 REAL(KIND=JPRD) ,POINTER :: RPNMDA(:,:) ! Legendre polynomials
-REAL(KIND=JPRBT) :: RCS
-REAL(KIND=JPRBT) :: RCA
-!REAL(KIND=JPRBT) ,POINTER :: RPNMCDO(:,:) ! Legendre polynomials for C-D formula at orig roots
-!REAL(KIND=JPRBT) ,POINTER :: RPNMCDD(:,:) ! Legendre polynomials for C-D formula at dual roots
 REAL(KIND=JPRBT) ,POINTER :: RPNMWI(:,:) ! special weights
 REAL(KIND=JPRBT) ,POINTER :: RPNMWO(:,:) ! special weights
 INTEGER(KIND=JPIM) :: ISLD ! starting latitude dual
@@ -53,6 +46,5 @@ END TYPE FLT_TYPE_WRAP
 
 TYPE(FLT_TYPE_WRAP),ALLOCATABLE,TARGET :: FLT_RESOL(:)
 TYPE(FLT_TYPE_WRAP),POINTER     :: S
-
 
 END MODULE TPM_FLT

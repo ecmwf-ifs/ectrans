@@ -109,9 +109,7 @@ jobs:
       run:  |
         python3 -m venv venv
         . venv/bin/activate
-        pip install build
-        python -m build --wheel ectrans -o $GITHUB_WORKSPACE
-        pip install ectrans4py*
+        pip install build ectrans/.
 
     - name: Check ectrans4py version
       run:  |
