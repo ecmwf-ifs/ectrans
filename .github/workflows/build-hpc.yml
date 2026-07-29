@@ -62,7 +62,6 @@ jobs:
 
         include:
           - name: ac-ops intel
-            path_name: ac-ops_intel
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/intel/2023.2.0/hpcx-openmpi/2.9.0
@@ -78,7 +77,6 @@ jobs:
               - CMAKE_GENERATOR=Ninja
 
           - name: ac-gpu nvhpc
-            path_name: ac-gpu_nvhpc
             site: ac-batch
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/nvhpc/24.5/hpcx-openmpi/2.19.0-cuda
@@ -94,7 +92,6 @@ jobs:
               - CMAKE_GENERATOR=Ninja
 
           - name: lumi-g cce
-            path_name: lumi-g_cce
             site: lumi
             troika_user_secret: LUMI_CI_SSH_USER
             account_secret: LUMI_CI_PROJECT
@@ -118,8 +115,8 @@ jobs:
     runs-on: [self-hosted, linux, hpc]
     env:
       GH_TOKEN: ${{ github.token }}
-      OUTPUT_DIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], matrix.path_name, github.run_id, github.run_attempt) }}
-      WORKDIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], matrix.path_name, github.run_id, github.run_attempt) }}
+      OUTPUT_DIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], github.run_id, strategy.job-index, github.run_attempt) }}
+      WORKDIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], github.run_id, strategy.job-index, github.run_attempt) }}
     steps:
       - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
         with:
