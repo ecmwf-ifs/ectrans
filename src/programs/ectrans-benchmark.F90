@@ -32,7 +32,8 @@ USE ectrans_field_api_helper, only : wrapped_fields, fields_lists, &
                                    & wrap_benchmark_fields, wrap_benchmark_fields_zgp, &
                                    & create_fields_lists, &
                                    & delete_wrapped_fields,delete_fields_lists, &
-                                   & nullify_wrapped_fields, synchost_rdonly_wrapped_fields
+                                   & nullify_wrapped_fields, &
+                                   & synchost_rdonly_wrapped_fields
 #endif
 
 implicit none
@@ -548,17 +549,17 @@ endif
 
 #if USE_FIELD_API
 if (lfield_api) then
-    call nullify_wrapped_fields(ywflds)
-    if (icall_mode == 1) then
-        call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
-          &                            zspvor, zspdiv, zspscalar, zgp)
-        call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc=ivsetsc)
-    else
-        call wrap_benchmark_fields(ywflds, lvordiv, lscders, luvder, 1, 1, nfld, zspvor, zspdiv, &
-          &                        zspsc3a, zspsc2, zgpuv, zgp3a, zgp2)
-        call create_fields_lists(ywflds,ylf,kvsetuv=ivset,kvsetsc2=ivsetsc2, kvsetsc=ivset)
-    endif
+  call nullify_wrapped_fields(ywflds)
+  if (icall_mode == 1) then
+    call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
+      &                            zspvor, zspdiv, zspscalar, zgp)
+    call create_fields_lists(ywflds, ylf, kvsetuv=ivset, kvsetsc=ivsetsc)
+  else
+    call wrap_benchmark_fields(ywflds, lvordiv, lscders, luvder, 1, 1, nfld, zspvor, zspdiv, &
+      &                        zspsc3a, zspsc2, zgpuv, zgp3a, zgp2)
+    call create_fields_lists(ywflds, ylf, kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc=ivset)
   endif
+endif
 #endif
 
 !===================================================================================================
@@ -752,8 +753,8 @@ do jstep = 1, iters+iters_warmup
   if (lfield_api) then
 #if USE_FIELD_API
     call dir_trans_field_api(kresol=1, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
-                               &ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
-      call synchost_rdonly_wrapped_fields(ywflds)
+      &                      ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
+    call synchost_rdonly_wrapped_fields(ywflds)
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
@@ -767,15 +768,15 @@ do jstep = 1, iters+iters_warmup
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
   endif
 
-    if (ldump_checksums) then
-      write(checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
+  if (ldump_checksums) then
+    write (checksums_filename,'(A)') trim(cchecksums_path)//'_dir_trans.checksums'
 
     if (icall_mode == 1) then
-        call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
+      call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
         &                     jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, &
         &                     nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar)
     else
-        call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+      call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
         &                          jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, &
         &                          nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, &
         &                          zspsc2=zspsc2)
