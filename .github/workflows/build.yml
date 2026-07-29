@@ -333,7 +333,7 @@ jobs:
         dependency_cmake_options: |
           ecmwf-ifs/fiat:      "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
           ecmwf-ifs/field_api: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_CUDA=OFF"
-        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON"
+        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools
