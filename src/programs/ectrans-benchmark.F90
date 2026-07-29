@@ -183,7 +183,6 @@ type(fields_lists) :: ylf
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
-character(len=1024) :: checksums_filename
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
@@ -722,11 +721,10 @@ do jstep = 1, iters+iters_warmup
   if (ldump_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
-    write (checksums_filename,'(A)') trim(cchecksums_path)
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
-      call dump_checksums_pgp(filename=checksums_filename, noutdump=noutdump_checksum, &
+      call dump_checksums_pgp(filename=cchecksums_path, noutdump=noutdump_checksum, &
                             & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
                             & zgp=zgp)
     else
@@ -734,7 +732,7 @@ do jstep = 1, iters+iters_warmup
       zgpuv (iend+1:, :, :, ngpblks) = 0
       zgp3a (iend+1:, :, :, ngpblks) = 0
       zgp2 (iend+1:, :, ngpblks) = 0
-      call dump_checksums_pgp_uv_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+      call dump_checksums_pgp_uv_3a_2(filename=cchecksums_path, noutdump=noutdump_checksum, &
                                     & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
                                     & lscders=lscders, luvder=luvder, zgpuv=zgpuv, zgp3a=zgp3a, zgp2=zgp2)
     endif
@@ -799,15 +797,14 @@ do jstep = 1, iters+iters_warmup
   endif
 
   if (ldump_checksums) then
-    write (checksums_filename,'(A)') trim(cchecksums_path)
 
     if (icall_mode == 1) then
-      call dump_checksums_psp(filename=checksums_filename, noutdump=noutdump_checksum, &
+      call dump_checksums_psp(filename=cchecksums_path, noutdump=noutdump_checksum, &
         &                     jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, &
         &                     nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspscalar=zspscalar, &
         &                     append_checksums=.true.)
     else
-      call dump_checksums_psp_3a_2(filename=checksums_filename, noutdump=noutdump_checksum, &
+      call dump_checksums_psp_3a_2(filename=cchecksums_path, noutdump=noutdump_checksum, &
         &                          jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc2=ivsetsc2, &
         &                          nspec2g=nspec2g, zspvor=zspvor, zspdiv=zspdiv, zspsc3a=zspsc3a, &
         &                          zspsc2=zspsc2, append_checksums=.true.)

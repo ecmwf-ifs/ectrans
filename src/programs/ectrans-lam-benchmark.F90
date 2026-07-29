@@ -137,7 +137,6 @@ logical :: lmeminfo = .false. ! Show information from FIAT routine ec_meminfo at
 integer(kind=jpim) :: nstats_mem = 0
 integer(kind=jpim) :: ntrace_stats = 0
 integer(kind=jpim) :: nprnt_stats = 1
-character(len=1024) :: checksums_filename
 
 ! The multiplier of the machine epsilon used as a tolerance for correctness checking
 ! ncheck = 0 (the default) means that correctness checking is disabled
@@ -640,8 +639,7 @@ do jstep = 1, iters
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
     zgp2 (iend+1:, :, ngpblks) = 0
-    write (checksums_filename,'(A)') trim(cchecksums_path)
-    call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
+    call dump_checksums(filename = cchecksums_path, noutdump = noutdump,                 &
                       & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
                       & ivset = ivset, ivsetsc = ivsetsc,                                   &
                       & nspec2g = nspec2g, zgpuv = zgpuv, zgp3a = zgpuv, zgp2 = zgp2)
@@ -727,8 +725,7 @@ do jstep = 1, iters
   endif
 
   if (ldump_checksums) then
-    write (checksums_filename,'(A)') trim(cchecksums_path)
-    call dump_checksums(filename = checksums_filename, noutdump = noutdump,                 &
+    call dump_checksums(filename = cchecksums_path, noutdump = noutdump,                 &
                       & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
                       & ivset = ivset, ivsetsc = ivsetsc,                                   &
                       & nspec2g = nspec2g, sp3d = sp3d, zspc2 = zspsc2, append_checksums=.true.)
