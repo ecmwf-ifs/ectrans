@@ -27,9 +27,29 @@ env:
   CACHE_SUFFIX: v1        # Increase to force new cache to be created
 
 jobs:
+  should-run:
+    name: decide whether to run build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      value: ${{ steps.decision.outputs.value }}
+    steps:
+      - name: Checkout reusable workflow action
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/should-run
+
+      - name: Decide whether this build should run
+        id: decision
+        uses: ./.github/actions/should-run
+
   ci-hpc:
     name: ci-hpc
-    if: ${{ !github.event.pull_request.head.repo.fork && github.event.action != 'labeled' || github.event.label.name == 'approved-for-ci' }}
+    needs: should-run
+    if: ${{ needs.should-run.outputs.value == 'true' && (!github.event.pull_request.head.repo.fork && github.event.action != 'labeled' || github.event.label.name == 'approved-for-ci') }}
 
     strategy:
       fail-fast: false    # false: try to complete all jobs
@@ -53,6 +73,8 @@ jobs:
               #SBATCH --gpus-per-task=0
               #SBATCH --mem=200G
               #SBATCH --qos=np
+            output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
+            workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
             env_vars:
               - CMAKE_GENERATOR=Ninja
 
@@ -68,6 +90,8 @@ jobs:
               #SBATCH --gpus-per-task=1
               #SBATCH --mem=200G
               #SBATCH --qos=ng
+            output_dir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
+            workdir: /scratch/{0}/github-actions/ectrans/${{ github.run_id }}/${{ github.run_attempt }}
             env_vars:
               - CMAKE_GENERATOR=Ninja
 
@@ -97,14 +121,16 @@ jobs:
     runs-on: [self-hosted, linux, hpc]
     env:
       GH_TOKEN: ${{ github.token }}
+      OUTPUT_DIR: ${{ format(matrix.output_dir, secrets[matrix.account_secret || matrix.troika_user_secret]) || '' }}
+      WORKDIR: ${{ format(matrix.workdir, secrets[matrix.account_secret || matrix.troika_user_secret]) || '' }}
     steps:
       - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
         with:
           site: ${{ matrix.site }}
           troika_user: ${{ secrets[matrix.troika_user_secret] }}
           sbatch_options: ${{ format(matrix.sbatch_options, secrets[matrix.account_secret]) }}
-          output_dir: ${{ format(matrix.output_dir, secrets[matrix.account_secret]) || '' }}
-          workdir: ${{ format(matrix.workdir, secrets[matrix.account_secret]) || '' }}
+          output_dir: ${{ env.OUTPUT_DIR }}
+          workdir: ${{ env.WORKDIR }}
           template_data: |
             site: ${{ matrix.site }}
             arch: ${{ matrix.arch }}
@@ -137,6 +163,17 @@ jobs:
 
               rm -r $REPO
               rm -r build
+
+              {% for name in dependencies.keys() %}
+                {% if name != unsupported_dependency %}
+                  {% set org, proj = name.split('/') %}
+                  rmdir {{org}} 2>/dev/null || true
+                {% endif %}
+              {% endfor %}
+              repo_owner=$(dirname "$REPO")
+              if [ "$repo_owner" != "." ]; then
+                rmdir "$repo_owner" 2>/dev/null || true
+              fi
             }
             error_trap() {
               cleanup
@@ -212,4 +249,3 @@ jobs:
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
             cleanup
-

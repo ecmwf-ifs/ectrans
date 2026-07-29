@@ -57,19 +57,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout ecBuild
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: ecmwf/ecbuild
         path: ecbuild
 
     - name: Checkout FIAT
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: ecmwf-ifs/fiat
         path: fiat
 
     - name: Checkout ecTrans
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         path: ectrans
 

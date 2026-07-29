@@ -19,11 +19,32 @@ on:
 env:
   ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
   CTEST_PARALLEL_LEVEL: 1
-  CACHE_SUFFIX: v2        # Increase to force new cache to be created
+  CACHE_SUFFIX: v3        # Increase to force new cache to be created
 
 jobs:
+  should-run:
+    name: decide whether to run build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      value: ${{ steps.decision.outputs.value }}
+    steps:
+      - name: Checkout reusable workflow action
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/should-run
+
+      - name: Decide whether this build should run
+        id: decision
+        uses: ./.github/actions/should-run
+
   ci:
     name: ci
+    needs: should-run
+    if: needs.should-run.outputs.value == 'true'
 
     strategy:
       fail-fast: false    # false: try to complete all jobs
@@ -68,7 +89,7 @@ jobs:
             compiler_fc: nvfortran
             cmake_options: -DBLA_VENDOR=Generic
             ctest_options: -E memory
-            caching: false
+            caching: true
 
           - name : linux intel-classic
             os: ubuntu-22.04
@@ -96,10 +117,7 @@ jobs:
             compiler_cc: ~
             compiler_cxx: ~
             compiler_fc: gfortran-13
-            cmake_options: >-
-              -DBLAS_LIBRARIES=/opt/homebrew/opt/lapack/lib/libblas.dylib
-              "-DLAPACK_LIBRARIES=/opt/homebrew/opt/lapack/lib/libblas.dylib;/opt/homebrew/opt/lapack/lib/liblapack.dylib"
-              -DBLA_VENDOR=Generic
+            cmake_options: -DBLA_VENDOR=Generic
             caching: true
 
     runs-on: ${{ matrix.os }}
@@ -115,37 +133,12 @@ jobs:
         fi
 
     - name: Set up Python 3.11
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: 3.11
 
     - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Environment
-      run:  |
-        echo "DEPS_DIR=${{ runner.temp }}/deps" >> $GITHUB_ENV
-        echo "CC=${{ matrix.compiler_cc }}"     >> $GITHUB_ENV
-        echo "CXX=${{ matrix.compiler_cxx }}"   >> $GITHUB_ENV
-        echo "FC=${{ matrix.compiler_fc }}"     >> $GITHUB_ENV
-
-        if [[ "${{ matrix.os }}" =~ macos ]]; then
-          brew install ninja
-        else
-          sudo apt-get update
-          sudo apt-get install ninja-build
-        fi
-
-        printenv
-
-    - name: Cache Dependencies
-      # There seems to be a problem with cached NVHPC dependencies, leading to SIGILL perhaps due to slightly different architectures
-      if: matrix.caching
-      id: deps-cache
-      uses: pat-s/always-upload-cache@v2.1.5
-      with:
-        path: ${{ env.DEPS_DIR }}
-        key: deps-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ env.CACHE_SUFFIX }}
+      uses: actions/checkout@v7
 
     # Free up disk space for nvhpc
     - name: Free Disk Space (Ubuntu)
@@ -204,6 +197,71 @@ jobs:
         [ -z ${I_MPI_ROOT+x} ] || echo "MPI_HOME=${I_MPI_ROOT}" >> $GITHUB_ENV
         echo "CACHE_SUFFIX=$CC-$($CC -dumpversion)" >> $GITHUB_ENV
 
+    - name: Environment
+      run:  |
+        echo "DEPS_DIR=${{ runner.temp }}/deps" >> $GITHUB_ENV
+        echo "CC=${{ matrix.compiler_cc }}"     >> $GITHUB_ENV
+        echo "CXX=${{ matrix.compiler_cxx }}"   >> $GITHUB_ENV
+        echo "FC=${{ matrix.compiler_fc }}"     >> $GITHUB_ENV
+
+        if [[ "${{ matrix.os }}" =~ macos ]]; then
+          # GitHub-hosted macOS runners can include aws/tap, which Homebrew may reject as untrusted during auto-update.
+          brew untap aws/tap || true
+          brew install ninja
+        else
+          sudo apt-get update
+          sudo apt-get install ninja-build
+        fi
+
+        printenv
+
+    - name: Dependency cache key
+      id: dependency-cache-key
+      shell: bash -eux {0}
+      run: |
+        echo "value=deps-${{ matrix.os }}-${{ matrix.compiler }}-${CACHE_SUFFIX}" >> $GITHUB_OUTPUT
+
+    - name: Restore dependencies cache
+      if: matrix.caching
+      id: deps-cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/deps
+        key: ${{ steps.dependency-cache-key.outputs.value }}
+
+
+    - name: Set compile flags
+      shell: bash -eux {0}
+      run: |
+        # Define flags to ensure a common baseline for the x86_64 runners, which have a mix of AMD and Intel processors.
+        # This should make builds reproducible across runners to compare references.
+        # This is also needed for self-compiled FFTW!
+        #
+        # Regardless of reproducibility across runners nvhpc needs the "-march=x86-64-v3" flag,
+        # which is needed to avoid nvfortran errors of "Error during math dispatching processing..."
+        # It seems the compiler detects an incompatible target processor on some of the runners,
+        # in particular -tp=znver4 seems incompatible with "AMD EPYC 9V74 80-Core Processor" as shown by /proc/cpuinfo.
+
+        TARGET_FLAGS="-march=x86-64-v3"
+        if [[ "${{ matrix.os }}" =~ macos ]]; then
+          # macos runners are all Apple Silicon, so we use the native architecture for reproducibility across runners.
+          TARGET_FLAGS="-march=native"
+        fi
+        if [[ "${{ matrix.compiler }}" == "intel-classic" ]]; then
+          # Classic intel compiler does not recognize -march=x86-64-v3, so we use -march=core-avx2 instead.
+          TARGET_FLAGS="-march=core-avx2"
+        fi
+
+        MATH_FLAGS="-ffp-contract=off -fno-fast-math"
+        if [[ "${{ matrix.compiler }}" =~ "nvhpc" ]]; then
+          MATH_FLAGS="-Kieee -Mnofma"
+        fi
+        if [[ "${{ matrix.compiler }}" =~ "intel" ]]; then
+          MATH_FLAGS="-fp-model consistent"
+        fi
+
+        echo "COMPILE_FLAGS=${TARGET_FLAGS} ${MATH_FLAGS}" >> $GITHUB_ENV
+
     - name: Install MPI
       shell: bash -eux {0}
       run: |
@@ -214,12 +272,24 @@ jobs:
     - name: Install FFTW
       shell: bash -eux {0}
       run: |
-        ${ECTRANS_TOOLS}/install-fftw.sh --version 3.3.10 --with-single --prefix ${DEPS_DIR}/fftw
+        CFLAGS="-fPIC ${COMPILE_FLAGS}" ${ECTRANS_TOOLS}/install-fftw.sh --version 3.3.10 --with-single --prefix ${DEPS_DIR}/fftw
         echo "FFTW_ROOT=${DEPS_DIR}/fftw" >> $GITHUB_ENV
 
+        if [[ "${{ matrix.os }}" != macos ]]; then
+          echo "ECTRANS_FFTW_CFLAGS=-fPIC ${COMPILE_FLAGS}" >> $GITHUB_ENV
+        fi
     - name: Install reference BLAS/LAPACK
       shell: bash -eux {0}
-      run: ${ECTRANS_TOOLS}/install-ref-blas-lapack.sh
+      run: |
+        ${ECTRANS_TOOLS}/install-ref-blas-lapack.sh
+        echo "ECTRANS_LAPACK_VENDOR=Netlib" >> $GITHUB_ENV
+
+    - name: Save dependencies cache
+      if: always() && matrix.caching && matrix.build_type == 'Debug' && steps.deps-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ runner.temp }}/deps
+        key: ${{ steps.dependency-cache-key.outputs.value }}
 
     - name: Set Build & Test Environment
       run: |
@@ -237,21 +307,19 @@ jobs:
         echo "UCX_NET_DEVICES=lo"  >> $GITHUB_ENV
         echo "UCX_LOG_LEVEL=error" >> $GITHUB_ENV
 
-        if [[ "${{ matrix.compiler }}" =~ "nvhpc" ]]; then
-          # Add a -tp=haswell flag, which is needed to avoid nvfortran errors of "Error during math dispatching processing..."
-          # It seems the compiler detects an incompatible target processor on some of the runners,
-          # in particular -tp=znver4 seems incompatible with "AMD EPYC 9V74 80-Core Processor" as shown by /proc/cpuinfo
-          NVHPC_TARGET_FLAG="-tp=haswell"
-          echo "set( ECBUILD_Fortran_FLAGS ${NVHPC_TARGET_FLAG} )" >> $PWD/toolchain.cmake
-          echo "set( ECBUILD_C_FLAGS ${NVHPC_TARGET_FLAG} )"       >> $PWD/toolchain.cmake
-          echo "set( ECBUILD_CXX_FLAGS ${NVHPC_TARGET_FLAG} )"     >> $PWD/toolchain.cmake
-
-          echo "CMAKE_TOOLCHAIN_FILE=$PWD/toolchain.cmake" >> $GITHUB_ENV
+        if [[ "${{ matrix.os }}" =~ macos ]]; then
+          echo "CMAKE_PREFIX_PATH=/opt/homebrew/opt/lapack${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}" >> $GITHUB_ENV
         fi
+
+        echo "set( ECBUILD_Fortran_FLAGS \"${COMPILE_FLAGS}\" )" >> $PWD/toolchain.cmake
+        echo "set( ECBUILD_C_FLAGS \"${COMPILE_FLAGS}\" )"       >> $PWD/toolchain.cmake
+        echo "set( ECBUILD_CXX_FLAGS \"${COMPILE_FLAGS}\" )"     >> $PWD/toolchain.cmake
+        cat $PWD/toolchain.cmake
+        echo "CMAKE_TOOLCHAIN_FILE=$PWD/toolchain.cmake" >> $GITHUB_ENV
 
     - name: Build & Test
       id: build-test
-      uses: ecmwf-actions/build-package@v2
+      uses: ecmwf/build-package@v2
       with:
         self_coverage: false
         force_build: true
@@ -263,8 +331,9 @@ jobs:
           ecmwf-ifs/field_api@refs/tags/v0.3.9
         dependency_branch: develop
         dependency_cmake_options: |
-          ecmwf-ifs/fiat: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
-        cmake_options:    "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON"
+          ecmwf-ifs/fiat:      "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
+          ecmwf-ifs/field_api: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_CUDA=OFF"
+        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_MPI=ON -DENABLE_FFTW=ON -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools
