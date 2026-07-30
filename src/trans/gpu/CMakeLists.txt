@@ -61,6 +61,7 @@ ecbuild_add_library(
                        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                        $<INSTALL_INTERFACE:include/ectrans>
                        $<INSTALL_INTERFACE:include>
+                       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/gpu/internal>
   PUBLIC_LIBS          fiat ectrans_common
   PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                        $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
@@ -142,6 +143,7 @@ foreach( prec dp sp )
                                $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/include/ectrans>
                                $<INSTALL_INTERFACE:include/ectrans>
                                $<INSTALL_INTERFACE:include>
+                               $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/gpu/internal>
           PUBLIC_LIBS          ectrans_common ectrans_gpu_common ectrans_gpu_${prec}_includes
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
