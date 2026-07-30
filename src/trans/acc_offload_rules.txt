@@ -1,4 +1,4 @@
-s/!$DIR/!$ACC/g
+s/!DIR/!$ACC/g
 s/!END_DATA/END DATA/g
 s/!EXIT_DATA/EXIT DATA/g
 s/!DATA/DATA/g
