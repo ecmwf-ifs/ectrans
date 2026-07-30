@@ -50,6 +50,16 @@ integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
 integer(kind=jpim), parameter :: noutdump_checksum = 8 ! Unit number for dump_checksum
 
+type checksum_run_type
+  character(len=4) :: checksum = ""
+  character(len=16) :: label = ""
+  character(len=16) :: description = ""
+  integer(kind=jpim) :: first_indices(2) = 0
+  integer(kind=jpim) :: last_indices(2) = 0
+  integer(kind=jpim) :: num_indices = 0
+  integer(kind=jpim) :: count = 0
+end type checksum_run_type
+
 ! Default parameters
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of 3D scalar fields
@@ -726,7 +736,9 @@ do jstep = 1, iters+iters_warmup
       zgp (iend+1:, :, ngpblks) = 0
       call dump_checksums_pgp(filename=cchecksums_path, noutdump=noutdump_checksum, &
                             & jstep=jstep, myproc=myproc, nproma=nproma, ngptotg=ngptotg, &
-                            & zgp=zgp)
+                            & knlev=nflevg, kuv_fields=inum_wind_fields, &
+                            & k3d_fields=inum_sc_3d_fields, k2d_fields=inum_sc_2d_fields, &
+                            & lscders=lscders, luvder=luvder, zgp=zgp)
     else
       ! Remove trash at end of last block
       zgpuv (iend+1:, :, :, ngpblks) = 0
@@ -1545,6 +1557,113 @@ end function discontiguous_fletcher16_hex
 
 !===================================================================================================
 
+function format_checksum_location(first_indices, last_indices, num_indices) result(location)
+
+  integer(kind=jpim), intent(in) :: first_indices(2)
+  integer(kind=jpim), intent(in) :: last_indices(2)
+  integer(kind=jpim), intent(in) :: num_indices
+  character(len=32) :: location
+
+  location = ""
+  select case (num_indices)
+    case (0)
+    case (1)
+      if (first_indices(1) == last_indices(1)) then
+        write(location, '("(",i0,")")') first_indices(1)
+      else
+        write(location, '("(",i0,"-",i0,")")') first_indices(1), last_indices(1)
+      endif
+    case (2)
+      if (first_indices(1) == last_indices(1) .and. first_indices(2) == last_indices(2)) then
+        write(location, '("(",i0,", ",i0,")")') first_indices(1), first_indices(2)
+      else if (first_indices(1) == last_indices(1)) then
+        write(location, '("(",i0,", ",i0,"-",i0,")")') &
+          & first_indices(1), first_indices(2), last_indices(2)
+      else if (first_indices(2) == last_indices(2)) then
+        write(location, '("(",i0,"-",i0,", ",i0,")")') &
+          & first_indices(1), last_indices(1), first_indices(2)
+      else
+        write(location, '("(",i0,"-",i0,", ",i0,"-",i0,")")') &
+          & first_indices(1), last_indices(1), first_indices(2), last_indices(2)
+      endif
+    case default
+      call abor1('format_checksum_location supports at most two indices')
+  end select
+
+end function format_checksum_location
+
+!===================================================================================================
+
+subroutine flush_checksum_run(noutdump, run)
+
+  integer(kind=jpim), intent(in) :: noutdump
+  type(checksum_run_type), intent(inout) :: run
+  character(len=32) :: location
+  character(len=24) :: label_and_location
+
+  if (run%count == 0) return
+
+  location = format_checksum_location(run%first_indices, run%last_indices, run%num_indices)
+  if (location == "") then
+    write(noutdump, '(a,1x,i4," # ",a)') run%checksum, run%count, trim(run%label)
+  else if (run%description == "") then
+    write(noutdump, '(a,1x,i4," # ",a,1x,a)') &
+      & run%checksum, run%count, trim(run%label), trim(location)
+  else
+    label_and_location = trim(run%label) // " " // trim(location)
+    write(noutdump, '(a,1x,i4," # ",a,1x,a)') &
+      & run%checksum, run%count, label_and_location, trim(run%description)
+  endif
+
+  run%checksum = ""
+  run%label = ""
+  run%description = ""
+  run%first_indices = 0
+  run%last_indices = 0
+  run%num_indices = 0
+  run%count = 0
+
+end subroutine flush_checksum_run
+
+!===================================================================================================
+
+subroutine append_checksum(noutdump, run, checksum, label, indices, description)
+
+  integer(kind=jpim), intent(in) :: noutdump
+  type(checksum_run_type), intent(inout) :: run
+  character(len=*), intent(in) :: checksum
+  character(len=*), intent(in) :: label
+  integer(kind=jpim), intent(in), optional :: indices(:)
+  character(len=*), intent(in), optional :: description
+  character(len=16) :: run_description
+
+  run_description = ""
+  if (present(description)) run_description = description
+  if (present(indices)) then
+    if (size(indices) > 2) call abor1('append_checksum supports at most two indices')
+  endif
+
+  if (run%count > 0) then
+    if (checksum /= run%checksum .or. label /= trim(run%label) .or. &
+      & run_description /= trim(run%description)) call flush_checksum_run(noutdump, run)
+  endif
+
+  if (run%count == 0) then
+    run%checksum = checksum
+    run%label = label
+    run%description = run_description
+    if (present(indices)) then
+      run%first_indices(1:size(indices)) = indices
+      run%num_indices = size(indices)
+    endif
+  endif
+  if (present(indices)) run%last_indices(1:size(indices)) = indices
+  run%count = run%count + 1
+
+end subroutine append_checksum
+
+!===================================================================================================
+
 subroutine dump_gridpoint_field(jstep, myproc, nproma, gfld, fld, fldchar, noutdump)
 
   ! Dump a 2d field to a binary file.
@@ -1615,7 +1734,8 @@ end subroutine open_dump_checksums_file
 
 subroutine dump_checksums_pgp(filename, noutdump,             &
                             & jstep, myproc, nproma, ngptotg, &
-                            & zgp)
+                            & knlev, kuv_fields, k3d_fields, k2d_fields, &
+                            & lscders, luvder, zgp)
 
   character(len=*),   intent(in) :: filename
   integer(kind=jpim), intent(in) :: noutdump ! unit number for output file
@@ -1623,10 +1743,36 @@ subroutine dump_checksums_pgp(filename, noutdump,             &
   integer(kind=jpim), intent(in) :: myproc   ! mpi rank
   integer(kind=jpim), intent(in) :: nproma   ! size of nproma
   integer(kind=jpim), intent(in) :: ngptotg
+  integer(kind=jpim), intent(in) :: knlev
+  integer(kind=jpim), intent(in) :: kuv_fields
+  integer(kind=jpim), intent(in) :: k3d_fields
+  integer(kind=jpim), intent(in) :: k2d_fields
+  logical, intent(in) :: lscders
+  logical, intent(in) :: luvder
   real(kind=jprb), intent(in) :: zgp(:,:,:)
   integer(kind=jpim) :: jfld
+  integer(kind=jpim) :: base_uv_fields, base_3d_scalar_fields, base_2d_scalar_fields
+  integer(kind=jpim) :: base_uv_size, uv_derivative_size, scalar_group_size, field_offset, scalar_group
+  logical :: checksum_appended
   real(kind=jprb), allocatable :: gfld(:,:)
   character(len=4) :: checksum_hex
+  character(len=16) :: field_description
+  type(checksum_run_type) :: checksum_run
+
+  base_uv_fields = kuv_fields
+  if (luvder) base_uv_fields = base_uv_fields - 2
+  base_3d_scalar_fields = k3d_fields
+  base_2d_scalar_fields = k2d_fields
+  if (lscders) then
+    base_3d_scalar_fields = base_3d_scalar_fields / 3
+    base_2d_scalar_fields = base_2d_scalar_fields / 3
+  endif
+  base_uv_size = knlev * base_uv_fields
+  uv_derivative_size = knlev * (kuv_fields - base_uv_fields)
+  scalar_group_size = knlev * base_3d_scalar_fields + base_2d_scalar_fields
+  if (size(zgp, 2) /= knlev * kuv_fields + knlev * k3d_fields + k2d_fields) then
+    call abor1('dump_checksums_pgp: inconsistent flattened grid-point field layout')
+  endif
 
   if (myproc == 1) then
    call open_dump_checksums_file(filename, noutdump, jstep)
@@ -1638,11 +1784,71 @@ subroutine dump_checksums_pgp(filename, noutdump,             &
       &            pgp=zgp(:,jfld:jfld,:))
     if (myproc == 1) then
       checksum_hex = fletcher16_hex(gfld(:,:))
-      write(noutdump, '(a," # ",a," (",i0,")")') checksum_hex, "zgp", jfld
+      field_offset = jfld
+      if (field_offset <= base_uv_size) then
+        if (base_uv_fields == 4) then
+          select case ((field_offset - 1) / knlev + 1)
+            case (1); field_description = "vorticity"
+            case (2); field_description = "divergence"
+            case (3); field_description = "u"
+            case (4); field_description = "v"
+          end select
+        else
+          if (field_offset <= knlev) then
+            field_description = "u"
+          else
+            field_description = "v"
+          endif
+        endif
+        call append_checksum(noutdump, checksum_run, checksum_hex, "zgp", [jfld], field_description)
+      else
+        field_offset = field_offset - base_uv_size
+        scalar_group = 0
+        checksum_appended = .false.
+        if (field_offset > scalar_group_size) then
+          field_offset = field_offset - scalar_group_size
+          if (lscders) then
+            scalar_group = 1
+            if (field_offset > scalar_group_size) then
+              field_offset = field_offset - scalar_group_size
+              scalar_group = 2
+            endif
+          endif
+          if (scalar_group /= 1 .and. luvder .and. field_offset <= uv_derivative_size) then
+            if (field_offset <= knlev) then
+              field_description = "u-ew"
+            else
+              field_description = "v-ew"
+            endif
+            call append_checksum(noutdump, checksum_run, checksum_hex, "zgp", [jfld], field_description)
+            checksum_appended = .true.
+          else if (scalar_group == 2 .and. luvder) then
+            field_offset = field_offset - uv_derivative_size
+          endif
+        endif
+        if (.not. checksum_appended) then
+          if (field_offset <= knlev * base_3d_scalar_fields) then
+            select case (scalar_group)
+              case (0); field_description = "scalar-3d"
+              case (1); field_description = "scalar-3d-ns"
+              case (2); field_description = "scalar-3d-ew"
+            end select
+            call append_checksum(noutdump, checksum_run, checksum_hex, "zgp", [jfld], field_description)
+          else
+            select case (scalar_group)
+              case (0); field_description = "scalar-2d"
+              case (1); field_description = "scalar-2d-ns"
+              case (2); field_description = "scalar-2d-ew"
+            end select
+            call append_checksum(noutdump, checksum_run, checksum_hex, "zgp", [jfld], field_description)
+          endif
+        endif
+      endif
     endif
   enddo
 
   if (myproc == 1) then
+    call flush_checksum_run(noutdump, checksum_run)
     write(nout,*) "close ", noutdump
     close(noutdump)
     if (allocated(gfld)) deallocate(gfld)
@@ -1672,6 +1878,8 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
   integer(kind=jpim) :: base_uv_fields, base_3d_scalar_fields, base_2d_scalar_fields
   real(kind=jprb), allocatable :: gfld(:,:)
   character(len=4) :: checksum_hex
+  character(len=16) :: field_description
+  type(checksum_run_type) :: checksum_run
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep)
@@ -1688,12 +1896,26 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
   endif
 
   do jfld = 1, base_uv_fields
+    if (base_uv_fields == 4) then
+      select case (jfld)
+        case (1); field_description = "vorticity"
+        case (2); field_description = "divergence"
+        case (3); field_description = "u"
+        case (4); field_description = "v"
+      end select
+    else
+      if (jfld == 1) then
+        field_description = "u"
+      else
+        field_description = "v"
+      endif
+    endif
     do jlev = 1, size(zgpuv, 2)
       call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
         &            pgp=zgpuv(:,jlev:jlev,jfld,:))
       if (myproc == 1) then
         checksum_hex = fletcher16_hex(gfld(:,:))
-        write(noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgpuv", jlev, jfld
+        call append_checksum(noutdump, checksum_run, checksum_hex, "zgpuv", [jlev, jfld], field_description)
       endif
     enddo
   enddo
@@ -1704,7 +1926,7 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
         &            pgp=zgp3a(:,jlev:jlev,jfld,:))
       if (myproc == 1) then
         checksum_hex = fletcher16_hex(gfld(:,:))
-        write(noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgp3a", jlev, jfld
+        call append_checksum(noutdump, checksum_run, checksum_hex, "zgp3a", [jlev, jfld], "scalar-3d")
       endif
     enddo
   enddo
@@ -1714,7 +1936,7 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
       &            pgp=zgp2(:,jfld:jfld,:))
     if (myproc == 1) then
       checksum_hex = fletcher16_hex(gfld(:,:))
-      write(noutdump, '(a," # ",a," (",i0,")")') checksum_hex, "zgp2", jfld
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zgp2", [jfld], "scalar-2d")
     endif
   enddo
 
@@ -1725,7 +1947,7 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
           &            pgp=zgp3a(:,jlev:jlev,jfld,:))
         if (myproc == 1) then
           checksum_hex = fletcher16_hex(gfld(:,:))
-          write(noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgp3a", jlev, jfld
+          call append_checksum(noutdump, checksum_run, checksum_hex, "zgp3a", [jlev, jfld], "scalar-3d-ns")
         endif
       enddo
     enddo
@@ -1735,19 +1957,24 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
         &            pgp=zgp2(:,jfld:jfld,:))
       if (myproc == 1) then
         checksum_hex = fletcher16_hex(gfld(:,:))
-        write(noutdump, '(a," # ",a," (",i0,")")') checksum_hex, "zgp2", jfld
+        call append_checksum(noutdump, checksum_run, checksum_hex, "zgp2", [jfld], "scalar-2d-ns")
       endif
     enddo
   endif
 
   if (luvder) then
     do jfld = base_uv_fields + 1, size(zgpuv, 3)
+      if (jfld == base_uv_fields + 1) then
+        field_description = "u-ew"
+      else
+        field_description = "v-ew"
+      endif
       do jlev = 1, size(zgpuv, 2)
         call gath_grid(pgpg=gfld, kproma=nproma, kfgathg=1, kto=(/1/), kresol=1, &
           &            pgp=zgpuv(:,jlev:jlev,jfld,:))
         if (myproc == 1) then
           checksum_hex = fletcher16_hex(gfld(:,:))
-          write(noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgpuv", jlev, jfld
+          call append_checksum(noutdump, checksum_run, checksum_hex, "zgpuv", [jlev, jfld], field_description)
         endif
       enddo
     enddo
@@ -1760,7 +1987,7 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
           &            pgp=zgp3a(:,jlev:jlev,jfld,:))
         if (myproc == 1) then
           checksum_hex = fletcher16_hex(gfld(:,:))
-          write(noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgp3a", jlev, jfld
+          call append_checksum(noutdump, checksum_run, checksum_hex, "zgp3a", [jlev, jfld], "scalar-3d-ew")
         endif
       enddo
     enddo
@@ -1770,12 +1997,13 @@ subroutine dump_checksums_pgp_uv_3a_2(filename, noutdump,                      &
         &            pgp=zgp2(:,jfld:jfld,:))
       if (myproc == 1) then
         checksum_hex = fletcher16_hex(gfld(:,:))
-        write(noutdump, '(a," # ",a," (",i0,")")') checksum_hex, "zgp2", jfld
+        call append_checksum(noutdump, checksum_run, checksum_hex, "zgp2", [jfld], "scalar-2d-ew")
       endif
     enddo
   endif
 
   if (myproc == 1) then
+    call flush_checksum_run(noutdump, checksum_run)
     write(nout,*) "close ", noutdump
     close(noutdump)
     if (allocated(gfld)) deallocate(gfld)
@@ -1803,6 +2031,7 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   integer(kind=jpim) :: numfld, numscfld, nlev_checksum, jfld, ifirst, ilast
   real(kind=jprb), allocatable :: gspfld(:,:)
   character(len=4) :: checksum_hex
+  type(checksum_run_type) :: checksum_run
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep, append_checksums)
@@ -1813,8 +2042,10 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspvor)
-    checksum_hex = discontiguous_fletcher16_hex(gspfld(1:numfld,:))
-    write(noutdump, '(a," # ",a)') checksum_hex, "zspvor"
+    do jfld = 1, numfld
+      checksum_hex = discontiguous_fletcher16_hex(gspfld(jfld:jfld,:))
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspvor", [jfld], "vorticity")
+    enddo
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
@@ -1822,8 +2053,10 @@ subroutine dump_checksums_psp(filename, noutdump,       &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspdiv)
-    checksum_hex = discontiguous_fletcher16_hex(gspfld(1:numfld,:))
-    write(noutdump, '(a," # ",a)') checksum_hex, "zspdiv"
+    do jfld = 1, numfld
+      checksum_hex = discontiguous_fletcher16_hex(gspfld(jfld:jfld,:))
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspdiv", [jfld], "divergence")
+    enddo
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
   endif
@@ -1838,15 +2071,16 @@ subroutine dump_checksums_psp(filename, noutdump,       &
       ifirst = (jfld - 1) * nlev_checksum + 1
       ilast = jfld * nlev_checksum
       checksum_hex = discontiguous_fletcher16_hex(gspfld(ifirst:ilast,:))
-      write(noutdump, '(a," # ",a,"(",i0,")")') checksum_hex, "zspscalar", jfld
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspscalar", [jfld], "scalar-3d")
     enddo
     checksum_hex = discontiguous_fletcher16_hex(gspfld(numscfld*nlev_checksum+1:numscfld*nlev_checksum+1,:))
-    write(noutdump, '(a," # ",a,"(",i0,")")') checksum_hex, "zspscalar", numscfld + 1
+    call append_checksum(noutdump, checksum_run, checksum_hex, "zspscalar", [numscfld + 1], "scalar-2d")
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivsetsc, pspec=zspscalar)
   endif
 
   if (myproc == 1) then
+    call flush_checksum_run(noutdump, checksum_run)
     write(nout,*) "close ", noutdump
     close(noutdump)
     if (allocated(gspfld)) deallocate(gspfld)
@@ -1877,6 +2111,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   integer(kind=jpim) :: numfld, jfld
   real(kind=jprb), allocatable :: gspfld(:,:)
   character(len=4) :: checksum_hex
+  type(checksum_run_type) :: checksum_run
 
   if (myproc == 1) then
     call open_dump_checksums_file(filename, noutdump, jstep, append_checksums)
@@ -1887,8 +2122,10 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspvor)
-    checksum_hex = discontiguous_fletcher16_hex(gspfld(1:numfld,:))
-    write(noutdump, '(a," # ",a)') checksum_hex, "zspvor"
+    do jfld = 1, numfld
+      checksum_hex = discontiguous_fletcher16_hex(gspfld(jfld:jfld,:))
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspvor", [jfld], "vorticity")
+    enddo
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspvor)
   endif
@@ -1896,8 +2133,10 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
       &            kvset=ivset, pspec=zspdiv)
-    checksum_hex = discontiguous_fletcher16_hex(gspfld(1:numfld,:))
-    write(noutdump, '(a," # ",a)') checksum_hex, "zspdiv"
+    do jfld = 1, numfld
+      checksum_hex = discontiguous_fletcher16_hex(gspfld(jfld:jfld,:))
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspdiv", [jfld], "divergence")
+    enddo
   else
     call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspdiv)
   endif
@@ -1907,7 +2146,7 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
       call gath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
         &            kvset=ivset, pspec=zspsc3a(:,:,jfld))
       checksum_hex = discontiguous_fletcher16_hex(gspfld(1:numfld,:))
-      write(noutdump, '(a," # ",a,"(",i0,")")') checksum_hex, "zspsc3a", jfld
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspsc3a", [jfld], "scalar-3d")
     else
       call gath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=zspsc3a(:,:,jfld))
     endif
@@ -1916,12 +2155,13 @@ subroutine dump_checksums_psp_3a_2(filename, noutdump,  &
   if (myproc == 1) then
     call gath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
     checksum_hex = discontiguous_fletcher16_hex(gspfld(1:1,:))
-    write(noutdump, '(a," # ",a)') checksum_hex, "zspsc2"
+    call append_checksum(noutdump, checksum_run, checksum_hex, "zspsc2", description="scalar-2d")
   else
     call gath_spec(kfgathg=1, kto=[1], kvset=ivsetsc2, pspec=zspsc2)
   endif
 
   if (myproc == 1) then
+    call flush_checksum_run(noutdump, checksum_run)
     write(nout,*) "close ", noutdump
     close(noutdump)
     if (allocated(gspfld)) deallocate(gspfld)

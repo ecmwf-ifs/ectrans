@@ -58,6 +58,15 @@ integer(kind=jpim), parameter :: nerr     = 0 ! Unit number for STDERR
 integer(kind=jpim), parameter :: nout     = 6 ! Unit number for STDOUT
 integer(kind=jpim), parameter :: noutdump = 7 ! Unit number for field output
 
+type checksum_run_type
+  character(len=4) :: checksum = ""
+  character(len=16) :: label = ""
+  integer(kind=jpim) :: first_indices(2) = 0
+  integer(kind=jpim) :: last_indices(2) = 0
+  integer(kind=jpim) :: num_indices = 0
+  integer(kind=jpim) :: count = 0
+end type checksum_run_type
+
 ! Default parameters
 integer(kind=jpim) :: nlon    = 128   ! Zonal dimension
 integer(kind=jpim) :: nlat    = 128   ! Meridional dimension
@@ -1578,6 +1587,101 @@ end function discontiguous_fletcher16_hex
 
 !===================================================================================================
 
+function format_checksum_location(first_indices, last_indices, num_indices) result(location)
+
+  integer(kind=jpim), intent(in) :: first_indices(2)
+  integer(kind=jpim), intent(in) :: last_indices(2)
+  integer(kind=jpim), intent(in) :: num_indices
+  character(len=32) :: location
+
+  location = ""
+  select case (num_indices)
+    case (0)
+    case (1)
+      if (first_indices(1) == last_indices(1)) then
+        write(location, '("(",i0,")")') first_indices(1)
+      else
+        write(location, '("(",i0,"-",i0,")")') first_indices(1), last_indices(1)
+      endif
+    case (2)
+      if (first_indices(1) == last_indices(1) .and. first_indices(2) == last_indices(2)) then
+        write(location, '("(",i0,", ",i0,")")') first_indices(1), first_indices(2)
+      else if (first_indices(1) == last_indices(1)) then
+        write(location, '("(",i0,", ",i0,"-",i0,")")') &
+          & first_indices(1), first_indices(2), last_indices(2)
+      else if (first_indices(2) == last_indices(2)) then
+        write(location, '("(",i0,"-",i0,", ",i0,")")') &
+          & first_indices(1), last_indices(1), first_indices(2)
+      else
+        write(location, '("(",i0,"-",i0,", ",i0,"-",i0,")")') &
+          & first_indices(1), last_indices(1), first_indices(2), last_indices(2)
+      endif
+    case default
+      call abor1('format_checksum_location supports at most two indices')
+  end select
+
+end function format_checksum_location
+
+!===================================================================================================
+
+subroutine flush_checksum_run(noutdump, run)
+
+  integer(kind=jpim), intent(in) :: noutdump
+  type(checksum_run_type), intent(inout) :: run
+  character(len=32) :: location
+
+  if (run%count == 0) return
+
+  location = format_checksum_location(run%first_indices, run%last_indices, run%num_indices)
+  if (location == "") then
+    write(noutdump, '(a,1x,i4," # ",a)') run%checksum, run%count, trim(run%label)
+  else
+    write(noutdump, '(a,1x,i4," # ",a,1x,a)') &
+      & run%checksum, run%count, trim(run%label), trim(location)
+  endif
+
+  run%checksum = ""
+  run%label = ""
+  run%first_indices = 0
+  run%last_indices = 0
+  run%num_indices = 0
+  run%count = 0
+
+end subroutine flush_checksum_run
+
+!===================================================================================================
+
+subroutine append_checksum(noutdump, run, checksum, label, indices)
+
+  integer(kind=jpim), intent(in) :: noutdump
+  type(checksum_run_type), intent(inout) :: run
+  character(len=*), intent(in) :: checksum
+  character(len=*), intent(in) :: label
+  integer(kind=jpim), intent(in), optional :: indices(:)
+
+  if (present(indices)) then
+    if (size(indices) > 2) call abor1('append_checksum supports at most two indices')
+  endif
+
+  if (run%count > 0) then
+    if (checksum /= run%checksum .or. label /= trim(run%label)) call flush_checksum_run(noutdump, run)
+  endif
+
+  if (run%count == 0) then
+    run%checksum = checksum
+    run%label = label
+    if (present(indices)) then
+      run%first_indices(1:size(indices)) = indices
+      run%num_indices = size(indices)
+    endif
+  endif
+  if (present(indices)) run%last_indices(1:size(indices)) = indices
+  run%count = run%count + 1
+
+end subroutine append_checksum
+
+!===================================================================================================
+
 subroutine dump_checksums(filename, noutdump, &
   & jstep, myproc, nproma, ngptotg, nspec2g,  &
   & ivset, ivsetsc,                           &
@@ -1608,6 +1712,7 @@ subroutine dump_checksums(filename, noutdump, &
   logical :: append
   integer(kind=jpim), save :: last_header_jstep = -1
   character(len=4) :: checksum_hex
+  type(checksum_run_type) :: checksum_run
 
   if (myproc == 1) then
     append = .false.
@@ -1639,7 +1744,7 @@ subroutine dump_checksums(filename, noutdump, &
         call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgpuv(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
           checksum_hex = fletcher16_hex(gfld(:,:))
-          write (noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgpuv", jlev, jfld
+          call append_checksum(noutdump, checksum_run, checksum_hex, "zgpuv", [jlev, jfld])
         endif
       enddo
     enddo
@@ -1651,7 +1756,7 @@ subroutine dump_checksums(filename, noutdump, &
         call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp3a(:,jlev:jlev,jfld, :))
         if (myproc == 1) then
           checksum_hex = fletcher16_hex(gfld(:,:))
-          write (noutdump, '(a," # ",a," (",i0,", ",i0,")")') checksum_hex, "zgp3a", jlev, jfld
+          call append_checksum(noutdump, checksum_run, checksum_hex, "zgp3a", [jlev, jfld])
         endif
       enddo
     enddo
@@ -1662,7 +1767,7 @@ subroutine dump_checksums(filename, noutdump, &
       call egath_grid(pgpg=gfld,kproma=nproma,kfgathg=1,kto=(/1/),kresol=1,pgp=zgp2(:,jfld:jfld,:))
       if (myproc == 1) then
         checksum_hex = fletcher16_hex(gfld(:,:))
-        write (noutdump, '(a," # ",a," (",i0,")")') checksum_hex, "zgp2", jfld
+        call append_checksum(noutdump, checksum_run, checksum_hex, "zgp2", [jfld])
       endif
     enddo
   endif
@@ -1673,7 +1778,7 @@ subroutine dump_checksums(filename, noutdump, &
         call egath_spec(pspecg=gspfld(1:numfld,:), kfgathg=numfld, kto=[(1, i = 1, numfld)], &
           &             kvset=ivset, pspec=sp3d(:,:,jfld))
         checksum_hex = discontiguous_fletcher16_hex(gspfld(1:numfld,:))
-        write(noutdump, '(a," # ",a,"(",i0,")")') checksum_hex, "sp3d", jfld
+        call append_checksum(noutdump, checksum_run, checksum_hex, "sp3d", [jfld])
       else
         call egath_spec(kfgathg=numfld, kto=[(1, i = 1, numfld)], kvset=ivset, pspec=sp3d(:,:,jfld))
       endif
@@ -1684,13 +1789,14 @@ subroutine dump_checksums(filename, noutdump, &
     if (myproc == 1) then
       call egath_spec(pspecg=gspfld(1:1,:), kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
       checksum_hex = discontiguous_fletcher16_hex(gspfld(1:1,:))
-      write (noutdump, '(a," # ",a)') checksum_hex, "zspc2"
+      call append_checksum(noutdump, checksum_run, checksum_hex, "zspc2")
     else
       call egath_spec(kfgathg=1, kto=[1], kvset=ivsetsc, pspec=zspc2)
     endif
   endif
 
   if (myproc == 1) then
+    call flush_checksum_run(noutdump, checksum_run)
     close(noutdump)
     if (allocated(gfld))   deallocate(gfld)
     if (allocated(gspfld)) deallocate(gspfld)
