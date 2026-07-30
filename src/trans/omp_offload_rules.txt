@@ -1,0 +1,11 @@
+s/!$DIR/!$OMP/g
+s/!END_DATA/END TARGET DATA/g
+s/!EXIT_DATA/TARGET EXIT DATA/g
+s/!DATA/TARGET DATA/g
+s/!PRESENT\(([^()]*)\)/MAP(PRESENT,ALLOC: (\1))/g
+s/!DELETE\(([^()]*)\)/MAP(DELETE: (\1))/g
+s/!ASYNC\(([^()]*)\)//g
+s/!WAIT\(([^()]*)\)//g
+s/!PARALLEL/TARGET TEAMS DISTRIBUTE PARALLEL DO/g
+s/!FIRSTPRIVATE\(([^()]*)\)/MAP(TO: (\1))/g
+s/!SHARED\(([^()]*)\)/SHARED((\1))/g

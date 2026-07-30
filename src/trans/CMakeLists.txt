@@ -17,6 +17,12 @@ function(generate_file)
   set(backend ${_PAR_BACKEND})
   set(sed_rules ${PROJECT_SOURCE_DIR}/src/trans/sedrenames.txt)
 
+  if( HAVE_ACC )
+    set( offload_rules ${PROJECT_SOURCE_DIR}/src/trans/acc_offload_rules.txt )
+  else()
+    set( offload_rules ${PROJECT_SOURCE_DIR}/src/trans/omp_offload_rules.txt )
+  endif()
+
   set( JPRB_dp JPRD )
   set( jprb_dp jprd )
   set( JPRB_sp JPRM )
@@ -28,7 +34,7 @@ function(generate_file)
 
   add_custom_command(
     OUTPUT  ${output}
-    COMMAND  cat ${sed_rules} |
+    COMMAND  cat ${sed_rules} ${offload_rules} |
              sed -e "s/VARIANTDESIGNATOR/${backend}/g" |
              sed -e "s/TYPEDESIGNATOR_UPPER/${JPRB_${backend}}/g" |
              sed -e "s/TYPEDESIGNATOR_LOWER/${jprb_${backend}}/g" |
