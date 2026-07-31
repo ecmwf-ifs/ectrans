@@ -24,28 +24,29 @@ foreach(platform ${platforms})
       endif()
 
       ecbuild_add_library(
-          TARGET           ectrans_field_api_${platform_tag}${prec}
+          TARGET           ectrans_field_view_${platform_tag}${prec}
           LINKER_LANGUAGE  Fortran
-          SOURCES          ectrans_field_api_mod.F90
-                           dir_trans_field_api.F90
-                           inv_trans_field_api.F90
-          PUBLIC_LIBS      ectrans_field_view_${platform_tag}${prec} field_api_${prec} fiat parkind_${prec}
-          PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/field_api/include/ectrans>
+          SOURCES          ectrans_field_view_mod.F90
+                           ectrans_field_view_internal_util_mod.F90
+                           dir_trans_field_view.F90
+                           inv_trans_field_view.F90
+          PUBLIC_LIBS      trans_${platform_tag}${prec} fiat parkind_${prec}
+          PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/field_view/include/ectrans>
                            $<INSTALL_INTERFACE:include/ectrans> )
 
       ecbuild_target_fortran_module_directory(
-          TARGET            ectrans_field_api_${platform_tag}${prec}
-          MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_field_api_${platform_tag}${prec}
-          INSTALL_DIRECTORY module/ectrans_field_api_${platform_tag}${prec} )
+          TARGET            ectrans_field_view_${platform_tag}${prec}
+          MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_field_view_${platform_tag}${prec}
+          INSTALL_DIRECTORY module/ectrans_field_view_${platform_tag}${prec} )
     endif()
   endforeach()
 endforeach()
 
-list( APPEND field_api_includes 
-  include/ectrans/dir_trans_field_api.h
-  include/ectrans/inv_trans_field_api.h
+list( APPEND field_view_includes 
+  include/ectrans/dir_trans_field_view.h
+  include/ectrans/inv_trans_field_view.h
 )
 install(
-  FILES        ${field_api_includes}
+  FILES        ${field_view_includes}
   DESTINATION  include/ectrans
 )
