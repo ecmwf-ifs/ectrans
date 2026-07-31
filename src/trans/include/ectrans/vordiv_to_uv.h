@@ -11,45 +11,49 @@
 INTERFACE
 SUBROUTINE VORDIV_TO_UV(PSPVOR,PSPDIV,PSPU,PSPV,KSMAX,KVSETUV)
 
-!**** *VORDIV_TO_UV* - Convert spectral vorticity and divergence to spectral U (u*cos(theta)) and V (v*cos(theta).
-
-!     Purpose.
-!     --------
-!        Interface routine for  Convert spectral vorticity and divergence to spectral U  and V 
-
-!**   Interface.
-!     ----------
-!     CALL VORDIV_TO_UV(...)
-
-!     Explicit arguments :
-!     --------------------
-!     PSPVOR(:,:) - spectral vorticity (input)
-!     PSPDIV(:,:) - spectral divergence (input)
-!     PSPU(:,:)   - spectral U (u*cos(theta) (output)
-!     PSPV(:,:)   - spectral V (v*cos(theta) (output)
-!     KSMAX       - spectral resolution (input)
-!     KVSETUV(:)  - Optionally indicating which 'b-set' in spectral space owns a
-!                   vor/div field. Equivalant to NBSETLEV in the IFS.
-!                   The length of KVSETUV should be the GLOBAL number
-!                   of u/v fields which is the dimension of u and v releated
-!                   fields in grid-point space.
-
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  VD2UV_CTL   - control vordiv to uv
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 15-06-15
-
-
-!     ------------------------------------------------------------------
+! begin_doc_block
+! ## `VORDIV_TO_UV`
+!
+! ### Signature
+!
+! ```f90
+! SUBROUTINE VORDIV_TO_UV(PSPVOR, PSPDIV, PSPU, PSPV, KSMAX, KVSETUV)
+! ```
+!
+! ### Purpose
+!
+! This subroutine converts spectral space vorticity and divergence to spectral space u and v wind
+! components.
+!
+! Note that this is a "special" subroutine: it can be called in isolation without initialisation by
+! `SETUP_TRANS0` and `SETUP_TRANS`. This is why it is necessary to pass in `KSMAX` explicitly.
+!
+! ### `INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(IN) :: PSPVOR(:,:)`  
+!   Spectral space vorticity.  
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `REAL(KIND=JPRB), INTENT(IN) :: PSPDIV(:,:)`  
+!   Spectral space divergence.  
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KSMAX`  
+!   Spectral truncation.
+!
+! ### `INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(OUT) :: PSPU(:,:)`  
+!   Spectral space U (zonal) wind.  
+!   Dimensions: (vertical levels, spectral coefficients).
+! - `REAL(KIND=JPRB), INTENT(OUT) :: PSPV(:,:)`  
+!   Spectral space V (meridional) wind.  
+!   Dimensions: (vertical levels, spectral coefficients).
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETUV(:)`  
+!   Array which maps each vertical level of the input vorticity/divergence to its corresponding  
+!   member of the V-set.
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

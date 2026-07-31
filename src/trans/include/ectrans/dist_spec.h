@@ -24,7 +24,16 @@ SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
 ! ### Purpose
 !
 ! This subroutine distributes a global spectral array among MPI tasks according to the specified
-! distribution parameters.
+! distribution parameters. Fields are partitioned in the horizontal dimension (i.e. the dimension
+! of spectral coefficients) and in the "fields" dimension, according to `KVSET`. This subroutine
+! is the opposite of `GATH_SPEC`.
+!
+! The figure below illustrates an example in which four fields are distributed equally across four
+! MPI tasks. In this case, `NPRTRV = 2` which means that each field is split among two MPI tasks,
+! as shown. This is in contrast to `DIST_GRID`, which distributes fields such that each MPI task
+! receives a slice of _every_ field.
+!
+! ![A schematic showing how DIST_SPEC works](img/dist_spec.png)
 !
 ! ### `INTENT(IN)` arguments
 !

@@ -11,42 +11,69 @@
 INTERFACE
 SUBROUTINE GATH_SPEC(PSPECG,KFGATHG,KTO,KVSET,KRESOL,PSPEC,LDIM1_IS_FLD,KSMAX,LDZA0IP)
 
-!**** *GATH_SPEC* - Gather global spectral array from processors
-
-!     Purpose.
-!     --------
-!        Interface routine for gathering spectral array
-
-!**   Interface.
-!     ----------
-!     CALL GATH_SPEC(...)
-
-!     Explicit arguments : 
-!     -------------------- 
-!     PSPECG(:,:) - Global spectral array
-!     KFGATHG     - Global number of fields to be gathered
-!     KTO(:)      - Processor responsible for gathering each field
-!     KVSET(:)    - "B-Set" for each field
-!     KRESOL      - resolution tag  which is required ,default is the
-!                   first defined resulution (input)
-!     PSPEC(:,:)  - Local spectral array
-!     LDIM1_IS_FLD - If TRUE first dimension of PSCPEC and PSPECG is the field dimension [.T.]
+! begin_doc_block
+! ## `GATH_SPEC`
 !
-!     Method.
-!     -------
-
-!     Externals.  SET_RESOL   - set resolution
-!     ----------  GATH_SPEC_CONTROL - control routine
-
-!     Author.
-!     -------
-!        Mats Hamrud *ECMWF*
-
-!     Modifications.
-!     --------------
-!        Original : 00-03-03
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE GATH_SPEC(PSPECG, KFGATHG, KTO, KVSET, KRESOL, PSPEC, LDIM1_IS_FLD, KSMAX, LDZA0IP)
+! ```
+!
+! ### Purpose
+!
+! This subroutine gathers spectral fields decomposed among MPI tasks according to the specified
+! distribution parameters. This subroutine is the opposite of `DIST_SPEC`.
+!
+! The figure below illustrates an example in which four fields distributed across four MPI
+! tasks are collected so that each task has one global spectral field. In this case, `NPRTRV = 2`
+! which means that each field is split among two MPI tasks to begin with, as shown.
+!
+! ![A schematic showing how GATH_SPEC works](img/gath_spec.png)
+!
+! ### `INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(IN) :: KFGATHG`  
+!   The global number of fields to be gathered.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KTO(:)`  
+!   Array which, for each field to be gathered, which MPI task will receive the field.  
+!   Dimensions: (KFGATHG).
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPEC(:,:)`  
+!   Array containing this MPI task's portion of the spectral fields to be gathered.  
+!   Dimensions: (number of fields, number of spectral coefficients) (flipped if `LDIM1_IS_FLD` is  
+!  `.FALSE.`).  
+!   Note that this is optional, because some tasks may not actually own any spectral fields (and  
+!   so they wouldn't have any fields to offer through `PSPEC`).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSET(:)`  
+!   Array which, for each field to be distributed, which "V-set" the field belongs to.  
+!   Dimensions: (KFGATHG).
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.  
+!   *Default*: `1` (i.e. first resolution handle)
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDIM1_IS_FLD`  
+!   If `.TRUE.`, the first dimension of `PSPECG` and `PSPEC` corresponds to fields and the second  
+!   dimension corresponds to spectral coefficients. If `.FALSE.`, the first dimension  
+!   corresponds to spectral coefficients and the second dimension corresponds to fields.  
+!   *Default*: `.TRUE.`
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSMAX`  
+!   Maximum total wavenumber of the spectral transform. If not provided, it is inferred from the  
+!   resolution handle `KRESOL`.  
+!   *Default*: inferred from `KRESOL`
+! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDZA0IP`  
+!   IF `.TRUE.`, the imaginary part of the coefficients corresponding to zonal wavenumber 0 are  
+!   zeroed.  
+!   *Default*: `.TRUE.`
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPECG(:,:)`  
+!   Array containing gathered fields.  
+!   Dimensions: (number of global spectral coefficients, number of fields on this MPI task).  
+!   Note that this is optional, because not all tasks may be receiving fields.
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
