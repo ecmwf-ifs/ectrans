@@ -382,6 +382,11 @@ END FUNCTION
 
 
 SUBROUTINE PROCESS_NSPEC2(LIST, NSPEC2)
+  ! Return the spectral dimension (NSPEC2) found in LIST.
+  ! Spectral fields follow these shape conventions:
+  !   rank 1: (NSPEC)                  -> NSPEC2 = EXTENTS(1)
+  !   rank 2: (NLEVS, NSPEC)           -> NSPEC2 = EXTENTS(2)
+  !   rank 3: (NLEVS, NSPEC, NFIELDS)  -> NSPEC2 = EXTENTS(2)
   TYPE(FIELD_VIEW), INTENT(IN) :: LIST(:)
   INTEGER(C_INT), INTENT(INOUT) :: NSPEC2
   INTEGER :: I
@@ -392,14 +397,14 @@ SUBROUTINE PROCESS_NSPEC2(LIST, NSPEC2)
       ELSE IF (NSPEC2 /= LIST(I)%EXTENTS(1)) THEN
         CALL ABORT_TRANS("GET_NSPEC2 FAILURE: Inconsistent NSPEC2 values across fields")
       ENDIF
-    ELSE IF (LIST(I)%RANK == 2) THEN
+    ELSE IF (LIST(I)%RANK == 2 .OR. LIST(I)%RANK == 3) THEN
       IF (NSPEC2 == 0) THEN
         NSPEC2 = LIST(I)%EXTENTS(2)
       ELSE IF (NSPEC2 /= LIST(I)%EXTENTS(2)) THEN
         CALL ABORT_TRANS("GET_NSPEC2 FAILURE: Inconsistent NSPEC2 values across fields")
       ENDIF
     ELSE
-      CALL ABORT_TRANS("GET_NSPEC2 FAILURE: RANK MUST BE <= 2")
+      CALL ABORT_TRANS("GET_NSPEC2 FAILURE: RANK MUST BE <= 3")
     ENDIF
   ENDDO
 END SUBROUTINE
