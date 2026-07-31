@@ -43,8 +43,7 @@ USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
 
 !     Externals.
 !     ----------
-
-!         PREPSNM - prepare REPSNM for wavenumber KM
+!
 !         PRFI1B  - prepares the spectral fields
 !         VDTUV   - compute u and v from vorticity and divergence
 
