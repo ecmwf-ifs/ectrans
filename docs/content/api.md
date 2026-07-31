@@ -2,10 +2,6 @@
 title: API
 ---
 
-@warning
-Page under construction.
-@endwarning
-
 The following subroutines can be called by programs that are linked against ecTrans. Here we
 describe in detail their signatures.
 
