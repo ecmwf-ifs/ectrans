@@ -8,9 +8,9 @@ s/!ASYNC\(([^()]*)\)//g
 s/!WAIT\(([^()]*)\)//g
 s/!PARALLEL/TARGET TEAMS DISTRIBUTE PARALLEL DO/g
 s/!FIRSTPRIVATE\(([^()]*)\)/MAP(TO: (\1))/g
-s/!SHARED\(([^()]*)\)/SHARED((\1))/g
+s/!SHARED\(([^()]*)\)/SHARED(\1)/g
 s/!COPYIN\(([^()]*)\)/MAP(TO: (\1))/g
-s/!UPDATE_DEVICE\(([^()]*)\)/TARGET UPDATE TO((\1))/g
-s/!USE_DEVICE\(([^()]*)\)/TARGET DATA USE_DEVICE_PTR((\1))/g
-s/!UPDATE_HOST\(([^()]*)\)/TARGET UPDATE FROM((\1))/g
-s/!END_HOST_DATA/END TARGET DATA/g
+s/!UPDATE_DEVICE\(([^()]*)\)/TARGET UPDATE TO(\1)/g
+s/!USE_DEVICE\(([^()]*)\)/TARGET DATA USE_DEVICE_PTR(\1)/g
+s/!END_USE_DEVICE/END TARGET DATA/g
+s/!UPDATE_HOST\(([^()]*)\)/TARGET UPDATE FROM(\1)/g

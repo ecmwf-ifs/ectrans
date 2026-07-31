@@ -10,7 +10,7 @@ s/!PARALLEL/PARALLEL LOOP/g
 s/!FIRSTPRIVATE\(([^()]*)\)/FIRSTPRIVATE(\1)/g
 s/!SHARED\(([^()]*)\)//g
 s/!COPYIN\(([^()]*)\)/COPYIN(\1)/g
-s/!UPDATE_DEVICE\(([^()]*)\)/UPDATE DEVICE((\1))/g
-s/!USE_DEVICE\(([^()]*)\)/HOST_DATA USE_DEVICE((\1))/g
-s/!UPDATE_HOST\(([^()]*)\)/UPDATE HOST((\1))/g
-s/!END_HOST_DATA/END HOST_DATA/g
+s/!UPDATE_DEVICE\(([^()]*)\)/UPDATE DEVICE(\1)/g
+s/!USE_DEVICE\(([^()]*)\)/HOST_DATA USE_DEVICE(\1)/g
+s/!END_USE_DEVICE/END HOST_DATA/g
+s/!UPDATE_HOST\(([^()]*)\)/UPDATE HOST(\1)/g
