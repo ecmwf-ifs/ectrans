@@ -158,7 +158,7 @@ SUBROUTINE LG2RB(LG2RBV,YLF,IVSET)
   ! Creation of a list of GRID_VIEW encapsulating the layer of an input FIELD_2RB field
   ! Given YLF dimensioned(NPROMA, NBLKS) as input,
   ! the output list size will contain one element, its view beeing dimensioned(NPROMA, NBLKS)
-  CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
+  TYPE (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (GRID_VIEW), INTENT(INOUT) :: LG2RBV (:)
   INTEGER(KIND=JPIM), POINTER, INTENT(IN) :: IVSET(:)
   REAL(KIND=JPRB), POINTER :: ZZ2 (:,:)
@@ -180,7 +180,7 @@ SUBROUTINE LG3RB(LG3RBV,YLF,IVSET)
   ! Creation of a list of GRID_VIEW encapsulating the layers of an input FIELD_3RB field
   ! Given YLF dimensioned(NPROMA, NLEVS, NBLKS) as input,
   ! the output list size will contain  (NLEVS) elements, their view beeing dimensioned(NPROMA, NBLKS)
-  CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
+  TYPE (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (GRID_VIEW), INTENT(INOUT) :: LG3RBV (:)
   INTEGER(KIND=JPIM), POINTER, INTENT(IN) :: IVSET(:)
 
@@ -222,7 +222,7 @@ SUBROUTINE LG4RB(LG4RBV, YLF, IVSET)
   ! Given YLF dimensioned(NPROMA, NLEVS, NFIELDS, NBLKS) as input,
   ! the output list size will contain  (NLEVS*NFIELDS) elementa, their view beeing dimensioned(NPROMA, NBLKS)
 
-  CLASS (FIELD_VIEW), INTENT(IN), POINTER :: YLF
+  TYPE (FIELD_VIEW), INTENT(IN), POINTER :: YLF
   TYPE (GRID_VIEW), INTENT(INOUT) :: LG4RBV (:)
   INTEGER(KIND=JPIM), POINTER, INTENT(IN) :: IVSET(:)
 
@@ -271,7 +271,7 @@ FUNCTION LG(YLFL,LGV,IVSET) RESULT(IOFF)
   TYPE (GRID_VIEW), INTENT(INOUT), OPTIONAL :: LGV (:) ! output list of GRID_VIEW
   TYPE (IVSET_PTR), INTENT(IN), OPTIONAL :: IVSET(:)
 
-  CLASS (FIELD_VIEW), POINTER:: YLF
+  TYPE (FIELD_VIEW), POINTER:: YLF
   INTEGER(KIND=JPIM), POINTER :: IVSET_NULL(:)
   INTEGER(KIND=JPIM) :: IOFF
   INTEGER(KIND=JPIM) :: ILEN, JFLD
@@ -348,7 +348,7 @@ SUBROUTINE LS1RB(LS1RBV, YLF)
   ! Creation of a list of SPEC_VIEW encapsulating the layer of an input FIELD_1RB field
   ! Given YLF dimensioned(NSPEC) as input,
   ! the output list size will contain one element, its view beeing dimensioned(NSPEC)
-  CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
+  TYPE (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (SPEC_VIEW), INTENT(INOUT) :: LS1RBV (:)
   INTEGER(KIND=JPIM), POINTER :: IVSET(:)
   REAL(KIND=JPRB), POINTER :: ZZ1 (:)
@@ -366,7 +366,7 @@ SUBROUTINE LS2RB(LS2RBV,YLF)
   ! Creation of a list of SPEC_VIEW, each of them encapsulating a layer of an input FIELD_2RB field.
   ! Given YLF dimensioned(NLEVS, NSPEC) as input,
   ! the output list size will contain (NLEVS) elements dimensioned(NSPEC)
-  CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
+  TYPE (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (SPEC_VIEW), INTENT(INOUT) :: LS2RBV (:)
 
   INTEGER(KIND=JPIM), POINTER :: IVSET(:)
@@ -391,7 +391,7 @@ SUBROUTINE LS3RB(LS3RBV,YLF)
   ! Creation of a list of SPEC_VIEW, each of them encapsulating a layer of an input FIELD_3RB field.
   ! Given YLF dimensioned(NLEVS, NSPEC, NFIELDS) as input,
   ! the output list size will contain (NLEVS*NFIELDS) SPEC_VIEW, each of them dimensioned(NSPEC)
-  CLASS (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
+  TYPE (FIELD_VIEW), POINTER, INTENT (IN) :: YLF
   TYPE (SPEC_VIEW), INTENT(INOUT) :: LS3RBV (:)
 
   INTEGER(KIND=JPIM), POINTER :: IVSET(:)
@@ -424,7 +424,7 @@ INTEGER(KIND=JPIM) :: IOFF
 
 INTEGER(KIND=JPIM) :: ILEN, JFLD
 
-CLASS (FIELD_VIEW), POINTER:: YLF
+TYPE (FIELD_VIEW), POINTER:: YLF
 LOGICAL :: LSV_PROVIDED
 REAL(KIND=JPRB), POINTER :: ZZ1 (:)
 
