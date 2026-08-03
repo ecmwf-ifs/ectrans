@@ -383,7 +383,7 @@ end subroutine synchost_rdonly_wrapped_fields
 
 subroutine nullify_wrapped_fields(ywflds)
 
-    ! Nullify all pointers in ywflds
+  ! Nullify all pointers in ywflds
 
   type(wrapped_fields), intent(inout) :: ywflds
 
