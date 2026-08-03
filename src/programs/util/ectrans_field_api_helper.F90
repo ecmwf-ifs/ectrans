@@ -380,37 +380,4 @@ subroutine synchost_rdonly_wrapped_fields(ywflds)
 
 end subroutine synchost_rdonly_wrapped_fields
 
-
-subroutine nullify_wrapped_fields(ywflds)
-
-  ! Nullify all pointers in ywflds
-
-  type(wrapped_fields), intent(inout) :: ywflds
-
-  nullify(ywflds%spvor)
-  nullify(ywflds%spdiv)
-  nullify(ywflds%spscalar)
-  nullify(ywflds%spscalar3)
-  nullify(ywflds%spscalar2)
-
-  nullify(ywflds%u)
-  nullify(ywflds%v)
-  nullify(ywflds%u_ew)
-  nullify(ywflds%v_ew)
-  nullify(ywflds%vor)
-  nullify(ywflds%div)
-
-  nullify(ywflds%scalar3)
-  nullify(ywflds%scalar3_ew)
-  nullify(ywflds%scalar3_ns)
-
-  nullify(ywflds%scalar2)
-  nullify(ywflds%scalar2_ew)
-  nullify(ywflds%scalar2_ns)
-
-  nullify(ywflds%scalar)
-  nullify(ywflds%scalar_ew)
-  nullify(ywflds%scalar_ns)
-end subroutine nullify_wrapped_fields
-
 end module ectrans_field_api_helper

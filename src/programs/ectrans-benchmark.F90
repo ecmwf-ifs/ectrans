@@ -32,7 +32,6 @@ USE ectrans_field_api_helper, only : wrapped_fields, fields_lists, &
                                    & wrap_benchmark_fields, wrap_benchmark_fields_zgp, &
                                    & create_fields_lists, &
                                    & delete_wrapped_fields,delete_fields_lists, &
-                                   & nullify_wrapped_fields, &
                                    & synchost_rdonly_wrapped_fields
 #endif
 
@@ -549,7 +548,6 @@ endif
 
 #if USE_FIELD_API
 if (lfield_api) then
-  call nullify_wrapped_fields(ywflds)
   if (icall_mode == 1) then
     call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
       &                            zspvor, zspdiv, zspscalar, zgp)
