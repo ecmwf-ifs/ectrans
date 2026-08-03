@@ -1,45 +1,18 @@
 # --------------------------------------------
 # Iteration 1
 # --------------------------------------------
-2a6e # zgp (1)
-f06e # zgp (2)
-5240 # zgp (3)
-5207 # zspvor
-aa8b # zspdiv
-ad66 # zspscalar(1)
+2a6e    1 # zgp (1)                  u
+f06e    1 # zgp (2)                  v
+5240    1 # zgp (3)                  scalar-2d
+5207    1 # zspvor (1)               vorticity
+aa8b    1 # zspdiv (1)               divergence
+ad66    1 # zspscalar (1)            scalar-2d
 # --------------------------------------------
 # Iteration 2
 # --------------------------------------------
-36ed # zgp (1)
-e3ed # zgp (2)
-5f0f # zgp (3)
-c8a7 # zspvor
-4f16 # zspdiv
-b019 # zspscalar(1)
-# --------------------------------------------
-# Iteration 3
-# --------------------------------------------
-a27d # zgp (1)
-bb7d # zgp (2)
-cc2a # zgp (3)
-5929 # zspvor
-d72a # zspdiv
-a774 # zspscalar(1)
-# --------------------------------------------
-# Iteration 4
-# --------------------------------------------
-ac08 # zgp (1)
-7108 # zgp (2)
-441c # zgp (3)
-199f # zspvor
-faa1 # zspdiv
-2c4b # zspscalar(1)
-# --------------------------------------------
-# Iteration 5
-# --------------------------------------------
-1838 # zgp (1)
-c138 # zgp (2)
-e38c # zgp (3)
-96dc # zspvor
-c64d # zspdiv
-595c # zspscalar(1)
+36ed    1 # zgp (1)                  u
+e3ed    1 # zgp (2)                  v
+5f0f    1 # zgp (3)                  scalar-2d
+c8a7    1 # zspvor (1)               vorticity
+4f16    1 # zspdiv (1)               divergence
+b019    1 # zspscalar (1)            scalar-2d

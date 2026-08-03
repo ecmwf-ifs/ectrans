@@ -8,21 +8,21 @@
       "flags": "",
       "id": "IntelLLVM",
       "path": "/opt/intel/oneapi/compiler/2026.1/bin/icx",
-      "version": "2026.1.0"
+      "version": "2026.1.1"
     },
     "cxx": {
       "build_type_flags": "-g -Rno-debug-disables-optimization",
       "flags": "",
       "id": "IntelLLVM",
       "path": "/opt/intel/oneapi/compiler/2026.1/bin/icpx",
-      "version": "2026.1.0"
+      "version": "2026.1.1"
     },
     "fortran": {
       "build_type_flags": "-g -diag-disable:10440",
       "flags": "-heap-arrays",
       "id": "IntelLLVM",
       "path": "/opt/intel/oneapi/compiler/2026.1/bin/ifx",
-      "version": "2026.1.0"
+      "version": "2026.1.1"
     }
   },
   "dependencies": {
@@ -81,6 +81,6 @@
     "arch": "X64",
     "loaded_modules": [],
     "os": "Linux",
-    "processor": "AMD EPYC 7763 64-Core Processor"
+    "processor": "AMD EPYC 9V74 80-Core Processor"
   }
 }

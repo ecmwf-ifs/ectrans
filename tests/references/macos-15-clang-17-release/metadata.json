@@ -65,9 +65,9 @@
     },
     "mpi": {
       "library_paths": [
-        "/opt/homebrew/Cellar/open-mpi/5.0.9/lib/libmpi.40.dylib"
+        "/opt/homebrew/Cellar/open-mpi/5.0.9_1/lib/libmpi.40.dylib"
       ],
-      "root": "/opt/homebrew/Cellar/open-mpi/5.0.9",
+      "root": "/opt/homebrew/Cellar/open-mpi/5.0.9_1",
       "vendor": "Open MPI",
       "version": "5.0.9"
     }

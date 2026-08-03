@@ -1,34 +1,16 @@
 # --------------------------------------------
 # Iteration 1
 # --------------------------------------------
-3cd7 # zgp2 (1)
-dfbf # sp3d(1)
-dfbf # sp3d(2)
-2c86 # sp3d(3)
-2c86 # sp3d(4)
-2c86 # sp3d(5)
-2c86 # sp3d(6)
-2c86 # sp3d(7)
-2c86 # sp3d(8)
-2c86 # sp3d(9)
-2c86 # sp3d(10)
-2c86 # sp3d(11)
-2c86 # sp3d(12)
-2c86 # zspc2
+3cd7   10 # zgp3a (1, 1-10)
+3cd7    1 # zgp2 (1)
+dfbf    2 # sp3d (1-2)
+2c86   10 # sp3d (3-12)
+2c86    1 # zspc2
 # --------------------------------------------
 # Iteration 2
 # --------------------------------------------
-00f5 # zgp2 (1)
-dfbf # sp3d(1)
-dfbf # sp3d(2)
-cfed # sp3d(3)
-cfed # sp3d(4)
-cfed # sp3d(5)
-cfed # sp3d(6)
-cfed # sp3d(7)
-cfed # sp3d(8)
-cfed # sp3d(9)
-cfed # sp3d(10)
-cfed # sp3d(11)
-cfed # sp3d(12)
-cfed # zspc2
+00f5   10 # zgp3a (1, 1-10)
+00f5    1 # zgp2 (1)
+dfbf    2 # sp3d (1-2)
+cfed   10 # sp3d (3-12)
+cfed    1 # zspc2
