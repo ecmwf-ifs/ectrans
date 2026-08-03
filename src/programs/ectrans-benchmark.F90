@@ -65,6 +65,7 @@ integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
 integer(kind=jpim) :: nfld    = 1   ! Number of 3D scalar fields
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
 integer(kind=jpim) :: iters_warmup = 3 ! Number of warm up steps (for which timing statistics should be ignored)
+integer(kind=jpim) :: iters_checksums = -1 ! Number of iterations for which checksum output is written
 
 integer(kind=jpim) :: nflevg  ! Total number of vertical levels
 
@@ -239,7 +240,9 @@ endif
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, &
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
-  &                             lpinning, lfield_api, icall_mode, ldump_checksums, cchecksums_path, lalloperm)
+  &                             lpinning, lfield_api, icall_mode, ldump_checksums, iters_checksums, &
+  &                             cchecksums_path, lalloperm)
+if (iters_checksums < 0) iters_checksums = iters_warmup
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -728,7 +731,7 @@ do jstep = 1, iters+iters_warmup
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
   endif
 
-  if (ldump_checksums) then
+  if (ldump_checksums .and. jstep <= iters_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
     if (icall_mode == 1) then
@@ -808,7 +811,7 @@ do jstep = 1, iters+iters_warmup
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
   endif
 
-  if (ldump_checksums) then
+  if (ldump_checksums .and. jstep <= iters_checksums) then
 
     if (icall_mode == 1) then
       call dump_checksums_psp(filename=cchecksums_path, noutdump=noutdump_checksum, &
@@ -1264,6 +1267,8 @@ subroutine print_help(unit)
     & iterations (default = 10)"
   write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
     & for which timing statistics should be ignored (default = 3)"
+  write(nout, "(a)") "    --niter-checksums  Number of iterations for which checksum output is&
+    & written, counting warmup iterations too (default = --niter-warmup)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
@@ -1325,6 +1330,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   lscders, luvder, luseflt, nopt_mem_tr, nproma, npromatr, &
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
+  &                                   iters_checksums, &
   &                                   cchecksums_path, lalloperm)
 
 #ifdef _OPENACC
@@ -1335,6 +1341,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   character(len=16), intent(inout) :: cgrid ! Grid
   integer, intent(inout) :: iters           ! Number of iterations for transform test
   integer, intent(inout) :: iters_warmup    ! Number of iterations for transform test
+  integer, intent(inout) :: iters_checksums ! Number of iterations for which checksum output is written
   integer, intent(inout) :: nfld            ! Number of scalar fields
   integer, intent(inout) :: nlev            ! Number of vertical levels
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
@@ -1393,6 +1400,11 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
         iters_warmup = get_int_value('--niter-warmup', iarg)
         if (iters_warmup < 0) then
           call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
+        end if
+      case('--niter-checksums')
+        iters_checksums = get_int_value('--niter-checksums', iarg)
+        if (iters_checksums < 0) then
+          call parsing_failed("Invalid argument for --niter-checksums: must be >= 0")
         end if
       ! Parse spectral truncation argument
       case('-t', '--truncation')

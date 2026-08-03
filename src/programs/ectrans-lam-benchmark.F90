@@ -73,6 +73,8 @@ integer(kind=jpim) :: nlat    = 128   ! Meridional dimension
 integer(kind=jpim) :: nsmax   = 0   ! Spectral meridional truncation
 integer(kind=jpim) :: nmsmax  = 0   ! Spectral zonal truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
+integer(kind=jpim) :: iters_warmup = 0 ! Number of warm up steps (for which timing statistics should be ignored)
+integer(kind=jpim) :: iters_checksums = -1 ! Number of iterations for which checksum output is written
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
 
@@ -235,9 +237,18 @@ real(kind=jprb) :: zexwn, zeywn
 luse_mpi = detect_mpirun()
 
 ! Setup
-call get_command_line_arguments(nlon, nlat, nsmax, nmsmax, iters, nfld, nlev, lvordiv, lscders, luvders, &
-                              & nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, lmeminfo, &
-                              & nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path, lalloperm)
+call get_command_line_arguments(nlon, nlat, nsmax, nmsmax, iters, iters_warmup, iters_checksums, nfld, nlev, &
+                              & lvordiv, lscders, luvders, nproma, verbosity, ldump_values, ldump_checksums, &
+                              & lprint_norms, lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck, &
+                              & cchecksums_path, lalloperm)
+if (iters_checksums < 0) then
+  if (iters_warmup > 0) then
+    iters_checksums = iters_warmup
+  else 
+    iters_checksums = iters
+  endif
+endif
+
 ! derived defaults
 if ( nsmax == 0 ) nsmax = nlat/2-1
 if ( nmsmax == 0 ) nmsmax = nlon/2-1
@@ -644,7 +655,7 @@ do jstep = 1, iters
 
   if( lstats ) call gstats(4,1)
 
-  if (ldump_checksums) then
+  if (ldump_checksums .and. jstep <= iters_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
     zgp2 (iend+1:, :, ngpblks) = 0
@@ -733,7 +744,7 @@ do jstep = 1, iters
     endif
   endif
 
-  if (ldump_checksums) then
+  if (ldump_checksums .and. jstep <= iters_checksums) then
     call dump_checksums(filename = cchecksums_path, noutdump = noutdump,                 &
                       & jstep = jstep, myproc = myproc, nproma = nproma, ngptotg = ngptotg, &
                       & ivset = ivset, ivsetsc = ivsetsc,                                   &
@@ -1116,7 +1127,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
-  &                                   iters, nfld, nlev, lvordiv, lscders, luvders, &
+  &                                   iters, iters_warmup, iters_checksums, nfld, nlev, lvordiv, lscders, luvders, &
   &                                   nproma, verbosity, ldump_values, ldump_checksums, lprint_norms, &
   &                                   lmeminfo, nprgpns, nprgpew, nprtrv, nprtrw, ncheck,cchecksums_path, &
   &                                   lalloperm)
@@ -1126,6 +1137,8 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
   integer, intent(inout) :: nsmax           ! Meridional truncation
   integer, intent(inout) :: nmsmax          ! Zonal trunciation
   integer, intent(inout) :: iters           ! Number of iterations for transform test
+  integer, intent(inout) :: iters_warmup    ! Number of warm up iterations
+  integer, intent(inout) :: iters_checksums ! Number of iterations for which checksum output is written
   integer, intent(inout) :: nfld            ! Number of scalar fields
   integer, intent(inout) :: nlev            ! Number of vertical levels
   logical, intent(inout) :: lvordiv         ! Also transform vorticity/divergence
@@ -1170,6 +1183,16 @@ subroutine get_command_line_arguments(nlon, nlat, nsmax, nmsmax, &
         iters = get_int_value('-n', iarg)
         if (iters < 1) then
           call parsing_failed("Invalid argument for -n: must be > 0")
+        end if
+      case('--niter-warmup')
+        iters_warmup = get_int_value('--niter-warmup', iarg)
+        if (iters_warmup < 0) then
+          call parsing_failed("Invalid argument for --niter-warmup: must be >= 0")
+        end if
+      case('--niter-checksums')
+        iters_checksums = get_int_value('--niter-checksums', iarg)
+        if (iters_checksums < 0) then
+          call parsing_failed("Invalid argument for --niter-checksums: must be >= 0")
         end if
       ! Parse spectral truncation argument
       case('--nlon'); nlon = get_int_value('--nlon', iarg)
@@ -1291,6 +1314,10 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --nmsmax NMSMAX     Spectral truncation in zonal direction (default = NLON/2-1)"
   write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
     & iterations (default = 10)"
+  write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
+    & for which timing statistics should be ignored (default = 0, and currently not implemented!)"
+  write(nout, "(a)") "    --niter-checksums  Number of iterations for which checksum output is&
+    & written, counting warmup iterations too (default = --niter-warmup > 0 ? --niter-warmup : --niter)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
