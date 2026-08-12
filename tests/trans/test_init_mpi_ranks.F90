@@ -1,23 +1,23 @@
-! (C) Crown Copyright 2025- Met Office.
+! (C) Copyright 2026- ECMWF.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
 !
-
-!> Test that SETUP_TRANS0 and SETUP_TRANS can be called twice, first on
-!! the full MPI_COMM_WORLD and then on a reduced communicator holding
-!! only the first (NPROC - 1) ranks, exactly as done in redistribute.F90.
-!!
-!! All ranks participate in both MPL_LOCOMM_CREATE calls (collective).
-!! Only the subset of ranks that belong to the reduced communicator enter
-!! the second SETUP_TRANS0 / SETUP_TRANS block.
-!!
-!! After the second SETUP_TRANS, an INV_TRANS call exercises TRMTOL which
-!! calls MPL_ALLTOALLV(KCOMM=MPL_ALL_MS_COMM).  Before the fiat fix this
-!! aborts because LGROUPSETUP=.TRUE. prevents MPL_GROUPS_CREATE from
-!! recreating the communicators for the new NPRTRW, so MPL_ALL_MS_COMM
-!! still holds Phase-1's larger set of tasks while KRECVCOUNTS is sized
-!! for Phase-2's smaller NPRTRW.
+! Test that SETUP_TRANS0 and SETUP_TRANS can be called twice, first on the full MPI_COMM_WORLD and
+! then on a reduced communicator holding only the first (NPROC - 1) ranks, exactly as done in
+! redistribute.F90 (in ifs-source).
+!
+! All ranks participate in both MPL_LOCOMM_CREATE calls (collective). Only the subset of ranks that
+! belong to the reduced communicator enter the second SETUP_TRANS0 / SETUP_TRANS block.
+!
+! After the second SETUP_TRANS, an INV_TRANS call exercises TRMTOL which calls
+! MPL_ALLTOALLV(KCOMM=MPL_ALL_MS_COMM).  Before FIAT was fixed
+! (https://github.com/ecmwf-ifs/fiat/pull/118) this would abort because LGROUPSETUP=.TRUE. prevents
+! MPL_GROUPS_CREATE from recreating the communicators for the new NPRTRW, so MPL_ALL_MS_COMM still
+! holds Phase-1's larger set of tasks while KRECVCOUNTS is sized for Phase-2's smaller NPRTRW.
 
 PROGRAM TEST_INIT_MPI_RANKS
 
@@ -81,12 +81,11 @@ PRINT *, "Phase 1 rank", MYPROC, ": KSPEC2 =", NSPEC2, ", KGPTOT =", NGPTOT
 
 CALL TRANS_END()
 
-! ==================================================================
+! ==================================================================================================
 ! Phase 2 – first (NPROC_INIT - 1) ranks only
-!   MPL_LOCOMM_CREATE is collective: ALL ranks call it.
-!   Only ranks 1 .. NPROC_REDUCED activate the new communicator and
-!   perform the ecTrans setup, exactly as in redistribute.F90.
-! ==================================================================
+!   MPL_LOCOMM_CREATE is collective: ALL ranks call it. Only ranks 1 .. NPROC_REDUCED activate the
+!   new communicator and perform the ecTrans setup, exactly as in redistribute.F90 in ifs-source.
+! ==================================================================================================
 NPROC_REDUCED = NPROC_INIT - 1
 
 CALL MPL_LOCOMM_CREATE(NPROC_REDUCED, ICOMM)
