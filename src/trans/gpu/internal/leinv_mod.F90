@@ -172,19 +172,8 @@ CONTAINS
                        IOUT0_STRIDES0,IOUT0_SIZE,IIN0_STRIDES0,IIN0_SIZE)
 
 
-#ifdef OMPGPU
-    !$OMP TARGET DATA &
-    !$OMP&              MAP(PRESENT,ALLOC:D,D_MYMS,D_NUMP) &
-    !$OMP&              MAP(PRESENT,ALLOC:ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
-    !$OMP&              MAP(PRESENT,ALLOC:ZAA,ZAS,PIA) &
-    !$OMP&              MAP(PRESENT,ALLOC:R,R_NSMAX,D_OFFSETS_GEMM2)
-#endif
-#ifdef ACCGPU
-    !$ACC DATA PRESENT(D,D_MYMS,D_NUMP) &
-    !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA,ZINP0,ZOUTS0,ZOUTA0) &
-    !$ACC&     PRESENT(ZAA,ZAS,PIA) &
-    !$ACC&     PRESENT(R,R_NSMAX,D_OFFSETS_GEMM2)
-#endif
+    !DIR !DATA !PRESENT(D, D_MYMS, D_NUMP, ZINP, ZOUTS, ZOUTA, ZINP0, ZOUTS0, ZOUTA0, ZAA, ZAS) &
+    !DIR& !PRESENT(PIA, R, R_NSMAX, D_OFFSETS_GEMM2)
 
     ! READ 2:NSMAX+3
 
@@ -197,51 +186,34 @@ CONTAINS
     !    DO=1,7/2+1 ... 1..4
     !       PIA_2=2+1+(1..4-1)*2 ...3+(0..3)*2 .... 3,5,7,9
 
-#ifdef OMPGPU
-    ! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
-    ! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) &
-    !$OMP& PRIVATE(KM,IA,J) &
-    !$OMP& SHARED(D,R,KF_LEG,ZINP,IIN_STRIDES0,IIN0_STRIDES0) MAP(TO:KF_LEG)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) &
-    !$ACC& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) DEFAULT(NONE) &
-#ifdef _CRAYFTN
-    !$ACC&
-#else
-    !$ACC& ASYNC(1)
-#endif
-#endif
+    !DIR !PARALLEL COLLAPSE(2) PRIVATE(KM, IA, J) DEFAULT(NONE) &
+    !DIR& !SHARED(D, R, KF_LEG, ZINP, ZINP0, IIN_STRIDES0, IIN0_STRIDES0, PIA) &
+    !DIR& !FIRSTPRIVATE(KF_LEG, IIN_STRIDES0, IIN0_STRIDES0) !ASYNC(1)
     DO KMLOC=1,D_NUMP
       DO JK=1,2*KF_LEG
         KM =  D_MYMS(KMLOC)
         IA  = 1+MOD(R_NSMAX-KM+2,2)
         IF(KM /= 0)THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX-KM+2)/2
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IA+1+(J-1)*2,KMLOC)
           ENDDO
           ! those are only needed with tensor cores (zinp might contain NaNs!)
 #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          !$ACC LOOP SEQ
+          !DIR !SEQ
           DO J=(R_NSMAX-KM+2)/2+1,ALIGN((R_NSMAX-KM+2)/2,A)
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
           ENDDO
 #endif
         ELSEIF (MOD((JK-1),2) == 0) THEN
           ! every other field is sufficient because Im(KM=0) == 0
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX+2)/2
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IA+1+(J-1)*2,KMLOC)
           ENDDO
           ! those are only needed with tensor cores (zinp might contain NaNs!)
 #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          !$ACC LOOP SEQ
+          !DIR !SEQ
           DO J=(R_NSMAX+2)/2+1,ALIGN((R_NSMAX+2)/2,A)
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
           ENDDO
@@ -252,9 +224,7 @@ CONTAINS
 
 
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(440,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(440,1)
@@ -264,12 +234,7 @@ CONTAINS
     IMLOC0 = FINDLOC(D_MYMS,0)
     IF (IMLOC0(1) > 0) THEN
       ! compute m=0 in double precision
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA0,ZINP0,ZOUTA0)
-#endif
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINP0,ZOUTA0)
-#endif
+      !DIR !USE_DEVICE(ZAA0, ZINP0, ZOUTA0)
       CALL HIP_DGEMM_BATCHED( &
         & 'N', 'T', &
         & KF_LEG, G_NDGLU(0), (R_NSMAX+2)/2, &
@@ -279,12 +244,7 @@ CONTAINS
         & 0.0_JPRD, &
         & C_LOC(ZOUTA0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef ACCGPU
-      !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
+      !DIR !END_USE_DEVICE
    ENDIF
 
     DO KMLOC=1,D_NUMP
@@ -299,12 +259,7 @@ CONTAINS
       NS(IMLOC0(1)) = 0
       KS(IMLOC0(1)) = 0
     ENDIF
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA,ZINP,ZOUTA)
-#endif
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(ZAA,ZINP,ZOUTA)
-#endif
+    !DIR !USE_DEVICE(ZAA, ZINP, ZOUTA)
     CALL HIP_GEMM( &
         & NCUR_RESOL, 11, & ! unique identifier
         & 'N', 'T', &
@@ -315,17 +270,10 @@ CONTAINS
         & 0.0_JPRBT, &
         & C_LOC(ZOUTA), IOUT_STRIDES0, COFFSETS, &
         & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef ACCGPU
-      !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
+    !DIR !END_USE_DEVICE
 
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(444,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(444,1)
@@ -342,50 +290,33 @@ CONTAINS
     !    DO=1,5
     !       PIA_2=1+1+(1..5-1)*2 ...2+(0..4)*2 .... 2,4,6,8,10
 
-#ifdef OMPGPU
-    ! Directive incomplete -> putting more variables in SHARED() triggers internal compiler error
-    ! ftn-7991: INTERNAL COMPILER ERROR:  "Too few arguments on the stack"
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) &
-    !$OMP& PRIVATE(KM,IS,J) &
-    !$OMP& SHARED(D,R,KF_LEG,ZINP,IIN_STRIDES0,IIN0_STRIDES0) MAP(TO:KF_LEG)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS,J) &
-    !$ACC& FIRSTPRIVATE(KF_LEG,IIN_STRIDES0,IIN0_STRIDES0) DEFAULT(NONE) &
-#ifndef _CRAYFTN
-    !$ACC& ASYNC(1)
-#else
-    !$ACC&
-#endif
-#endif
+    !DIR !PARALLEL COLLAPSE(2) PRIVATE(KM, IS, J) DEFAULT(NONE) &
+    !DIR& !SHARED(D, R, KF_LEG, ZINP, ZINP0, IIN_STRIDES0, IIN0_STRIDES0, PIA) &
+    !DIR& !FIRSTPRIVATE(KF_LEG, IIN_STRIDES0, IIN0_STRIDES0) !ASYNC(1)
     DO KMLOC=1,D_NUMP
       DO JK=1,2*KF_LEG
         KM =  D_MYMS(KMLOC)
         IS  = 1+MOD(R_NSMAX-KM+1,2)
         IF(KM /= 0) THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX-KM+3)/2
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=PIA(JK,IS+1+(J-1)*2,KMLOC)
           ENDDO
 #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
           ! those are only needed with tensor cores (zinp might contain NaNs!)
-          !$ACC LOOP SEQ
+          !DIR !SEQ
           DO J=(R_NSMAX-KM+3)/2+1,ALIGN((R_NSMAX-KM+3)/2,A)
             ZINP(JK+(J-1)*IIN_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IIN_STRIDES0)=0
           ENDDO
 #endif
         ELSEIF (MOD((JK-1),2) == 0) THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX+3)/2
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = PIA(JK,IS+1+(J-1)*2,KMLOC)
           ENDDO
           ! those are only needed with tensor cores (zinp might contain NaNs!)
 #if defined(USE_CUTLASS) && defined(USE_CUTLASS_3XTF32)
-          !$ACC LOOP SEQ
+          !DIR !SEQ
           DO J=(R_NSMAX+3)/2+1,ALIGN((R_NSMAX+3)/2,A)
             ZINP0((JK-1)/2+1+(J-1)*IIN0_STRIDES0) = 0
           ENDDO
@@ -395,9 +326,7 @@ CONTAINS
     ENDDO
 
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(440,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(440,1)
@@ -405,12 +334,7 @@ CONTAINS
     CALL GSTATS(424,0)
 
     IF (IMLOC0(1) > 0) THEN
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS0,ZINP0,ZOUTS0)
-#endif
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINP0,ZOUTS0)
-#endif
+      !DIR !USE_DEVICE(ZAS0, ZINP0, ZOUTS0)
       CALL HIP_DGEMM_BATCHED( &
         & 'N', 'T', &
         & KF_LEG, G_NDGLU(0), (R_NSMAX+3)/2, &
@@ -420,12 +344,7 @@ CONTAINS
         & 0.0_JPRD, &
         & C_LOC(ZOUTS0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef ACCGPU
-      !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
+      !DIR !END_USE_DEVICE
     ENDIF
 
     DO KMLOC=1,D_NUMP
@@ -440,12 +359,7 @@ CONTAINS
       NS(IMLOC0(1)) = 0
       KS(IMLOC0(1)) = 0
     ENDIF
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS,ZINP,ZOUTS)
-#endif
-#ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAS,ZINP,ZOUTS)
-#endif
+    !DIR !USE_DEVICE(ZAS, ZINP, ZOUTS)
     CALL HIP_GEMM( &
       & NCUR_RESOL, 12, & ! unique identifier
       & 'N', 'T', &
@@ -456,31 +370,18 @@ CONTAINS
       & 0.0_JPRBT, &
       & C_LOC(ZOUTS), IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
+    !DIR !END_USE_DEVICE
 
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(444,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(444,1)
     ENDIF
     CALL GSTATS(424,1)
 
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC WAIT(1)
-
-    !$ACC END DATA
-#endif
+    !DIR !WAIT(1)
+    !DIR !END_DATA
 
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------
