@@ -65,3 +65,7 @@ endif()
 if( CMAKE_Fortran_COMPILER_ID STREQUAL "XL" )
   ectrans_add_fortran_flags( "-qextname -qnobindcextname" )
 endif()
+
+if( CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu" )
+  set( NO_FORTRAN_MAIN_FLAG "-mlcmain=main" )
+endif()
