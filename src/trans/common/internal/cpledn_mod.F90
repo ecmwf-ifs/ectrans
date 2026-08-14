@@ -80,7 +80,7 @@ REAL(KIND=JPRD),INTENT(OUT)   :: PXMOD
 
 !     ------------------------------------------------------------------
 
-REAL(KIND=JPRD) :: ZDLK,ZDLLDN,ZDLXN
+REAL(KIND=JPRD) :: ZDLK,ZDLLDN
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(PX)
 
@@ -107,8 +107,7 @@ IF(KFLAG == 0)THEN
   ENDDO
   ! Newton method
   PXMOD = -ZDLK/ZDLLDN
-  ZDLXN = PX+PXMOD
-  PXN = ZDLXN
+  PXN = PX+PXMOD
 ENDIF
 
 !     ------------------------------------------------------------------
