@@ -80,8 +80,8 @@ REAL(KIND=JPRD),INTENT(INOUT)  :: PMOD
 !     ------------------------------------------------------------------
 
 
-INTEGER(KIND=JPIM) :: IFLAG, ITEMAX, JTER, IODD
-REAL(KIND=JPRD) :: ZW, ZX, ZXN
+INTEGER(KIND=JPIM) :: IFLAG, ITEMAX, IODD
+REAL(KIND=JPRD) :: ZX, ZXN
 
 !     ------------------------------------------------------------------
 
@@ -98,9 +98,8 @@ IODD=MOD(KN,2)
 !*       2. Newton iteration.
 !           -----------------
 
-DO JTER=1,ITEMAX+1
-  KITER = JTER
-  CALL CPLEDN(KN,IODD,PFN,ZX,IFLAG,ZW,ZXN,PMOD)
+DO KITER=1,ITEMAX+1
+  CALL CPLEDN(KN,IODD,PFN,ZX,IFLAG,PW,ZXN,PMOD)
   ZX = ZXN
 
   IF(IFLAG == 1) EXIT
@@ -108,7 +107,6 @@ DO JTER=1,ITEMAX+1
 ENDDO
 
 PL = ZXN
-PW = ZW
 
 !     ------------------------------------------------------------------
 
