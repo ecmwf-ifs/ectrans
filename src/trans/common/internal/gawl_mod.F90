@@ -77,7 +77,8 @@ REAL(KIND=JPRD),    INTENT(INOUT) :: PMOD
 
 !     ------------------------------------------------------------------
 
-INTEGER(KIND=JPIM) :: ITEMAX, IODD
+INTEGER(KIND=JPIM), PARAMETER :: ITEMAX = 20
+INTEGER(KIND=JPIM) :: IODD
 REAL(KIND=JPRD) :: ZDLK, ZDLLDN
 INTEGER(KIND=JPIM) :: IK, JN
 
@@ -86,7 +87,6 @@ INTEGER(KIND=JPIM) :: IK, JN
 !*       1. Initialization.
 !           ---------------
 
-ITEMAX = 20
 IODD = MOD(KN, 2)
 
 !     ------------------------------------------------------------------
