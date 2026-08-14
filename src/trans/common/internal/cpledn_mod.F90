@@ -80,7 +80,7 @@ REAL(KIND=JPRD),INTENT(OUT)   :: PXMOD
 
 !     ------------------------------------------------------------------
 
-REAL(KIND=JPRD) :: ZDLX,ZDLK,ZDLLDN,ZDLXN,ZDLMOD
+REAL(KIND=JPRD) :: ZDLK,ZDLLDN,ZDLXN
 
 INTEGER(KIND=JPIM), PARAMETER :: JPKD=KIND(PX)
 
@@ -91,7 +91,6 @@ INTEGER(KIND=JPIM) :: JN, IK
 !*       1. NEWTON ITERATION STEP.
 !           ----------------------
 
-ZDLX = PX
 
 ZDLK = 0.0_JPRD
 IF( KODD==0 ) ZDLK=0.5_JPRD*PFN(0)
@@ -102,16 +101,15 @@ IK=1
 IF(KFLAG == 0)THEN
   DO JN=2-KODD,KN,2
     ! normalised ordinary Legendre polynomial == \overbar{P_n}^0
-    ZDLK = ZDLK + PFN(IK)*COS(REAL(JN,JPKD)*ZDLX)
+    ZDLK = ZDLK + PFN(IK)*COS(REAL(JN,JPKD)*PX)
     ! normalised derivative == d/d\theta(\overbar{P_n}^0)
-    ZDLLDN = ZDLLDN - PFN(IK)*REAL(JN,JPKD)*SIN(REAL(JN,JPKD)*ZDLX)
+    ZDLLDN = ZDLLDN - PFN(IK)*REAL(JN,JPKD)*SIN(REAL(JN,JPKD)*PX)
     IK=IK+1
   ENDDO
   ! Newton method
-  ZDLMOD = -ZDLK/ZDLLDN
-  ZDLXN = ZDLX+ZDLMOD
+  PXMOD = -ZDLK/ZDLLDN
+  ZDLXN = PX+PXMOD
   PXN = ZDLXN
-  PXMOD = ZDLMOD
 ENDIF
 
 !     ------------------------------------------------------------------
@@ -122,7 +120,7 @@ ENDIF
 IF(KFLAG == 1)THEN
   DO JN=2-KODD,KN,2
     ! normalised derivative
-    ZDLLDN = ZDLLDN - PFN(IK)*REAL(JN,JPKD)*SIN(REAL(JN,JPKD)*ZDLX)
+    ZDLLDN = ZDLLDN - PFN(IK)*REAL(JN,JPKD)*SIN(REAL(JN,JPKD)*PX)
     IK=IK+1
   ENDDO
   PW = REAL(2*KN+1,JPKD)/ZDLLDN**2
