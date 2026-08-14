@@ -20,7 +20,7 @@ SUBROUTINE CPLEDN(KN,KODD,PFN,PX,KFLAG,PW,PXN,PXMOD)
 
 !**   Interface.
 !     ----------
-!        *CALL* *CPLEDN(KN,KDBLE,PX,KFLAG,PW,PXN,PXMOD)*
+!        *CALL* *CPLEDN(KN,KODD,PFN,PX,KFLAG,PW,PXN,PXMOD)*
 
 !        Explicit arguments :
 !        --------------------
