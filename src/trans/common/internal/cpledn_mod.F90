@@ -75,7 +75,7 @@ REAL(KIND=JPRD),INTENT(IN)    :: PFN(0:KN/2)
 REAL(KIND=JPRD),INTENT(IN)    :: PX
 INTEGER(KIND=JPIM),INTENT(IN) :: KFLAG
 REAL(KIND=JPRD),INTENT(OUT)   :: PW
-REAL(KIND=JPRD),INTENT(INOUT) :: PXN
+REAL(KIND=JPRD),INTENT(OUT)   :: PXN
 REAL(KIND=JPRD),INTENT(OUT)   :: PXMOD
 
 !     ------------------------------------------------------------------
