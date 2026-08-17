@@ -370,20 +370,8 @@ enddo
 
 nflevl = numll(mysetv)
 
+ivsetsc2(1) = iprused
 ifld = 0
-ivsetsc2(1) = 1 ! Only for callmode 2
-! The standalone 2D scalar field in callmode 2 must be assigned to a stable, decomposition-independent
-! spectral V-set. Previously this value followed iprused, which depends on the number of vertical levels
-! and on the spectral decomposition. That made the synthetic benchmark data layout change between serial
-! and MPI runs even though the logical test case was intended to be identical.
-! This showed up as checksum differences for zspsc2 between mpi0 and mpi4: the actual field being
-! transformed was the same benchmark field, but it was attached to a different V-set depending on the
-! decomposition. Since zspsc2 is a single 2D scalar field and has no vertical level distribution to mirror,
-! assigning it consistently to V-set 1 gives it a canonical owner. That makes the checksum independent of
-! execution decomposition, which is one of the invariants the checksum tests are meant to enforce.
-! In other words: this change removes decomposition metadata from the benchmark result. The checksum
-! should reflect transform output for the logical field, not where the benchmark happened to place that
-! single 2D scalar in a particular MPI layout.
 
 !===================================================================================================
 ! Setup allocation strategy
@@ -509,25 +497,7 @@ if (icall_mode == 1) then
       enddo
     enddo
   enddo
-  ivsetsc(nfld*nflevg+1) = ivset(nflevg) ! This is the extra 2D scalar field
-  ! Callmode 1 stores all scalar fields in one combined zspscalar / zgp sequence: first the nfld * nflevg 3D scalar levels,
-  ! then one extra standalone 2D scalar. With --npromatr 20, the transform processes scalar fields in blocks.
-  ! For the nfld=10, nlev=20 test, that means the last 3D scalar level and the extra 2D scalar sit exactly at the sensitive
-  ! boundary of the combined scalar ordering.
-  ! When the 2D scalar was always assigned to V-set 1, MPI decomposition could make the blocked transform order differ from
-  ! the serial order. The observed symptom was that zgp(240) and zgp(241) were swapped between mpi0 and mpi4 in the
-  ! inverse-transform checksum file, and the combined zspscalar checksum then differed after the direct transform.
-  ! The transform was not merely producing a different numeric result; the benchmark had given the extra scalar
-  ! a V-set assignment that could disturb the canonical field order under NPROMATR blocking.
-
-  ! Assigning the extra 2D scalar to ivset(nflevg) places it on the same V-set as the final 3D scalar level,
-  ! preserving the intended combined scalar ordering across serial and MPI decompositions.
-  ! This keeps callmode 1’s packed scalar array stable when field blocking is enabled, so checksum files remain
-  ! independent of execution decomposition and NPROMATR.
-
-  ! The important distinction from the callmode 2 fix is that callmode 1 needs order preservation inside a single combined
-  ! scalar array. The extra scalar is not independent in the memory/interface layout; it follows the 3D scalar levels,
-  ! so its V-set assignment must be compatible with that sequence.
+  ivsetsc(nfld*nflevg+1) = 1
 
   call allocator%allocate('zspscalar', zspscalar, [count(ivsetsc == mysetv),nspec2])
   call initialize_spectral_field(nsmax, zspscalar)
