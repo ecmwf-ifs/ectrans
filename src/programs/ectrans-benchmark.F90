@@ -242,7 +242,14 @@ call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, l
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
   &                             lpinning, lfield_api, icall_mode, ldump_checksums, iters_checksums, &
   &                             cchecksums_path, lalloperm)
-if (iters_checksums < 0) iters_checksums = iters_warmup
+if (iters_checksums < 0) then
+  if (iters_warmup > 0) then
+    iters_checksums = iters_warmup
+  else
+    iters_checksums = iters
+  endif
+endif
+
 if (cgrid == '') cgrid = cubic_octahedral_gaussian_grid(nsmax)
 call parse_grid(cgrid, ndgl, nloen)
 nflevg = nlev
@@ -1237,8 +1244,8 @@ subroutine print_help(unit)
     & iterations (default = 10)"
   write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
     & for which timing statistics should be ignored (default = 3)"
-  write(nout, "(a)") "    --niter-checksums  Number of iterations for which checksum output is&
-    & written, counting warmup iterations too (default = --niter-warmup)"
+  write(nout, "(a)") "    --niter-checksums   Number of iterations for which checksum output is&
+    & written, counting warmup iterations too (default = --niter-warmup > 0 ? --niter-warmup : --niter)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
   write(nout, "(a)") "    -l, --nlev NLEV     Number of vertical levels (default = 1)"
   write(nout, "(a)") "    --vordiv            Also transform vorticity-divergence to wind"
@@ -1262,13 +1269,13 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --no-pinning        Disable memory-pinning (a.k.a. page-locked memory) &
    & to allocate fields for GPU version"
   write(nout, "(a)") "    --field-api         Use the field api interface of ecTrans"
-  write(nout, "(a)") "    --callmode          The call mode for INV_TRANS and DIR_TRANS (1 or 2)"
+  write(nout, "(a)") "    --callmode          The call mode for INV_TRANS and DIR_TRANS (1 or 2; default = 2)"
   write(nout, "(a)") "                        Call mode 1 uses arrays PSPVOR, PSPDIV, PSPSCALAR and&
    & PGP"
   write(nout, "(a)") "                        Call mode 2 uses arrays PSPVOR, PSPDIV, PSPSC3A,&
    & PSPSC3B, PSPSC2, PGPUV, PGP3A, PGP3B, PGP2"
   write(nout, "(a)") "                        See&
-   & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information (default  = 2)"
+   & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information"
   write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
    & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") ""
