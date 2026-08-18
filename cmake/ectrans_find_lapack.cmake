@@ -8,23 +8,16 @@
 
 macro( ectrans_find_lapack )
   # This macro sets the LAPACK_LIBRARIES variable
-  # IF MKL is preferred, unless ENABLE_MKL=OFF
+  # MKL is preferred, unless ENABLE_MKL=OFF
 
-  if( HAVE_MKL )
-    set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
+  if( LAPACK_LIBRARIES )
+    ecbuild_debug( "LAPACK already found: ${LAPACK_LIBRARIES}" )
   else()
-    # Following libsci code should disappear soon, with more recent cmake versions (needs more investigation)
-    if( DEFINED ENV{CRAY_LIBSCI_DIR} )
-      set( _cray_libsci_loaded $ENV{CRAY_LIBSCI_DIR} )
-    elseif( DEFINED ENV{CRAY_LIBSCI_BASE_DIR} )
-      set( _cray_libsci_loaded $ENV{CRAY_LIBSCI_BASE_DIR} )
-    endif()
-    if( _cray_libsci_loaded )
-        set( _CRAY_PRGENV $ENV{PE_ENV} )
-        string( TOLOWER "${_CRAY_PRGENV}" _cray_prgenv  )
-        set( LAPACK_LIBRARIES sci_${_cray_prgenv} )
-        ecbuild_debug( "LAPACK found, already loaded as part of Cray's libsci" )
+    if( HAVE_MKL )
+      ecbuild_debug( "Setting LAPACK_LIBRARIES to MKL_LIBRARIES" )
+      set( LAPACK_LIBRARIES ${MKL_LIBRARIES} )
     else()
+      ecbuild_debug( "Searching for LAPACK" )
       ecbuild_find_package( NAME LAPACK REQUIRED )
       if( TARGET lapack )
         ecbuild_debug( "LAPACK found as CMake target lapack" )
