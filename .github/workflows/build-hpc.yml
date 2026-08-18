@@ -107,7 +107,6 @@ jobs:
               - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
-              - CMAKE_BUILD_PARALLEL_LEVEL=1
             ctest_options: -E compare_checksums # We don't bother with reproducibility checks on LUMI
             unsupported_dependency: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
 
