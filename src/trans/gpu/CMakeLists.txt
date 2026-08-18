@@ -110,11 +110,12 @@ function(generate_backend_sources)
 
   set(outfiles)
   foreach(file_i ${files})
-    get_filename_component(outfile_name    ${file_i} NAME)
     get_filename_component(outfile_name_we ${file_i} NAME_WE)
     get_filename_component(outfile_ext     ${file_i} EXT)
-    get_filename_component(outfile_dir     ${file_i} DIRECTORY)
-    set(outfile "${destination}/${file_i}")
+    # Note: we ensure the outfile has the precision suffix so that intermediate compilation files
+    # for single- and double-precision builds don't have the same name
+    # This is a known problem with crayftn
+    set(outfile "${destination}/${outfile_name_we}_${backend}${outfile_ext}")
     ecbuild_debug("Generate ${outfile}")
     generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
     list(APPEND outfiles ${outfile})
