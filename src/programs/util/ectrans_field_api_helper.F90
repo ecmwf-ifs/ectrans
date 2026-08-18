@@ -17,8 +17,10 @@ implicit none
 
 type wrapped_fields
   ! The type wrapped_fields is a helper, containing a set of field API objects (field_1rb, field_2rb, etc).
-  ! It is used in the benchmark to mimic IFS, where the field API objects wrapped the PGMV/PGFL arrays, and are used
-  ! to identify the various fields of the model. In a similar way, the fields in this type wrap the PGMV/PGFV arrays of the benchmark,
+  ! It is used in the benchmark to mimic IFS, where the field API objects
+  ! wrapped the PGMV/PGFL arrays, and are used to identify the various fields
+  ! of the model. In a similar way, the fields in this type wrap the
+  ! PGMV/PGFV arrays of the benchmark,
   ! in the subroutines wrap_benchmark_fields and wrap_benchmark_fields_zgp
 
   ! Set of field api object to be transformed in the spectral transforms

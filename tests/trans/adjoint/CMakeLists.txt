@@ -22,7 +22,8 @@ foreach( precision ${precisions} )
       TARGET           adjoint_utils${platform_tag}_${precision}
       LINKER_LANGUAGE  Fortran
       SOURCES          utils.F90
-      PUBLIC_LIBS      fiat trans${platform_tag}_${precision}
+      PUBLIC_LIBS      fiat trans${platform_tag}_${precision} ectrans_util
+      NOINSTALL
     )
     ecbuild_target_fortran_module_directory(
       TARGET adjoint_utils${platform_tag}_${precision}

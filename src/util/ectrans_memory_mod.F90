@@ -1,4 +1,4 @@
-module ectrans_memory
+module ectrans_memory_mod
 use, intrinsic :: iso_c_binding, only : c_char
 
 private
