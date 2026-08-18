@@ -73,7 +73,7 @@ integer(kind=jpim) :: nlat    = 128   ! Meridional dimension
 integer(kind=jpim) :: nsmax   = 0   ! Spectral meridional truncation
 integer(kind=jpim) :: nmsmax  = 0   ! Spectral zonal truncation
 integer(kind=jpim) :: iters   = 10  ! Number of iterations for transform test
-integer(kind=jpim) :: iters_warmup = 0 ! Number of warm up steps (for which timing statistics should be ignored)
+integer(kind=jpim) :: iters_warmup = 3 ! Number of warm up steps (for which timing statistics should be ignored)
 integer(kind=jpim) :: iters_checksums = -1 ! Number of iterations for which checksum output is written
 integer(kind=jpim) :: nfld    = 1   ! Number of scalar fields
 integer(kind=jpim) :: nlev    = 1   ! Number of vertical levels
@@ -568,19 +568,9 @@ endif
 
 if (iters <= 0) call abor1('transform_test:iters <= 0')
 
-allocate(ztstep(iters))
-allocate(ztstep1(iters))
-allocate(ztstep2(iters))
-
-ztstepavg  = 0._jprd
-ztstepmax  = 0._jprd
-ztstepmin  = 9999999999999999._jprd
-ztstepavg1 = 0._jprd
-ztstepmax1 = 0._jprd
-ztstepmin1 = 9999999999999999._jprd
-ztstepavg2 = 0._jprd
-ztstepmax2 = 0._jprd
-ztstepmin2 = 9999999999999999._jprd
+allocate(ztstep(iters+iters_warmup))
+allocate(ztstep1(iters+iters_warmup))
+allocate(ztstep2(iters+iters_warmup))
 
 !=================================================================================================
 ! Dump the values to disk, for debugging only
@@ -601,13 +591,18 @@ endif
 write(nout,'(a)') '======= Start of spectral transforms  ======='
 write(nout,'(" ")')
 
-ztloop = timef() / 1000.0_jprd
+write(nout,'(a,i0,a,i0,a)') 'Running for ', iters, ' iterations with ', iters_warmup, &
+  & ' extra warm-up iterations'
+write(nout,'(" ")')
 
 !===================================================================================================
 ! Do spectral transform loop
 !===================================================================================================
 
-do jstep = 1, iters
+do jstep = 1, iters+iters_warmup
+  if (jstep == iters_warmup + 1) then
+    ztloop = timef() / 1000.0_jprd
+  endif
 
   if( lstats ) call gstats(3,0)
   ztstep(jstep) = timef() / 1000.0_jprd
@@ -757,24 +752,22 @@ do jstep = 1, iters
 
   ztstep(jstep) = (timef() / 1000.0_jprd - ztstep(jstep))
 
-  ztstepavg = ztstepavg + ztstep(jstep)
-  ztstepmin = min(ztstep(jstep), ztstepmin)
-  ztstepmax = max(ztstep(jstep), ztstepmax)
-
-  ztstepavg1 = ztstepavg1 + ztstep1(jstep)
-  ztstepmin1 = min(ztstep1(jstep), ztstepmin1)
-  ztstepmax1 = max(ztstep1(jstep), ztstepmax1)
-
-  ztstepavg2 = ztstepavg2 + ztstep2(jstep)
-  ztstepmin2 = min(ztstep2(jstep), ztstepmin2)
-  ztstepmax2 = max(ztstep2(jstep), ztstepmax2)
-
   !=================================================================================================
   ! Print norms
   !=================================================================================================
 
   if (lprint_norms) then
     if( lstats ) call gstats(6,0)
+  ztstepavg = sum(ztstep(iters_warmup+1:))
+  ztstepmin = minval(ztstep(iters_warmup+1:))
+  ztstepmax = maxval(ztstep(iters_warmup+1:))
+  ztstepavg1 = sum(ztstep1(iters_warmup+1:))
+  ztstepmin1 = minval(ztstep1(iters_warmup+1:))
+  ztstepmax1 = maxval(ztstep1(iters_warmup+1:))
+  ztstepavg2 = sum(ztstep2(iters_warmup+1:))
+  ztstepmin2 = minval(ztstep2(iters_warmup+1:))
+  ztstepmax2 = maxval(ztstep2(iters_warmup+1:))
+
 
     call especnorm(pspec=zspsc2(1:1,:),         pnorm=znormsp,  kvset=ivsetsc(1:1))
     if ( lvordiv ) then
@@ -959,20 +952,20 @@ ztstepavg = (ztstepavg/real(nproc,jprb))/real(iters,jprd)
 ztloop = ztloop/real(nproc,jprd)
 ztstep(:) = ztstep(:)/real(nproc,jprd)
 
-call sort(ztstep,iters)
-ztstepmed = ztstep(iters/2)
+call sort(ztstep(iters_warmup+1:), iters)
+ztstepmed = ztstep(iters_warmup + iters/2)
 
 ztstepavg1 = (ztstepavg1/real(nproc,jprb))/real(iters,jprd)
 ztstep1(:) = ztstep1(:)/real(nproc,jprd)
 
-call sort(ztstep1, iters)
-ztstepmed1 = ztstep1(iters/2)
+call sort(ztstep1(iters_warmup+1:), iters)
+ztstepmed1 = ztstep1(iters_warmup + iters/2)
 
 ztstepavg2 = (ztstepavg2/real(nproc,jprb))/real(iters,jprd)
 ztstep2(:) = ztstep2(:)/real(nproc,jprd)
 
-call sort(ztstep2,iters)
-ztstepmed2 = ztstep2(iters/2)
+call sort(ztstep2(iters_warmup+1:), iters)
+ztstepmed2 = ztstep2(iters_warmup + iters/2)
 
 
 write(nout,'(a)') '======= Start of time step stats ======='
@@ -1315,7 +1308,7 @@ subroutine print_help(unit)
   write(nout, "(a)") "    -n, --niter NITER   Run for this many inverse/direct transform&
     & iterations (default = 10)"
   write(nout, "(a)") "    --niter-warmup      Number of warm up iterations,&
-    & for which timing statistics should be ignored (default = 0, and currently not implemented!)"
+    & for which timing statistics should be ignored (default = 3)"
   write(nout, "(a)") "    --niter-checksums  Number of iterations for which checksum output is&
     & written, counting warmup iterations too (default = --niter-warmup > 0 ? --niter-warmup : --niter)"
   write(nout, "(a)") "    -f, --nfld NFLD     Number of scalar fields (default = 1)"
