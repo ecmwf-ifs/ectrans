@@ -46,7 +46,7 @@ SUBROUTINE FTDIR(PREEL,KFIELDS,KGL)
 !        R. El Khatib  08-Jun-2023 LALL_FFTW for better flexibility
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM, JPIB, JPRB
+USE PARKIND1  ,ONLY : JPIM, JPRB
 
 USE TPM_DISTR       ,ONLY : D, MYSETW
 USE TPM_GEOMETRY    ,ONLY : G
