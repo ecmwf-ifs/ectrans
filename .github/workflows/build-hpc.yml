@@ -100,7 +100,6 @@ jobs:
               #SBATCH --time=01:10:00
               #SBATCH --nodes=1
               #SBATCH --ntasks-per-node=8
-              #SBATCH --cpus-per-task=4
               #SBATCH --gpus-per-task=1
               #SBATCH --partition=standard-g
               #SBATCH --account={0}
@@ -222,7 +221,7 @@ jobs:
                     {% endif %}
                   {% endfor %}
                   {{ options['cmake_options']|join(' ') }}
-                cmake --build build -j4
+                cmake --build build
                 cmake --install build --prefix installation
                 popd
               {% endif %}
@@ -237,7 +236,7 @@ jobs:
                 {% endif %}
               {% endfor %}
               {{ cmake_options|join(' ') }}
-            cmake --build build -j4
+            cmake --build build
 
             ctest --test-dir build --output-on-failure {{ ctest_options }}
 
