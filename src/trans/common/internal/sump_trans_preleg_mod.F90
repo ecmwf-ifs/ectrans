@@ -130,8 +130,6 @@ IF(LLP1) WRITE(NOUT,*) '=== ENTER ROUTINE SUMP_TRANS_PRELEG ==='
     INM = INM+R%NTMAX+2-JM
   ENDDO
 
-  D%NLEI3D = (R%NLEI3-1)/NPRTRW+1
-
 ENDIF
 
 !     ------------------------------------------------------------------

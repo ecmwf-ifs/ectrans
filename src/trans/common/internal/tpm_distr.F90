@@ -58,7 +58,6 @@ INTEGER(KIND=JPIM) :: NSPEC2    ! 2*NSPEC
 INTEGER(KIND=JPIM) :: NSPEC2MX  ! maximun NSPEC2 among all PEs
 
 INTEGER(KIND=JPIM) :: NSPOLEGL  ! No. of legendre polynomials on this PE
-INTEGER(KIND=JPIM) :: NLEI3D    ! (NLEI3-1)/NPRTRW+1
 
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: MYMS(:)    ! Wave numbers handled by this PE
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NUMPP(:)   ! No. of wave numbers each wave set is
