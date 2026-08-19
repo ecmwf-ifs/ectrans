@@ -56,7 +56,6 @@ INTEGER(KIND=JPIM) :: NUMP      ! No. of spectral waves handled by this processo
 INTEGER(KIND=JPIM) :: NSPEC     ! No. of complex spectral coefficients (on this PE)
 INTEGER(KIND=JPIM) :: NSPEC2    ! 2*NSPEC
 INTEGER(KIND=JPIM) :: NSPEC2MX  ! maximun NSPEC2 among all PEs
-INTEGER(KIND=JPIM) :: NTPEC2    ! cf. NSPEC2 but for truncation NTMAX
 
 INTEGER(KIND=JPIM) :: NSPOLEGL  ! No. of legendre polynomials on this PE
 INTEGER(KIND=JPIM) :: NLEI3D    ! (NLEI3-1)/NPRTRW+1
