@@ -145,7 +145,6 @@ IMPLICIT NONE
         ALLOCATE(D%MYMS(D%NUMP))
         IF(LLP2)WRITE(NOUT,9) 'D%MYMS    ',SIZE(D%MYMS   ),SHAPE(D%MYMS   )
         D%MYMS(:) = IMYMS(1:D%NUMP)
-        D%NUMTP = D%NUMP 
 
         ! pointer to the first wave number of a given wave-set in NALLMS array
         ALLOCATE(D%NPTRMS(NPRTRW))
