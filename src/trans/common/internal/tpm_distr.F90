@@ -72,7 +72,6 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NDIM0G(:)  ! Defines partitioning of global s
                                  ! fields among PEs
 
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NATM0(:)  ! Same as NASM0 but for NTMAX
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NALLMS(:) ! Wave numbers for all a-set concatenated
                                 ! together to give all wave numbers in a-set
                                 ! order. Used when global spectral norms 
