@@ -10,7 +10,7 @@
 
 MODULE PRFI2_MOD
 CONTAINS
-SUBROUTINE PRFI2(KM,KMLOC,KF_FS,PAIA,PSIA)
+SUBROUTINE PRFI2(KM, KMLOC, KF_FS_CMPLX, PAIA, PSIA)
 
 !**** *PRFI2* - Prepare input work arrays for direct transform
 
@@ -75,7 +75,7 @@ IMPLICIT NONE
 !     DUMMY INTEGER SCALARS
 INTEGER(KIND=JPIM) , INTENT(IN) :: KM
 INTEGER(KIND=JPIM) , INTENT(IN) :: KMLOC
-INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS
+INTEGER(KIND=JPIM) , INTENT(IN) :: KF_FS_CMPLX
 
 
 REAL(KIND=JPRB) , INTENT(OUT) :: PSIA(:,:),   PAIA(:,:)
@@ -88,7 +88,7 @@ REAL(KIND=JPRB) , INTENT(OUT) :: PSIA(:,:),   PAIA(:,:)
 !*       2.    EXTRACT SYM./ANTISYM. FIELDS FROM TIME T+1.
 !              -------------------------------------------
 
-CALL PRFI2B(KF_FS,KM,KMLOC,PAIA,PSIA)
+CALL PRFI2B(KF_FS_CMPLX, KM, KMLOC, PAIA, PSIA)
 
 !     ------------------------------------------------------------------
 

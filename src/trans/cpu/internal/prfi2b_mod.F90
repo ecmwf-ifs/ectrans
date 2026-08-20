@@ -10,7 +10,7 @@
 
 MODULE PRFI2B_MOD
 CONTAINS
-SUBROUTINE PRFI2B(KFIELD,KM,KMLOC,PAIA,PSIA)
+SUBROUTINE PRFI2B(KF_FS_CMPLX, KM, KMLOC, PAIA, PSIA)
 
 !**** *PRFI2B* - Prepare input work arrays for direct transform
 
@@ -25,7 +25,7 @@ SUBROUTINE PRFI2B(KFIELD,KM,KMLOC,PAIA,PSIA)
 !     *CALL* *PRFI2B(..)
 
 !        Explicit arguments :
-!        -------------------   KFIELD - number of fields
+!        -------------------   KF_FS_CMPLX - number of complex fields as reals
 !                              KM - zonal wavenumber
 !                              KMLOC - local zonal wavenumber
 !                              PAOA - antisymmetric part of Fourier
@@ -67,7 +67,7 @@ USE TPM_DISTR       ,ONLY : D
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: KFIELD,KM,KMLOC
+INTEGER(KIND=JPIM), INTENT(IN)  :: KF_FS_CMPLX, KM, KMLOC
 REAL(KIND=JPRB)  , INTENT(OUT) :: PSIA(:,:),   PAIA(:,:)
 
 !     LOCAL INTEGER SCALARS
@@ -83,11 +83,11 @@ ISL = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
 
 DO JGL=ISL,R%NDGNH
   IGLS = R%NDGL+1-JGL
-  ISTAN = (D%NSTAGT1B(D%NPROCL(JGL) )+D%NPNTGTB1(KMLOC,JGL ))*2*KFIELD
-  ISTAS = (D%NSTAGT1B(D%NPROCL(IGLS))+D%NPNTGTB1(KMLOC,IGLS))*2*KFIELD
+  ISTAN = (D%NSTAGT1B(D%NPROCL(JGL))  + D%NPNTGTB1(KMLOC,JGL )) * KF_FS_CMPLX
+  ISTAS = (D%NSTAGT1B(D%NPROCL(IGLS)) + D%NPNTGTB1(KMLOC,IGLS)) * KF_FS_CMPLX
 !DIR$ IVDEP
 !OCL    NOVREC
-  DO JF=1,KFIELD*2
+  DO JF = 1, KF_FS_CMPLX
     PSIA(JF,JGL - ISL + 1) = FOUBUF(ISTAN+JF)+FOUBUF(ISTAS+JF)
     PAIA(JF,JGL - ISL + 1) = FOUBUF(ISTAN+JF)-FOUBUF(ISTAS+JF)
   ENDDO
