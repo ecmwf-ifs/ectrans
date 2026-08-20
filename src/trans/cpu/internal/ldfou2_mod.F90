@@ -10,7 +10,7 @@
 
 MODULE LDFOU2_MOD
 CONTAINS
-SUBROUTINE LDFOU2(KM,KF_UV,PAIA,PSIA)
+SUBROUTINE LDFOU2(KM, KF_UV_CMPLX, PAIA, PSIA)
 
 !**** *LDFOU2* - Division by a*cos(theta) of u and v
 
@@ -20,7 +20,7 @@ SUBROUTINE LDFOU2(KM,KF_UV,PAIA,PSIA)
 
 !**   Interface.
 !     ----------
-!        CALL LDFOU2(KM,PAIA,PSIA)
+!        CALL LDFOU2(KM, KF_UV_CMPLX, PAIA, PSIA)
 
 !        Explicit arguments :
 !        --------------------  KM - zonal wavenumber
@@ -66,7 +66,7 @@ IMPLICIT NONE
 
 
 !     DUMMY INTEGER SCALARS
-INTEGER(KIND=JPIM), INTENT(IN) :: KM,KF_UV
+INTEGER(KIND=JPIM), INTENT(IN) :: KM, KF_UV_CMPLX
 
 REAL(KIND=JPRB) ,INTENT(INOUT) :: PSIA(:,:),   PAIA(:,:)
 
@@ -74,7 +74,7 @@ REAL(KIND=JPRB) ,INTENT(INOUT) :: PSIA(:,:),   PAIA(:,:)
 REAL(KIND=JPRB)   :: ZACTHE
 
 !     LOCAL INTEGER SCALARS
-INTEGER(KIND=JPIM) :: J, JGL ,IFLD ,ISL
+INTEGER(KIND=JPIM) :: J, JGL, ISL
 
 
 !     ------------------------------------------------------------------
@@ -83,13 +83,12 @@ INTEGER(KIND=JPIM) :: J, JGL ,IFLD ,ISL
 !              --------------------------
 
 ISL  = MAX(R%NDGNH-G%NDGLU(KM)+1,1)
-IFLD = 4*KF_UV
 
 !*       1.1      U AND V
 
 DO JGL=ISL,R%NDGNH
   ZACTHE = REAL(F%RACTHE(JGL),JPRB)
-  DO J=1,IFLD
+  DO J = 1, KF_UV_CMPLX
     PAIA(J, JGL - ISL + 1) = PAIA(J, JGL - ISL + 1)*ZACTHE
     PSIA(J, JGL - ISL + 1) = PSIA(J, JGL - ISL + 1)*ZACTHE
   ENDDO
