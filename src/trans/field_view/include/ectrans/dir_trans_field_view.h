@@ -14,7 +14,7 @@ SUBROUTINE DIR_TRANS_FIELD_VIEW(KRESOL,                       &
                               & YDGPSCALAR, YDGPU, YDGPV,     &
                               & YDSPSCALAR, YDSPVOR, YDSPDIV)
 
-!**** *DIR_TRANS_FIELD_VIEW* - Field API interface to direct spectral transform
+!**** *DIR_TRANS_FIELD_VIEW* - Field view interface to direct spectral transform
 !
 !     Purpose.
 !     --------
