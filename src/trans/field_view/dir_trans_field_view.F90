@@ -122,9 +122,9 @@ IF (SIZE(YDGPU) > 0) THEN
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
     CALL ABOR1("[DIR_TRANS_FIELD_API] inconsistent number of field_view for vectors")
   ENDIF
-  KFLEVG = SIZE (YLGVU) / SIZE (YDGPU)    
+  KFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
   IUVG = SIZE(YDGPU)
-  
+
   IUVDIM = 2
 
   ! allocate temporary vector field arrays in spectral space
