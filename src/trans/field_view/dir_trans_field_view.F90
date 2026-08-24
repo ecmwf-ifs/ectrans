@@ -107,7 +107,7 @@ JFLD = 0
 IF (SIZE(YDGPU) > 0) THEN
 
   IF ((SIZE(YDGPU)/= SIZE(YDGPV)).OR.(SIZE(YDGPU)/= SIZE(YDSPDIV)).OR.(SIZE(YDGPU)/= SIZE(YDSPVOR))) THEN
-    CALL ABOR1("[DIR_TRANS_FIELD_API] The vector arrays have inconsitent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
+    CALL ABOR1("[DIR_TRANS_FIELD_API] The vector arrays have inconsistent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
   ENDIF
 
   ! Convert list of spectral vector fields into a list of 2d FIELD_VIEW
