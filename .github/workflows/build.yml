@@ -269,7 +269,8 @@ jobs:
         [ -f ${DEPS_DIR}/openmpi/env.sh ] && source ${DEPS_DIR}/openmpi/env.sh
         [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
         if [[ "${{ matrix.os }}" =~ macos ]]; then
-           echo "CACHE_SUFFIX=${CACHE_SUFFIX}-mpi_$(mpirun --version | head -1 | awk '{print $4}')" >> $GITHUB_ENV
+          mpi_cache_version=$(${ECTRANS_TOOLS}/openmpi-cache-version.py)
+          echo "CACHE_SUFFIX=${CACHE_SUFFIX}-mpi_${mpi_cache_version}" >> $GITHUB_ENV
         fi
 
     - name: Install FFTW
@@ -336,7 +337,7 @@ jobs:
         dependency_cmake_options: |
           ecmwf-ifs/fiat:      "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
           ecmwf-ifs/field_api: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_CUDA=OFF"
-        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON"
+        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON -DENABLE_FIAT_DEVELOP=ON"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools

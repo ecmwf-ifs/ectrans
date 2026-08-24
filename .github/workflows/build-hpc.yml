@@ -107,7 +107,7 @@ jobs:
               - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
-              - CMAKE_BUILD_PARALLEL_LEVEL=1
+              - CMAKE_GENERATOR=Ninja
             ctest_options: -E compare_checksums # We don't bother with reproducibility checks on LUMI
             unsupported_dependency: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
 
@@ -214,6 +214,7 @@ jobs:
             {% for name, options in dependencies.items() %}
               {% if name != unsupported_dependency %}
                 pushd {{name}}
+                configure_start=$(date +%s)
                 cmake -S . -B build \
                   {% for name in dependencies %}
                     {% if name != unsupported_dependency %}
@@ -222,13 +223,20 @@ jobs:
                     {% endif %}
                   {% endfor %}
                   {{ options['cmake_options']|join(' ') }}
+                configure_end=$(date +%s)
+                echo "{{name}} configure took $((configure_end - configure_start)) seconds"
+                build_install_start=$(date +%s)
                 cmake --build build
                 cmake --install build --prefix installation
+                build_install_end=$(date +%s)
+                echo "{{name}} configure took $((configure_end - configure_start)) seconds"
+                echo "{{name}} build and install took $((build_install_end - build_install_start)) seconds"
                 popd
               {% endif %}
             {% endfor %}
 
             # Build ecTrans
+            configure_start=$(date +%s)
             cmake -S $REPO -B build \
               {% for name in dependencies %}
                 {% if name != unsupported_dependency %}
@@ -237,8 +245,17 @@ jobs:
                 {% endif %}
               {% endfor %}
               {{ cmake_options|join(' ') }}
+            configure_end=$(date +%s)
+            echo "ecTrans configure took $((configure_end - configure_start)) seconds"
+            build_start=$(date +%s)
             cmake --build build
+            build_end=$(date +%s)
+            echo "ecTrans configure took $((configure_end - configure_start)) seconds"
+            echo "ecTrans build took $((build_end - build_start)) seconds"
 
+            test_start=$(date +%s)
             ctest --test-dir build --output-on-failure {{ ctest_options }}
+            test_end=$(date +%s)
+            echo "ecTrans tests took $((test_end - test_start)) seconds"
 
             cleanup

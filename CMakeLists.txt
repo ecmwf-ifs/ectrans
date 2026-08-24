@@ -156,6 +156,11 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
+ecbuild_add_option( FEATURE ROCFFT
+                    DEFAULT OFF
+                    CONDITION HAVE_HIP
+                    DESCRIPTION "Use rocFFT library instead of hipFFT for FFT operations on AMD GPUs" )
+
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
 else()
@@ -192,8 +197,11 @@ ectrans_find_lapack()
 ecbuild_add_option( FEATURE FIELD_API
                     DEFAULT OFF
                     DESCRIPTION "Compile field API interface to ectrans"
-                    REQUIRED_PACKAGES "field_api"
-                   )
+                    REQUIRED_PACKAGES "field_api" )
+
+ecbuild_add_option( FEATURE FIAT_DEVELOP
+                    DEFAULT OFF
+                    DESCRIPTION "Explicitly add knowledge that fiat is on develop branch" )
 
 ### Add sources
 ecbuild_override_compiler_flags(

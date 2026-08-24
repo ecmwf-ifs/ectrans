@@ -154,14 +154,14 @@ foreach( benchmark ${benchmarks} )
 
       # Base arguments -> 2 iterations, memory consumption/pinning information, spectral norms, and
       # verbose output
-      set( base_args --niter 2 --meminfo --norms -v )
+      set( base_args --niter 2 --niter-checksums 2 --meminfo --norms -v )
 
       foreach( callmode 1 2 )
         set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}_callmode${callmode}")
         # Check it works with 0 3D scalar fields
         ecbuild_add_test( TARGET ${base_title}_nfld0
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld0 ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld0.checksums ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -170,7 +170,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields and 20 levels
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20 ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20.checksums ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -179,7 +179,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and derivatives
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_derivatives
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --uvders --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_derivatives ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --uvders --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_derivatives.checksums ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -188,7 +188,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and vordiv in grid point space
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 100  --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 100  --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv.checksums ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -197,7 +197,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_nproma16 ${base_args}
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_nproma16.checksums ${base_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -207,7 +207,7 @@ foreach( benchmark ${benchmarks} )
         if( ${benchmark} MATCHES "cpu" )
           ecbuild_add_test( TARGET ${base_title}_lalloperm_f
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --deallocate-foubuf-temps --dump-checksums ${base_title}_lalloperm_f ${base_args}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 --callmode ${callmode} --deallocate-foubuf-temps --dump-checksums ${base_title}_lalloperm_f.checksums ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -218,7 +218,7 @@ foreach( benchmark ${benchmarks} )
         if( ${benchmark} MATCHES "cpu" AND ${callmode} MATCHES "1" )
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_npromatr20
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --npromatr 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_npromatr20 ${base_args}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --npromatr 20 --check 100 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_npromatr20.checksums ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -230,7 +230,7 @@ foreach( benchmark ${benchmarks} )
           # TODO: Find out why the FLT gives so much higher errors
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
               COMMAND ${benchmark}
-              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_flt ${base_args}
+              ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_flt.checksums ${base_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -268,7 +268,7 @@ foreach( benchmark ${benchmarks} )
 
       # Base arguments -> 2 iterations, memory consumption/pinning information, spectral norms, and
       # verbose output
-      set( base_args --niter 2 --meminfo --norms -v --field-api)
+      set( base_args --niter 2 --niter-checksums 2 --meminfo --norms -v --field-api)
       foreach( callmode 1 2 )
       set (base_title "${benchmark}_T${t}_${grid}_mpi${mpi}_omp${omp}_callmode${callmode}_field_api")
 
@@ -276,7 +276,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 0 3D scalar fields
       ecbuild_add_test( TARGET ${base_title}_nfld0
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld0
+          ARGS --truncation ${t} --grid ${grid} --nfld 0 --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld0.checksums
           MPI ${mpi}
           OMP ${omp}
       )
@@ -286,7 +286,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields and 20 levels
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20.checksums
           MPI ${mpi}
           OMP ${omp}
       )
@@ -296,7 +296,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and scalar derivatives
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_derivatives
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20_scders
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --scders --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20_scders.checksums
           MPI ${mpi}
           OMP ${omp}
       )
@@ -306,7 +306,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and wind transforms
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 100  ${base_args} --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --vordiv --check 100  ${base_args} --callmode ${callmode} --dump-checksums ${base_title}_nfld10_nlev20_vordiv.checksums
           MPI ${mpi}
           OMP ${omp}
       )
@@ -316,7 +316,7 @@ foreach( benchmark ${benchmarks} )
       # Check it works with 10 3D scalar fields, 20 levels, and NPROMA=16
       ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
           COMMAND ${benchmark}
-          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20_nproma16
+          ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --nproma 16 --check 100 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20_nproma16.checksums
           MPI ${mpi}
           OMP ${omp}
       )
@@ -327,7 +327,7 @@ foreach( benchmark ${benchmarks} )
         # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
         ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_flt
             COMMAND ${benchmark}
-            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20_flt
+            ARGS --truncation ${t} --grid ${grid} --nfld 10 --nlev 20 --flt --check 1000000 ${base_args} --callmode ${callmode}  --dump-checksums ${base_title}_nfld10_nlev20_flt.checksums
             MPI ${mpi}
             OMP ${omp}
         )
@@ -359,7 +359,7 @@ if( HAVE_ETRANS )
 
       # Base arguments -> nlat x nlon, 2 iterations, memory consumption/pinning information,
       # spectral norms, and verbose output
-      set( base_args --nlon ${nlon} --nlat ${nlat} --niter 2 --meminfo --norms -v )
+      set( base_args --nlon ${nlon} --nlat ${nlat} --niter 2 --niter-checksums 2 --meminfo --norms -v )
 
       foreach( mpi ${ntasks} )
         foreach( omp ${nthreads} )
@@ -372,49 +372,49 @@ if( HAVE_ETRANS )
           set(base_title "ectrans_lam_test_benchmark_${prec}_${nlon}x${nlat}_mpi${mpi}_omp${omp}" )
 
           ecbuild_add_test( TARGET ${base_title}_nfld0
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0 --dump-checksums ${base_title}_nfld0
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 0 --dump-checksums ${base_title}_nfld0.checksums
               MPI ${mpi}
               OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld0 )
 
           ecbuild_add_test( TARGET ${base_title}_nfld10
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --dump-checksums ${base_title}_nfld10
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --dump-checksums ${base_title}_nfld10.checksums
               MPI ${mpi}
               OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld10 )
 
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --dump-checksums ${base_title}_nfld20
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --dump-checksums ${base_title}_nfld20.checksums
               MPI ${mpi}
               OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld10_nlev20 )
 
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_scders
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders --dump-checksums ${base_title}_nfld10_nlev20_scders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --scders --dump-checksums ${base_title}_nfld10_nlev20_scders.checksums
               MPI ${mpi}
               OMP ${omp}
           )
           ectrans_set_test_properties(  ${base_title}_nfld10_nlev20_scders )
 
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --dump-checksums ${base_title}_nfld10_nlev20_vordiv
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --dump-checksums ${base_title}_nfld10_nlev20_vordiv.checksums
               MPI ${mpi}
               OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv )
 
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_vordiv_uvders
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --uvders --dump-checksums ${base_title}_nfld10_nlev20_vordiv_uvders.checksums
               MPI ${mpi}
               OMP ${omp}
           )
           ectrans_set_test_properties( ${base_title}_nfld10_nlev20_vordiv_uvders )
 
           ecbuild_add_test( TARGET ${base_title}_nfld10_nlev20_nproma16
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_nfld10_nlev20_nproma16
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --dump-checksums ${base_title}_nfld10_nlev20_nproma16.checksums
               MPI ${mpi}
               OMP ${omp}
           )
@@ -422,7 +422,7 @@ if( HAVE_ETRANS )
 
           # Check it works with LALLOPERM=F (cpu only)
           ecbuild_add_test( TARGET ${base_title}_lalloperm_f
-              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --deallocate-foubuf-temps --dump-checksums ${base_title}_lalloperm_f
+              COMMAND ectrans-lam-benchmark-cpu-${prec} ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --deallocate-foubuf-temps --dump-checksums ${base_title}_lalloperm_f.checksums
               MPI ${mpi}
               OMP ${omp}
           )
@@ -454,6 +454,20 @@ if( HAVE_CPU AND HAVE_MPI )
   else()
     ecbuild_add_test(TARGET ectrans_test_split_mpi_comm
       SOURCES trans/test_split_mpi_comm.F90
+      LIBS ${trans_lib} ${parkind_lib}
+      LINKER_LANGUAGE Fortran
+      MPI 4
+      OMP 1
+    )
+  endif()
+
+  if (fiat_VERSION VERSION_LESS 1.6.3 OR (fiat_VERSION VERSION_EQUAL 2.0.0 AND NOT HAVE_FIAT_DEVELOP))
+    # Once fiat develop branch is released in version > 2.0.0, we can drop "AND NOT HAVE FIAT_DEVELOP"
+    ecbuild_warn("Skipping test ectrans_test_init_mpi_ranks for fiat version (${fiat_VERSION}) < 1.6.3 or "
+                 " version == 2.0.0; see https://github.com/ecmwf-ifs/ectrans/pull/387")
+  else()
+    ecbuild_add_test(TARGET ectrans_test_init_mpi_ranks
+      SOURCES trans/test_init_mpi_ranks.F90
       LIBS ${trans_lib} ${parkind_lib}
       LINKER_LANGUAGE Fortran
       MPI 4

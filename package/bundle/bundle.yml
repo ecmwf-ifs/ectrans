@@ -89,6 +89,12 @@ options :
         help  : Deactivate 3XTF32 usage on compatible hardware
         cmake : >
             ENABLE_CUTLASS_3XTF32=OFF
+
     - with-static-linking :
         help  : Build static libraries by default
         cmake : BUILD_SHARED_LIBS=OFF
+
+    - with-rocfft :
+        help  : Use rocFFT backend on AMD GPUs
+        cmake : ENABLE_ROCFFT=ON
+
