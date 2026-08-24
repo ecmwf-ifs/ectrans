@@ -81,6 +81,6 @@
     "arch": "X64",
     "loaded_modules": [],
     "os": "Linux",
-    "processor": "AMD EPYC 9V74 80-Core Processor"
+    "processor": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz"
   }
 }
