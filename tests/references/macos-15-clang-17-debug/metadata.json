@@ -1,0 +1,82 @@
+{
+  "cmake": {
+    "version": "4.4.0"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-g",
+      "flags": "",
+      "id": "AppleClang",
+      "path": "/usr/bin/cc",
+      "version": "17.0.0.17000013"
+    },
+    "cxx": {
+      "build_type_flags": "-g",
+      "flags": "",
+      "id": "AppleClang",
+      "path": "/usr/bin/c++",
+      "version": "17.0.0.17000013"
+    },
+    "fortran": {
+      "build_type_flags": "-O0 -g -fcheck=bounds -fbacktrace -finit-real=snan",
+      "flags": "",
+      "id": "GNU",
+      "path": "/opt/homebrew/Cellar/gcc@13/13.4.0/bin/gfortran-13",
+      "version": "13.4.0"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "/Users/runner/work/_temp/install/ecbuild/lib/cmake/ecbuild",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "fftw": {
+      "cflags": "-fPIC -march=native -ffp-contract=off -fno-fast-math",
+      "library_paths": [
+        "/opt/homebrew/Cellar/fftw/3.3.11/lib/libfftw3.3.dylib",
+        "/opt/homebrew/Cellar/fftw/3.3.11/lib/libfftw3f.3.dylib"
+      ],
+      "root": "/opt/homebrew/Cellar/fftw/3.3.11",
+      "vendor": "FFTW",
+      "version": "3.3.11"
+    },
+    "fiat": {
+      "library_paths": [],
+      "root": "/Users/runner/work/_temp/install/fiat/lib/cmake/fiat",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "field_api": {
+      "library_paths": [],
+      "root": "/Users/runner/work/_temp/install/field_api/lib/cmake/field_api",
+      "vendor": "ECMWF",
+      "version": "v0.3.9"
+    },
+    "lapack": {
+      "library_paths": [
+        "/opt/homebrew/Cellar/lapack/3.12.1/lib/libblas.3.12.0.dylib",
+        "/opt/homebrew/Cellar/lapack/3.12.1/lib/liblapack.3.12.0.dylib"
+      ],
+      "root": "/opt/homebrew/Cellar/lapack/3.12.1",
+      "vendor": "Netlib",
+      "version": "3.12.0"
+    },
+    "mpi": {
+      "library_paths": [
+        "/opt/homebrew/Cellar/open-mpi/5.0.9_1/lib/libmpi.40.dylib"
+      ],
+      "root": "/opt/homebrew/Cellar/open-mpi/5.0.9_1",
+      "vendor": "Open MPI",
+      "version": "5.0.9"
+    }
+  },
+  "environment": {},
+  "system": {
+    "arch": "ARM64",
+    "loaded_modules": [],
+    "os": "macOS",
+    "processor": "Apple M1 (Virtual)"
+  }
+}
