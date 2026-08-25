@@ -64,7 +64,7 @@ done
 reference_dir=${reference_dir:-${ECTRANS_TEST_REFERENCE_DIR:-@ECTRANS_TEST_REFERENCE_DIR@}}
 local_reference_dir="@local_reference_dir@"
 build_dir="@CMAKE_BINARY_DIR@"
-provenance_script="@CMAKE_SOURCE_DIR@/tests/reference-build-provenance.py"
+provenance_script="@CMAKE_CURRENT_SOURCE_DIR@/reference-build-provenance.py"
 
 if [[ ! -d "${local_reference_dir}" ]]; then
   echo "Missing local reference directory: ${local_reference_dir}" >&2
