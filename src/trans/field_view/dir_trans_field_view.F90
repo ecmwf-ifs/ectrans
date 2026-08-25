@@ -104,7 +104,7 @@ JFLD = 0
 IF (SIZE(YDGPU) > 0) THEN
 
   IF ((SIZE(YDGPU)/= SIZE(YDGPV)).OR.(SIZE(YDGPU)/= SIZE(YDSPDIV)).OR.(SIZE(YDGPU)/= SIZE(YDSPVOR))) THEN
-    CALL ABOR1("[DIR_TRANS_FIELD_API] The vector arrays have inconsistent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
+    CALL ABOR1("[DIR_TRANS_FIELD_VIEW] The vector arrays have inconsistent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
   ENDIF
 
   ! Convert list of spectral vector fields into a list of 2d FIELD_VIEW
@@ -117,7 +117,7 @@ IF (SIZE(YDGPU) > 0) THEN
   ALLOCATE(YLGVU(LG_COUNT(YDGPU)))
   ALLOCATE(YLGVV(LG_COUNT(YDGPV)))
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
-    CALL ABOR1("[DIR_TRANS_FIELD_API] inconsistent number of field_view for vectors")
+    CALL ABOR1("[DIR_TRANS_FIELD_VIEW] inconsistent number of field_view for vectors")
   ENDIF
   KFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
   IUVG = SIZE(YDGPU)
@@ -161,7 +161,7 @@ IF (SIZE(YDGPU) > 0) THEN
       IF (JFLD .EQ. 1) THEN
         IVSETUV(JLEV) = YLGVU(ID)%IVSET
       ENDIF
-      IF (IVSETUV(JLEV) .NE. YLGVV(ID)%IVSET)  CALL ABOR1("[DIR_TRANS_FIELD_API] ivsetuv inconsistent with ylgvv%ivset")
+      IF (IVSETUV(JLEV) .NE. YLGVV(ID)%IVSET)  CALL ABOR1("[DIR_TRANS_FIELD_VIEW] ivsetuv inconsistent with ylgvv%ivset")
     ENDDO
   ENDDO
 ELSE
@@ -178,7 +178,7 @@ ENDIF
 
 ! Do we have scalar fields?
 IF (SIZE(YDSPSCALAR) > 0 ) THEN
-  IF ((SIZE(YDSPSCALAR)/= SIZE(YDGPSCALAR)))  CALL ABOR1("[DIR_TRANS_FIELD_API] Inconsistent size &
+  IF ((SIZE(YDSPSCALAR)/= SIZE(YDGPSCALAR)))  CALL ABOR1("[DIR_TRANS_FIELD_VIEW] Inconsistent size &
                                                          & for YDSPSCALAR and YDGPSCALAR")
 
   ! Convert list of spectral scalar fields of any dimension into a list of 2d fields
