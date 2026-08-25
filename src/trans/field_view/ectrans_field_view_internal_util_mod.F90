@@ -407,7 +407,7 @@ CONTAINS
   END FUNCTION
 END SUBROUTINE LG4RB
 
-FUNCTION LG(YLFL,LGV,IVSET) RESULT(IOFF)
+SUBROUTINE LG(YLFL,LGV,IVSET)
   ! Creation of a list of GRID_VIEW from a list YLFL of FIELD_VIEW
   ! For each field of YLFL, the IVSET of the matching spectral field can be provided
   ! through the optional IVSET argument. If IVSET is not provided, the IVSET of the
@@ -467,7 +467,7 @@ FUNCTION LG(YLFL,LGV,IVSET) RESULT(IOFF)
 
   IF (SIZE(LGV) /= IOFF)  CALL ABORT_TRANS("LG FAILURE: LGV has incorrect size")
 
-END FUNCTION LG
+END SUBROUTINE LG
 
 SUBROUTINE LS1RB(LS1RBV, YLF)
   ! Creation of a list of SPEC_VIEW encapsulating the layer of an input FIELD_1RB field
@@ -533,7 +533,7 @@ SUBROUTINE LS3RB(LS3RBV,YLF)
   ENDDO
 END SUBROUTINE LS3RB
 
-FUNCTION LS(YLFL,LSV) RESULT(IOFF)
+SUBROUTINE LS(YLFL,LSV)
 ! Creation of a list of SPEC_VIEW from a list YLFL of FIELD_BASIC_PTR
 TYPE (FIELD_VIEW), TARGET, INTENT(IN) :: YLFL (:) ! input list of FIELD_BASIC_PTR
 TYPE (SPEC_VIEW), INTENT(INOUT) :: LSV (:)        ! output list of SPEC_VIEW
@@ -576,6 +576,6 @@ ENDDO
 
 IF (SIZE(LSV) /= IOFF)  CALL ABORT_TRANS("LS FAILURE: LSV has incorrect size")
 
-END FUNCTION LS
+END SUBROUTINE LS
 
 END MODULE
