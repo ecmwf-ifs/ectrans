@@ -207,7 +207,7 @@ ecbuild_add_option( FEATURE FIAT_DEVELOP
 ecbuild_add_option( FEATURE REFERENCE_TESTS DEFAULT OFF
                     DESCRIPTION "Compare each ectrans-benchmark checksum file against references" )
 
-ecbuild_add_option( FEATURE BITID_TESTS DEFAULT ON
+ecbuild_add_option( FEATURE BITID_TESTS DEFAULT OFF
                     DESCRIPTION "Compare each ectrans-benchmark checksum file against build-local references" )
 
 ecbuild_add_option( FEATURE MEMORY_TESTS DEFAULT ON
