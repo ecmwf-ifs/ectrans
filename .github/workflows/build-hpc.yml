@@ -156,6 +156,8 @@ jobs:
             cmake_options:
               - -DENABLE_ETRANS=ON
               - -DENABLE_FIELD_API=ON
+              - -DENABLE_BITID_TESTS=ON
+              - -DENABLE_REFERENCE_TESTS=ON
               - -DECTRANS_TEST_REFERENCE_DIR=$BASEDIR/$REPO/tests/references/${{ steps.reference-key.outputs.reference_key }}
             ctest_options: ${{ matrix.ctest_options || '' }}
             reference_key: ${{ steps.reference-key.outputs.reference_key }}
