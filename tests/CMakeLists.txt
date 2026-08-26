@@ -592,6 +592,17 @@ if( HAVE_CPU AND HAVE_MPI )
 endif()
 
 # --------------------------------------------------------------------------------------------------
+# Add test for ability to call INV_TRANS at multiple precisions
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
+  ecbuild_add_test( TARGET ectrans_test_multiple_precisions
+    SOURCES trans/test_multiple_precisions.F90
+    LIBS ectrans_sp ectrans_dp fiat parkind_sp
+    LINKER_LANGUAGE Fortran )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
 
