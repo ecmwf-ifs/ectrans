@@ -547,6 +547,7 @@ if( ectrans_update_reference_tests )
     DEPENDS ${ectrans_update_reference_benchmarks}
     USES_TERMINAL
     VERBATIM )
+  set_target_properties( ectrans-update-references PROPERTIES EXCLUDE_FROM_ALL TRUE )
 endif()
 
 # --------------------------------------------------------------------------------------------------
