@@ -21,8 +21,10 @@ unique logical reference variant is only available from a field-api test.
 Run the local-reference CTest tests before this script so the checksum files
 pointed to by the build-tree local-reference symlinks exist.
 
-REFERENCE_DIR defaults to:
-  @ECTRANS_TEST_REFERENCE_DIR@
+REFERENCE_DIR is selected in this order:
+  1. Optional REFERENCE_DIR argument
+  2. ECTRANS_TEST_REFERENCE_DIR environment variable
+  3. configured default: @ECTRANS_TEST_REFERENCE_DIR@
 
 Provenance paths are anonymous by default. Use --no-anonymous to retain the
 actual ecbuild, fiat, and field_api roots and library paths.
@@ -59,7 +61,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-reference_dir=${reference_dir:-@ECTRANS_TEST_REFERENCE_DIR@}
+reference_dir=${reference_dir:-${ECTRANS_TEST_REFERENCE_DIR:-@ECTRANS_TEST_REFERENCE_DIR@}}
 local_reference_dir="@local_reference_dir@"
 build_dir="@CMAKE_BINARY_DIR@"
 provenance_script="@CMAKE_SOURCE_DIR@/tests/reference-build-provenance.py"
