@@ -41,7 +41,6 @@ SUBROUTINE TRANS_END(CDMODE)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
 IMPLICIT NONE
 CHARACTER*5, OPTIONAL, INTENT(IN) :: CDMODE
 
