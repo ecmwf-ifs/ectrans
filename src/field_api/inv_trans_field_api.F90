@@ -28,26 +28,25 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
 !     Explicit arguments :
 !     --------------------
 !      input
-!       KRESOL           The resolution identifier
-!       YDFSPSCALAR(:) - List of spectral scalar fields
-!       YDFSPVOR(:)    - List of spectral vector fields (vorticity)
-!       YDFSPDIV(:)    - List of spectral vector fields (divergence)
-!       FSPGL_PROC     - procedure to be executed in fourier space
-!                        before transposition
+!       KRESOL          - The resolution identifier
+!       YDFSPSCALAR(:)  - List of spectral scalar fields
+!       YDFSPVOR(:)     - List of spectral vector fields (vorticity)
+!       YDFSPDIV(:)     - List of spectral vector fields (divergence)
+!       FSPGL_PROC      - procedure to be executed in fourier space
+!                         before transposition
 
 !      output
-!       YDFSCALAR(:)   - List of grid-point scalar fields
-!       YDFU(:)        - List of grid-point vector fields (u)
-!       YDFV(:)        - List of grid-point vector fields (v)
-!       YDFVOR(:)      - List of grid-point vector fields (vorticity)
-!       YDFDIV(:)      - List of grid-point vector fields (divergence)
+!       YDFSCALAR(:)    - List of grid-point scalar fields
+!       YDFU(:)         - List of grid-point vector fields (u)
+!       YDFV(:)         - List of grid-point vector fields (v)
+!       YDFVOR(:)       - List of grid-point vector fields (vorticity)
+!       YDFDIV(:)       - List of grid-point vector fields (divergence)
 !       YDFSCALAR_NS(:) - List of grid-point scalar fields derivatives N-S
 !       YDFSCALAR_EW(:) - List of grid-point scalar fields derivatives E-W
 !       YDFU_EW(:)      - List of grid-point vector fields derivatives E-W (u)
 !       YDFV_EW(:)      - List of grid-point vector fields derivatives E-W (v)
 
 USE YOMHOOK, ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
 USE ECTRANS_FIELD_API_MOD, ONLY : FIELD_GRID, FIELD_SPEC, MAKE_FIELD_VIEW
 USE ECTRANS_FIELD_VIEW_MOD, ONLY: FIELD_VIEW
 USE PARKIND1, ONLY : JPIM, JPRB
@@ -96,9 +95,10 @@ INTEGER(KIND=JPIM) :: IRESOL
 
 REAL(KIND=JPHOOK)           :: ZHOOK_HANDLE
 
-#include "inv_trans.h"
 #include "inv_trans_field_view.h"
 #include "abor1.intfb.h"
+! We use ABOR1 and not ABORT_TRANS because ABORT_TRANS is to be private to trans routines,
+! and this interface is conceptually outside trans.
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('INV_TRANS_FIELD_API',0,ZHOOK_HANDLE)
@@ -109,22 +109,52 @@ IF (LHOOK) CALL DR_HOOK('INV_TRANS_FIELD_API',0,ZHOOK_HANDLE)
 
 IF (PRESENT(YDFU) .OR. PRESENT(YDFV) .OR. PRESENT(YDFSPVOR) .OR. PRESENT(YDFSPDIV)) THEN
   IF (.NOT. (PRESENT(YDFU) .AND. PRESENT(YDFV) .AND. PRESENT(YDFSPVOR) .AND. PRESENT(YDFSPDIV))) THEN
-    CALL ABORT_TRANS('INV_TRANS_FIELD_API: YDFU, YDFV, YDFSPVOR AND YDFSPDIV MUST ALL BE PRESENT IF ANY IS PRESENT')
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFU, YDFV, YDFSPVOR AND YDFSPDIV MUST ALL BE PRESENT IF ANY IS PRESENT')
   ENDIF
   IF (SIZE(YDFU) /= SIZE(YDFV) .OR. SIZE(YDFU) /= SIZE(YDFSPVOR) .OR. SIZE(YDFU) /= SIZE(YDFSPDIV)) THEN
-    CALL ABORT_TRANS('INV_TRANS_FIELD_API: YDFU, YDFV, YDFSPVOR AND YDFSPDIV MUST HAVE THE SAME SIZE')
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFU, YDFV, YDFSPVOR AND YDFSPDIV MUST HAVE THE SAME SIZE')
+  ENDIF
+ENDIF
+
+IF (PRESENT(YDFVOR)) THEN
+  IF (.NOT. PRESENT(YDFSPVOR)) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFSPVOR BE PRESENT IF YDFVOR IS PRESENT')
+  ENDIF
+  IF (SIZE(YDFVOR) /= SIZE(YDFSPVOR)) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFVOR AND YDFSPVOR MUST HAVE THE SAME SIZE')
+  ENDIF
+ENDIF
+
+IF (PRESENT(YDFDIV)) THEN
+  IF (.NOT. PRESENT(YDFSPDIV)) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFSPDIV BE PRESENT IF YDFDIV IS PRESENT')
+  ENDIF
+  IF (SIZE(YDFDIV) /= SIZE(YDFSPDIV)) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFDIV AND YDFSPDIV MUST HAVE THE SAME SIZE')
+  ENDIF
+ENDIF
+
+IF (PRESENT(YDFU_EW) .OR. PRESENT(YDFV_EW)) THEN
+  IF (.NOT. (PRESENT(YDFU_EW) .AND. PRESENT(YDFV_EW))) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFU_EW AND YDFV_EW MUST BOTH BE PRESENT IF EITHER IS PRESENT')
+  ENDIF
+  IF (.NOT. PRESENT(YDFU)) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFU MUST BE PRESENT WITH YDFU_EW AND YDFV_EW')
+  ENDIF
+  IF (SIZE(YDFU_EW) /= SIZE(YDFV_EW) .OR. SIZE(YDFU_EW) /= SIZE(YDFU)) THEN
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFU_EW, YDFV_EW AND YDFU MUST HAVE THE SAME SIZE')
   ENDIF
 ENDIF
 
 IF (PRESENT(YDFSCALAR_NS) .OR. PRESENT(YDFSCALAR_EW)) THEN
   IF (.NOT. (PRESENT(YDFSCALAR_NS) .AND. PRESENT(YDFSCALAR_EW))) THEN
-    CALL ABORT_TRANS('INV_TRANS_FIELD_API: YDFSCALAR_NS AND YDFSCALAR_EW MUST BOTH BE PRESENT IF EITHER IS PRESENT')
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFSCALAR_NS AND YDFSCALAR_EW MUST BOTH BE PRESENT IF EITHER IS PRESENT')
   ENDIF
   IF (.NOT. PRESENT(YDFSCALAR)) THEN
-    CALL ABORT_TRANS('INV_TRANS_FIELD_API: YDFSCALAR MUST BE PRESENT WITH YDFSCALAR_NS AND YDFSCALAR_EW')
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFSCALAR MUST BE PRESENT WITH YDFSCALAR_NS AND YDFSCALAR_EW')
   ENDIF
   IF (SIZE(YDFSCALAR_NS) /= SIZE(YDFSCALAR_EW) .OR. SIZE(YDFSCALAR_NS) /= SIZE(YDFSCALAR)) THEN
-    CALL ABORT_TRANS('INV_TRANS_FIELD_API: YDFSCALAR, YDFSCALAR_NS AND YDFSCALAR_EW MUST HAVE THE SAME SIZE')
+    CALL ABOR1('INV_TRANS_FIELD_API: YDFSCALAR, YDFSCALAR_NS AND YDFSCALAR_EW MUST HAVE THE SAME SIZE')
   ENDIF
 ENDIF
 
