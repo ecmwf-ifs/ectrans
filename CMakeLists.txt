@@ -186,9 +186,10 @@ if( HAVE_ETRANS AND HAVE_GPU )
   endif()
 endif()
 
+# ectrans4py Python wrapper (can only be built with one precision)
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
-                    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
+                    CONDITION HAVE_ETRANS AND NOT (HAVE_DOUBLE_PRECISION AND HAVE_SINGLE_PRECISION)
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
 
 
