@@ -43,7 +43,7 @@ USE EC_PARKIND, ONLY: JPIM
 
 !ifndef INTERFACE
 
-USE BACKENDS_MOD, ONLY: Y_RESOL_DEALLOCATORS
+USE RESOLS_MOD, ONLY: Y_RESOLS
 
 IMPLICIT NONE
 
@@ -53,7 +53,7 @@ INTEGER(KIND=JPIM), INTENT(IN) :: KRESOL
 
 !     ------------------------------------------------------------------
 
-CALL Y_RESOL_DEALLOCATORS(KRESOL)%F(KRESOL)
+CALL Y_RESOLS(KRESOL)%DESTROY(KRESOL)
 
 !     ------------------------------------------------------------------
 

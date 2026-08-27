@@ -50,6 +50,7 @@ list( APPEND ectrans_common_src
   internal/sump_trans_preleg_mod.F90
   internal/wts500_mod.F90
   internal/backends_mod.F90
+  internal/resols_mod.F90
   external/get_current.F90
   external/setup_trans0.F90
   external/ini_spec_dist.F90
