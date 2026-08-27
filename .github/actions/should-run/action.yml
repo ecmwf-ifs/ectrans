@@ -20,14 +20,20 @@ runs:
           // push build for same-repository PRs, because it is tied directly to
           // the pushed branch commit. Keep pull_request builds for fork PRs,
           // where there is no corresponding push event in this repository.
+          const setDecision = (run, reason) => {
+            const resolution = run ? 'run' : 'skip';
+            core.notice(`should-run resolution: ${resolution}; ${reason}`);
+            core.setOutput('value', String(run));
+          };
+
           if (context.eventName !== 'pull_request') {
-            core.setOutput('value', 'true');
+            setDecision(true, `${context.eventName} events are not duplicate pull_request events`);
             return;
           }
 
           const pull = context.payload.pull_request;
           if (!pull) {
-            core.setOutput('value', 'true');
+            setDecision(true, 'the event payload has no pull request data');
             return;
           }
 
@@ -36,7 +42,7 @@ runs:
           const sameRepositoryPullRequest = headRepo === currentRepo;
 
           if (!sameRepositoryPullRequest) {
-            core.setOutput('value', 'true');
+            setDecision(true, `PR #${pull.number} is from ${headRepo || 'an unknown repository'} and has no duplicate push event in ${currentRepo}`);
             return;
           }
 
@@ -55,13 +61,11 @@ runs:
             });
             const content = Buffer.from(action.data.content, action.data.encoding).toString('utf8');
             if (content.includes(rolloutMarker)) {
-              core.info(`PR #${pull.number} uses the push-preferred policy; skipping the duplicate pull_request build.`);
-              core.setOutput('value', 'false');
+              setDecision(false, `PR #${pull.number} uses the push-preferred policy, so its push build is preferred`);
               return;
             }
           } catch (error) {
             core.warning(`Could not inspect the should-run action at ${pull.head.sha}: ${error.message}`);
           }
 
-          core.info(`PR #${pull.number} does not yet use the push-preferred policy; keeping the pull_request build during rollout.`);
-          core.setOutput('value', 'true');
+          setDecision(true, `PR #${pull.number} does not yet use the push-preferred policy, so pull_request CI is retained during rollout`);
