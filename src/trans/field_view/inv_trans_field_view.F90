@@ -202,7 +202,7 @@ IF (SIZE(YDGPU) > 0) THEN
   ! Output derivatives of vector fields
   IF (SIZE(YDGPU_EW) > 0 .AND. SIZE(YDGPV_EW) > 0)    THEN
     LLUVDER = .TRUE.
-    IUVDIM = 5
+    IUVDIM = IUVDIM + 2
     ALLOCATE(YLGVU_EW(LG_COUNT(YDGPU_EW)))
     ALLOCATE(YLGVV_EW(LG_COUNT(YDGPV_EW)))
   ENDIF
@@ -210,14 +210,14 @@ IF (SIZE(YDGPU) > 0) THEN
   ! Output divergence of vector fields
   IF (SIZE(YDGPDIV)  > 0) THEN
     LLDIVGP = .TRUE.
-    IUVDIM = 5
+    IUVDIM = IUVDIM + 1
     ALLOCATE(YLGVDIV(LG_COUNT(YDGPDIV)))
   ENDIF
 
   ! Output vorticity of vector fields
   IF (SIZE(YDGPVOR) > 0) THEN
     LLVORGP = .TRUE.
-    IUVDIM = 6
+    IUVDIM = IUVDIM + 1
     ALLOCATE(YLGVVOR(LG_COUNT(YDGPVOR)))
   ENDIF
 
