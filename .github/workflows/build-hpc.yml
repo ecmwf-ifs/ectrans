@@ -3,11 +3,10 @@ name: build-hpc
 # Controls when the action will run
 on:
 
-  # Trigger the workflow on all pushes to main and develop, except on tag creation
+  # Trigger the workflow on all pushes, except on tag creation
   push:
     branches:
-    - main
-    - develop
+    - '**'
     tags-ignore:
     - '**'
 
@@ -63,6 +62,8 @@ jobs:
         include:
           - name: ac-ops intel
             site: ac-batch
+            os: ecmwf-hpc2020
+            compiler: intel-2023-2-0
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/intel/2023.2.0/hpcx-openmpi/2.9.0
             sbatch_options: |
@@ -78,6 +79,8 @@ jobs:
 
           - name: ac-gpu nvhpc
             site: ac-batch
+            os: ecmwf-hpc2020
+            compiler: nvhpc-24-5
             troika_user_secret: HPC_CI_SSH_USER
             arch: ecmwf/hpc2020/nvhpc/24.5/hpcx-openmpi/2.19.0-cuda
             sbatch_options: |
@@ -93,6 +96,8 @@ jobs:
 
           - name: lumi-g cce
             site: lumi
+            os: lumi-g
+            compiler: cce-19-0-0
             troika_user_secret: LUMI_CI_SSH_USER
             account_secret: LUMI_CI_PROJECT
             arch: eurohpc/lumi-g/cray/19.0.0
@@ -108,7 +113,7 @@ jobs:
               - MPICH_GPU_SUPPORT_ENABLED=1
               - MPICH_SMP_SINGLE_COPY_MODE=NONE
               - CMAKE_GENERATOR=Ninja
-            ctest_options: -E compare_checksums # We don't bother with reproducibility checks on LUMI
+            ctest_options: -E bitid # We don't bother with reproducibility checks on LUMI
             unsupported_dependency: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
 
 
@@ -118,7 +123,27 @@ jobs:
       OUTPUT_DIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], github.run_id, strategy.job-index, github.run_attempt) }}
       WORKDIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], github.run_id, strategy.job-index, github.run_attempt) }}
     steps:
-      - uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Reference artifact dir
+        id: reference-artifact-dir
+        shell: bash -eux {0}
+        run: |
+          reference_artifact_dir="${OUTPUT_DIR}/ectrans-reference-artifact"
+          echo "path=${reference_artifact_dir}" >> "$GITHUB_OUTPUT"
+
+      - name: Reference key
+        id: reference-key
+        shell: bash -eux {0}
+        run: |
+          reference_key=$(bash ${ECTRANS_TOOLS}/reference-key.sh "${{ matrix.os }}" "${{ matrix.compiler }}" default)
+          echo "reference_key=${reference_key}" >> $GITHUB_OUTPUT
+
+      - name: Build on HPC
+        id: build_hpc
+        uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
         with:
           site: ${{ matrix.site }}
           troika_user: ${{ secrets[matrix.troika_user_secret] }}
@@ -131,7 +156,15 @@ jobs:
             cmake_options:
               - -DENABLE_ETRANS=ON
               - -DENABLE_FIELD_API=ON
+              - -DENABLE_BITID_TESTS=ON
+              - -DENABLE_REFERENCE_TESTS=ON
+              - -DECTRANS_TEST_REFERENCE_DIR=$BASEDIR/$REPO/tests/references/${{ steps.reference-key.outputs.reference_key }}
             ctest_options: ${{ matrix.ctest_options || '' }}
+            reference_key: ${{ steps.reference-key.outputs.reference_key }}
+            reference_head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+            reference_pr_number: "${{ github.event.pull_request.number || '' }}"
+            reference_artifact_dir: ${{ steps.reference-artifact-dir.outputs.path }}
+            reference_redact_secret: ${{ secrets[matrix.account_secret || matrix.troika_user_secret] }}
             dependencies:
               ecmwf/ecbuild:
                 version: develop
@@ -178,6 +211,10 @@ jobs:
             trap error_trap ERR
 
             BASEDIR=$PWD
+
+            set +x
+            export ECTRANS_HPC_REFERENCE_PATH_SECRET="{{ reference_redact_secret }}"
+            set -x
 
             {% for var in "${{ join(matrix.env_vars, ',') }}".split(',') %}
               export {{var}}
@@ -254,8 +291,62 @@ jobs:
             echo "ecTrans build took $((build_end - build_start)) seconds"
 
             test_start=$(date +%s)
+            set +e
             ctest --test-dir build --output-on-failure {{ ctest_options }}
+            ctest_status=$?
+            set -e
             test_end=$(date +%s)
             echo "ecTrans tests took $((test_end - test_start)) seconds"
 
+            export ECTRANS_DEP_REF_ECBUILD=develop
+            export ECTRANS_DEP_REF_FIAT=develop
+            export ECTRANS_DEP_REF_FIELD_API=v0.3.9
+
+            bash $REPO/.github/tools/reference-artifact-package.sh \
+              "{{ reference_key }}" \
+              "{{ reference_head_sha }}" \
+              "{{ reference_pr_number }}" \
+              "{{ reference_artifact_dir }}"
+
             cleanup
+
+            if [ $ctest_status -ne 0 ]; then
+              echo "Finished: FAILURE"
+              exit $ctest_status
+            fi
+
+      - name: Ensure ci-infrastructure present
+        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        uses: ecmwf/ci-infrastructure/actions/ensure-infrastructure-present@main
+
+      - name: Fetch the reference artifacts from the HPC
+        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        uses: ecmwf/ci-infrastructure/actions/fetch-hpc-tree@main
+        with:
+          site: ${{ matrix.site }}
+          troika-user: ${{ secrets[matrix.troika_user_secret] }}
+          remote-dir: ${{ steps.reference-artifact-dir.outputs.path }}
+          local-dir: ${{ runner.temp }}/ectrans-reference-artifact
+
+      - name: Remove the artifacts from the HPC
+        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        uses: ecmwf/ci-infrastructure/actions/remove-hpc-tree@main
+        with:
+          site: ${{ matrix.site }}
+          troika-user: ${{ secrets[matrix.troika_user_secret] }}
+          remote-dir: ${{ steps.reference-artifact-dir.outputs.path }}
+
+      - name: Upload reference artifact
+        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ectrans-reference-artifact-${{ steps.reference-key.outputs.reference_key }}
+          path: ${{ runner.temp }}/ectrans-reference-artifact
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Cleanup reference artifact
+        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        shell: bash -eux {0}
+        run: |
+          rm -rf "${{ runner.temp }}/ectrans-reference-artifact"

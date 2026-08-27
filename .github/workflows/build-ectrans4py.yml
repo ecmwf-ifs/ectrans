@@ -51,6 +51,7 @@ jobs:
 
       matrix:
         build_type: [Release,Debug]
+        precision: [single, double]
         name:
           - linux gnu-13
           - macos
@@ -132,7 +133,10 @@ jobs:
       run:  |
         python3 -m venv venv
         . venv/bin/activate
-        pip install build ectrans/.
+        pip install build
+        pip install ectrans/. \
+          -C cmake.define.ENABLE_SINGLE_PRECISION=${{ matrix.precision == 'single' && 'ON' || 'OFF' }} \
+          -C cmake.define.ENABLE_DOUBLE_PRECISION=${{ matrix.precision == 'double' && 'ON' || 'OFF' }}
 
     - name: Check ectrans4py version
       run:  |

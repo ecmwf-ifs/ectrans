@@ -48,6 +48,10 @@ options :
         help  : Disable OpenMP
         cmake : ENABLE_OMP=OFF
 
+    - with-bitid-tests :
+        help  : Enable bit-identicality tests
+        cmake : ENABLE_BITID_TESTS=ON
+
     - with-mkl :
         help : Enable use of MKL for BLAS and FFT calls
         cmake : ENABLE_MKL=ON
@@ -97,4 +101,12 @@ options :
     - with-rocfft :
         help  : Use rocFFT backend on AMD GPUs
         cmake : ENABLE_ROCFFT=ON
+
+    - with-reference-tests :
+        help  : Enables reference testing
+        cmake : ENABLE_REFERENCE_TESTS=ON
+
+    - reference-test-dir :
+        help  : Set the reference directory
+        cmake : ECTRANS_TEST_REFERENCE_DIR={{value}}
 

@@ -3,75 +3,69 @@ description: Decide whether a workflow job should run for the current GitHub eve
 
 outputs:
   value:
-    description: "true when the job should run; false when this is a duplicate push event"
+    description: "true when the job should run; false when this is a duplicate same-repository pull_request event"
     value: ${{ steps.decision.outputs.value }}
 
 runs:
   using: composite
   steps:
-    - name: Skip duplicate push builds only when PR CI can run
+    - name: Skip duplicate same-repository pull request builds
       id: decision
       uses: actions/github-script@v9
       with:
         script: |
           // Workflows using this action are triggered by both `push` and
           // `pull_request`. For a same-repository PR, every push to the PR
-          // branch can trigger both events for the same commit. We keep the
-          // pull_request build and skip only the duplicate push build when
-          // GitHub can actually create that pull_request build.
-          if (context.eventName !== 'push') {
-            core.setOutput('value', 'true');
+          // branch can trigger both events for the same commit. Prefer the
+          // push build for same-repository PRs, because it is tied directly to
+          // the pushed branch commit. Keep pull_request builds for fork PRs,
+          // where there is no corresponding push event in this repository.
+          const setDecision = (run, reason) => {
+            const resolution = run ? 'run' : 'skip';
+            core.notice(`should-run resolution: ${resolution}; ${reason}`);
+            core.setOutput('value', String(run));
+          };
+
+          if (context.eventName !== 'pull_request') {
+            setDecision(true, `${context.eventName} events are not duplicate pull_request events`);
             return;
           }
 
-          const { owner, repo } = context.repo;
-          const branch = context.ref.replace('refs/heads/', '');
-
-          // `head` uses owner:branch syntax and only matches PRs opened from
-          // this repository. Fork PRs do not create duplicate same-repo push
-          // events here, so they are not filtered by this check.
-          const pulls = await github.rest.pulls.list({
-            owner,
-            repo,
-            head: `${owner}:${branch}`,
-            state: 'open',
-            per_page: 10,
-          });
-
-          if (pulls.data.length === 0) {
-            core.setOutput('value', 'true');
+          const pull = context.payload.pull_request;
+          if (!pull) {
+            setDecision(true, 'the event payload has no pull request data');
             return;
           }
 
-          // GitHub does not run pull_request workflows when a PR has merge
-          // conflicts with its base branch. In that case, the push workflow
-          // is the only CI signal for the pushed commit, so it must run.
-          // If mergeability is still being computed, keep the push build too;
-          // a duplicate build is better than accidentally losing coverage.
-          let pullRequestBuildCanRun = false;
-          for (const pull of pulls.data) {
-            const details = await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number: pull.number,
+          const headRepo = pull.head.repo && pull.head.repo.full_name;
+          const currentRepo = `${context.repo.owner}/${context.repo.repo}`;
+          const sameRepositoryPullRequest = headRepo === currentRepo;
+
+          if (!sameRepositoryPullRequest) {
+            setDecision(true, `PR #${pull.number} is from ${headRepo || 'an unknown repository'} and has no duplicate push event in ${currentRepo}`);
+            return;
+          }
+
+          // should-run-policy: push-preferred-v1
+          // During rollout, the pull_request merge ref may contain this action
+          // while the PR head still contains the old action that skips push
+          // builds. Only skip this PR build after confirming the head action
+          // also implements the push-preferred policy.
+          const rolloutMarker = 'should-run-policy: push-preferred-v1';
+          try {
+            const action = await github.rest.repos.getContent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: '.github/actions/should-run/action.yml',
+              ref: pull.head.sha,
             });
-
-            const mergeable = details.data.mergeable;
-            const mergeableState = details.data.mergeable_state;
-
-            if (mergeable === false || mergeableState === 'dirty') {
-              core.info(`PR #${pull.number} has merge conflicts; keeping push build.`);
-              continue;
+            const content = Buffer.from(action.data.content, action.data.encoding).toString('utf8');
+            if (content.includes(rolloutMarker)) {
+              setDecision(false, `PR #${pull.number} uses the push-preferred policy, so its push build is preferred`);
+              return;
             }
-
-            if (mergeable === null || mergeableState === 'unknown') {
-              core.info(`PR #${pull.number} mergeability is unknown; keeping push build.`);
-              continue;
-            }
-
-            pullRequestBuildCanRun = true;
-            core.info(`PR #${pull.number} can run pull_request CI; skipping duplicate push build.`);
-            break;
+          } catch (error) {
+            core.warning(`Could not inspect the should-run action at ${pull.head.sha}: ${error.message}`);
           }
 
-          core.setOutput('value', pullRequestBuildCanRun ? 'false' : 'true');
+          setDecision(true, `PR #${pull.number} does not yet use the push-preferred policy, so pull_request CI is retained during rollout`);

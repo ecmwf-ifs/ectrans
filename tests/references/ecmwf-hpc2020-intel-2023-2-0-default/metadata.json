@@ -1,0 +1,102 @@
+{
+  "cmake": {
+    "version": "3.25.2"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-O2 -g -DNDEBUG",
+      "flags": "",
+      "id": "Intel",
+      "path": "/usr/local/apps/intel/oneAPI_2023_update2/compiler/2023.2.0/linux/bin/intel64/icc",
+      "version": "2021.10.0.20230609"
+    },
+    "cxx": {
+      "build_type_flags": "-O2 -g -DNDEBUG",
+      "flags": "",
+      "id": "Intel",
+      "path": "/usr/local/apps/intel/oneAPI_2023_update2/compiler/2023.2.0/linux/bin/intel64/icpc",
+      "version": "2021.10.0.20230609"
+    },
+    "fortran": {
+      "build_type_flags": "-O2 -g -DNDEBUG -heap-arrays 32",
+      "flags": "",
+      "id": "Intel",
+      "path": "/usr/local/apps/intel/oneAPI_2023_update2/compiler/2023.2.0/linux/bin/intel64/ifort",
+      "version": "2021.10.0.20230609"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf/ecbuild/installation/share/ecbuild/cmake",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "fftw": {
+      "cflags": null,
+      "library_paths": [
+        "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64_lin/libmkl_core.so",
+        "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64_lin/libmkl_intel_lp64.so",
+        "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64_lin/libmkl_sequential.so"
+      ],
+      "root": "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl",
+      "vendor": "Intel MKL",
+      "version": "2019.5.281"
+    },
+    "fiat": {
+      "library_paths": [
+        "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/fiat/installation/lib64/libfiat.so",
+        "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/fiat/installation/lib64/libmpi_serial.a",
+        "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/fiat/installation/lib64/libparkind_dp.so",
+        "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/fiat/installation/lib64/libparkind_sp.so"
+      ],
+      "root": "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/fiat/installation",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "field_api": {
+      "library_paths": [
+        "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/field_api/installation/lib64/libfield_api_dp.so",
+        "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/field_api/installation/lib64/libfield_api_sp.so"
+      ],
+      "root": "/lus/h2resw01/scratch/***/github-actions/ectrans/32788663568/0/1/ecmwf-ifs/field_api/installation",
+      "vendor": "ECMWF",
+      "version": "v0.3.9"
+    },
+    "lapack": {
+      "library_paths": [
+        "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64_lin/libmkl_core.so",
+        "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64_lin/libmkl_intel_lp64.so",
+        "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64_lin/libmkl_sequential.so"
+      ],
+      "root": "/usr/local/apps/intel/parallel_studio_xe_2019_update5/compilers_and_libraries_2019.5.281/linux/mkl",
+      "vendor": "Intel MKL",
+      "version": "2019.5.281"
+    },
+    "mpi": {
+      "library_paths": [
+        "/usr/local/apps/hpcx-openmpi/2.9.0/INTEL/2023.2/ec-hpcx-ompi/lib/libmpi.so.40.30.1"
+      ],
+      "root": "/usr/local/apps/hpcx-openmpi/2.9.0/INTEL/2023.2/ec-hpcx-ompi",
+      "vendor": "Open MPI",
+      "version": "4.1"
+    }
+  },
+  "environment": {
+    "MKL_CBWR": "AUTO,STRICT"
+  },
+  "system": {
+    "arch": "x86_64",
+    "loaded_modules": [
+      "prgenv/intel",
+      "intel/2023.2.0",
+      "hpcx-openmpi/2.9.0",
+      "intel-mkl/19.0.5",
+      "fftw/3.3.10",
+      "cmake/3.25.2",
+      "ninja/1.10.0"
+    ],
+    "os": "linux",
+    "processor": "AMD EPYC 7742 64-Core Processor"
+  }
+}
