@@ -42,7 +42,7 @@ SUBROUTINE DEALLOC_RESOL(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS, ONLY: JPIM
+USE PARKIND_ECTRANS, ONLY: JPIM, JPRD, JPRB
 USE TPM_DIM,         ONLY: R, DIM_TYPE
 USE TPM_GEN,         ONLY: LENABLED, NOUT, NDEF_RESOL
 USE TPM_DISTR,       ONLY: D, DISTR_TYPE, NPRTRV
@@ -55,6 +55,7 @@ USE TPM_FLT,         ONLY: S, FLT_TYPE_WRAP
 USE TPM_CTL,         ONLY: C
 USE SEEFMM_MIX,      ONLY: FREE_SEEFMM
 USE SET_RESOL_MOD,   ONLY: SET_RESOL
+USE BACKENDS_MOD,    ONLY: JP_BACKEND_GPU_SP, JP_BACKEND_GPU_DP
 !
 
 IMPLICIT NONE
@@ -138,14 +139,17 @@ ELSE
 
   LENABLED(KRESOL)=.FALSE.
   NDEF_RESOL = COUNT(LENABLED)
-  ! Do not stay on a disabled resolution
+
+  ! Determine backend
+  I_BACKEND = MERGE(JP_BACKEND_GPU_DP, JP_BACKEND_GPU_SP, JPRB == JPRD)
+
+  ! Do not stay on a disabled resolution -> pick the first one that matches this backend
   DO JRESOL=1,SIZE(LENABLED)
-    IF (LENABLED(JRESOL)) THEN
+    IF (LENABLED(JRESOL) .AND. Y_RESOLS(JRESOL)%BACKEND == I_BACKEND) THEN
       CALL SET_RESOL(JRESOL)
       EXIT
     ENDIF
   ENDDO
-
 ENDIF
 !     ------------------------------------------------------------------
 
