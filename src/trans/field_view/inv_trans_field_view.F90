@@ -1,5 +1,5 @@
-! (C) Copyright 2001- ECMWF.
-! (C) Copyright 2001- Meteo-France.
+! (C) Copyright 2026- ECMWF.
+! (C) Copyright 2026- Meteo-France.
 !
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -55,6 +55,7 @@ USE ECTRANS_FIELD_VIEW_INTERNAL_UTIL_MOD, ONLY : SPEC_VIEW, GRID_VIEW, LS_COUNT,
                                                & GET_NPROMA, GET_NFLD, GET_NSPEC2, GET_NBLK
 USE TPM_DISTR, ONLY : DISTR_RESOL
 USE PARKIND1, ONLY : JPRB, JPIM
+USE ABORT_TRANS_MOD, ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
@@ -128,7 +129,6 @@ INTEGER(KIND=JPIM) :: NPROMA, NBLK, NFIELD_TOTAL_UV, NSPEC2
 REAL(KIND=JPHOOK)           :: ZHOOK_HANDLE
 
 #include "inv_trans.h"
-#include "abor1.intfb.h"
 
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('INV_TRANS_FIELD_VIEW',0,ZHOOK_HANDLE)
@@ -166,16 +166,30 @@ IF (PRESENT(FSPGL_PROC)) THEN
   ENDIF
 ENDIF
 
+IF ((SIZE(YDGPU) /= SIZE(YDGPV)).OR.(SIZE(YDGPU) /= SIZE(YDSPDIV)).OR.(SIZE(YDGPU) /= SIZE(YDSPVOR))) THEN
+  CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] The vector arrays have inconsistent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
+ENDIF
+IF (SIZE(YDGPVOR) > 0 .AND. SIZE(YDGPVOR) /= SIZE(YDSPVOR)) THEN
+  CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] YDGPVOR and YDSPVOR must have the same size")
+ENDIF
+IF (SIZE(YDGPDIV) > 0 .AND. SIZE(YDGPDIV) /= SIZE(YDSPDIV)) THEN
+  CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] YDGPDIV and YDSPDIV must have the same size")
+ENDIF
+IF (SIZE(YDGPU_EW) > 0 .OR. SIZE(YDGPV_EW) > 0) THEN
+  IF (SIZE(YDGPU_EW) /= SIZE(YDGPV_EW) .OR. SIZE(YDGPU_EW) /= SIZE(YDGPU)) THEN
+    CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] YDGPU_EW, YDGPV_EW and YDGPU must have the same size")
+  ENDIF
+ENDIF
+IF ((SIZE(YDSPSCALAR)/= SIZE(YDGPSCALAR))) THEN
+  CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] Inconsistent size for YDSPSCALAR and YDGPSCALAR")
+ENDIF
+
+
 
 ! 1. Vector fields transformation to grid space
 
-! Preliminary checks
 ! Do we have vector fields?
 IF (SIZE(YDGPU) > 0) THEN
-
-  IF ((SIZE(YDGPU)/= SIZE(YDGPV)).OR.(SIZE(YDGPU)/= SIZE(YDSPDIV)).OR.(SIZE(YDGPU)/= SIZE(YDSPVOR))) THEN
-    CALL ABOR1("[INV_TRANS_FIELD_VIEW] The vector arrays have inconsistent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
-  ENDIF
 
   ! Convert list of spectral vector fields into a list of 2d FIELD_VIEW
 
@@ -186,7 +200,7 @@ IF (SIZE(YDGPU) > 0) THEN
   ALLOCATE(YLGVU(LG_COUNT(YDGPU)))
   ALLOCATE(YLGVV(LG_COUNT(YDGPV)))
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
-    CALL ABOR1("[INV_TRANS_FIELD_VIEW] inconsistent number of field_view for vectors")
+    CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] inconsistent number of field_view for vectors")
   ENDIF
 
   NFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
@@ -257,7 +271,9 @@ IF (SIZE(YDGPU) > 0) THEN
       IF (JFLD .EQ. 1) THEN
         IVSETUV(JLEV) = YLGVU(ID)%IVSET
       ENDIF
-      IF (IVSETUV(JLEV) .NE. YLGVU(ID)%IVSET) CALL ABOR1("[INV_TRANS_FIELD_VIEW] ivsetuv inconsistent with ylgvu%ivset")
+      IF (IVSETUV(JLEV) .NE. YLGVU(ID)%IVSET) THEN
+        CALL ABORT_TRANS("[INV_TRANS_FIELD_VIEW] ivsetuv inconsistent with ylgvu%ivset")
+      ENDIF
     ENDDO
   ENDDO
 ELSE
@@ -270,12 +286,7 @@ ENDIF
 
 ! 2. scalar fields transformation
 
-! Preliminary checks
-
 IF (SIZE(YDSPSCALAR) > 0) THEN
-
-  IF ((SIZE(YDSPSCALAR)/= SIZE(YDGPSCALAR))) CALL ABOR1("[INV_TRANS_FIELD_VIEW] Inconsistent size &
-                                                        & for YDSPSCALAR and YDGPSCALAR")
 
   ! Convert list of spectral scalar fields of any domension into a list of 2d fields
   IFLDSPSC = LS_COUNT(YDSPSCALAR)
