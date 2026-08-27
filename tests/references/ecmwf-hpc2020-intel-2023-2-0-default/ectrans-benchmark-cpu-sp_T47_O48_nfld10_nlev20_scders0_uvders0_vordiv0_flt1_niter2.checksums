@@ -1,0 +1,22 @@
+# --------------------------------------------
+# Iteration 1
+# --------------------------------------------
+fa73   20 # zgp (1-20)               u
+2273   20 # zgp (21-40)              v
+621d  200 # zgp (41-240)             scalar-3d
+621d    1 # zgp (241)                scalar-2d
+bf23   20 # zspvor (1-20)            vorticity
+a7ab   20 # zspdiv (1-20)            divergence
+003c   10 # zspscalar (1-10)         scalar-3d
+6803    1 # zspscalar (11)           scalar-2d
+# --------------------------------------------
+# Iteration 2
+# --------------------------------------------
+1da2   20 # zgp (1-20)               u
+dda2   20 # zgp (21-40)              v
+0c86  200 # zgp (41-240)             scalar-3d
+0c86    1 # zgp (241)                scalar-2d
+264d   20 # zspvor (1-20)            vorticity
+bab5   20 # zspdiv (1-20)            divergence
+a537   10 # zspscalar (1-10)         scalar-3d
+8e8f    1 # zspscalar (11)           scalar-2d

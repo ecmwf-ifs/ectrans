@@ -60,6 +60,7 @@ SUBROUTINE FPBIPERE(KDLUX,KDGUX,KDLON,KDGL,KNUBI,KD1,PGPBI,KDADD,LDZON, &
 !      R. El Khatib 04-Aug-2016 new interface to ewindowe + cleaning
 !     ------------------------------------------------------------------
 
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ESPLINE_MOD

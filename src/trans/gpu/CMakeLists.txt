@@ -26,8 +26,13 @@ if( HAVE_HIP )
   list( APPEND trans_gpu_common_src
     algor/hicblas_gemm.hip.cpp
     algor/hicfft.hip.cpp
+    algor/hicfft.rocfft.cpp
   )
-  ecbuild_info("warn: IN_PLACE_FFT not defined for hipFFT")
+  if( HAVE_ROCFFT )
+    ecbuild_info("warn: rocFFT uses out-of-place FFT")
+  else()
+    ecbuild_info("warn: IN_PLACE_FFT not defined for hipFFT")
+  endif()
 elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
@@ -71,6 +76,7 @@ ecbuild_add_library(
                        $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
+                       $<${HAVE_ROCFFT}:USE_ROCFFT>
 )
 
 ecbuild_target_fortran_module_directory(
@@ -110,11 +116,12 @@ function(generate_backend_sources)
 
   set(outfiles)
   foreach(file_i ${files})
-    get_filename_component(outfile_name    ${file_i} NAME)
     get_filename_component(outfile_name_we ${file_i} NAME_WE)
     get_filename_component(outfile_ext     ${file_i} EXT)
-    get_filename_component(outfile_dir     ${file_i} DIRECTORY)
-    set(outfile "${destination}/${file_i}")
+    # Note: we ensure the outfile has the precision suffix so that intermediate compilation files
+    # for single- and double-precision builds don't have the same name
+    # This is a known problem with crayftn
+    set(outfile "${destination}/${outfile_name_we}_${backend}${outfile_ext}")
     ecbuild_debug("Generate ${outfile}")
     generate_file(BACKEND ${backend} INPUT ${CMAKE_CURRENT_SOURCE_DIR}/${file_i} OUTPUT ${outfile})
     list(APPEND outfiles ${outfile})
@@ -152,6 +159,7 @@ foreach( prec dp sp )
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                                $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
+                               $<${HAVE_ROCFFT}:USE_ROCFFT>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                $<${USE_RAW_MPI}:USE_RAW_MPI>
         )
@@ -166,7 +174,7 @@ foreach( prec dp sp )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
         endif()
 
-        # cuFFT can do in-place FFT, hipFFT cannot
+        # cuFFT uses in-place FFT; rocFFT uses out-of-place FFT
         if( HAVE_CUDA )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()

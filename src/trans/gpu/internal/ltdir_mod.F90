@@ -68,7 +68,6 @@ CONTAINS
     USE TPM_DIM,                ONLY: R
     USE TPM_DISTR,              ONLY: D
     USE TPM_GEOMETRY,           ONLY: G
-    USE PREPSNM_MOD,            ONLY: PREPSNM
     USE LEDIR_MOD,              ONLY: LEDIR_STRIDES, LEDIR
     USE UVTVD_MOD,              ONLY: UVTVD
     USE UPDSP_MOD,              ONLY: UPDSP
@@ -103,7 +102,6 @@ CONTAINS
 
     !     Externals.
     !     ----------
-    !         PREPSNM - prepare REPSNM for wavenumber KM
     !         PRFI2   - prepares the Fourier work arrays for model variables.
     !         LEDIR   - direct Legendre transform
     !         UVTVD   -
