@@ -22,8 +22,7 @@ IMPLICIT NONE
 #include "trans_inq_sp.h"
 #include "inv_trans_sp.h"
 #include "inv_trans_dp.h"
-#include "trans_end_sp.h"
-#include "trans_end_dp.h"
+#include "trans_end.h"
 
 ! STDOUT
 INTEGER, PARAMETER :: NOUT = 6
@@ -71,8 +70,7 @@ CALL INV_TRANS_DP(PSPSCALAR=SPECTRAL_FIELD_DP, PGP=GRID_POINT_FIELD_DP)
 WRITE(NOUT,*) "Grid point norm (single precision) = ", SQRT(SUM(GRID_POINT_FIELD_SP(:,:,:)**2.0_JPRM))
 WRITE(NOUT,*) "Grid point norm (double precision) = ", SQRT(SUM(GRID_POINT_FIELD_DP(:,:,:)**2.0_JPRD))
 
-CALL TRANS_END_SP
-CALL TRANS_END_DP
+CALL TRANS_END
 
 WRITE(NOUT,*) "Finished"
 
