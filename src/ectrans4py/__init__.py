@@ -15,9 +15,6 @@ import ctypesForFortran
 from ctypesForFortran import addReturnCode, treatReturnCode, IN, OUT, array2string
 import platform
 
-
-
-
 # Shared objects library
 ########################
 system = platform.system()
@@ -28,23 +25,39 @@ elif system == "Darwin":
 else:
     raise NotImplementedError("ectrans4py does not support Windows")
 
-lib_basename = f"libectrans4py_dp.{platform_ext}"  # local name of library in the directory
+# Local names of dp and sp libraries in the directory
+lib_basenames = [f"libectrans4py_{p}.{platform_ext}" for p in ["dp", "sp"]]
 LD_LIBRARY_PATH = [p for p in os.environ.get('LD_LIBRARY_PATH', '').split(':') if p != '']
 lpath = LD_LIBRARY_PATH + [
     os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'),
     os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib64'),
-        ]
-for d in lpath:
-    shared_objects_library = os.path.join(d, lib_basename)
-    if os.path.exists(shared_objects_library):
+]
+
+
+def _find_library(basename):
+    for d in lpath:
+        candidate = os.path.join(d, basename)
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+for _p in ["dp", "sp"]:
+    shared_objects_library = _find_library(f"libectrans4py_{_p}.{platform_ext}")
+    if shared_objects_library is not None:
+        _prec = _p
         break
-    else:
-        shared_objects_library = None
-if shared_objects_library is None:
-    msg = ' '.join(["'{}' was not found in any of potential locations: {}.",
-                    "You can specify a different location using env var LD_LIBRARY_PATH"])
-    msg = msg.format(lib_basename, str(lpath))
+else:
+    msg = f'libectrans4py_{{dp/sp}}.{platform_ext} was not found in any of potential locations: {str(lpath)}.'
+    msg += 'You can specify a different location using env var LD_LIBRARY_PATH'
     raise FileNotFoundError(msg)
+
+# Floating-point type of the field data (spectral / grid-point) crossing the
+# Fortran interface (the JPRB arrays): float32 for the single-precision build,
+# float64 for the double. Geometry (Gaussian latitudes/weights, Legendre
+# polynomials) and resolution deltas remain double regardless.
+_REAL = np.float32 if _prec == "sp" else np.float64
+
 ctypesFF, handle = ctypesForFortran.ctypesForFortranFactory(shared_objects_library)
 
 # Initialization
@@ -113,8 +126,8 @@ def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
              (np.int64, (KSLOEN,), IN),
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), OUT),
-             (np.float64, (KSLOEN,), OUT),
-             (np.float64, (KSLOEN//2,KSPOLEGL), OUT)],
+             (_REAL, (KSLOEN,), OUT),
+             (_REAL, (KSLOEN//2,KSPOLEGL), OUT)],
             None)
 
 @treatReturnCode
@@ -151,8 +164,8 @@ def etrans_inq4py(KSIZEI, KSIZEJ,
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
-             (np.float64, None, IN),
-             (np.float64, None, IN),
+             (_REAL, None, IN),
+             (_REAL, None, IN),
              (np.int64, None, OUT),
              (np.int64, None, OUT)],
             None)
@@ -239,12 +252,12 @@ def sp2gp_lam4py(KSIZEI, KSIZEJ,
              (np.int64, None, IN),
              (bool, None, IN),
              (bool, None, IN),
-             (np.float64, None, IN),
-             (np.float64, None, IN),
-             (np.float64, (KSIZE,), IN),
-             (np.float64, (KSIZEI * KSIZEJ,), OUT),
-             (np.float64, (KSIZEI * KSIZEJ,), OUT),
-             (np.float64, (KSIZEI * KSIZEJ,), OUT)],
+             (_REAL, None, IN),
+             (_REAL, None, IN),
+             (_REAL, (KSIZE,), IN),
+             (_REAL, (KSIZEI * KSIZEJ,), OUT),
+             (_REAL, (KSIZEI * KSIZEJ,), OUT),
+             (_REAL, (KSIZEI * KSIZEJ,), OUT)],
             None)
 
 
@@ -291,11 +304,11 @@ def gp2sp_lam4py(KSIZE,
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
-             (np.float64, None, IN),
-             (np.float64, None, IN),
+             (_REAL, None, IN),
+             (_REAL, None, IN),
              (bool, None, IN),
-             (np.float64, (KSIZEI * KSIZEJ,), IN),
-             (np.float64, (KSIZE,), OUT)],
+             (_REAL, (KSIZEI * KSIZEJ,), IN),
+             (_REAL, (KSIZE,), OUT)],
             None)
 
 
@@ -351,10 +364,10 @@ def sp2gp_gauss4py(KSIZEJ,
              (np.int64, None, IN),
              (bool, None, IN),
              (bool, None, IN),
-             (np.float64, (KSIZE,), IN),
-             (np.float64, (KGPTOT,), OUT),
-             (np.float64, (KGPTOT,), OUT),
-             (np.float64, (KGPTOT,), OUT)],
+             (_REAL, (KSIZE,), IN),
+             (_REAL, (KGPTOT,), OUT),
+             (_REAL, (KGPTOT,), OUT),
+             (_REAL, (KGPTOT,), OUT)],
             None)
 
 
@@ -404,8 +417,8 @@ def gp2sp_gauss4py(KSPEC,
              (np.int64, (KSLOEN,), IN),
              (np.int64, None, IN),
              (bool, None, IN),
-             (np.float64, (KSIZE,), IN),
-             (np.float64, (KSPEC,), OUT)],
+             (_REAL, (KSIZE,), IN),
+             (_REAL, (KSPEC,), OUT)],
             None)
 
 
@@ -427,9 +440,9 @@ def sp2gp_fft1d4py(KSIZES, KTRUNC, PSPEC, KSIZEG):
     return ([KSIZES, KTRUNC, PSPEC, KSIZEG],
             [(np.int64, None, IN),
              (np.int64, None, IN),
-             (np.float64, (KSIZES,), IN),
+             (_REAL, (KSIZES,), IN),
              (np.int64, None, IN),
-             (np.float64, (KSIZEG,), OUT)],
+             (_REAL, (KSIZEG,), OUT)],
             None)
 
 __version__ = ectrans_version().strip()

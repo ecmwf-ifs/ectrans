@@ -6,7 +6,6 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-
 # Base flags for all supported build types
 foreach( lang Fortran C CXX )
   ectrans_add_flags( "-g -O0"            BUILD DEBUG            LANG ${lang} )
@@ -15,12 +14,10 @@ foreach( lang Fortran C CXX )
   ectrans_add_flags( "-g -O2 -DNDEBUG"   BUILD BIT              LANG ${lang} )
 endforeach()
 
-
 # Flag to tell compiler that Fortran side has no program
 # Needed if linking a C executable against some Fortran objects with some compilers
 # Not needed for most
 set( NO_FORTRAN_MAIN_FLAG "" )
-
 
 if( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
   # gfortran 10 has become stricter with argument matching
@@ -28,7 +25,6 @@ if( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
     ectrans_add_fortran_flags( "-fallow-argument-mismatch" )
   endif()
 endif()
-
 
 if( CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" )
   ectrans_add_fortran_flags( "-Mlarge_arrays" )
@@ -56,7 +52,6 @@ if( CMAKE_Fortran_COMPILER_ID STREQUAL "Cray" )
   ectrans_add_fortran_flags( "-M7256" )
 endif()
 
-
 if( CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM" OR CMAKE_Fortran_COMPILER_ID STREQUAL "Intel" )
   ectrans_add_fortran_flags( "-march=core-avx2 -no-fma" BUILD BIT )
   ectrans_add_fortran_flags( "-fp-model precise -fp-speculation=safe" )
@@ -67,7 +62,10 @@ if( CMAKE_Fortran_COMPILER_ID STREQUAL "IntelLLVM" OR CMAKE_Fortran_COMPILER_ID 
   endif()
 endif()
 
-
 if( CMAKE_Fortran_COMPILER_ID STREQUAL "XL" )
   ectrans_add_fortran_flags( "-qextname -qnobindcextname" )
+endif()
+
+if( CMAKE_Fortran_COMPILER_ID STREQUAL "Fujitsu" )
+  set( NO_FORTRAN_MAIN_FLAG "-mlcmain=main" )
 endif()

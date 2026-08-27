@@ -1,0 +1,90 @@
+{
+  "cmake": {
+    "version": "4.4.0"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-O2 -g -DNDEBUG",
+      "flags": "",
+      "id": "AppleClang",
+      "path": "/usr/bin/cc",
+      "version": "15.0.0.15000309"
+    },
+    "cxx": {
+      "build_type_flags": "-O2 -g -DNDEBUG",
+      "flags": "",
+      "id": "AppleClang",
+      "path": "/usr/bin/c++",
+      "version": "15.0.0.15000309"
+    },
+    "fortran": {
+      "build_type_flags": "-O2 -g -DNDEBUG",
+      "flags": "",
+      "id": "GNU",
+      "path": "/opt/homebrew/Cellar/gcc/16.1.0/bin/gfortran-16",
+      "version": "16.1.0"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "${ecbuild_ROOT}",
+      "vendor": "ECMWF",
+      "version": "3.15.0"
+    },
+    "fftw": {
+      "cflags": null,
+      "library_paths": [
+        "/opt/homebrew/Cellar/fftw/3.3.11/lib/libfftw3.3.dylib",
+        "/opt/homebrew/Cellar/fftw/3.3.11/lib/libfftw3f.3.dylib"
+      ],
+      "root": "/opt/homebrew/Cellar/fftw/3.3.11",
+      "vendor": "FFTW",
+      "version": "3.3.11"
+    },
+    "fiat": {
+      "library_paths": [
+        "${fiat_ROOT}/lib/libfiat.dylib",
+        "${fiat_ROOT}/lib/libmpi_serial.a",
+        "${fiat_ROOT}/lib/libparkind_dp.dylib",
+        "${fiat_ROOT}/lib/libparkind_sp.dylib"
+      ],
+      "root": "${fiat_ROOT}",
+      "vendor": "ECMWF",
+      "version": "2.0.0"
+    },
+    "field_api": {
+      "library_paths": [
+        "${field_api_ROOT}/lib/libfield_api_dp.dylib",
+        "${field_api_ROOT}/lib/libfield_api_sp.dylib"
+      ],
+      "root": "${field_api_ROOT}",
+      "vendor": "ECMWF",
+      "version": "0.3.4"
+    },
+    "lapack": {
+      "library_paths": [
+        "/opt/homebrew/Cellar/lapack/3.12.1/lib/libblas.3.12.0.dylib",
+        "/opt/homebrew/Cellar/lapack/3.12.1/lib/liblapack.3.12.0.dylib"
+      ],
+      "root": "/opt/homebrew/Cellar/lapack/3.12.1",
+      "vendor": "Netlib",
+      "version": "3.12.0"
+    },
+    "mpi": {
+      "library_paths": [
+        "/opt/homebrew/Cellar/open-mpi/5.0.8/lib/libmpi.40.dylib"
+      ],
+      "root": "/opt/homebrew/Cellar/open-mpi/5.0.8",
+      "vendor": "Open MPI",
+      "version": "5.0.8"
+    }
+  },
+  "environment": {},
+  "system": {
+    "arch": "arm64",
+    "loaded_modules": [],
+    "os": "macos",
+    "processor": "Apple M1 Pro"
+  }
+}
