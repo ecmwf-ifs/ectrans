@@ -35,8 +35,33 @@ runs:
           const currentRepo = `${context.repo.owner}/${context.repo.repo}`;
           const sameRepositoryPullRequest = headRepo === currentRepo;
 
-          if (sameRepositoryPullRequest) {
-            core.info(`PR #${pull.number} is from ${headRepo}; skipping duplicate pull_request build and using the push build.`);
+          if (!sameRepositoryPullRequest) {
+            core.setOutput('value', 'true');
+            return;
           }
 
-          core.setOutput('value', sameRepositoryPullRequest ? 'false' : 'true');
+          // should-run-policy: push-preferred-v1
+          // During rollout, the pull_request merge ref may contain this action
+          // while the PR head still contains the old action that skips push
+          // builds. Only skip this PR build after confirming the head action
+          // also implements the push-preferred policy.
+          const rolloutMarker = 'should-run-policy: push-preferred-v1';
+          try {
+            const action = await github.rest.repos.getContent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: '.github/actions/should-run/action.yml',
+              ref: pull.head.sha,
+            });
+            const content = Buffer.from(action.data.content, action.data.encoding).toString('utf8');
+            if (content.includes(rolloutMarker)) {
+              core.info(`PR #${pull.number} uses the push-preferred policy; skipping the duplicate pull_request build.`);
+              core.setOutput('value', 'false');
+              return;
+            }
+          } catch (error) {
+            core.warning(`Could not inspect the should-run action at ${pull.head.sha}: ${error.message}`);
+          }
+
+          core.info(`PR #${pull.number} does not yet use the push-preferred policy; keeping the pull_request build during rollout.`);
+          core.setOutput('value', 'true');
