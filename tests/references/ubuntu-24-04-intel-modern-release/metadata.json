@@ -1,0 +1,86 @@
+{
+  "cmake": {
+    "version": "3.31.6"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-O3 -DNDEBUG",
+      "flags": "",
+      "id": "IntelLLVM",
+      "path": "/opt/intel/oneapi/compiler/2026.1/bin/icx",
+      "version": "2026.1.1"
+    },
+    "cxx": {
+      "build_type_flags": "-O3 -DNDEBUG",
+      "flags": "",
+      "id": "IntelLLVM",
+      "path": "/opt/intel/oneapi/compiler/2026.1/bin/icpx",
+      "version": "2026.1.1"
+    },
+    "fortran": {
+      "build_type_flags": "-O3",
+      "flags": "-heap-arrays",
+      "id": "IntelLLVM",
+      "path": "/opt/intel/oneapi/compiler/2026.1/bin/ifx",
+      "version": "2026.1.1"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/ecbuild/lib/cmake/ecbuild",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "fftw": {
+      "cflags": "-fPIC -march=x86-64-v3 -fp-model consistent",
+      "library_paths": [
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3.so.3.6.10",
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3f.so.3.6.10"
+      ],
+      "root": "/home/runner/work/_temp/deps/fftw",
+      "vendor": "Intel MKL",
+      "version": "2026.1"
+    },
+    "fiat": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/fiat/lib/cmake/fiat",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "field_api": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/field_api/lib/cmake/field_api",
+      "vendor": "ECMWF",
+      "version": "v0.3.9"
+    },
+    "lapack": {
+      "library_paths": [
+        "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+        "/usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0"
+      ],
+      "root": "/usr",
+      "vendor": "Netlib",
+      "version": "2026.1"
+    },
+    "mpi": {
+      "library_paths": [
+        "/opt/intel/oneapi/mpi/2021.18/lib/libmpi.so.12.0.0",
+        "/opt/intel/oneapi/mpi/2021.18/lib/libmpifort.so.12.0.0",
+        "/usr/lib/x86_64-linux-gnu/libdl.a",
+        "/usr/lib/x86_64-linux-gnu/libpthread.a",
+        "/usr/lib/x86_64-linux-gnu/librt.a"
+      ],
+      "root": "/opt/intel/oneapi/mpi/2021.18",
+      "vendor": "Intel MPI",
+      "version": "2021.18.1"
+    }
+  },
+  "environment": {},
+  "system": {
+    "arch": "X64",
+    "loaded_modules": [],
+    "os": "Linux",
+    "processor": "AMD EPYC 7763 64-Core Processor"
+  }
+}

@@ -215,6 +215,15 @@ jobs:
 
         printenv
 
+    - name: Reference key
+      id: reference-key
+      shell: bash -eux {0}
+      run: |
+        reference_key=$(bash ${ECTRANS_TOOLS}/reference-key.sh "${{ matrix.os }}" "${{ matrix.compiler }}" "${{ matrix.build_type }}")
+        reference_dir="${GITHUB_WORKSPACE}/tests/references/${reference_key}"
+        echo "reference_key=${reference_key}" >> $GITHUB_OUTPUT
+        echo "reference_dir=${reference_dir}" >> $GITHUB_OUTPUT
+
     - name: Dependency cache key
       id: dependency-cache-key
       shell: bash -eux {0}
@@ -337,7 +346,7 @@ jobs:
         dependency_cmake_options: |
           ecmwf-ifs/fiat:      "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_MPI=ON"
           ecmwf-ifs/field_api: "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DENABLE_TESTS=OFF -DENABLE_CUDA=OFF"
-        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON -DENABLE_FIAT_DEVELOP=ON"
+        cmake_options:         "-G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} ${{ matrix.cmake_options }} -DENABLE_ETRANS=ON -DENABLE_MKL=OFF -DENABLE_FIELD_API=ON -DENABLE_FIAT_DEVELOP=ON -DENABLE_REFERENCE_TESTS=ON -DENABLE_BITID_TESTS=ON -DECTRANS_TEST_REFERENCE_DIR=${{ steps.reference-key.outputs.reference_dir }}"
         ctest_options: "${{ matrix.ctest_options }}"
 
     - name: Verify tools
@@ -346,6 +355,31 @@ jobs:
 
         echo "+ ectrans --info"
         ectrans --info
+
+    - name: Package reference artifact
+      if: always()
+      shell: bash -eux {0}
+      run: |
+        # Set dependency references for provenance metadata in the reference artifact package.
+        export ECTRANS_DEP_REF_ECBUILD=develop
+        export ECTRANS_DEP_REF_FIAT=develop
+        export ECTRANS_DEP_REF_FIELD_API=v0.3.9
+
+        bash ${ECTRANS_TOOLS}/reference-artifact-package.sh \
+          "${{ steps.reference-key.outputs.reference_key }}" \
+          "${{ github.event.pull_request.head.sha || github.sha }}" \
+          "${{ github.event.pull_request.number || '' }}" \
+          "${RUNNER_TEMP}/ectrans-reference-artifact"
+
+    - name: Upload reference artifact
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ectrans-reference-artifact-${{ steps.reference-key.outputs.reference_key }}
+        path: ${{ runner.temp }}/ectrans-reference-artifact
+        retention-days: 14
+        if-no-files-found: error
+
 
 #    - name: Codecov Upload
 #      if: steps.build-test.outputs.coverage_file

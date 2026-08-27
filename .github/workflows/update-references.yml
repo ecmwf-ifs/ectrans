@@ -1,7 +1,9 @@
 name: update-references
 
-# Placeholder workflow used to register update-references.yml on the default
-# branch. Run this workflow from a branch that contains the real implementation.
+# Manually updates committed checksum references for a same-repository PR by
+# collecting reference candidate artifacts produced by build workflows. This
+# workflow intentionally does not build or regenerate references itself. It opens
+# or updates a separate PR into the original PR branch.
 
 on:
   workflow_dispatch:
@@ -12,15 +14,328 @@ on:
         type: number
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
+  pull-requests: write
+
+env:
+  ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
 
 jobs:
-  noop:
-    name: Placeholder
+  pr-info:
+    name: PR information
     runs-on: ubuntu-latest
+    outputs:
+      head_ref: ${{ steps.pr.outputs.head_ref }}
+      head_repo: ${{ steps.pr.outputs.head_repo }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      same_repo: ${{ steps.pr.outputs.same_repo }}
     steps:
-      - name: Explain placeholder
+      - name: Read pull request
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: Number('${{ inputs.pr_number }}'),
+            });
+            core.setOutput('head_ref', pull.data.head.ref);
+            core.setOutput('head_repo', pull.data.head.repo.full_name);
+            core.setOutput('head_sha', pull.data.head.sha);
+            core.setOutput('same_repo', String(pull.data.head.repo.full_name === `${owner}/${repo}`));
+
+      - name: Explain unsupported fork PR
+        if: steps.pr.outputs.same_repo != 'true'
         run: |
-          echo "This is a placeholder workflow on the default branch."
-          echo "Run update-references.yml with --ref pointing to a branch that contains the real implementation."
-          echo "Requested PR number: ${{ inputs.pr_number }}"
+          echo "::error title=Unsupported fork PR::Updating references through a follow-up PR is not enabled for fork pull requests. The repository token cannot create a PR into a fork-owned target branch without fork write permission."
+          echo "Updating references through a follow-up PR is not enabled for this fork pull request." >&2
+          echo "This workflow opens update-references-for-PR-${{ inputs.pr_number }} in this repository and targets the original PR branch." >&2
+          echo "The repository token cannot create a PR into a fork-owned target branch without fork write permission." >&2
+          exit 1
+
+  references:
+    name: references (${{ matrix.name }}, ${{ matrix.build_type }})
+    needs: pr-info
+    if: needs.pr-info.outputs.same_repo == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux gnu-13
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: gnu-13
+            build_type: Release
+          - name: linux gnu-13
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: gnu-13
+            build_type: Debug
+          - name: linux clang-18
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: clang-18
+            build_type: Release
+          - name: linux clang-18
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: clang-18
+            build_type: Debug
+          - name: linux nvhpc-26.3
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: nvhpc-26.3
+            build_type: Release
+          - name: linux nvhpc-26.3
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: nvhpc-26.3
+            build_type: Debug
+          - name: linux intel-classic
+            workflow: build.yml
+            os: ubuntu-22.04
+            compiler: intel-classic
+            build_type: Release
+          - name: linux intel-classic
+            workflow: build.yml
+            os: ubuntu-22.04
+            compiler: intel-classic
+            build_type: Debug
+          - name: linux intel-modern
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: intel-modern
+            build_type: Release
+          - name: linux intel-modern
+            workflow: build.yml
+            os: ubuntu-24.04
+            compiler: intel-modern
+            build_type: Debug
+          - name: macos
+            workflow: build.yml
+            os: macos-15
+            compiler: clang-17
+            build_type: Release
+          - name: macos
+            workflow: build.yml
+            os: macos-15
+            compiler: clang-17
+            build_type: Debug
+          - name: ac-ops intel
+            workflow: build-hpc.yml
+            os: ecmwf-hpc2020
+            compiler: intel-2023-2-0
+            build_type: default
+          - name: ac-gpu nvhpc
+            workflow: build-hpc.yml
+            os: ecmwf-hpc2020
+            compiler: nvhpc-24-5
+            build_type: default
+          # - name: lumi-g cce
+          #   workflow: build-hpc.yml
+          #   os: lumi-g
+          #   compiler: cce-19-0-0
+          #   build_type: default
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_REF: ${{ needs.pr-info.outputs.head_ref }}
+      PR_HEAD_SHA: ${{ needs.pr-info.outputs.head_sha }}
+      MATRIX_BUILD_TYPE: ${{ matrix.build_type }}
+    steps:
+      - name: Checkout workflow tools
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set reference key
+        id: reference-key
+        shell: bash -eux {0}
+        run: |
+          reference_key=$(bash ${ECTRANS_TOOLS}/reference-key.sh "${{ matrix.os }}" "${{ matrix.compiler }}" "${{ matrix.build_type }}")
+          echo "value=${reference_key}" >> "$GITHUB_OUTPUT"
+
+      - name: Download matching reference artifact
+        shell: bash -eux {0}
+        env:
+          ECTRANS_REFERENCE_KEY: ${{ steps.reference-key.outputs.value }}
+        run: |
+          artifact_name="ectrans-reference-artifact-${ECTRANS_REFERENCE_KEY}"
+          bash ${ECTRANS_TOOLS}/reference-artifacts-download.sh \
+            "${{ matrix.workflow }}" \
+            "${PR_HEAD_REF}" \
+            "${PR_HEAD_SHA}" \
+            "${artifact_name}" \
+            "${{ matrix.name }}" \
+            "${MATRIX_BUILD_TYPE}"
+          bash ${ECTRANS_TOOLS}/reference-artifact-validate.sh \
+            "${RUNNER_TEMP}/ectrans-reference-update" \
+            "${ECTRANS_REFERENCE_KEY}" \
+            "${PR_HEAD_SHA}"
+
+      - name: Upload reference update artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ectrans-reference-update-${{ steps.reference-key.outputs.value }}
+          path: ${{ runner.temp }}/ectrans-reference-update
+          retention-days: 14
+          if-no-files-found: error
+
+  commit:
+    name: Open reference update PR
+    needs:
+      - pr-info
+      - references
+    if: needs.pr-info.outputs.same_repo == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_HEAD_REF: ${{ needs.pr-info.outputs.head_ref }}
+      PR_HEAD_SHA: ${{ needs.pr-info.outputs.head_sha }}
+      PR_NUMBER: ${{ inputs.pr_number }}
+      UPDATE_BRANCH: update-references-for-PR-${{ inputs.pr_number }}
+    steps:
+      - name: Checkout workflow tools
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ needs.pr-info.outputs.head_repo }}
+          ref: ${{ needs.pr-info.outputs.head_ref }}
+          path: worktree
+          token: ${{ github.token }}
+
+      - name: Prepare update branch
+        shell: bash -eux {0}
+        working-directory: worktree
+        run: |
+          if git ls-remote --exit-code --heads origin "${UPDATE_BRANCH}"; then
+            git fetch origin "${UPDATE_BRANCH}"
+            git switch -c "${UPDATE_BRANCH}" --track "origin/${UPDATE_BRANCH}"
+            if ! git merge --no-edit "${PR_HEAD_SHA}"; then
+              echo "Failed to merge current PR head ${PR_HEAD_SHA} into ${UPDATE_BRANCH}" >&2
+              exit 1
+            fi
+          else
+            git switch -c "${UPDATE_BRANCH}"
+          fi
+
+      - name: Download reference update artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ectrans-reference-update-*
+          path: ${{ runner.temp }}/reference-artifacts
+
+      - name: Install updated references
+        shell: bash -eux {0}
+        working-directory: worktree
+        run: |
+          shopt -s nullglob
+          artifact_dirs=("${RUNNER_TEMP}/reference-artifacts"/ectrans-reference-update-*)
+          shopt -u nullglob
+
+          if [[ ${#artifact_dirs[@]} -eq 0 ]]; then
+            echo "No reference update artifacts were downloaded" >&2
+            exit 1
+          fi
+
+          for artifact_dir in "${artifact_dirs[@]}"; do
+            metadata_file="${artifact_dir}/metadata.json"
+            references_dir="${artifact_dir}/references"
+            reference_key=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["reference_key"])' "${metadata_file}")
+
+            bash ${ECTRANS_TOOLS}/reference-artifact-validate.sh "${artifact_dir}" "${reference_key}" "${PR_HEAD_SHA}"
+
+            destination="tests/references/${reference_key}"
+            rm -rf "${destination}"
+            mkdir -p "${destination}"
+            cp -a "${references_dir}/." "${destination}/"
+            python3 - "${metadata_file}" "${destination}/metadata.json" <<'PY'
+          import json
+          import sys
+
+          metadata_file, output_file = sys.argv[1:]
+          with open(metadata_file, encoding="utf-8") as handle:
+            metadata = json.load(handle)
+          with open(output_file, "w", encoding="utf-8") as handle:
+            json.dump(metadata["build_provenance"], handle, indent=2, sort_keys=True)
+            handle.write("\n")
+          PY
+          done
+
+      - name: Commit updated references
+        id: commit
+        shell: bash -eux {0}
+        working-directory: worktree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/references
+          if ! git diff --cached --quiet; then
+            git commit -m "Update checksum references"
+          else
+            echo "No new reference changes to commit"
+          fi
+
+          if git diff --quiet "${PR_HEAD_SHA}...HEAD"; then
+            echo "No reference update PR is needed because ${UPDATE_BRANCH} has no changes relative to PR head ${PR_HEAD_SHA}."
+            {
+              echo "## Reference update PR"
+              echo
+              echo "No reference update PR is needed because ${UPDATE_BRANCH} has no changes relative to PR head ${PR_HEAD_SHA}."
+            } >> "${GITHUB_STEP_SUMMARY}"
+            echo "update_needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "update_needed=true" >> "$GITHUB_OUTPUT"
+          git push --set-upstream origin "${UPDATE_BRANCH}"
+
+      - name: Open or update reference PR
+        if: steps.commit.outputs.update_needed == 'true'
+        shell: bash -eux {0}
+        working-directory: worktree
+        run: |
+          existing_pr=$(gh pr list \
+            --head "${UPDATE_BRANCH}" \
+            --base "${PR_HEAD_REF}" \
+            --state open \
+            --json url \
+            --jq '.[0].url // ""')
+
+          if [[ -n "${existing_pr}" ]]; then
+            echo "Updated existing reference PR: ${existing_pr}"
+            reference_pr="${existing_pr}"
+            reference_pr_status="Updated existing reference PR"
+          else
+            body_file="${RUNNER_TEMP}/reference-update-pr-body.md"
+            cat > "${body_file}" <<EOF
+          Updates checksum references for PR #${PR_NUMBER} using artifacts collected by the update-references workflow.
+
+          Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+
+            reference_pr=$(gh pr create \
+              --draft \
+              --head "${UPDATE_BRANCH}" \
+              --base "${PR_HEAD_REF}" \
+              --title "Update references for PR #${PR_NUMBER}" \
+              --body-file "${body_file}")
+            reference_pr_status="Created new reference PR"
+          fi
+
+          target_pr="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
+          {
+            echo "## Reference update PR"
+            echo
+            echo "${reference_pr_status}."
+            echo
+            echo "- Reference update PR: [${reference_pr}](${reference_pr})"
+            echo "- Target PR: [${target_pr}](${target_pr})"
+          } >> "${GITHUB_STEP_SUMMARY}"
