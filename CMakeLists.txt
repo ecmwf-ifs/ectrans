@@ -68,9 +68,6 @@ if( (NOT HAVE_DOUBLE_PRECISION) AND (NOT HAVE_SINGLE_PRECISION) )
   ecbuild_critical("Please enable one or both of the DOUBLE_PRECISION and SINGLE_PRECISION features")
 endif()
 
-if( HAVE_SINGLE_PRECISION )
-  set( single "single" )
-endif()
 set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
@@ -89,7 +86,7 @@ if( NOT HAVE_MKL )
 endif()
 
 if( HAVE_CPU )
-  ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
+  ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double single )
 endif()
 
 ecbuild_add_option( FEATURE TRANSI
