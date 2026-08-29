@@ -172,23 +172,11 @@ CONTAINS
     CALL LEDIR_STRIDES(KF_FS,IOUT_STRIDES0,IOUT_STRIDES1,IIN_STRIDES0,IIN_STRIDES1,&
                        IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
 
-#ifdef OMPGPU
-    !$OMP TARGET DATA &
-    !$OMP& MAP(PRESENT,ALLOC:ZINPS,ZINPA,ZOUT,ZINPS0,ZINPA0,ZOUT0) &
-    !$OMP& MAP(PRESENT,ALLOC:D,D_MYMS,D_NUMP,R,R_NTMAX,R_NSMAX) &
-    !$OMP& MAP(PRESENT,ALLOC:ZAA,ZAS,POA1,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2)
-#endif
-#ifdef ACCGPU
-    !$ACC DATA &
-    !$ACC& PRESENT(ZINPS,ZINPA,ZOUT,ZINPS0,ZINPA0,ZOUT0) &
-    !$ACC& PRESENT(D,D_MYMS,D_NUMP,R,R_NTMAX,R_NSMAX) &
-    !$ACC& PRESENT(ZAA,ZAS,POA1,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2)
-#endif
+    !DIR !DATA !PRESENT(ZINPS, ZINPA, ZOUT, ZINPS0, ZINPA0, ZOUT0, D, D_MYMS, D_NUMP, R, R_NTMAX) &
+    !DIR& !PRESENT(R_NSMAX, ZAA, ZAS, POA1, D_OFFSETS_GEMM1, D_OFFSETS_GEMM2)
 
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(430,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(430,1)
@@ -199,12 +187,7 @@ CONTAINS
     IMLOC0 = FINDLOC(D_MYMS,0)
     IF(IMLOC0(1) > 0) THEN
       ! compute m=0 in double precision:
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA0,ZINPA0,ZOUT0)
-#endif
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(ZAA0,ZINPA0,ZOUT0)
-#endif
+      !DIR !USE_DEVICE(ZAA0, ZINPA0, ZOUT0)
       CALL HIP_DGEMM_BATCHED( &
         & 'N', 'N', &
         & KF_FS, (R_NSMAX+2)/2, G_NDGLU(0), &
@@ -214,12 +197,7 @@ CONTAINS
         & 0.0_JPRD, &
         & C_LOC(ZOUT0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
+      !DIR !END_USE_DEVICE
     ENDIF
     ! Get C in transpose format to get better memory access patterns later
     !C=A*B =>
@@ -236,12 +214,7 @@ CONTAINS
       NS(IMLOC0(1)) = 0
       KS(IMLOC0(1)) = 0
     ENDIF
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA,ZINPA,ZOUT)
-#endif
-#ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAA,ZINPA,ZOUT)
-#endif
+    !DIR !USE_DEVICE(ZAA, ZINPA, ZOUT)
     CALL HIP_GEMM( &
       & NCUR_RESOL, 21, & ! unique identifier
       & 'N', 'N', &
@@ -252,50 +225,29 @@ CONTAINS
       & 0.0_JPRBT, &
       & C_LOC(ZOUT), IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
+    !DIR !END_USE_DEVICE
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(434,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(434,1)
     ENDIF
     CALL GSTATS(414,1)
 
-#ifdef OMPGPU
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(KM,IA) &
-    !$OMP& SHARED(D,R,KF_FS,IOUT_STRIDES0,ZOUT,IOUT0_STRIDES0,ZOUT0,POA1) &
-    !$OMP& MAP(TO:KF_FS,IOUT_STRIDES0)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IA,J) FIRSTPRIVATE(KF_FS,IOUT_STRIDES0,IOUT0_STRIDES0) DEFAULT(NONE) &
-#ifndef _CRAYFTN
-    !$ACC& ASYNC(1)
-#else
-    !$ACC&
-#endif
-#endif
+    !DIR !PARALLEL COLLAPSE(2) PRIVATE(KM, IA, J) DEFAULT(NONE) &
+    !DIR& !SHARED(D, R, KF_FS, IOUT_STRIDES0, ZOUT, IOUT0_STRIDES0, ZOUT0, POA1) &
+    !DIR& !FIRSTPRIVATE(KF_FS, IOUT_STRIDES0, IOUT0_STRIDES0) !ASYNC(1)
     DO KMLOC=1,D_NUMP
       DO JF=1,2*KF_FS
         KM = D_MYMS(KMLOC)
         IA  = 1+MOD(R_NTMAX-KM+2,2)
         IF (KM /= 0) THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX-KM+2)/2
             POA1(JF,IA+1+(J-1)*2,KMLOC) = ZOUT(JF+(J-1)*IOUT_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IOUT_STRIDES0)
           ENDDO
         ELSEIF (MOD(JF-1,2) == 0) THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX+2)/2
             POA1(JF,IA+1+(J-1)*2,KMLOC) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
           ENDDO
@@ -306,9 +258,7 @@ CONTAINS
     ! symmetric
 
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(430,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(430,1)
@@ -316,13 +266,8 @@ CONTAINS
     CALL GSTATS(414,0)
 
     IF(IMLOC0(1) > 0) THEN
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS0,ZINPS0,ZOUT0)
-#endif
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(ZAS0,ZINPS0,ZOUT0)
-#endif
       ! compute m=0 in double precision:
+      !DIR !USE_DEVICE(ZAS0, ZINPS0, ZOUT0)
       call HIP_DGEMM_BATCHED( &
         & 'N', 'N', &
         & KF_FS, (R_NSMAX+3)/2, G_NDGLU(0), &
@@ -332,12 +277,7 @@ CONTAINS
         & 0.0_JPRD, &
         & C_LOC(ZOUT0), IOUT0_STRIDES0, 0, &
         & 1, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
+      !DIR !END_USE_DEVICE
     ENDIF
 
     ! Get C in transpose format to get better memory access patterns later
@@ -355,12 +295,7 @@ CONTAINS
       NS(IMLOC0(1)) = 0
       KS(IMLOC0(1)) = 0
     ENDIF
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS,ZINPS,ZOUT)
-#endif
-#ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAS,ZINPS,ZOUT)
-#endif
+    !DIR !USE_DEVICE(ZAS, ZINPS, ZOUT)
     CALL HIP_GEMM( &
       & NCUR_RESOL, 22, & ! unique identifier
       & 'N', 'N', &
@@ -371,64 +306,38 @@ CONTAINS
       & 0.0_JPRBT, &
       & C_LOC(ZOUT), IOUT_STRIDES0, COFFSETS, &
       & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC END HOST_DATA
-#endif
+    !DIR !END_USE_DEVICE
     IF (LSYNC_TRANS) THEN
-#ifdef ACCGPU
-      !$ACC WAIT(1)
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(434,0)
       CALL MPL_BARRIER(MPL_ALL_MS_COMM,CDSTRING='')
       CALL GSTATS(434,1)
     ENDIF
     CALL GSTATS(414,1)
 
-#ifdef OMPGPU
-    !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) PRIVATE(KM,IS) &
-    !$OMP& SHARED(D,R,KF_FS,IOUT_STRIDES0,ZOUT,POA1)
-#endif
-#ifdef ACCGPU
-    !$ACC PARALLEL LOOP COLLAPSE(2) PRIVATE(KM,IS) FIRSTPRIVATE(KF_FS,IOUT_STRIDES0,IOUT0_STRIDES0) &
-    !$ACC& DEFAULT(NONE) &
-#ifndef _CRAYFTN
-    !$ACC& ASYNC(1)
-#else
-    !$ACC&
-#endif
-#endif
+    !DIR !PARALLEL COLLAPSE(2) PRIVATE(KM, IS) DEFAULT(NONE) &
+    !DIR& !SHARED(D, R, KF_FS, IOUT_STRIDES0, ZOUT, IOUT0_STRIDES0, ZOUT0, POA1) &
+    !DIR& !FIRSTPRIVATE(KF_FS, IOUT_STRIDES0, IOUT0_STRIDES0) !ASYNC(1)
     DO KMLOC=1,D_NUMP
       DO JF=1,2*KF_FS
         KM = D_MYMS(KMLOC)
         IS  = 1+MOD(R_NTMAX-KM+1,2)
         IF (KM /= 0) THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX-KM+3)/2
             POA1(JF,IS+1+(J-1)*2,KMLOC) = ZOUT(JF+(J-1)*IOUT_STRIDES0+D_OFFSETS_GEMM2(KMLOC)*IOUT_STRIDES0)
           ENDDO
         ELSEIF (MOD(JF-1,2) == 0) THEN
-#ifdef ACCGPU
-          !$ACC LOOP SEQ
-#endif
+          !DIR !SEQ
           DO J=1,(R_NSMAX+3)/2
             POA1(JF,IS+1+(J-1)*2,KMLOC) = ZOUT0((JF-1)/2+1+(J-1)*IOUT0_STRIDES0)
           ENDDO
         ENDIF
       ENDDO
     ENDDO
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
-#ifdef ACCGPU
-    !$ACC WAIT(1)
 
-    !$ACC END DATA
-#endif
+    !DIR !WAIT(1)
+    !DIR !END_DATA
 
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',1,ZHOOK_HANDLE)
     !     ------------------------------------------------------------------

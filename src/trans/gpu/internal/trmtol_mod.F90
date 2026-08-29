@@ -187,20 +187,9 @@ CONTAINS
       ENDIF
       CALL GSTATS(421,0)
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(PFBUF_IN,PFBUF)
-#endif
-#ifdef ACCGPU
-      !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
-#endif
+      !DIR !USE_DEVICE(PFBUF_IN, PFBUF)
 #else
-      !! this is safe-but-slow fallback for running without GPU-aware MPI
-#ifdef OMPGPU
-      !$OMP TARGET UPDATE FROM(PFBUF_IN,PFBUF)
-#endif
-#ifdef ACCGPU
-      !$ACC UPDATE HOST(PFBUF_IN,PFBUF)
-#endif
+      !DIR !UPDATE_HOST(PFBUF_IN, PFBUF)
 #endif
 
 #ifdef USE_RAW_MPI
@@ -214,20 +203,9 @@ CONTAINS
 #endif
 
 #ifdef USE_GPU_AWARE_MPI
-#ifdef ACCGPU
-      !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
+      !DIR !END_USE_DEVICE
 #else
-      !! this is safe-but-slow fallback for running without GPU-aware MPI
-#ifdef ACCGPU
-      !$ACC UPDATE DEVICE(PFBUF)
-#endif
-#ifdef OMPGPU
-      !$OMP TARGET UPDATE TO(PFBUF)
-#endif
+      !DIR !UPDATE_DEVICE(PFBUF)
 #endif
       IF (LSYNC_TRANS) THEN
         CALL GSTATS(441,0)
@@ -236,25 +214,15 @@ CONTAINS
       ENDIF
       CALL GSTATS(421,1)
 
-#ifdef ACCGPU
-#ifndef __HIP_PLATFORM_AMD__
-      ! Workaround for AMD GPUs - ASYNC execution of this kernel gives numerical errors
-      !$ACC WAIT(1)
-#endif
-#endif
+      !DIR !WAIT(1)
       CALL GSTATS(807,1)
     ELSE
       ILEN = 2_JPIB*D%NLTSGTB(MYSETW)*KF_LEG
       ISTA = 2_JPIB*D%NSTAGT0B(MYSETW)*KF_LEG+1
       IEND = ISTA+ILEN-1
       CALL GSTATS(1608,0)
-#ifdef OMPGPU
-      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) &
-      !$OMP SHARED(PFBUF,PFBUF_IN,ISTA,IEND) MAP(TO:ISTA,IEND)
-#endif
-#ifdef ACCGPU
-      !$ACC PARALLEL LOOP DEFAULT(NONE) PRESENT(PFBUF,PFBUF_IN) FIRSTPRIVATE(ISTA,IEND)
-#endif
+      !DIR !PARALLEL DEFAULT(NONE) !PRESENT(PFBUF, PFBUF_IN) !FIRSTPRIVATE(ISTA,IEND) &
+      !DIR !SHARED(PFBUF,PFBUF_IN,ISTA,IEND)
       DO JPOS=ISTA,IEND
         PFBUF(JPOS) = PFBUF_IN(JPOS)
       ENDDO

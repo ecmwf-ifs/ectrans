@@ -1,0 +1,17 @@
+s/!DIR/!$ACC/g
+s/!END_DATA/END DATA/g
+s/!EXIT_DATA/EXIT DATA/g
+s/!DATA/DATA/g
+s/!PRESENT\(([^()]*)\)/PRESENT(\1)/g
+s/!DELETE\(([^()]*)\)/DELETE(\1)/g
+s/!ASYNC\(([^()]*)\)/ASYNC(\1)/g
+s/!WAIT\(([^()]*)\)/WAIT(\1)/g
+s/!PARALLEL/PARALLEL LOOP/g
+s/!FIRSTPRIVATE\(([^()]*)\)/FIRSTPRIVATE(\1)/g
+s/!SHARED\(([^()]*)\)//g
+s/!COPYIN\(([^()]*)\)/COPYIN(\1)/g
+s/!UPDATE_DEVICE\(([^()]*)\)/UPDATE DEVICE(\1)/g
+s/!USE_DEVICE\(([^()]*)\)/HOST_DATA USE_DEVICE(\1)/g
+s/!END_USE_DEVICE/END HOST_DATA/g
+s/!UPDATE_HOST\(([^()]*)\)/UPDATE HOST(\1)/g
+s/!SEQ/LOOP SEQ/g
