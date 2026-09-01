@@ -127,6 +127,7 @@ IMPLICIT NONE
 
 !     LOCAL
 !     ------------------------------------------------------------------
+REAL(KIND=JPRD),ALLOCATABLE :: ZPNM(:,:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZPNMG(:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZFN(:,:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZLRMUZ2(:)
@@ -162,7 +163,7 @@ REAL(KIND=JPRD),ALLOCATABLE :: ZLFPOL(:,:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZLPOL(:)
 
 TYPE(CLONE),ALLOCATABLE :: ZCLONEA(:),ZCLONES(:)
-
+LOGICAL :: LLDOUBLE
 LOGICAL :: LLP1,LLP2
 
 ! For latitudes on the stretched geometry
@@ -181,6 +182,7 @@ ZEPS = 1000._JPRD*EPSILON(ZEPS)
 ZEPS_INT_DEC = 1.0E-7_JPRD
 !ZEPS_INT_DEC = 1.0E-5_JPRD
 
+LLDOUBLE = (JPRB == JPRD)
 IHEMIS=1
 IF (S%LSOUTHPNM) IHEMIS=2
 LLP1 = NPRINTLEV>0
@@ -373,10 +375,9 @@ IF(.NOT.D%LGRIDONLY) THEN
   IF (LLP2) WRITE(NOUT,9) 'F%RACTHE  ',SIZE(F%RACTHE),SHAPE(F%RACTHE )
 
   IF( S%LUSE_BELUSOV) THEN
-    ALLOCATE(F%RPNM(R%NLEI3,D%NSPOLEGL))
-    IF (LLP2) WRITE(NOUT,9) 'F%RPNM    ',SIZE(F%RPNM),SHAPE(F%RPNM)
+    ALLOCATE(ZPNM(R%NLEI3,D%NSPOLEGL))
     DO JNM=1,D%NSPOLEGL
-      F%RPNM(R%NLEI3,JNM) = 0.0_JPRD
+      ZPNM(R%NLEI3,JNM) = 0.0_JPRD
     ENDDO
   ENDIF
 
@@ -447,7 +448,7 @@ IF(.NOT.D%LGRIDONLY) THEN
 
         CALL GSTATS(1801,2)
         ILOOP = JGL-IGL1+1
-        CALL SUTRLE(ZPNMG,JGL,ILOOP)
+        CALL SUTRLE(ZPNMG,JGL,ILOOP,ZPNM)
         CALL GSTATS(1801,3)
 
       ENDDO
@@ -469,7 +470,7 @@ IF(.NOT.D%LGRIDONLY) THEN
       DO J=ILATS,ILATSMAX-1
         ILOOP=ILOOP+1
         CALL GSTATS(1801,2)
-        CALL SUTRLE(ZPNMG,-1,ILOOP)
+        CALL SUTRLE(ZPNMG,-1,ILOOP,ZPNM)
         CALL GSTATS(1801,3)
       ENDDO
 
@@ -719,6 +720,11 @@ IF(.NOT.D%LGRIDONLY) THEN
                 S%FA(IMLOC)%RPNMA(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+              S%RPNMA_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMA(:,:), JPRD)
+            ENDIF
           ENDIF
         ENDDO
         !$OMP END PARALLEL DO
@@ -743,22 +749,27 @@ IF(.NOT.D%LGRIDONLY) THEN
             ALLOCATE(S%FA(IMLOC)%RPNMDA(IDGLU,ILA))
             DO JI=1,ILA
               DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMDA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                S%FA(IMLOC)%RPNMDA(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
               ENDDO
             ENDDO
             IF( S%LKEEPRPNM ) THEN
               DO JI=1,ILA
                 DO JGL=1,IDGLU
-                  S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                  S%FA(IMLOC)%RPNMA(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
                 ENDDO
               ENDDO
             ENDIF
           ELSE
             DO JI=1,ILA
               DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMA(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+                S%FA(IMLOC)%RPNMA(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMA_DGEMM)) THEN
+              ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+              S%RPNMA_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMA(:,:), JPRD)
+            ENDIF
           END IF
         ENDDO
         !$OMP END PARALLEL DO
@@ -998,6 +1009,11 @@ IF(.NOT.D%LGRIDONLY) THEN
                 S%FA(IMLOC)%RPNMS(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+              S%RPNMS_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMS(:,:), JPRD)
+            ENDIF
           ENDIF
         ENDDO
         !$OMP END PARALLEL DO
@@ -1022,22 +1038,27 @@ IF(.NOT.D%LGRIDONLY) THEN
             ALLOCATE(S%FA(IMLOC)%RPNMDS(IDGLU,ILS))
             DO JI=1,ILS
               DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMDS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+                S%FA(IMLOC)%RPNMDS(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
               ENDDO
             ENDDO
             IF( S%LKEEPRPNM ) THEN
               DO JI=1,ILS
                 DO JGL=1,IDGLU
-                  S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+                  S%FA(IMLOC)%RPNMS(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
                 ENDDO
               ENDDO
             ENDIF
           ELSE
             DO JI=1,ILS
               DO JGL=1,IDGLU
-                S%FA(IMLOC)%RPNMS(JGL,JI) = F%RPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+                S%FA(IMLOC)%RPNMS(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
               ENDDO
             ENDDO
+
+            IF (.NOT. LLDOUBLE .AND. IM == 0 .AND. .NOT. ALLOCATED(S%RPNMS_DGEMM)) THEN
+              ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+              S%RPNMS_DGEMM(:,:) = REAL(S%FA(IMLOC)%RPNMS(:,:), JPRD)
+            ENDIF
           END IF
         END DO
         !$OMP END PARALLEL DO
@@ -1169,7 +1190,7 @@ IF(.NOT.D%LGRIDONLY) THEN
   ENDIF
 
   CALL GSTATS(1801,3)
-  IF(S%LUSE_BELUSOV) DEALLOCATE(F%RPNM)
+  IF(S%LUSE_BELUSOV) DEALLOCATE(ZPNM)
 
   IF(C%LWRITE_LEGPOL) CALL WRITE_LEGPOL
   IF(C%LREAD_LEGPOL)  CALL READ_LEGPOL

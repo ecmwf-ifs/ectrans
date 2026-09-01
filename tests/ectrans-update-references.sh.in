@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+# (C) Copyright 2026- ECMWF.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+# In applying this licence, ECMWF does not waive the privileges and immunities
+# granted to it by virtue of its status as an intergovernmental organisation
+# nor does it submit to any jurisdiction.
+
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [-h|--help] [--anonymous|--no-anonymous] [REFERENCE_DIR]
+
+Populate the checksum reference directory from selected serial ectrans-benchmark
+tests. The selected sources use mpi0, omp1, callmode1, and no field-api unless a
+unique logical reference variant is only available from a field-api test.
+
+Run the local-reference CTest tests before this script so the checksum files
+pointed to by the build-tree local-reference symlinks exist.
+
+REFERENCE_DIR is selected in this order:
+  1. Optional REFERENCE_DIR argument
+  2. ECTRANS_TEST_REFERENCE_DIR environment variable
+  3. configured default: @ECTRANS_TEST_REFERENCE_DIR@
+
+Provenance paths are anonymous by default. Use --no-anonymous to retain the
+actual ecbuild, fiat, and field_api roots and library paths.
+EOF
+}
+
+anonymous=true
+reference_dir=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --anonymous)
+      anonymous=true
+      ;;
+    --no-anonymous)
+      anonymous=false
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [[ -n "${reference_dir}" ]]; then
+        usage >&2
+        exit 2
+      fi
+      reference_dir=$1
+      ;;
+  esac
+  shift
+done
+
+reference_dir=${reference_dir:-${ECTRANS_TEST_REFERENCE_DIR:-@ECTRANS_TEST_REFERENCE_DIR@}}
+local_reference_dir="@local_reference_dir@"
+build_dir="@CMAKE_BINARY_DIR@"
+provenance_script="@CMAKE_CURRENT_SOURCE_DIR@/reference-build-provenance.py"
+
+if [[ ! -d "${local_reference_dir}" ]]; then
+  echo "Missing local reference directory: ${local_reference_dir}" >&2
+  exit 1
+fi
+
+mkdir -p "${reference_dir}"
+
+shopt -s nullglob
+local_reference_files=("${local_reference_dir}"/*.checksums)
+shopt -u nullglob
+
+if [[ ${#local_reference_files[@]} -eq 0 ]]; then
+  echo "No local reference files found in: ${local_reference_dir}" >&2
+  exit 1
+fi
+
+for source_file in "${local_reference_files[@]}"; do
+  destination_file="${reference_dir}/$(basename "${source_file}")"
+  cp -L "${source_file}" "${destination_file}"
+  echo "${source_file} -> ${destination_file}"
+done
+
+if [[ ! -f "${provenance_script}" ]]; then
+  echo "Missing provenance collector script: ${provenance_script}" >&2
+  exit 1
+fi
+
+provenance_cmd=(
+  python3 "${provenance_script}"
+  --build-dir "${build_dir}"
+  --output "${reference_dir}/metadata.json"
+)
+if [[ "${anonymous}" == true ]]; then
+  provenance_cmd+=(--anonymous)
+fi
+
+"${provenance_cmd[@]}"

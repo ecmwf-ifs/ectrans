@@ -1,0 +1,82 @@
+{
+  "cmake": {
+    "version": "3.31.6"
+  },
+  "compilers": {
+    "c": {
+      "build_type_flags": "-O0 -g",
+      "flags": "",
+      "id": "GNU",
+      "path": "/usr/bin/x86_64-linux-gnu-gcc-13",
+      "version": "13.3.0"
+    },
+    "cxx": {
+      "build_type_flags": "-O0 -g",
+      "flags": "",
+      "id": "GNU",
+      "path": "/usr/bin/x86_64-linux-gnu-g++-13",
+      "version": "13.3.0"
+    },
+    "fortran": {
+      "build_type_flags": "-O0 -g -fcheck=bounds -fbacktrace -finit-real=snan",
+      "flags": "",
+      "id": "GNU",
+      "path": "/usr/bin/x86_64-linux-gnu-gfortran-13",
+      "version": "13.3.0"
+    }
+  },
+  "dependencies": {
+    "ecbuild": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/ecbuild/lib/cmake/ecbuild",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "fftw": {
+      "cflags": "-fPIC -march=x86-64-v3 -ffp-contract=off -fno-fast-math",
+      "library_paths": [
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3.so.3.6.10",
+        "/home/runner/work/_temp/deps/fftw/lib/libfftw3f.so.3.6.10"
+      ],
+      "root": "/home/runner/work/_temp/deps/fftw",
+      "vendor": "FFTW",
+      "version": null
+    },
+    "fiat": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/fiat/lib/cmake/fiat",
+      "vendor": "ECMWF",
+      "version": "develop"
+    },
+    "field_api": {
+      "library_paths": [],
+      "root": "/home/runner/work/_temp/install/field_api/lib/cmake/field_api",
+      "vendor": "ECMWF",
+      "version": "v0.3.9"
+    },
+    "lapack": {
+      "library_paths": [
+        "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0",
+        "/usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0"
+      ],
+      "root": "/usr",
+      "vendor": "Netlib",
+      "version": "3.12.0"
+    },
+    "mpi": {
+      "library_paths": [
+        "/home/runner/work/_temp/deps/openmpi/lib/libmpi.so.40.40.7"
+      ],
+      "root": "/home/runner/work/_temp/deps/openmpi",
+      "vendor": "Open MPI",
+      "version": "5.0.7"
+    }
+  },
+  "environment": {},
+  "system": {
+    "arch": "X64",
+    "loaded_modules": [],
+    "os": "Linux",
+    "processor": "AMD EPYC 9V74 80-Core Processor"
+  }
+}

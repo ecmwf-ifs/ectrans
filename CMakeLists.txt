@@ -8,7 +8,7 @@
 
 cmake_minimum_required( VERSION 3.25 FATAL_ERROR )
 
-find_package( ecbuild 3.8 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
+find_package( ecbuild 3.14.2 REQUIRED HINTS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../ecbuild )
 
 project( ectrans LANGUAGES C CXX Fortran )
 include( ectrans_macros )
@@ -68,9 +68,6 @@ if( (NOT HAVE_DOUBLE_PRECISION) AND (NOT HAVE_SINGLE_PRECISION) )
   ecbuild_critical("Please enable one or both of the DOUBLE_PRECISION and SINGLE_PRECISION features")
 endif()
 
-if( HAVE_SINGLE_PRECISION )
-  set( single "single" )
-endif()
 set( HAVE_dp ${HAVE_DOUBLE_PRECISION} )
 set( HAVE_sp ${HAVE_SINGLE_PRECISION} )
 
@@ -89,7 +86,7 @@ if( NOT HAVE_MKL )
 endif()
 
 if( HAVE_CPU )
-  ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double ${single} )
+  ecbuild_find_package( NAME FFTW REQUIRED COMPONENTS double single )
 endif()
 
 ecbuild_add_option( FEATURE TRANSI
@@ -156,6 +153,11 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
+ecbuild_add_option( FEATURE ROCFFT
+                    DEFAULT OFF
+                    CONDITION HAVE_HIP
+                    DESCRIPTION "Use rocFFT library instead of hipFFT for FFT operations on AMD GPUs" )
+
 if( BUILD_SHARED_LIBS )
   set( GPU_STATIC_DEFAULT OFF )
 else()
@@ -181,16 +183,57 @@ if( HAVE_ETRANS AND HAVE_GPU )
   endif()
 endif()
 
+# ectrans4py Python wrapper (can only be built with one precision)
 ecbuild_add_option( FEATURE ECTRANS4PY
                     DEFAULT OFF
-                    CONDITION HAVE_ETRANS AND HAVE_DOUBLE_PRECISION
+                    CONDITION HAVE_ETRANS AND NOT (HAVE_DOUBLE_PRECISION AND HAVE_SINGLE_PRECISION)
                     DESCRIPTION "Compile ectrans4py interface routines for python binding w/ ctypesForFortran" )
 
 
 ectrans_find_lapack()
 
+ecbuild_add_option( FEATURE FIELD_API
+                    DEFAULT OFF
+                    DESCRIPTION "Compile field API interface to ectrans"
+                    REQUIRED_PACKAGES "field_api" )
+
+ecbuild_add_option( FEATURE FIAT_DEVELOP
+                    DEFAULT OFF
+                    DESCRIPTION "Explicitly add knowledge that fiat is on develop branch" )
+
+ecbuild_add_option( FEATURE REFERENCE_TESTS DEFAULT OFF
+                    DESCRIPTION "Compare each ectrans-benchmark checksum file against references" )
+
+ecbuild_add_option( FEATURE BITID_TESTS DEFAULT OFF
+                    DESCRIPTION "Compare each ectrans-benchmark checksum file against build-local references" )
+
+ecbuild_add_option( FEATURE MEMORY_TESTS DEFAULT ON
+                    CONDITION HAVE_TESTS AND HAVE_TRANSI
+                    DESCRIPTION "Enable memory tests" )
+
+set( _ectrans_default_reference_dir "${ECTRANS_TEST_REFERENCE_DIR}" )
+if( NOT DEFINED ECTRANS_TEST_REFERENCE_DIR )
+  ectrans_default_reference_dir( _ectrans_default_reference_dir )
+endif()
+set( ECTRANS_TEST_REFERENCE_DIR
+  "${_ectrans_default_reference_dir}"
+     CACHE PATH "Directory containing ectrans-benchmark checksum reference files" )
+if (HAVE_REFERENCE_TESTS)
+  ecbuild_info("Reference tests requested")
+  ecbuild_info("    ECTRANS_TEST_REFERENCE_DIR : ${ECTRANS_TEST_REFERENCE_DIR}")
+  if (NOT EXISTS "${ECTRANS_TEST_REFERENCE_DIR}")
+    ecbuild_warn("Reference tests requested, but reference directory does not exist: ${ECTRANS_TEST_REFERENCE_DIR}.
+    After running the bit-identical tests, you can copy the generated checksum reference files to the reference directory using the script:
+    ${CMAKE_BINARY_DIR}/tests/ectrans-update-references.sh")
+  endif()
+endif()
+
 ### Add sources
-include( ectrans_compile_options )
+ecbuild_override_compiler_flags(
+  COMPILE_FLAGS ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ectrans_compile_flags.cmake
+  INHERIT_ECBUILD_FLAGS
+)
+include( ectrans_contiguous_workaround )
 add_subdirectory( src )
 
 ### Add tests
@@ -204,6 +247,8 @@ if( BUILD_SHARED_LIBS )
 else()
   set( PACKAGE_REQUIRES_PRIVATE_DEPENDENCIES 1 )
 endif()
+
+include( ectrans_reference_provenance )
 
 ecbuild_install_project( NAME ${PROJECT_NAME} )
 

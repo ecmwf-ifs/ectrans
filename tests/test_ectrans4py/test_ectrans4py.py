@@ -13,7 +13,7 @@ else:
     raise NotImplementedError("ectrans4py does not support Windows")
 
 KNUMMAXRESOL = 10
-EPSILON = 1e-10
+EPSILON = 1e-10 if ectrans4py._REAL == numpy.float64 else 1e-4
 
 
 class ArraysAlmostEqual(object):
@@ -67,7 +67,7 @@ class TestLAM(TestCase, ArraysAlmostEqual):
             False, # spectral_coeff_order != 'model',
             self.gpdims['X_resolution'],
             self.gpdims['Y_resolution'],
-            self.spdata.flatten())[0]
+            self.spdata.flatten().astype(ectrans4py._REAL))[0]
         self.assert_arrays_diff_under_epsilon(gpdata, gpdata.flatten())
     
     def test_gp2sp(self):
@@ -83,7 +83,7 @@ class TestLAM(TestCase, ArraysAlmostEqual):
             self.gpdims['X_resolution'],
             self.gpdims['Y_resolution'],
             False,  # spectral_coeff_order != 'model',
-            self.gpdata.flatten())
+            self.gpdata.flatten().astype(ectrans4py._REAL))
         self.assert_arrays_diff_under_epsilon(spdata, spdata.flatten())
 
 class TestGlobal(TestCase, ArraysAlmostEqual):
@@ -141,7 +141,7 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             len(self.spdata),
             False,  # no derivatives
             False, # spectral_coeff_order != 'model',
-            self.spdata)[0]
+            self.spdata.astype(ectrans4py._REAL))[0]
         self.assert_arrays_diff_under_epsilon(self.gpdata, gpdata)
     
     def test_gp2sp(self):
@@ -154,6 +154,6 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             self.gpdims['lon_number_by_lat'],
             len(self.gpdata),
             False,  # spectral_coeff_order != 'model',
-            self.gpdata)
+            self.gpdata.astype(ectrans4py._REAL))
         self.assert_arrays_diff_under_epsilon(self.spdata, spdata)
 

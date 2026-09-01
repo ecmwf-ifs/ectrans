@@ -23,7 +23,7 @@ case "$os" in
     ;;
     Linux)
       echo "Installing OpenBLAS via apt-get"
-      sudo apt-get install libblas-dev liblapack-dev
+      sudo apt-get install libopenblas-dev
       exit
     ;;
     *)

@@ -74,21 +74,21 @@ tar xzf ${fftw_tarball} -C ${TMPDIR}/downloads
 echo "+ cd ${fftw_dir}"
 cd ${fftw_dir}
 echo "+ ./configure --prefix=${PREFIX} ${fftw_configure}"
-./configure --prefix=${PREFIX} ${fftw_configure}
+${SCRIPTDIR}/reduce-output.sh ./configure --prefix=${PREFIX} ${fftw_configure}
 echo "+ make -j8"
-make -j8
+${SCRIPTDIR}/reduce-output.sh make -j8
 echo "+ make install"
-make install
+${SCRIPTDIR}/reduce-output.sh make install
 
 if $fftw_with_single; then
   # Now again in single precision
-  make clean
+  ${SCRIPTDIR}/reduce-output.sh make clean
   echo "+ ./configure --prefix=${PREFIX} ${fftw_configure} --enable-float"
-  ./configure --prefix=${PREFIX} ${fftw_configure} --enable-float
+  ${SCRIPTDIR}/reduce-output.sh ./configure --prefix=${PREFIX} ${fftw_configure} --enable-float
   echo "+ make -j8"
-  make -j8
+  ${SCRIPTDIR}/reduce-output.sh make -j8
   echo "+ make install"
-  make install
+  ${SCRIPTDIR}/reduce-output.sh make install
 fi
 
 

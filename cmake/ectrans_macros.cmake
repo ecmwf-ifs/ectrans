@@ -21,5 +21,8 @@ endif()
 include( ectrans_find_lapack )
 include( ectrans_find_cuda )
 include( ectrans_find_hip )
+include( ectrans_add_flags )
+include( ectrans_reference_dir )
+include( ectrans_test_helpers )
 include( CheckLanguage )
 

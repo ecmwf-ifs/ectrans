@@ -19,5 +19,31 @@ classifiers = [
 ]
 
 [build-system]
-requires = ["setuptools", "wheel", "scikit-build"]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core>=0.10"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+
+# Require the same CMake as the top-level CMakeLists.txt
+cmake.version = ">=3.25"
+
+# The Python package lives under src/
+wheel.packages = ["src/ectrans4py"]
+
+# CMake installs into the ectrans4py package dir
+wheel.install-dir = "ectrans4py"
+
+# Read the version from the VERSION file
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "VERSION"
+regex = '(?P<value>[^\s]+)'
+
+# CMake configure options
+[tool.scikit-build.cmake.define]
+ENABLE_ETRANS = "ON"
+ENABLE_ECTRANS4PY = "ON"
+ENABLE_SINGLE_PRECISION = "OFF"
+ENABLE_OMP = "ON"
+FFTW_USE_STATIC_LIBS = "ON"

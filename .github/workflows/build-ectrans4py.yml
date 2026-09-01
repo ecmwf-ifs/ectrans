@@ -22,14 +22,36 @@ env:
   CACHE_SUFFIX: v1        # Increase to force new cache to be created
 
 jobs:
+  should-run:
+    name: decide whether to run build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      value: ${{ steps.decision.outputs.value }}
+    steps:
+      - name: Checkout reusable workflow action
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/should-run
+
+      - name: Decide whether this build should run
+        id: decision
+        uses: ./.github/actions/should-run
+
   ci:
     name: ci
+    needs: should-run
+    if: needs.should-run.outputs.value == 'true'
 
     strategy:
       fail-fast: false    # false: try to complete all jobs
 
       matrix:
         build_type: [Release,Debug]
+        precision: [single, double]
         name:
           - linux gnu-13
           - macos
@@ -57,19 +79,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout ecBuild
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: ecmwf/ecbuild
         path: ecbuild
 
     - name: Checkout FIAT
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: ecmwf-ifs/fiat
         path: fiat
 
     - name: Checkout ecTrans
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         path: ectrans
 
@@ -81,6 +103,8 @@ jobs:
         echo "FC=${{ matrix.compiler_fc }}"     >> $GITHUB_ENV
 
         if [[ "${{ matrix.os }}" =~ macos ]]; then
+          # GitHub-hosted macOS runners can include aws/tap, which Homebrew may reject as untrusted during auto-update.
+          brew untap aws/tap || true
           brew install ninja
         else
           sudo apt-get update
@@ -110,8 +134,9 @@ jobs:
         python3 -m venv venv
         . venv/bin/activate
         pip install build
-        python -m build --wheel ectrans -o $GITHUB_WORKSPACE
-        pip install ectrans4py*
+        pip install ectrans/. \
+          -C cmake.define.ENABLE_SINGLE_PRECISION=${{ matrix.precision == 'single' && 'ON' || 'OFF' }} \
+          -C cmake.define.ENABLE_DOUBLE_PRECISION=${{ matrix.precision == 'double' && 'ON' || 'OFF' }}
 
     - name: Check ectrans4py version
       run:  |
