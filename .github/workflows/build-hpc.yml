@@ -316,11 +316,11 @@ jobs:
             fi
 
       - name: Ensure ci-infrastructure present
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/ensure-infrastructure-present@main
 
       - name: Fetch the reference artifacts from the HPC
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/fetch-hpc-tree@main
         with:
           site: ${{ matrix.site }}
@@ -329,7 +329,7 @@ jobs:
           local-dir: ${{ runner.temp }}/ectrans-reference-artifact
 
       - name: Remove the artifacts from the HPC
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/remove-hpc-tree@main
         with:
           site: ${{ matrix.site }}
@@ -337,7 +337,7 @@ jobs:
           remote-dir: ${{ steps.reference-artifact-dir.outputs.path }}
 
       - name: Upload reference artifact
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: ectrans-reference-artifact-${{ steps.reference-key.outputs.reference_key }}
@@ -346,7 +346,7 @@ jobs:
           if-no-files-found: error
 
       - name: Cleanup reference artifact
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         shell: bash -eux {0}
         run: |
           rm -rf "${{ runner.temp }}/ectrans-reference-artifact"
