@@ -83,6 +83,7 @@ public :: GathSpec_t
 public :: DistSpec_t
 public :: VorDivToUV_t
 public :: trans_use_mpi
+public :: trans_set_mpi_comm
 public :: trans_set_handles_limit
 public :: trans_set_radius
 public :: trans_set_leq_regions
@@ -90,6 +91,7 @@ public :: trans_set_nprtrv
 public :: trans_set_nprgpew
 public :: trans_init
 public :: trans_setup
+public :: trans_specnorm
 public :: trans_inquire
 public :: trans_dirtrans
 public :: trans_dirtrans_adj
