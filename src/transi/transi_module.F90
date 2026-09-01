@@ -1290,156 +1290,229 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
     var = trim(var_arr(jvar))
     call to_lower(var)
 
-    if    ( var == "numpp" ) then
-      call allocate_ptr( trans%numpp, trans%nprtrw, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KUMPP=int1 )
+    if( .not. is_lam(trans) ) then
+      if    ( var == "numpp" ) then
+        call allocate_ptr( trans%numpp, trans%nprtrw, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KUMPP=int1 )
 
-    elseif( var == "ngptotl" ) then
-      call allocate_ptr( trans%ngptotl, trans%n_regions_NS, trans%n_regions_EW, int2 )
-      call TRANS_INQ( KRESOL=trans%handle,  KGPTOTL=int2 )
+      elseif( var == "ngptotl" ) then
+        call allocate_ptr( trans%ngptotl, trans%n_regions_NS, trans%n_regions_EW, int2 )
+        call TRANS_INQ( KRESOL=trans%handle,  KGPTOTL=int2 )
 
-    elseif( var == "nmyms" ) then
-      call allocate_ptr( trans%nmyms, trans%nump, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KMYMS=int1 )
+      elseif( var == "nmyms" ) then
+        call allocate_ptr( trans%nmyms, trans%nump, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KMYMS=int1 )
 
-    elseif( var == "nasm0" ) then
-      call allocate_ptr( trans%nasm0, trans%nsmax+1, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KASM0=int1 )
+      elseif( var == "nasm0" ) then
+        call allocate_ptr( trans%nasm0, trans%nsmax+1, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KASM0=int1 )
 
-    elseif( var == "npossp" ) then
-      call allocate_ptr( trans%npossp, trans%nprtrw+1, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPOSSP=int1 )
+      elseif( var == "npossp" ) then
+        call allocate_ptr( trans%npossp, trans%nprtrw+1, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPOSSP=int1 )
 
-    elseif( var == "nptrms" ) then
-      call allocate_ptr( trans%nptrms, trans%nprtrw, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPTRMS=int1 )
+      elseif( var == "nptrms" ) then
+        call allocate_ptr( trans%nptrms, trans%nprtrw, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPTRMS=int1 )
 
-    elseif( var == "nallms" ) then
-      call allocate_ptr( trans%nallms, trans%nsmax+1, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KALLMS=int1 )
+      elseif( var == "nallms" ) then
+        call allocate_ptr( trans%nallms, trans%nsmax+1, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KALLMS=int1 )
 
-    elseif( var == "ndim0g" ) then
-      call allocate_ptr( trans%ndim0g, trans%nsmax+1, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KDIM0G=int1 )
+      elseif( var == "ndim0g" ) then
+        call allocate_ptr( trans%ndim0g, trans%nsmax+1, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KDIM0G=int1 )
 
-    elseif( var == "nvalue" ) then
-      call allocate_ptr( trans%nvalue, trans%nspec2, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
-      if( .not. is_lam(trans) ) then
+      elseif( var == "nvalue" ) then
+        call allocate_ptr( trans%nvalue, trans%nspec2, int1 )
         call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
-#if ECTRANS_HAVE_ETRANS
+      call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
+
+      elseif( var == "nfrstlat" ) then
+        call allocate_ptr( trans%nfrstlat, trans%n_regions_NS, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KFRSTLAT=int1 )
+
+      elseif( var == "nlstlat" ) then
+        call allocate_ptr( trans%nlstlat, trans%n_regions_NS, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KLSTLAT=int1 )
+
+      elseif( var == "nptrlat" ) then
+        call allocate_ptr( trans%nptrlat, trans%ndgl, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPTRLAT=int1 )
+
+      elseif( var == "nptrfrstlat" ) then
+        call allocate_ptr( trans%nptrfrstlat ,trans%n_regions_ns, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPTRFRSTLAT=int1 )
+
+      elseif( var == "nptrlstlat" ) then
+        call allocate_ptr( trans%nptrlstlat, trans%n_regions_ns, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPTRLSTLAT=int1 )
+
+      elseif( var == "nsta" ) then
+        call allocate_ptr( trans%nsta, trans%ndgl+trans%n_regions_NS-1, trans%n_regions_EW, int2 )
+        call TRANS_INQ( KRESOL=trans%handle,  KSTA=int2 )
+
+      elseif( var == "nonl" ) then
+        call allocate_ptr( trans%nonl, trans%ndgl+trans%n_regions_NS-1, trans%n_regions_EW, int2 )
+        call TRANS_INQ( KRESOL=trans%handle,  KONL=int2 )
+
+      elseif( var == "ldsplitlat" ) then
+        !!call allocate_ptr( trans%nonl, trans%ndgl, bool1 )
+        !allocate( booltmp(trans%ndgl) )
+        !call TRANS_INQ( KRESOL=trans%handle,  LDSPLITLAT=booltmp )
+        !bool1(:) = booltmp(:)
+        !deallocate( booltmp )
+        iret = TRANS_NOTIMPL
+        return
+
+      elseif( var == "nultpp" ) then
+        call allocate_ptr( trans%nultpp, trans%nprtrns, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KULTPP=int1 )
+
+      elseif( var == "nptrls" ) then
+        call allocate_ptr( trans%nptrls, trans%nprtrns, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPTRLS=int1 )
+
+      elseif( var == "nnmeng" ) then
+        call allocate_ptr( trans%nnmeng, trans%ndgl, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KNMENG=int1 )
+
+      elseif( var == "rmu" ) then
+        call allocate_ptr( trans%rmu, trans%ndgl, double1 )
+        call TRANS_INQ( KRESOL=trans%handle,  PMU=double1 )
+
+      elseif( var == "rgw" ) then
+        call allocate_ptr( trans%rgw, trans%ndgl, double1 )
+        call TRANS_INQ( KRESOL=trans%handle,  PGW=double1 )
+
+      elseif( var == "rpnm" ) then
+        call allocate_ptr( trans%rpnm, trans%nlei3, trans%nspolegl, double2 )
+        call TRANS_INQ( KRESOL=trans%handle,  PRPNM=double2 )
+
+      elseif( var == "npms" ) then
+        call allocate_ptr( trans%npms, trans%nsmax+1, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KPMS=int1 )
+
+      elseif( var == "rlapin" ) then
+        call allocate_ptr( trans%rlapin, trans%nsmax+4, double1 )
+        call TRANS_INQ( KRESOL=trans%handle,  PLAPIN=double1 )
+
+      elseif( var == "ndglu" ) then
+        call allocate_ptr( trans%ndglu, trans%nsmax+1, int1 )
+        call TRANS_INQ( KRESOL=trans%handle,  KDGLU=int1 )
+
       else
-        call ETRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
-#endif
+        write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
+        iret = TRANS_UNRECOGNIZED_ARG
+        return
       endif
-
+    else
 #if ECTRANS_HAVE_ETRANS
-    elseif( var == "mvalue" ) then
-      call allocate_ptr( trans%mvalue, trans%nspec2, int1 )
-      call ETRANS_INQ( KRESOL=trans%handle,  KMVALUE=int1 )
+      if    ( var == "numpp" ) then
+        call allocate_ptr( trans%numpp, trans%nprtrw, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KUMPP=int1 )
+
+      elseif( var == "ngptotl" ) then
+        call allocate_ptr( trans%ngptotl, trans%n_regions_NS, trans%n_regions_EW, int2 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KGPTOTL=int2 )
+
+      elseif( var == "nmyms" ) then
+        call allocate_ptr( trans%nmyms, trans%nump, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KMYMS=int1 )
+
+      elseif( var == "npossp" ) then
+        call allocate_ptr( trans%npossp, trans%nprtrw+1, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPOSSP=int1 )
+
+      elseif( var == "nptrms" ) then
+        call allocate_ptr( trans%nptrms, trans%nprtrw, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPTRMS=int1 )
+
+      elseif( var == "nallms" ) then
+        call allocate_ptr( trans%nallms, trans%nsmax+1, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KALLMS=int1 )
+
+      elseif( var == "ndim0g" ) then
+        call allocate_ptr( trans%ndim0g, trans%nsmax+1, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KDIM0G=int1 )
+
+      elseif( var == "nvalue" ) then
+        call allocate_ptr( trans%nvalue, trans%nspec2, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
+
+      elseif( var == "mvalue" ) then
+        call allocate_ptr( trans%mvalue, trans%nspec2, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KMVALUE=int1 )
+
+      elseif( var == "nfrstlat" ) then
+        call allocate_ptr( trans%nfrstlat, trans%n_regions_NS, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KFRSTLAT=int1 )
+
+      elseif( var == "nlstlat" ) then
+        call allocate_ptr( trans%nlstlat, trans%n_regions_NS, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KLSTLAT=int1 )
+
+      elseif( var == "nptrlat" ) then
+        call allocate_ptr( trans%nptrlat, trans%ndgl, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPTRLAT=int1 )
+
+      elseif( var == "nptrfrstlat" ) then
+        call allocate_ptr( trans%nptrfrstlat ,trans%n_regions_ns, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPTRFRSTLAT=int1 )
+
+      elseif( var == "nptrlstlat" ) then
+        call allocate_ptr( trans%nptrlstlat, trans%n_regions_ns, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPTRLSTLAT=int1 )
+
+      elseif( var == "nsta" ) then
+        call allocate_ptr( trans%nsta, trans%ndgl+trans%n_regions_NS-1, trans%n_regions_EW, int2 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KSTA=int2 )
+
+      elseif( var == "nonl" ) then
+        call allocate_ptr( trans%nonl, trans%ndgl+trans%n_regions_NS-1, trans%n_regions_EW, int2 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KONL=int2 )
+
+      elseif( var == "ldsplitlat" ) then
+        !!call allocate_ptr( trans%nonl, trans%ndgl, bool1 )
+        !allocate( booltmp(trans%ndgl) )
+        !call ETRANS_INQ( KRESOL=trans%handle,  LDSPLITLAT=booltmp )
+        !bool1(:) = booltmp(:)
+        !deallocate( booltmp )
+        iret = TRANS_NOTIMPL
+        return
+
+      elseif( var == "nultpp" ) then
+        call allocate_ptr( trans%nultpp, trans%nprtrns, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KULTPP=int1 )
+
+      elseif( var == "nptrls" ) then
+        call allocate_ptr( trans%nptrls, trans%nprtrns, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPTRLS=int1 )
+
+      elseif( var == "rmu" ) then
+        call allocate_ptr( trans%rmu, trans%ndgl, double1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  PMU=double1 )
+
+      elseif( var == "rgw" ) then
+        call allocate_ptr( trans%rgw, trans%ndgl, double1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  PGW=double1 )
+
+      elseif( var == "rpnm" ) then
+        call allocate_ptr( trans%rpnm, trans%nlei3, trans%nspolegl, double2 )
+        call ETRANS_INQ( KRESOL=trans%handle,  PRPNM=double2 )
+
+      elseif( var == "npms" ) then
+        call allocate_ptr( trans%npms, trans%nsmax+1, int1 )
+        call ETRANS_INQ( KRESOL=trans%handle,  KPMS=int1 )
+
+      else
+        write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
+        iret = TRANS_UNRECOGNIZED_ARG
+        return
+      endif
 #endif
-
-    elseif( var == "nfrstlat" ) then
-      call allocate_ptr( trans%nfrstlat, trans%n_regions_NS, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KFRSTLAT=int1 )
-
-    elseif( var == "nlstlat" ) then
-      call allocate_ptr( trans%nlstlat, trans%n_regions_NS, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KLSTLAT=int1 )
-
-    elseif( var == "nptrlat" ) then
-      call allocate_ptr( trans%nptrlat, trans%ndgl, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPTRLAT=int1 )
-
-    elseif( var == "nptrfrstlat" ) then
-      call allocate_ptr( trans%nptrfrstlat ,trans%n_regions_ns, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPTRFRSTLAT=int1 )
-
-    elseif( var == "nptrlstlat" ) then
-      call allocate_ptr( trans%nptrlstlat, trans%n_regions_ns, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPTRLSTLAT=int1 )
-
-    elseif( var == "nsta" ) then
-      call allocate_ptr( trans%nsta, trans%ndgl+trans%n_regions_NS-1, trans%n_regions_EW, int2 )
-      call TRANS_INQ( KRESOL=trans%handle,  KSTA=int2 )
-
-    elseif( var == "nonl" ) then
-      call allocate_ptr( trans%nonl, trans%ndgl+trans%n_regions_NS-1, trans%n_regions_EW, int2 )
-      call TRANS_INQ( KRESOL=trans%handle,  KONL=int2 )
-
-    elseif( var == "ldsplitlat" ) then
-      !!call allocate_ptr( trans%nonl, trans%ndgl, bool1 )
-      !allocate( booltmp(trans%ndgl) )
-      !call TRANS_INQ( KRESOL=trans%handle,  LDSPLITLAT=booltmp )
-      !bool1(:) = booltmp(:)
-      !deallocate( booltmp )
-      iret = TRANS_NOTIMPL
-      return
-
-    elseif( var == "nultpp" ) then
-      call allocate_ptr( trans%nultpp, trans%nprtrns, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KULTPP=int1 )
-
-    elseif( var == "nptrls" ) then
-      call allocate_ptr( trans%nptrls, trans%nprtrns, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPTRLS=int1 )
-
-    elseif( var == "nnmeng" ) then
-      call allocate_ptr( trans%nnmeng, trans%ndgl, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KNMENG=int1 )
-
-    elseif( var == "rmu" ) then
-      call allocate_ptr( trans%rmu, trans%ndgl, double1 )
-      call TRANS_INQ( KRESOL=trans%handle,  PMU=double1 )
-
-    elseif( var == "rgw" ) then
-      call allocate_ptr( trans%rgw, trans%ndgl, double1 )
-      call TRANS_INQ( KRESOL=trans%handle,  PGW=double1 )
-
-    elseif( var == "rpnm" ) then
-      call allocate_ptr( trans%rpnm, trans%nlei3, trans%nspolegl, double2 )
-      call TRANS_INQ( KRESOL=trans%handle,  PRPNM=double2 )
-
-    elseif( var == "npms" ) then
-      call allocate_ptr( trans%npms, trans%nsmax+1, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KPMS=int1 )
-
-    elseif( var == "rlapin" ) then
-      call allocate_ptr( trans%rlapin, trans%nsmax+4, double1 )
-      call TRANS_INQ( KRESOL=trans%handle,  PLAPIN=double1 )
-
-    elseif( var == "ndglu" ) then
-      call allocate_ptr( trans%ndglu, trans%nsmax+1, int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KDGLU=int1 )
-
-    elseif(       var /= "ndgl"         &
-        &   .and. var /= "nsmax"        &
-        &   .and. var /= "myproc"       &
-        &   .and. var /= "nproc"        &
-        &   .and. var /= "llam"         &
-        &   .and. var /= "nspec"        &
-        &   .and. var /= "nspec2"       &
-        &   .and. var /= "nspec2g"      &
-        &   .and. var /= "nspec2mx"     &
-        &   .and. var /= "nump"         &
-        &   .and. var /= "ngptot"       &
-        &   .and. var /= "ngptotg"      &
-        &   .and. var /= "ngptotmx"     &
-        &   .and. var /= "n_regions_ns" &
-        &   .and. var /= "n_regions_ew" &
-        &   .and. var /= "my_region_ns" &
-        &   .and. var /= "my_region_ew" &
-        &   .and. var /= "nfrstloff"    &
-        &   .and. var /= "nptrfloff"    &
-        &   .and. var /= "nprtrns"      &
-        &   .and. var /= "nlei3"        &
-        &   .and. var /= "nspolegl"     &
-        &   .and. var /= "nmsmax"       ) then
-            write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
-      iret = TRANS_UNRECOGNIZED_ARG
-      return
     endif
-
   enddo
 
   iret = TRANS_SUCCESS
