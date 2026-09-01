@@ -598,7 +598,7 @@ endif()
 if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
   ecbuild_add_test( TARGET ectrans_test_multiple_precisions
     SOURCES trans/test_multiple_precisions.F90
-    LIBS ectrans_sp ectrans_dp fiat parkind_sp
+    LIBS ectrans_sp ectrans_dp fiat
     LINKER_LANGUAGE Fortran )
 endif()
 
