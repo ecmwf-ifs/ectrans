@@ -291,10 +291,11 @@ jobs:
             echo "ecTrans build took $((build_end - build_start)) seconds"
 
             test_start=$(date +%s)
-            set +e
-            ctest --test-dir build --output-on-failure {{ ctest_options }}
-            ctest_status=$?
-            set -e
+            if ctest --test-dir build --output-on-failure {{ ctest_options }}; then
+              ctest_status=0
+            else
+              ctest_status=$?
+            fi
             test_end=$(date +%s)
             echo "ecTrans tests took $((test_end - test_start)) seconds"
 
