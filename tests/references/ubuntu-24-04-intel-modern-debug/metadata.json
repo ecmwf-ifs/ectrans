@@ -81,6 +81,6 @@
     "arch": "X64",
     "loaded_modules": [],
     "os": "Linux",
-    "processor": "AMD EPYC 9V74 80-Core Processor"
+    "processor": "AMD EPYC 7763 64-Core Processor"
   }
 }
