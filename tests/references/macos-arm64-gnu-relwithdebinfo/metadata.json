@@ -30,7 +30,7 @@
       "library_paths": [],
       "root": "${ecbuild_ROOT}",
       "vendor": "ECMWF",
-      "version": "3.15.0"
+      "version": "3.15.2"
     },
     "fftw": {
       "cflags": null,

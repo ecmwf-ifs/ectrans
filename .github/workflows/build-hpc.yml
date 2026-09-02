@@ -291,10 +291,11 @@ jobs:
             echo "ecTrans build took $((build_end - build_start)) seconds"
 
             test_start=$(date +%s)
-            set +e
-            ctest --test-dir build --output-on-failure {{ ctest_options }}
-            ctest_status=$?
-            set -e
+            if ctest --test-dir build --output-on-failure {{ ctest_options }}; then
+              ctest_status=0
+            else
+              ctest_status=$?
+            fi
             test_end=$(date +%s)
             echo "ecTrans tests took $((test_end - test_start)) seconds"
 
@@ -316,11 +317,11 @@ jobs:
             fi
 
       - name: Ensure ci-infrastructure present
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/ensure-infrastructure-present@main
 
       - name: Fetch the reference artifacts from the HPC
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/fetch-hpc-tree@main
         with:
           site: ${{ matrix.site }}
@@ -329,7 +330,7 @@ jobs:
           local-dir: ${{ runner.temp }}/ectrans-reference-artifact
 
       - name: Remove the artifacts from the HPC
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/remove-hpc-tree@main
         with:
           site: ${{ matrix.site }}
@@ -337,7 +338,7 @@ jobs:
           remote-dir: ${{ steps.reference-artifact-dir.outputs.path }}
 
       - name: Upload reference artifact
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
           name: ectrans-reference-artifact-${{ steps.reference-key.outputs.reference_key }}
@@ -346,7 +347,7 @@ jobs:
           if-no-files-found: error
 
       - name: Cleanup reference artifact
-        if: ${{ always() && steps.build_hpc.outcome == 'success' }}
+        if: ${{ always() }}
         shell: bash -eux {0}
         run: |
           rm -rf "${{ runner.temp }}/ectrans-reference-artifact"
