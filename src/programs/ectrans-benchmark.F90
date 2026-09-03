@@ -1313,7 +1313,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
   &                                   iters_checksums, &
-  &                                   cchecksums_path, lalloperm)
+  &                                   cchecksums_path, lalloperm, lpgp_on_gpu)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1431,8 +1431,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   end do
 
   if (lpgp_on_gpu .and. (ldump_values .or. ldump_checksums)) then
-    call parsing_failed("Invalid combination of arguments: --keep-pgp-arrays-on-device cannot be
-      used with --dump-values or --dump-checksums")
+    call parsing_failed("Invalid combination of arguments: --keep-pgp-arrays-on-device cannot be&
+      &used with --dump-values or --dump-checksums")
   end if
 
 end subroutine get_command_line_arguments
