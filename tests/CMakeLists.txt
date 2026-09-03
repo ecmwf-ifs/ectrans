@@ -82,6 +82,26 @@ add_subdirectory( trans/api )
 add_subdirectory( trans/adjoint )
 
 # --------------------------------------------------------------------------------------------------
+# Add field-view metadata test
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_CPU )
+  set( field_view_platform_tag "" )
+else()
+  set( field_view_platform_tag "gpu_" )
+endif()
+if( HAVE_DOUBLE_PRECISION )
+  set( field_view_precision dp )
+else()
+  set( field_view_precision sp )
+endif()
+
+ecbuild_add_test( TARGET ectrans_test_field_view
+  SOURCES trans/test_field_view.F90
+  LIBS ectrans_field_view_${field_view_platform_tag}${field_view_precision}
+  LINKER_LANGUAGE Fortran )
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans, using the benchmark program
 # This tests CPU and/or GPU versions, depending on which are enabled
 # --------------------------------------------------------------------------------------------------
