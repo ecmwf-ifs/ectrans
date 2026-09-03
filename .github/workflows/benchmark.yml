@@ -94,8 +94,6 @@ jobs:
             max_nodes: 8
             ntasks_per_node: 4
             cpus_per_task: 32
-            env_vars:
-              - CMAKE_GENERATOR=Ninja
 
     runs-on: [self-hosted, linux, hpc]
     env:
@@ -153,7 +151,7 @@ jobs:
 
             source $BASEDIR/ectrans-pr/package/bundle/arch/{{ arch }}/env.sh
 
-            {% for var in env_vars.split(',') %}
+            {% for var in env_vars.split(',') if var %}
               export {{ var }}
             {% endfor %}
 
@@ -176,10 +174,10 @@ jobs:
               exit 1
             fi
 
-            $BUNDLE/ectrans-bundle build --src-dir=$BASEDIR/source_pr \
+            $BUNDLE/ectrans-bundle build --ninja --src-dir=$BASEDIR/source_pr \
               --build-dir=$BASEDIR/build_pr --arch={{ arch }}
 
-            $BUNDLE/ectrans-bundle build --src-dir=$BASEDIR/source_develop \
+            $BUNDLE/ectrans-bundle build --ninja --src-dir=$BASEDIR/source_develop \
               --build-dir=$BASEDIR/build_develop --arch={{ arch }}
 
             # Provenance for the report step. Do not clean up the build trees
@@ -234,7 +232,7 @@ jobs:
 
             source $BASEDIR/ectrans-pr/package/bundle/arch/{{ arch }}/env.sh
 
-            {% for var in env_vars.split(',') %}
+            {% for var in env_vars.split(',') if var %}
               export {{ var }}
             {% endfor %}
 
