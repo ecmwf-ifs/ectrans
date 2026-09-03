@@ -690,9 +690,8 @@ do jstep = 1, iters+iters_warmup
     call inv_trans_field_api(kresol=1, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
       &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
-      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew, &
-      &                      kgptot = ngptot)
-    call synchost_rdonly_wrapped_fields(ywflds)
+      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
+      call synchost_rdonly_wrapped_fields(ywflds)
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
