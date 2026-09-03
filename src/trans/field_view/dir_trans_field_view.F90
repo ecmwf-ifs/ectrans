@@ -107,13 +107,13 @@ IF (SIZE(YDGPU) > 0) THEN
     CALL ABORT_TRANS("[DIR_TRANS_FIELD_VIEW] The vector arrays have inconsistent sizes: YDGPU, YDGPV, YDSPDIV, YDSPVOR")
   ENDIF
 
-  ! Convert list of spectral vector fields into a list of 2d FIELD_VIEW
+  ! Convert list of spectral vector fields into a list of 2d SPEC_VIEW
   IFLDSPVOR = LS_COUNT(YDSPVOR)
 
   ALLOCATE(YLSPVVOR(IFLDSPVOR))
   ALLOCATE(YLSPVDIV(IFLDSPVOR))
 
-  ! Convert list of grid-point vector fields into a list of 2d FIELD_VIEW
+  ! Convert list of grid-point vector fields into a list of 2d GRID_VIEW
   ALLOCATE(YLGVU(LG_COUNT(YDGPU)))
   ALLOCATE(YLGVV(LG_COUNT(YDGPV)))
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
