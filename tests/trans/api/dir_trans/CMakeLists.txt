@@ -27,3 +27,18 @@ generate_api_test_suite( SUITE_NAME dir_trans_test_suite
                          WILL_FAIL_LIST ${will_fail_list}
                          MPIxOMPS 0x1 0x8 1x1 1x8 2x1 2x8
                          BACKENDS cpu_sp cpu_dp gpu_sp gpu_dp )
+
+set( field_view_test_list
+  ectrans_test_trans_api_dir_trans_field_view_call_mode_1_scalar_1
+  ectrans_test_trans_api_dir_trans_field_view_call_mode_1_wind_1
+  ectrans_test_trans_api_dir_trans_field_view_call_mode_1_wind_1_scalar_1
+  ectrans_test_trans_api_dir_trans_field_view_call_mode_2_pgp3a_1
+  ectrans_test_trans_api_dir_trans_field_view_call_mode_2_pgp3b_1
+  ectrans_test_trans_api_dir_trans_field_view_call_mode_2_wind_1
+)
+
+generate_api_test_suite( SUITE_NAME dir_trans_field_view_test_suite
+                         TESTS ${field_view_test_list}
+                         WILL_FAIL_LIST ${will_fail_list}
+                         MPIxOMPS 0x1 0x8 1x1 1x8 2x1 2x8
+                         BACKENDS cpu_sp cpu_dp gpu_sp gpu_dp )
