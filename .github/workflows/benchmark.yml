@@ -16,9 +16,6 @@ on:
   pull_request_target:
     types: [labeled]
 
-env:
-  ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
-  CACHE_SUFFIX: v1        # Increase to force new cache to be created
 
 jobs:
   benchmark:
