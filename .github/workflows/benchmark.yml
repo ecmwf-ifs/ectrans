@@ -1,27 +1,159 @@
 name: benchmark
 
-# Placeholder. This file exists on the default branch only so the workflow is
-# registered and can be dispatched against a feature branch:
-#
-#   gh workflow run benchmark.yml --ref <branch> -f pr_number=<n>
-#
-# The real implementation (pull_request_target on the
-# 'approved-for-benchmarking' label, plus the HPC build and benchmark sweep)
-# replaces this once it has been validated that way.
-
+# Controls when the action will run
 on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: Pull request number to benchmark
-        required: true
-        type: number
+
+  # Trigger when a label is added to a pull request
+  pull_request_target:
+    types: [labeled]
+
+env:
+  ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
+  CACHE_SUFFIX: v1        # Increase to force new cache to be created
 
 jobs:
-  placeholder:
-    name: placeholder
-    runs-on: ubuntu-latest
+  benchmark:
+    name: benchmark
+    # Only run when the 'approved-for-benchmarking' label is added
+    if: ${{ github.event.label.name == 'approved-for-benchmarking' }}
+
+    strategy:
+      fail-fast: false    # false: try to complete all jobs
+
+      matrix:
+        name:
+          - ac-ops intel
+
+        include:
+          - name: ac-ops intel
+            site: ac-batch
+            troika_user_secret: HPC_CI_SSH_USER
+            arch: ecmwf/hpc2020/intel/2023.2.0/hpcx-openmpi/2.9.0
+            build_time_limit: 01:30:00
+            build_threads: 32
+            memory: 200G
+            extra_slurm_options: --qos=np
+            run_time_limit: 01:30:00
+            max_benchmark_nodes: 8
+            ntasks_per_node: 4
+            run_threads: 32
+            gpus_per_node: 0
+            node_sweep: [1, 2, 4, 8]
+            env_vars:
+              - CMAKE_GENERATOR=Ninja
+
+    runs-on: [self-hosted, linux, hpc]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WORKDIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], github.run_id, strategy.job-index, github.run_attempt) }}
     steps:
-      - run: |
-          echo "The benchmark workflow is not implemented on this branch."
-          echo "Dispatch it against the feature branch that implements it."
+      - name: Build ecTrans bundles
+        uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        with:
+          workdir: ${{ env.WORKDIR }}
+          site: ${{ matrix.site }}
+          troika_user: ${{ secrets[matrix.troika_user_secret] }}
+          sbatch_options: |
+            #SBATCH --time=${{ matrix.build_time_limit }}
+            #SBATCH --nodes=1
+            #SBATCH --ntasks=1
+            #SBATCH --cpus-per-task=${{ matrix.build_threads }}
+            #SBATCH --gpus-per-task=0
+            #SBATCH --mem=${{ matrix.memory }}
+            #SBATCH ${{ matrix.extra_slurm_options }}
+          template_data: |
+            arch: ${{ matrix.arch }}
+          template: |
+            # The PR branch (the proposed changes to benchmark)
+            PR_REPO=${{ github.event.pull_request.head.repo.full_name }}
+            PR_REF=${{ github.event.pull_request.head.ref }}
+            PR_SHA=${{ github.event.pull_request.head.sha }}
+
+            cleanup() {
+              rm -r $PR_REPO
+            }
+            error_trap() {
+              cleanup
+
+              echo "Finished: FAILURE"
+              exit 1
+            }
+
+            # The base branch the PR targets (the reference to benchmark against)
+            BASE_REPO=${{ github.repository }}
+            BASE_REF=${{ github.event.pull_request.base.ref }}
+
+            # Check out the PR branch so we use its bundle scripts/config
+            git clone ${{ github.server_url }}/$PR_REPO $PR_REPO
+            cd $PR_REPO
+            git checkout $PR_SHA
+
+            # Create the PR branch bundle
+            ECTRANS_BUNDLE_ECTRANS_GIT=${{ github.server_url }}/$PR_REPO \
+              ECTRANS_BUNDLE_ECTRANS_VERSION=$PR_REF \
+              ./package/bundle/ectrans-bundle create --bundle ./package/bundle/bundle.yml \
+              --src-dir=./package/bundle/source_pr
+
+            # Create the base branch bundle
+            ECTRANS_BUNDLE_ECTRANS_GIT=${{ github.server_url }}/$BASE_REPO \
+              ECTRANS_BUNDLE_ECTRANS_VERSION=$BASE_REF \
+              ./package/bundle/ectrans-bundle create --bundle ./package/bundle/bundle.yml \
+              --src-dir=./package/bundle/source_develop
+
+            ./package/bundle/ectrans-bundle build --src-dir=./package/bundle/source_pr \
+              --build-dir=./package/bundle/build_pr --arch={{ arch }}
+
+            ./package/bundle/ectrans-bundle build --src-dir=./package/bundle/source_develop \
+              --build-dir=./package/bundle/build_develop --arch={{ arch }}
+
+            cleanup
+
+      - name: Run benchmark sweep
+        uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        with:
+          workdir: ${{ env.WORKDIR }}
+          site: ${{ matrix.site }}
+          troika_user: ${{ secrets[matrix.troika_user_secret] }}
+          sbatch_options: |
+            #SBATCH --time=${{ matrix.run_time_limit }}
+            #SBATCH --nodes=${{ matrix.max_benchmark_nodes }}
+            #SBATCH --ntasks-per-node=${{ matrix.ntasks_per_node}}
+            #SBATCH --cpus-per-task=${{ matrix.run_threads }}
+            #SBATCH --gpus-per-node=${{ matrix.gpus_per_node }}
+            #SBATCH --mem=${{ matrix.memory }}
+            #SBATCH ${{ matrix.extra_slurm_options }}
+          template_data: |
+            arch: ${{ matrix.arch }}
+            node_sweep: ${{ toJSON(matrix.node_sweep) }}
+            ntasks_per_node: ${{ matrix.ntasks_per_node }}
+            cpus_per_task: ${{ matrix.run_threads }}
+          template: |
+            PR_REPO=${{ github.event.pull_request.head.repo.full_name }}
+
+            cleanup() {
+              rm -r $PR_REPO
+            }
+            error_trap() {
+              cleanup
+
+              echo "Finished: FAILURE"
+              exit 1
+            }
+
+            cd $PR_REPO
+            source ./package/bundle/build_pr/env.sh
+
+            {% for nodes in node_sweep %}
+              {% for run in ['develop', 'pr'] %}
+                outfile="stdout_{{ run }}_{{ nodes }}_cpu.txt"
+
+                # Run benchmark
+                srun --nodes={{ nodes }} --ntasks={{ nodes % ntasks_per_node }} \
+                  --ntasks-per-node={{ ntasks_per_node }} --cpus-per-task={{ cpus_per_task }} \
+                  ./package/bundle/build_{{ run }}/bin/ectrans-benchmark-cpu-sp > $outfile
+
+                # Extract timings from stdout
+              {% endfor %}
+            {% endfor %}
+
+            cleanup
