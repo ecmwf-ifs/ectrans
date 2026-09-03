@@ -16,6 +16,15 @@ on:
   pull_request_target:
     types: [labeled]
 
+  # Allow benchmarking a pull request on demand. Unlike pull_request_target,
+  # this runs the version of this file on the ref selected at dispatch time,
+  # which is what makes iterating on the templates below practical.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to benchmark
+        required: true
+        type: number
 
 jobs:
   benchmark:
