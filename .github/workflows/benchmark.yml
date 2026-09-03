@@ -27,10 +27,51 @@ on:
         type: number
 
 jobs:
+  pr-info:
+    name: PR information
+    # Gate both triggers here. Downstream jobs inherit the gate through `needs`,
+    # because a skipped job skips its dependents.
+    if: ${{ github.event_name == 'workflow_dispatch' ||
+            github.event.label.name == 'approved-for-benchmarking' }}
+    runs-on: ubuntu-latest
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      head_repo: ${{ steps.pr.outputs.head_repo }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      base_repo: ${{ steps.pr.outputs.base_repo }}
+      base_ref: ${{ steps.pr.outputs.base_ref }}
+      base_sha: ${{ steps.pr.outputs.base_sha }}
+    steps:
+      - name: Read pull request
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const number = Number('${{ inputs.pr_number || github.event.pull_request.number }}');
+            const { data } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: number,
+            });
+
+            // Everything downstream is pinned to these two commits. Resolving a
+            // branch name inside the Slurm job instead would mean the machine
+            // builds whatever the branch tip happens to be when the job leaves
+            // the queue, which is neither what the maintainer approved nor what
+            // the results would be attributed to.
+            core.setOutput('number', String(number));
+            core.setOutput('head_repo', data.head.repo.full_name);
+            core.setOutput('head_sha', data.head.sha);
+            core.setOutput('base_repo', `${context.repo.owner}/${context.repo.repo}`);
+            core.setOutput('base_ref', data.base.ref);
+            core.setOutput('base_sha', data.base.sha);
+
+            core.info(`PR #${number}`);
+            core.info(`  head: ${data.head.repo.full_name} @ ${data.head.sha}`);
+            core.info(`  base: ${context.repo.owner}/${context.repo.repo} @ ${data.base.sha} (${data.base.ref})`);
+
   benchmark:
-    name: benchmark
-    # Only run when the 'approved-for-benchmarking' label is added
-    if: ${{ github.event.label.name == 'approved-for-benchmarking' }}
+    name: benchmark (${{ matrix.name }})
+    needs: pr-info
 
     strategy:
       fail-fast: false    # false: try to complete all jobs
