@@ -249,6 +249,8 @@ jobs:
             {% set nlev = 137 %}
             {% set niter = 10 %}
 
+            {% set timing_section = 'Inverse-direct transforms' %}
+
             if [ "$SLURM_JOB_NUM_NODES" -ne {{ node_counts | max }} ]; then
               echo "FATAL: allocation has $SLURM_JOB_NUM_NODES nodes, sweep needs {{ node_counts | max }}"
               exit 1
@@ -269,9 +271,25 @@ jobs:
               fi
             done
 
+            # Read one "med  (s):" value out of a benchmark log, in ms.
+            extract_median_ms() {
+              [ -f "$1" ] || { echo NA; return 0; }
+              awk -v section="$2" '
+                $0 ~ "^[[:space:]]*" section "[[:space:]]*$" { inside = 1; next }
+                inside && /^[[:space:]]*med[[:space:]]+\(s\):/ {
+                  if ($NF ~ /^[0-9]*\.[0-9]+$/) printf "%.4f\n", $NF * 1000.0
+                  else print "NA"
+                  found = 1
+                  exit
+                }
+                END { if (!found) print "NA" }
+              ' "$1"
+            }
+
             failures=0
             echo "variant,nodes,ntasks,ntasks_per_node,cpus_per_task,truncation,precision,nfld,nlev,niter,logfile,exit_code" \
               > $RESULTS/runs.csv
+            echo "nodes,truncation,version,median_ms" > $RESULTS/results.csv
 
             {% for nodes in node_counts %}
               {% set ntasks = nodes * (ntasks_per_node | int) %}
@@ -303,10 +321,16 @@ jobs:
                 echo "{{ variant }},{{ nodes }},{{ ntasks }},{{ ntasks_per_node }},{{ cpus_per_task }},{{ truncation }},{{ precision }},{{ nfld }},{{ nlev }},{{ niter }},$logfile,$status" \
                   >> $RESULTS/runs.csv
 
+                median_ms=$(extract_median_ms "$RESULTS/$logfile" "{{ timing_section }}")
+                echo "  {{ timing_section }} med: $median_ms ms"
+                echo "{{ nodes }},{{ truncation }},{{ variant }},$median_ms" >> $RESULTS/results.csv
+
               {% endfor %}
             {% endfor %}
 
             cat $RESULTS/runs.csv
+            echo
+            cat $RESULTS/results.csv
 
             if [ "$failures" -ne 0 ]; then
               echo "$failures benchmark run(s) failed"
