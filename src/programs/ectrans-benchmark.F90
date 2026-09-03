@@ -194,6 +194,7 @@ type(fields_lists) :: ylf
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
+logical :: lpgp_on_gpu = .false.
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
@@ -241,7 +242,7 @@ call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, l
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
   &                             lpinning, lfield_api, icall_mode, ldump_checksums, iters_checksums, &
-  &                             cchecksums_path, lalloperm)
+  &                             cchecksums_path, lalloperm, lpgp_on_gpu)
 if (iters_checksums < 0) then
   if (iters_warmup > 0) then
     iters_checksums = iters_warmup
@@ -700,12 +701,13 @@ do jstep = 1, iters+iters_warmup
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
       &            kvsetuv=ivset, kvsetsc=ivsetsc, &
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
-      &            kproma=nproma)
+      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu)
   else
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
       &            pgp3a=zgp3a, pgp2=zgp2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
-      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
+      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
+      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu)
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
@@ -780,12 +782,14 @@ do jstep = 1, iters+iters_warmup
 #endif
   else if (icall_mode == 1) then
     call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
-      &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
+      &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma, &
+      &            lpgp_on_gpu=lpgp_on_gpu)
   else
     call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
       &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
       &            pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, &
-      &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
+      &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma, &
+      &            lpgp_on_gpu=lpgp_on_gpu)
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
@@ -1278,6 +1282,8 @@ subroutine print_help(unit)
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information"
   write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
    & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
+  write(nout, "(a)") "    --keep-pgp-arrays-on-device  Keep PGP arrays on the GPU (default = off;&
+   & cannot be enabled with --dump-values nor --dump-checksums)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
@@ -1308,7 +1314,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
   &                                   iters_checksums, &
-  &                                   cchecksums_path, lalloperm)
+  &                                   cchecksums_path, lalloperm, lpgp_on_gpu)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1346,6 +1352,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
 
   character(len=1024), intent(inout) :: cchecksums_path ! path to export checksum files
   logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
+  logical, intent(inout) :: lpgp_on_gpu                ! keep PGP arrays on the GPU
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
 
@@ -1416,12 +1423,18 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
             call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
       case('--deallocate-foubuf-temps'); lalloperm = .false.
+      case('--keep-pgp-arrays-on-device'); lpgp_on_gpu = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
     end select
     iarg = iarg + 1
   end do
+
+  if (lpgp_on_gpu .and. (ldump_values .or. ldump_checksums)) then
+    call parsing_failed("Invalid combination of arguments: --keep-pgp-arrays-on-device cannot be&
+      &used with --dump-values or --dump-checksums")
+  end if
 
 end subroutine get_command_line_arguments
 !===================================================================================================
