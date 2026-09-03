@@ -291,6 +291,10 @@ jobs:
               > $RESULTS/runs.csv
             echo "nodes,truncation,version,median_ms" > $RESULTS/results.csv
 
+            # Record which timing block results.csv reports, so the report job
+            # can label the table without duplicating the choice made above.
+            echo "timing_section={{ timing_section }}" >> $RESULTS/metadata.env
+
             {% for nodes in node_counts %}
               {% set ntasks = nodes * (ntasks_per_node | int) %}
               {% for variant in ['develop', 'pr'] %}
@@ -373,3 +377,83 @@ jobs:
         shell: bash -eux {0}
         run: |
           rm -rf "${{ runner.temp }}/ectrans-benchmark-results"
+
+  report:
+    name: report
+    # always() so a sweep with failed runs still gets reported; pr-info must
+    # have succeeded because the PR number to comment on comes from it. Waiting
+    # on the whole benchmark matrix means one comment covers every platform.
+    needs: [pr-info, benchmark]
+    if: ${{ always() && needs.pr-info.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      # No `ref` on purpose. Under pull_request_target this checks out the base
+      # branch, so a fork PR cannot alter the script that posts comments with a
+      # write token; under workflow_dispatch it checks out the dispatched ref,
+      # which is what you want while iterating. Do not "fix" this to head.sha.
+      - name: Checkout report tooling
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/tools
+
+      # continue-on-error: a totally failed build produces no artifact at all,
+      # and the report should still say so rather than failing silently.
+      - name: Download benchmark artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ectrans-benchmark-*
+          path: ${{ runner.temp }}/artifacts
+
+      - name: Render comparison
+        shell: bash -eux {0}
+        env:
+          BENCHMARK_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 .github/tools/benchmark-report.py \
+            "${{ runner.temp }}/artifacts" > "${{ runner.temp }}/body.md"
+          cat "${{ runner.temp }}/body.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update the comparison comment
+        uses: actions/github-script@v9
+        env:
+          BODY_FILE: ${{ runner.temp }}/body.md
+          PR_NUMBER: ${{ needs.pr-info.outputs.number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.BODY_FILE, 'utf8');
+            const marker = '<!-- ectrans-benchmark-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = Number(process.env.PR_NUMBER);
+
+            // Update in place rather than adding a comment per run, so
+            // re-benchmarking a PR does not bury the conversation.
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated ${existing.html_url}`);
+            } else {
+              const { data } = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+              core.info(`Created ${data.html_url}`);
+            }
