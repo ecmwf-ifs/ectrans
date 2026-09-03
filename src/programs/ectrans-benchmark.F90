@@ -1282,7 +1282,8 @@ subroutine print_help(unit)
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information"
   write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
    & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
-  write(nout, "(a)") "    --keep-pgp-arrays-on-device  Keep PGP arrays on the GPU (default = off; cannot be enabled with --dump-values nor --dump-checksums)"
+  write(nout, "(a)") "    --keep-pgp-arrays-on-device  Keep PGP arrays on the GPU (default = off;&
+   & cannot be enabled with --dump-values nor --dump-checksums)"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
