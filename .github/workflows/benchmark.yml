@@ -1,6 +1,15 @@
 name: benchmark
 
-# Controls when the action will run
+# Builds the pull request branch and its base branch side by side on HPC, runs a
+# node-count sweep of the ecTrans benchmark against both, and uploads the raw
+# results as an artifact.
+#
+# Triggered by a maintainer applying the 'approved-for-benchmarking' label, or
+# manually with a PR number. Note that under pull_request_target GitHub always
+# runs the copy of this file that is on the *base* branch, so changes here only
+# take effect once merged; use the workflow_dispatch trigger to test edits from
+# a feature branch.
+
 on:
 
   # Trigger when a label is added to a pull request
