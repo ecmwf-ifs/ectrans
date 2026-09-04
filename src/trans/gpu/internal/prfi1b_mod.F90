@@ -121,12 +121,12 @@ MODULE PRFI1B_MOD
               INM = IASM0+((R_NSMAX+2-JN)-KM)*2
               PIA(2*JFLD-1,JN+1,KMLOC) = PSPEC(JFLD,INM  )
               PIA(2*JFLD  ,JN+1,KMLOC) = PSPEC(JFLD,INM+1)
-          ELSEIF (JN <= R_NSMAX+4-KM) THEN
+          ELSEIF (JN <= R_NSMAX+3-KM) THEN
               PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
               PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
           ENDIF
+          ENDDO
         ENDDO
-      ENDDO
     ENDDO
 
   ENDIF
