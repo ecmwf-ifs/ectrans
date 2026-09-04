@@ -109,7 +109,7 @@ MODULE PRFI1B_MOD
 #endif
 #endif
     DO KMLOC=1,D_NUMP
-      DO JN=0,R_NSMAX+4
+      DO JN=0,R_NSMAX+3
         DO JFLD=1,KFIELDS
           KM = D_MYMS(KMLOC)
 
