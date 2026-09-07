@@ -11,24 +11,24 @@ aa6c   20 # zgp (443-462)            u-ew
 f74c   20 # zgp (463-482)            v-ew
 faeb  200 # zgp (483-682)            scalar-3d-ew
 faeb    1 # zgp (683)                scalar-2d-ew
-4e31   20 # zspvor (1-20)            vorticity
-2bc1   20 # zspdiv (1-20)            divergence
-4655   10 # zspscalar (1-10)         scalar-3d
-a0dd    1 # zspscalar (11)           scalar-2d
+b7d0   20 # zspvor (1-20)            vorticity
+6e63   20 # zspdiv (1-20)            divergence
+236e   10 # zspscalar (1-10)         scalar-3d
+6a52    1 # zspscalar (11)           scalar-2d
 # --------------------------------------------
 # Iteration 2
 # --------------------------------------------
-77f4   20 # zgp (1-20)               u
-70f4   20 # zgp (21-40)              v
-224d  200 # zgp (41-240)             scalar-3d
-224d    1 # zgp (241)                scalar-2d
-b03d  200 # zgp (242-441)            scalar-3d-ns
-b03d    1 # zgp (442)                scalar-2d-ns
-be57   20 # zgp (443-462)            u-ew
-9f37   20 # zgp (463-482)            v-ew
-95e3  200 # zgp (483-682)            scalar-3d-ew
-95e3    1 # zgp (683)                scalar-2d-ew
-1412   20 # zspvor (1-20)            vorticity
-dc83   20 # zspdiv (1-20)            divergence
-5aaf   10 # zspscalar (1-10)         scalar-3d
-0c62    1 # zspscalar (11)           scalar-2d
+c3d1   20 # zgp (1-20)               u
+9ed1   20 # zgp (21-40)              v
+36ab  200 # zgp (41-240)             scalar-3d
+36ab    1 # zgp (241)                scalar-2d
+d988  200 # zgp (242-441)            scalar-3d-ns
+d988    1 # zgp (442)                scalar-2d-ns
+aa84   20 # zgp (443-462)            u-ew
+fb64   20 # zgp (463-482)            v-ew
+cd9f  200 # zgp (483-682)            scalar-3d-ew
+cd9f    1 # zgp (683)                scalar-2d-ew
+b351   20 # zspvor (1-20)            vorticity
+47db   20 # zspdiv (1-20)            divergence
+46e1   10 # zspscalar (1-10)         scalar-3d
+d47e    1 # zspscalar (11)           scalar-2d
