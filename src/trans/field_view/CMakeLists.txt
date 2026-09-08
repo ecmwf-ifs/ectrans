@@ -18,7 +18,8 @@ function(generate_backend_sources)
   set(destination ${_PAR_DESTINATION})
   set(platform ${_PAR_PLATFORM})
 
-  file(MAKE_DIRECTORY ${destination}/field_view)
+  file( MAKE_DIRECTORY ${destination}/${platform} )
+  file( MAKE_DIRECTORY ${destination}/${platform}/internal )
 
   list( APPEND files
         ectrans_field_view_internal_util_mod.F90
@@ -61,6 +62,9 @@ set (platforms)
 if (HAVE_CPU)
     list(APPEND platforms cpu)
 endif()
+if (HAVE_GPU)
+    list(APPEND platforms gpu)
+endif()
 
 # We can't reliably pass GPU buffers directly to MPL routines yet, so for now we should still use raw MPI calls
 if( HAVE_GPU_AWARE_MPI )
@@ -69,10 +73,6 @@ else()
   set( USE_RAW_MPI 0)
 endif()
 
-if (HAVE_GPU)
-    list(APPEND platforms gpu)
-
-endif()
 foreach(platform ${platforms})
   foreach( prec dp sp)
     if( HAVE_${prec})
@@ -101,16 +101,12 @@ foreach(platform ${platforms})
           PUBLIC_LIBS      trans_${platform_tag}${prec} fiat parkind_${prec}
           PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/trans/field_view/include/ectrans>
                            $<INSTALL_INTERFACE:include/ectrans> 
-          PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
+          PRIVATE_LIBS         $<${HAVE_GPU}:${ECTRANS_GPU_HIP_LIBRARIES}>
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${USE_RAW_MPI}:MPI::MPI_Fortran>
-          PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
-                               $<${HAVE_CUTLASS}:USE_CUTLASS>
-                               $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
-                               $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
-                               $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
-                               $<${HAVE_ROCFFT}:USE_ROCFFT>
+          PRIVATE_DEFINITIONS  $<${HAVE_GPU}:${GPU_RUNTIME}GPU>
+                               $<${HAVE_GPU}:${GPU_OFFLOAD}GPU>
                                $<${HAVE_GPU_AWARE_MPI}:USE_GPU_AWARE_MPI>
                                $<${USE_RAW_MPI}:USE_RAW_MPI>
                              )
@@ -118,10 +114,6 @@ foreach(platform ${platforms})
           TARGET            ectrans_field_view_${platform_tag}${prec}
           MODULE_DIRECTORY  ${CMAKE_BINARY_DIR}/module/ectrans_field_view_${platform_tag}${prec}
           INSTALL_DIRECTORY module/ectrans_field_view_${platform_tag}${prec} )
-          if( HAVE_OMP )
-            ecbuild_debug("target_link_libraries( ectrans_field_view_${platform_tag}${prec} PRIVATE OpenMP::OpenMP_Fortran )")
-            target_link_libraries( ectrans_field_view_${platform_tag}${prec} PRIVATE OpenMP::OpenMP_Fortran )
-          endif()
     endif()
   endforeach()
 endforeach()
