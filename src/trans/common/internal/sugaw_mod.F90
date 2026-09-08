@@ -16,7 +16,7 @@ USE EC_PARKIND  ,ONLY : JPRD, JPIM
 
 USE TPM_CONSTANTS   ,ONLY : RA
 
-USE TPM_GEN         ,ONLY : NOUT
+USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
 USE GAWL_MOD        ,ONLY : GAWL
 USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE SUPOLF_MOD      ,ONLY : SUPOLF
@@ -133,7 +133,7 @@ FQ1(X) = -2._JPRH*X*REAL(KM**2,JPRH)/SQRT(1._JPRH-X**2)
 !*       1. Initialization + root + weight computation
 !           ------------------------------------------
 
-LLP2 = .FALSE.
+LLP2 = NPRINTLEV > 1
 INS2 = KDGL/2
 
 LLOLD=( KM == 0 .AND. KN == KDGL ).AND.PRESENT(PFN)
