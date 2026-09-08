@@ -7,14 +7,17 @@
 # nor does it submit to any jurisdiction.
 
 add_subdirectory( trans )
-add_subdirectory( programs )
+if(HAVE_FIELD_API)
+  add_subdirectory(field_api)
+endif()
+
 if( HAVE_TRANSI )
   add_subdirectory(transi)
 endif()
 add_subdirectory(etrans)
+add_subdirectory( programs )
+
+
 if(HAVE_ECTRANS4PY)
   add_subdirectory(ectrans4py)
-endif()
-if(HAVE_FIELD_API)
-  add_subdirectory(field_api)
 endif()

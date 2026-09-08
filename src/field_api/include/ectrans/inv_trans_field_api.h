@@ -16,7 +16,6 @@ SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
                              & YDFSCALAR, YDFU, YDFV,                        &
                              & YDFVOR,YDFDIV,                                &
                              & YDFSCALAR_NS, YDFSCALAR_EW, YDFU_EW, YDFV_EW, &
-                             & KGPTOT,                                       &
                              & FSPGL_PROC)
 
 !**** *INV_TRANS_FIELD_API* - Field API interface to inverse spectral transform
@@ -68,7 +67,6 @@ TYPE(FIELD_GRID),INTENT(IN), OPTIONAL  :: YDFSCALAR(:)                    ! GRID
 TYPE(FIELD_GRID),INTENT(IN), OPTIONAL  :: YDFU_EW(:),YDFV_EW(:)             ! GRID VECTOR FIELDS DERIVATIVES EW (OUT)
 TYPE(FIELD_GRID),INTENT(IN), OPTIONAL  :: YDFSCALAR_NS(:), YDFSCALAR_EW(:)  ! GRID SCALAR FIELDS DERIVATIVES EW AND NS (OUT)
 
-INTEGER(KIND=JPIM),   INTENT(IN)            :: KGPTOT
 PROCEDURE(FSPGL_INTF), POINTER, INTENT(IN), OPTIONAL  :: FSPGL_PROC
 
 END SUBROUTINE INV_TRANS_FIELD_API

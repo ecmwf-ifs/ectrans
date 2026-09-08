@@ -29,7 +29,7 @@ foreach(platform ${platforms})
           SOURCES          ectrans_field_api_mod.F90
                            dir_trans_field_api.F90
                            inv_trans_field_api.F90
-          PUBLIC_LIBS      trans_${platform_tag}${prec} field_api_${prec} fiat parkind_${prec}
+          PUBLIC_LIBS      ectrans_field_view_${platform_tag}${prec} field_api_${prec} fiat parkind_${prec}
           PUBLIC_INCLUDES  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/field_api/include/ectrans>
                            $<INSTALL_INTERFACE:include/ectrans> )
 
