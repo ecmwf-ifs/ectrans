@@ -23,8 +23,15 @@ foreach(platform ${platforms})
         set (platform_tag "")
       endif()
 
+      # Make sure the TYPE of ectrans_field_view respects HAVE_GPU_STATIC
+      set( LIBRARY_TYPE SHARED )
+      if( ${platform} MATCHES "gpu" AND HAVE_GPU_STATIC )
+        set( LIBRARY_TYPE STATIC )
+      endif()
+
       ecbuild_add_library(
           TARGET           ectrans_field_view_${platform_tag}${prec}
+          TYPE             ${LIBRARY_TYPE}
           LINKER_LANGUAGE  Fortran
           SOURCES          ectrans_field_view_mod.F90
                            ectrans_field_view_internal_util_mod.F90
