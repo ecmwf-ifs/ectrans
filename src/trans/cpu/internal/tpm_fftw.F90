@@ -445,30 +445,30 @@ ELSE
 ENDIF
 END SUBROUTINE COPY_PREEL_TO_ZFFT
 
-SUBROUTINE COPY_ZFFT_TO_PREEL(KLEN,KOFF,LD_TRANSPOSED,ZFFT,PREEL,PDIVISOR)
-!> @brief Copy a rank-2 FFT work array back into `PREEL`, optionally applying a divisor.
+SUBROUTINE COPY_ZFFT_TO_PREEL(KLEN,KOFF,LD_TRANSPOSED,ZFFT,PREEL,PSCALE)
+!> @brief Copy a rank-2 FFT work array back into `PREEL`, optionally applying a scale factor.
 !!
 !! @param[in] KLEN Number of values copied per field.
 !! @param[in] KOFF One-based offset of the transform segment inside `PREEL`.
 !! @param[in] LD_TRANSPOSED Selects `PREEL(point,field)` when true and `PREEL(field,point)` when false.
 !! @param[in] ZFFT Source rank-2 FFT work buffer.
 !! @param[inout] PREEL Destination work array.
-!! @param[in] PDIVISOR Optional divisor applied to each copied value when present.
+!! @param[in] PSCALE Optional scale factor applied to each copied value when present.
 IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN) :: KLEN
 INTEGER(KIND=JPIM),INTENT(IN) :: KOFF
 LOGICAL,INTENT(IN) :: LD_TRANSPOSED
 REAL(KIND=JPRB),INTENT(IN) :: ZFFT(:,:)
 REAL(KIND=JPRB),INTENT(INOUT) :: PREEL(:,:)
-REAL(KIND=JPRB), OPTIONAL,INTENT(IN) :: PDIVISOR
+REAL(KIND=JPRB), OPTIONAL,INTENT(IN) :: PSCALE
 
 INTEGER(KIND=JPIM) :: JJ,JF
 
 IF( LD_TRANSPOSED )THEN
-  IF (PRESENT(PDIVISOR)) THEN
+  IF (PRESENT(PSCALE)) THEN
      DO JF=1,SIZE(ZFFT,2)
        DO JJ=1,KLEN
-         PREEL(KOFF+JJ-1,JF)=ZFFT(JJ,JF)/PDIVISOR
+         PREEL(KOFF+JJ-1,JF)=ZFFT(JJ,JF)*PSCALE
        ENDDO
      ENDDO
   ELSE
@@ -479,10 +479,10 @@ IF( LD_TRANSPOSED )THEN
     ENDDO
   ENDIF
 ELSE
-  IF (PRESENT(PDIVISOR)) THEN
+  IF (PRESENT(PSCALE)) THEN
      DO JF=1,SIZE(ZFFT,2)
        DO JJ=1,KLEN
-         PREEL(JF,KOFF+JJ-1)=ZFFT(JJ,JF)/PDIVISOR
+         PREEL(JF,KOFF+JJ-1)=ZFFT(JJ,JF)*PSCALE
        ENDDO
      ENDDO
   ELSE
@@ -527,8 +527,8 @@ ENDIF
 END SUBROUTINE COPY_PREEL_JF_TO_ZFFT_1
 
 
-SUBROUTINE COPY_ZFFT_1_TO_PREEL_JF(KLEN,KOFF,LD_TRANSPOSED,ZFFT1,PREEL,KFIELD,PDIVISOR)
-!> @brief Copy one FFT work vector back into `PREEL`, optionally applying a divisor.
+SUBROUTINE COPY_ZFFT_1_TO_PREEL_JF(KLEN,KOFF,LD_TRANSPOSED,ZFFT1,PREEL,KFIELD,PSCALE)
+!> @brief Copy one FFT work vector back into `PREEL`, optionally applying a scale factor.
 !!
 !! @param[in] KLEN Number of values copied for the selected field.
 !! @param[in] KOFF One-based offset of the transform segment inside `PREEL`.
@@ -536,7 +536,7 @@ SUBROUTINE COPY_ZFFT_1_TO_PREEL_JF(KLEN,KOFF,LD_TRANSPOSED,ZFFT1,PREEL,KFIELD,PD
 !! @param[in] ZFFT1 Source rank-1 FFT work buffer.
 !! @param[inout] PREEL Destination work array.
 !! @param[in] KFIELD Field index updated in `PREEL`.
-!! @param[in] PDIVISOR Optional divisor applied to each copied value when present.
+!! @param[in] PSCALE Optional scale factor applied to each copied value when present.
 IMPLICIT NONE
 INTEGER(KIND=JPIM),INTENT(IN) :: KLEN
 INTEGER(KIND=JPIM),INTENT(IN) :: KOFF
@@ -544,14 +544,14 @@ LOGICAL,INTENT(IN) :: LD_TRANSPOSED
 REAL(KIND=JPRB),INTENT(IN) :: ZFFT1(:)
 REAL(KIND=JPRB),INTENT(INOUT) :: PREEL(:,:)
 INTEGER(KIND=JPIM),INTENT(IN) :: KFIELD
-REAL(KIND=JPRB), OPTIONAL,INTENT(IN) :: PDIVISOR
+REAL(KIND=JPRB), OPTIONAL,INTENT(IN) :: PSCALE
 
 INTEGER(KIND=JPIM) :: JJ
 
 IF( LD_TRANSPOSED )THEN
-  IF (PRESENT(PDIVISOR)) THEN
+  IF (PRESENT(PSCALE)) THEN
     DO JJ=1,KLEN
-      PREEL(KOFF+JJ-1,KFIELD)=ZFFT1(JJ)/PDIVISOR
+      PREEL(KOFF+JJ-1,KFIELD)=ZFFT1(JJ)*PSCALE
     ENDDO
   ELSE
     DO JJ=1,KLEN
@@ -559,9 +559,9 @@ IF( LD_TRANSPOSED )THEN
     ENDDO
   ENDIF
 ELSE
-  IF (PRESENT(PDIVISOR)) THEN
+  IF (PRESENT(PSCALE)) THEN
     DO JJ=1,KLEN
-      PREEL(KFIELD,KOFF+JJ-1)=ZFFT1(JJ)/PDIVISOR
+      PREEL(KFIELD,KOFF+JJ-1)=ZFFT1(JJ)*PSCALE
     ENDDO
   ELSE
     DO JJ=1,KLEN
@@ -605,7 +605,7 @@ TYPE(C_PTR) :: IPLAN
 INTEGER(KIND=JPIM) :: JF
 REAL(KIND=JPHOOK) :: ZHOOK_HANDLE, ZHOOK_HANDLE2
 INTEGER(KIND=JPIM) :: NBATCH
-REAL(KIND=JPRB) :: ZDIVISOR
+REAL(KIND=JPRB) :: ZSCALE
 
 IF (LHOOK) CALL DR_HOOK(CDNAME,0,ZHOOK_HANDLE)
 
@@ -641,9 +641,9 @@ IF( LD_ALL ) THEN
     IF (LHOOK) CALL DR_HOOK('FFTW_EXECUTE_DFT_R2C',0,ZHOOK_HANDLE2)
     CALL TPM_FFTW_EXECUTE_DFT_R2C(IPLAN,ZFFT,CFFT)
     IF (LHOOK) CALL DR_HOOK('FFTW_EXECUTE_DFT_R2C',1,ZHOOK_HANDLE2)
-    ! Real-to-complex transforms require scaling by 1/KRLEN, applied during copy back to PREEL to save cycles in the FFT work array.
-    ZDIVISOR = REAL(KRLEN,JPRB)
-    CALL COPY_ZFFT_TO_PREEL(KCLEN,KOFF,LD_TRANSPOSED,ZFFT,PREEL,PDIVISOR=ZDIVISOR)
+    ! Real-to-complex transforms require scaling by 1/KRLEN, which can be applied in the copy back to PREEL to save cycles in the FFT work array.
+    ZSCALE = 1.0_JPRB/REAL(KRLEN,JPRB)
+    CALL COPY_ZFFT_TO_PREEL(KCLEN,KOFF,LD_TRANSPOSED,ZFFT,PREEL,PSCALE=ZSCALE)
   ENDIF
 ELSE
   ! All fields are transformed separately in a loop over `JF`, so the work array is laid out as ZFFT(transform_point,1) and only one field is copied in and out at a time.
@@ -656,14 +656,14 @@ ELSE
       CALL COPY_ZFFT_1_TO_PREEL_JF(KRLEN,KOFF,LD_TRANSPOSED,ZFFT(:,1),PREEL,JF)
     ENDDO
   ELSE
-    ! Real-to-complex transforms require scaling by 1/KRLEN, applied during copy back to PREEL to save cycles in the FFT work array.
-    ZDIVISOR = REAL(KRLEN,JPRB)
+    ! Real-to-complex transforms require scaling by 1/KRLEN, which can be applied in the copy back to PREEL to save cycles in the FFT work array.
+    ZSCALE = 1.0_JPRB/REAL(KRLEN,JPRB)
     DO JF=1,KFIELDS
       CALL COPY_PREEL_JF_TO_ZFFT_1(KRLEN,KOFF,LD_TRANSPOSED,PREEL,JF,ZFFT(:,1))
       IF (LHOOK) CALL DR_HOOK('FFTW_EXECUTE_DFT_R2C',0,ZHOOK_HANDLE2)
       CALL TPM_FFTW_EXECUTE_DFT_R2C(IPLAN,ZFFT(:,1),CFFT(:,1))
       IF (LHOOK) CALL DR_HOOK('FFTW_EXECUTE_DFT_R2C',1,ZHOOK_HANDLE2)
-      CALL COPY_ZFFT_1_TO_PREEL_JF(KCLEN,KOFF,LD_TRANSPOSED,ZFFT(:,1),PREEL,JF,PDIVISOR=ZDIVISOR)
+      CALL COPY_ZFFT_1_TO_PREEL_JF(KCLEN,KOFF,LD_TRANSPOSED,ZFFT(:,1),PREEL,JF,PSCALE=ZSCALE)
     ENDDO
   ENDIF
 ENDIF

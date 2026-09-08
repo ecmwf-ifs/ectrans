@@ -1,0 +1,27 @@
+name: benchmark
+
+# Placeholder. This file exists on the default branch only so the workflow is
+# registered and can be dispatched against a feature branch:
+#
+#   gh workflow run benchmark.yml --ref <branch> -f pr_number=<n>
+#
+# The real implementation (pull_request_target on the
+# 'approved-for-benchmarking' label, plus the HPC build and benchmark sweep)
+# replaces this once it has been validated that way.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to benchmark
+        required: true
+        type: number
+
+jobs:
+  placeholder:
+    name: placeholder
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "The benchmark workflow is not implemented on this branch."
+          echo "Dispatch it against the feature branch that implements it."

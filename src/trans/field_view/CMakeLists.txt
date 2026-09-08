@@ -61,14 +61,16 @@ set (platforms)
 if (HAVE_CPU)
     list(APPEND platforms cpu)
 endif()
+
+# We can't reliably pass GPU buffers directly to MPL routines yet, so for now we should still use raw MPI calls
+if( HAVE_GPU_AWARE_MPI )
+  set( USE_RAW_MPI 1 )
+else()
+  set( USE_RAW_MPI 0)
+endif()
+
 if (HAVE_GPU)
     list(APPEND platforms gpu)
-    # We can't reliably pass GPU buffers directly to MPL routines yet, so for now we should still use raw MPI calls
-    if( HAVE_GPU_AWARE_MPI )
-      set( USE_RAW_MPI 1 )
-    else()
-      set( USE_RAW_MPI 0)
-    endif()
 
 endif()
 foreach(platform ${platforms})
@@ -79,12 +81,20 @@ foreach(platform ${platforms})
       else()
         set (platform_tag "")
       endif()
+
+      # Make sure the TYPE of ectrans_field_view respects HAVE_GPU_STATIC
+      set( LIBRARY_TYPE SHARED )
+      if( ${platform} MATCHES "gpu" AND HAVE_GPU_STATIC )
+        set( LIBRARY_TYPE STATIC )
+      endif()
+
       generate_backend_sources( BACKEND ${platform_tag}${prec}
         PLATFORM ${platform}
         OUTPUT ectrans_field_view_${platform_tag}${prec}_src
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/generated/ectrans_${platform_tag}${prec})
       ecbuild_add_library(
           TARGET           ectrans_field_view_${platform_tag}${prec}
+          TYPE             ${LIBRARY_TYPE}
           LINKER_LANGUAGE  Fortran
           SOURCES          ${ectrans_field_view_${platform_tag}${prec}_src}
                            ectrans_field_view_mod.F90
@@ -116,7 +126,7 @@ foreach(platform ${platforms})
   endforeach()
 endforeach()
 
-list( APPEND field_view_includes
+list( APPEND field_view_includes 
   include/ectrans/dir_trans_field_view.h
   include/ectrans/inv_trans_field_view.h
 )
