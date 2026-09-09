@@ -78,8 +78,6 @@ PROCEDURE (FSPGL_INTF), POINTER, OPTIONAL, INTENT(IN)  :: FSPGL_PROC
 
 ! Local variables
 
-LOGICAL :: LLFSPGL_PROC
-
 ! Lists of SPEC_VIEW and GRID_VIEW: intermediate representation of fields to facilitate copy to temporary arrays
 
 TYPE(SPEC_VIEW), ALLOCATABLE :: YLSPVVOR(:), YLSPVDIV(:)
@@ -103,7 +101,6 @@ LOGICAL                     :: LLSCDERS                               ! INDICATI
 LOGICAL                     :: LLVORGP                                ! INDICATING IF GRID-POINT VORTICITY IS REQ.
 LOGICAL                     :: LLDIVGP                                ! INDICATING IF GRID-POINT DIVERGENCE IS REQ.
 LOGICAL                     :: LLUVDER                                ! INDICATING IF E-W DERIVATIVES OF U AND V ARE REQ.
-INTEGER(KIND=JPIM)          :: NGPTOT
 INTEGER(KIND=JPIM)          :: NPROMA, NBLK
 REAL(KIND=JPHOOK)           :: ZHOOK_HANDLE
 

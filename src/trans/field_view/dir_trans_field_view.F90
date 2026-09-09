@@ -56,8 +56,6 @@ INTEGER(KIND=JPIM) :: IFLDSPVOR
 INTEGER(KIND=JPIM) :: IUVG
 INTEGER(KIND=JPIM) :: JFLD      ! Field counter
 
-INTEGER(KIND=JPIM) :: KFLEVG
-
 IF (LHOOK) CALL DR_HOOK('DIR_TRANS_FIELD_VIEW',0,ZHOOK_HANDLE)
 
 NPROMA              = GET_NPROMA(YDGPU, YDGPV, YDGPSCALAR)
@@ -86,7 +84,6 @@ IF (SIZE(YDGPU) > 0) THEN
   IF ((SIZE (YLGVU) /= SIZE (YLGVV)) .OR. (SIZE (YLSPVVOR) /= SIZE (YLSPVDIV))) THEN
     CALL ABORT_TRANS("[DIR_TRANS_FIELD_VIEW] inconsistent number of field_view for vectors")
   ENDIF
-  KFLEVG = SIZE (YLGVU) / SIZE (YDGPU)
   IUVG = SIZE(YDGPU)
 
   ! For LG we need the ivset of each grid point field,
