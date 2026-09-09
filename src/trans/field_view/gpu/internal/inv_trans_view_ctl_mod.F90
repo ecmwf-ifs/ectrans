@@ -103,7 +103,8 @@ CONTAINS
 
     IMPLICIT NONE
 
-    #include "fspgl_intf.h"
+#include "fspgl_intf.h"
+
     ! Declaration of arguments
     INTEGER(KIND=JPIM) :: KPROMA, KGPBLKS
     TYPE(SPEC_VIEW) :: YDSPVVOR(:), YDSPVDIV(:)
