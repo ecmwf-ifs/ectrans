@@ -2590,6 +2590,7 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
   type(DistSpec_t), intent(inout) :: args
   real(c_double), pointer :: RSPEC (:,:)   ! (NFLD,NSPEC2)
   real(c_double), pointer :: RSPECG(:,:)   ! (NFLD_from,NSPEC2G)
+  real(c_double), allocatable, target :: RSPEC_DUMMY(:,:)
   integer(c_int), pointer :: NFROM(:)
   type(Trans_t), pointer  :: trans
   integer :: jfld, isend
@@ -2621,12 +2622,16 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
     if ( NFROM(jfld) == trans%myproc ) isend = isend + 1
   enddo
 
-  if( .not. c_associated(args%rspec) ) then
+  if( trans%nspec2 == 0 ) then
+    allocate( RSPEC_DUMMY(max(1,args%nfld),1) )
+    RSPEC => RSPEC_DUMMY
+  else if( .not. c_associated(args%rspec) ) then
     call transi_error( "trans_distspec: ERROR: Array RSPEC was not allocated" )
     iret = TRANS_MISSING_ARG
     return
+  else
+    call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
   endif
-  call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
 
   if( isend > 0 ) then
     if( .not. c_associated(args%rspecg) ) then
@@ -2661,6 +2666,7 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
   type(GathSpec_t), intent(inout) :: args
   real(c_double), pointer :: RSPEC(:,:)    ! (NFLD,NSPEC2)
   real(c_double), pointer :: RSPECG(:,:)   ! (NFLD_to,NSPEC2G)
+  real(c_double), allocatable, target :: RSPEC_DUMMY(:,:)
   integer(c_int), pointer :: NTO(:)
   type(Trans_t), pointer  :: trans
   integer :: jfld, irecv
@@ -2692,12 +2698,16 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
     if ( NTO(jfld) == trans%myproc ) irecv = irecv + 1
   enddo
 
-  if( .not. c_associated(args%rspec) ) then
+  if( trans%nspec2 == 0 ) then
+    allocate( RSPEC_DUMMY(max(1,args%nfld),1) )
+    RSPEC => RSPEC_DUMMY
+  else if( .not. c_associated(args%rspec) ) then
     call transi_error( "trans_gathspec: ERROR: Array RSPEC was not allocated" )
     iret = TRANS_MISSING_ARG
     return
+  else
+    call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
   endif
-  call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
 
   if( irecv > 0 ) then
     if( .not. c_associated(args%rspecg) ) then
@@ -2817,6 +2827,7 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
   real(c_double), pointer :: RSPEC(:,:)     !(IF_GP,NGPTOTG)
   real(c_double), pointer :: RNORM(:)
   real(c_double), pointer :: RMET(:)
+  real(c_double), allocatable, target :: RSPEC_DUMMY(:,:)
   type(Trans_t), pointer  :: trans
 
   if( args%count > 0 ) then
@@ -2838,12 +2849,16 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
     return
   endif
 
-  if( .not. c_associated(args%rspec) ) then
+  if( trans%nspec2 == 0 ) then
+    allocate( RSPEC_DUMMY(max(1,args%nfld),1) )
+    RSPEC => RSPEC_DUMMY
+  else if( .not. c_associated(args%rspec) ) then
     call transi_error( "trans_specnorm: ERROR: Array RSPEC was not allocated" )
     iret = TRANS_MISSING_ARG
     return
+  else
+    call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
   endif
-  call c_f_pointer( args%rspec, RSPEC, (/args%nfld,trans%nspec2/) )
 
   if( .not. c_associated(args%rnorm) ) then
     call transi_error( "trans_specnorm: ERROR: Array RNORM was not allocated" )
