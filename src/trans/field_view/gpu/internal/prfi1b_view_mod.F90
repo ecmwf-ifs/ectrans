@@ -1,7 +1,7 @@
 ! (C) Copyright 2000- ECMWF.
 ! (C) Copyright 2000- Meteo-France.
 ! (C) Copyright 2022- NVIDIA.
-! 
+!
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
 ! In applying this licence, ECMWF does not waive the privileges and immunities
@@ -12,7 +12,7 @@
 MODULE PRFI1B_VIEW_MOD
   CONTAINS
   SUBROUTINE PRFI1B_VIEW(PIA,YDSP)
-  
+
   USE PARKIND1,        ONLY: JPIM, JPRB
   USE TPM_DIM,         ONLY: R
   USE TPM_DISTR,       ONLY: D
@@ -20,7 +20,7 @@ MODULE PRFI1B_VIEW_MOD
   USE ECTRANS_FIELD_VIEW_INTERNAL_UTIL_MOD, ONLY: SPEC_VIEW
 
   !**** *PRFI1* - Prepare spectral fields for inverse Legendre transform
-  
+
   !     Purpose.
   !     --------
   !        To extract the spectral fields for a specific zonal wavenumber
@@ -28,50 +28,50 @@ MODULE PRFI1B_VIEW_MOD
   !        tranforms.The ordering is from NSMAX to KM for better conditioning.
   !        Elements 1,2 and NLCM(KM)+1 are zeroed in preparation for computing
   !        u,v and derivatives in spectral space.
-  
+
   !**   Interface.
   !     ----------
   !        *CALL* *PRFI1B_VIEW(...)*
-  
+
   !        Explicit arguments :  KM     - zonal wavenumber
   !        ------------------    PIA    - spectral components for transform
   !                              YDSP    - spectral arrays
-    
-  
+
+
   !        Implicit arguments :  None.
   !        --------------------
-  
+
   !     Method.
   !     -------
-  
+
   !     Externals.   None.
   !     ----------
-  
+
   !     Reference.
   !     ----------
   !        ECMWF Research Department documentation of the IFS
-  
+
   !     Author.
   !     -------
   !        Mats Hamrud and Philippe Courtier  *ECMWF*
-  
+
   !     Modifications.
   !     --------------
   !        Original : 00-02-01 From PRFI1B_VIEW in IFS CY22R1
-  
+
   !     ------------------------------------------------------------------
-  
+
   IMPLICIT NONE
-    
+
   INTEGER(KIND=JPIM) :: KM,KMLOC
   TYPE(SPEC_VIEW), INTENT(IN) :: YDSP(:)
   REAL(KIND=JPRB)   ,INTENT(INOUT)  :: PIA(:,:,:)
-      
+
   !     LOCAL INTEGER SCALARS
   INTEGER(KIND=JPIM) :: INM, IR, JN, JFLD, IASM0, IFIELDS
-  
+
   !     ------------------------------------------------------------------
-  
+
   !*       1.    EXTRACT FIELDS FROM SPECTRAL ARRAYS.
   !              --------------------------------------------------
 
@@ -84,7 +84,7 @@ IFIELDS = SIZE(YDSP)
   !$OMP TARGET DATA MAP(PRESENT,ALLOC:D,D_NUMP,R,R_NSMAX,D_MYMS,D_NASM0,PIA,YDSP)
 #endif
 
-  
+
     !loop over wavenumber
 
 #ifdef OMPGPU
@@ -104,22 +104,20 @@ IFIELDS = SIZE(YDSP)
     DO JN=0,R_NSMAX+3
       DO JFLD=1,IFIELDS
         KM = D_MYMS(KMLOC)
-        IF (JN+1 <= UBOUND(PIA,2)) THEN
-            IF (JN <= 1) THEN
-                PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
-                PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
-            ELSEIF (JN <= R_NSMAX+2-KM) THEN
-                IASM0 = D_NASM0(KM)
-                INM = IASM0+((R_NSMAX+2-JN)-KM)*2
-                PIA(2*JFLD-1,JN+1,KMLOC) = YDSP(JFLD)%P(INM)
-                PIA(2*JFLD  ,JN+1,KMLOC) = YDSP(JFLD)%P(INM+1)
-            ELSEIF (JN <= R_NSMAX+3-KM) THEN
-                PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
-                PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
-            ENDIF
-         ENDIF
-        ENDDO
+        IF (JN <= 1) THEN
+          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+        ELSEIF (JN <= R_NSMAX+2-KM) THEN
+          IASM0 = D_NASM0(KM)
+          INM = IASM0+((R_NSMAX+2-JN)-KM)*2
+          PIA(2*JFLD-1,JN+1,KMLOC) = YDSP(JFLD)%P(INM)
+          PIA(2*JFLD  ,JN+1,KMLOC) = YDSP(JFLD)%P(INM+1)
+        ELSEIF (JN <= R_NSMAX+3-KM) THEN
+          PIA(2*JFLD-1,JN+1,KMLOC) = 0.0_JPRB
+          PIA(2*JFLD  ,JN+1,KMLOC) = 0.0_JPRB
+        ENDIF
       ENDDO
+    ENDDO
   ENDDO
 
 
