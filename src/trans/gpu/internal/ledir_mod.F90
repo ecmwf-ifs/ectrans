@@ -105,7 +105,7 @@ CONTAINS
     !      F. Vana  05-Mar-2015  Support for single precision
     !     ------------------------------------------------------------------
 
-    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NOUT, NCUR_RESOL
+    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NCUR_RESOL
     USE YOMHOOK,                     ONLY: LHOOK,   DR_HOOK, JPHOOK
     USE TPM_DIM,                     ONLY: R
     USE TPM_GEOMETRY,                ONLY: G
