@@ -73,7 +73,7 @@ CONTAINS
 
     !     ------------------------------------------------------------------
 
-    USE PARKIND_ECTRANS,        ONLY: JPRBT, JPRD, JPRB, JPIM
+    USE PARKIND_ECTRANS,        ONLY: JPRBT, JPRB, JPIM
     USE TPM_GEN,                ONLY: NPROMATR
     USE TPM_TRANS,              ONLY: GROWING_ALLOCATION
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, MAKE_BUFFERED_ALLOCATOR, &
