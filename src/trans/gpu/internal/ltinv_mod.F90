@@ -98,7 +98,6 @@ CONTAINS
     USE YOMHOOK,                ONLY: LHOOK, DR_HOOK, JPHOOK
     USE TPM_DIM,                ONLY: R
     USE TPM_TRANS,              ONLY: LDIVGP, LVORGP, NF_SC2, NF_SC3A, NF_SC3B, LSCDERS
-    USE TPM_GEOMETRY,           ONLY: G
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
     USE TPM_DISTR,              ONLY: D
     USE PRFI1B_MOD,             ONLY: PRFI1B
@@ -382,4 +381,3 @@ CONTAINS
     !     ------------------------------------------------------------------
   END SUBROUTINE LTINV
 END MODULE LTINV_MOD
-
