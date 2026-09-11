@@ -36,7 +36,9 @@ void test_trans_inquire() {
   // Check all keys are accepted
   TRANS_CHECK(trans_inquire(&trans, "numpp,ngptotl,nmyms,nasm0,npossp,nptrms,nallms,ndim0g,nvalue,"
     "nfrstlat,nlstlat,nptrlat,nptrfrstlat,nptrlstlat,nsta,nonl,nultpp,nptrls,nnmeng,rmu,rgw,rpnm,"
-    "npms,rlapin,ndglu"));
+    "npms,rlapin,ndglu,ndgl,nsmax,myproc,nproc,llam,nspec,nspec2,nspec2g,nspec2mx,nump,ngptot,"
+    "ngptotg,ngptotmx,n_regions_ns,n_regions_ew,my_region_ns,my_region_ew,nfrstloff,nptrfloff,"
+    "nprtrns,nlei3,nspolegl,nmsmax"));
 
   TRANS_CHECK(trans_delete(&trans));
   free(nloen);

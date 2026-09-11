@@ -34,9 +34,9 @@ void test_trans_inquire_lam() {
 
   // Check all keys are accepted
   TRANS_CHECK(trans_inquire(&trans, "numpp,ngptotl,nmyms,npossp,nptrms,nallms,ndim0g,nvalue,mvalue,"
-    "nfrstlat,nlstlat,nptrlat,nptrfrstlat,nptrlstlat,nsta,nonl,nultpp,nptrls,npms"));
-  // TRANS_CHECK(trans_inquire(&trans, "numpp,ngptotl,nmyms,npossp,nptrms,nallms,ndim0g,nvalue,mvalue,"
-  //   "nfrstlat,nlstlat,nptrlat,nptrfrstlat,nptrlstlat,nsta,nonl,nultpp,nptrls,rmu,rgw,rpnm,npms"));
+    "nfrstlat,nlstlat,nptrlat,nptrfrstlat,nptrlstlat,nsta,nonl,nultpp,nptrls,npms,ndgl,nsmax,"
+    "myproc,nproc,llam,nspec,nspec2,nspec2g,nspec2mx,nump,ngptot,ngptotg,ngptotmx,n_regions_ns,"
+    "n_regions_ew,my_region_ns,my_region_ew,nfrstloff,nptrfloff,nprtrns,nlei3,nspolegl,nmsmax"));
 
   TRANS_CHECK(trans_delete(&trans));
 }
