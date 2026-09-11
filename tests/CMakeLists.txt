@@ -783,4 +783,16 @@ if( HAVE_TRANSI )
     endif()
   endif()
 
+  ecbuild_add_test( TARGET ectrans_test_transi_trans_inquire
+    SOURCES   transi/transi_test_trans_inquire.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_trans_inquire_lam
+    SOURCES   transi/transi_test_trans_inquire_lam.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
 endif()
