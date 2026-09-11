@@ -29,7 +29,7 @@ void test_trans_inquire_lam() {
 
   TRANS_CHECK(trans_new(&trans));
   TRANS_CHECK(trans_set_resol_lam(&trans, nx, ny, dx, dy));
-  TRANS_CHECK(trans_set_trunc_lam(&trans, ty, tx));
+  TRANS_CHECK(trans_set_trunc_lam(&trans, tx, ty));
   TRANS_CHECK(trans_setup(&trans));
 
   // Check all keys are accepted
