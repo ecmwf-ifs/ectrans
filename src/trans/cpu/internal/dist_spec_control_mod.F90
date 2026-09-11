@@ -103,7 +103,6 @@ INTEGER(KIND=JPIM), POINTER :: ISORT (:)
 
 !     ------------------------------------------------------------------
 
-
 ! Compute help array for distribution
 
 IF (PRESENT (KSORT)) THEN

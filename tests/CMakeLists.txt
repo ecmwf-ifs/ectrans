@@ -768,6 +768,12 @@ if( HAVE_TRANSI )
         LINKER_LANGUAGE C
         ENVIRONMENT TRANS_USE_MPI=1 )
     endif()
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test
+      MPI 4 # > 3 needed to make this test result in zero-sized local spectra
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=1 )
   endif()
 
   if( HAVE_ETRANS_GPU )
