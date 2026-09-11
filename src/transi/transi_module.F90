@@ -1326,7 +1326,6 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
       elseif( var == "nvalue" ) then
         call allocate_ptr( trans%nvalue, trans%nspec2, int1 )
         call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
-      call TRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
 
       elseif( var == "nfrstlat" ) then
         call allocate_ptr( trans%nfrstlat, trans%n_regions_NS, int1 )
@@ -1460,7 +1459,6 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
 
       elseif( var == "nvalue" ) then
         call allocate_ptr( trans%nvalue, trans%nspec2, int1 )
-        call ETRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
         call ETRANS_INQ( KRESOL=trans%handle,  KNVALUE=int1 )
 
       elseif( var == "mvalue" ) then
