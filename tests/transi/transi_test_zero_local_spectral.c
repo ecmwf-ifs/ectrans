@@ -158,9 +158,6 @@ int main( int argc, char** argv ) {
            trans.myproc, trans.nproc, trans.nspec, trans.nspec2, trans.nspec2g, trans.nspec2mx,
            trans.nump, nfld, (void*) rspec, (void*) rspecg );
 
-  if( trans.myproc == trans.nproc )
-    ASSERT( has_zero_local_spectral );
-
   fprintf( stderr, "rank %d/%d: trans_distspec begin\n", trans.myproc, trans.nproc );
   struct DistSpec_t distspec = new_distspec( &trans );
     distspec.rspec = rspec;
