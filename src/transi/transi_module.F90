@@ -1490,18 +1490,6 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
         call allocate_ptr( trans%nptrls, trans%nprtrns, int1 )
         call ETRANS_INQ( KRESOL=trans%handle,  KPTRLS=int1 )
 
-      elseif( var == "rmu" ) then
-        call allocate_ptr( trans%rmu, trans%ndgl, double1 )
-        call ETRANS_INQ( KRESOL=trans%handle,  PMU=double1 )
-
-      elseif( var == "rgw" ) then
-        call allocate_ptr( trans%rgw, trans%ndgl, double1 )
-        call ETRANS_INQ( KRESOL=trans%handle,  PGW=double1 )
-
-      elseif( var == "rpnm" ) then
-        call allocate_ptr( trans%rpnm, trans%nlei3, trans%nspolegl, double2 )
-        call ETRANS_INQ( KRESOL=trans%handle,  PRPNM=double2 )
-
       elseif( var == "npms" ) then
         call allocate_ptr( trans%npms, trans%nsmax+1, int1 )
         call ETRANS_INQ( KRESOL=trans%handle,  KPMS=int1 )
