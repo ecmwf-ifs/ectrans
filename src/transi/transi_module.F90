@@ -1450,11 +1450,11 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
         call ETRANS_INQ( KRESOL=trans%handle,  KPTRMS=int1 )
 
       elseif( var == "nallms" ) then
-        call allocate_ptr( trans%nallms, trans%nsmax+1, int1 )
+        call allocate_ptr( trans%nallms, trans%nmsmax+1, int1 )
         call ETRANS_INQ( KRESOL=trans%handle,  KALLMS=int1 )
 
       elseif( var == "ndim0g" ) then
-        call allocate_ptr( trans%ndim0g, trans%nsmax+1, int1 )
+        call allocate_ptr( trans%ndim0g, trans%nmsmax+1, int1 )
         call ETRANS_INQ( KRESOL=trans%handle,  KDIM0G=int1 )
 
       elseif( var == "nvalue" ) then
