@@ -1401,8 +1401,30 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
         call allocate_ptr( trans%ndglu, trans%nsmax+1, int1 )
         call TRANS_INQ( KRESOL=trans%handle,  KDGLU=int1 )
 
-      else
-        write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
+      elseif(     var /= "ndgl"         &
+        &   .and. var /= "nsmax"        &
+        &   .and. var /= "myproc"       &
+        &   .and. var /= "nproc"        &
+        &   .and. var /= "llam"         &
+        &   .and. var /= "nspec"        &
+        &   .and. var /= "nspec2"       &
+        &   .and. var /= "nspec2g"      &
+        &   .and. var /= "nspec2mx"     &
+        &   .and. var /= "nump"         &
+        &   .and. var /= "ngptot"       &
+        &   .and. var /= "ngptotg"      &
+        &   .and. var /= "ngptotmx"     &
+        &   .and. var /= "n_regions_ns" &
+        &   .and. var /= "n_regions_ew" &
+        &   .and. var /= "my_region_ns" &
+        &   .and. var /= "my_region_ew" &
+        &   .and. var /= "nfrstloff"    &
+        &   .and. var /= "nptrfloff"    &
+        &   .and. var /= "nprtrns"      &
+        &   .and. var /= "nlei3"        &
+        &   .and. var /= "nspolegl"     &
+        &   .and. var /= "nmsmax"       ) then
+        write(error_unit,*) "trans_inquire: ERROR: unrecognized variable ", var
         iret = TRANS_UNRECOGNIZED_ARG
         return
       endif
@@ -1494,8 +1516,30 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
         call allocate_ptr( trans%npms, trans%nsmax+1, int1 )
         call ETRANS_INQ( KRESOL=trans%handle,  KPMS=int1 )
 
-      else
-        write(error_unit,*) "trans_inqure: ERROR: unrecognized variable ", var
+      elseif(     var /= "ndgl"         &
+        &   .and. var /= "nsmax"        &
+        &   .and. var /= "myproc"       &
+        &   .and. var /= "nproc"        &
+        &   .and. var /= "llam"         &
+        &   .and. var /= "nspec"        &
+        &   .and. var /= "nspec2"       &
+        &   .and. var /= "nspec2g"      &
+        &   .and. var /= "nspec2mx"     &
+        &   .and. var /= "nump"         &
+        &   .and. var /= "ngptot"       &
+        &   .and. var /= "ngptotg"      &
+        &   .and. var /= "ngptotmx"     &
+        &   .and. var /= "n_regions_ns" &
+        &   .and. var /= "n_regions_ew" &
+        &   .and. var /= "my_region_ns" &
+        &   .and. var /= "my_region_ew" &
+        &   .and. var /= "nfrstloff"    &
+        &   .and. var /= "nptrfloff"    &
+        &   .and. var /= "nprtrns"      &
+        &   .and. var /= "nlei3"        &
+        &   .and. var /= "nspolegl"     &
+        &   .and. var /= "nmsmax"       ) then
+        write(error_unit,*) "trans_inquire: ERROR: unrecognized variable ", var
         iret = TRANS_UNRECOGNIZED_ARG
         return
       endif
