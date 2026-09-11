@@ -111,6 +111,7 @@ TYPE, BIND(C) :: FIELD_VIEW
   ! IVSET
   TYPE(C_PTR)    :: IVSET ! Value indexing is specified by IVSET_BASE
   INTEGER(C_INT) :: IVSET_SIZE
+  INTEGER(C_INT) :: IVSET_DIM ! C ORDERING; -1 when IVSET does not index distribution array dimension
   INTEGER(C_INT) :: IVSET_BASE ! 0 for zero-based values, 1 for one-based values
 
   ! NAME
