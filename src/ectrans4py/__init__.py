@@ -3,7 +3,8 @@
 """
 ectrans4py:
 
-A Python interface to spectral transforms from ecTrans, using cTypesForFortran for the Fortran/Python binding.
+A Python interface to spectral transforms from ecTrans, using cTypesForFortran for the
+Fortran/Python binding.
 
 Two interfaces are provided, sharing one geometry inquiry (``trans_inq4py``) and
 one set of Legendre assets (``get_legendre_assets``):
@@ -62,8 +63,11 @@ for _p in ["dp", "sp"]:
         _prec = _p
         break
 else:
-    msg = f'libectrans4py_{{dp/sp}}.{platform_ext} was not found in any of potential locations: {str(lpath)}.'
-    msg += 'You can specify a different location using env var LD_LIBRARY_PATH'
+    msg = (
+        f'libectrans4py_{{dp/sp}}.{platform_ext} was not found in any of '
+        f'potential locations: {str(lpath)}. '
+        f'You can specify a different location using env var LD_LIBRARY_PATH'
+    )
     raise FileNotFoundError(msg)
 
 # Floating-point type of the field data (spectral / grid-point) crossing the
@@ -116,7 +120,8 @@ def ectrans_version():
 def get_legendre_assets(KSIZEJ, KTRUNC, KSLOEN, KSPOLEGL, KLOEN, KNUMMAXRESOL):
     """
     Fetch arrays relevant for performing the Legendre transform.
-    KNMENG and PGW are specified across the full globe, pole to pole. PRPNM is specified across the Northern hemisphere only.
+    KNMENG and PGW are specified across the full globe, pole to pole. PRPNM is specified across the
+    Northern hemisphere only.
 
     Args:\n
     1) KSIZEJ: number of latitudes in grid-point space
@@ -620,7 +625,8 @@ def mpl_end4py():
 @ctypesFF()
 @addReturnCode
 def setup_trans0_4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF):
-    """Parallel resolution-independent setup (processor grid). Returns (k_regions_ns, k_regions_ew)."""
+    """Parallel resolution-independent setup (processor grid).
+    Returns (k_regions_ns, k_regions_ew)."""
     return ([KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF],
             [(np.int64, None, IN),
              (np.int64, None, IN),
