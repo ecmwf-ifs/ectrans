@@ -648,9 +648,9 @@ CONTAINS
     IR=0
 
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_PTR(ZCOMBUFR,ZCOMBUFS)
-#endif
+    ! Under OMPGPU these buffers come from the growing allocator, which hands out device
+    ! pointers directly (see GROWING_ALLOCATOR_MOD), so they can go straight to GPU-aware
+    ! MPI; a USE_DEVICE_ADDR region would only map and re-copy their descriptors.
 #ifdef ACCGPU
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFR,ZCOMBUFS)
 #endif
@@ -782,9 +782,6 @@ CONTAINS
 #ifdef USE_GPU_AWARE_MPI
 #ifdef ACCGPU
     !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
 #endif
 #else
 #ifdef OMPGPU
