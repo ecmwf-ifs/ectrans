@@ -25,8 +25,10 @@ NFLD = 20
 # Shared transform geometry, populated once by setUpModule
 context = SimpleNamespace()
 
+
 def _from_which_rank(rank, nfld):
     return np.ones(nfld, dtype=np.int64)
+
 
 def _initialise_global_spectral_field(rank, nfld, num_spec2_glob):
     # Only rank 0 will have non-zero, meaningful data in the global spectral field
@@ -35,10 +37,12 @@ def _initialise_global_spectral_field(rank, nfld, num_spec2_glob):
         global_spectral_field[:, 0] = 1.0 # (m = 0, n = 0) real part is 1.0
     return global_spectral_field
 
+
 def _initialise_local_spectral_field(rank, nfld, num_spec2_glob, num_spec2_loc):
     global_spectral_field = _initialise_global_spectral_field(rank, nfld, num_spec2_glob)
     return ectrans4py.dist_spec4py(num_spec2_glob, num_spec2_loc, nfld,
                                    _from_which_rank(rank, nfld), global_spectral_field)
+
 
 def setUpModule():
     system = platform.system()
@@ -75,6 +79,7 @@ def setUpModule():
     context.num_spec2_loc = num_spec2_loc
     context.num_grid_points_glob = num_grid_points_glob
     context.num_spec2_glob = num_spec2_glob
+
 
 def tearDownModule():
     ectrans4py.mpl_end4py()
