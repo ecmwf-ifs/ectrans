@@ -10,8 +10,11 @@ from unittest import TestCase
 import ectrans4py
 import platform
 import numpy as np
-from mpi4py import MPI
+import pytest
 from types import SimpleNamespace
+
+mpi4py = pytest.importorskip("mpi4py")
+from mpi4py import MPI
 
 TRUNCATION = 79
 NUM_LATS = 2 * (TRUNCATION + 1)
