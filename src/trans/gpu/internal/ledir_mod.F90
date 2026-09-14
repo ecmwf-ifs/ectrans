@@ -173,9 +173,11 @@ CONTAINS
                        IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
 
 #ifdef OMPGPU
+    ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
+    ! walk and re-copy every one of its allocatable component descriptors on region entry.
     !$OMP TARGET DATA &
     !$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:ZINPS,ZINPA,ZOUT,ZINPS0,ZINPA0,ZOUT0) &
-    !$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:D,D_MYMS,D_NUMP,R,R_NTMAX,R_NSMAX) &
+    !$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:D_MYMS,D_NUMP,R_NTMAX,R_NSMAX) &
     !$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:ZAA,ZAS,POA1,D_OFFSETS_GEMM1,D_OFFSETS_GEMM2)
 #endif
 #ifdef ACCGPU

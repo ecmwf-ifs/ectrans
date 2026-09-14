@@ -83,8 +83,10 @@ INTEGER(KIND=JPIM) :: J, JN, JI, IR, II
 ASSOCIATE(D_NUMP=>D%NUMP, R_NSMAX=>R%NSMAX, D_MYMS=>D%MYMS)
 
 #ifdef OMPGPU
+! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
+! walk and re-copy every one of its allocatable component descriptors on region entry.
 !$OMP TARGET DATA &
-!$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:R,R_NSMAX,D,D_MYMS) &
+!$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:R_NSMAX,D_MYMS) &
 !$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NUMP,PEPSNM,PF,PNSD)
 #endif
 #ifdef ACCGPU

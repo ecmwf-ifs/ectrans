@@ -94,8 +94,10 @@ ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NSMAX=>R%NSMAX, F_RLAPIN=>F%RLAPIN)
 !$ACC&      PRESENT(PU, PV)
 #endif
 #ifdef OMPGPU
+! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
+! walk and re-copy every one of its allocatable component descriptors on region entry.
 !$OMP TARGET DATA                                                   &
-!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:R,R_NSMAX,D,D_MYMS,D_NUMP,F,F_RLAPIN) &
+!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:R_NSMAX,D_MYMS,D_NUMP,F_RLAPIN) &
 !$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:PEPSNM, PVOR, PDIV)                   &
 !$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:PU, PV)
 #endif

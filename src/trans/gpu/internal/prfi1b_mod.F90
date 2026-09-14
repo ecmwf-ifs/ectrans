@@ -84,7 +84,9 @@ MODULE PRFI1B_MOD
   !$ACC DATA PRESENT(D,D_NUMP,R,R_NSMAX,D_MYMS,D_NASM0,PIA,PSPEC) ASYNC(1)
 #endif
 #ifdef OMPGPU
-  !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D,D_NUMP,R,R_NSMAX,D_MYMS,D_NASM0,PIA,PSPEC)
+  ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
+  ! walk and re-copy every one of its allocatable component descriptors on region entry.
+  !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NUMP,R_NSMAX,D_MYMS,D_NASM0,PIA,PSPEC)
 #endif
 
   IF(PRESENT(KFLDPTR)) THEN
