@@ -15,6 +15,7 @@ rather than duplicating the git URLs/versions). scikit-build-core is then
 pointed at the generated bundle superbuild via ``cmake.source-dir``.
 """
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -26,14 +27,23 @@ _BUNDLE_SOURCE = _BUNDLE_DIR / "source"
 
 
 def _ensure_bundle_sources():
-    """Clone ecbuild/fiat via ectrans-bundle if they are not already present."""
-    if (_BUNDLE_SOURCE / "ecbuild").is_dir() and (_BUNDLE_SOURCE / "fiat").is_dir():
-        return
-    subprocess.run(
-        ["./ectrans-bundle", "create"],
-        cwd=_BUNDLE_DIR,
-        check=True,
-    )
+    """Clone ecbuild/fiat via ectrans-bundle and point the ectrans project at this checkout."""
+    if not ((_BUNDLE_SOURCE / "ecbuild").is_dir() and (_BUNDLE_SOURCE / "fiat").is_dir()):
+        subprocess.run(
+            ["./ectrans-bundle", "create"],
+            cwd=_BUNDLE_DIR,
+            check=True,
+        )
+
+    # bundle.yml uses `dir: $PWD` for ectrans, but $PWD resolves to the wrapper
+    # script's directory when create runs here, not this repo. Point the symlink
+    # at the actual checkout so the superbuild's add_subdirectory(ectrans) works.
+    ectrans_link = _BUNDLE_SOURCE / "ectrans"
+    if ectrans_link.is_symlink() or not ectrans_link.exists():
+        if ectrans_link.is_symlink():
+            ectrans_link.unlink()
+        os.symlink(_ROOT, ectrans_link)
+
 
 
 def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
