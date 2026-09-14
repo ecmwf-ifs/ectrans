@@ -28,22 +28,28 @@ NFLD = 20
 context = SimpleNamespace()
 
 
+def _approx_eq(a, b, tol=1.0e-4):
+    return np.all(np.abs(a - b) <= tol)
+
+
 def _from_which_rank(rank, nfld):
     return np.ones(nfld, dtype=np.int64)
 
 
 def _initialise_global_spectral_field(rank, nfld, num_spec2_glob):
     # Only rank 0 will have non-zero, meaningful data in the global spectral field
-    global_spectral_field = np.zeros((nfld, num_spec2_glob), dtype=ectrans4py._REAL)
+    spectral_field_glob = np.zeros((nfld, num_spec2_glob), dtype=ectrans4py._REAL)
     if rank == 0:
-        global_spectral_field[:, 0] = 1.0 # (m = 0, n = 0) real part is 1.0
-    return global_spectral_field
+        spectral_field_glob[:, 0] = 1.0 # (m = 0, n = 0) real part is 1.0
+    return spectral_field_glob
+
 
 
 def _initialise_local_spectral_field(rank, nfld, num_spec2_glob, num_spec2_loc):
-    global_spectral_field = _initialise_global_spectral_field(rank, nfld, num_spec2_glob)
+    spectral_field_glob = _initialise_global_spectral_field(rank, nfld, num_spec2_glob)
     return ectrans4py.dist_spec4py(num_spec2_glob, num_spec2_loc, nfld,
-                                   _from_which_rank(rank, nfld), global_spectral_field)
+                                   _from_which_rank(rank, nfld), spectral_field_glob)
+
 
 
 def setUpModule():
@@ -72,8 +78,6 @@ def setUpModule():
     (num_grid_points_loc, _, num_spec2_loc, num_grid_points_glob, num_spec2_glob, _, _, _, _) = \
         ectrans4py.trans_inq4py(kresol, NUM_LATS, 0, 0, np.array([], dtype=np.int64), 0)
 
-    print(f"num_grid_points_loc: {num_grid_points_loc}, num_spec2_loc: {num_spec2_loc}, num_grid_points_glob: {num_grid_points_glob}, num_spec2_glob: {num_spec2_glob}")
-
     context.my_rank = my_rank
     context.n_rank = n_rank
     context.kresol = kresol
@@ -89,18 +93,19 @@ def tearDownModule():
 
 class TestInverse(TestCase):
     def test_scalar(self):
-        local_spectral_field = _initialise_local_spectral_field(context.my_rank, NFLD,
-                                                               context.num_spec2_glob,
-                                                               context.num_spec2_loc)
-        gridded_local = ectrans4py.inv_trans_scalar_dist4py(context.num_spec2_loc,
-                                                            context.num_grid_points_loc, NFLD, local_spectral_field)
-        gridded_glob = ectrans4py.gath_grid4py(context.num_grid_points_glob,
-                                               context.num_grid_points_loc, NFLD,
-                                               _from_which_rank(context.my_rank, NFLD),
-                                               gridded_local)
+        spectral_field_loc = _initialise_local_spectral_field(context.my_rank, NFLD,
+                                                              context.num_spec2_glob,
+                                                              context.num_spec2_loc)
+        gridded_field_loc = ectrans4py.inv_trans_scalar_dist4py(context.num_spec2_loc,
+                                                                context.num_grid_points_loc, NFLD,
+                                                                spectral_field_loc)
+        gridded_field_glob = ectrans4py.gath_grid4py(context.num_grid_points_glob,
+                                                     context.num_grid_points_loc, NFLD,
+                                                     _from_which_rank(context.my_rank, NFLD),
+                                                     gridded_field_loc)
+
         if context.my_rank == 0:
-            range_val = float(np.max(gridded_glob) - np.min(gridded_glob))
-            print(range_val)
+            range_val = float(np.max(gridded_field_glob) - np.min(gridded_field_glob))
             assert range_val <= 1.0e-4
 
     def test_scalar_ders(self):
@@ -109,12 +114,32 @@ class TestInverse(TestCase):
     def test_uv(self):
         assert True
 
+
 class TestDirect(TestCase):
     def test_scalar(self):
-        assert True
+        gridded_field_glob = np.ones((NFLD, context.num_grid_points_glob), dtype=ectrans4py._REAL)
+
+        gridded_field_loc = ectrans4py.dist_grid4py(context.num_grid_points_glob,
+                                                    context.num_grid_points_loc, NFLD,
+                                                    _from_which_rank(context.my_rank, NFLD),
+                                                    gridded_field_glob)
+
+        spectral_field_loc = ectrans4py.dir_trans_scalar_dist4py(context.num_spec2_loc,
+                                                                 context.num_grid_points_loc, NFLD,
+                                                                 gridded_field_loc)
+
+        spectral_field_glob = ectrans4py.gath_spec4py(context.num_spec2_glob,
+                                                      context.num_spec2_loc, NFLD,
+                                                      _from_which_rank(context.my_rank, NFLD),
+                                                      spectral_field_loc)
+
+        if context.my_rank == 0:
+            assert _approx_eq(spectral_field_glob[:,0], 1.0)
+            assert _approx_eq(spectral_field_glob[:,1:], 0.0)
 
     def test_uv(self):
         assert True
+
 
 class TestRoundTrip(TestCase):
     def test_scalar(self):
@@ -123,12 +148,14 @@ class TestRoundTrip(TestCase):
     def test_uv(self):
         assert True
 
+
 class TestDistributeGather(TestCase):
     def test_dist_spec(self):
         assert True
 
     def test_dist_grid(self):
         assert True
+
 
 class TestNorm(TestCase):
     def test_specnorm(self):
