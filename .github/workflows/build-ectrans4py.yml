@@ -151,9 +151,19 @@ jobs:
           exit 1
         fi
 
-    - name: Test ectrans4py
+    - name: Prepare environment for testing
+      run:  |
+        . venv/bin/activate
+        pip install pytest mpi4py
+
+    - name: Run ectrans4py serial tests
       run:  |
         . venv/bin/activate
         cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
-        pip install pytest
-        python -m pytest
+        python -m pytest -k test_ectrans4py_serial
+
+    - name: Run ectrans4py parallel tests with MPI
+      run:  |
+        . venv/bin/activate
+        cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
+        mpirun -np ${{ matrix.n_rank }} python -m pytest -k test_ectrans4py_parallel
