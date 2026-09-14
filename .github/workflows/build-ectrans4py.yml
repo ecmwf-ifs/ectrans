@@ -120,6 +120,7 @@ jobs:
           ${ECTRANS_TOOLS}/install-mpi.sh --mpi openmpi --prefix  ${DEPS_DIR}/openmpi
         [ -f ${DEPS_DIR}/openmpi/env.sh ] && source ${DEPS_DIR}/openmpi/env.sh
         [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
+        [ -z ${MPI_HOME+x} ] || echo "${MPI_HOME}/bin" >> $GITHUB_PATH
         if [[ "${{ matrix.os }}" =~ macos ]]; then
           mpi_cache_version=$(${ECTRANS_TOOLS}/openmpi-cache-version.py)
           echo "CACHE_SUFFIX=${CACHE_SUFFIX}-mpi_${mpi_cache_version}" >> $GITHUB_ENV
