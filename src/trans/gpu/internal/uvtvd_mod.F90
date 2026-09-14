@@ -87,7 +87,10 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NTMAX=>R%NTMAX, D_MYMS=>D%MYMS, ZEPSNM=>FG%ZEPSNM)
 #ifdef OMPGPU
 ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
 ! walk and re-copy every one of its allocatable component descriptors on region entry.
-!$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D_MYMS,D_NUMP,R_NTMAX,ZEPSNM,PU,PV,PVOR,PDIV)
+! PU/PV/PVOR/PDIV are allocator-backed, so their descriptors are never entered in the
+! present table and cannot be MAP(PRESENT)'d. They stay in SHARED on the constructs below,
+! where ordinary mapping resolves the storage omp_target_associate_ptr already registered.
+!$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D_MYMS,D_NUMP,R_NTMAX,ZEPSNM)
 #endif
 #ifdef ACCGPU
 !$ACC DATA &

@@ -87,7 +87,7 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NSMAX=>R%NSMAX, D_MYMS=>D%MYMS)
 ! walk and re-copy every one of its allocatable component descriptors on region entry.
 !$OMP TARGET DATA &
 !$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:R_NSMAX,D_MYMS) &
-!$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NUMP,PEPSNM,PF,PNSD)
+!$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NUMP,PEPSNM)
 #endif
 #ifdef ACCGPU
 !$ACC DATA                                  &
@@ -104,8 +104,12 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NSMAX=>R%NSMAX, D_MYMS=>D%MYMS)
 !*       1.1      COMPUTE
 
 #ifdef OMPGPU
-!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) DEFAULT(ECTRANS_OMP_DEFAULT) &
-!$OMP& PRIVATE(KM,IR,II,JI) MAP(TO:KF_SCALARS) SHARED(D,R,PEPSNM,PF,PNSD,KF_SCALARS)
+! PF/PNSD are slices of the growing-allocator buffer PIA, so their storage is already on
+! the device and only the address is needed. PEPSNM is a normally mapped component and is
+! resolved by the MAP above, so it stays in SHARED.
+!$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) ECTRANS_OMP_DEFAULT_CLAUSE &
+!$OMP& PRIVATE(KM,IR,II,JI) MAP(TO:KF_SCALARS) SHARED(PEPSNM,KF_SCALARS) &
+!$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PF,PNSD)
 #endif
 #ifdef ACCGPU
 !$ACC PARALLEL LOOP DEFAULT(NONE) COLLAPSE(3) PRIVATE(KM,IR,II,JI) FIRSTPRIVATE(KF_SCALARS) &
