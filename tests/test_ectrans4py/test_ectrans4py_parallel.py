@@ -6,12 +6,14 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-from unittest import TestCase
-import ectrans4py
 import platform
+from types import SimpleNamespace
+from unittest import TestCase
+
 import numpy as np
 import pytest
-from types import SimpleNamespace
+
+import ectrans4py
 
 mpi4py = pytest.importorskip("mpi4py")
 from mpi4py import MPI
