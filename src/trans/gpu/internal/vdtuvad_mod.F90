@@ -95,9 +95,9 @@ ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NSMAX=>R%NSMAX, F_RLAPIN=>F%RLAPIN)
 #endif
 #ifdef OMPGPU
 !$OMP TARGET DATA                                                   &
-!$OMP&      MAP(PRESENT,ALLOC:R,R_NSMAX,D,D_MYMS,D_NUMP,F,F_RLAPIN) &
-!$OMP&      MAP(PRESENT,ALLOC:PEPSNM, PVOR, PDIV)                   &
-!$OMP&      MAP(PRESENT,ALLOC:PU, PV)
+!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:R,R_NSMAX,D,D_MYMS,D_NUMP,F,F_RLAPIN) &
+!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:PEPSNM, PVOR, PDIV)                   &
+!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:PU, PV)
 #endif
 
 !     ------------------------------------------------------------------
