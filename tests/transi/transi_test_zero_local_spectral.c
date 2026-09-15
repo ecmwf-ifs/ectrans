@@ -24,7 +24,8 @@ static double spectral_value( int field, int m, int n, int part ) {
   return 10. * ( field + 1 ) + 3. * ( m + 1 ) + 0.25 * ( n + 1 ) + 0.125 * part;
 }
 
-static void setup_global_spectrum( double* rspecg, int nfld, int nsmax ) {
+#ifndef LAM_VERSION
+static int setup_sh_global_spectrum( double* rspecg, int nfld, int nsmax ) {
   int coeff = 0;
   for( int m = 0; m <= nsmax; ++m ) {
     for( int n = m; n <= nsmax; ++n ) {
@@ -35,9 +36,10 @@ static void setup_global_spectrum( double* rspecg, int nfld, int nsmax ) {
       coeff += 2;
     }
   }
+  return coeff;
 }
 
-static void compute_global_spectral_norm_from_spectral_values( int nfld, int nsmax, double* rnorm ) {
+static void compute_sh_global_spectral_norm_from_spectral_values( int nfld, int nsmax, double* rnorm ) {
   for( int field = 0; field < nfld; ++field ) {
     rnorm[field] = 0.;
   }
@@ -57,7 +59,7 @@ static void compute_global_spectral_norm_from_spectral_values( int nfld, int nsm
   }
 }
 
-static void compute_global_spectral_norm_from_rspecg( const double* rspecg, int nfld, int nsmax, double* rnorm ) {
+static void compute_sh_global_spectral_norm_from_rspecg( const double* rspecg, int nfld, int nsmax, double* rnorm ) {
   for( int field = 0; field < nfld; ++field ) {
     rnorm[field] = 0.;
   }
@@ -77,6 +79,93 @@ static void compute_global_spectral_norm_from_rspecg( const double* rspecg, int 
 
   for( int field = 0; field < nfld; ++field )
     rnorm[field] = sqrt( rnorm[field] );
+}
+
+#else
+
+static int lam_nmax( int tx, int ty, int m ) {
+  return (int) ( (double) ty / tx * sqrt( (double) ( tx * tx - m * m ) ) + 1.e-10 );
+}
+
+static int setup_lam_global_spectrum( double* rspecg, int nfld, int tx, int ty ) {
+  int coeff = 0;
+  for( int m = 0; m <= tx; ++m ) {
+    for( int n = 0; n <= lam_nmax( tx, ty, m ); ++n ) {
+      for( int part = 0; part < 4; ++part ) {
+        for( int field = 0; field < nfld; ++field ) {
+          rspecg[spectral_index( coeff, field, nfld )] = spectral_value( field, m, n, part );
+        }
+        ++coeff;
+      }
+    }
+  }
+  return coeff;
+}
+
+static void compute_lam_global_spectral_norm_from_spectral_values( int nfld, int tx, int ty, double* rnorm ) {
+  for( int field = 0; field < nfld; ++field ) {
+    rnorm[field] = 0.;
+    for( int m = 0; m <= tx; ++m ) {
+      for( int n = 0; n <= lam_nmax( tx, ty, m ); ++n ) {
+        for( int part = 0; part < 4; ++part ) {
+          const double value = spectral_value( field, m, n, part );
+          rnorm[field] += value * value;
+        }
+      }
+    }
+    rnorm[field] = sqrt( rnorm[field] );
+  }
+}
+
+static void compute_lam_global_spectral_norm_from_rspecg(
+    const double* rspecg, int nfld, int tx, int ty, double* rnorm ) {
+  for( int field = 0; field < nfld; ++field ) {
+    rnorm[field] = 0.;
+  }
+
+  int coeff = 0;
+  for( int m = 0; m <= tx; ++m ) {
+    for( int n = 0; n <= lam_nmax( tx, ty, m ); ++n ) {
+      for( int part = 0; part < 4; ++part ) {
+        (void) n;
+        (void) part;
+        for( int field = 0; field < nfld; ++field ) {
+          const double value = rspecg[spectral_index( coeff, field, nfld )];
+          rnorm[field] += value * value;
+        }
+        ++coeff;
+      }
+    }
+  }
+
+  for( int field = 0; field < nfld; ++field ) {
+    rnorm[field] = sqrt( rnorm[field] );
+  }
+}
+#endif
+
+static int setup_global_spectrum( double* rspecg, int nfld, struct Trans_t* trans ) {
+#ifndef LAM_VERSION
+  return setup_sh_global_spectrum( rspecg, nfld, trans->nsmax );
+#else
+  return setup_lam_global_spectrum( rspecg, nfld, trans->nmsmax, trans->nsmax );
+#endif
+}
+
+static void compute_global_spectral_norm_from_spectral_values( int nfld, struct Trans_t* trans, double* rnorm ) {
+#ifndef LAM_VERSION
+  compute_sh_global_spectral_norm_from_spectral_values( nfld, trans->nsmax, rnorm );
+#else
+  compute_lam_global_spectral_norm_from_spectral_values( nfld, trans->nmsmax, trans->nsmax, rnorm );
+#endif
+}
+
+static void compute_global_spectral_norm_from_rspecg( const double* rspecg, int nfld, struct Trans_t* trans, double* rnorm ) {
+#ifndef LAM_VERSION
+  compute_sh_global_spectral_norm_from_rspecg( rspecg, nfld, trans->nsmax, rnorm );
+#else
+  compute_lam_global_spectral_norm_from_rspecg( rspecg, nfld, trans->nmsmax, trans->nsmax, rnorm );
+#endif
 }
 
 static int is_approx_eq( double actual, double expected ) {
@@ -102,8 +191,11 @@ int main( int argc, char** argv ) {
 
   struct Trans_t trans;
   TRANS_CHECK( trans_new( &trans ) );
-  TRANS_CHECK( trans_set_resol_lonlat( &trans, 16, 9 ) );
+#ifndef LAM_VERSION
   TRANS_CHECK( trans_set_trunc( &trans, 2 ) );
+#else
+  TRANS_CHECK( trans_set_trunc_lam( &trans, 2, 3 ) );
+#endif
   TRANS_CHECK( trans_setup( &trans ) );
 
   enum { nfld = 2 };
@@ -137,15 +229,15 @@ int main( int argc, char** argv ) {
   }
 
   if( trans.myproc == 1 ) {
-    setup_global_spectrum( rspecg, nfld, trans.nsmax );
+    ASSERT( setup_global_spectrum( rspecg, nfld, &trans ) == trans.nspec2g );
     memcpy( rspecg_initial, rspecg, nfld * trans.nspec2g * sizeof( double ) );
-    compute_global_spectral_norm_from_rspecg( rspecg, nfld, trans.nsmax, rspecg_norm );
+    compute_global_spectral_norm_from_rspecg( rspecg, nfld, &trans, rspecg_norm );
     fprintf( stderr, "rank %d/%d: rspecg_norm = [", trans.myproc, trans.nproc );
     for( int field = 0; field < nfld; ++field )
       fprintf( stderr, " %g", rspecg_norm[field] );
     fprintf( stderr, " ]\n" );
   }
-  compute_global_spectral_norm_from_spectral_values( nfld, trans.nsmax, expected_norm );
+  compute_global_spectral_norm_from_spectral_values( nfld, &trans, expected_norm );
 
   if( trans.myproc == 1 ) {
     for( int field = 0; field < nfld; ++field ) {
@@ -178,6 +270,8 @@ int main( int argc, char** argv ) {
 
   if( trans.myproc == 1 ) {
     for( int field = 0; field < nfld; ++field ) {
+      ASSERT( isfinite( rnorm[field] ) );
+      ASSERT( rnorm[field] > 0. );
       ASSERT( is_approx_eq( rnorm[field], expected_norm[field] ) );
     }
   }
@@ -193,7 +287,7 @@ int main( int argc, char** argv ) {
 
   if( trans.myproc == 1 ) {
     ASSERT( spectra_are_approx_eq( rspecg, rspecg_initial, nfld * trans.nspec2g ) );
-    compute_global_spectral_norm_from_rspecg( rspecg, nfld, trans.nsmax, rspecg_norm );
+    compute_global_spectral_norm_from_rspecg( rspecg, nfld, &trans, rspecg_norm );
     for( int field = 0; field < nfld; ++field ) {
       ASSERT( is_approx_eq( rspecg_norm[field], expected_norm[field] ) );
     }
