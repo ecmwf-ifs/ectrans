@@ -28,7 +28,7 @@ projects :
     - ectrans :
         dir     : $PWD
         require : fiat
-        cmake   : ENABLE_MKL=OFF WITH_FFTW=OFF ENABLE_FFTW=OFF ENABLE_GPU=OFF
+        cmake   : ENABLE_MKL=OFF ENABLE_GPU=OFF
 
 options :
 
@@ -55,10 +55,6 @@ options :
     - with-mkl :
         help : Enable use of MKL for BLAS and FFT calls
         cmake : ENABLE_MKL=ON
-
-    - with-fftw :
-        help : Enable use of FFTW to handle FFT calls
-        cmake : ENABLE_FFTW=ON WITH_FFTW=ON
 
     - with-etrans :
         help : Enable use of FFTW to handle FFT calls

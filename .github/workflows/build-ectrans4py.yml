@@ -78,18 +78,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout ecBuild
-      uses: actions/checkout@v7
-      with:
-        repository: ecmwf/ecbuild
-        path: ecbuild
-
-    - name: Checkout FIAT
-      uses: actions/checkout@v7
-      with:
-        repository: ecmwf-ifs/fiat
-        path: fiat
-
     - name: Checkout ecTrans
       uses: actions/checkout@v7
       with:
@@ -113,12 +101,6 @@ jobs:
 
         printenv
 
-    - name: Install FIAT
-      run:  |
-        cmake -B $GITHUB_WORKSPACE/fiat/build -S $GITHUB_WORKSPACE/fiat
-        cmake --build $GITHUB_WORKSPACE/fiat/build
-        echo "fiat_ROOT=$GITHUB_WORKSPACE/fiat/build" >> $GITHUB_ENV
-
     - name: Install FFTW
       shell: bash -eux {0}
       run: |
@@ -133,7 +115,6 @@ jobs:
       run:  |
         python3 -m venv venv
         . venv/bin/activate
-        pip install build
         pip install ectrans/. \
           -C cmake.define.ENABLE_SINGLE_PRECISION=${{ matrix.precision == 'single' && 'ON' || 'OFF' }} \
           -C cmake.define.ENABLE_DOUBLE_PRECISION=${{ matrix.precision == 'double' && 'ON' || 'OFF' }}
