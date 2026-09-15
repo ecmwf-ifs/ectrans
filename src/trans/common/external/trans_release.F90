@@ -39,22 +39,21 @@ SUBROUTINE TRANS_RELEASE(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1, ONLY: JPIM
+USE EC_PARKIND, ONLY: JPIM
 
 !ifndef INTERFACE
 
-USE DEALLOC_RESOL_MOD, ONLY: DEALLOC_RESOL
-!
+USE RESOLS_MOD, ONLY: Y_RESOLS
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN) :: KRESOL
+INTEGER(KIND=JPIM), INTENT(IN) :: KRESOL
 
 !endif INTERFACE
 
 !     ------------------------------------------------------------------
 
-CALL DEALLOC_RESOL(KRESOL)
+CALL Y_RESOLS(KRESOL)%DESTROY(KRESOL)
 
 !     ------------------------------------------------------------------
 
