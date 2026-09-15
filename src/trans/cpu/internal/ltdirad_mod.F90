@@ -171,7 +171,7 @@ CALL LEDIRAD(KM,KMLOC,IFC,IIFC,IDGLU,ZAIA,ZSIA,ZOA1)
 !*       3.    FOURIER SPACE COMPUTATIONS.
 !              ---------------------------
 
-CALL LDFOU2(KM,KF_UV,ZAIA,ZSIA)
+CALL LDFOU2(KM, 4 * KF_UV, ZAIA, ZSIA, LD_TRANSPOSE=.TRUE.)
 
 !     ------------------------------------------------------------------
 
