@@ -11,7 +11,7 @@
 MODULE DIST_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
- & KSMAX,KSPEC2,KSPEC2G,KPOSSP,KDIM0G,KSORT)
+ & KSMAX,KSPEC2,KSPEC2G,KPOSSP,KDIM0G,KN,KSORT)
 
 !**** *DIST_SPEC_CONTROL* - Distribute global spectral array among processors
 
@@ -30,7 +30,10 @@ SUBROUTINE DIST_SPEC_CONTROL(PSPECG,KFDISTG,KFROM,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     KFROM(:)    - Processor resposible for distributing each field
 !     KVSET(:)    - "B-Set" for each field
 !     PSPEC(:,:)  - Local spectral array
-!     KSORT(:)   - Re-order fields on output
+!     KN          - Optional number of coefficients for each m wave.
+!                   Required for non-triangular truncation (ETRANS).
+!                   If absent, triangular truncation is assumed.
+!     KSORT(:)    - Re-order fields on output
 
 !     Externals.  SET2PE - compute "A and B" set from PE
 !     ----------  MPL..  - message passing routines
@@ -67,6 +70,7 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2G
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KPOSSP(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KDIM0G(0:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KN(0:)
 INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN), TARGET :: KSORT (:)
     
 INTEGER(KIND=JPIM) :: IDIST(KSPEC2G)
@@ -114,13 +118,23 @@ IF( NPROC == 1 ) THEN
 ELSE
   II = 0
   CALL GSTATS(1804,0)
-  DO JM=0,KSMAX
-    DO JN=JM,KSMAX
-      IDIST(II+1) = KDIM0G(JM)+(JN-JM)*2
-      IDIST(II+2) = KDIM0G(JM)+(JN-JM)*2+1
-      II = II+2
+  IF (PRESENT(KN)) THEN
+    DO JM=0,KSMAX
+      DO JN=0,KN(JM)-1
+        II = II+1
+        IDIST(II) = KDIM0G(JM)+JN
+      ENDDO
     ENDDO
-  ENDDO
+  ELSE
+    DO JM=0,KSMAX
+      DO JN=JM,KSMAX
+        IDIST(II+1) = KDIM0G(JM)+(JN-JM)*2
+        IDIST(II+2) = KDIM0G(JM)+(JN-JM)*2+1
+        II = II+2
+      ENDDO
+    ENDDO
+  ENDIF
+  IF (II /= KSPEC2G) CALL ABORT_TRANS('DIST_SPEC_CONTROL:INVALID GLOBAL SPECTRAL MAP SIZE')
   CALL GSTATS(1804,1)
 
 !Distribute spectral array
