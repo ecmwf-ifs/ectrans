@@ -2644,7 +2644,11 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
       endif
 #if ECTRANS_HAVE_ETRANS
     else
-      call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC,PSPECG=RSPECG)
+      if (associated(RSPEC)) then
+        call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPECG=RSPECG,PSPEC=RSPEC)
+      else
+        call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPECG=RSPECG)
+      endif
 #endif
     endif
   else
@@ -2656,7 +2660,11 @@ function trans_distspec(args) bind(C,name="trans_distspec") result(iret)
       endif
 #if ECTRANS_HAVE_ETRANS
     else
-      call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC)
+      if (associated(RSPEC)) then
+        call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM,PSPEC=RSPEC)
+      else
+        call EDIST_SPEC(KRESOL=trans%handle,KFDISTG=args%nfld,KFROM=NFROM)
+      endif
 #endif
     endif
   endif
@@ -2728,7 +2736,11 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
       endif
 #if ECTRANS_HAVE_ETRANS
     else
-      call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC,PSPECG=RSPECG)
+      if( associated(RSPEC) ) then
+        call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPECG=RSPECG,PSPEC=RSPEC)
+      else
+        call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPECG=RSPECG)
+      endif
 #endif
     endif
   else
@@ -2740,7 +2752,11 @@ function trans_gathspec(args) bind(C,name="trans_gathspec") result(iret)
       endif
 #if ECTRANS_HAVE_ETRANS
     else
-      call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC)
+      if( associated(RSPEC) ) then
+        call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO,PSPEC=RSPEC)
+      else
+        call EGATH_SPEC(KRESOL=trans%handle,KFGATHG=args%nfld,KTO=NTO)
+      endif
 #endif
     endif
   endif
@@ -2903,7 +2919,11 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
       endif
 #if ECTRANS_HAVE_ETRANS
     else
-      call ESPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM,KVSET=IVSET)
+      if( associated(RSPEC) ) then
+        call ESPECNORM(KRESOL=trans%handle,KMASTER=args%nmaster,PNORM=RNORM,KVSET=IVSET,PSPEC=RSPEC)
+      else
+        call ESPECNORM(KRESOL=trans%handle,KMASTER=args%nmaster,PNORM=RNORM,KVSET=IVSET)
+      endif
 #endif
     endif
   else
@@ -2915,7 +2935,11 @@ function trans_specnorm(args) bind(C,name="trans_specnorm") result(iret)
       endif
 #if ECTRANS_HAVE_ETRANS
     else
-      call ESPECNORM(KRESOL=trans%handle,PSPEC=RSPEC,KMASTER=args%nmaster,PNORM=RNORM,PMET=RMET,KVSET=IVSET)
+      if( associated(RSPEC) ) then
+        call ESPECNORM(KRESOL=trans%handle,KMASTER=args%nmaster,PNORM=RNORM,PMET=RMET,KVSET=IVSET,PSPEC=RSPEC)
+      else
+        call ESPECNORM(KRESOL=trans%handle,KMASTER=args%nmaster,PNORM=RNORM,PMET=RMET,KVSET=IVSET)
+      endif
 #endif
     endif
   endif
