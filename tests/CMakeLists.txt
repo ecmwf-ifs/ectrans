@@ -768,6 +768,42 @@ if( HAVE_TRANSI )
         LINKER_LANGUAGE C
         ENVIRONMENT TRANS_USE_MPI=1 )
     endif()
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test
+      MPI 4 # > 3 needed to make this test result in zero-sized local spectra
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral_lam
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test
+      MPI 4
+      LINKER_LANGUAGE C
+      DEFINITIONS LAM_VERSION
+      CONDITION HAVE_ETRANS
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral_gpu
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test_gpu
+      MPI 4
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      CONDITION HAVE_GPU
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    if( TEST ectrans_test_transi_zero_local_spectral_gpu )
+      set_tests_properties( ectrans_test_transi_zero_local_spectral_gpu PROPERTIES LABELS gpu )
+    endif()
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral_lam_gpu
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test_gpu
+      MPI 4
+      LINKER_LANGUAGE C
+      DEFINITIONS LAM_VERSION GPU_VERSION
+      CONDITION HAVE_ETRANS_GPU
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    if( TEST ectrans_test_transi_zero_local_spectral_lam_gpu )
+      set_tests_properties( ectrans_test_transi_zero_local_spectral_lam_gpu PROPERTIES LABELS gpu )
+    endif()
   endif()
 
   if( HAVE_ETRANS_GPU )
