@@ -15,7 +15,6 @@ list( APPEND ectrans_common_src
   sharedmem/sharedmem.c
   internal/ectrans_blas_mod.F90
   internal/abort_trans_mod.F90
-  internal/cpledn_mod.F90
   internal/field_split_mod.F90
   internal/gawl_mod.F90
   internal/interpol_decomp_mod.F90
