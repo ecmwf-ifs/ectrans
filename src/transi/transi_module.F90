@@ -1276,7 +1276,7 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
   integer(c_int) :: iret
   type(Trans_t), intent(inout) :: trans
   character(len=*), intent(in) :: vars_fstr
-  character(20), :: var
+  character(20) :: var
   character(20), allocatable :: var_arr(:)
   integer :: nvars, jvar
   !logical(c_bool), pointer :: bool1(:)
