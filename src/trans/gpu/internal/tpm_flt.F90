@@ -32,6 +32,7 @@ TYPE FLT_TYPE_WRAP
 TYPE(FLT_TYPE),ALLOCATABLE :: FA(:)
 LOGICAL :: LDLL
 LOGICAL :: LSHIFTLL
+LOGICAL :: LUSEFLT = .FALSE. ! Kept for compatibility (GPU doesn't support FLT)
 LOGICAL :: LUSE_BELUSOV
 LOGICAL :: LKEEPRPNM
 LOGICAL :: LSOUTHPNM ! .TRUE. to compute Legendre polynomials on southern hemisphere
