@@ -102,6 +102,14 @@ ecbuild_add_test( TARGET ectrans_test_field_view
   LINKER_LANGUAGE Fortran )
 
 # --------------------------------------------------------------------------------------------------
+# Add etrans tests
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_ETRANS )
+  add_subdirectory( etrans )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans, using the benchmark program
 # This tests CPU and/or GPU versions, depending on which are enabled
 # --------------------------------------------------------------------------------------------------
