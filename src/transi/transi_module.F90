@@ -1276,7 +1276,8 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
   integer(c_int) :: iret
   type(Trans_t), intent(inout) :: trans
   character(len=*), intent(in) :: vars_fstr
-  character(20) :: var_arr(48), var
+  character(20), :: var
+  character(20), allocatable :: var_arr(:)
   integer :: nvars, jvar
   !logical(c_bool), pointer :: bool1(:)
   integer(c_int), pointer :: int1(:), int2(:,:)
@@ -1284,6 +1285,7 @@ function trans_inquire_fstr(trans,vars_fstr) result(iret)
   !logical, allocatable :: booltmp(:)
 
   nvars = count(transfer(vars_fstr, 'a', len(vars_fstr)) == ",") + 1
+  allocate(var_arr(nvars))
   read(vars_fstr, *) var_arr(1:nvars)
 
   do jvar=1,nvars
