@@ -57,21 +57,21 @@ options :
         cmake : ENABLE_MKL=ON
 
     - with-etrans :
-        help : Enable use of FFTW to handle FFT calls
+        help : Enable limited-area-transforms
         cmake : ENABLE_ETRANS=ON
 
     - with-gpu-acc:
-        help  : Compile GPU libraries as well as CPU libraries
+        help  : Compile GPU libraries with OpenACC offloading
         cmake : >
             ENABLE_GPU=ON ENABLE_ACC=ON
 
     - with-gpu-omp:
-        help  : Compile GPU libraries as well as CPU libraries
+        help  : Compile GPU libraries with OpenMP offloading
         cmake : >
             ENABLE_GPU=ON ENABLE_OMP=ON
 
     - without-gpu-mpi:
-        help  : Use GPU-aware MPI for communication
+        help  : Disable GPU-aware MPI for communication
         cmake : >
             ENABLE_GPU_AWARE_MPI=OFF
 
