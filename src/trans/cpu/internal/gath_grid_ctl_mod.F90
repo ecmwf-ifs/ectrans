@@ -55,7 +55,9 @@ REAL(KIND=JPRB)             , INTENT(IN)  :: PGP(:,:,:)
 
 ! Declaration of local variables
 
-REAL(KIND=JPRB)    :: ZFLD(D%NGPTOTMX*KFGATHG)
+! Removed stack hog: this is the whole global field, which overflows the stack at
+! operational resolutions, and it is only needed when there is more than one task.
+REAL(KIND=JPRB),ALLOCATABLE :: ZFLD(:) ! (D%NGPTOTMX*KFGATHG)
 REAL(KIND=JPRB),ALLOCATABLE :: ZBUF(:)
 INTEGER(KIND=JPIM),ALLOCATABLE :: IREQ(:)
 INTEGER(KIND=JPIM) :: IFLDR,JFLD,ITAG,ILEN,JA,JB,ISND,JGL,JLON,ILOFF
@@ -87,6 +89,8 @@ IF( NPROC == 1 ) THEN
   CALL GSTATS(1643,1)
 
 ELSE
+  ALLOCATE(ZFLD(D%NGPTOTMX*KFGATHG))
+
 ! test if values in KTO are all the same
   LLSAME=.TRUE.
   ITO=KTO(1)
@@ -284,6 +288,7 @@ ELSE
 !!$  CALL MPL_BARRIER(CDSTRING='GATH_GRID_CTL:')
 !!$  CALL GSTATS(784,1)
   IF(ALLOCATED(ZBUF)) DEALLOCATE(ZBUF)
+  IF(ALLOCATED(ZFLD)) DEALLOCATE(ZFLD)
 ENDIF
 
 !     ------------------------------------------------------------------

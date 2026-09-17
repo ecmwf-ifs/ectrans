@@ -67,10 +67,15 @@ FUNCTION SCALPRODSP(PSP1, PSP2, KVSET, KLEVL, KLEVG, KSPEC2, KSPEC2G, KSMAX, KMY
 
   INTEGER(KIND=JPIM), ALLOCATABLE :: MYMS(:), NASM0(:)
   INTEGER(KIND=JPIM) :: JMLOC, IM, JIR, JN, INM, JLEV, NUMP, I
-  REAL(KIND=JPRB) :: ZMFACT, ZSP(KLEVL,KSPEC2), ZSPG(KLEVG,KSPEC2G)
+  REAL(KIND=JPRB) :: ZMFACT
+  ! Allocatable rather than automatic: the global field ZSPG is far too large for the stack
+  REAL(KIND=JPRB), ALLOCATABLE :: ZSP(:,:), ZSPG(:,:)
 
 #include "trans_inq.h"
 #include "gath_spec.h"
+
+  ALLOCATE(ZSP(KLEVL,KSPEC2))
+  ALLOCATE(ZSPG(KLEVG,KSPEC2G))
 
   ! Get Ms I'm responsible for (MYMS)
   CALL TRANS_INQ(KNUMP=NUMP)
@@ -120,11 +125,17 @@ FUNCTION SCALPRODGP(RGP1, RGP2, KPROMA, KFIELD, KGPBLKS, KGPTOT, KGPTOTG, KMYPRO
   REAL(KIND=JPRB) :: RSC
 
   INTEGER(KIND=JPIM) :: JLEV, JKGLO, IEND, IBL, JROF, I
-  REAL(KIND=JPRB) :: RGP(KPROMA,KFIELD,KGPBLKS), RGPG(KGPTOTG,KFIELD)
+  ! Allocatable rather than automatic: the global field RGPG is far too large for the stack
+  REAL(KIND=JPRB), ALLOCATABLE :: RGP(:,:,:), RGPG(:,:)
 
 #include "gath_grid.h"
 
+  ALLOCATE(RGP(KPROMA,KFIELD,KGPBLKS))
+  ALLOCATE(RGPG(KGPTOTG,KFIELD))
+
   RSC = 0.0_JPRB
+  ! Zero the NPROMA padding of the final block, which the loop below does not fill
+  RGP(:,:,:) = 0.0_JPRB
 
   !$OMP PARALLEL DO SCHEDULE(STATIC,1) PRIVATE(JLEV,JKGLO,IEND,IBL,JROF)
   DO JLEV = 1, KFIELD
