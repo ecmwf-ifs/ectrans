@@ -75,6 +75,10 @@ IF(IRESOL /= NCUR_RESOL) THEN
   NCUR_RESOL = IRESOL
 ENDIF
 
+! We always reassociate the pointers, even if IRESOL equalled NCUR_RESOL on entering this subroutine
+! If a different backend called SET_RESOL with the same IRESOL previously, and that resol was
+! deactivated, that IRESOL might be reused here, but the pointers will be pointing to the other
+! backend's arrays, so they need to be reassociated
 R => DIM_RESOL(NCUR_RESOL)
 F => FIELDS_RESOL(NCUR_RESOL)
 FG => FIELDS_GPU_RESOL(NCUR_RESOL)
