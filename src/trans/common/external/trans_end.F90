@@ -63,7 +63,8 @@ CHARACTER(LEN=5), OPTIONAL,  INTENT(IN) :: CDMODE
 INTEGER(KIND=JPIM) :: JRES, JBACKEND
 CHARACTER(LEN=5) :: CLMODE
 
-IF (MSETUP0 == 0) CALL ABORT_TRANS('TRANS_END: TRANS NOT SETUP')
+! If SETUP_TRANS0 hasn't been called or TRANS_END has already been called, we just return
+IF (MSETUP0 == 0) RETURN
 
 !     ------------------------------------------------------------------
 CLMODE='FINAL'
