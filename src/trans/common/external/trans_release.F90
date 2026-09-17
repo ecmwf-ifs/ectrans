@@ -44,6 +44,7 @@ USE EC_PARKIND, ONLY: JPIM
 !ifndef INTERFACE
 
 USE RESOLS_MOD, ONLY: Y_RESOLS
+USE TPM_GEN, ONLY: LENABLED
 
 IMPLICIT NONE
 
@@ -53,7 +54,13 @@ INTEGER(KIND=JPIM), INTENT(IN) :: KRESOL
 
 !     ------------------------------------------------------------------
 
-CALL Y_RESOLS(KRESOL)%DESTROY(KRESOL)
+! Check this resol is less than maximum number of resols
+IF (KRESOL < Y_RESOLS%SIZE) THEN
+  ! Check this resol is actually initialised
+  IF (LENABLED(KRESOL)) THEN
+    CALL Y_RESOLS(KRESOL)%DESTROY(KRESOL)
+  ENDIF
+ENDIF
 
 !     ------------------------------------------------------------------
 
