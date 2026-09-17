@@ -55,7 +55,7 @@ INTEGER(KIND=JPIM), INTENT(IN) :: KRESOL
 !     ------------------------------------------------------------------
 
 ! Check this resol is less than maximum number of resols
-IF (KRESOL < Y_RESOLS%SIZE) THEN
+IF (KRESOL < SIZE(Y_RESOLS)) THEN
   ! Check this resol is actually initialised
   IF (LENABLED(KRESOL)) THEN
     CALL Y_RESOLS(KRESOL)%DESTROY(KRESOL)
