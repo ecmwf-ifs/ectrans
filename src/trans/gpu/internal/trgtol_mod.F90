@@ -123,7 +123,7 @@ CONTAINS
     USE TPM_TRANS,              ONLY: NPROMA
     USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
-    USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_CREATE, &
+    USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_COPYIN, &
       &                               EXT_ACC_DELETE
 #ifdef ACCGPU
     USE OPENACC,                ONLY: ACC_HANDLE_KIND
@@ -388,7 +388,11 @@ CONTAINS
       ACC_POINTERS(ACC_POINTERS_CNT) = EXT_ACC_PASS(PGP3B)
     ENDIF
 
-    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_CREATE(ACC_POINTERS(1:ACC_POINTERS_CNT), &
+    ! COPYIN rather than CREATE: the gridpoint arrays are mapped by byte range through a
+    ! local integer alias, so the array names themselves are never in the device data
+    ! environment and an UPDATE TO on them copies nothing. The copy has to be requested on
+    ! the same ranges that were mapped.
+    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_COPYIN(ACC_POINTERS(1:ACC_POINTERS_CNT), &
 #ifdef ACCGPU
          & STREAM=1_ACC_HANDLE_KIND)
 #endif

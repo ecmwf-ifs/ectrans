@@ -124,7 +124,7 @@ CONTAINS
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
     USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_CREATE, &
-      &                               EXT_ACC_DELETE
+      &                               EXT_ACC_COPYOUT
 #ifdef ACCGPU
     USE OPENACC,                ONLY: ACC_HANDLE_KIND
 #endif
@@ -998,7 +998,11 @@ CONTAINS
       !$ACC UPDATE HOST(PGP3B) IF (.NOT. LLPGP_ON_GPU) ASYNC(1)
 #endif
     ENDIF
-    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_DELETE(ACC_POINTERS(1:ACC_POINTERS_CNT), &
+    ! COPYOUT rather than DELETE: the gridpoint arrays are mapped by byte range through a
+    ! local integer alias, so the array names themselves are never in the device data
+    ! environment and the UPDATE FROM above copies nothing. Without requesting the copy on
+    ! the same ranges that were mapped, the transform result is discarded with the mapping.
+    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_COPYOUT(ACC_POINTERS(1:ACC_POINTERS_CNT), &
 #ifdef ACCGPU
          & STREAM=1_ACC_HANDLE_KIND)
 #endif
