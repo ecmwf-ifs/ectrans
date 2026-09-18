@@ -57,7 +57,6 @@ IF(PRESENT(KRESOL)) THEN
 ENDIF
 
 ! Verify backend compatibility
-! Verify backend compatibility
 ! etrans is not yet "backend-aware", but we don't currently prohibit the use of TRANS_INQ in
 ! combination with etrans, so for now we need to permit etrans to bypass this check.
 ! etrans is the only one that doesn't give Y_RESOLS(IRESOL)%BACKEND a value, so it will be
