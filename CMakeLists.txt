@@ -296,6 +296,7 @@ ecbuild_override_compiler_flags(
   INHERIT_ECBUILD_FLAGS
 )
 include( ectrans_contiguous_workaround )
+include( ectrans_optional_map_workaround )
 add_subdirectory( src )
 
 ### Add tests
