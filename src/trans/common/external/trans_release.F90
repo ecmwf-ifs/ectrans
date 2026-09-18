@@ -39,22 +39,30 @@ SUBROUTINE TRANS_RELEASE(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND1, ONLY: JPIM
+USE EC_PARKIND, ONLY: JPIM
 
 !ifndef INTERFACE
 
-USE DEALLOC_RESOL_MOD, ONLY: DEALLOC_RESOL
-!
+USE RESOLS_MOD, ONLY: Y_RESOLS
+USE TPM_GEN, ONLY: LENABLED, NOUT
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN) :: KRESOL
+INTEGER(KIND=JPIM), INTENT(IN) :: KRESOL
 
 !endif INTERFACE
 
 !     ------------------------------------------------------------------
 
-CALL DEALLOC_RESOL(KRESOL)
+! Check this resol is less than maximum number of resols
+IF (KRESOL <= SIZE(Y_RESOLS)) THEN
+  ! Check this resol is actually initialised
+  IF (LENABLED(KRESOL)) THEN
+    CALL Y_RESOLS(KRESOL)%DESTROY(KRESOL)
+  ELSE
+    WRITE(NOUT, FMT='(''TRANS_RELEASE: Warning KRESOL = '',I3,'' is already disabled '')') KRESOL
+  ENDIF
+ENDIF
 
 !     ------------------------------------------------------------------
 
