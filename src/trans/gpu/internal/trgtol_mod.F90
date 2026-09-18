@@ -10,6 +10,22 @@
 ! nor does it submit to any jurisdiction.
 !
 
+! ECTRANS_OPTIONAL_MAP_WORKAROUND, set by cmake/ectrans_optional_map_workaround.cmake for
+! CCE, routes the four split-interface gridpoint arrays through local pointers in the pack
+! constructs below. See the comment at their declarations for why. Everywhere else, and on
+! every other compiler, these expand to the dummy arguments themselves.
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+#define ECTRANS_PGPUV ZPGPUV
+#define ECTRANS_PGP2  ZPGP2
+#define ECTRANS_PGP3A ZPGP3A
+#define ECTRANS_PGP3B ZPGP3B
+#else
+#define ECTRANS_PGPUV PGPUV
+#define ECTRANS_PGP2  PGP2
+#define ECTRANS_PGP3A PGP3A
+#define ECTRANS_PGP3B PGP3B
+#endif
+
 MODULE TRGTOL_MOD
   USE BUFFERED_ALLOCATOR_MOD, ONLY: ALLOCATION_RESERVATION_HANDLE
   IMPLICIT NONE
@@ -136,7 +152,12 @@ CONTAINS
     INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G
     INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
     INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:), KVSETSC(:), KVSETSC3A(:), KVSETSC3B(:), KVSETSC2(:)
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+    ! TARGET so the stand-in pointers below may be aimed at them.
+    REAL(KIND=JPRB),OPTIONAL,INTENT(IN),TARGET :: PGP(:,:,:), PGPUV(:,:,:,:), PGP3A(:,:,:,:), PGP3B(:,:,:,:), PGP2(:,:,:)
+#else
     REAL(KIND=JPRB),OPTIONAL,INTENT(IN) :: PGP(:,:,:), PGPUV(:,:,:,:), PGP3A(:,:,:,:), PGP3B(:,:,:,:), PGP2(:,:,:)
+#endif
     LOGICAL, OPTIONAL, INTENT(IN) :: LPGP_ON_GPU
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
@@ -188,6 +209,21 @@ CONTAINS
     TYPE(EXT_ACC_ARR_DESC) :: ACC_POINTERS(5) ! at most 5 copyins...
     INTEGER(KIND=JPIM) :: ACC_POINTERS_CNT
     LOGICAL :: LLPGP_ON_GPU
+
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+    ! CCE 21's offload runtime segfaults in is_contiguous_dv while building the transfer
+    ! list for the pack constructs: MAP(ALLOC:...) names all four split-interface gridpoint
+    ! arrays, the caller routinely omits some of them, and the runtime walks the absent
+    ! one's null descriptor instead of skipping the item. Map these pointers instead, aimed
+    ! at the caller's arrays where supplied and at the one-element stand-ins where not, so
+    ! every item in the list carries a valid descriptor. The stand-ins are never read: the
+    ! PGP_INDICES dispatch inside the loops only ever selects an array the caller actually
+    ! passed. Dropping this workaround costs every call that omits an array, which is all
+    ! of call mode 2 and the partial-field field_view entry points.
+    REAL(KIND=JPRB), TARGET  :: ZSTANDIN3(1,1,1), ZSTANDIN4(1,1,1,1)
+    REAL(KIND=JPRB), POINTER :: ZPGPUV(:,:,:,:), ZPGP3A(:,:,:,:), ZPGP3B(:,:,:,:)
+    REAL(KIND=JPRB), POINTER :: ZPGP2(:,:,:)
+#endif
 
 #ifdef USE_RAW_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
@@ -443,6 +479,13 @@ CONTAINS
         !$ACC UPDATE DEVICE(PGP3B) IF (.NOT. LLPGP_ON_GPU)
 #endif
     ENDIF
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+    IF (PRESENT(PGPUV)) THEN ; ZPGPUV => PGPUV ; ELSE ; ZPGPUV => ZSTANDIN4 ; ENDIF
+    IF (PRESENT(PGP3A)) THEN ; ZPGP3A => PGP3A ; ELSE ; ZPGP3A => ZSTANDIN4 ; ENDIF
+    IF (PRESENT(PGP3B)) THEN ; ZPGP3B => PGP3B ; ELSE ; ZPGP3B => ZSTANDIN4 ; ENDIF
+    IF (PRESENT(PGP2))  THEN ; ZPGP2  => PGP2  ; ELSE ; ZPGP2  => ZSTANDIN3 ; ENDIF
+#endif
+
 #ifdef OMPGPU
     ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays, and where they live depends on
     ! LPGP_ON_GPU: either already device-resident from the caller's allocator, or host
@@ -603,7 +646,7 @@ CONTAINS
         !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V) &
         !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,INS,ICOMBUFS_OFFSET_V) &
         !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFS) &
-        !$OMP& MAP(ALLOC:PGPUV,PGP2,PGP3A,PGP3B)
+        !$OMP& MAP(ALLOC:ECTRANS_PGPUV,ECTRANS_PGP2,ECTRANS_PGP3A,ECTRANS_PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI,IOFF,PBOUND) &
@@ -618,20 +661,20 @@ CONTAINS
             JI = ICOMBUFS_OFFSET_V+(JFLD-1)*ISEND_WSET_SIZE_V+JL
             IF(IFLD < PGP_INDICES(PGP_INDICES_UV+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_UV)
-              PBOUND=UBOUND(PGPUV,2)
+              PBOUND=UBOUND(ECTRANS_PGPUV,2)
               ! TODO we could certainly reshape PGPXX arrays and we would simplify this
-              ZCOMBUFS(JI) = PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              ZCOMBUFS(JI) = ECTRANS_PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP2+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP2)
-              ZCOMBUFS(JI)  = PGP2(JK,IOFF+1,JBLK)
+              ZCOMBUFS(JI)  = ECTRANS_PGP2(JK,IOFF+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3A+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3A)
-              PBOUND=UBOUND(PGP3A,2)
-              ZCOMBUFS(JI) = PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3A,2)
+              ZCOMBUFS(JI) = ECTRANS_PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3B+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3B)
-              PBOUND=UBOUND(PGP3B,2)
-              ZCOMBUFS(JI)= PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3B,2)
+              ZCOMBUFS(JI)= ECTRANS_PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ENDIF
          ENDDO
         ENDDO
@@ -760,7 +803,7 @@ CONTAINS
         !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(KF_FS,ISEND_WSET_SIZE_V) &
         !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,IRECV_BUFR_TO_OUT_V) &
         !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PREEL_REAL) &
-        !$OMP& MAP(ALLOC:PGPUV,PGP2,PGP3A,PGP3B)
+        !$OMP& MAP(ALLOC:ECTRANS_PGPUV,ECTRANS_PGP2,ECTRANS_PGP3A,ECTRANS_PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS,IOFF,PBOUND) &
@@ -776,19 +819,19 @@ CONTAINS
                 & (JFLD-1)*IRECV_BUFR_TO_OUT(IRECV_BUFR_TO_OUT_V+JL,2)+1
             IF(IFLD < PGP_INDICES(PGP_INDICES_UV+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_UV)
-              PBOUND=UBOUND(PGPUV,2)
-              PREEL_REAL(IPOS) = PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGPUV,2)
+              PREEL_REAL(IPOS) = ECTRANS_PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP2+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP2)
-              PREEL_REAL(IPOS) = PGP2(JK,IOFF+1,JBLK)
+              PREEL_REAL(IPOS) = ECTRANS_PGP2(JK,IOFF+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3A+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3A)
-              PBOUND=UBOUND(PGP3A,2)
-              PREEL_REAL(IPOS) = PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3A,2)
+              PREEL_REAL(IPOS) = ECTRANS_PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3B+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3B)
-              PBOUND=UBOUND(PGP3B,2)
-              PREEL_REAL(IPOS) = PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3B,2)
+              PREEL_REAL(IPOS) = ECTRANS_PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ENDIF
           ENDDO
         ENDDO

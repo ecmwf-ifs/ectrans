@@ -77,6 +77,7 @@ ecbuild_add_library(
                        ECTRANS_OMP_DEFAULT_CLAUSE=${ECTRANS_OMP_DEFAULT_CLAUSE}
                        ECTRANS_DEVICE_ADDR_CLAUSE=${ECTRANS_DEVICE_ADDR_CLAUSE}
                        ECTRANS_LOOP_BOUNDS_CLAUSE=${ECTRANS_LOOP_BOUNDS_CLAUSE}
+                       $<$<BOOL:${ECTRANS_HAVE_OPTIONAL_MAP_ISSUE}>:ECTRANS_OPTIONAL_MAP_WORKAROUND>
                        $<${HAVE_CUTLASS}:USE_CUTLASS>
                        $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
@@ -165,6 +166,7 @@ foreach( prec dp sp )
                                ECTRANS_OMP_DEFAULT_CLAUSE=${ECTRANS_OMP_DEFAULT_CLAUSE}
                                ECTRANS_DEVICE_ADDR_CLAUSE=${ECTRANS_DEVICE_ADDR_CLAUSE}
                                ECTRANS_LOOP_BOUNDS_CLAUSE=${ECTRANS_LOOP_BOUNDS_CLAUSE}
+                               $<$<BOOL:${ECTRANS_HAVE_OPTIONAL_MAP_ISSUE}>:ECTRANS_OPTIONAL_MAP_WORKAROUND>
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
