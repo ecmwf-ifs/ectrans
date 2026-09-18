@@ -28,7 +28,7 @@ projects :
     - ectrans :
         dir     : $PWD
         require : fiat
-        cmake   : ENABLE_MKL=OFF WITH_FFTW=OFF ENABLE_FFTW=OFF ENABLE_GPU=OFF
+        cmake   : ENABLE_MKL=OFF ENABLE_GPU=OFF
 
 options :
 
@@ -56,26 +56,22 @@ options :
         help : Enable use of MKL for BLAS and FFT calls
         cmake : ENABLE_MKL=ON
 
-    - with-fftw :
-        help : Enable use of FFTW to handle FFT calls
-        cmake : ENABLE_FFTW=ON WITH_FFTW=ON
-
     - with-etrans :
-        help : Enable use of FFTW to handle FFT calls
+        help : Enable limited-area-transforms
         cmake : ENABLE_ETRANS=ON
 
     - with-gpu-acc:
-        help  : Compile GPU libraries as well as CPU libraries
+        help  : Compile GPU libraries with OpenACC offloading
         cmake : >
             ENABLE_GPU=ON ENABLE_ACC=ON
 
     - with-gpu-omp:
-        help  : Compile GPU libraries as well as CPU libraries
+        help  : Compile GPU libraries with OpenMP offloading
         cmake : >
             ENABLE_GPU=ON ENABLE_OMP=ON
 
     - without-gpu-mpi:
-        help  : Use GPU-aware MPI for communication
+        help  : Disable GPU-aware MPI for communication
         cmake : >
             ENABLE_GPU_AWARE_MPI=OFF
 
