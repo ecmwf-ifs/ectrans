@@ -126,7 +126,8 @@ if( HAVE_GPU )
 endif()
 
 # Per-compiler spellings for the OpenMP clauses in the GPU backend. The defaults are the
-# amdflang spellings the directives were written against; nvfortran needs all four replaced:
+# amdflang spellings the directives were written against; nvfortran needs all four replaced,
+# Cray Fortran only the DEFAULT argument:
 #
 #   ECTRANS_MAP_PRESENT_ALLOC   Map-type modifiers for MAP(...) of device-resident storage.
 #                               nvfortran has no OpenMP 5.1 'present' modifier (absent in 26.3
@@ -136,6 +137,11 @@ endif()
 #                               cannot resolve the ASSOCIATE selectors these constructs use
 #                               (R_NTMAX=>R%NTMAX and similar), whatever SHARED lists;
 #                               DEFAULT(SHARED) is what the implicit rules give anyway.
+#                               Cray Fortran 21 rejects the same ASSOCIATE selectors, and in
+#                               addition wants an explicit scope for the HAS_DEVICE_ADDR list
+#                               items of TRLTOM and TRGTOL. Naming those in SHARED() is not a
+#                               way out either: the UPDSPB construct already carries a comment
+#                               that a longer SHARED list there hits ftn-7991.
 #   ECTRANS_DEVICE_ADDR_CLAUSE  Clause naming storage that is already on the device.
 #                               nvfortran implements neither HAS_DEVICE_ADDR nor a usable
 #                               substitute: IS_DEVICE_PTR parses but carries no array
@@ -154,6 +160,11 @@ if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC" )
   set( ECTRANS_OMP_DEFAULT        "SHARED" )
   set( ECTRANS_DEVICE_ADDR_CLAUSE "SHARED" )
   set( ECTRANS_LOOP_BOUNDS_CLAUSE "SHARED" )
+elseif( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+  set( ECTRANS_MAP_PRESENT_ALLOC  "PRESENT,ALLOC" )
+  set( ECTRANS_OMP_DEFAULT        "SHARED" )
+  set( ECTRANS_DEVICE_ADDR_CLAUSE "HAS_DEVICE_ADDR" )
+  set( ECTRANS_LOOP_BOUNDS_CLAUSE "FIRSTPRIVATE" )
 else()
   set( ECTRANS_MAP_PRESENT_ALLOC  "PRESENT,ALLOC" )
   set( ECTRANS_OMP_DEFAULT        "NONE" )
