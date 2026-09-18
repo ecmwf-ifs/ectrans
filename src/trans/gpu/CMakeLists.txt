@@ -72,6 +72,12 @@ ecbuild_add_library(
                        $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                        $<${HAVE_CUTLASS}:nvidia::cutlass::cutlass>
   PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
+                       ECTRANS_MAP_PRESENT_ALLOC=${ECTRANS_MAP_PRESENT_ALLOC}
+                       ECTRANS_OMP_DEFAULT=${ECTRANS_OMP_DEFAULT}
+                       ECTRANS_OMP_DEFAULT_CLAUSE=${ECTRANS_OMP_DEFAULT_CLAUSE}
+                       ECTRANS_DEVICE_ADDR_CLAUSE=${ECTRANS_DEVICE_ADDR_CLAUSE}
+                       ECTRANS_LOOP_BOUNDS_CLAUSE=${ECTRANS_LOOP_BOUNDS_CLAUSE}
+                       $<$<BOOL:${ECTRANS_HAVE_OPTIONAL_MAP_ISSUE}>:ECTRANS_OPTIONAL_MAP_WORKAROUND>
                        $<${HAVE_CUTLASS}:USE_CUTLASS>
                        $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
@@ -155,6 +161,12 @@ foreach( prec dp sp )
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${USE_RAW_MPI}:MPI::MPI_Fortran>
           PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
+                               ECTRANS_MAP_PRESENT_ALLOC=${ECTRANS_MAP_PRESENT_ALLOC}
+                               ECTRANS_OMP_DEFAULT=${ECTRANS_OMP_DEFAULT}
+                               ECTRANS_OMP_DEFAULT_CLAUSE=${ECTRANS_OMP_DEFAULT_CLAUSE}
+                               ECTRANS_DEVICE_ADDR_CLAUSE=${ECTRANS_DEVICE_ADDR_CLAUSE}
+                               ECTRANS_LOOP_BOUNDS_CLAUSE=${ECTRANS_LOOP_BOUNDS_CLAUSE}
+                               $<$<BOOL:${ECTRANS_HAVE_OPTIONAL_MAP_ISSUE}>:ECTRANS_OPTIONAL_MAP_WORKAROUND>
                                $<${HAVE_CUTLASS}:USE_CUTLASS>
                                $<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>
                                $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
@@ -179,12 +191,14 @@ foreach( prec dp sp )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
 
-        if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
-          # Propagate flags as link options for downstream targets. Only required for Cray
+        if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES "Cray|NVHPC" )
+          # Propagate flags as link options for downstream targets. Only required for Cray and NVHPC
           target_link_options( ectrans_gpu_${prec} INTERFACE
                 $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenMP_Fortran_FLAGS}>
                 $<$<LINK_LANG_AND_ID:C,Cray>:SHELL:${OpenMP_Fortran_FLAGS}>
-                $<$<LINK_LANG_AND_ID:CXX,Cray>:SHELL:${OpenMP_Fortran_FLAGS}> )
+                $<$<LINK_LANG_AND_ID:CXX,Cray>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:C,NVHPC>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenMP_Fortran_FLAGS}> )
         endif()
 
         if( HAVE_ACC AND CMAKE_Fortran_COMPILER_ID MATCHES NVHPC )
