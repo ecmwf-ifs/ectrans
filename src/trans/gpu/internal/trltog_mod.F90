@@ -535,11 +535,13 @@ CONTAINS
 #endif
 
 #ifdef OMPGPU
-    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays placed on the device via
-    ! EXT_ACC_CREATE (target enter data over the raw byte range), which maps the storage
-    ! without ever entering their descriptors in the present table, so MAP(PRESENT) on them
-    ! cannot succeed. Those referenced by the pack/unpack compute constructs are named in
-    ! HAS_DEVICE_ADDR instead.
+    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays, either already device-resident
+    ! from the caller's allocator or host storage whose byte range EXT_ACC_CREATE maps here,
+    ! depending on LPGP_ON_GPU. PREEL_REAL is a growing-allocator buffer. The pack/unpack
+    ! compute constructs name the gridpoint arrays in MAP(ALLOC:...), which is the only form
+    ! that covers both residencies and also tolerates the OPTIONAL ones the caller omits;
+    ! see the longer note in TRGTOL for why neither HAS_DEVICE_ADDR nor the PRESENT modifier
+    ! of ECTRANS_MAP_PRESENT_ALLOC can be used here.
 
     !$OMP TARGET DATA MAP(TO:IIN_TO_SEND_BUFR) IF(KF_FS > 0)
 #endif
@@ -658,7 +660,8 @@ CONTAINS
         !$OMP& SHARED(IFLDA,IGP_OFFSETS,IIN_TO_SEND_BUFR) &
         !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(KF_FS,IRECV_WSET_SIZE_V) &
         !$OMP& FIRSTPRIVATE(NPROMA,IRECV_WSET_OFFSET_V,IIN_TO_SEND_BUFR_V) &
-        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PREEL_REAL,PGPUV,PGP2,PGP3A,PGP3B)
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PREEL_REAL) &
+        !$OMP& MAP(ALLOC:PGPUV,PGP2,PGP3A,PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) &
@@ -897,7 +900,8 @@ CONTAINS
         !$OMP& SHARED(IFLDA,IGP_OFFSETS) &
         !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(IRECV_FIELD_COUNT_V,IRECV_WSET_SIZE_V) &
         !$OMP& FIRSTPRIVATE(NPROMA,IRECV_WSET_OFFSET_V,ICOMBUFR_OFFSET_V,INR) &
-        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFR,PGPUV,PGP2,PGP3A,PGP3B)
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFR) &
+        !$OMP& MAP(ALLOC:PGPUV,PGP2,PGP3A,PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) &

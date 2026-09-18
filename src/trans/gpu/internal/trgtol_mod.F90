@@ -440,11 +440,23 @@ CONTAINS
 #endif
     ENDIF
 #ifdef OMPGPU
-    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays placed on the device via
-    ! EXT_ACC_CREATE (target enter data over the raw byte range), which maps the storage
-    ! without ever entering their descriptors in the present table, so MAP(PRESENT) on them
-    ! cannot succeed. Those referenced by the pack compute constructs are named in
-    ! HAS_DEVICE_ADDR instead.
+    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays, and where they live depends on
+    ! LPGP_ON_GPU: either already device-resident from the caller's allocator, or host
+    ! storage whose byte range is mapped here by EXT_ACC_CREATE and pushed across by the
+    ! TARGET UPDATE above. The pack compute constructs name them in MAP(ALLOC:...), which is
+    ! the only form that covers both. Two constraints pin it down, and they pull opposite
+    ! ways:
+    !
+    !   - not HAS_DEVICE_ADDR, because when the arrays are host-resident their addresses are
+    !     host addresses, and the kernel then faults on them.
+    !   - not the PRESENT modifier of ECTRANS_MAP_PRESENT_ALLOC, because these are OPTIONAL
+    !     and the caller routinely omits PGP3B. An absent optional arrives as a null base
+    !     address that no present-table entry can match, and the modifier turns that into
+    !     "device mapping required by 'present' map type modifier does not exist for host
+    !     address 0x0000000000000000" at the first launch.
+    !
+    ! Plain ALLOC resolves whichever mapping exists, ignores the absent ones, and is what
+    ! nvfortran gets from ECTRANS_MAP_PRESENT_ALLOC anyway, so the clause is uniform.
 #endif
 #ifdef ACCGPU
     !$ACC DATA IF(PRESENT(PGP) .AND. KF_GP > 0)   PRESENT(PGP) ASYNC(1)
@@ -586,7 +598,8 @@ CONTAINS
         !$OMP& JI,IOFF,PBOUND) SHARED(IFLDA,PGP_INDICES) &
         !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V) &
         !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,INS,ICOMBUFS_OFFSET_V) &
-        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PGPUV,ZCOMBUFS,PGP2,PGP3A,PGP3B)
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFS) &
+        !$OMP& MAP(ALLOC:PGPUV,PGP2,PGP3A,PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI,IOFF,PBOUND) &
@@ -742,7 +755,8 @@ CONTAINS
         !$OMP& SHARED(IFLDA,PGP_INDICES,IRECV_BUFR_TO_OUT) &
         !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(KF_FS,ISEND_WSET_SIZE_V) &
         !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,IRECV_BUFR_TO_OUT_V) &
-        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PGPUV,PREEL_REAL,PGP2,PGP3A,PGP3B)
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PREEL_REAL) &
+        !$OMP& MAP(ALLOC:PGPUV,PGP2,PGP3A,PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS,IOFF,PBOUND) &
