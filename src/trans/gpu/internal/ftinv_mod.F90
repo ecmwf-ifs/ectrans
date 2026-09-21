@@ -102,7 +102,11 @@ CONTAINS
 #endif
 
 #ifdef OMPGPU
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PREEL_REAL,PREEL_COMPLEX,D_NPTRLS,D_NDGL_FS,D_NSTAGTF,G_NLOEN)
+    ! PREEL_REAL/PREEL_COMPLEX are growing-allocator buffers whose descriptors are never
+    ! entered in the present table, so they cannot be MAP(PRESENT)'d. Nothing here needs
+    ! them mapped: this routine has no target compute construct, and the FFT entry point
+    ! takes their device addresses directly.
+    !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NPTRLS,D_NDGL_FS,D_NSTAGTF,G_NLOEN)
 #endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(PREEL_REAL,PREEL_COMPLEX,D_NPTRLS,D_NDGL_FS,D_NSTAGTF,G_NLOEN)
