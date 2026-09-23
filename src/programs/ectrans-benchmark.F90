@@ -189,6 +189,7 @@ integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 #if USE_FIELD_API
 type(wrapped_fields) :: ywflds
 type(fields_lists) :: ylf
+logical :: llacc
 #endif
 
 logical :: ldump_values = .false.
@@ -567,6 +568,11 @@ else
 endif
 
 #if USE_FIELD_API
+#ifdef defined(ACCGPU) || defined (OMPGPU)
+  llacc = .TRUE.
+#else
+  llacc = .FALSE.
+#endif
 if (lfield_api) then
   if (icall_mode == 1) then
     call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
@@ -687,7 +693,7 @@ do jstep = 1, iters+iters_warmup
 
   if (lfield_api) then
 #if USE_FIELD_API
-    call inv_trans_field_api(kresol=1, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
+    call inv_trans_field_api(kresol=1, ldacc=llacc, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
       &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
       &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
@@ -771,7 +777,7 @@ do jstep = 1, iters+iters_warmup
 
   if (lfield_api) then
 #if USE_FIELD_API
-    call dir_trans_field_api(kresol=1, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
+    call dir_trans_field_api(kresol=1, ldacc=llacc, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
     call synchost_rdonly_wrapped_fields(ywflds)
 #else
