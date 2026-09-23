@@ -102,6 +102,14 @@ ecbuild_add_test( TARGET ectrans_test_field_view
   LINKER_LANGUAGE Fortran )
 
 # --------------------------------------------------------------------------------------------------
+# Add etrans tests
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_ETRANS )
+  add_subdirectory( etrans )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans, using the benchmark program
 # This tests CPU and/or GPU versions, depending on which are enabled
 # --------------------------------------------------------------------------------------------------
@@ -612,6 +620,17 @@ if( HAVE_CPU AND HAVE_MPI )
 endif()
 
 # --------------------------------------------------------------------------------------------------
+# Add test for ability to call INV_TRANS at multiple precisions
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
+  ecbuild_add_test( TARGET ectrans_test_multiple_precisions
+    SOURCES trans/test_multiple_precisions.F90
+    LIBS ectrans_sp ectrans_dp fiat
+    LINKER_LANGUAGE Fortran )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for transi
 # --------------------------------------------------------------------------------------------------
 
@@ -783,4 +802,16 @@ if( HAVE_TRANSI )
     endif()
   endif()
 
+  ecbuild_add_test( TARGET ectrans_test_transi_trans_inquire
+    SOURCES   transi/transi_test_trans_inquire.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_trans_inquire_lam
+    SOURCES   transi/transi_test_trans_inquire_lam.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
 endif()
