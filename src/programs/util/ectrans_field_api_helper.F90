@@ -358,9 +358,9 @@ subroutine synchost_rdonly_wrapped_fields(ywflds,ldgp, ldsp)
   type(wrapped_fields),intent(in) ::ywflds
   logical, intent(in):: ldgp
   logical, intent(in):: ldsp
-  
 
-  if (ldsp) then 
+
+  if (ldsp) then
     if (associated(ywflds%spvor))      call ywflds%spvor%sync_host_rdonly()
     if (associated(ywflds%spdiv))      call ywflds%spdiv%sync_host_rdonly()
     if (associated(ywflds%spscalar))   call ywflds%spscalar%sync_host_rdonly()
@@ -368,7 +368,7 @@ subroutine synchost_rdonly_wrapped_fields(ywflds,ldgp, ldsp)
     if (associated(ywflds%spscalar2))  call ywflds%spscalar2%sync_host_rdonly()
   endif
 
-  if (ldgp)
+  if (ldgp) then
     if (associated(ywflds%u))          call ywflds%u%sync_host_rdonly()
     if (associated(ywflds%v))          call ywflds%v%sync_host_rdonly()
     if (associated(ywflds%u_ew))       call ywflds%u_ew%sync_host_rdonly()
@@ -384,7 +384,7 @@ subroutine synchost_rdonly_wrapped_fields(ywflds,ldgp, ldsp)
     if (associated(ywflds%scalar))    call ywflds%scalar%sync_host_rdonly()
     if (associated(ywflds%scalar_ew)) call ywflds%scalar_ew%sync_host_rdonly()
     if (associated(ywflds%scalar_ns)) call ywflds%scalar_ns%sync_host_rdonly()
-  endif()
+  endif
 end subroutine synchost_rdonly_wrapped_fields
 
 end module ectrans_field_api_helper
