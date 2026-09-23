@@ -1,0 +1,88 @@
+! (C) Copyright 2026- ECMWF.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+
+MODULE MULT_BUTM_MOD
+
+IMPLICIT NONE
+
+INTERFACE
+  SUBROUTINE MULT_BUTM_SP(CD_TRANSPOSE, K_ORDER, K_LEVELS, KBETALEN_MAX, KLEV_OFFSET, KLEV_IJ, &
+    &                     KLEV_IK, KLEV_IBETALEN, IKLEV_NODE_OFFSET, KLEV_NODE_IFCOL, &
+    &                     KLEV_NODE_ILCOL, KLEV_NODE_IFROW, KLEV_NODE_ILROW, KLEV_NODE_ICOLS, &
+    &                     KLEV_NODE_IROWS, KLEV_NODE_IRANK, KLEV_NODE_IOFFBETA, &
+    &                     KLEV_NODE_ICLIST_OFFSET, KLEV_NODE_ICLIST, KLEV_NODE_PNONIM_OFFSET, &
+    &                     PLEV_NODE_PNONIM, KLEV_NODE_B_OFFSET, PLEV_NODE_B, P_A, P_C) &
+    &                     BIND(C, NAME='mult_butm_sp')
+
+    USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_PTR
+    CHARACTER(1, C_CHAR),       VALUE :: CD_TRANSPOSE
+    INTEGER(C_INT), INTENT(IN)        :: K_ORDER(*)
+    INTEGER(C_INT), INTENT(IN)        :: K_LEVELS(*)
+    INTEGER(C_INT), INTENT(IN)        :: KBETALEN_MAX(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_OFFSET(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_IJ(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_IK(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_IBETALEN(*)
+    INTEGER(C_INT), INTENT(IN)        :: IKLEV_NODE_OFFSET(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IFCOL(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ILCOL(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IFROW(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ILROW(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ICOLS(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IROWS(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IRANK(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IOFFBETA(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ICLIST_OFFSET(*)
+    TYPE(C_PTR),    INTENT(IN), VALUE :: KLEV_NODE_ICLIST
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_PNONIM_OFFSET(*)
+    TYPE(C_PTR),    INTENT(IN), VALUE :: PLEV_NODE_PNONIM
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_B_OFFSET(*)
+    TYPE(C_PTR),    INTENT(IN), VALUE :: PLEV_NODE_B
+    TYPE(C_PTR),    INTENT(IN), VALUE :: P_A
+    TYPE(C_PTR),    INTENT(IN), VALUE :: P_C
+  END SUBROUTINE MULT_BUTM_SP
+
+  SUBROUTINE MULT_BUTM_DP(CD_TRANSPOSE, K_ORDER, K_LEVELS, KBETALEN_MAX, KLEV_OFFSET, KLEV_IJ, &
+    &                     KLEV_IK, KLEV_IBETALEN, IKLEV_NODE_OFFSET, KLEV_NODE_IFCOL, &
+    &                     KLEV_NODE_ILCOL, KLEV_NODE_IFROW, KLEV_NODE_ILROW, KLEV_NODE_ICOLS, &
+    &                     KLEV_NODE_IROWS, KLEV_NODE_IRANK, KLEV_NODE_IOFFBETA, &
+    &                     KLEV_NODE_ICLIST_OFFSET, KLEV_NODE_ICLIST, KLEV_NODE_PNONIM_OFFSET, &
+    &                     PLEV_NODE_PNONIM, KLEV_NODE_B_OFFSET, PLEV_NODE_B, P_A, P_C) &
+    &                     BIND(C, NAME='mult_butm_dp')
+
+    USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_PTR
+    CHARACTER(1, C_CHAR),       VALUE :: CD_TRANSPOSE
+    INTEGER(C_INT), INTENT(IN)        :: K_ORDER(*)
+    INTEGER(C_INT), INTENT(IN)        :: K_LEVELS(*)
+    INTEGER(C_INT), INTENT(IN)        :: KBETALEN_MAX(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_OFFSET(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_IJ(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_IK(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_IBETALEN(*)
+    INTEGER(C_INT), INTENT(IN)        :: IKLEV_NODE_OFFSET(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IFCOL(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ILCOL(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IFROW(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ILROW(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ICOLS(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IROWS(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IRANK(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_IOFFBETA(*)
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_ICLIST_OFFSET(*)
+    TYPE(C_PTR),    INTENT(IN), VALUE :: KLEV_NODE_ICLIST
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_PNONIM_OFFSET(*)
+    TYPE(C_PTR),    INTENT(IN), VALUE :: PLEV_NODE_PNONIM
+    INTEGER(C_INT), INTENT(IN)        :: KLEV_NODE_B_OFFSET(*)
+    TYPE(C_PTR),    INTENT(IN), VALUE :: PLEV_NODE_B
+    TYPE(C_PTR),    INTENT(IN), VALUE :: P_A
+    TYPE(C_PTR),    INTENT(IN), VALUE :: P_C
+  END SUBROUTINE MULT_BUTM_DP
+END INTERFACE
+
+END MODULE MULT_BUTM_MOD
