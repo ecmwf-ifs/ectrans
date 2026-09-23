@@ -189,6 +189,7 @@ integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 #if USE_FIELD_API
 type(wrapped_fields) :: ywflds
 type(fields_lists) :: ylf
+logical :: llacc = .false.
 #endif
 
 logical :: ldump_values = .false.
@@ -234,6 +235,9 @@ real(kind=jprb), allocatable :: global_field(:,:)
 luse_mpi = detect_mpirun()
 if (VERSION == "gpu") then
   lpinning = .true.
+#if USE_FIELD_API
+  llacc = .true.
+#endif
 endif
 
 ! Setup
@@ -687,7 +691,7 @@ do jstep = 1, iters+iters_warmup
 
   if (lfield_api) then
 #if USE_FIELD_API
-    call inv_trans_field_api(kresol=1, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
+    call inv_trans_field_api(kresol=1, ldacc=llacc, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
       &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
       &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
@@ -771,7 +775,7 @@ do jstep = 1, iters+iters_warmup
 
   if (lfield_api) then
 #if USE_FIELD_API
-    call dir_trans_field_api(kresol=1, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
+    call dir_trans_field_api(kresol=1, ldacc=llacc, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
     call synchost_rdonly_wrapped_fields(ywflds)
 #else
