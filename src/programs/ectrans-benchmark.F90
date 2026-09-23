@@ -189,7 +189,7 @@ integer(kind=jpim) :: iprused, ilevpp, irest, ilev, jlev
 #if USE_FIELD_API
 type(wrapped_fields) :: ywflds
 type(fields_lists) :: ylf
-logical :: llacc
+logical :: llacc = .false.
 #endif
 
 logical :: ldump_values = .false.
@@ -235,6 +235,9 @@ real(kind=jprb), allocatable :: global_field(:,:)
 luse_mpi = detect_mpirun()
 if (VERSION == "gpu") then
   lpinning = .true.
+#if USE_FIELD_API
+  llacc = .true.
+#endif
 endif
 
 ! Setup
@@ -568,16 +571,6 @@ else
 endif
 
 #if USE_FIELD_API
-
-llacc = .FALSE.
-
-#ifdef ACCGPU
-llacc = .TRUE.
-#endif
-#ifdef OMPGPU
-llacc = .TRUE.
-#endif
-
 if (lfield_api) then
   if (icall_mode == 1) then
     call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
