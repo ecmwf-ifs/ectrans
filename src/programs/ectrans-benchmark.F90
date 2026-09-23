@@ -568,11 +568,16 @@ else
 endif
 
 #if USE_FIELD_API
-#ifdef defined(ACCGPU) || defined (OMPGPU)
-  llacc = .TRUE.
-#else
-  llacc = .FALSE.
+
+llacc = .FALSE.
+
+#ifdef ACCGPU
+llacc = .TRUE.
 #endif
+#ifdef OMPGPU
+llacc = .TRUE.
+#endif
+
 if (lfield_api) then
   if (icall_mode == 1) then
     call wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvder, nflevg, 1 + nflevg * nfld, &
