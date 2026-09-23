@@ -455,6 +455,11 @@ IF(PRESENT(LDKEEPRPNM)) THEN
   ENDIF
   S%LKEEPRPNM=LDKEEPRPNM
 ENDIF
+
+! TODO remove Legendre polynomials for FLT modes
+! For now we just always keep them
+S%LKEEPRPNM = .TRUE.
+
 !     Setup resolution dependent structures
 !     -------------------------------------
 
@@ -542,7 +547,7 @@ IF( .NOT.D%LGRIDONLY ) THEN
   ! Prepare FLT
   IF (S%LUSEFLT) THEN
     ! We need to prepare flattened copies of the antisymmetric and symmetric butterfly structs
-    ! for EVERY zonal mode, which can be copied to GPU
+    ! for EVERY zonal mode on this task which is initialised for FLT, which can be copied to GPU
     CALL FLATTEN_BUTTERFLY_STRUCT(S%FA, "ANTI", FG%Y_BUT_FLAT_A)
     CALL FLATTEN_BUTTERFLY_STRUCT(S%FA, "SYMM", FG%Y_BUT_FLAT_S)
   ENDIF
@@ -582,39 +587,13 @@ IF( .NOT.D%LGRIDONLY ) THEN
   !$ACC ENTER DATA COPYIN(FG,FG%ZAA,FG%ZAS,FG%ZEPSNM) ASYNC(1)
   IF (S%LUSEFLT) THEN
     !$ACC ENTER DATA COPYIN(FG%Y_BUT_FLAT_A) ASYNC(1)
-    !$ACC ENTER DATA COPYIN(FG%Y_BUT_FLAT_A%N_ORDER) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%N_LEVELS) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%IBETALEN_MAX) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_OFFSET) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_IJ) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_IK) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_IBETALEN) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_OFFSET) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_IFCOL) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_ILCOL) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_IFROW) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_ILROW) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_ICOLS) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_IROWS) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_IRANK) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_IOFFBETA) ASYNC(1)
+    !$ACC ENTER DATA COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_ICLIST) &
+    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_PNONIM) &
+    !$ACC&           COPYIN(FG%Y_BUT_FLAT_A%SLEV_NODE_B) ASYNC(1)
     !$ACC ENTER DATA COPYIN(FG%Y_BUT_FLAT_S) ASYNC(1)
-    !$ACC ENTER DATA COPYIN(FG%Y_BUT_FLAT_S%N_ORDER) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%N_LEVELS) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%IBETALEN_MAX) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_OFFSET) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_IJ) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_IK) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_IBETALEN) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_OFFSET) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_IFCOL) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_ILCOL) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_IFROW) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_ILROW) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_ICOLS) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_IROWS) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_IRANK) &
-    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_IOFFBETA) ASYNC(1)
+    !$ACC ENTER DATA COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_ICLIST) &
+    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_PNONIM) &
+    !$ACC&           COPYIN(FG%Y_BUT_FLAT_S%SLEV_NODE_B) ASYNC(1)
   ENDIF
 #ifdef _CRAYFTN
   !$ACC ENTER DATA COPYIN(D,D%NUMP,D%MYMS,D%NPNTGTB0,D%NPNTGTB1,D%NSTAGT0B,D%NSTAGT1B,D%NSTAGTF,D%NPROCM,D%NPROCL)&
@@ -632,39 +611,13 @@ IF( .NOT.D%LGRIDONLY ) THEN
   !$OMP TARGET ENTER DATA MAP(TO:FG,FG%ZAA,FG%ZAS,FG%ZEPSNM)
   IF (S%LUSEFLT) THEN
     !$OMP TARGET ENTER DATA MAP(TO:FG%Y_BUT_FLAT_A)
-    !$OMP TARGET ENTER DATA MAP(TO:FG%Y_BUT_FLAT_A%N_ORDER) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%N_LEVELS) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%IBETALEN_MAX) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_OFFSET) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_IJ) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_IK) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_IBETALEN) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_OFFSET) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_IFCOL) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_ILCOL) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_IFROW) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_ILROW) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_ICOLS) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_IROWS) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_IRANK) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_IOFFBETA)
+    !$OMP TARGET ENTER DATA MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_ICLIST) &
+    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_PNONIM) &
+    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_A%SLEV_NODE_B)
     !$OMP TARGET ENTER DATA MAP(TO:FG%Y_BUT_FLAT_S)
-    !$OMP TARGET ENTER DATA MAP(TO:FG%Y_BUT_FLAT_S%N_ORDER) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%N_LEVELS) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%IBETALEN_MAX) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_OFFSET) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_IJ) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_IK) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_IBETALEN) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_OFFSET) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_IFCOL) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_ILCOL) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_IFROW) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_ILROW) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_ICOLS) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_IROWS) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_IRANK) &
-    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_IOFFBETA)
+    !$OMP TARGET ENTER DATA MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_ICLIST) &
+    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_PNONIM) &
+    !$OMP&                  MAP(TO:FG%Y_BUT_FLAT_S%SLEV_NODE_B)
   ENDIF
   !$OMP TARGET ENTER DATA MAP(TO:D,D%NUMP,D%MYMS,D%NPNTGTB0,D%NPNTGTB1,D%NSTAGT0B,D%NSTAGT1B,D%NSTAGTF,&
   !$OMP&                         D%NPROCM,D%NPROCL,D%NPTRLS,D%MSTABF,D%NASM0,D%OFFSETS_GEMM1,&
