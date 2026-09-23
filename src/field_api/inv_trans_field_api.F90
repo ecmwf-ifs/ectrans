@@ -95,8 +95,6 @@ INTEGER(KIND=JPIM) :: IRESOL
 
 REAL(KIND=JPHOOK)           :: ZHOOK_HANDLE
 
-LOGICAL LDACC
-
 #include "inv_trans_field_view.h"
 #include "abor1.intfb.h"
 ! We use ABOR1 and not ABORT_TRANS because ABORT_TRANS is to be private to trans routines,
