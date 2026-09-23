@@ -351,13 +351,14 @@ subroutine delete_fields_lists(yfl)
   if (allocated(yfl%scalar_ew)) deallocate(yfl%scalar_ew)
 end subroutine delete_fields_lists
 
-subroutine synchost_rdonly_wrapped_fields(ywflds,ldgp, ldsp)
+subroutine synchost_rdonly_wrapped_fields(ywflds,ldgp, ldsp, ldgp_diagnostics)
 
   ! Synchronize all field lists on host readonly
 
   type(wrapped_fields),intent(in) ::ywflds
   logical, intent(in):: ldgp
   logical, intent(in):: ldsp
+  logical, intent(in):: ldgp_diagnostics
 
 
   if (ldsp) then
@@ -371,10 +372,13 @@ subroutine synchost_rdonly_wrapped_fields(ywflds,ldgp, ldsp)
   if (ldgp) then
     if (associated(ywflds%u))          call ywflds%u%sync_host_rdonly()
     if (associated(ywflds%v))          call ywflds%v%sync_host_rdonly()
-    if (associated(ywflds%u_ew))       call ywflds%u_ew%sync_host_rdonly()
-    if (associated(ywflds%v_ew))       call ywflds%v_ew%sync_host_rdonly()
+  endif
+
+  if (ldgp_diagnostics) then
     if (associated(ywflds%vor))        call ywflds%vor%sync_host_rdonly()
     if (associated(ywflds%div))        call ywflds%div%sync_host_rdonly()
+    if (associated(ywflds%u_ew))       call ywflds%u_ew%sync_host_rdonly()
+    if (associated(ywflds%v_ew))       call ywflds%v_ew%sync_host_rdonly()
     if (associated(ywflds%scalar3))     call ywflds%scalar3%sync_host_rdonly()
     if (associated(ywflds%scalar3_ew))  call ywflds%scalar3_ew%sync_host_rdonly()
     if (associated(ywflds%scalar3_ns))  call ywflds%scalar3_ns%sync_host_rdonly()
