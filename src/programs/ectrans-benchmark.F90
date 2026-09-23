@@ -694,7 +694,8 @@ do jstep = 1, iters+iters_warmup
     call inv_trans_field_api(kresol=1, ldacc=llacc, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
       &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
-      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)      
+      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
+    call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .FALSE.,.FALSE.)
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
@@ -711,9 +712,9 @@ do jstep = 1, iters+iters_warmup
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
-    call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .FALSE.)
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
+    call synchost_rdonly_wrapped_fields(ywflds, .FALSE., .FALSE.,.TRUE.)
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
@@ -747,7 +748,7 @@ do jstep = 1, iters+iters_warmup
       allocate(global_field(ngptotg,1))
     endif
     if (icall_mode == 1) then
-      call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .FALSE.)
+      call synchost_rdonly_wrapped_fields(ywflds, .FALSE.,.FALSE., .TRUE.)
       islice = (ipgpuv_end - 1) * nflevg
       call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp(:,islice:islice,:), 'U', noutdump)
       islice = ipgpuv_end * nflevg
@@ -777,7 +778,8 @@ do jstep = 1, iters+iters_warmup
   if (lfield_api) then
 #if USE_FIELD_API
     call dir_trans_field_api(kresol=1, ldacc=llacc, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
-      &                      ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)    
+      &                      ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, ydfspdiv=ylf%spdiv)
+    call synchost_rdonly_wrapped_fields(ywflds, .FALSE., .TRUE., .FALSE.)
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
@@ -792,7 +794,6 @@ do jstep = 1, iters+iters_warmup
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
-    call synchost_rdonly_wrapped_fields(ywflds, .FALSE., .TRUE.)
     if (icall_mode == 1) then
       call dump_checksums_psp(filename=cchecksums_path, noutdump=noutdump_checksum, &
         &                     jstep=jstep, myproc=myproc, ivset=ivset, ivsetsc=ivsetsc, &
@@ -816,7 +817,6 @@ do jstep = 1, iters+iters_warmup
   !=================================================================================================
 
   if (lprint_norms) then
-    call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .TRUE.)
     call gstats(6,0)
     call specnorm(pspec=zspvor(1:nflevl,:), pnorm=znormvor, kvset=ivset)
     call specnorm(pspec=zspdiv(1:nflevl,:), pnorm=znormdiv, kvset=ivset)
@@ -859,7 +859,7 @@ enddo
 
 !===================================================================================================
 
-call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .TRUE.)
+call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .TRUE.,.TRUE.)
 
 ztloop = (timef() - ztloop)/1000.0_jprd
 
