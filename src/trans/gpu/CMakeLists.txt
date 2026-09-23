@@ -15,6 +15,7 @@ list( APPEND trans_gpu_common_src
   algor/device_mod.F90
   algor/growing_allocator_mod.F90
   algor/hicblas_mod.F90
+  algor/mult_butm_mod.F90
   internal/tpm_stats.F90
   internal/tpm_hicfft.F90
 )
@@ -25,6 +26,7 @@ if( HAVE_HIP )
   )
   list( APPEND trans_gpu_common_src
     algor/hicblas_gemm.hip.cpp
+    algor/mult_butm.hip.cpp
     algor/hicfft.hip.cpp
     algor/hicfft.rocfft.cpp
   )
@@ -38,6 +40,7 @@ elseif( HAVE_CUDA )
   set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
   list( APPEND trans_gpu_common_src
     algor/hicblas_gemm.cuda.cu
+    algor/mult_butm.cuda.cu
     algor/hicfft.cuda.cu
   )
   ecbuild_info("warn: IN_PLACE_FFT defined for cuFFT")
