@@ -716,7 +716,9 @@ do jstep = 1, iters+iters_warmup
   if (ldump_checksums .and. jstep <= iters_checksums) then
     ! Remove trash at end of last block
     iend = ngptot - nproma * (ngpblks - 1)
+#if USE_FIELD_API
     call synchost_rdonly_wrapped_fields(ywflds, .FALSE., .FALSE.,.TRUE.)
+#endif
     if (icall_mode == 1) then
       ! Remove trash at end of last block
       zgp (iend+1:, :, ngpblks) = 0
@@ -750,7 +752,9 @@ do jstep = 1, iters+iters_warmup
       allocate(global_field(ngptotg,1))
     endif
     if (icall_mode == 1) then
+#if USE_FIELD_API
       call synchost_rdonly_wrapped_fields(ywflds, .FALSE.,.FALSE., .TRUE.)
+#endif
       islice = (ipgpuv_end - 1) * nflevg
       call dump_gridpoint_field(jstep, myproc, nproma, global_field, zgp(:,islice:islice,:), 'U', noutdump)
       islice = ipgpuv_end * nflevg
@@ -862,8 +866,9 @@ do jstep = 1, iters+iters_warmup
 enddo
 
 !===================================================================================================
-
+#if USE_FIELD_API
 call synchost_rdonly_wrapped_fields(ywflds, .TRUE., .TRUE.,.TRUE.)
+#endif
 
 ztloop = (timef() - ztloop)/1000.0_jprd
 
