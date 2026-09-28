@@ -12,29 +12,56 @@
 // Unlike the CPU version, the input (A) and output (C) arrays are stored with the field index
 // fastest, as for the other GPU Legendre GEMMs, i.e. element (row, field) of mode m is at
 // A[a_offsets[m] + field + row * lda]. The internal work arrays (beta and vec) keep the CPU
-// layout (row fastest, leading dimensions IBETALEN_MAX and N_ORDER respectively) so the logic
+// layout (row fastest, leading dimensions IBETALEN_MAX and ICOLS respectively) so the logic
 // below maps directly onto the Fortran.
 //
 // All index/offset arrays are host arrays, apart from lev_node_iclist, lev_node_pnonim and
 // lev_node_b which, together with A and C, are device arrays. Indices stored in the flattened
 // struct (IFCOL, IFROW, ICLIST) are Fortran 1-based; IOFFBETA and all *_OFFSET arrays are 0-based.
+//
+// Modes are distributed round-robin over a pool of worker streams (MULT_BUTM_NSTREAMS, default
+// 4), which are forked from and joined back onto the caller's stream. Each stream has its own
+// work space, and each node on a level its own vec region within it, so that the only true
+// dependencies within a mode are between consecutive levels (and, in the transposed case,
+// between the two partner nodes scattering into the same children).
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <vector>
 
 #include "hicblas.h"
 
 namespace {
 
-hipblasHandle_t get_mult_butm_handle() {
-  static hipblasHandle_t handle;
-  static bool initialised = false;
-  if (!initialised) {
-    HICBLAS_CHECK(hipblasCreate(&handle));
-    initialised = true;
+// Pool of worker streams, each with its own BLAS handle, plus the events used to fork from and
+// join onto the caller's stream
+struct StreamPool {
+  int n = 0;
+  std::vector<hipStream_t> streams;
+  std::vector<hipblasHandle_t> handles;
+  std::vector<hipEvent_t> join_events;
+  hipEvent_t fork_event;
+};
+
+StreamPool &get_stream_pool() {
+  static StreamPool pool;
+  if (pool.n == 0) {
+    int n = 4;
+    if (const char *env = std::getenv("MULT_BUTM_NSTREAMS")) n = std::max(1, std::atoi(env));
+    pool.streams.resize(n);
+    pool.handles.resize(n);
+    pool.join_events.resize(n);
+    for (int i = 0; i < n; ++i) {
+      HIC_CHECK(hipStreamCreateWithFlags(&pool.streams[i], hipStreamNonBlocking));
+      HICBLAS_CHECK(hipblasCreate(&pool.handles[i]));
+      HICBLAS_CHECK(hipblasSetStream(pool.handles[i], pool.streams[i]));
+      HIC_CHECK(hipEventCreateWithFlags(&pool.join_events[i], hipEventDisableTiming));
+    }
+    HIC_CHECK(hipEventCreateWithFlags(&pool.fork_event, hipEventDisableTiming));
+    pool.n = n;
   }
-  return handle;
+  return pool;
 }
 
 // Device work space, grown as needed and kept between calls
@@ -133,27 +160,48 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
 
   if (n_modes <= 0 || n_flds <= 0) return;
 
-  hipblasHandle_t handle = get_mult_butm_handle();
-  HICBLAS_CHECK(hipblasSetStream(handle, stream));
+  StreamPool &pool = get_stream_pool();
 
-  // Work space: two "beta" buffers (ZBETA(:,:,0:1)) and one vector buffer (ZVECIN in the normal
-  // case, ZVECOUT in the transposed case), sized for the largest mode
-  int lbeta_max = 0, order_max = 0;
+  // Work space for each worker stream: two "beta" buffers (ZBETA(:,:,0:1)) followed by the vec
+  // regions (ZVECIN in the normal case, ZVECOUT in the transposed case) of the nodes of one
+  // level. Each node gets its own ICOLS x n_flds vec region, so the vec part is sized for the
+  // level with the largest total ICOLS. Modes on the same stream run one after the other and
+  // share that stream's work space, which is sized for the largest mode.
+  size_t lbeta_max = 0, vec_len_max = 0;
   for (int m = 0; m < n_modes; ++m) {
-    lbeta_max = std::max(lbeta_max, betalen_max[m]);
-    order_max = std::max(order_max, order[m]);
+    size_t vec_len = 0;
+    for (int lev = 0; lev <= levels[m]; ++lev) {
+      int l = lev_offset[m] + lev;
+      size_t lev_len = 0;
+      for (int inode = 0; inode < lev_ij[l] * lev_ik[l]; ++inode) {
+        lev_len += lev_node_icols[lev_node_offset[l] + inode];
+      }
+      vec_len = std::max(vec_len, lev_len);
+    }
+    lbeta_max = std::max(lbeta_max, (size_t)betalen_max[m]);
+    vec_len_max = std::max(vec_len_max, vec_len);
   }
-  Real *work = get_workspace<Real>((size_t)(2 * lbeta_max + order_max) * n_flds);
-  Real *beta_buf[2] = {work, work + (size_t)lbeta_max * n_flds};
-  Real *vec = work + (size_t)2 * lbeta_max * n_flds;
+  size_t work_len = (2 * lbeta_max + vec_len_max) * n_flds;
+  Real *work = get_workspace<Real>(work_len * pool.n);
+
+  // Fork the worker streams from the caller's stream
+  HIC_CHECK(hipEventRecord(pool.fork_event, stream));
+  for (int i = 0; i < pool.n; ++i) {
+    HIC_CHECK(hipStreamWaitEvent(pool.streams[i], pool.fork_event, 0));
+  }
 
   // Loop over zonal wavenumbers
   for (int m = 0; m < n_modes; ++m) {
+    hipStream_t mstream = pool.streams[m % pool.n];
+    hipblasHandle_t handle = pool.handles[m % pool.n];
+
     int nlevels = levels[m];
     int lbeta = betalen_max[m];
-    int ld_vec = order[m];
     const Real *Am = A + a_offsets[m];
     Real *Cm = C + c_offsets[m];
+    Real *mwork = work + (m % pool.n) * work_len;
+    Real *beta_buf[2] = {mwork, mwork + (size_t)lbeta * n_flds};
+    Real *vec_base = mwork + (size_t)2 * lbeta * n_flds;
 
     // Flat index of NODE(j,k) on level lev of this mode (j and k are 1-based, as in Fortran)
     auto node_index = [&](int lev, int j, int k) {
@@ -166,6 +214,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
         int l = lev_offset[m] + lev;
         Real *beta = beta_buf[lev % 2];
         Real *beta_prev = beta_buf[(lev + 1) % 2]; // Buffer for level lev-1
+        size_t vec_off = 0;
         for (int j = 1; j <= lev_ij[l]; ++j) {
           for (int k = 1; k <= lev_ik[l]; ++k) {
             int idx = node_index(lev, j, k);
@@ -174,6 +223,9 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
             int icols = lev_node_icols[idx];
             int n = icols - rank;
             const int *iclist = lev_node_iclist + lev_node_iclist_offset[idx];
+            Real *vec = vec_base + vec_off;
+            int ld_vec = icols;
+            vec_off += (size_t)icols * n_flds;
             check_rank(rank);
 
             if (lev > 0 && lev == nlevels) {
@@ -194,7 +246,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
 
             if (lev == 0) {
               // Scatter into PVECOUT(IFR:ILR,:), stored transposed
-              scatter_kernel<<<num_blocks(icols * n_flds), block_size, 0, stream>>>(
+              scatter_kernel<<<num_blocks(icols * n_flds), block_size, 0, mstream>>>(
                 icols, rank, n_flds, iclist, beta + btst, lbeta, vec, ld_vec,
                 Cm + (size_t)(lev_node_ifcol[idx] - 1) * ldc, ldc, 1,
                 0, icols, 0, icols, false);
@@ -211,7 +263,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
                 irankr = lev_node_irank[ir];
                 btstr = lev_node_ioffbeta[ir];
               }
-              scatter_kernel<<<num_blocks(icols * n_flds), block_size, 0, stream>>>(
+              scatter_kernel<<<num_blocks(icols * n_flds), block_size, 0, mstream>>>(
                 icols, rank, n_flds, iclist, beta + btst, lbeta, vec, ld_vec,
                 beta_prev, 1, lbeta,
                 btstl, irankl, btstr, irankl + irankr, j % 2 == 0);
@@ -225,6 +277,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
         int l = lev_offset[m] + lev;
         Real *beta = beta_buf[lev % 2];
         Real *beta_prev = beta_buf[(lev + 1) % 2]; // Buffer for level lev-1
+        size_t vec_off = 0;
         for (int j = 1; j <= lev_ij[l]; ++j) {
           for (int k = 1; k <= lev_ik[l]; ++k) {
             int idx = node_index(lev, j, k);
@@ -233,11 +286,14 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
             int icols = lev_node_icols[idx];
             int n = icols - rank;
             const int *iclist = lev_node_iclist + lev_node_iclist_offset[idx];
+            Real *vec = vec_base + vec_off;
+            int ld_vec = icols;
+            vec_off += (size_t)icols * n_flds;
             check_rank(rank);
 
             if (lev == 0) {
               // Gather from PVECIN(IFR:,:), stored transposed
-              gather_kernel<<<num_blocks(icols * n_flds), block_size, 0, stream>>>(
+              gather_kernel<<<num_blocks(icols * n_flds), block_size, 0, mstream>>>(
                 icols, rank, n_flds, iclist,
                 Am + (size_t)(lev_node_ifcol[idx] - 1) * lda, lda, 1,
                 beta + btst, lbeta, vec, ld_vec);
@@ -245,7 +301,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
               // Gather from the beta slots of the children on level lev-1, which are contiguous
               // starting from the left child
               int il = node_index(lev - 1, (j + 1) / 2, 2 * k - 1);
-              gather_kernel<<<num_blocks(icols * n_flds), block_size, 0, stream>>>(
+              gather_kernel<<<num_blocks(icols * n_flds), block_size, 0, mstream>>>(
                 icols, rank, n_flds, iclist,
                 beta_prev + lev_node_ioffbeta[il], 1, lbeta,
                 beta + btst, lbeta, vec, ld_vec);
@@ -271,6 +327,12 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
         }
       }
     }
+  }
+
+  // Join the worker streams back onto the caller's stream
+  for (int i = 0; i < pool.n; ++i) {
+    HIC_CHECK(hipEventRecord(pool.join_events[i], pool.streams[i]));
+    HIC_CHECK(hipStreamWaitEvent(stream, pool.join_events[i], 0));
   }
 }
 
