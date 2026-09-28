@@ -63,6 +63,7 @@
 #define hipStreamEndCapture cudaStreamEndCapture
 
 // Runtime calls
+#define hipGetLastError cudaGetLastError
 #define hipHostMalloc(PTR, SIZE, FLAGS) cudaMallocHost(PTR, SIZE)
 #define hipMalloc cudaMalloc
 #define hipFree cudaFree
