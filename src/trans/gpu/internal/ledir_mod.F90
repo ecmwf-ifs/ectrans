@@ -105,7 +105,7 @@ CONTAINS
     !      F. Vana  05-Mar-2015  Support for single precision
     !     ------------------------------------------------------------------
 
-    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NOUT, NCUR_RESOL
+    USE TPM_GEN,                     ONLY: LSYNC_TRANS, NCUR_RESOL
     USE YOMHOOK,                     ONLY: LHOOK,   DR_HOOK, JPHOOK
     USE TPM_DIM,                     ONLY: R
     USE TPM_GEOMETRY,                ONLY: G
@@ -169,8 +169,8 @@ CONTAINS
     HIP_STREAM = 0_C_LONG
 #endif
 
-    CALL LEDIR_STRIDES(KF_FS,IOUT_STRIDES0,IOUT_STRIDES1,IIN_STRIDES0,IIN_STRIDES1,&
-                       IOUT0_STRIDES0,IOUT0_STRIDES1,IIN0_STRIDES0,IIN0_STRIDES1)
+    CALL LEDIR_STRIDES(KF_FS, IOUT_STRIDES0, IOUT_STRIDES1, IIN_STRIDES0, IIN_STRIDES1, &
+      &                IOUT0_STRIDES0, IOUT0_STRIDES1, IIN0_STRIDES0, IIN0_STRIDES1)
 
 #ifdef OMPGPU
     !$OMP TARGET DATA &
