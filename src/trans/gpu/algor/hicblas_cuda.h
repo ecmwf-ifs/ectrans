@@ -77,6 +77,9 @@
 #define hipStreamWaitEvent cudaStreamWaitEvent
 #define hipEventCreateWithFlags cudaEventCreateWithFlags
 #define hipEventRecord cudaEventRecord
+#define hipEventSynchronize cudaEventSynchronize
+#define hipMemcpyAsync cudaMemcpyAsync
+#define hipHostFree cudaFreeHost
 #define hipMemGetInfo cudaMemGetInfo
 
 inline static const char * _blasGetErrorEnum(cublasStatus_t error)
