@@ -401,11 +401,11 @@ CONTAINS
 #ifdef OMPGPU
       !$OMP TARGET DATA USE_DEVICE_ADDR(Y_BUT_FLAT_S%SLEV_NODE_ICLIST, &
       !$OMP&                            Y_BUT_FLAT_S%SLEV_NODE_PNONIM, Y_BUT_FLAT_S%SLEV_NODE_B, &
-      !$OMP&                            ZINP, ZOUTA)
+      !$OMP&                            ZINP, ZOUTS)
 #endif
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(Y_BUT_FLAT_S%SLEV_NODE_ICLIST, Y_BUT_FLAT_S%SLEV_NODE_PNONIM, &
-      !$ACC&                     Y_BUT_FLAT_S%SLEV_NODE_B, ZINP, ZOUTA)
+      !$ACC&                     Y_BUT_FLAT_S%SLEV_NODE_B, ZINP, ZOUTS)
 #endif
       CALL MULT_BUTM('N', SIZE(Y_BUT_FLAT_S%N_ORDER), 2 * KF_LEG, Y_BUT_FLAT_S%N_ORDER, &
         &            Y_BUT_FLAT_S%N_LEVELS, Y_BUT_FLAT_S%IBETALEN_MAX, Y_BUT_FLAT_S%SLEV_OFFSET, &
@@ -418,7 +418,7 @@ CONTAINS
         &            C_LOC(Y_BUT_FLAT_S%SLEV_NODE_ICLIST), Y_BUT_FLAT_S%SLEV_NODE_PNONIM_OFFSET, &
         &            C_LOC(Y_BUT_FLAT_S%SLEV_NODE_PNONIM), Y_BUT_FLAT_S%SLEV_NODE_B_OFFSET, &
         &            C_LOC(Y_BUT_FLAT_S%SLEV_NODE_B), C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
-        &            C_LOC(ZOUTA), IOUT_STRIDES0, COFFSETS, HIP_STREAM)
+        &            C_LOC(ZOUTS), IOUT_STRIDES0, COFFSETS, HIP_STREAM)
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
