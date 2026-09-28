@@ -84,6 +84,7 @@
 #define hipEventRecord cudaEventRecord
 #define hipEventSynchronize cudaEventSynchronize
 #define hipMemcpyAsync cudaMemcpyAsync
+#define hipMemset cudaMemset
 #define hipHostFree cudaFreeHost
 #define hipMemGetInfo cudaMemGetInfo
 

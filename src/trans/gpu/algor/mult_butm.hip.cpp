@@ -25,10 +25,18 @@
 // are advanced together one level at a time. For each level a plan is built on the host: one task
 // per node for the gather/scatter kernels, and the GEMMs grouped by shape. The plan for all levels
 // is uploaded with a single copy, after which each level takes one gather kernel (or two scatter
-// kernels in the transposed case) plus one batched GEMM per distinct shape.
+// kernels in the transposed case) plus one batched GEMM per distinct shape. The GEMM groups of a
+// phase are independent, and are spread over several "branch" streams (MULT_BUTM_NBRANCHES,
+// default 4) so that they can run concurrently.
+//
+// By default the whole sequence is captured once in a CUDA/HIP graph, together with its own copy
+// of the plan, and replayed on subsequent calls, which avoids both building the plan and issuing
+// the individual launches. The graph is recaptured if anything it depends on changes (A, C, the
+// work space or the butterfly structure). Set MULT_BUTM_GRAPHS=0 to execute directly instead.
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <map>
 #include <tuple>
@@ -53,6 +61,8 @@ template <typename Real> Real *get_workspace(size_t n) {
   static Real *ptr = nullptr;
   static size_t capacity = 0;
   if (n > capacity) {
+    // Previous calls may still be using the work space
+    HIC_CHECK(hipDeviceSynchronize());
     if (ptr) HIC_CHECK(hipFree(ptr));
     HIC_CHECK(hipMalloc(&ptr, n * sizeof(Real)));
     capacity = n;
@@ -126,6 +136,58 @@ void check_rank(int rank) {
     fprintf(stderr, "mult_butm: IRANK<=0 not allowed\n");
     abort();
   }
+}
+
+int env_int(const char *name, int default_value) {
+  const char *env = std::getenv(name);
+  return env ? std::atoi(env) : default_value;
+}
+
+// Branch streams (each with its own BLAS handle) over which independent GEMMs are spread, plus the
+// events used to fork them from and join them onto the main stream, and the stream on which
+// graphs are captured. All BLAS handles are warmed up here, so that no lazy initialisation (and
+// in particular no allocation) happens during graph capture.
+struct Branches {
+  int n = 0;
+  std::vector<hipStream_t> streams;
+  std::vector<hipblasHandle_t> handles;
+  std::vector<hipEvent_t> join;
+  hipEvent_t fork;
+  hipStream_t capture;
+};
+
+Branches &get_branches() {
+  static Branches br;
+  if (br.n == 0) {
+    int n = std::max(1, env_int("MULT_BUTM_NBRANCHES", 4));
+    br.streams.resize(n);
+    br.handles.resize(n);
+    br.join.resize(n);
+    for (int i = 0; i < n; ++i) {
+      HIC_CHECK(hipStreamCreateWithFlags(&br.streams[i], hipStreamNonBlocking));
+      HICBLAS_CHECK(hipblasCreate(&br.handles[i]));
+      HICBLAS_CHECK(hipblasSetStream(br.handles[i], br.streams[i]));
+      HIC_CHECK(hipEventCreateWithFlags(&br.join[i], hipEventDisableTiming));
+    }
+    HIC_CHECK(hipEventCreateWithFlags(&br.fork, hipEventDisableTiming));
+    HIC_CHECK(hipStreamCreateWithFlags(&br.capture, hipStreamNonBlocking));
+
+    double *scratch;
+    HIC_CHECK(hipMalloc(&scratch, 3 * sizeof(double)));
+    HIC_CHECK(hipMemset(scratch, 0, 3 * sizeof(double)));
+    auto warm_up = [&](hipblasHandle_t handle, hipStream_t stream) {
+      HICBLAS_CHECK(hipblasSetStream(handle, stream));
+      gemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, 1, 1, 1, 1.0, scratch, 1, scratch + 1, 1, 0.0,
+           scratch + 2, 1);
+    };
+    for (int i = 0; i < n; ++i) warm_up(br.handles[i], br.streams[i]);
+    warm_up(get_mult_butm_handle(), br.capture);
+    HIC_CHECK(hipDeviceSynchronize());
+    HIC_CHECK(hipFree(scratch));
+
+    br.n = n;
+  }
+  return br;
 }
 
 constexpr int block_size = 256;
@@ -238,8 +300,22 @@ template <typename Real> struct GemmPhase {
     g.c.push_back(c);
   }
 
-  void launch(hipblasHandle_t handle, void *const *d_ptrs) const {
-    for (const GemmGroup<Real> &g : groups) {
+  // Launch the groups after all preceding work on stream (whose BLAS handle is handle), and before
+  // all subsequent work on it. If there are several groups, they are spread over the branch
+  // streams so that they can run concurrently.
+  void launch(hipblasHandle_t handle, hipStream_t stream, Branches &br,
+              void *const *d_ptrs) const {
+    int n_used = groups.size() > 1 ? std::min<int>(br.n, groups.size()) : 0;
+    if (n_used > 1) {
+      HIC_CHECK(hipEventRecord(br.fork, stream));
+      for (int i = 0; i < n_used; ++i) HIC_CHECK(hipStreamWaitEvent(br.streams[i], br.fork, 0));
+    } else {
+      n_used = 0;
+    }
+
+    for (size_t ig = 0; ig < groups.size(); ++ig) {
+      const GemmGroup<Real> &g = groups[ig];
+      if (n_used > 0) handle = br.handles[ig % n_used];
       int count = g.c.size();
       if (count == 1) {
         gemm(handle, g.transa, g.transb, g.m, g.n, g.k, (Real)1.0, g.a[0], g.lda, g.b[0], g.ldb,
@@ -251,6 +327,11 @@ template <typename Real> struct GemmPhase {
                      reinterpret_cast<const Real *const *>(p + count), g.ldb, g.beta,
                      reinterpret_cast<Real *const *>(p + 2 * count), g.ldc, count);
       }
+    }
+
+    for (int i = 0; i < n_used; ++i) {
+      HIC_CHECK(hipEventRecord(br.join[i], br.streams[i]));
+      HIC_CHECK(hipStreamWaitEvent(stream, br.join[i], 0));
     }
   }
 };
@@ -264,6 +345,54 @@ template <typename Real> struct LevelPlan {
   std::vector<NodeTask> tasks[2];
   size_t task_off[2] = {0, 0};
   GemmPhase<Real> gemms[2];
+};
+
+// Graph cache. There is at most one graph per key; everything else the graph depends on is kept
+// in GraphDeps, and if any of it changes the graph is recaptured.
+struct GraphKey {
+  char transpose;
+  int n_flds, lda, ldc, n_modes;
+  const void *iclist; // Identifies the butterfly structure
+
+  bool operator<(const GraphKey &o) const {
+    return std::tie(transpose, n_flds, lda, ldc, n_modes, iclist) <
+           std::tie(o.transpose, o.n_flds, o.lda, o.ldc, o.n_modes, o.iclist);
+  }
+};
+
+struct GraphDeps {
+  const void *A, *C, *work, *pnonim, *b;
+  uint64_t hash; // Of the per-mode sizes and offsets, and the host node array addresses
+
+  bool operator==(const GraphDeps &o) const {
+    return std::tie(A, C, work, pnonim, b, hash) ==
+           std::tie(o.A, o.C, o.work, o.pnonim, o.b, o.hash);
+  }
+};
+
+struct GraphEntry {
+  GraphDeps deps;
+  size_t work_len;
+  char *d_plan; // The graph's own copy of the plan
+  hipGraphExec_t exec;
+};
+
+template <typename Real> std::map<GraphKey, GraphEntry> &get_graph_cache() {
+  static std::map<GraphKey, GraphEntry> cache;
+  return cache;
+}
+
+// FNV-1a
+struct Hasher {
+  uint64_t h = 14695981039346656037ull;
+  void add(const void *p, size_t n) {
+    const unsigned char *c = static_cast<const unsigned char *>(p);
+    for (size_t i = 0; i < n; ++i) {
+      h ^= c[i];
+      h *= 1099511628211ull;
+    }
+  }
+  template <typename T> void add_value(T v) { add(&v, sizeof(v)); }
 };
 
 } // namespace
@@ -283,8 +412,8 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
 
   if (n_modes <= 0 || n_flds <= 0) return;
 
+  Branches &br = get_branches();
   hipblasHandle_t handle = get_mult_butm_handle();
-  HICBLAS_CHECK(hipblasSetStream(handle, stream));
 
   const hipblasOperation_t N = HIPBLAS_OP_N, T = HIPBLAS_OP_T;
   const int nf = n_flds;
@@ -295,207 +424,296 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
   // largest total ICOLS.
   std::vector<size_t> work_offsets(n_modes + 1, 0);
   int max_levels = 0;
-  for (int m = 0; m < n_modes; ++m) {
-    size_t vec_len = 0;
-    for (int lev = 0; lev <= levels[m]; ++lev) {
-      int l = lev_offset[m] + lev;
-      size_t lev_len = 0;
-      for (int inode = 0; inode < lev_ij[l] * lev_ik[l]; ++inode) {
-        lev_len += lev_node_icols[lev_node_offset[l] + inode];
+  auto compute_work_offsets = [&]() {
+    for (int m = 0; m < n_modes; ++m) {
+      size_t vec_len = 0;
+      for (int lev = 0; lev <= levels[m]; ++lev) {
+        int l = lev_offset[m] + lev;
+        size_t lev_len = 0;
+        for (int inode = 0; inode < lev_ij[l] * lev_ik[l]; ++inode) {
+          lev_len += lev_node_icols[lev_node_offset[l] + inode];
+        }
+        vec_len = std::max(vec_len, lev_len);
       }
-      vec_len = std::max(vec_len, lev_len);
+      work_offsets[m + 1] = work_offsets[m] + (2 * (size_t)betalen_max[m] + vec_len) * nf;
+      max_levels = std::max(max_levels, levels[m]);
     }
-    work_offsets[m + 1] = work_offsets[m] + (2 * (size_t)betalen_max[m] + vec_len) * nf;
-    max_levels = std::max(max_levels, levels[m]);
-  }
-  Real *work = get_workspace<Real>(work_offsets[n_modes]);
+  };
 
-  // Build the plan for every level
-  std::vector<LevelPlan<Real>> plan(max_levels + 1);
-  for (int m = 0; m < n_modes; ++m) {
-    int nlevels = levels[m];
-    int lbeta = betalen_max[m];
-    size_t beta_buf[2] = {work_offsets[m], work_offsets[m] + (size_t)lbeta * nf};
-    size_t vec_base = work_offsets[m] + (size_t)2 * lbeta * nf;
+  // Build the plan for every level, for the work space at work
+  auto build_plan = [&](Real *work) {
+    std::vector<LevelPlan<Real>> plan(max_levels + 1);
+    for (int m = 0; m < n_modes; ++m) {
+      int nlevels = levels[m];
+      int lbeta = betalen_max[m];
+      size_t beta_buf[2] = {work_offsets[m], work_offsets[m] + (size_t)lbeta * nf};
+      size_t vec_base = work_offsets[m] + (size_t)2 * lbeta * nf;
 
-    // Flat index of NODE(j,k) on level lev of this mode (j and k are 1-based, as in Fortran)
-    auto node_index = [&](int lev, int j, int k) {
-      int l = lev_offset[m] + lev;
-      return lev_node_offset[l] + (k - 1) * lev_ij[l] + (j - 1);
-    };
+      // Flat index of NODE(j,k) on level lev of this mode (j and k are 1-based, as in Fortran)
+      auto node_index = [&](int lev, int j, int k) {
+        int l = lev_offset[m] + lev;
+        return lev_node_offset[l] + (k - 1) * lev_ij[l] + (j - 1);
+      };
 
-    for (int lev = 0; lev <= nlevels; ++lev) {
-      int l = lev_offset[m] + lev;
-      LevelPlan<Real> &lp = plan[lev];
-      size_t beta = beta_buf[lev % 2];
-      size_t beta_prev = beta_buf[(lev + 1) % 2]; // Buffer for level lev-1
-      size_t vec_off = vec_base;
-      for (int j = 1; j <= lev_ij[l]; ++j) {
-        for (int k = 1; k <= lev_ik[l]; ++k) {
-          int idx = node_index(lev, j, k);
-          int rank = lev_node_irank[idx];
-          int icols = lev_node_icols[idx];
-          int irows = lev_node_irows[idx];
-          int n = icols - rank;
-          check_rank(rank);
+      for (int lev = 0; lev <= nlevels; ++lev) {
+        int l = lev_offset[m] + lev;
+        LevelPlan<Real> &lp = plan[lev];
+        size_t beta = beta_buf[lev % 2];
+        size_t beta_prev = beta_buf[(lev + 1) % 2]; // Buffer for level lev-1
+        size_t vec_off = vec_base;
+        for (int j = 1; j <= lev_ij[l]; ++j) {
+          for (int k = 1; k <= lev_ik[l]; ++k) {
+            int idx = node_index(lev, j, k);
+            int rank = lev_node_irank[idx];
+            int icols = lev_node_icols[idx];
+            int irows = lev_node_irows[idx];
+            int n = icols - rank;
+            check_rank(rank);
 
-          NodeTask t = {};
-          t.icols = icols;
-          t.rank = rank;
-          t.iclist_off = lev_node_iclist_offset[idx];
-          t.beta_off = beta + (size_t)lev_node_ioffbeta[idx] * nf;
-          t.vec_off = vec_off;
-          vec_off += (size_t)icols * nf;
+            NodeTask t = {};
+            t.icols = icols;
+            t.rank = rank;
+            t.iclist_off = lev_node_iclist_offset[idx];
+            t.beta_off = beta + (size_t)lev_node_ioffbeta[idx] * nf;
+            t.vec_off = vec_off;
+            vec_off += (size_t)icols * nf;
 
-          Real *beta_ptr = work + t.beta_off;
-          Real *vec_ns_ptr = work + t.vec_off + (size_t)rank * nf; // Non-skeleton columns of vec
-          const Real *pnonim = lev_node_pnonim + lev_node_pnonim_offset[idx];
-          const Real *b = lev_node_b + lev_node_b_offset[idx];
+            Real *beta_ptr = work + t.beta_off;
+            Real *vec_ns_ptr = work + t.vec_off + (size_t)rank * nf; // Non-skeleton columns of vec
+            const Real *pnonim = lev_node_pnonim + lev_node_pnonim_offset[idx];
+            const Real *b = lev_node_b + lev_node_b_offset[idx];
 
-          if (is_transposed) {
-            if (lev > 0 && lev == nlevels) {
-              // ZBETA = B^T * PVECIN(IFR:ILR,:), i.e. ZBETA^T = PVECIN(IFR:ILR,:)^T * B
-              lp.gemms[0].add(N, N, nf, rank, irows,
-                              A + a_offsets[m] + (size_t)(lev_node_ifrow[idx] - 1) * lda, lda,
-                              b, irows, (Real)0.0, beta_ptr, nf);
-            }
-
-            if (n > 0) {
-              // ZVECOUT(IRANK+1:ICOLS,:) = PNONIM^T * ZBETA, i.e. ZVECOUT^T = ZBETA^T * PNONIM
-              lp.gemms[1].add(N, N, nf, n, rank, beta_ptr, nf, pnonim, rank, (Real)0.0,
-                              vec_ns_ptr, nf);
-            }
-
-            if (lev == 0) {
-              // Scatter into PVECOUT(IFR:ILR,:)
-              t.flags = EXTERNAL;
-              t.ext_off = c_offsets[m] + (int64_t)(lev_node_ifcol[idx] - 1) * ldc;
-              t.off_l = 0;
-              t.split = icols;
-              t.off_r = 0;
-              t.limit = icols;
-              lp.tasks[0].push_back(t);
-            } else {
-              // Scatter into the beta slots of the two children on level lev-1. Odd j assigns,
-              // even j (the partner sharing the same children) accumulates afterwards.
-              int jc = (j + 1) / 2;
-              int il = node_index(lev - 1, jc, 2 * k - 1);
-              int irankl = lev_node_irank[il];
-              int irankr = 0, btstr = 0;
-              if (2 * k <= lev_ik[l - 1]) {
-                int ir = node_index(lev - 1, jc, 2 * k);
-                irankr = lev_node_irank[ir];
-                btstr = lev_node_ioffbeta[ir];
+            if (is_transposed) {
+              if (lev > 0 && lev == nlevels) {
+                // ZBETA = B^T * PVECIN(IFR:ILR,:), i.e. ZBETA^T = PVECIN(IFR:ILR,:)^T * B
+                lp.gemms[0].add(N, N, nf, rank, irows,
+                                A + a_offsets[m] + (size_t)(lev_node_ifrow[idx] - 1) * lda, lda,
+                                b, irows, (Real)0.0, beta_ptr, nf);
               }
-              t.ext_off = beta_prev;
-              t.off_l = lev_node_ioffbeta[il];
-              t.split = irankl;
-              t.off_r = btstr;
-              t.limit = irankl + irankr;
-              if (j % 2 == 0) {
-                t.flags = ACCUMULATE;
-                lp.tasks[1].push_back(t);
-              } else {
+
+              if (n > 0) {
+                // ZVECOUT(IRANK+1:ICOLS,:) = PNONIM^T * ZBETA, i.e. ZVECOUT^T = ZBETA^T * PNONIM
+                lp.gemms[1].add(N, N, nf, n, rank, beta_ptr, nf, pnonim, rank, (Real)0.0,
+                                vec_ns_ptr, nf);
+              }
+
+              if (lev == 0) {
+                // Scatter into PVECOUT(IFR:ILR,:)
+                t.flags = EXTERNAL;
+                t.ext_off = c_offsets[m] + (int64_t)(lev_node_ifcol[idx] - 1) * ldc;
+                t.off_l = 0;
+                t.split = icols;
+                t.off_r = 0;
+                t.limit = icols;
                 lp.tasks[0].push_back(t);
+              } else {
+                // Scatter into the beta slots of the two children on level lev-1. Odd j assigns,
+                // even j (the partner sharing the same children) accumulates afterwards.
+                int jc = (j + 1) / 2;
+                int il = node_index(lev - 1, jc, 2 * k - 1);
+                int irankl = lev_node_irank[il];
+                int irankr = 0, btstr = 0;
+                if (2 * k <= lev_ik[l - 1]) {
+                  int ir = node_index(lev - 1, jc, 2 * k);
+                  irankr = lev_node_irank[ir];
+                  btstr = lev_node_ioffbeta[ir];
+                }
+                t.ext_off = beta_prev;
+                t.off_l = lev_node_ioffbeta[il];
+                t.split = irankl;
+                t.off_r = btstr;
+                t.limit = irankl + irankr;
+                if (j % 2 == 0) {
+                  t.flags = ACCUMULATE;
+                  lp.tasks[1].push_back(t);
+                } else {
+                  lp.tasks[0].push_back(t);
+                }
               }
-            }
-          } else {
-            if (lev == 0) {
-              // Gather from PVECIN(IFR:,:)
-              t.flags = EXTERNAL;
-              t.ext_off = a_offsets[m] + (int64_t)(lev_node_ifcol[idx] - 1) * lda;
             } else {
-              // Gather from the beta slots of the children on level lev-1, which are contiguous
-              // starting from the left child
-              int il = node_index(lev - 1, (j + 1) / 2, 2 * k - 1);
-              t.ext_off = beta_prev + (size_t)lev_node_ioffbeta[il] * nf;
-            }
-            lp.tasks[0].push_back(t);
+              if (lev == 0) {
+                // Gather from PVECIN(IFR:,:)
+                t.flags = EXTERNAL;
+                t.ext_off = a_offsets[m] + (int64_t)(lev_node_ifcol[idx] - 1) * lda;
+              } else {
+                // Gather from the beta slots of the children on level lev-1, which are contiguous
+                // starting from the left child
+                int il = node_index(lev - 1, (j + 1) / 2, 2 * k - 1);
+                t.ext_off = beta_prev + (size_t)lev_node_ioffbeta[il] * nf;
+              }
+              lp.tasks[0].push_back(t);
 
-            if (n > 0) {
-              // ZBETA += PNONIM * ZVECIN(IRANK+1:ICOLS,:), i.e.
-              // ZBETA^T += ZVECIN(IRANK+1:ICOLS,:)^T * PNONIM^T
-              lp.gemms[0].add(N, T, nf, rank, n, vec_ns_ptr, nf, pnonim, rank, (Real)1.0,
-                              beta_ptr, nf);
-            }
+              if (n > 0) {
+                // ZBETA += PNONIM * ZVECIN(IRANK+1:ICOLS,:), i.e.
+                // ZBETA^T += ZVECIN(IRANK+1:ICOLS,:)^T * PNONIM^T
+                lp.gemms[0].add(N, T, nf, rank, n, vec_ns_ptr, nf, pnonim, rank, (Real)1.0,
+                                beta_ptr, nf);
+              }
 
-            if (lev == nlevels) {
-              // PVECOUT(IFR:ILR,:) = B * ZBETA, i.e. PVECOUT(IFR:ILR,:)^T = ZBETA^T * B^T
-              lp.gemms[1].add(N, T, nf, irows, rank, beta_ptr, nf, b, irows, (Real)0.0,
-                              C + c_offsets[m] + (size_t)(lev_node_ifrow[idx] - 1) * ldc, ldc);
+              if (lev == nlevels) {
+                // PVECOUT(IFR:ILR,:) = B * ZBETA, i.e. PVECOUT(IFR:ILR,:)^T = ZBETA^T * B^T
+                lp.gemms[1].add(N, T, nf, irows, rank, beta_ptr, nf, b, irows, (Real)0.0,
+                                C + c_offsets[m] + (size_t)(lev_node_ifrow[idx] - 1) * ldc, ldc);
+              }
             }
           }
         }
       }
     }
-  }
-
-  // Pack the tasks and GEMM pointer arrays of all levels into one buffer and upload it
-  size_t n_tasks = 0, n_ptrs = 0;
-  for (LevelPlan<Real> &lp : plan) {
-    for (int i = 0; i < 2; ++i) {
-      lp.task_off[i] = n_tasks;
-      n_tasks += lp.tasks[i].size();
-      for (GemmGroup<Real> &g : lp.gemms[i].groups) {
-        g.ptr_off = n_ptrs;
-        n_ptrs += 3 * g.c.size();
-      }
-    }
-  }
-  size_t task_bytes = n_tasks * sizeof(NodeTask);
-  size_t total_bytes = task_bytes + n_ptrs * sizeof(void *);
-  PlanBuffers &buf = get_plan_buffers(total_bytes);
-  NodeTask *h_tasks = reinterpret_cast<NodeTask *>(buf.host);
-  const void **h_ptrs = reinterpret_cast<const void **>(buf.host + task_bytes);
-  for (const LevelPlan<Real> &lp : plan) {
-    for (int i = 0; i < 2; ++i) {
-      std::copy(lp.tasks[i].begin(), lp.tasks[i].end(), h_tasks + lp.task_off[i]);
-      for (const GemmGroup<Real> &g : lp.gemms[i].groups) {
-        size_t count = g.c.size();
-        std::copy(g.a.begin(), g.a.end(), h_ptrs + g.ptr_off);
-        std::copy(g.b.begin(), g.b.end(), h_ptrs + g.ptr_off + count);
-        std::copy(g.c.begin(), g.c.end(), h_ptrs + g.ptr_off + 2 * count);
-      }
-    }
-  }
-  if (total_bytes > 0) {
-    HIC_CHECK(hipMemcpyAsync(buf.device, buf.host, total_bytes, hipMemcpyHostToDevice, stream));
-    HIC_CHECK(hipEventRecord(buf.uploaded, stream));
-    buf.pending = true;
-  }
-  const NodeTask *d_tasks = reinterpret_cast<const NodeTask *>(buf.device);
-  void *const *d_ptrs = reinterpret_cast<void *const *>(buf.device + task_bytes);
-
-  auto launch_tasks = [&](const LevelPlan<Real> &lp, int i, bool scatter) {
-    int count = lp.tasks[i].size();
-    if (count == 0) return;
-    if (scatter) {
-      scatter_kernel<<<count, block_size, 0, stream>>>(d_tasks + lp.task_off[i], nf,
-                                                       lev_node_iclist, C, ldc, work);
-    } else {
-      gather_kernel<<<count, block_size, 0, stream>>>(d_tasks + lp.task_off[i], nf,
-                                                      lev_node_iclist, A, lda, work);
-    }
-    HIC_CHECK(hipGetLastError());
+    return plan;
   };
 
-  // Execute the plan, one level at a time across all modes
-  if (is_transposed) {
-    for (int lev = max_levels; lev >= 0; --lev) {
-      const LevelPlan<Real> &lp = plan[lev];
-      lp.gemms[0].launch(handle, d_ptrs);
-      lp.gemms[1].launch(handle, d_ptrs);
-      launch_tasks(lp, 0, true);
-      launch_tasks(lp, 1, true);
+  // Pack the tasks and GEMM pointer arrays of all levels into one buffer, to be uploaded in one
+  // go. Returns the size of the tasks part, which is followed by the pointers.
+  auto pack_plan = [&](std::vector<LevelPlan<Real>> &plan, std::vector<char> &host) {
+    size_t n_tasks = 0, n_ptrs = 0;
+    for (LevelPlan<Real> &lp : plan) {
+      for (int i = 0; i < 2; ++i) {
+        lp.task_off[i] = n_tasks;
+        n_tasks += lp.tasks[i].size();
+        for (GemmGroup<Real> &g : lp.gemms[i].groups) {
+          g.ptr_off = n_ptrs;
+          n_ptrs += 3 * g.c.size();
+        }
+      }
     }
-  } else {
-    for (int lev = 0; lev <= max_levels; ++lev) {
-      const LevelPlan<Real> &lp = plan[lev];
-      launch_tasks(lp, 0, false);
-      lp.gemms[0].launch(handle, d_ptrs);
-      lp.gemms[1].launch(handle, d_ptrs);
+    size_t task_bytes = n_tasks * sizeof(NodeTask);
+    host.resize(task_bytes + n_ptrs * sizeof(void *));
+    NodeTask *h_tasks = reinterpret_cast<NodeTask *>(host.data());
+    const void **h_ptrs = reinterpret_cast<const void **>(host.data() + task_bytes);
+    for (const LevelPlan<Real> &lp : plan) {
+      for (int i = 0; i < 2; ++i) {
+        std::copy(lp.tasks[i].begin(), lp.tasks[i].end(), h_tasks + lp.task_off[i]);
+        for (const GemmGroup<Real> &g : lp.gemms[i].groups) {
+          size_t count = g.c.size();
+          std::copy(g.a.begin(), g.a.end(), h_ptrs + g.ptr_off);
+          std::copy(g.b.begin(), g.b.end(), h_ptrs + g.ptr_off + count);
+          std::copy(g.c.begin(), g.c.end(), h_ptrs + g.ptr_off + 2 * count);
+        }
+      }
     }
+    return task_bytes;
+  };
+
+  // Issue the plan on stream s, one level at a time across all modes, using the uploaded copy of
+  // the plan at d_plan
+  auto execute_plan = [&](const std::vector<LevelPlan<Real>> &plan, char *d_plan,
+                          size_t task_bytes, Real *work, hipStream_t s) {
+    HICBLAS_CHECK(hipblasSetStream(handle, s));
+    const NodeTask *d_tasks = reinterpret_cast<const NodeTask *>(d_plan);
+    void *const *d_ptrs = reinterpret_cast<void *const *>(d_plan + task_bytes);
+
+    auto launch_tasks = [&](const LevelPlan<Real> &lp, int i, bool scatter) {
+      int count = lp.tasks[i].size();
+      if (count == 0) return;
+      if (scatter) {
+        scatter_kernel<<<count, block_size, 0, s>>>(d_tasks + lp.task_off[i], nf,
+                                                    lev_node_iclist, C, ldc, work);
+      } else {
+        gather_kernel<<<count, block_size, 0, s>>>(d_tasks + lp.task_off[i], nf,
+                                                   lev_node_iclist, A, lda, work);
+      }
+      HIC_CHECK(hipGetLastError());
+    };
+
+    if (is_transposed) {
+      for (int lev = max_levels; lev >= 0; --lev) {
+        const LevelPlan<Real> &lp = plan[lev];
+        lp.gemms[0].launch(handle, s, br, d_ptrs);
+        lp.gemms[1].launch(handle, s, br, d_ptrs);
+        launch_tasks(lp, 0, true);
+        launch_tasks(lp, 1, true);
+      }
+    } else {
+      for (int lev = 0; lev <= max_levels; ++lev) {
+        const LevelPlan<Real> &lp = plan[lev];
+        launch_tasks(lp, 0, false);
+        lp.gemms[0].launch(handle, s, br, d_ptrs);
+        lp.gemms[1].launch(handle, s, br, d_ptrs);
+      }
+    }
+  };
+
+  static const bool use_graphs = env_int("MULT_BUTM_GRAPHS", 1) != 0;
+
+  if (!use_graphs) {
+    // Build, upload and execute the plan directly on the caller's stream
+    compute_work_offsets();
+    Real *work = get_workspace<Real>(work_offsets[n_modes]);
+    std::vector<LevelPlan<Real>> plan = build_plan(work);
+    std::vector<char> host;
+    size_t task_bytes = pack_plan(plan, host);
+    PlanBuffers &buf = get_plan_buffers(host.size());
+    if (!host.empty()) {
+      std::copy(host.begin(), host.end(), buf.host);
+      HIC_CHECK(hipMemcpyAsync(buf.device, buf.host, host.size(), hipMemcpyHostToDevice, stream));
+      HIC_CHECK(hipEventRecord(buf.uploaded, stream));
+      buf.pending = true;
+    }
+    execute_plan(plan, buf.device, task_bytes, work, stream);
+    return;
   }
+
+  // Everything, apart from the key, that a captured graph depends on. The sizes of the butterfly
+  // structure are hashed per mode and per level only, since hashing all the node arrays on every
+  // call would be relatively expensive; the device arrays identify the structure itself.
+  auto make_deps = [&](const Real *work) {
+    int n_lev_total = lev_offset[n_modes - 1] + levels[n_modes - 1] + 1;
+    Hasher h;
+    h.add(order, n_modes * sizeof(int));
+    h.add(levels, n_modes * sizeof(int));
+    h.add(betalen_max, n_modes * sizeof(int));
+    h.add(lev_offset, n_modes * sizeof(int));
+    h.add(a_offsets, n_modes * sizeof(int64_t));
+    h.add(c_offsets, n_modes * sizeof(int64_t));
+    h.add(lev_ij, n_lev_total * sizeof(int));
+    h.add(lev_ik, n_lev_total * sizeof(int));
+    h.add(lev_node_offset, n_lev_total * sizeof(int));
+    return GraphDeps{A, C, work, lev_node_pnonim, lev_node_b, h.h};
+  };
+
+  GraphKey key = {is_transposed ? 'T' : 'N', n_flds, lda, ldc, n_modes, lev_node_iclist};
+  auto &cache = get_graph_cache<Real>();
+  auto it = cache.find(key);
+  if (it != cache.end()) {
+    GraphEntry &entry = it->second;
+    Real *work = get_workspace<Real>(entry.work_len);
+    if (make_deps(work) == entry.deps) {
+      HIC_CHECK(hipGraphLaunch(entry.exec, stream));
+      return;
+    }
+    fprintf(stderr, "WARNING mult_butm: graph dependencies changed, recapturing (slow)\n");
+    HIC_CHECK(hipDeviceSynchronize());
+    HIC_CHECK(hipGraphExecDestroy(entry.exec));
+    if (entry.d_plan) HIC_CHECK(hipFree(entry.d_plan));
+    cache.erase(it);
+  }
+
+  // Build the plan and give the graph its own copy of it on the device
+  compute_work_offsets();
+  GraphEntry entry;
+  entry.work_len = work_offsets[n_modes];
+  Real *work = get_workspace<Real>(entry.work_len);
+  std::vector<LevelPlan<Real>> plan = build_plan(work);
+  std::vector<char> host;
+  size_t task_bytes = pack_plan(plan, host);
+  entry.d_plan = nullptr;
+  if (!host.empty()) {
+    HIC_CHECK(hipMalloc(&entry.d_plan, host.size()));
+    HIC_CHECK(hipMemcpy(entry.d_plan, host.data(), host.size(), hipMemcpyHostToDevice));
+  }
+  entry.deps = make_deps(work);
+
+  // Capture the plan's execution on the capture stream, then launch it on the caller's stream
+  hipGraph_t graph;
+  HIC_CHECK(hipStreamBeginCapture(br.capture, hipStreamCaptureModeGlobal));
+  execute_plan(plan, entry.d_plan, task_bytes, work, br.capture);
+  HIC_CHECK(hipStreamEndCapture(br.capture, &graph));
+  HIC_CHECK(hipGraphInstantiate(&entry.exec, graph, NULL, NULL, 0));
+  HIC_CHECK(hipGraphDestroy(graph));
+  cache.emplace(key, entry);
+
+  HIC_CHECK(hipGraphLaunch(entry.exec, stream));
 }
 
 // -------------------------------------------------------------------------------------------------
