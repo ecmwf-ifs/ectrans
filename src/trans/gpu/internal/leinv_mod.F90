@@ -286,7 +286,7 @@ CONTAINS
       !$ACC END HOST_DATA
 #endif
 #ifdef OMPGPU
-      ! TODO
+      !$OMP END TARGET DATA
 #endif
     ENDIF
 
@@ -423,7 +423,7 @@ CONTAINS
       !$ACC END HOST_DATA
 #endif
 #ifdef OMPGPU
-      ! TODO
+      !$OMP END TARGET DATA
 #endif
     ENDIF
 
