@@ -398,9 +398,9 @@ struct Hasher {
 } // namespace
 
 template <typename Real>
-void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const int *levels,
-  const int *betalen_max, const int *lev_offset, const int *lev_ij, const int *lev_ik,
-  const int *lev_ibetalen, const int *lev_node_offset, const int *lev_node_ifcol,
+void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const int *order,
+  const int *levels, const int *betalen_max, const int *lev_offset, const int *lev_ij,
+  const int *lev_ik, const int *lev_ibetalen, const int *lev_node_offset, const int *lev_node_ifcol,
   const int *lev_node_ilcol, const int *lev_node_ifrow, const int *lev_node_ilrow,
   const int *lev_node_icols, const int *lev_node_irows, const int *lev_node_irank,
   const int *lev_node_ioffbeta, const int *lev_node_iclist_offset, const int *lev_node_iclist,
@@ -410,6 +410,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
 
   bool is_transposed = (transpose == 'T' || transpose == 't');
 
+  int n_modes = end_mode - start_mode + 1;
   if (n_modes <= 0 || n_flds <= 0) return;
 
   Branches &br = get_branches();
@@ -425,7 +426,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
   std::vector<size_t> work_offsets(n_modes + 1, 0);
   int max_levels = 0;
   auto compute_work_offsets = [&]() {
-    for (int m = 0; m < n_modes; ++m) {
+    for (int m = start_mode; m <= end_mode; ++m) {
       size_t vec_len = 0;
       for (int lev = 0; lev <= levels[m]; ++lev) {
         int l = lev_offset[m] + lev;
@@ -435,7 +436,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
         }
         vec_len = std::max(vec_len, lev_len);
       }
-      work_offsets[m + 1] = work_offsets[m] + (2 * (size_t)betalen_max[m] + vec_len) * nf;
+      work_offsets[m + 1 - start_mode] = work_offsets[m - start_mode] + (2 * (size_t)betalen_max[m] + vec_len) * nf;
       max_levels = std::max(max_levels, levels[m]);
     }
   };
@@ -443,11 +444,11 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
   // Build the plan for every level, for the work space at work
   auto build_plan = [&](Real *work) {
     std::vector<LevelPlan<Real>> plan(max_levels + 1);
-    for (int m = 0; m < n_modes; ++m) {
+    for (int m = start_mode; m <= end_mode; ++m) {
       int nlevels = levels[m];
       int lbeta = betalen_max[m];
-      size_t beta_buf[2] = {work_offsets[m], work_offsets[m] + (size_t)lbeta * nf};
-      size_t vec_base = work_offsets[m] + (size_t)2 * lbeta * nf;
+      size_t beta_buf[2] = {work_offsets[m - start_mode], work_offsets[m - start_mode] + (size_t)(lbeta) * nf};
+      size_t vec_base = work_offsets[m - start_mode] + (size_t)2 * lbeta * nf;
 
       // Flat index of NODE(j,k) on level lev of this mode (j and k are 1-based, as in Fortran)
       auto node_index = [&](int lev, int j, int k) {
@@ -658,7 +659,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
   // structure are hashed per mode and per level only, since hashing all the node arrays on every
   // call would be relatively expensive; the device arrays identify the structure itself.
   auto make_deps = [&](const Real *work) {
-    int n_lev_total = lev_offset[n_modes - 1] + levels[n_modes - 1] + 1;
+    int n_lev_total = lev_offset[n_modes - 1] + levels[n_modes - 1] + 1 - lev_offset[start_mode];
     Hasher h;
     h.add(order, n_modes * sizeof(int));
     h.add(levels, n_modes * sizeof(int));
@@ -722,7 +723,7 @@ void mult_butm(char transpose, int n_modes, int n_flds, const int *order, const 
 
 extern "C" {
 void mult_butm_sp(
-  char transpose, int n_modes, int n_flds, const int *order, const int *levels,
+  char transpose, int start_mode, int end_mode, int n_flds, const int *order, const int *levels,
   const int *betalen_max, const int *lev_offset, const int *lev_ij, const int *lev_ik,
   const int *lev_ibetalen, const int *lev_node_offset, const int *lev_node_ifcol,
   const int *lev_node_ilcol, const int *lev_node_ifrow, const int *lev_node_ilrow,
@@ -732,7 +733,7 @@ void mult_butm_sp(
   const float *lev_node_b, const float *A, int lda, const int64_t *a_offsets, float *C, int ldc,
   const int64_t *c_offsets, const long *stream) {
 
-  mult_butm<float>(transpose, n_modes, n_flds, order, levels, betalen_max,
+  mult_butm<float>(transpose, start_mode, end_mode, n_flds, order, levels, betalen_max,
     lev_offset, lev_ij, lev_ik, lev_ibetalen,
     lev_node_offset, lev_node_ifcol, lev_node_ilcol,
     lev_node_ifrow, lev_node_ilrow, lev_node_icols,
@@ -743,7 +744,7 @@ void mult_butm_sp(
 }
 
 void mult_butm_dp(
-  char transpose, int n_modes, int n_flds, const int *order, const int *levels,
+  char transpose, int start_mode, int end_mode, int n_flds, const int *order, const int *levels,
   const int *betalen_max, const int *lev_offset, const int *lev_ij, const int *lev_ik,
   const int *lev_ibetalen, const int *lev_node_offset, const int *lev_node_ifcol,
   const int *lev_node_ilcol, const int *lev_node_ifrow, const int *lev_node_ilrow,
@@ -753,7 +754,7 @@ void mult_butm_dp(
   const double *lev_node_b, const double *A, int lda, const int64_t *a_offsets, double *C, int ldc,
   const int64_t *c_offsets, const long *stream) {
 
-  mult_butm<double>(transpose, n_modes, n_flds, order, levels, betalen_max,
+  mult_butm<double>(transpose, start_mode, end_mode, n_flds, order, levels, betalen_max,
     lev_offset, lev_ij, lev_ik, lev_ibetalen,
     lev_node_offset, lev_node_ifcol, lev_node_ilcol,
     lev_node_ifrow, lev_node_ilrow, lev_node_icols,
