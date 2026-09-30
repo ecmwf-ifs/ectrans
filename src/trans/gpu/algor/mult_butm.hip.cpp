@@ -659,7 +659,7 @@ void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const i
   // structure are hashed per mode and per level only, since hashing all the node arrays on every
   // call would be relatively expensive; the device arrays identify the structure itself.
   auto make_deps = [&](const Real *work) {
-    int n_lev_total = lev_offset[n_modes - 1] + levels[n_modes - 1] + 1 - lev_offset[start_mode];
+    int n_lev_total = lev_offset[end_mode] + levels[end_mode] + 1 - lev_offset[start_mode];
     Hasher h;
     h.add(order, n_modes * sizeof(int));
     h.add(levels, n_modes * sizeof(int));

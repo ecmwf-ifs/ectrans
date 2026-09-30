@@ -113,17 +113,21 @@ CONTAINS
     USE TPM_DISTR,                   ONLY: D
     USE HICBLAS_MOD,                 ONLY: HIP_DGEMM_BATCHED, &
       &                                    HIP_DGEMM_GROUPED, HIP_SGEMM_GROUPED
+    USE MULT_BUTM_MOD,               ONLY: MULT_BUTM_SP, MULT_BUTM_DP
     USE MPL_MODULE,                  ONLY: MPL_BARRIER,MPL_ALL_MS_COMM
     USE TPM_STATS,                   ONLY: GSTATS => GSTATS_NVTX
     USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT, C_LONG, C_LOC
+    USE TPM_FLT,                     ONLY: S
 #ifdef ACCGPU
     USE OPENACC_LIB, ONLY: ACC_GET_HIP_STREAM
 #endif
 
 #ifdef TRANS_SINGLE
 #define HIP_GEMM HIP_SGEMM_GROUPED
+#define MULT_BUTM MULT_BUTM_SP
 #else
 #define HIP_GEMM HIP_DGEMM_GROUPED
+#define MULT_BUTM MULT_BUTM_DP
 #endif
 
     IMPLICIT NONE
@@ -153,13 +157,15 @@ CONTAINS
     INTEGER(KIND=JPIB)  :: IIN_STRIDES1
     INTEGER(KIND=JPIM)  :: IOUT0_STRIDES0, IOUT0_STRIDES1
     INTEGER(KIND=JPIM)  :: IIN0_STRIDES0, IIN0_STRIDES1
+    INTEGER(KIND=JPIM)  :: N_MODES_FLT, I_START_MODE_FLT
 
     INTEGER(KIND=C_LONG) :: HIP_STREAM
 
     ASSOCIATE(D_NUMP=>D%NUMP, R_NSMAX=>R%NSMAX, R_NTMAX=>R%NTMAX, G_NDGLU=>G%NDGLU, &
             & D_MYMS=>D%MYMS, D_OFFSETS_GEMM1=>D%OFFSETS_GEMM1, &
             & D_OFFSETS_GEMM2=>D%OFFSETS_GEMM2, &
-            & ZAA=>FG%ZAA, ZAS=>FG%ZAS, ZAA0=>FG%ZAA0, ZAS0=>FG%ZAS0)
+            & ZAA=>FG%ZAA, ZAS=>FG%ZAS, ZAA0=>FG%ZAA0, ZAS0=>FG%ZAS0, &
+            & Y_BUT_FLAT_A=>FG%Y_BUT_FLAT_A, Y_BUT_FLAT_S=>FG%Y_BUT_FLAT_S)
     IF (LHOOK) CALL DR_HOOK('LE_DGEMM',0,ZHOOK_HANDLE)
 
 #ifdef ACCGPU
@@ -197,6 +203,7 @@ CONTAINS
 
     ! anti-symmetric
     IMLOC0 = FINDLOC(D_MYMS,0)
+    I_START_MODE_FLT = MERGE(1, 0, IMLOC0(1) == 1)
     IF(IMLOC0(1) > 0) THEN
       ! compute m=0 in double precision:
 #ifdef OMPGPU
@@ -236,6 +243,49 @@ CONTAINS
       NS(IMLOC0(1)) = 0
       KS(IMLOC0(1)) = 0
     ENDIF
+
+    IF (S%LUSEFLT) THEN
+      ! Disable the GEMM for the FLT modes
+      DO KMLOC = 1, D_NUMP
+        KM = D_MYMS(KMLOC)
+        IF ((R%NSMAX - KM + 2) / 2 > S%ITHRESHOLD) THEN
+          KS(KMLOC) = 0
+          NS(KMLOC) = 0
+        ENDIF
+      ENDDO
+
+      ! Count the number of modes for which FLT will be used
+      N_MODES_FLT = SIZE(Y_BUT_FLAT_A%N_ORDER)
+
+#ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_ADDR(Y_BUT_FLAT_A%SLEV_NODE_ICLIST, &
+      !$OMP&                            Y_BUT_FLAT_A%SLEV_NODE_PNONIM, Y_BUT_FLAT_A%SLEV_NODE_B, &
+      !$OMP&                            ZINPA, ZOUT)
+#endif
+#ifdef ACCGPU
+      !$ACC HOST_DATA USE_DEVICE(Y_BUT_FLAT_A%SLEV_NODE_ICLIST, Y_BUT_FLAT_A%SLEV_NODE_PNONIM, &
+      !$ACC&                     Y_BUT_FLAT_A%SLEV_NODE_B, ZINPA, ZOUT)
+#endif
+      CALL MULT_BUTM('T', I_START_MODE_FLT, N_MODES_FLT - 1, 2 * KF_FS, Y_BUT_FLAT_A%N_ORDER, &
+        &            Y_BUT_FLAT_A%N_LEVELS, Y_BUT_FLAT_A%IBETALEN_MAX, Y_BUT_FLAT_A%SLEV_OFFSET, &
+        &            Y_BUT_FLAT_A%SLEV_IJ, Y_BUT_FLAT_A%SLEV_IK, Y_BUT_FLAT_A%SLEV_IBETALEN, &
+        &            Y_BUT_FLAT_A%SLEV_NODE_OFFSET, Y_BUT_FLAT_A%SLEV_NODE_IFCOL, &
+        &            Y_BUT_FLAT_A%SLEV_NODE_ILCOL, Y_BUT_FLAT_A%SLEV_NODE_IFROW, &
+        &            Y_BUT_FLAT_A%SLEV_NODE_ILROW, Y_BUT_FLAT_A%SLEV_NODE_ICOLS, &
+        &            Y_BUT_FLAT_A%SLEV_NODE_IROWS, Y_BUT_FLAT_A%SLEV_NODE_IRANK, &
+        &            Y_BUT_FLAT_A%SLEV_NODE_IOFFBETA, Y_BUT_FLAT_A%SLEV_NODE_ICLIST_OFFSET, &
+        &            C_LOC(Y_BUT_FLAT_A%SLEV_NODE_ICLIST), Y_BUT_FLAT_A%SLEV_NODE_PNONIM_OFFSET, &
+        &            C_LOC(Y_BUT_FLAT_A%SLEV_NODE_PNONIM), Y_BUT_FLAT_A%SLEV_NODE_B_OFFSET, &
+        &            C_LOC(Y_BUT_FLAT_A%SLEV_NODE_B), C_LOC(ZINPA), IIN_STRIDES0, AOFFSETS, &
+        &            C_LOC(ZOUT), IOUT_STRIDES0, COFFSETS, HIP_STREAM)
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
+#endif
+    ENDIF
+
 #ifdef OMPGPU
     !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA,ZINPA,ZOUT)
 #endif
@@ -355,6 +405,49 @@ CONTAINS
       NS(IMLOC0(1)) = 0
       KS(IMLOC0(1)) = 0
     ENDIF
+
+    IF (S%LUSEFLT) THEN
+      ! Disable the GEMM for the FLT modes
+      DO KMLOC = 1, D_NUMP
+        KM = D_MYMS(KMLOC)
+        IF ((R%NSMAX - KM + 3) / 2 > S%ITHRESHOLD) THEN
+          KS(KMLOC) = 0
+          NS(KMLOC) = 0
+        ENDIF
+      ENDDO
+
+      ! Count the number of modes for which FLT will be used
+      N_MODES_FLT = SIZE(Y_BUT_FLAT_S%N_ORDER)
+
+#ifdef OMPGPU
+      !$OMP TARGET DATA USE_DEVICE_ADDR(Y_BUT_FLAT_S%SLEV_NODE_ICLIST, &
+      !$OMP&                            Y_BUT_FLAT_S%SLEV_NODE_PNONIM, Y_BUT_FLAT_S%SLEV_NODE_B, &
+      !$OMP&                            ZINPS, ZOUT)
+#endif
+#ifdef ACCGPU
+      !$ACC HOST_DATA USE_DEVICE(Y_BUT_FLAT_S%SLEV_NODE_ICLIST, Y_BUT_FLAT_S%SLEV_NODE_PNONIM, &
+      !$ACC&                     Y_BUT_FLAT_S%SLEV_NODE_B, ZINPS, ZOUT)
+#endif
+      CALL MULT_BUTM('T', I_START_MODE_FLT, N_MODES_FLT - 1, 2 * KF_FS, Y_BUT_FLAT_S%N_ORDER, &
+        &            Y_BUT_FLAT_S%N_LEVELS, Y_BUT_FLAT_S%IBETALEN_MAX, Y_BUT_FLAT_S%SLEV_OFFSET, &
+        &            Y_BUT_FLAT_S%SLEV_IJ, Y_BUT_FLAT_S%SLEV_IK, Y_BUT_FLAT_S%SLEV_IBETALEN, &
+        &            Y_BUT_FLAT_S%SLEV_NODE_OFFSET, Y_BUT_FLAT_S%SLEV_NODE_IFCOL, &
+        &            Y_BUT_FLAT_S%SLEV_NODE_ILCOL, Y_BUT_FLAT_S%SLEV_NODE_IFROW, &
+        &            Y_BUT_FLAT_S%SLEV_NODE_ILROW, Y_BUT_FLAT_S%SLEV_NODE_ICOLS, &
+        &            Y_BUT_FLAT_S%SLEV_NODE_IROWS, Y_BUT_FLAT_S%SLEV_NODE_IRANK, &
+        &            Y_BUT_FLAT_S%SLEV_NODE_IOFFBETA, Y_BUT_FLAT_S%SLEV_NODE_ICLIST_OFFSET, &
+        &            C_LOC(Y_BUT_FLAT_S%SLEV_NODE_ICLIST), Y_BUT_FLAT_S%SLEV_NODE_PNONIM_OFFSET, &
+        &            C_LOC(Y_BUT_FLAT_S%SLEV_NODE_PNONIM), Y_BUT_FLAT_S%SLEV_NODE_B_OFFSET, &
+        &            C_LOC(Y_BUT_FLAT_S%SLEV_NODE_B), C_LOC(ZINPS), IIN_STRIDES0, AOFFSETS, &
+        &            C_LOC(ZOUT), IOUT_STRIDES0, COFFSETS, HIP_STREAM)
+#ifdef ACCGPU
+      !$ACC END HOST_DATA
+#endif
+#ifdef OMPGPU
+      !$OMP END TARGET DATA
+#endif
+    ENDIF
+
 #ifdef OMPGPU
     !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS,ZINPS,ZOUT)
 #endif
