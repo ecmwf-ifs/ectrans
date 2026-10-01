@@ -79,7 +79,7 @@ REAL(KIND=JPRB)    ,OPTIONAL, INTENT(IN) CONTIG_STATUS :: PSPECG(:,:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFDISTG
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KFROM(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KVSET(:)
-REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT), CONTIGUOUS :: PSPEC(:,:)
+REAL(KIND=JPRB)    ,OPTIONAL, INTENT(OUT) CONTIG_STATUS :: PSPEC(:,:)
 LOGICAL                     , INTENT(IN)  :: LDIM1_IS_FLD
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSMAX
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2
@@ -102,7 +102,6 @@ INTEGER(KIND=JPIM) :: ISENT, INR, IOFFPROC(NPROC+1), IFLDLOC(KFDISTG), ILOCFLD(K
 INTEGER(KIND=JPIM), POINTER :: ISORT (:)
 
 !     ------------------------------------------------------------------
-
 
 ! Compute help array for distribution
 

@@ -260,11 +260,8 @@ if( trans.myproc == 1 )
   int i,j;
   for( j=0; j<nfld; ++j)
   { 
-    if( j>=0 )
-    {
-      for( i=0; i<trans.ngptotg; ++i )
-        adj_value2 += rgpxg[j*trans.ngptotg+i] * rgpyg[j*trans.ngptotg+i];
-    }
+    for( i=0; i<trans.ngptotg; ++i )
+      adj_value2 += rgpxg[j*trans.ngptotg+i] * rgpyg[j*trans.ngptotg+i];
 
     for( i=0; i<trans.ngptotg; ++i ) {
       printf("rgpyg[fld=%d][pt=%d] : %g\n",j,i,rgpyg[j*trans.ngptotg+i]);
