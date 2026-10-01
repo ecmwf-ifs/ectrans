@@ -28,7 +28,7 @@
 #                               substitute: IS_DEVICE_PTR parses but carries no array
 #                               descriptor, so assumed-shape list items fault. SHARED is
 #                               correct but copies the array in and out per launch wherever
-#                               the runtime cannot resolve the storage; --gp-on-gpu removes
+#                               the runtime cannot resolve the storage; LPGP_ON_GPU removes
 #                               that traffic for the gridpoint arrays.
 #   ECTRANS_LOOP_BOUNDS_CLAUSE  Clause for read-only loop-bound scalars. On nvfortran this
 #                               decides the launch geometry: FIRSTPRIVATE emits a grid-stride
