@@ -2240,7 +2240,7 @@ subroutine gstats_labels
   call gstats_label(424, '   ', 'LEINV GEMM     - Matrix multiplication')
   call gstats_label(430, '   ', 'H2D_MPL_BARRIER- MPI Synchronization')
   call gstats_label(431, '   ', 'TRGTOL/TRLTOM  - MPI Synchronization')
-  call gstats_label(432, '   ', 'H2D_MPL_BARRIER- MPI Synchronization'))
+  call gstats_label(432, '   ', 'H2D_MPL_BARRIER- MPI Synchronization')
   call gstats_label(433, '   ', 'DIR_FFT_BARRIER- MPI Synchronization')
   call gstats_label(434, '   ', 'LEDIR_BARRIER  - MPI Synchronization')
   call gstats_label(440, '   ', 'LSYNC_BARRIER  - MPI Synchronization')
