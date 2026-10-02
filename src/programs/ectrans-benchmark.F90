@@ -2228,9 +2228,30 @@ subroutine gstats_labels
   call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
   call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
   call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
-
+  call gstats_label(410, '   ', 'DIR_TRANS      - Direct transform')
+  call gstats_label(411, '   ', 'TRGTOL/TRLTOM  - MPI Communications')
+  call gstats_label(412, '   ', 'H2D_CP         - Host-To-Device Copy')
+  call gstats_label(413, '   ', 'EXECUTE_DIR_FFT- Low level FFT')
+  call gstats_label(414, '   ', 'LTDIR GEMM     - Matrix multiplication')
+  call gstats_label(420, '   ', 'INV_TRANS      - Inverse transform')
+  call gstats_label(421, '   ', 'TRLTOG/TRMTOL  - MPI Send and Receive')
+  call gstats_label(422, '   ', 'D2H_CP         - Device-To-Host Copy')
+  call gstats_label(423, '   ', 'EXECUTE_INV_FFT- Low level FFT')
+  call gstats_label(424, '   ', 'LEINV GEMM     - Matrix multiplication')
+  call gstats_label(430, '   ', 'H2D_MPL_BARRIER- MPI Synchronization')
+  call gstats_label(431, '   ', 'TRGTOL/TRLTOM  - MPI Synchronization')
+  call gstats_label(432, '   ', 'H2D_MPL_BARRIER- MPI Synchronization')
+  call gstats_label(433, '   ', 'DIR_FFT_BARRIER- MPI Synchronization')
+  call gstats_label(434, '   ', 'LEDIR_BARRIER  - MPI Synchronization')
+  call gstats_label(440, '   ', 'LSYNC_BARRIER  - MPI Synchronization')
+  call gstats_label(441, '   ', 'TRLTOG/TRMTOL  - MPI Synchronization')
+  call gstats_label(442, '   ', 'D2H_MPL_BARRIER- MPI Synchronization')
+  call gstats_label(443, '   ', 'INV_FFT_BARRIER- MPI Synchronization')
+  call gstats_label(444, '   ', 'LEINV_BARRIER  - MPI Synchronization')
+  call gstats_label(1644,'   ', 'DIST           - Domain decomposition')
 end subroutine gstats_labels
 
 end program ectrans_benchmark
+
 
 !===================================================================================================
