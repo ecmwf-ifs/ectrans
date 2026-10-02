@@ -138,7 +138,9 @@ CONTAINS
         & 1_JPIB, 2_JPIB*D%NLENGT1B*KF_FS*C_SIZEOF(PFBUF(1)))
 
 #ifdef OMPGPU
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PFBUF,PFBUF_IN)
+    ! PFBUF/PFBUF_IN are growing-allocator buffers, so their descriptors are never entered
+    ! in the present table and cannot be MAP(PRESENT)'d. The compute constructs below name
+    ! them in HAS_DEVICE_ADDR instead, so no enclosing data region is needed.
 #endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(PFBUF,PFBUF_IN)
@@ -166,7 +168,9 @@ CONTAINS
           FROM_RECV = IOFFR(IRANK) + 1
           TO_RECV = FROM_RECV + ILENR(IRANK) - 1
 #ifdef OMPGPU
-          !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(PFBUF,PFBUF_IN,FROM_RECV,TO_RECV,FROM_SEND,TO_SEND)
+          !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO ECTRANS_OMP_DEFAULT_CLAUSE &
+          !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PFBUF,PFBUF_IN) &
+          !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(FROM_SEND,TO_SEND) FIRSTPRIVATE(FROM_RECV,TO_RECV)
           DO JPOS=FROM_SEND,TO_SEND
              PFBUF(JPOS-FROM_SEND+FROM_RECV) = PFBUF_IN(JPOS)
           ENDDO
@@ -188,9 +192,9 @@ CONTAINS
       ENDIF
       CALL GSTATS(411,0)
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-      !$OMP TARGET DATA USE_DEVICE_ADDR(PFBUF_IN,PFBUF)
-#endif
+      ! Under OMPGPU these buffers come from the growing allocator, which hands out device
+      ! pointers directly (see GROWING_ALLOCATOR_MOD), so they can go straight to GPU-aware
+      ! MPI; a USE_DEVICE_ADDR region would only map and re-copy their descriptors.
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
 #endif
@@ -213,9 +217,6 @@ CONTAINS
         &                CDSTRING='TRLTOM:')
 #endif
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-      !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
       !$ACC END HOST_DATA
 #endif
@@ -245,7 +246,9 @@ CONTAINS
       IEND = ISTA+ILEN-1
       CALL GSTATS(1607,0)
 #ifdef OMPGPU
-      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO DEFAULT(NONE) SHARED(IEND,ISTA,PFBUF_IN,PFBUF)
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO ECTRANS_OMP_DEFAULT_CLAUSE &
+      !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PFBUF_IN,PFBUF) &
+      !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(IEND,ISTA)
 #endif
 #ifdef ACCGPU
       !$ACC PARALLEL LOOP DEFAULT(NONE) FIRSTPRIVATE(ISTA,IEND)
@@ -256,9 +259,6 @@ CONTAINS
       CALL GSTATS(1607,1)
     ENDIF
 
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
-#endif
 #ifdef ACCGPU
     !$ACC END DATA
 #endif

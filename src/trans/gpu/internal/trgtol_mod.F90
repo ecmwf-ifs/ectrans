@@ -10,6 +10,22 @@
 ! nor does it submit to any jurisdiction.
 !
 
+! ECTRANS_OPTIONAL_MAP_WORKAROUND, set by cmake/ectrans_optional_map_workaround.cmake for
+! CCE, routes the four split-interface gridpoint arrays through local pointers in the pack
+! constructs below. See the comment at their declarations for why. Everywhere else, and on
+! every other compiler, these expand to the dummy arguments themselves.
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+#define ECTRANS_PGPUV ZPGPUV
+#define ECTRANS_PGP2  ZPGP2
+#define ECTRANS_PGP3A ZPGP3A
+#define ECTRANS_PGP3B ZPGP3B
+#else
+#define ECTRANS_PGPUV PGPUV
+#define ECTRANS_PGP2  PGP2
+#define ECTRANS_PGP3A PGP3A
+#define ECTRANS_PGP3B PGP3B
+#endif
+
 MODULE TRGTOL_MOD
   USE BUFFERED_ALLOCATOR_MOD, ONLY: ALLOCATION_RESERVATION_HANDLE
   IMPLICIT NONE
@@ -123,7 +139,7 @@ CONTAINS
     USE TPM_TRANS,              ONLY: NPROMA
     USE ISO_C_BINDING,          ONLY: C_SIZEOF
     USE BUFFERED_ALLOCATOR_MOD, ONLY: BUFFERED_ALLOCATOR, ASSIGN_PTR, GET_ALLOCATION
-    USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_CREATE, &
+    USE OPENACC_EXT,            ONLY: EXT_ACC_ARR_DESC, EXT_ACC_PASS, EXT_ACC_COPYIN, &
       &                               EXT_ACC_DELETE
 #ifdef ACCGPU
     USE OPENACC,                ONLY: ACC_HANDLE_KIND
@@ -136,7 +152,12 @@ CONTAINS
     INTEGER(KIND=JPIM),INTENT(IN) :: KF_FS,KF_GP,KF_UV_G,KF_SCALARS_G
     INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KPTRGP(:)
     INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KVSETUV(:), KVSETSC(:), KVSETSC3A(:), KVSETSC3B(:), KVSETSC2(:)
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+    ! TARGET so the stand-in pointers below may be aimed at them.
+    REAL(KIND=JPRB),OPTIONAL,INTENT(IN),TARGET :: PGP(:,:,:), PGPUV(:,:,:,:), PGP3A(:,:,:,:), PGP3B(:,:,:,:), PGP2(:,:,:)
+#else
     REAL(KIND=JPRB),OPTIONAL,INTENT(IN) :: PGP(:,:,:), PGPUV(:,:,:,:), PGP3A(:,:,:,:), PGP3B(:,:,:,:), PGP2(:,:,:)
+#endif
     LOGICAL, OPTIONAL, INTENT(IN) :: LPGP_ON_GPU
 
     TYPE(BUFFERED_ALLOCATOR), INTENT(IN) :: ALLOCATOR
@@ -188,6 +209,21 @@ CONTAINS
     TYPE(EXT_ACC_ARR_DESC) :: ACC_POINTERS(5) ! at most 5 copyins...
     INTEGER(KIND=JPIM) :: ACC_POINTERS_CNT
     LOGICAL :: LLPGP_ON_GPU
+
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+    ! CCE 21's offload runtime segfaults in is_contiguous_dv while building the transfer
+    ! list for the pack constructs: MAP(ALLOC:...) names all four split-interface gridpoint
+    ! arrays, the caller routinely omits some of them, and the runtime walks the absent
+    ! one's null descriptor instead of skipping the item. Map these pointers instead, aimed
+    ! at the caller's arrays where supplied and at the one-element stand-ins where not, so
+    ! every item in the list carries a valid descriptor. The stand-ins are never read: the
+    ! PGP_INDICES dispatch inside the loops only ever selects an array the caller actually
+    ! passed. Dropping this workaround costs every call that omits an array, which is all
+    ! of call mode 2 and the partial-field field_view entry points.
+    REAL(KIND=JPRB), TARGET  :: ZSTANDIN3(1,1,1), ZSTANDIN4(1,1,1,1)
+    REAL(KIND=JPRB), POINTER :: ZPGPUV(:,:,:,:), ZPGP3A(:,:,:,:), ZPGP3B(:,:,:,:)
+    REAL(KIND=JPRB), POINTER :: ZPGP2(:,:,:)
+#endif
 
 #ifdef USE_RAW_MPI
     TYPE(MPI_COMM) :: LOCAL_COMM
@@ -346,7 +382,7 @@ CONTAINS
     end block
 
 #ifdef OMPGPU
-    !$OMP TARGET DATA MAP(TO:IRECV_BUFR_TO_OUT) MAP(PRESENT,ALLOC:PREEL_REAL) IF (KF_FS > 0)
+    !$OMP TARGET DATA MAP(TO:IRECV_BUFR_TO_OUT) IF (KF_FS > 0)
     !$OMP TARGET DATA MAP(TO:PGP_INDICES)
 #endif
 #ifdef ACCGPU
@@ -388,7 +424,11 @@ CONTAINS
       ACC_POINTERS(ACC_POINTERS_CNT) = EXT_ACC_PASS(PGP3B)
     ENDIF
 
-    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_CREATE(ACC_POINTERS(1:ACC_POINTERS_CNT), &
+    ! COPYIN rather than CREATE: the gridpoint arrays are mapped by byte range through a
+    ! local integer alias, so the array names themselves are never in the device data
+    ! environment and an UPDATE TO on them copies nothing. The copy has to be requested on
+    ! the same ranges that were mapped.
+    IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_COPYIN(ACC_POINTERS(1:ACC_POINTERS_CNT), &
 #ifdef ACCGPU
          & STREAM=1_ACC_HANDLE_KIND)
 #endif
@@ -439,12 +479,31 @@ CONTAINS
         !$ACC UPDATE DEVICE(PGP3B) IF (.NOT. LLPGP_ON_GPU)
 #endif
     ENDIF
+#if defined(ECTRANS_OPTIONAL_MAP_WORKAROUND) && defined(OMPGPU)
+    IF (PRESENT(PGPUV)) THEN ; ZPGPUV => PGPUV ; ELSE ; ZPGPUV => ZSTANDIN4 ; ENDIF
+    IF (PRESENT(PGP3A)) THEN ; ZPGP3A => PGP3A ; ELSE ; ZPGP3A => ZSTANDIN4 ; ENDIF
+    IF (PRESENT(PGP3B)) THEN ; ZPGP3B => PGP3B ; ELSE ; ZPGP3B => ZSTANDIN4 ; ENDIF
+    IF (PRESENT(PGP2))  THEN ; ZPGP2  => PGP2  ; ELSE ; ZPGP2  => ZSTANDIN3 ; ENDIF
+#endif
+
 #ifdef OMPGPU
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGP) IF(PRESENT(PGP) .AND. KF_GP > 0)
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGPUV) IF(PRESENT(PGPUV))
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGP2) IF(PRESENT(PGP2))
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGP3A) IF(PRESENT(PGP3A))
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:PGP3B) IF(PRESENT(PGP3B))
+    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays, and where they live depends on
+    ! LPGP_ON_GPU: either already device-resident from the caller's allocator, or host
+    ! storage whose byte range is mapped here by EXT_ACC_CREATE and pushed across by the
+    ! TARGET UPDATE above. The pack compute constructs name them in MAP(ALLOC:...), which is
+    ! the only form that covers both. Two constraints pin it down, and they pull opposite
+    ! ways:
+    !
+    !   - not HAS_DEVICE_ADDR, because when the arrays are host-resident their addresses are
+    !     host addresses, and the kernel then faults on them.
+    !   - not the PRESENT modifier of ECTRANS_MAP_PRESENT_ALLOC, because these are OPTIONAL
+    !     and the caller routinely omits PGP3B. An absent optional arrives as a null base
+    !     address that no present-table entry can match, and the modifier turns that into
+    !     "device mapping required by 'present' map type modifier does not exist for host
+    !     address 0x0000000000000000" at the first launch.
+    !
+    ! Plain ALLOC resolves whichever mapping exists, ignores the absent ones, and is what
+    ! nvfortran gets from ECTRANS_MAP_PRESENT_ALLOC anyway, so the clause is uniform.
 #endif
 #ifdef ACCGPU
     !$ACC DATA IF(PRESENT(PGP) .AND. KF_GP > 0)   PRESENT(PGP) ASYNC(1)
@@ -499,7 +558,7 @@ CONTAINS
 
     !....Pack loop.........................................................
 #ifdef OMPGPU
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:ZCOMBUFS) IF(ISEND_COUNTS > 0)
+    ! ZCOMBUFS is a growing-allocator buffer; named in HAS_DEVICE_ADDR in the pack loops.
 #endif
 #ifdef ACCGPU
     !$ACC DATA IF(ISEND_COUNTS > 0) PRESENT(ZCOMBUFS) ASYNC(1)
@@ -561,11 +620,10 @@ CONTAINS
       ISEND_WSET_SIZE_V = ISEND_WSET_SIZE(ISETW)
       IF(PRESENT(PGP)) THEN
 #ifdef OMPGPU
-        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) &
-        !$OMP& PRIVATE(JK,JBLK,IFLD,JI) SHARED(ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V,NPROMA,&
-        !$OMP& ISEND_WSET_OFFSET_V,INS,ICOMBUFS_OFFSET_V,IFLDA,PGP,ZCOMBUFS) &
-        !$OMP& MAP(TO:ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V,NPROMA,ISEND_WSET_OFFSET_V,&
-        !$OMP& INS,ICOMBUFS_OFFSET_V)
+        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) ECTRANS_OMP_DEFAULT_CLAUSE &
+        !$OMP& PRIVATE(JK,JBLK,IFLD,JI) SHARED(IFLDA,PGP) ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFS) &
+        !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V) &
+        !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,INS,ICOMBUFS_OFFSET_V)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI) &
@@ -583,11 +641,12 @@ CONTAINS
         ENDDO
       ELSE
 #ifdef OMPGPU
-        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,&
-        !$OMP& JI,IOFF,PBOUND) SHARED(ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V,NPROMA,&
-        !$OMP& ISEND_WSET_OFFSET_V,INS,IFLDA,ICOMBUFS_OFFSET_V,PGP_INDICES,PGPUV,ZCOMBUFS,PGP2,&
-        !$OMP& PGP3A,PGP3B) MAP(TO:ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V,NPROMA,&
-        !$OMP& ISEND_WSET_OFFSET_V,ICOMBUFS_OFFSET_V)
+        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) ECTRANS_OMP_DEFAULT_CLAUSE PRIVATE(JK,JBLK,IFLD,&
+        !$OMP& JI,IOFF,PBOUND) SHARED(IFLDA,PGP_INDICES) &
+        !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(ISEND_FIELD_COUNT_V,ISEND_WSET_SIZE_V) &
+        !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,INS,ICOMBUFS_OFFSET_V) &
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFS) &
+        !$OMP& MAP(ALLOC:ECTRANS_PGPUV,ECTRANS_PGP2,ECTRANS_PGP3A,ECTRANS_PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,JI,IOFF,PBOUND) &
@@ -602,20 +661,20 @@ CONTAINS
             JI = ICOMBUFS_OFFSET_V+(JFLD-1)*ISEND_WSET_SIZE_V+JL
             IF(IFLD < PGP_INDICES(PGP_INDICES_UV+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_UV)
-              PBOUND=UBOUND(PGPUV,2)
+              PBOUND=UBOUND(ECTRANS_PGPUV,2)
               ! TODO we could certainly reshape PGPXX arrays and we would simplify this
-              ZCOMBUFS(JI) = PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              ZCOMBUFS(JI) = ECTRANS_PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP2+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP2)
-              ZCOMBUFS(JI)  = PGP2(JK,IOFF+1,JBLK)
+              ZCOMBUFS(JI)  = ECTRANS_PGP2(JK,IOFF+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3A+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3A)
-              PBOUND=UBOUND(PGP3A,2)
-              ZCOMBUFS(JI) = PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3A,2)
+              ZCOMBUFS(JI) = ECTRANS_PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3B+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3B)
-              PBOUND=UBOUND(PGP3B,2)
-              ZCOMBUFS(JI)= PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3B,2)
+              ZCOMBUFS(JI)= ECTRANS_PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ENDIF
          ENDDO
         ENDDO
@@ -639,7 +698,7 @@ CONTAINS
           & 1_JPIB, ICOMBUFR_OFFSET(IRECV_COUNTS+1)*C_SIZEOF(ZCOMBUFR(1)))
     ENDIF
 #ifdef OMPGPU
-    !$OMP TARGET DATA MAP(PRESENT,ALLOC:ZCOMBUFR) IF(IRECV_COUNTS > 0)
+    ! ZCOMBUFR is a growing-allocator buffer; named in HAS_DEVICE_ADDR in the unpack loop.
 #endif
 #ifdef ACCGPU
     !$ACC DATA IF(IRECV_COUNTS > 0) PRESENT(ZCOMBUFR) ASYNC(1)
@@ -648,9 +707,9 @@ CONTAINS
     IR=0
 
 #ifdef USE_GPU_AWARE_MPI
-#ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_PTR(ZCOMBUFR,ZCOMBUFS)
-#endif
+    ! Under OMPGPU these buffers come from the growing allocator, which hands out device
+    ! pointers directly (see GROWING_ALLOCATOR_MOD), so they can go straight to GPU-aware
+    ! MPI; a USE_DEVICE_ADDR region would only map and re-copy their descriptors.
 #ifdef ACCGPU
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFR,ZCOMBUFS)
 #endif
@@ -715,9 +774,11 @@ CONTAINS
       CALL GSTATS(1601,0)
       IF(PRESENT(PGP)) THEN
 #ifdef OMPGPU
-        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,&
-        !$OMP& IPOS) SHARED(KF_FS,ISEND_WSET_SIZE_V,NPROMA,ISEND_WSET_OFFSET_V,IFLDA,&
-        !$OMP& IRECV_BUFR_TO_OUT_V,IRECV_BUFR_TO_OUT,PGP,PREEL_REAL) MAP(TO:KF_FS,IRECV_BUFR_TO_OUT_V)
+        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) ECTRANS_OMP_DEFAULT_CLAUSE PRIVATE(JK,JBLK,IFLD,&
+        !$OMP& IPOS) SHARED(IFLDA,PGP,IRECV_BUFR_TO_OUT) &
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PREEL_REAL) &
+        !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(KF_FS,ISEND_WSET_SIZE_V) &
+        !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,IRECV_BUFR_TO_OUT_V)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS) &
@@ -736,10 +797,13 @@ CONTAINS
         ENDDO
       ELSE
 #ifdef OMPGPU
-        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,&
-        !$OMP& IPOS,IOFF,PBOUND) SHARED(KF_FS,ISEND_WSET_SIZE_V,NPROMA,ISEND_WSET_OFFSET_V,IFLDA,&
-        !$OMP& IRECV_BUFR_TO_OUT_V,IRECV_BUFR_TO_OUT,PGP_INDICES,PGPUV,PREEL_REAL,PGP2,PGP3A,PGP3B) &
-        !$OMP& MAP(TO:KF_FS)
+        !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) ECTRANS_OMP_DEFAULT_CLAUSE PRIVATE(JK,JBLK,IFLD,&
+        !$OMP& IPOS,IOFF,PBOUND) &
+        !$OMP& SHARED(IFLDA,PGP_INDICES,IRECV_BUFR_TO_OUT) &
+        !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(KF_FS,ISEND_WSET_SIZE_V) &
+        !$OMP& FIRSTPRIVATE(NPROMA,ISEND_WSET_OFFSET_V,IRECV_BUFR_TO_OUT_V) &
+        !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(PREEL_REAL) &
+        !$OMP& MAP(ALLOC:ECTRANS_PGPUV,ECTRANS_PGP2,ECTRANS_PGP3A,ECTRANS_PGP3B)
 #endif
 #ifdef ACCGPU
         !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(JK,JBLK,IFLD,IPOS,IOFF,PBOUND) &
@@ -755,19 +819,19 @@ CONTAINS
                 & (JFLD-1)*IRECV_BUFR_TO_OUT(IRECV_BUFR_TO_OUT_V+JL,2)+1
             IF(IFLD < PGP_INDICES(PGP_INDICES_UV+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_UV)
-              PBOUND=UBOUND(PGPUV,2)
-              PREEL_REAL(IPOS) = PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGPUV,2)
+              PREEL_REAL(IPOS) = ECTRANS_PGPUV(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP2+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP2)
-              PREEL_REAL(IPOS) = PGP2(JK,IOFF+1,JBLK)
+              PREEL_REAL(IPOS) = ECTRANS_PGP2(JK,IOFF+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3A+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3A)
-              PBOUND=UBOUND(PGP3A,2)
-              PREEL_REAL(IPOS) = PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3A,2)
+              PREEL_REAL(IPOS) = ECTRANS_PGP3A(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ELSEIF(IFLD < PGP_INDICES(PGP_INDICES_GP3B+1)) THEN
               IOFF=IFLD-PGP_INDICES(PGP_INDICES_GP3B)
-              PBOUND=UBOUND(PGP3B,2)
-              PREEL_REAL(IPOS) = PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
+              PBOUND=UBOUND(ECTRANS_PGP3B,2)
+              PREEL_REAL(IPOS) = ECTRANS_PGP3B(JK,MOD(IOFF,PBOUND)+1,IOFF/PBOUND+1,JBLK)
             ENDIF
           ENDDO
         ENDDO
@@ -782,9 +846,6 @@ CONTAINS
 #ifdef USE_GPU_AWARE_MPI
 #ifdef ACCGPU
     !$ACC END HOST_DATA
-#endif
-#ifdef OMPGPU
-    !$OMP END TARGET DATA
 #endif
 #else
 #ifdef OMPGPU
@@ -811,9 +872,11 @@ CONTAINS
       IRECV_BUFR_TO_OUT_V = IRECV_BUFR_TO_OUT_OFFSET(IPROC)
       ICOMBUFR_OFFSET_V = ICOMBUFR_OFFSET(INR)
 #ifdef OMPGPU
-      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) DEFAULT(NONE) PRIVATE(IPOS) &
-      !$OMP& SHARED(KF_FS,ILEN,IRECV_BUFR_TO_OUT_V,IRECV_BUFR_TO_OUT,ICOMBUFR_OFFSET_V,ZCOMBUFR,&
-      !$OMP& PREEL_REAL) MAP(TO:IRECV_BUFR_TO_OUT_V,ICOMBUFR_OFFSET_V)
+      !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(2) ECTRANS_OMP_DEFAULT_CLAUSE PRIVATE(IPOS) &
+      !$OMP& SHARED(IRECV_BUFR_TO_OUT) &
+      !$OMP& ECTRANS_DEVICE_ADDR_CLAUSE(ZCOMBUFR,PREEL_REAL) &
+      !$OMP& ECTRANS_LOOP_BOUNDS_CLAUSE(KF_FS,ILEN) &
+      !$OMP& FIRSTPRIVATE(IRECV_BUFR_TO_OUT_V,ICOMBUFR_OFFSET_V)
 #endif
 #ifdef ACCGPU
       !$ACC PARALLEL LOOP COLLAPSE(2) DEFAULT(NONE) PRIVATE(IPOS) FIRSTPRIVATE(KF_FS,ILEN, &
@@ -833,16 +896,9 @@ CONTAINS
     CALL GSTATS(1603,1)
 
 #ifdef OMPGPU
-    !$OMP END TARGET DATA ! ZCOMBUFR
     !$OMP END TARGET DATA ! IFLDA
     !$OMP END TARGET DATA ! IRECV_BUFR_TO_OUT
-    !$OMP END TARGET DATA ! PGPINDICES
-    !$OMP END TARGET DATA !ZCOMBUFS (present)
-    !$OMP END TARGET DATA !PGP3B
-    !$OMP END TARGET DATA !PGP3A
-    !$OMP END TARGET DATA !PGP2
-    !$OMP END TARGET DATA !PGPUV
-    !$OMP END TARGET DATA !PGP
+    !$OMP END TARGET DATA ! PGP_INDICES
 #endif
 #ifdef ACCGPU
     !$ACC END DATA ! ZCOMBUFR

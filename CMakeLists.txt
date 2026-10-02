@@ -125,6 +125,10 @@ if( HAVE_GPU )
   endif()
 endif()
 
+# Per-compiler spellings for the OpenMP clauses in the GPU backend, consumed by the GPU
+# targets in src/trans/gpu and src/etrans/gpu.
+include( ectrans_compiler_specific_directives )
+
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
@@ -234,6 +238,7 @@ ecbuild_override_compiler_flags(
   INHERIT_ECBUILD_FLAGS
 )
 include( ectrans_contiguous_workaround )
+include( ectrans_optional_map_workaround )
 add_subdirectory( src )
 
 ### Add tests

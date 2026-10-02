@@ -65,6 +65,8 @@ foreach( prec dp sp )
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${HAVE_MPI}:MPI::MPI_Fortran>
           PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
+                               ECTRANS_MAP_PRESENT_ALLOC=${ECTRANS_MAP_PRESENT_ALLOC}
+                               ECTRANS_OMP_DEFAULT=${ECTRANS_OMP_DEFAULT}
                                #$<${HAVE_CUTLASS}:USE_CUTLASS>   # not relevant for LAM
                                #$<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>   # not relevant for LAM
                                #$<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>   # not relevant for LAM
