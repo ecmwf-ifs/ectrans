@@ -179,12 +179,14 @@ foreach( prec dp sp )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
 
-        if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
-          # Propagate flags as link options for downstream targets. Only required for Cray
+        if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES "Cray|NVHPC" )
+          # Propagate flags as link options for downstream targets. Only required for Cray and NVHPC
           target_link_options( ectrans_gpu_${prec} INTERFACE
                 $<$<LINK_LANGUAGE:Fortran>:SHELL:${OpenMP_Fortran_FLAGS}>
                 $<$<LINK_LANG_AND_ID:C,Cray>:SHELL:${OpenMP_Fortran_FLAGS}>
-                $<$<LINK_LANG_AND_ID:CXX,Cray>:SHELL:${OpenMP_Fortran_FLAGS}> )
+                $<$<LINK_LANG_AND_ID:CXX,Cray>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:C,NVHPC>:SHELL:${OpenMP_Fortran_FLAGS}>
+                $<$<LINK_LANG_AND_ID:CXX,NVHPC>:SHELL:${OpenMP_Fortran_FLAGS}> )
         endif()
 
         if( HAVE_ACC AND CMAKE_Fortran_COMPILER_ID MATCHES NVHPC )
