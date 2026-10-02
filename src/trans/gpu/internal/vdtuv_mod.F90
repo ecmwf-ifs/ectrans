@@ -88,17 +88,10 @@ REAL(KIND=JPRBT) :: ZKM
 ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NSMAX=>R%NSMAX, F_RLAPIN=>F%RLAPIN)
 
 #ifdef ACCGPU
-!$ACC DATA                                                       &
-!$ACC&      PRESENT(R,R_NSMAX,D,D_MYMS,D_NUMP,F,F_RLAPIN) &
-!$ACC&      PRESENT(PEPSNM, PVOR, PDIV)                          &
-!$ACC&      PRESENT(PU, PV)
+!$ACC DATA PRESENT(R, R_NSMAX, D, D_MYMS, D_NUMP, F, F_RLAPIN, PEPSNM, PVOR, PDIV, PU, PV)
 #endif
 #ifdef OMPGPU
-! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-! walk and re-copy every one of its allocatable component descriptors on region entry.
-!$OMP TARGET DATA                                                   &
-!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:R_NSMAX,D_MYMS,D_NUMP,F_RLAPIN) &
-!$OMP&      MAP(ECTRANS_MAP_PRESENT_ALLOC:PEPSNM)
+!$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC: R_NSMAX, D_MYMS, D_NUMP, F_RLAPIN, PEPSNM)
 #endif
 
 !     ------------------------------------------------------------------

@@ -97,8 +97,6 @@ CONTAINS
         & 1_JPIB, 2_JPIB*D%NLENGT0B*KF_FS*C_SIZEOF(FOUBUF_IN(1)))
 
 #ifdef OMPGPU
-   ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-   ! walk and re-copy every one of its allocatable component descriptors on region entry.
    !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:G_NMEN,D_NPNTGTB0,D_NSTAGTF,&
    !$OMP& D_NDGL_FS,G_NLOEN,R_NSMAX)
 #endif
@@ -246,8 +244,6 @@ CONTAINS
     IALLOC_POS=IALLOC_POS+IALLOC_SZ
 
 #ifdef OMPGPU
-    ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-    ! walk and re-copy every one of its allocatable component descriptors on region entry.
     !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:F_RW,F_RACTHE) &
     !$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:D_MYMS,D_NUMP,R_NDGNH,R_NDGL,G_NDGLU) &
     !$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NPNTGTB1,D_OFFSETS_GEMM1)

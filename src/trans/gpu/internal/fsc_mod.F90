@@ -92,14 +92,10 @@ ELSE
 ENDIF
 
 #ifdef OMPGPU
-! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-! walk and re-copy every one of its allocatable component descriptors on region entry.
-!$OMP TARGET DATA &
-!$OMP& MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NPTRLS,D_NSTAGTF,F_RACTHE,G_NMEN,G_NLOEN,R_NSMAX)
+!$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D_NPTRLS,D_NSTAGTF,F_RACTHE,G_NMEN,G_NLOEN,R_NSMAX)
 #endif
 #ifdef ACCGPU
-!$ACC DATA &
-!$ACC& PRESENT(D,D_NPTRLS,D_NSTAGTF,PREEL_COMPLEX,F,F_RACTHE,G,G_NMEN,G_NLOEN,R,R_NSMAX)
+!$ACC DATA PRESENT(D,D_NPTRLS,D_NSTAGTF,PREEL_COMPLEX,F,F_RACTHE,G,G_NMEN,G_NLOEN,R,R_NSMAX)
 #endif
 
 !     ------------------------------------------------------------------

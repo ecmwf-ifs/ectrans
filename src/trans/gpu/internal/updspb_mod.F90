@@ -97,9 +97,7 @@ MODULE UPDSPB_MOD
   !              -----------------------
 
 #ifdef OMPGPU
-  ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-  ! walk and re-copy every one of its allocatable component descriptors on region entry.
-  !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:R_NTMAX,D_NUMP,D_MYMS,D_NASM0)
+  !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC: R_NTMAX, D_NUMP, D_MYMS, D_NASM0)
 #endif
 #ifdef ACCGPU
   !$ACC DATA PRESENT(PSPEC,POA,R,R_NTMAX,D,D_NUMP,D_MYMS,D_NASM0) ASYNC(1)

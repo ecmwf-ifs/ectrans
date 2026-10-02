@@ -127,10 +127,8 @@ CONTAINS
                        IOUT0_STRIDES0=IOUT0_STRIDES0,IOUT0_SIZE=IOUT0_SIZE)
 
 #ifdef OMPGPU
-    ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-    ! walk and re-copy every one of its allocatable component descriptors on region entry.
-    !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:D_MYMS,D_NPNTGTB1,D_NUMP,G_NDGLU,R_NDGNH,R_NDGL) &
-    !$OMP&            MAP(ECTRANS_MAP_PRESENT_ALLOC:D_OFFSETS_GEMM1)
+    !$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC: D_MYMS, D_NPNTGTB1, D_NUMP, G_NDGLU, R_NDGNH, &
+    !$OMP&                R_NDGL, D_OFFSETS_GEMM1)
 #endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(D,D_MYMS,D_NPNTGTB1,D_NUMP,G,G_NDGLU,R,R_NDGNH,R_NDGL) &
@@ -271,9 +269,7 @@ CALL ASSIGN_PTR(PREEL_COMPLEX, GET_ALLOCATION(ALLOCATOR, HTRMTOL_UNPACK%HREEL),&
     & 1_JPIB, 1_JPIB*KF_TOTAL*D%NLENGTF*C_SIZEOF(PREEL_COMPLEX(1)))
 
 #ifdef OMPGPU
-! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-! walk and re-copy every one of its allocatable component descriptors on region entry.
-!$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC:G_NLOEN,G_NMEN,D_NPNTGTB0,D_NSTAGTF,D_NDGL_FS)
+!$OMP TARGET DATA MAP(ECTRANS_MAP_PRESENT_ALLOC: G_NLOEN, G_NMEN, D_NPNTGTB0, D_NSTAGTF, D_NDGL_FS)
 #endif
 #ifdef ACCGPU
 !$ACC DATA PRESENT(G,G_NLOEN,G_NMEN,D,D_NPNTGTB0,FOUBUF,PREEL_COMPLEX,D_NSTAGTF,D_NDGL_FS) ASYNC(1)

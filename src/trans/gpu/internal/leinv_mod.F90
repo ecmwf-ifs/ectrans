@@ -173,8 +173,6 @@ CONTAINS
 
 
 #ifdef OMPGPU
-    ! Only the ASSOCIATE aliases are mapped: naming the parent derived type makes the runtime
-    ! walk and re-copy every one of its allocatable component descriptors on region entry.
     !$OMP TARGET DATA &
     !$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:D_MYMS,D_NUMP) &
     !$OMP&              MAP(ECTRANS_MAP_PRESENT_ALLOC:ZAA,ZAS) &
