@@ -181,8 +181,9 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC DATA PRESENT(D,D_MYMS,D_NUMP) &
     !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA) &
-    !$ACC&     PRESENT(ZAA,ZAS,PIA) &
+    !$ACC&     PRESENT(PIA) &
     !$ACC&     PRESENT(R,R_NSMAX,D_OFFSETS_GEMM2)
+    !$ACC DATA PRESENT(ZAA,ZAS) IF (.NOT. S%LUSEFLT)
 #endif
 
     ! READ 2:NSMAX+3
@@ -292,7 +293,7 @@ CONTAINS
 #ifdef OMPGPU
       !$OMP END TARGET DATA
 #endif
-    ENDIF
+    ELSE
 
 #ifdef OMPGPU
     !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA)
@@ -316,6 +317,7 @@ CONTAINS
 #ifdef OMPGPU
     !$OMP END TARGET DATA
 #endif
+    ENDIF
 
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
@@ -433,7 +435,7 @@ CONTAINS
 #ifdef OMPGPU
       !$OMP END TARGET DATA
 #endif
-    ENDIF
+    ELSE
 
 #ifdef OMPGPU
     !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS)
@@ -457,6 +459,7 @@ CONTAINS
 #ifdef OMPGPU
     !$OMP END TARGET DATA
 #endif
+    ENDIF
 
     IF (LSYNC_TRANS) THEN
 #ifdef ACCGPU
@@ -474,6 +477,7 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC WAIT(1)
 
+    !$ACC END DATA
     !$ACC END DATA
 #endif
 
