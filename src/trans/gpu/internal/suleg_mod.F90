@@ -229,6 +229,7 @@ ELSE
 ENDIF
 
 ITHRESHOLD = MAX(ITHRESHOLD,IMAXCOLS+1)
+ITHRESHOLD = -1
 S%ITHRESHOLD = ITHRESHOLD
 
 !*       3.1   Gaussian latitudes and weights
