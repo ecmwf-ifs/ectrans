@@ -485,7 +485,7 @@ void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const i
             const Real *b = lev_node_b + lev_node_b_offset[idx];
 
             if (is_transposed) {
-              if (lev > 0 && lev == nlevels) {
+              if (lev == nlevels) {
                 // ZBETA = B^T * PVECIN(IFR:ILR,:), i.e. ZBETA^T = PVECIN(IFR:ILR,:)^T * B
                 lp.gemms[0].add(N, N, nf, rank, irows,
                                 A + a_offsets[m] + (size_t)(lev_node_ifrow[idx] - 1) * lda, lda,
