@@ -816,6 +816,17 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 
 #define LATLON_FLAGS LDLL=llatlon, LDSHIFTLL=llatlonshift,
 
+  select case (trans%fft)
+  case (TRANS_FFT992)
+    lusefftw = .False.
+  case (TRANS_FFTW)
+    lusefftw = .True.
+  case default
+    write(error_unit,'(A,I0)') 'trans_setup: ERROR: unsupported FFT backend ', trans%fft
+    iret = TRANS_UNRECOGNIZED_ARG
+    return
+  end select
+
  if( .not. llam ) then
 ! if( trans%flt > 0 .and. trans%nsmax+1 > trans%ndgl ) then
 !   write(error_unit,'(A)') "trans_setup: WARNING: A bug in trans doesn't allow to use FLT with "&
@@ -827,17 +838,6 @@ function trans_setup(trans) bind(C,name="trans_setup") result(iret)
 
  luseflt = .False.
   if( trans%flt > 0 ) luseflt = .True.
-
-  select case (trans%fft)
-  case (TRANS_FFT992)
-    lusefftw = .False.
-  case (TRANS_FFTW)
-    lusefftw = .True.
-  case default
-    write(error_unit,'(A,I0)') 'trans_setup: ERROR: unsupported FFT backend ', trans%fft
-    iret = TRANS_UNRECOGNIZED_ARG
-    return
-  end select
 
  if( .not. c_associated( trans%nloen ) ) then
    ! Setup that involves latlon requires no nloen
