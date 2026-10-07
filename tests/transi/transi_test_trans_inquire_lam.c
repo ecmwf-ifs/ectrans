@@ -28,6 +28,7 @@ void test_trans_inquire_lam() {
   const int ty = (ny - 1) / 2;
 
   TRANS_CHECK(trans_new(&trans));
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   TRANS_CHECK(trans_set_resol_lam(&trans, nx, ny, dx, dy));
   TRANS_CHECK(trans_set_trunc_lam(&trans, tx, ty));
   TRANS_CHECK(trans_setup(&trans));

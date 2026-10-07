@@ -683,6 +683,7 @@ if( HAVE_TRANSI )
       NOINSTALL
     )
     target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
+    target_compile_definitions( ectrans_test_gpu PUBLIC ${transi_fft_defs} )
   endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_program
