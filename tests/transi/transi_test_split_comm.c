@@ -48,6 +48,7 @@ int main ( int arc, char **argv ) {
   // Initialise trans (+ MPL as a result) with split communicator.
   struct Trans_t trans;
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
 
   const int nlon = 320;
   const int nlat = 161;

@@ -75,6 +75,18 @@ add_test( NAME ectrans_test_install
 
 add_subdirectory( trans/api )
 
+if( HAVE_FFT992 )
+  foreach( precision ${precisions} )
+    ecbuild_add_test(TARGET ectrans_test_bluestein_roundtrip_${precision}
+      SOURCES fft992/test_bluestein_roundtrip.F90
+      LIBS fft992_${precision} parkind_${precision}
+      LINKER_LANGUAGE Fortran
+      MPI 0
+      OMP 1
+    )
+  endforeach()
+endif()
+
 # --------------------------------------------------------------------------------------------------
 # Add adjoint tests
 # --------------------------------------------------------------------------------------------------
@@ -168,6 +180,11 @@ foreach( benchmark ${benchmarks} )
 
   endif()
 
+  set( benchmark_fft_args )
+  if( NOT HAVE_FFTW AND HAVE_FFT992 )
+    set( benchmark_fft_args --fft992 )
+  endif()
+
   # Establish which task/thread parameters to test
   set( ntasks 0 )
   set( nthreads 1 )
@@ -203,7 +220,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld0 )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -215,7 +232,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20 )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 10 --nlev 20 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 10 --nlev 20 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -227,7 +244,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20_derivatives )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 10 --nlev 20 --scders --uvders --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 10 --nlev 20 --scders --uvders --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -238,7 +255,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20_vordiv )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -250,7 +267,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20_nproma16 )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -263,7 +280,7 @@ foreach( benchmark ${benchmarks} )
           set( test_name ${base_title}_lalloperm_f )
           ecbuild_add_test( TARGET ${test_name}
               COMMAND ${benchmark}
-              ARGS ${base_args} --nfld 10 --nlev 20 --deallocate-foubuf-temps --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+              ARGS ${base_args} --nfld 10 --nlev 20 --deallocate-foubuf-temps --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -277,7 +294,7 @@ foreach( benchmark ${benchmarks} )
           set( test_name ${base_title}_nfld10_nlev20_npromatr20 )
           ecbuild_add_test( TARGET ${test_name}
               COMMAND ${benchmark}
-              ARGS ${base_args} --nfld 10 --nlev 20 --npromatr 20 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+              ARGS ${base_args} --nfld 10 --nlev 20 --npromatr 20 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -292,7 +309,7 @@ foreach( benchmark ${benchmarks} )
           set( test_name ${base_title}_nfld10_nlev20_flt )
           ecbuild_add_test( TARGET ${test_name}
               COMMAND ${benchmark}
-              ARGS ${base_args} --nfld 10 --nlev 20 --flt --check 1000000 --dump-checksums ${checksums_dir}/${test_name}.checksums
+              ARGS ${base_args} --nfld 10 --nlev 20 --flt --check 1000000 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -340,7 +357,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld0 )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 0 --check 100 --callmode ${callmode} --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -352,7 +369,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20 )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 10 --nlev 20 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 10 --nlev 20 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -365,7 +382,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20_derivatives )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-          ARGS ${base_args} --nfld 10 --nlev 20 --scders --uvders --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+          ARGS ${base_args} --nfld 10 --nlev 20 --scders --uvders --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -378,7 +395,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20_vordiv )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-            ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            ARGS ${base_args} --nfld 10 --nlev 20 --vordiv --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
             MPI ${mpi}
             OMP ${omp}
         )
@@ -391,7 +408,7 @@ foreach( benchmark ${benchmarks} )
         set( test_name ${base_title}_nfld10_nlev20_nproma16 )
         ecbuild_add_test( TARGET ${test_name}
             COMMAND ${benchmark}
-          ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums
+          ARGS ${base_args} --nfld 10 --nlev 20 --nproma 16 --check 100 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
           MPI ${mpi}
           OMP ${omp}
         )
@@ -405,7 +422,7 @@ foreach( benchmark ${benchmarks} )
           set( test_name ${base_title}_nfld10_nlev20_flt )
           ecbuild_add_test( TARGET ${test_name}
               COMMAND ${benchmark}
-              ARGS ${base_args} --nfld 10 --nlev 20 --flt --check 1000000 --dump-checksums ${checksums_dir}/${test_name}.checksums
+              ARGS ${base_args} --nfld 10 --nlev 20 --flt --check 1000000 --dump-checksums ${checksums_dir}/${test_name}.checksums ${benchmark_fft_args}
               MPI ${mpi}
               OMP ${omp}
           )
@@ -647,12 +664,17 @@ if( HAVE_TRANSI )
   endif()
 
   find_package( CMath )
+  set( transi_fft_defs )
+  if( NOT HAVE_FFTW AND HAVE_FFT992 )
+    list( APPEND transi_fft_defs TRANSI_TEST_FFT_BACKEND=TRANS_FFT992 )
+  endif()
+
   ecbuild_add_library( TARGET ectrans_test
     SOURCES     transi/transi_test.h transi/transi_test.c
     PUBLIC_LIBS transi_dp ${CMATH_LIBRARIES}
     NOINSTALL
   )
-  target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
+  target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} ${transi_fft_defs} )
 
   if( HAVE_GPU )
     ecbuild_add_library( TARGET ectrans_test_gpu
@@ -661,6 +683,7 @@ if( HAVE_TRANSI )
       NOINSTALL
     )
     target_compile_definitions( ectrans_test PUBLIC ${TEST_DEFINITIONS} )
+    target_compile_definitions( ectrans_test_gpu PUBLIC ${transi_fft_defs} )
   endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_program
@@ -706,6 +729,15 @@ if( HAVE_TRANSI )
     LIBS      ectrans_test
     LINKER_LANGUAGE C
     ENVIRONMENT TRANS_USE_MPI=0 )
+
+  if( HAVE_FFT992 )
+    ecbuild_add_test( TARGET ectrans_test_transi_lonlat_fft992
+      SOURCES     transi/transi_test_lonlat.c
+      LIBS        ectrans_test
+      DEFINITIONS TRANSI_TEST_FFT_BACKEND=TRANS_FFT992
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=0 )
+  endif()
 
   ecbuild_add_test( TARGET ectrans_test_transi_io
     SOURCES   transi/transi_test_io.c
