@@ -2228,7 +2228,26 @@ subroutine gstats_labels
   call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
   call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
   call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
-
+  call gstats_label(410, '   ', 'DIR_TRANS      - Direct transform')
+  call gstats_label(411, '   ', 'TRGTOL/TRLTOM  - MPI communications')
+  call gstats_label(412, '   ', 'LTDIR/TRGTOL   - H<->D copies (direct)')
+  call gstats_label(413, '   ', 'FTDIR          - Low level FFT')
+  call gstats_label(414, '   ', 'LEDIR          - Mat. mul.')
+  call gstats_label(420, '   ', 'INV_TRANS      - Inverse transform')
+  call gstats_label(421, '   ', 'TRLTOG/TRMTOL  - MPI communications')
+  call gstats_label(422, '   ', 'LTINV/TRLTOG   - H<->D copies (inverse)')
+  call gstats_label(423, '   ', 'FTINV          - Low level FFT')
+  call gstats_label(424, '   ', 'LEINV          - Mat. mul.')
+  call gstats_label(430, '   ', 'Direct trans.  - MPI synchronization')
+  call gstats_label(431, '   ', 'TRGTOL/TRLTOM  - MPI synchronization')
+  call gstats_label(432, '   ', 'LTDIR/TRGTOL   - MPI synchronization')
+  call gstats_label(433, '   ', 'FTDIR          - MPI synchronization')
+  call gstats_label(434, '   ', 'LEDIR          - MPI synchronization')
+  call gstats_label(440, '   ', 'Inverse trans. - MPI synchronization')
+  call gstats_label(441, '   ', 'TRLTOG/TRMTOL  - MPI synchronization')
+  call gstats_label(442, '   ', 'LTINV/TRLTOG   - MPI synchronization')
+  call gstats_label(443, '   ', 'FTINV          - MPI synchronization')
+  call gstats_label(444, '   ', 'LEINV          - MPI synchronization')
 end subroutine gstats_labels
 
 end program ectrans_benchmark
