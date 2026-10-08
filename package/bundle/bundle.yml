@@ -26,7 +26,7 @@ projects :
         cmake   : ENABLE_DR_HOOK_NVTX=OFF ENAMBLE_OMP=ON
 
     - ectrans :
-        dir     : $PWD
+        dir     : $PWD/../../
         require : fiat
         cmake   : ENABLE_MKL=OFF WITH_FFTW=OFF ENABLE_FFTW=OFF ENABLE_GPU=OFF
 
