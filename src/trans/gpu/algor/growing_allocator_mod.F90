@@ -51,7 +51,6 @@ CONTAINS
 
     IF (.NOT. ASSOCIATED(ALLOC%PTR)) THEN
 #ifdef OMPGPU
-#ifndef __NVCOMPILER
       DEVICE_NUM = OMP_GET_DEFAULT_DEVICE()
       DEV_PTR = OMP_TARGET_ALLOC(SZ, DEVICE_NUM)
       CALL C_F_POINTER(DEV_PTR, ALLOC%PTR, [SZ])
@@ -60,10 +59,6 @@ CONTAINS
         CALL ABORT_TRANS("REALLOCATE_GROWING_ALLOCATION: ERROR - Failed to associate device&
                         & pointer")
       ENDIF
-#else
-      ALLOCATE(ALLOC%PTR(SZ))
-      !$OMP TARGET ENTER DATA MAP(ALLOC:ALLOC%PTR)
-#endif
 #endif
 #ifdef ACCGPU
       ALLOCATE(ALLOC%PTR(SZ))
