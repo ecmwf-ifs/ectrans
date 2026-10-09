@@ -70,7 +70,7 @@ REAL(KIND=JPRB)   ,INTENT(OUT)  :: PIA(:,:)
 
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: II, INM, IR, J, JFLD, ILCM, IOFF,IFLD,IFIELDS
-
+REAL(KIND=JPRB), POINTER :: ZZ(:)
 
 !     ------------------------------------------------------------------
 
@@ -81,17 +81,17 @@ ILCM = R%NSMAX+1-KM
 IOFF = D%NASM0(KM)
 IFIELDS = SIZE(YDSP)
 
-DO J=1,ILCM
-  INM = IOFF+(ILCM-J)*2
-  !DIR$ IVDEP
-  !OCL NOVREC
-  DO JFLD=1,IFIELDS
-    IR = 2*(JFLD-1)+1
-    II = IR+1
-    PIA(J+2,IR) = YDSP(JFLD)%P(INM)
-    PIA(J+2,II) = YDSP(JFLD)%P(INM+1)
+
+DO JFLD=1,IFIELDS
+  ZZ=>YDSP(JFLD)%P
+  IR = 2*(JFLD-1)+1
+  II = IR+1
+  DO J=1,ILCM
+    INM = IOFF+(ILCM-J)*2    
+    PIA(J+2,IR) = ZZ(INM)
+    PIA(J+2,II) = ZZ(INM+1)
+    ENDDO
   ENDDO
-ENDDO
 
 DO JFLD=1,2*IFIELDS
   PIA(1,JFLD) = 0.0_JPRB

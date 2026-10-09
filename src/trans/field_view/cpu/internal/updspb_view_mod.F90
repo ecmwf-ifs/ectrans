@@ -69,7 +69,7 @@ TYPE(SPEC_VIEW) :: YDSPEC(:)
 !     LOCAL INTEGER SCALARS
 INTEGER(KIND=JPIM) :: IR, INM, JFLD, JN, ISMAX, ITMAX, IASM0,IFLD
 REAL(KIND=JPRB) :: INM1
-
+REAL(KIND=JPRB), POINTER :: ZZ(:)
 !     ------------------------------------------------------------------
 
 !*       0.    NOTE.
@@ -92,16 +92,15 @@ ITMAX = R%NTMAX
 IASM0 = D%NASM0(KM)
 
 INM1 = 0.0_JPRB
-DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
-      INM = IASM0+((ITMAX+2-JN)-KM)*2
-!DIR$ IVDEP
-!OCL NOVREC
-  DO JFLD=1,SIZE(YDSPEC)
-    IR = 2*JFLD-1
-    YDSPEC(JFLD)%P(INM) = POA(JN,IR)
-    IF (KM /= 0) INM1 = POA(JN,IR+1)
-    YDSPEC(JFLD)%P(INM+1) = INM1
-  ENDDO
+DO JFLD=1,SIZE(YDSPEC)
+   IR = 2*JFLD-1
+   ZZ=>YDSPEC(JFLD)%P
+   DO JN=ITMAX+2-ISMAX,ITMAX+2-KM
+     INM = IASM0+((ITMAX+2-JN)-KM)*2
+     ZZ(INM) = POA(JN,IR)
+     IF (KM /= 0) INM1 = POA(JN,IR+1)
+     ZZ(INM+1) = INM1
+   ENDDO
 ENDDO
 
 !     ------------------------------------------------------------------
