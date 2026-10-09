@@ -108,7 +108,7 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
 
     def test_get_legendre_assets(self):
         nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
-        knmeng, weights, polys = ectrans4py.get_legendre_assets(
+        knmeng, weights, pmu, polys = ectrans4py.get_legendre_assets(
             self.gpdims['lat_number'],
             self.truncation['max'],
             len(self.gpdims['lon_number_by_lat']),
@@ -119,16 +119,26 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         weights_sum = sum(weights)
         # The sum of the Gaussian weights should be equal to 1.0
         self.assertTrue(abs(weights_sum - 1.0) < EPSILON, f"sum of weights is {weights_sum}")
+        # PMU = sines of the Gaussian latitudes: within [-1, 1] and strictly monotone
+        self.assertTrue(numpy.all(numpy.abs(pmu) <= 1.0 + EPSILON))
+        self.assertTrue(numpy.all(numpy.diff(pmu) > 0) or numpy.all(numpy.diff(pmu) < 0))
 
     def test_trans_inq4py(self):
-        spectral_data_sizes = ectrans4py.trans_inq4py(
+        # KRESOL <= 0 => serial self-initialisation from the grid parameters.
+        (kgptot, kspec, kspec2, kgptotg, kspec2g, ksmax,
+         knmeng, pmu, pgw) = ectrans4py.trans_inq4py(
+            0,
             self.gpdims['lat_number'],
             self.truncation['max'],
             len(self.gpdims['lon_number_by_lat']),
             self.gpdims['lon_number_by_lat'],
             KNUMMAXRESOL)
-        self.assertEqual(spectral_data_sizes[0:2], self.spectral_data_sizes[0:2])  # dimensions
-        numpy.testing.assert_array_equal(spectral_data_sizes[2], self.spectral_data_sizes[2])  # zonal_wavenumbers
+        self.assertEqual((kgptot, kspec), self.spectral_data_sizes[0:2])  # dimensions
+        numpy.testing.assert_array_equal(knmeng, self.spectral_data_sizes[2])  # zonal_wavenumbers
+        self.assertEqual(ksmax, self.truncation['max'])
+        self.assertEqual(kgptot, kgptotg)   # serial: local sizes equal global
+        # PGW/PMU consistent with get_legendre_assets
+        self.assertTrue(abs(sum(pgw) - 1.0) < EPSILON, f"sum of weights is {sum(pgw)}")
     
     def test_sp2gp(self):
         gpdata = ectrans4py.sp2gp_gauss4py(
