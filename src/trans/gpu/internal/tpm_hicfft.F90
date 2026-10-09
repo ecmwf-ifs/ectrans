@@ -93,9 +93,6 @@ SUBROUTINE EXECUTE_DIR_FFT_FLOAT(PREEL_REAL,PREEL_COMPLEX,RESOL_ID,KFIELD,LOENS,
     END SUBROUTINE
   END INTERFACE
 
-  ! Under OMPGPU both buffers come from the growing allocator, which hands out device
-  ! pointers directly (see GROWING_ALLOCATOR_MOD), so C_LOC already yields a device address.
-  ! A USE_DEVICE_ADDR region would only map and re-copy their descriptors on every call.
 #ifdef ACCGPU
   !$ACC HOST_DATA USE_DEVICE(PREEL_REAL,PREEL_COMPLEX)
 #endif
@@ -137,9 +134,6 @@ SUBROUTINE EXECUTE_DIR_FFT_DOUBLE(PREEL_REAL,PREEL_COMPLEX,RESOL_ID,KFIELD,LOENS
     END SUBROUTINE
   END INTERFACE
 
-  ! Under OMPGPU both buffers come from the growing allocator, which hands out device
-  ! pointers directly (see GROWING_ALLOCATOR_MOD), so C_LOC already yields a device address.
-  ! A USE_DEVICE_ADDR region would only map and re-copy their descriptors on every call.
 #ifdef ACCGPU
   !$ACC HOST_DATA USE_DEVICE(PREEL_REAL,PREEL_COMPLEX)
 #endif
@@ -182,9 +176,6 @@ SUBROUTINE EXECUTE_INV_FFT_FLOAT(PREEL_COMPLEX,PREEL_REAL,RESOL_ID,KFIELD,LOENS,
     END SUBROUTINE
   END INTERFACE
 
-  ! Under OMPGPU both buffers come from the growing allocator, which hands out device
-  ! pointers directly (see GROWING_ALLOCATOR_MOD), so C_LOC already yields a device address.
-  ! A USE_DEVICE_ADDR region would only map and re-copy their descriptors on every call.
 #ifdef ACCGPU
   !$ACC HOST_DATA USE_DEVICE(PREEL_COMPLEX,PREEL_REAL)
 #endif
@@ -227,9 +218,6 @@ SUBROUTINE EXECUTE_INV_FFT_DOUBLE(PREEL_COMPLEX,PREEL_REAL,RESOL_ID,KFIELD,LOENS
     END SUBROUTINE
   END INTERFACE
 
-  ! Under OMPGPU both buffers come from the growing allocator, which hands out device
-  ! pointers directly (see GROWING_ALLOCATOR_MOD), so C_LOC already yields a device address.
-  ! A USE_DEVICE_ADDR region would only map and re-copy their descriptors on every call.
 #ifdef ACCGPU
   !$ACC HOST_DATA USE_DEVICE(PREEL_COMPLEX,PREEL_REAL)
 #endif

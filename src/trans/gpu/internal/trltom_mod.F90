@@ -137,11 +137,6 @@ CONTAINS
     CALL ASSIGN_PTR(PFBUF, GET_ALLOCATION(ALLOCATOR, HTRLTOM%HPFBUF),&
         & 1_JPIB, 2_JPIB*D%NLENGT1B*KF_FS*C_SIZEOF(PFBUF(1)))
 
-#ifdef OMPGPU
-    ! PFBUF/PFBUF_IN are growing-allocator buffers, so their descriptors are never entered
-    ! in the present table and cannot be MAP(PRESENT)'d. The compute constructs below name
-    ! them in HAS_DEVICE_ADDR instead, so no enclosing data region is needed.
-#endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(PFBUF,PFBUF_IN)
 #endif
@@ -192,9 +187,6 @@ CONTAINS
       ENDIF
       CALL GSTATS(411,0)
 #ifdef USE_GPU_AWARE_MPI
-      ! Under OMPGPU these buffers come from the growing allocator, which hands out device
-      ! pointers directly (see GROWING_ALLOCATOR_MOD), so they can go straight to GPU-aware
-      ! MPI; a USE_DEVICE_ADDR region would only map and re-copy their descriptors.
 #ifdef ACCGPU
       !$ACC HOST_DATA USE_DEVICE(PFBUF_IN, PFBUF)
 #endif
