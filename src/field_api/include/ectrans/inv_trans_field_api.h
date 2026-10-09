@@ -12,6 +12,7 @@ INTERFACE
 
 
 SUBROUTINE INV_TRANS_FIELD_API(KRESOL,                                       &
+                             & LDACC,                                        &
                              & YDFSPSCALAR, YDFSPVOR,YDFSPDIV,               &
                              & YDFSCALAR, YDFU, YDFV,                        &
                              & YDFVOR,YDFDIV,                                &
@@ -57,6 +58,7 @@ USE PARKIND1, ONLY : JPIM, JPRB
 #include "fspgl_intf.h"
 
 INTEGER(KIND=JPIM),   INTENT(IN), OPTIONAL  :: KRESOL
+LOGICAL, INTENT(IN), OPTIONAL :: LDACC
 TYPE(FIELD_SPEC),INTENT(IN), OPTIONAL  :: YDFSPVOR(:), YDFSPDIV(:)        ! SPECTRAL VECTOR FIELDS : VORTICITY AND DIVERGENCE FIELDS (IN)
 TYPE(FIELD_SPEC),INTENT(IN), OPTIONAL  :: YDFSPSCALAR(:)                  ! SPECTRAL SCALAR FIELDS (IN)
 
