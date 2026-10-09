@@ -129,6 +129,9 @@ endif()
 # targets in src/trans/gpu and src/etrans/gpu.
 include( ectrans_compiler_specific_directives )
 
+# OpenMP offload flags for the GPU targets only, keeping OpenMP_Fortran_FLAGS host-only.
+include( ectrans_omp_offload )
+
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"

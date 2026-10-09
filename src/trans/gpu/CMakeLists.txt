@@ -8,6 +8,9 @@
 
 ## Assemble sources
 
+# OpenMP offload flags for the GPU targets only, keeping OpenMP_Fortran_FLAGS host-only.
+include( ectrans_omp_offload )
+
 list( APPEND trans_gpu_common_src
   algor/ext_acc.F90
   algor/c_hipmemgetinfo.cpp
@@ -91,7 +94,7 @@ ecbuild_target_fortran_module_directory(
   INSTALL_MODULE_DIRECTORY module/ectrans
 )
 
-
+ectrans_target_omp_offload( ectrans_gpu_common )
 
 function(generate_backend_sources)
   set (options)
@@ -190,6 +193,8 @@ foreach( prec dp sp )
         if( HAVE_CUDA )
           target_compile_definitions( ectrans_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
+
+        ectrans_target_omp_offload( ectrans_gpu_${prec} )
 
         if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES "Cray|NVHPC" )
           # Propagate flags as link options for downstream targets. Only required for Cray and NVHPC

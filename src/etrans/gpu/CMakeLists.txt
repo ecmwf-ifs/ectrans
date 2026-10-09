@@ -90,6 +90,8 @@ foreach( prec dp sp )
           target_compile_definitions( ectrans_lam_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
 
+        ectrans_target_omp_offload( ectrans_lam_gpu_${prec} )
+
         if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
           # Propagate flags as link options for downstream targets. Only required for Cray
           target_link_options( ectrans_lam_gpu_${prec} INTERFACE
