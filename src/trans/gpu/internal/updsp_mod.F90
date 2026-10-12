@@ -98,12 +98,6 @@ INTEGER(KIND=JPIM) :: IST ,IEND,IDIM1,IDIM3,J3
 !$ACC DATA PRESENT(PSPSC3A) IF(NF_SC3A > 0)
 !$ACC DATA PRESENT(PSPSC3B) IF(NF_SC3B > 0)
 #endif
-#ifdef OMPGPU
-! PSPSCALAR/PSPSC2/PSPSC3A/PSPSC3B are output spectral arrays already mapped MAP(FROM) by the
-! caller (LTDIR), but their dummy descriptors here are not in the present table, so they cannot
-! be MAP(PRESENT)'d. Nothing here needs them mapped: this routine has no target compute
-! construct and only passes them on to UPDSPB.
-#endif
 
 IST = 1
 IST = IST+4*KF_UV
