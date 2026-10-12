@@ -231,6 +231,10 @@ ENDIF
 ITHRESHOLD = MAX(ITHRESHOLD,IMAXCOLS+1)
 S%ITHRESHOLD = ITHRESHOLD
 
+IF (S%LUSEFLT) THEN
+  IF (LLP1) WRITE(NOUT,*) 'Using FLT with ITHRESHOLD = ', ITHRESHOLD
+ENDIF
+
 !*       3.1   Gaussian latitudes and weights
 !     ---------------------------------------
 
