@@ -6,25 +6,16 @@
 # granted to it by virtue of its status as an intergovernmental organisation
 # nor does it submit to any jurisdiction.
 
-# CCE 21's OpenMP offload runtime segfaults in is_contiguous_dv, called from
-# cray_acc_new_transfer_list_1, when the transfer list of a TARGET construct
-# contains the descriptor of an absent OPTIONAL assumed-shape dummy: it walks the
-# null dope vector instead of skipping the item. OpenMP says a non-present
-# optional in a map clause is ignored, so this is a runtime defect rather than
-# anything the directives ask for.
+# CCE's offload runtime segfaults in is_contiguous_dv when a TARGET transfer list
+# holds the null descriptor of an absent OPTIONAL assumed-shape dummy, which
+# TRGTOL and TRLTOG hit on every call omitting a PGP* array: 138 of 366 tests.
+# ECTRANS_OPTIONAL_MAP_WORKAROUND maps stand-in pointers there instead.
 #
-# TRGTOL and TRLTOG trip it on every call that omits one of the PGP* gridpoint
-# arrays, which covers all of benchmark call mode 2 and the partial-field
-# field_view entry points: 138 of 366 tests segfault without this.
-#
-# ECTRANS_OPTIONAL_MAP_WORKAROUND makes those two routines map local pointers,
-# aimed at the caller's arrays when supplied and at one-element stand-ins when
-# not, so every mapped item carries a valid descriptor. See the constructs.
-#
-# Only CCE is known to be affected and only 21.0.0 has been tested here, so the
-# gate stays narrow. Set ECTRANS_HAVE_OPTIONAL_MAP_ISSUE explicitly to override.
+# Seen on 21.0.0; 19 and 20 want a ROCm 6 that was not available to test with.
+# Set ECTRANS_HAVE_OPTIONAL_MAP_ISSUE explicitly to override.
 if( NOT DEFINED ECTRANS_HAVE_OPTIONAL_MAP_ISSUE )
-  if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray" )
+  if( CMAKE_Fortran_COMPILER_ID MATCHES "Cray"
+      AND NOT CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 20 )
     set( ECTRANS_HAVE_OPTIONAL_MAP_ISSUE True )
   else()
     set( ECTRANS_HAVE_OPTIONAL_MAP_ISSUE False )
