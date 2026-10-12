@@ -181,9 +181,8 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC DATA PRESENT(D,D_MYMS,D_NUMP) &
     !$ACC&     PRESENT(ZINP,ZOUTS,ZOUTA) &
-    !$ACC&     PRESENT(PIA) &
+    !$ACC&     PRESENT(ZAA,ZAS,PIA) &
     !$ACC&     PRESENT(R,R_NSMAX,D_OFFSETS_GEMM2)
-    !$ACC DATA PRESENT(ZAA,ZAS) IF (.NOT. S%LUSEFLT)
 #endif
 
     ! READ 2:NSMAX+3
@@ -294,28 +293,31 @@ CONTAINS
       !$OMP END TARGET DATA
 #endif
     ELSE
+      N_MODES_FLT = 0
+    ENDIF
 
+    IF (N_MODES_FLT < D_NUMP) THEN
 #ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA)
+      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAA)
 #endif
 #ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAA,ZINP,ZOUTA)
+      !$ACC HOST_DATA USE_DEVICE(ZAA,ZINP,ZOUTA)
 #endif
-    CALL HIP_GEMM( &
-        & NCUR_RESOL, 11, & ! unique identifier
-        & 'N', 'T', &
-        & 2*KF_LEG, NS(:), KS(:), &
-        & 1.0_JPRBT, &
-        & C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
-        & C_LOC(ZAA), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
-        & 0.0_JPRBT, &
-        & C_LOC(ZOUTA), IOUT_STRIDES0, COFFSETS, &
-        & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
+      CALL HIP_GEMM( &
+          & NCUR_RESOL, 11, & ! unique identifier
+          & 'N', 'T', &
+          & 2*KF_LEG, NS(:), KS(:), &
+          & 1.0_JPRBT, &
+          & C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
+          & C_LOC(ZAA), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS(:) - BOFFSETS(N_MODES_FLT + 1), &
+          & 0.0_JPRBT, &
+          & C_LOC(ZOUTA), IOUT_STRIDES0, COFFSETS, &
+          & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
-    !$ACC END HOST_DATA
+      !$ACC END HOST_DATA
 #endif
 #ifdef OMPGPU
-    !$OMP END TARGET DATA
+      !$OMP END TARGET DATA
 #endif
     ENDIF
 
@@ -436,28 +438,31 @@ CONTAINS
       !$OMP END TARGET DATA
 #endif
     ELSE
+      N_MODES_FLT = 0
+    ENDIF
 
+    IF (N_MODES_FLT < D_NUMP) THEN
 #ifdef OMPGPU
-    !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS)
+      !$OMP TARGET DATA USE_DEVICE_ADDR(ZAS)
 #endif
 #ifdef ACCGPU
-    !$ACC HOST_DATA USE_DEVICE(ZAS,ZINP,ZOUTS)
+      !$ACC HOST_DATA USE_DEVICE(ZAS,ZINP,ZOUTS)
 #endif
-    CALL HIP_GEMM( &
-      & NCUR_RESOL, 12, & ! unique identifier
-      & 'N', 'T', &
-      & 2*KF_LEG, NS(:), KS(:), &
-      & 1.0_JPRBT, &
-      & C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
-      & C_LOC(ZAS), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS, &
-      & 0.0_JPRBT, &
-      & C_LOC(ZOUTS), IOUT_STRIDES0, COFFSETS, &
-      & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
+      CALL HIP_GEMM( &
+        & NCUR_RESOL, 12, & ! unique identifier
+        & 'N', 'T', &
+        & 2*KF_LEG, NS(:), KS(:), &
+        & 1.0_JPRBT, &
+        & C_LOC(ZINP), IIN_STRIDES0, AOFFSETS, &
+        & C_LOC(ZAS), D%LEGENDRE_MATRIX_STRIDES, BOFFSETS(:) - BOFFSETS(N_MODES_FLT + 1), &
+        & 0.0_JPRBT, &
+        & C_LOC(ZOUTS), IOUT_STRIDES0, COFFSETS, &
+        & D_NUMP, HIP_STREAM, C_LOC(ALLOCATOR%PTR))
 #ifdef ACCGPU
-    !$ACC END HOST_DATA
+      !$ACC END HOST_DATA
 #endif
 #ifdef OMPGPU
-    !$OMP END TARGET DATA
+      !$OMP END TARGET DATA
 #endif
     ENDIF
 
@@ -477,7 +482,6 @@ CONTAINS
 #ifdef ACCGPU
     !$ACC WAIT(1)
 
-    !$ACC END DATA
     !$ACC END DATA
 #endif
 
