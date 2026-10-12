@@ -229,7 +229,6 @@ ELSE
 ENDIF
 
 ITHRESHOLD = MAX(ITHRESHOLD,IMAXCOLS+1)
-ITHRESHOLD = -1
 S%ITHRESHOLD = ITHRESHOLD
 
 !*       3.1   Gaussian latitudes and weights
@@ -646,6 +645,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IA  = 1+MOD(R%NSMAX-IM+2,2)
           ILA = (R%NSMAX-IM+2)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
           IF( S%LUSEFLT .AND. ILA > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMA)
             ALLOCATE(S%FA(IMLOC)%RPNMDA(IDGLU,ILA))
@@ -668,6 +668,15 @@ IF(.NOT.D%LGRIDONLY) THEN
               ENDDO
             ENDDO
           ENDIF
+
+          IF (IM == 0) THEN
+            ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+            DO JGL=1,IDGLU
+              DO JI=1,ILA
+                S%RPNMA_DGEMM(JGL,ILA-JI+1)=ZRCVBUFV((JGL-1)*ILA+JI,JSETV)
+              ENDDO
+            ENDDO
+          ENDIF
         ENDDO
         !$OMP END PARALLEL DO
         CALL GSTATS(1251,1)
@@ -686,6 +695,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IA  = 1+MOD(R%NSMAX-IM+2,2)
           ILA = (R%NSMAX-IM+2)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
           IF( S%LUSEFLT .AND. ILA > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMA)
             ALLOCATE(S%FA(IMLOC)%RPNMDA(IDGLU,ILA))
@@ -708,6 +718,15 @@ IF(.NOT.D%LGRIDONLY) THEN
               ENDDO
             ENDDO
           END IF
+
+          IF (IM == 0) THEN
+            ALLOCATE(S%RPNMA_DGEMM(IDGLU,ILA))
+            DO JI=1,ILA
+              DO JGL=1,IDGLU
+                S%RPNMA_DGEMM(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IA+(JI-1)*2)
+              ENDDO
+            ENDDO
+          ENDIF
         ENDDO
         !$OMP END PARALLEL DO
         CALL GSTATS(1251,1)
@@ -925,6 +944,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IS  = 1+MOD(R%NSMAX-IM+1,2)
           ILS = (R%NSMAX-IM+3)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
           IF( S%LUSEFLT .AND. ILS > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMS)
             ALLOCATE(S%FA(IMLOC)%RPNMDS(IDGLU,ILS))
@@ -947,6 +967,15 @@ IF(.NOT.D%LGRIDONLY) THEN
               ENDDO
             ENDDO
           ENDIF
+
+          IF (IM == 0) THEN
+            ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+            DO JGL=1,IDGLU
+              DO JI=1,ILS
+                S%RPNMS_DGEMM(JGL,ILS-JI+1)=ZRCVBUFV((JGL-1)*ILS+JI,JSETV)
+              ENDDO
+            ENDDO
+          ENDIF
         ENDDO
         !$OMP END PARALLEL DO
         CALL GSTATS(1251,1)
@@ -965,6 +994,7 @@ IF(.NOT.D%LGRIDONLY) THEN
           IS  = 1+MOD(R%NSMAX-IM+1,2)
           ILS = (R%NSMAX-IM+3)/2
           IDGLU = MIN(R%NDGNH,G%NDGLU(IM))
+
           IF( S%LUSEFLT .AND. ILS > ITHRESHOLD ) THEN
             IF( .NOT. S%LKEEPRPNM ) DEALLOCATE(S%FA(IMLOC)%RPNMS)
             ALLOCATE(S%FA(IMLOC)%RPNMDS(IDGLU,ILS))
@@ -987,6 +1017,15 @@ IF(.NOT.D%LGRIDONLY) THEN
               ENDDO
             ENDDO
           END IF
+
+          IF (IM == 0) THEN
+            ALLOCATE(S%RPNMS_DGEMM(IDGLU,ILS))
+            DO JI=1,ILS
+              DO JGL=1,IDGLU
+                S%RPNMS_DGEMM(JGL,JI) = ZPNM(ISL+JGL-1,D%NPMS(IM)+IS+(JI-1)*2)
+              ENDDO
+            ENDDO
+          ENDIF
         END DO
         !$OMP END PARALLEL DO
         CALL GSTATS(1251,1)
