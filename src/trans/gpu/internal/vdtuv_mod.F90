@@ -100,9 +100,6 @@ ASSOCIATE(D_NUMP=>D%NUMP, D_MYMS=>D%MYMS, R_NSMAX=>R%NSMAX, F_RLAPIN=>F%RLAPIN)
 !              ------------------------------------------
 
 #ifdef OMPGPU
-! PVOR/PDIV/PU/PV are slices of the growing-allocator buffer PIA, so their storage is
-! already on the device and only the address is needed. PEPSNM is a normally mapped
-! component and is resolved by the MAP above, so it stays in SHARED.
 !$OMP TARGET TEAMS DISTRIBUTE PARALLEL DO COLLAPSE(3) ECTRANS_OMP_DEFAULT_CLAUSE &
 !$OMP& PRIVATE(IR,II,KM,ZKM,JI) &
 !$OMP& SHARED(PEPSNM) ECTRANS_DEVICE_ADDR_CLAUSE(PVOR,PDIV,PU,PV) &
