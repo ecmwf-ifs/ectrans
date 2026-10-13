@@ -13,7 +13,7 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & FSPGL_PROC,&
  & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
- & PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU)
+ & PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU,LPSP_ON_GPU)
 
 !**** *INV_TRANS* - Inverse spectral transform.
 
@@ -105,6 +105,10 @@ SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 if no derivatives, 3 times that with der.)
+!     LPSP_ON_GPU    - optional device-residency flag for PSPVOR/PSPDIV only.
+!                      If true, the GPU path uses their existing device data
+!                      without host transfers. Scalars retain host semantics.
+!                      Ignored by the CPU implementation; default is false.
 !     LPGP_ON_GPU    - optional device-residency hint for PGP, PGPUV,
 !                      PGP3A, PGP3B and PGP2. If present and true, the GPU
 !                      path assumes the corresponding present array is
@@ -162,6 +166,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(OUT) :: PGP2(:,:,:)
 LOGICAL        ,OPTIONAL    ,INTENT(IN) :: LPGP_ON_GPU
+LOGICAL        ,OPTIONAL    ,INTENT(IN) :: LPSP_ON_GPU
 
 
 END SUBROUTINE INV_TRANS
