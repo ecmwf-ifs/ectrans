@@ -11,7 +11,7 @@
 
 SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 & LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,KVSETSC3A,KVSETSC3B,KVSETSC2,&
-& PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU)
+& PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU,LPSP_ON_GPU)
 
 
 !**** *DIR_TRANS* - Direct spectral transform (from grid-point to spectral).
@@ -90,6 +90,10 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 )
+!     LPSP_ON_GPU    - optional device-residency flag for PSPVOR/PSPDIV only.
+!                      If true, the GPU path uses their existing device data
+!                      without host transfers. Scalars retain host semantics.
+!                      Ignored by the CPU implementation; default is false.
 !     LPGP_ON_GPU    - optional device-residency hint for PGP, PGPUV,
 !                      PGP3A, PGP3B and PGP2. If present and true, the GPU
 !                      path assumes the corresponding present array is
@@ -157,6 +161,7 @@ REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3A(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP3B(:,:,:,:)
 REAL(KIND=JPRB),OPTIONAL    ,INTENT(IN) :: PGP2(:,:,:)
 LOGICAL        ,OPTIONAL    ,INTENT(IN) :: LPGP_ON_GPU
+LOGICAL        ,OPTIONAL    ,INTENT(IN) :: LPSP_ON_GPU
 
 !ifndef INTERFACE
 
@@ -513,7 +518,7 @@ CALL GSTATS(1808,1)
 CALL DIR_TRANS_CTL(IF_UV_G,IF_SCALARS_G,IF_GP,IF_FS,IF_UV,IF_SCALARS,&
  & PSPVOR,PSPDIV,PSPSCALAR,KVSETUV,KVSETSC,PGP,&
  & PSPSC3A,PSPSC3B,PSPSC2,KVSETSC3A,KVSETSC3B,KVSETSC2,PGPUV,PGP3A,PGP3B,PGP2,&
- & LPGP_ON_GPU)
+ & LPGP_ON_GPU,LPSP_ON_GPU)
 
  IF (LSYNC_TRANS) THEN
    CALL GSTATS(430,0)
