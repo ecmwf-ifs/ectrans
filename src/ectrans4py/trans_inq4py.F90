@@ -12,7 +12,8 @@ SUBROUTINE TRANS_INQ4PY(KRETURNCODE, KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUM
 !                    then inquire. Local == global (single task).
 !    * KRESOL >  0 : inquire the resolution already set up by SETUP_TRANS_4PY (after
 !                    the parallel SETUP_TRANS0_4PY). Local sizes are this task's
-!                    partition; the grid parameters are then unused.
+!                    partition; the grid parameters are then unused. A KRESOL that is
+!                    not a resolution set up by SETUP_TRANS_4PY returns error code 101.
 !
 ! ** AUTHOR
 !    9 April 2014, S. Riette
@@ -36,6 +37,7 @@ SUBROUTINE TRANS_INQ4PY(KRETURNCODE, KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUM
 
 USE ISO_FORTRAN_ENV, ONLY: INT64
 USE PARKIND1, ONLY: JPIM, JPRB, JPRD
+USE RESOL_CHECK4PY_MOD, ONLY: RESOL_STATUS
 
 IMPLICIT NONE
 
@@ -70,6 +72,8 @@ IF (KRESOL <= 0_INT64) THEN
   IRESOL = IIDENTRESOL
 ELSE
   ! Inquire the resolution already set up by SETUP_TRANS_4PY (distributed).
+  KRETURNCODE = RESOL_STATUS(KRESOL)
+  IF (KRETURNCODE /= 0) RETURN
   IRESOL = INT(KRESOL, JPIM)
 ENDIF
 !
