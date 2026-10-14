@@ -139,6 +139,30 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         self.assertEqual(kgptot, kgptotg)   # serial: local sizes equal global
         # PGW/PMU consistent with get_legendre_assets
         self.assertTrue(abs(sum(pgw) - 1.0) < EPSILON, f"sum of weights is {sum(pgw)}")
+
+    def test_trans_inq4py_latitudes(self):
+        # PMU in double precision whatever the precision of the build, as get_legendre_assets
+        # returns it, and PGW in the precision of the build: both the same as get_legendre_assets
+        nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
+        _, weights, mu, _ = ectrans4py.get_legendre_assets(
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            nspec,
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL
+        )
+        *_, pmu, pgw = ectrans4py.trans_inq4py(
+            0,
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL)
+        self.assertEqual(pmu.dtype, numpy.float64)
+        self.assertEqual(pgw.dtype, ectrans4py._REAL)
+        numpy.testing.assert_array_equal(pmu, mu)
+        numpy.testing.assert_array_equal(pgw, weights)
     
     def test_sp2gp(self):
         gpdata = ectrans4py.sp2gp_gauss4py(

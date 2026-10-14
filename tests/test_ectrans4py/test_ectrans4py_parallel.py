@@ -83,7 +83,7 @@ def _inquire_geometry(geom, kresol, truncation, lons_per_lat):
     geom.num_grid_points_glob = num_grid_points_glob
     geom.num_spec2_glob = num_spec2_glob
     geom.inquired_truncation = inquired_truncation
-    geom.sin_lats = sin_lats.astype(np.float64)
+    geom.sin_lats = sin_lats
     geom.gauss_weights = gauss_weights
 
     # Grid points: latitude rows from north to south, each starting at longitude 0
@@ -243,6 +243,15 @@ class TestInquiry(DistributedTestCase):
         assert np.all(np.diff(geom.sin_lats) < 0.0)
         weights_sum = np.sum(geom.gauss_weights, dtype=np.float64)
         assert abs(weights_sum - 1.0) <= len(geom.lons_per_lat) * EPS
+
+    def test_sin_lats_double_precision(self):
+        geom = self.geom
+        # The sines of the Gaussian latitudes come in double precision whatever the precision of
+        # the build: the Gauss-Legendre nodes, north to south. numpy's nodes agree with them to
+        # within an ulp or two; rounded to single precision, they would be off by up to 3e-8
+        nodes, _ = np.polynomial.legendre.leggauss(len(geom.lons_per_lat))
+        assert geom.sin_lats.dtype == np.float64
+        assert np.max(np.abs(geom.sin_lats - nodes[::-1])) <= 100 * np.finfo(np.float64).eps
 
 
 class TestInverse(DistributedTestCase):

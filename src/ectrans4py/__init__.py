@@ -72,8 +72,9 @@ else:
 
 # Floating-point type of the field data (spectral / grid-point) crossing the
 # Fortran interface (the JPRB arrays): float32 for the single-precision build,
-# float64 for the double. Geometry (Gaussian latitudes/weights, Legendre
-# polynomials) and resolution deltas remain double regardless.
+# float64 for the double. So are the Gaussian weights, Legendre polynomials and
+# resolution deltas; only the sines of the Gaussian latitudes (PMU), which
+# ecTrans returns in double precision, are float64 regardless.
 _REAL = np.float32 if _prec == "sp" else np.float64
 
 ctypesFF, handle = ctypesForFortran.ctypesForFortranFactory(shared_objects_library)
@@ -222,7 +223,8 @@ def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
     5) KSPEC2G: global number of (doubled) spectral coefficients
     6) KSMAX: spectral truncation T
     7) KNMENG: cut-off zonal wavenumber (per latitude)
-    8) PMU: sines of the Gaussian latitudes (global, length KSIZEJ)
+    8) PMU: sines of the Gaussian latitudes (global, length KSIZEJ), float64 whatever the
+       precision of the build
     9) PGW: Gaussian weights (global, length KSIZEJ)
     """
     return ([KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL],
@@ -239,7 +241,7 @@ def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
              (np.int64, None, OUT),
              (np.int64, None, OUT),
              (np.int64, (KSIZEJ,), OUT),
-             (_REAL, (KSIZEJ,), OUT),
+             (np.float64, (KSIZEJ,), OUT),
              (_REAL, (KSIZEJ,), OUT)],
             None)
 
