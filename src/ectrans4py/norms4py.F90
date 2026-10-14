@@ -4,6 +4,9 @@
 ! KRESOL, the last argument of both routines, is the resolution tag returned by
 ! SETUP_TRANS_4PY, and the norms are computed on that resolution. A KRESOL that is not a
 ! resolution set up by SETUP_TRANS_4PY returns error code 101 (RESOL_CHECK4PY_MOD).
+! Grid-point arrays that ecTrans reads or writes whole are declared (KGPTOT, KFLD, 1),
+! ecTrans's NPROMA-blocked layout with a single block: the same memory as (KGPTOT, KFLD),
+! so they are passed to ecTrans without a copy.
 
 SUBROUTINE SPECNORM4PY(KRETURNCODE, KSPEC2, KFLD, PSPEC, PNORM, KRESOL)
 ! Global spectral L2 norm per field. Cf. SPECNORM.
@@ -37,15 +40,13 @@ USE RESOL_CHECK4PY_MOD, ONLY: RESOL_STATUS
 IMPLICIT NONE
 INTEGER(KIND=INT64), INTENT(OUT) :: KRETURNCODE
 INTEGER(KIND=INT64), INTENT(IN)  :: KGPTOT, KFLD, KRESOL
-REAL(KIND=JPRB), DIMENSION(KGPTOT, KFLD), INTENT(IN)  :: PGP
+REAL(KIND=JPRB), DIMENSION(KGPTOT, KFLD, 1), INTENT(IN)  :: PGP
 REAL(KIND=JPRB), DIMENSION(KFLD),         INTENT(OUT) :: PAVE, PMIN, PMAX
-REAL(KIND=JPRB) :: ZGP(KGPTOT, KFLD, 1)
 #include "gpnorm_trans.h"
 KRETURNCODE = RESOL_STATUS(KRESOL)
 IF (KRETURNCODE /= 0) RETURN
-ZGP(:, :, 1) = PGP(:, :)
 PMIN(:) = 0._JPRB
 PMAX(:) = 0._JPRB
-CALL GPNORM_TRANS(ZGP, INT(KFLD,JPIM), INT(KGPTOT,JPIM), PAVE, PMIN, PMAX, .FALSE., &
+CALL GPNORM_TRANS(PGP, INT(KFLD,JPIM), INT(KGPTOT,JPIM), PAVE, PMIN, PMAX, .FALSE., &
  & KRESOL=INT(KRESOL,JPIM))
 END SUBROUTINE GPNORM_TRANS4PY

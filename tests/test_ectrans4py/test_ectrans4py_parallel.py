@@ -679,6 +679,25 @@ class TestAdjoint(DistributedTestCase):
         assert _adjoint_error(lhs, rhs) <= ADJOINT_TOL
 
 
+class TestInputArrays(DistributedTestCase):
+    def test_grid_point_inputs_unchanged(self):
+        # The bindings pass grid-point inputs to ecTrans in place, without a copy, and must leave
+        # them bit for bit as they were
+        geom = self.geom
+        sizes = (geom.num_spec2_loc, geom.num_grid_points_loc, NFLD)
+        gridded_field_loc = _distribute_grid(geom, _random_grid_field(geom, NFLD, seed=27))
+        original = gridded_field_loc.copy()
+        ectrans4py.dir_trans_scalar_dist4py(*sizes, gridded_field_loc, geom.kresol)
+        ectrans4py.inv_trans_scalar_dist4py_ad(*sizes, gridded_field_loc, geom.kresol)
+        ectrans4py.gath_grid4py(geom.num_grid_points_glob, geom.num_grid_points_loc, NFLD,
+                                _from_which_rank(context.my_rank, NFLD), gridded_field_loc,
+                                geom.kresol)
+        ectrans4py.gpnorm_trans4py(geom.num_grid_points_loc, NFLD, gridded_field_loc, geom.kresol)
+
+        unchanged = gridded_field_loc.tobytes() == original.tobytes()
+        assert MPI.COMM_WORLD.allreduce(unchanged, op=MPI.LAND)
+
+
 # The tests above on the second resolution: every binding is passed its KRESOL, and runs at
 # that resolution's truncation and on its grid. (The test_scalar of TestInverse and TestDirect
 # use the first resolution and the default KRESOL, and are not repeated.)
@@ -711,6 +730,10 @@ class TestNormResolution2(TestNorm):
 
 
 class TestAdjointResolution2(TestAdjoint):
+    geom = context_2
+
+
+class TestInputArraysResolution2(TestInputArrays):
     geom = context_2
 
 
