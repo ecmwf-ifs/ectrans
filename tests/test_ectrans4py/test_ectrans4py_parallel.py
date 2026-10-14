@@ -282,6 +282,12 @@ def _binding_calls(geom):
             *vset_sizes, spectral_loc, spectral_loc, *k)),
         ("specnorm_vset4py", lambda *k: _first_task_only(ectrans4py.specnorm_vset4py(
             spec2_loc, nfld, nfld, vset, spectral_loc, *k))),
+        ("inv_trans_all_dist4py", lambda *k: ectrans4py.inv_trans_all_dist4py(
+            spec2_loc, gp_loc, nfld, nfld, nfld, nfld, 6 * nfld, 1, 1, vset, vset, spectral_loc,
+            spectral_loc, spectral_loc, *k)),
+        ("dir_trans_all_dist4py", lambda *k: ectrans4py.dir_trans_all_dist4py(
+            spec2_loc, gp_loc, nfld, nfld, nfld, nfld, 3 * nfld, vset, vset,
+            np.concatenate([grid_loc, grid_loc, grid_loc]), *k)),
     ]
 
 
@@ -760,6 +766,73 @@ class TestVsetBindings(DistributedTestCase):
         assert sum(MPI.COMM_WORLD.allgather(differing), []) == []
 
 
+class TestTransformAll(DistributedTestCase):
+    # A single transform of the winds and the scalar fields together, against the transforms of
+    # each kind of field. ecTrans's sums depend, at the level of rounding, on the number of fields
+    # transformed together (by up to 4 EPS when measured, in single and double precision), so the
+    # results agree up to rounding, not bit for bit. The numbers of wind and scalar fields differ,
+    # so that a field in the wrong place shows.
+    NUM_WINDS = 3
+    NUM_SCALARS = 2
+
+    def _blocks_agree(self, actual, expected_blocks):
+        """Whether actual, split into the shapes of expected_blocks, agrees with each of them
+        within 100 EPS relative to its largest magnitude, on every task"""
+        offsets = np.cumsum([block.shape[0] for block in expected_blocks])[:-1]
+        agree = (actual.shape[0] == sum(block.shape[0] for block in expected_blocks)
+                 and all(_relative_error(block, expected) <= 100 * EPS
+                         for block, expected in zip(np.split(actual, offsets), expected_blocks)))
+        return MPI.COMM_WORLD.allreduce(agree, op=MPI.LAND)
+
+    def test_inverse(self):
+        # [grid-point divergence] u v scalars [N-S derivatives E-W derivatives], with and without
+        # the divergence (KDDIVGP) and the derivatives (KDSCDERS)
+        geom = self.geom
+        nuv, nsc = self.NUM_WINDS, self.NUM_SCALARS
+        sizes = (geom.num_spec2_loc, geom.num_grid_points_loc)
+        vorticity_loc, divergence_loc = [
+            _distribute_spectral(geom, _random_spectral_field(geom, nuv, seed, zero_mean=True))
+            for seed in (32, 33)]
+        scalar_loc = _distribute_spectral(geom, _random_spectral_field(geom, nsc, seed=34))
+        u_loc, v_loc = ectrans4py.inv_trans_uv_dist4py(*sizes, nuv, vorticity_loc, divergence_loc,
+                                                        geom.kresol)
+        divergence_gp_loc = ectrans4py.inv_trans_scalar_dist4py(*sizes, nuv, divergence_loc,
+                                                                geom.kresol)
+        scalar_gp_loc, ns_der_loc, ew_der_loc = ectrans4py.inv_trans_scalar_ders_dist4py(
+            *sizes, nsc, scalar_loc, geom.kresol)
+
+        for with_divergence in (0, 1):
+            for with_derivatives in (0, 1):
+                expected_blocks = (([divergence_gp_loc] if with_divergence else [])
+                                   + [u_loc, v_loc, scalar_gp_loc]
+                                   + ([ns_der_loc, ew_der_loc] if with_derivatives else []))
+                num_gp = (3 if with_divergence else 2) * nuv + (3 if with_derivatives else 1) * nsc
+                gridded_field_loc = ectrans4py.inv_trans_all_dist4py(
+                    *sizes, nuv, nsc, nuv, nsc, num_gp, with_divergence, with_derivatives,
+                    np.ones(nuv, dtype=np.int64), np.ones(nsc, dtype=np.int64), vorticity_loc,
+                    divergence_loc, scalar_loc, geom.kresol)
+                agree = self._blocks_agree(gridded_field_loc, expected_blocks)
+                assert agree, (with_divergence, with_derivatives)
+
+    def test_direct(self):
+        # u v scalars
+        geom = self.geom
+        nuv, nsc = self.NUM_WINDS, self.NUM_SCALARS
+        sizes = (geom.num_spec2_loc, geom.num_grid_points_loc)
+        u_loc, v_loc = [_distribute_grid(geom, _random_grid_field(geom, nuv, seed))
+                        for seed in (35, 36)]
+        scalar_loc = _distribute_grid(geom, _random_grid_field(geom, nsc, seed=37))
+        expected_blocks = (list(ectrans4py.dir_trans_uv_dist4py(*sizes, nuv, u_loc, v_loc,
+                                                                geom.kresol))
+                           + [ectrans4py.dir_trans_scalar_dist4py(*sizes, nsc, scalar_loc,
+                                                                  geom.kresol)])
+        spectral_fields_loc = ectrans4py.dir_trans_all_dist4py(
+            *sizes, nuv, nsc, nuv, nsc, 2 * nuv + nsc, np.ones(nuv, dtype=np.int64),
+            np.ones(nsc, dtype=np.int64), np.concatenate([u_loc, v_loc, scalar_loc]), geom.kresol)
+
+        assert self._blocks_agree(np.concatenate(spectral_fields_loc), expected_blocks)
+
+
 # The tests above on the second resolution: every binding is passed its KRESOL, and runs at
 # that resolution's truncation and on its grid. (The test_scalar of TestInverse and TestDirect
 # use the first resolution and the default KRESOL, and are not repeated.)
@@ -800,6 +873,10 @@ class TestInputArraysResolution2(TestInputArrays):
 
 
 class TestVsetBindingsResolution2(TestVsetBindings):
+    geom = context_2
+
+
+class TestTransformAllResolution2(TestTransformAll):
     geom = context_2
 
 

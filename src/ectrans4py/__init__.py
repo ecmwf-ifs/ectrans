@@ -23,7 +23,8 @@ one set of Legendre assets (``get_legendre_assets``):
   ``specnorm4py``/``gpnorm_trans4py``. With several V-sets (``KPRTRW < NPROC``), the
   spectral fields are distributed over the V-sets as well: use the ``*_vset4py``
   bindings, with a map from each field to its V-set (``trans_inq_vset4py`` returns
-  the task's).
+  the task's). ``inv_trans_all_dist4py``/``dir_trans_all_dist4py`` transform winds
+  and scalar fields together, in a single call.
 
 Several resolutions can coexist (``KMAX_RESOL`` of ``setup_trans0_4py``): every
 distributed transform, scatter/gather and norm takes a trailing ``KRESOL``, the tag
@@ -1190,6 +1191,77 @@ def specnorm_vset4py(KSPEC2, KFLDG, KFLDL, KVSET, PSPEC, KRESOL=1):
              (np.int64, (KFLDG,), IN),
              (_REAL, (KFLDL, KSPEC2), IN),
              (_REAL, (KFLDG,), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+# ---------------------------------------------------------------------------
+# One transform for a whole set of fields: winds and scalars together in a
+# single INV_TRANS or DIR_TRANS, as the IFS transforms its model state. The
+# V-set maps and field counts are those of the *_vset4py bindings (with a single
+# V-set: KVSETUV, KVSETSC all 1, KFUV == KFUVG, KFSC == KFSCG).
+# ---------------------------------------------------------------------------
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_all_dist4py(KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KDDIVGP, KDSCDERS,
+                          KVSETUV, KVSETSC, PSPVOR, PSPDIV, PSPSCALAR, KRESOL=1):
+    """Local inverse transform of vorticity/divergence (KFUV,KSPEC2 each) and scalar fields
+    (KFSC,KSPEC2), the fields of this task's V-set, in a single INV_TRANS. KVSETUV (KFUVG,)
+    and KVSETSC (KFSCG,) give the V-set of each global wind and scalar field. KDDIVGP and
+    KDSCDERS (0 or 1) ask for the grid-point divergence and the derivatives of the scalars.
+    Returns PGP (KFGP,KGPTOT), all fields in the order of inv_trans.h:
+      [divergence (KFUVG, if KDDIVGP)] u (KFUVG) v (KFUVG) scalars (KFSCG)
+      [N-S derivatives (KFSCG)] [E-W derivatives (KFSCG)] (the last two if KDSCDERS),
+    so KFGP = (3 if KDDIVGP else 2) * KFUVG + (3 if KDSCDERS else 1) * KFSCG.
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KDDIVGP, KDSCDERS, KVSETUV,
+             KVSETSC, PSPVOR, PSPDIV, PSPSCALAR, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFUVG,), IN),
+             (np.int64, (KFSCG,), IN),
+             (_REAL, (KFUV, KSPEC2), IN),
+             (_REAL, (KFUV, KSPEC2), IN),
+             (_REAL, (KFSC, KSPEC2), IN),
+             (_REAL, (KFGP, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_all_dist4py(KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KVSETUV, KVSETSC, PGP,
+                          KRESOL=1):
+    """Local direct transform of grid-point fields PGP (KFGP,KGPTOT), all fields in the order
+    of dir_trans.h, u (KFUVG) v (KFUVG) scalars (KFSCG), so KFGP = 2 * KFUVG + KFSCG, in a
+    single DIR_TRANS. KVSETUV (KFUVG,) and KVSETSC (KFSCG,) give the V-set of each global wind
+    and scalar field. Returns PSPVOR, PSPDIV (KFUV,KSPEC2 each) and PSPSCALAR (KFSC,KSPEC2),
+    the fields of this task's V-set.
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KVSETUV, KVSETSC, PGP, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFUVG,), IN),
+             (np.int64, (KFSCG,), IN),
+             (_REAL, (KFGP, KGPTOT), IN),
+             (_REAL, (KFUV, KSPEC2), OUT),
+             (_REAL, (KFUV, KSPEC2), OUT),
+             (_REAL, (KFSC, KSPEC2), OUT),
              (np.int64, None, IN)],
             None)
 

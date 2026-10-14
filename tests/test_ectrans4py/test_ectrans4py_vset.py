@@ -41,8 +41,9 @@ EARTH_RADIUS = 6371229.0
 # Tolerances, relative to the size of the expected values. EPS: machine epsilon of the build.
 EPS = np.finfo(ectrans4py._REAL).eps
 # On a regular quadratic Gaussian grid, transforms are exact up to rounding: of a single
-# spherical harmonic, there and back, and with another map from the fields to the V-sets, which
-# changes the order of some of ecTrans's sums (by up to about 10 EPS, when measured)
+# spherical harmonic, there and back, and with another map from the fields to the V-sets or other
+# fields transformed together, which change the order of some of ecTrans's sums (by up to about
+# 10 EPS, when measured)
 TOL = 1000 * EPS
 # Adjoint identities: the threshold of ecTrans's own adjoint tests (tests/trans/adjoint)
 ADJOINT_TOL = 20000 * EPS
@@ -162,6 +163,11 @@ def _binding_calls():
     grid_loc = _distribute_grid(_random_grid_field(seed=31))
     spec2_glob, spec2_loc, num_loc = (context.num_spec2_glob, context.num_spec2_loc,
                                       _num_local_fields(kvset))
+    # the scalar fields of inv/dir_trans_all_dist4py on another map than the winds
+    kvset_scalars = _vset_map("blocked")
+    scalar_loc = _distribute_spectral(spectral_glob, kvset_scalars)
+    num_loc_scalars = _num_local_fields(kvset_scalars)
+    gp_loc = context.num_grid_points_loc
     return [
         ("trans_inq_vset4py", lambda *k: ectrans4py.trans_inq_vset4py(*k)),
         ("dist_spec_vset4py", lambda *k: ectrans4py.dist_spec_vset4py(
@@ -191,6 +197,12 @@ def _binding_calls():
             *sizes, spectral_loc, spectral_loc, *k)),
         ("specnorm_vset4py", lambda *k: ectrans4py.specnorm_vset4py(
             spec2_loc, NFLD, num_loc, kvset, spectral_loc, *k)),
+        ("inv_trans_all_dist4py", lambda *k: ectrans4py.inv_trans_all_dist4py(
+            spec2_loc, gp_loc, num_loc, num_loc_scalars, NFLD, NFLD, 6 * NFLD, 1, 1, kvset,
+            kvset_scalars, spectral_loc, spectral_loc, scalar_loc, *k)),
+        ("dir_trans_all_dist4py", lambda *k: ectrans4py.dir_trans_all_dist4py(
+            spec2_loc, gp_loc, num_loc, num_loc_scalars, NFLD, NFLD, 3 * NFLD, kvset,
+            kvset_scalars, np.concatenate([grid_loc, grid_loc, grid_loc]), *k)),
     ]
 
 
@@ -499,6 +511,62 @@ class TestFieldMaps(TestCase):
 
         assert _on_rank_0(lambda: max(_relative_error(field, reference) for other in outputs[1:]
                                       for field, reference in zip(other, outputs[0]))) <= TOL
+
+
+class TestTransformAll(TestCase):
+    # A single transform of the winds and the scalar fields together, against the transforms of
+    # each kind of field, with the winds and the scalars on different maps to the V-sets (and
+    # V-sets without wind or without scalar fields)
+    MAPS = (("round-robin", "blocked"), ("last", "round-robin"), ("blocked", "last"))
+
+    def test_inverse(self):
+        # Grid-point divergence, u, v, scalars, N-S and E-W derivatives, NFLD fields each
+        vorticity_glob = _random_spectral_field(seed=25, zero_mean=True)
+        divergence_glob = _random_spectral_field(seed=26, zero_mean=True)
+        scalar_glob = _random_spectral_field(seed=27)
+        errors = []
+        for wind_map, scalar_map in self.MAPS:
+            kvsetuv, kvsetsc = _vset_map(wind_map), _vset_map(scalar_map)
+            vorticity_loc = _distribute_spectral(vorticity_glob, kvsetuv)
+            divergence_loc = _distribute_spectral(divergence_glob, kvsetuv)
+            scalar_loc = _distribute_spectral(scalar_glob, kvsetsc)
+            expected_blocks = (
+                [ectrans4py.inv_trans_scalar_vset4py(*_sizes(kvsetuv), divergence_loc,
+                                                     context.kresol)]
+                + list(ectrans4py.inv_trans_uv_vset4py(*_sizes(kvsetuv), vorticity_loc,
+                                                       divergence_loc, context.kresol))
+                + list(ectrans4py.inv_trans_scalar_ders_vset4py(*_sizes(kvsetsc), scalar_loc,
+                                                                context.kresol)))
+            gridded_field_loc = ectrans4py.inv_trans_all_dist4py(
+                context.num_spec2_loc, context.num_grid_points_loc, _num_local_fields(kvsetuv),
+                _num_local_fields(kvsetsc), NFLD, NFLD, 6 * NFLD, 1, 1, kvsetuv, kvsetsc,
+                vorticity_loc, divergence_loc, scalar_loc, context.kresol)
+            errors += [_relative_error(block, expected) for block, expected
+                       in zip(np.split(gridded_field_loc, 6), expected_blocks)]
+
+        assert MPI.COMM_WORLD.allreduce(max(errors, default=0.0), op=MPI.MAX) <= TOL
+
+    def test_direct(self):
+        # u, v and scalars, NFLD fields each, to the fields of each task's V-sets
+        u_loc, v_loc, scalar_loc = [_distribute_grid(_random_grid_field(seed))
+                                    for seed in (28, 29, 30)]
+        errors = []
+        for wind_map, scalar_map in self.MAPS:
+            kvsetuv, kvsetsc = _vset_map(wind_map), _vset_map(scalar_map)
+            expected_fields = (
+                list(ectrans4py.dir_trans_uv_vset4py(*_sizes(kvsetuv), u_loc, v_loc,
+                                                     context.kresol))
+                + [ectrans4py.dir_trans_scalar_vset4py(*_sizes(kvsetsc), scalar_loc,
+                                                       context.kresol)])
+            spectral_fields_loc = ectrans4py.dir_trans_all_dist4py(
+                context.num_spec2_loc, context.num_grid_points_loc, _num_local_fields(kvsetuv),
+                _num_local_fields(kvsetsc), NFLD, NFLD, 3 * NFLD, kvsetuv, kvsetsc,
+                np.concatenate([u_loc, v_loc, scalar_loc]), context.kresol)
+            # (a task whose V-set holds no field of a kind has nothing to compare)
+            errors += [_relative_error(field, expected) for field, expected
+                       in zip(spectral_fields_loc, expected_fields) if expected.size]
+
+        assert MPI.COMM_WORLD.allreduce(max(errors, default=0.0), op=MPI.MAX) <= TOL
 
 
 class TestResolution(TestCase):
