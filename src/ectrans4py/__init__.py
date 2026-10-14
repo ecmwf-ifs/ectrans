@@ -24,7 +24,10 @@ one set of Legendre assets (``get_legendre_assets``):
   spectral fields are distributed over the V-sets as well: use the ``*_vset4py``
   bindings, with a map from each field to its V-set (``trans_inq_vset4py`` returns
   the task's). ``inv_trans_all_dist4py``/``dir_trans_all_dist4py`` transform winds
-  and scalar fields together, in a single call.
+  and scalar fields together, in a single call. The repacking of the spectral arrays
+  between the layout of the callers and that of ecTrans is blocked and threaded with
+  OpenMP when the environment variable ``ECTRANS4PY_OMP`` is set (to ``1``, say), with
+  bit-identical results (``spec_layout_inq4py``).
 
 Several resolutions can coexist (``KMAX_RESOL`` of ``setup_trans0_4py``): every
 distributed transform, scatter/gather and norm takes a trailing ``KRESOL``, the tag
@@ -1357,6 +1360,65 @@ def dir_trans_all_dist4py(KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KVSETU
              (_REAL, (KFUV, KSPEC2), OUT),
              (_REAL, (KFSC, KSPEC2), OUT),
              (np.int64, None, IN)],
+            None)
+
+
+# ---------------------------------------------------------------------------
+# The repacking of spectral arrays between the layout of the Python callers
+# (KFLD, KSPEC2) and that of ecTrans, which every distributed binding with
+# spectral fields does (SPEC_LAYOUT4PY_MOD in spec_layout4py.F90): by default
+# with array-section loops; with the environment variable ECTRANS4PY_OMP set to a
+# value that does not start with '0', with loops blocked over the spectral
+# coefficients and threaded with OpenMP (OMP_NUM_THREADS), which pay off with
+# several threads per task. The results are bit-identical. ECTRANS4PY_OMP is read
+# once per process. These bindings expose the repacking, to test and time it.
+# ---------------------------------------------------------------------------
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def spec_to_fld4py(KSPEC2, KFLD, PSPEC):
+    """The transpose (KSPEC2,KFLD) of PSPEC (KFLD,KSPEC2), as the bindings repack their
+    spectral inputs for ecTrans."""
+    return ([KSPEC2, KFLD, PSPEC],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (_REAL, (KFLD, KSPEC2), IN),
+             (_REAL, (KSPEC2, KFLD), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def fld_to_spec4py(KSPEC2, KFLD, PFLD):
+    """The transpose (KFLD,KSPEC2) of PFLD (KSPEC2,KFLD), as the bindings repack the spectral
+    outputs of ecTrans."""
+    return ([KSPEC2, KFLD, PFLD],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (_REAL, (KSPEC2, KFLD), IN),
+             (_REAL, (KFLD, KSPEC2), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def spec_layout_inq4py():
+    """Inquire the repacking of spectral arrays. Returns:
+    1) KBLK: number of spectral coefficients in a block of the blocked loops
+    2) KBLOCKED: 1 if ECTRANS4PY_OMP selects the blocked, threaded loops, else 0
+    3) KTHREADS: number of OpenMP threads of the blocked loops (1 without OpenMP)
+    4) KOPENMP: 1 if the repacking is compiled with OpenMP, else 0
+    5) KOPENMP_BUILD: 1 if the build asked for OpenMP (ecTrans's feature OMP), else 0;
+       KOPENMP must be the same, or the blocked loops run on a single thread."""
+    return ([],
+            [(np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT)],
             None)
 
 

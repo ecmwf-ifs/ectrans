@@ -3,6 +3,11 @@ import numpy
 from . import data
 import ectrans4py
 import platform
+import json
+import os
+import subprocess
+import sys
+from . import spec_layout_check
 
 system = platform.system()
 if system == "Linux":
@@ -191,3 +196,33 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             self.gpdata.astype(ectrans4py._REAL))
         self.assert_arrays_diff_under_epsilon(self.spdata, spdata)
 
+
+class TestSpecLayout(TestCase):
+    # The repacking of spectral arrays between the layout of the Python callers and that of
+    # ecTrans, in every distributed binding with spectral fields (spec_layout_check.py), exact
+    # with the array-section loops and with the blocked loops, at any number of threads
+
+    def test_repack(self):
+        # In this process, as the environment sets the repacking up; threaded if the build asked
+        # for OpenMP
+        report = spec_layout_check.report()
+        self.assertEqual(report["failed"], [])
+        self.assertEqual(report["openmp"], report["openmp_build"])
+
+    def test_repack_settings(self):
+        # In processes of their own (ECTRANS4PY_OMP and OMP_NUM_THREADS are read once per
+        # process): the array-section loops (ECTRANS4PY_OMP unset or 0), and the blocked loops
+        # on 1, 2 and 4 threads
+        for setting, threads in ((None, 4), ("0", 4), ("1", 1), ("1", 2), ("1", 4)):
+            env = dict(os.environ, OMP_NUM_THREADS=str(threads))
+            env.pop("ECTRANS4PY_OMP", None)
+            if setting is not None:
+                env["ECTRANS4PY_OMP"] = setting
+            result = subprocess.run([sys.executable, spec_layout_check.__file__], env=env,
+                                    capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout.splitlines()[-1])
+            self.assertEqual(report["failed"], [], (setting, threads))
+            self.assertEqual(report["blocked"], int(setting == "1"), (setting, threads))
+            if report["openmp"]:
+                self.assertEqual(report["threads"], threads, (setting, threads))
