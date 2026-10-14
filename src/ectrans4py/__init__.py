@@ -33,6 +33,13 @@ that resolution. A ``KRESOL`` that is not a resolution set up by ``setup_trans_4
 raises ``RuntimeError`` with error code 101, instead of ecTrans aborting the job. The
 bindings take positional arguments only (the ctypesForFortran wrappers forward
 ``*args``), so pass ``KRESOL`` positionally.
+
+A resolution can be set up for grid-point space only (``setup_trans_4py`` with
+``LDGRIDONLY`` True, CPU only), as the IFS does for its radiation grid: its grid-point
+partition is distributed (``dist_grid4py``/``gath_grid4py``) and inquired
+(``trans_inq_grid4py``, with the region counts of ``setup_trans0_regions4py``), and
+every binding that needs spectral or Fourier space raises ``RuntimeError`` with error
+code 102 for it, instead of ecTrans crashing.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -258,6 +265,63 @@ def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
              (np.int64, (KSIZEJ,), OUT),
              (np.float64, (KSIZEJ,), OUT),
              (_REAL, (KSIZEJ,), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def trans_inq_grid4py(KRESOL, KDGL, KNRNS, KNREW):
+    """
+    Wrapper to TRANS_INQ for the grid-point partition tables of a distributed resolution,
+    spectral or grid-point-only (setup_trans_4py LDGRIDONLY), as the IFS inquires them for
+    its radiation grid.
+
+    Args:\n
+    1) KRESOL: resolution tag from setup_trans_4py
+    2) KDGL: number of latitude rows of that resolution
+    3,4) KNRNS, KNREW: numbers of N-S bands and of E-W regions of the grid-point partition,
+       k_regions_ns and k_regions_ew of setup_trans0_4py (or setup_trans0_regions4py)
+
+    Returns:\n
+    1) NGPTOT: grid points on this task
+    2) NGPTOTG: grid points on the globe
+    3) NGPTOTMX: largest number of grid points on a task
+    4) NFRSTLOFF: offset of the first latitude of this task's N-S band
+    5) NPTRFLOFF: offset of the row of that latitude in NSTA/NONL
+    6,7) MY_REGION_NS, MY_REGION_EW: this task's region (1-based)
+    8) NFRSTLAT (KNRNS,): first latitude of each N-S band
+    9) NLSTLAT (KNRNS,): last latitude of each N-S band
+    10) NPTRFRSTLAT (KNRNS,): row of the first latitude of each N-S band in NSTA/NONL
+    11) NSTA (KNREW, KDGL+KNRNS-1): first grid point (1-based) of each row in each E-W
+        region; a latitude split between two N-S bands has a row in each
+    12) NONL (KNREW, KDGL+KNRNS-1): number of grid points of each row in each E-W region
+    13) NGPTOTL (KNREW, KNRNS): grid points of each region
+    14) PMU (KDGL,): sines of the latitudes, float64
+
+    Raises RuntimeError with error code 1 when KNRNS or KNREW differs from the region counts
+    of the setup, 2 when KDGL differs from the number of latitude rows of KRESOL and 101
+    when KRESOL is not a resolution set up by setup_trans_4py.
+    """
+    return ([KRESOL, KDGL, KNRNS, KNREW],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, (KNRNS,), OUT),
+             (np.int64, (KNRNS,), OUT),
+             (np.int64, (KNRNS,), OUT),
+             (np.int64, (KNREW, KDGL + KNRNS - 1), OUT),
+             (np.int64, (KNREW, KDGL + KNRNS - 1), OUT),
+             (np.int64, (KNREW, KNRNS), OUT),
+             (np.float64, (KDGL,), OUT)],
             None)
 
 
@@ -707,17 +771,47 @@ def setup_trans0_4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def setup_trans_4py(KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT):
+def setup_trans_4py(KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT, LDGRIDONLY=False):
     """Parallel resolution-dependent setup (LDUSEFLT selects Fast Legendre Transform).
+    LDGRIDONLY=True sets up grid-point space only, as the IFS does for its radiation grid
+    (KSMAX is then not used; the IFS passes 0): dist_grid4py, gath_grid4py and
+    trans_inq_grid4py work on such a resolution, every binding that needs spectral or
+    Fourier space (the transforms, the spectral scatter/gather, the norms -- gpnorm_trans4py
+    too -- and trans_inq4py, trans_inq_vset4py) raises RuntimeError with error code 102.
+    CPU only: the GPU version of ecTrans's SETUP_TRANS resets LDGRIDONLY to False and sets
+    up truncation 1 instead (src/trans/gpu/external/setup_trans.F90).
     Returns kresol."""
-    return ([KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT],
+    return ([KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT, LDGRIDONLY],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), IN),
              (bool, None, IN),
              (bool, None, IN),
-             (np.int64, None, OUT)],
+             (np.int64, None, OUT),
+             (bool, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def setup_trans0_regions4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF):
+    """setup_trans0_4py that also returns the number of E-W regions of each N-S band of the
+    grid-point partition (SETUP_TRANS0's K_REGIONS; with equal regions, it differs between
+    the bands). The same setup otherwise: call one of the two, once per process.
+    Returns (k_regions_ns, k_regions_ew, k_regions), k_regions of length KPRGPNS * KPRGPEW:
+    the number of E-W regions of N-S band 1..k_regions_ns, zero beyond."""
+    return ([KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (bool, None, IN),
+             (np.int64, None, IN),
+             (bool, None, IN),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, (KPRGPNS * KPRGPEW,), OUT)],
             None)
 
 

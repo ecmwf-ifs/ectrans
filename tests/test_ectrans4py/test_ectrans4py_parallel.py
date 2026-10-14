@@ -25,11 +25,17 @@ LONS_PER_LAT = np.array(LONS_PER_LAT + LONS_PER_LAT[::-1])
 NFLD = 20
 
 # A second resolution, set up next to the first one: another truncation, on a regular Gaussian
-# grid. The maximum number of resolutions leaves room for a third one, never set up.
+# grid
 TRUNCATION_2 = 47
 NUM_LATS_2 = 72
 LONS_PER_LAT_2 = np.full(NUM_LATS_2, 2 * NUM_LATS_2, dtype=np.int64)
-KMAX_RESOL = 3
+# A third one for grid-point space only (LDGRIDONLY), on the octahedral grid O16, as the IFS
+# sets up its radiation grid (truncation 0)
+NUM_LATS_GRID = 32
+LONS_PER_LAT_GRID = [20 + 4 * i for i in range(NUM_LATS_GRID // 2)]
+LONS_PER_LAT_GRID = np.array(LONS_PER_LAT_GRID + LONS_PER_LAT_GRID[::-1])
+# The maximum number of resolutions leaves room for a fourth one, never set up
+KMAX_RESOL = 4
 
 # Earth radius used by ecTrans (the default of SETUP_TRANS0's PRAD)
 EARTH_RADIUS = 6371229.0
@@ -50,6 +56,8 @@ ADJOINT_TOL = 20000 * EPS
 context = SimpleNamespace()
 # The same for the second resolution
 context_2 = SimpleNamespace()
+# The grid-point-only resolution
+context_grid = SimpleNamespace()
 
 
 def _approx_eq(a, b, tol=1.0e-4):
@@ -303,6 +311,59 @@ def _differing_outputs(names, outputs, other_outputs):
     return sorted(set(sum(MPI.COMM_WORLD.allgather(differing), [])))
 
 
+def _partition_tables(kresol, num_lats, regions_ns, regions_ew):
+    """trans_inq_grid4py of resolution kresol, as a namespace"""
+    names = ("ngptot", "ngptotg", "ngptotmx", "frstloff", "ptrfloff", "my_region_ns",
+             "my_region_ew", "frstlat", "lstlat", "ptrfrstlat", "sta", "onl", "gptotl", "mu")
+    return SimpleNamespace(**dict(zip(names, ectrans4py.trans_inq_grid4py(
+        kresol, num_lats, regions_ns, regions_ew))))
+
+
+def _partition_problems(tables, lons_per_lat, regions):
+    """What is wrong with the grid-point partition tables of a resolution with lons_per_lat
+    points on its latitude rows, for the number of E-W regions of each N-S band (regions,
+    zero beyond the bands), on this task: the descriptions of the failed checks."""
+    comm = MPI.COMM_WORLD
+    num_bands = int(np.count_nonzero(regions))
+    problems = []
+    # Every point of every latitude row is in exactly one region: the rows of a band are at
+    # NPTRFRSTLAT onwards in NSTA/NONL, a latitude split between two bands has a row in each
+    counts = [np.zeros(n, dtype=np.int64) for n in lons_per_lat]
+    own_points = 0
+    for band in range(num_bands):
+        for region in range(tables.onl.shape[0]):
+            for lat in range(tables.frstlat[band], tables.lstlat[band] + 1):
+                row = tables.ptrfrstlat[band] + lat - tables.frstlat[band] - 1
+                start, length = tables.sta[region, row], tables.onl[region, row]
+                counts[lat - 1][start - 1:start - 1 + length] += 1
+                if (band + 1, region + 1) == (tables.my_region_ns, tables.my_region_ew):
+                    own_points += length
+            if (tables.gptotl[region, band] > 0) != (region < regions[band]):
+                problems.append(f"region ({band + 1}, {region + 1}) of {regions[band]}: "
+                                f"{tables.gptotl[region, band]} points")
+    if not all(np.all(count == 1) for count in counts):
+        problems.append("the regions do not tile every latitude row exactly once")
+    # The numbers of points
+    if not (tables.ngptotg == np.sum(lons_per_lat) == np.sum(tables.gptotl)
+            == comm.allreduce(tables.ngptot, op=MPI.SUM)):
+        problems.append(f"NGPTOTG {tables.ngptotg}, not the number of points")
+    if not (tables.ngptot == own_points
+            == tables.gptotl[tables.my_region_ew - 1, tables.my_region_ns - 1]):
+        problems.append(f"NGPTOT {tables.ngptot}, not the points of the task's region")
+    if tables.ngptotmx != comm.allreduce(tables.ngptot, op=MPI.MAX):
+        problems.append(f"NGPTOTMX {tables.ngptotmx}, not the most points of a task")
+    # The regions of the tasks: each once
+    if sorted(comm.allgather((tables.my_region_ns, tables.my_region_ew))) != [
+            (band + 1, region + 1) for band in range(num_bands)
+            for region in range(regions[band])]:
+        problems.append("the tasks are not on the regions, once each")
+    # The latitudes, north to south, in double precision
+    if not (tables.mu.dtype == np.float64 and np.all(np.abs(tables.mu) < 1.0)
+            and np.all(np.diff(tables.mu) < 0.0)):
+        problems.append("PMU is not the sines of the latitudes, north to south")
+    return problems
+
+
 def setUpModule():
     system = platform.system()
     if system == "Linux":
@@ -319,8 +380,10 @@ def setUpModule():
         print(f"Testing with {comm.Get_size()} MPI processes")
     ectrans4py.mpl_init4py()
 
-    # KPRGPNS=n_rank, KPRGPEW=1, KPRTRW=n_rank, LDEQ_REGIONS=False, KMAX_RESOL, LDMPOFF=False
-    ectrans4py.setup_trans0_4py(n_rank, 1, n_rank, False, KMAX_RESOL, False)
+    # KPRGPNS=n_rank, KPRGPEW=1, KPRTRW=n_rank, LDEQ_REGIONS=False, KMAX_RESOL, LDMPOFF=False:
+    # setup_trans0_4py, also returning the region counts of the grid-point partition
+    context.regions_ns, context.regions_ew, context.regions = (
+        ectrans4py.setup_trans0_regions4py(n_rank, 1, n_rank, False, KMAX_RESOL, False))
 
     # KSMAX=TRUNCATION, KDGL=num_lats, KSLOEN=num_lats, KLOEN=lons_per_lat, LDSPLIT=True
     # LDUSEFLT=False
@@ -336,6 +399,15 @@ def setUpModule():
     kresol_2 = ectrans4py.setup_trans_4py(TRUNCATION_2, NUM_LATS_2, NUM_LATS_2, LONS_PER_LAT_2,
                                           True, False)
     _inquire_geometry(context_2, kresol_2, TRUNCATION_2, LONS_PER_LAT_2)
+
+    # Outputs of the second resolution before the grid-point-only one is set up
+    context_2.reference_outputs = [call(kresol_2) for _, call in _binding_calls(context_2)]
+
+    # KSMAX=0, KDGL=NUM_LATS_GRID, KSLOEN=NUM_LATS_GRID, KLOEN=LONS_PER_LAT_GRID, LDSPLIT=True,
+    # LDUSEFLT=False, LDGRIDONLY=True
+    context_grid.kresol = ectrans4py.setup_trans_4py(0, NUM_LATS_GRID, NUM_LATS_GRID,
+                                                     LONS_PER_LAT_GRID, True, False, True)
+    context_grid.lons_per_lat = LONS_PER_LAT_GRID
 
 
 def tearDownModule():
@@ -912,3 +984,96 @@ class TestResolutions(TestCase):
                 with pytest.raises(RuntimeError, match="Error code 101"):
                     ectrans4py.trans_inq4py(kresol, NUM_LATS, 0, 0, np.array([], dtype=np.int64),
                                             0)
+
+
+class TestPartitionTables(TestCase):
+    def test_region_counts(self):
+        # The number of E-W regions of each N-S band: one region per task
+        regions = context.regions
+        num_bands = context.regions_ns
+
+        assert len(regions) == context.n_rank
+        assert np.all(regions[:num_bands] >= 1) and np.all(regions[num_bands:] == 0)
+        assert np.sum(regions) == context.n_rank
+        assert np.max(regions) == context.regions_ew
+
+    def test_tables(self):
+        # The partition tables of the two spectral resolutions and of the grid-point-only one,
+        # which agree with trans_inq4py for the spectral ones
+        problems = []
+        for kresol, lons_per_lat, geom in ((context.kresol, LONS_PER_LAT, context),
+                                           (context_2.kresol, LONS_PER_LAT_2, context_2),
+                                           (context_grid.kresol, LONS_PER_LAT_GRID, None)):
+            tables = _partition_tables(kresol, len(lons_per_lat), context.regions_ns,
+                                       context.regions_ew)
+            problems += [f"resolution {kresol}: {problem}" for problem
+                         in _partition_problems(tables, lons_per_lat, context.regions)]
+            if geom is not None and not (
+                    tables.ngptot == geom.num_grid_points_loc
+                    and tables.ngptotg == geom.num_grid_points_glob
+                    and np.array_equal(tables.mu, geom.sin_lats)):
+                problems.append(f"resolution {kresol}: not the sizes and PMU of trans_inq4py")
+
+        assert sum(MPI.COMM_WORLD.allgather(problems), []) == []
+
+    def test_errors(self):
+        # Error code 1 for region counts other than those of the setup, 2 for another number
+        # of latitude rows than that of the resolution, 101 for a KRESOL that is not set up
+        kresol, num_lats = context_grid.kresol, NUM_LATS_GRID
+        num_bands, num_regions = context.regions_ns, context.regions_ew
+        for args, code in (((kresol, num_lats, num_bands + 1, num_regions), 1),
+                           ((kresol, num_lats, num_bands, num_regions + 1), 1),
+                           ((kresol, num_lats + 1, num_bands, num_regions), 2),
+                           ((KMAX_RESOL, num_lats, num_bands, num_regions), 101),
+                           ((0, num_lats, num_bands, num_regions), 101)):
+            with pytest.raises(RuntimeError, match=f"Error code {code} "):
+                ectrans4py.trans_inq_grid4py(*args)
+
+
+def _grid_only_round_trip():
+    """Random global grid-point fields of the grid-point-only resolution, and the same
+    distributed and gathered back"""
+    tables = _partition_tables(context_grid.kresol, NUM_LATS_GRID, context.regions_ns,
+                               context.regions_ew)
+    gridded_field_glob = _random_field((NFLD, tables.ngptotg), seed=38)
+    root = _from_which_rank(context.my_rank, NFLD)
+    gridded_field_loc = ectrans4py.dist_grid4py(tables.ngptotg, tables.ngptot, NFLD, root,
+                                                gridded_field_glob, context_grid.kresol)
+    gathered_glob = ectrans4py.gath_grid4py(tables.ngptotg, tables.ngptot, NFLD, root,
+                                            gridded_field_loc, context_grid.kresol)
+    return gridded_field_glob, gathered_glob
+
+
+class TestGridOnly(TestCase):
+    def test_distribute_gather(self):
+        # Grid-point fields distributed over the grid-point-only resolution and gathered back:
+        # bit for bit the global fields
+        gridded_field_glob, gathered_glob = _grid_only_round_trip()
+
+        assert context_grid.kresol == 3
+        assert _on_rank_0(lambda: np.array_equal(gathered_glob, gridded_field_glob))
+
+    def test_spectral_calls(self):
+        # Every binding that needs spectral or Fourier space raises error code 102 on the
+        # grid-point-only resolution, gpnorm_trans4py too (ecTrans's GPNORM_TRANS crashes on
+        # one), instead of ecTrans aborting or crashing. (The inputs are those of the first
+        # resolution: the bindings check the resolution first.)
+        grid_point_bindings = ("dist_grid4py", "gath_grid4py")
+        for name, call in _binding_calls(context):
+            if name not in grid_point_bindings:
+                with pytest.raises(RuntimeError, match="Error code 102"):
+                    call(context_grid.kresol)
+        with pytest.raises(RuntimeError, match="Error code 102"):
+            ectrans4py.trans_inq4py(context_grid.kresol, NUM_LATS_GRID, 0, 0,
+                                    np.array([], dtype=np.int64), 0)
+
+    def test_other_resolutions_unchanged(self):
+        # After the grid-point-only resolution has been set up and used, the outputs of the two
+        # spectral resolutions are bit-identical to those before it was set up
+        _grid_only_round_trip()
+        names = [name for name, _ in _binding_calls(context)]
+        outputs = [call() for _, call in _binding_calls(context)]
+        outputs_2 = [call(context_2.kresol) for _, call in _binding_calls(context_2)]
+
+        assert _differing_outputs(names, context.reference_outputs, outputs) == []
+        assert _differing_outputs(names, context_2.reference_outputs, outputs_2) == []

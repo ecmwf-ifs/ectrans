@@ -3,8 +3,9 @@
 ! Single precision (JPRB = real32). KFROM/KTO give the source/dest MPL rank per field.
 ! KRESOL, the last argument of every routine below, is the resolution tag returned by
 ! SETUP_TRANS_4PY, and the data are distributed or gathered on that resolution. A KRESOL
-! that is not a resolution set up by SETUP_TRANS_4PY returns error code 101
-! (RESOL_CHECK4PY_MOD).
+! that is not a resolution set up by SETUP_TRANS_4PY returns error code 101, and a
+! grid-point-only resolution (SETUP_TRANS_4PY LDGRIDONLY) error code 102 for the spectral
+! fields (RESOL_CHECK4PY_MOD).
 ! Grid-point arrays that ecTrans reads or writes whole are declared (KGPTOT, KFLD, 1),
 ! ecTrans's NPROMA-blocked layout with a single block: the same memory as (KGPTOT, KFLD),
 ! so they are passed to ecTrans without a copy.
@@ -65,7 +66,7 @@ REAL(KIND=JPRB), DIMENSION(KGPTOTG, KFLD), INTENT(IN)  :: PGPG
 REAL(KIND=JPRB), DIMENSION(KGPTOT, KFLD, 1), INTENT(OUT) :: PGP
 INTEGER(KIND=JPIM) :: IFROM(KFLD)
 #include "dist_grid.h"
-KRETURNCODE = RESOL_STATUS(KRESOL)
+KRETURNCODE = RESOL_STATUS(KRESOL, LDGRIDPOINT_ONLY=.TRUE.)
 IF (KRETURNCODE /= 0) RETURN
 IFROM(:) = INT(KFROM(:), JPIM)
 CALL DIST_GRID(PGPG=PGPG, KPROMA=INT(KGPTOT,JPIM), KFDISTG=INT(KFLD,JPIM), KFROM=IFROM, PGP=PGP, &
@@ -86,7 +87,7 @@ REAL(KIND=JPRB), DIMENSION(KGPTOT, KFLD, 1), INTENT(IN)  :: PGP
 REAL(KIND=JPRB), DIMENSION(KGPTOTG, KFLD), INTENT(OUT) :: PGPG
 INTEGER(KIND=JPIM) :: ITO(KFLD)
 #include "gath_grid.h"
-KRETURNCODE = RESOL_STATUS(KRESOL)
+KRETURNCODE = RESOL_STATUS(KRESOL, LDGRIDPOINT_ONLY=.TRUE.)
 IF (KRETURNCODE /= 0) RETURN
 ITO(:) = INT(KTO(:), JPIM)
 PGPG(:,:) = 0._JPRB

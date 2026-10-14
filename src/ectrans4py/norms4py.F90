@@ -1,9 +1,11 @@
 ! Spectral and grid-point norms (distributed). Single precision. Field-first inputs
 ! consistent with the transform wrappers: spectral (KSPEC2, KFLD) [coeff-first in
 ! Fortran], grid (KGPTOT, KFLD). Norms are global (gathered across tasks).
-! KRESOL, the last argument of both routines, is the resolution tag returned by
+! KRESOL, the last argument of every routine below, is the resolution tag returned by
 ! SETUP_TRANS_4PY, and the norms are computed on that resolution. A KRESOL that is not a
-! resolution set up by SETUP_TRANS_4PY returns error code 101 (RESOL_CHECK4PY_MOD).
+! resolution set up by SETUP_TRANS_4PY returns error code 101, a grid-point-only one
+! (SETUP_TRANS_4PY LDGRIDONLY) error code 102: GPNORM_TRANS too needs the Fourier-space
+! layout, for its TRGTOL transposition (RESOL_CHECK4PY_MOD).
 ! Grid-point arrays that ecTrans reads or writes whole are declared (KGPTOT, KFLD, 1),
 ! ecTrans's NPROMA-blocked layout with a single block: the same memory as (KGPTOT, KFLD),
 ! so they are passed to ecTrans without a copy.
