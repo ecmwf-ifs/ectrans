@@ -582,14 +582,6 @@ CONTAINS
 #endif
 
 #ifdef OMPGPU
-    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays, either already device-resident
-    ! from the caller's allocator or host storage whose byte range EXT_ACC_CREATE maps here,
-    ! depending on LPGP_ON_GPU. PREEL_REAL is a growing-allocator buffer. The pack/unpack
-    ! compute constructs name the gridpoint arrays in MAP(ALLOC:...), which is the only form
-    ! that covers both residencies and also tolerates the OPTIONAL ones the caller omits;
-    ! see the longer note in TRGTOL for why neither HAS_DEVICE_ADDR nor the PRESENT modifier
-    ! of ECTRANS_MAP_PRESENT_ALLOC can be used here.
-
     !$OMP TARGET DATA MAP(TO:IIN_TO_SEND_BUFR) IF(KF_FS > 0)
 #endif
 #ifdef ACCGPU
@@ -758,9 +750,6 @@ CONTAINS
           & ICOMBUFS_OFFSET(ISEND_COUNTS+1)*C_SIZEOF(ZCOMBUFS(1)))
     ENDIF
 
-#ifdef OMPGPU
-    ! ZCOMBUFS is a growing-allocator buffer; named in HAS_DEVICE_ADDR in the pack loop.
-#endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(ZCOMBUFS) IF(ISEND_COUNTS > 0) ASYNC(1)
 #endif
@@ -898,9 +887,6 @@ CONTAINS
     ENDIF
     CALL GSTATS(421,1)
 
-#ifdef OMPGPU
-    ! ZCOMBUFR is a growing-allocator buffer; named in HAS_DEVICE_ADDR in the unpack loops.
-#endif
 #ifdef ACCGPU
     !$ACC DATA PRESENT(ZCOMBUFR) IF(IRECV_COUNTS > 0) ASYNC(1)
 #endif

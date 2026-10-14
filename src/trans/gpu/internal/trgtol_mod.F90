@@ -486,25 +486,6 @@ CONTAINS
     IF (PRESENT(PGP2))  THEN ; ZPGP2  => PGP2  ; ELSE ; ZPGP2  => ZSTANDIN3 ; ENDIF
 #endif
 
-#ifdef OMPGPU
-    ! PGP/PGPUV/PGP2/PGP3A/PGP3B are user gridpoint arrays, and where they live depends on
-    ! LPGP_ON_GPU: either already device-resident from the caller's allocator, or host
-    ! storage whose byte range is mapped here by EXT_ACC_CREATE and pushed across by the
-    ! TARGET UPDATE above. The pack compute constructs name them in MAP(ALLOC:...), which is
-    ! the only form that covers both. Two constraints pin it down, and they pull opposite
-    ! ways:
-    !
-    !   - not HAS_DEVICE_ADDR, because when the arrays are host-resident their addresses are
-    !     host addresses, and the kernel then faults on them.
-    !   - not the PRESENT modifier of ECTRANS_MAP_PRESENT_ALLOC, because these are OPTIONAL
-    !     and the caller routinely omits PGP3B. An absent optional arrives as a null base
-    !     address that no present-table entry can match, and the modifier turns that into
-    !     "device mapping required by 'present' map type modifier does not exist for host
-    !     address 0x0000000000000000" at the first launch.
-    !
-    ! Plain ALLOC resolves whichever mapping exists, ignores the absent ones, and is what
-    ! nvfortran gets from ECTRANS_MAP_PRESENT_ALLOC anyway, so the clause is uniform.
-#endif
 #ifdef ACCGPU
     !$ACC DATA IF(PRESENT(PGP) .AND. KF_GP > 0)   PRESENT(PGP) ASYNC(1)
     !$ACC DATA IF(PRESENT(PGPUV)) PRESENT(PGPUV) ASYNC(1)
@@ -557,9 +538,6 @@ CONTAINS
     ENDIF
 
     !....Pack loop.........................................................
-#ifdef OMPGPU
-    ! ZCOMBUFS is a growing-allocator buffer; named in HAS_DEVICE_ADDR in the pack loops.
-#endif
 #ifdef ACCGPU
     !$ACC DATA IF(ISEND_COUNTS > 0) PRESENT(ZCOMBUFS) ASYNC(1)
 #endif
@@ -697,9 +675,6 @@ CONTAINS
       CALL ASSIGN_PTR(ZCOMBUFR, GET_ALLOCATION(ALLOCATOR, HTRGTOL%HCOMBUFR_AND_REEL),&
           & 1_JPIB, ICOMBUFR_OFFSET(IRECV_COUNTS+1)*C_SIZEOF(ZCOMBUFR(1)))
     ENDIF
-#ifdef OMPGPU
-    ! ZCOMBUFR is a growing-allocator buffer; named in HAS_DEVICE_ADDR in the unpack loop.
-#endif
 #ifdef ACCGPU
     !$ACC DATA IF(IRECV_COUNTS > 0) PRESENT(ZCOMBUFR) ASYNC(1)
 #endif
