@@ -188,3 +188,11 @@ jobs:
         . venv/bin/activate
         cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
         mpirun -np 4 python -m pytest -k test_ectrans4py_comm
+
+    - name: Run ectrans4py tests with the spectral fields on 2 V-sets
+      # an inconsistent decomposition can leave tasks waiting for each other forever
+      timeout-minutes: 10
+      run:  |
+        . venv/bin/activate
+        cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
+        mpirun -np 4 python -m pytest -k test_ectrans4py_vset

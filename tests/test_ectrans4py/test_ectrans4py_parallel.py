@@ -207,7 +207,8 @@ def _first_task_only(outputs):
 def _binding_calls(geom):
     """Every distributed binding that takes KRESOL, as (name, call) pairs: call(*kresol) runs
     the binding on fixed inputs of resolution geom, with *kresol appended to its arguments
-    (none: the default resolution), and returns its outputs."""
+    (none: the default resolution), and returns its outputs. The V-set bindings get the single
+    V-set of the suite's decomposition for every field, and the same inputs as the others."""
     nfld = 2
     root = np.ones(nfld, dtype=np.int64)
     spectral_glob = _random_spectral_field(geom, nfld, seed=25, zero_mean=True)
@@ -217,6 +218,8 @@ def _binding_calls(geom):
     spec2_glob, spec2_loc = geom.num_spec2_glob, geom.num_spec2_loc
     gp_glob, gp_loc = geom.num_grid_points_glob, geom.num_grid_points_loc
     sizes = (spec2_loc, gp_loc, nfld)
+    vset = np.ones(nfld, dtype=np.int64)
+    vset_sizes = (spec2_loc, gp_loc, nfld, nfld, vset)
     return [
         ("dist_spec4py", lambda *k: ectrans4py.dist_spec4py(
             spec2_glob, spec2_loc, nfld, root, spectral_glob, *k)),
@@ -251,6 +254,34 @@ def _binding_calls(geom):
             spec2_loc, nfld, spectral_loc, *k))),
         ("gpnorm_trans4py", lambda *k: _first_task_only(ectrans4py.gpnorm_trans4py(
             gp_loc, nfld, grid_loc, *k))),
+        ("trans_inq_vset4py", lambda *k: ectrans4py.trans_inq_vset4py(*k)),
+        ("dist_spec_vset4py", lambda *k: ectrans4py.dist_spec_vset4py(
+            spec2_glob, spec2_loc, nfld, nfld, root, vset, spectral_glob, *k)),
+        ("gath_spec_vset4py", lambda *k: ectrans4py.gath_spec_vset4py(
+            spec2_glob, spec2_loc, nfld, nfld, root, vset, spectral_loc, *k)),
+        ("inv_trans_scalar_vset4py", lambda *k: ectrans4py.inv_trans_scalar_vset4py(
+            *vset_sizes, spectral_loc, *k)),
+        ("inv_trans_scalar_ders_vset4py", lambda *k: ectrans4py.inv_trans_scalar_ders_vset4py(
+            *vset_sizes, spectral_loc, *k)),
+        ("dir_trans_scalar_vset4py", lambda *k: ectrans4py.dir_trans_scalar_vset4py(
+            *vset_sizes, grid_loc, *k)),
+        ("inv_trans_uv_vset4py", lambda *k: ectrans4py.inv_trans_uv_vset4py(
+            *vset_sizes, spectral_loc, spectral_loc, *k)),
+        ("dir_trans_uv_vset4py", lambda *k: ectrans4py.dir_trans_uv_vset4py(
+            *vset_sizes, grid_loc, grid_loc, *k)),
+        ("inv_trans_scalar_vset4py_ad", lambda *k: ectrans4py.inv_trans_scalar_vset4py_ad(
+            *vset_sizes, grid_loc, *k)),
+        ("inv_trans_scalar_ders_vset4py_ad",
+         lambda *k: ectrans4py.inv_trans_scalar_ders_vset4py_ad(
+             *vset_sizes, grid_loc, grid_loc, grid_loc, *k)),
+        ("dir_trans_scalar_vset4py_ad", lambda *k: ectrans4py.dir_trans_scalar_vset4py_ad(
+            *vset_sizes, spectral_loc, *k)),
+        ("inv_trans_uv_vset4py_ad", lambda *k: ectrans4py.inv_trans_uv_vset4py_ad(
+            *vset_sizes, grid_loc, grid_loc, *k)),
+        ("dir_trans_uv_vset4py_ad", lambda *k: ectrans4py.dir_trans_uv_vset4py_ad(
+            *vset_sizes, spectral_loc, spectral_loc, *k)),
+        ("specnorm_vset4py", lambda *k: _first_task_only(ectrans4py.specnorm_vset4py(
+            spec2_loc, nfld, nfld, vset, spectral_loc, *k))),
     ]
 
 
@@ -698,6 +729,37 @@ class TestInputArrays(DistributedTestCase):
         assert MPI.COMM_WORLD.allreduce(unchanged, op=MPI.LAND)
 
 
+class TestVsetBindings(DistributedTestCase):
+    def test_single_vset(self):
+        # The suite's decomposition has a single V-set (as many wave sets as tasks). With it,
+        # the V-set bindings compute the same as the other bindings, here on the same inputs
+        # (test_ectrans4py_vset.py tests them with several V-sets).
+        geom = self.geom
+        calls = dict(_binding_calls(geom))
+        kprtrw, mysetw, mysetv = calls.pop("trans_inq_vset4py")(geom.kresol)
+        wave_sets = MPI.COMM_WORLD.allgather(mysetw)
+
+        def counterpart(name):
+            return name.replace("_vset4py", "_dist4py" if "_trans_" in name else "4py")
+
+        def as_tuple(output):
+            return output if isinstance(output, tuple) else (output,)
+
+        # The same computation in ecTrans: bit-identical when measured, but allowed rounding
+        # differences of the order of EPS (exactly equal where the result is zero)
+        differing = []
+        for name in [name for name in calls if "_vset4py" in name]:
+            outputs = zip(as_tuple(calls[name](geom.kresol)),
+                          as_tuple(calls[counterpart(name)](geom.kresol)))
+            if not all(np.all(np.abs(a - b) <= 10 * EPS * np.max(np.abs(b), initial=0.0))
+                       for a, b in outputs):
+                differing.append(name)
+
+        assert kprtrw == context.n_rank and mysetv == 1
+        assert sorted(wave_sets) == list(range(1, context.n_rank + 1))
+        assert sum(MPI.COMM_WORLD.allgather(differing), []) == []
+
+
 # The tests above on the second resolution: every binding is passed its KRESOL, and runs at
 # that resolution's truncation and on its grid. (The test_scalar of TestInverse and TestDirect
 # use the first resolution and the default KRESOL, and are not repeated.)
@@ -734,6 +796,10 @@ class TestAdjointResolution2(TestAdjoint):
 
 
 class TestInputArraysResolution2(TestInputArrays):
+    geom = context_2
+
+
+class TestVsetBindingsResolution2(TestVsetBindings):
     geom = context_2
 
 
