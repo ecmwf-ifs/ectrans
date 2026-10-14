@@ -424,10 +424,6 @@ CONTAINS
       ACC_POINTERS(ACC_POINTERS_CNT) = EXT_ACC_PASS(PGP3B)
     ENDIF
 
-    ! COPYIN rather than CREATE: the gridpoint arrays are mapped by byte range through a
-    ! local integer alias, so the array names themselves are never in the device data
-    ! environment and an UPDATE TO on them copies nothing. The copy has to be requested on
-    ! the same ranges that were mapped.
     IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_COPYIN(ACC_POINTERS(1:ACC_POINTERS_CNT), &
 #ifdef ACCGPU
          & STREAM=1_ACC_HANDLE_KIND)
@@ -682,9 +678,6 @@ CONTAINS
     IR=0
 
 #ifdef USE_GPU_AWARE_MPI
-    ! Under OMPGPU these buffers come from the growing allocator, which hands out device
-    ! pointers directly (see GROWING_ALLOCATOR_MOD), so they can go straight to GPU-aware
-    ! MPI; a USE_DEVICE_ADDR region would only map and re-copy their descriptors.
 #ifdef ACCGPU
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFR,ZCOMBUFS)
 #endif

@@ -798,9 +798,6 @@ CONTAINS
     IR=0
     !...Receive loop.........................................................
 #ifdef USE_GPU_AWARE_MPI
-    ! Under OMPGPU these buffers come from the growing allocator, which hands out device
-    ! pointers directly (see GROWING_ALLOCATOR_MOD), so they can go straight to GPU-aware
-    ! MPI; a USE_DEVICE_ADDR region would only map and re-copy their descriptors.
 #ifdef ACCGPU
     !$ACC HOST_DATA USE_DEVICE(ZCOMBUFS,ZCOMBUFR)
 #endif
@@ -1031,10 +1028,6 @@ CONTAINS
       !$ACC UPDATE HOST(PGP3B) IF (.NOT. LLPGP_ON_GPU) ASYNC(1)
 #endif
     ENDIF
-    ! COPYOUT rather than DELETE: the gridpoint arrays are mapped by byte range through a
-    ! local integer alias, so the array names themselves are never in the device data
-    ! environment and the UPDATE FROM above copies nothing. Without requesting the copy on
-    ! the same ranges that were mapped, the transform result is discarded with the mapping.
     IF (ACC_POINTERS_CNT > 0) CALL EXT_ACC_COPYOUT(ACC_POINTERS(1:ACC_POINTERS_CNT), &
 #ifdef ACCGPU
          & STREAM=1_ACC_HANDLE_KIND)
