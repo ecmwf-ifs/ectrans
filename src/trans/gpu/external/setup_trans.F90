@@ -590,19 +590,31 @@ IF( .NOT.D%LGRIDONLY ) THEN
 
   ! Print sizes of Legendre polynomial work arrays (these numbers can be BIG so we need to use a
   ! nice and wide integer type like JPIB)
-  WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%ZAS', C_SIZEOF(FG%ZAS(1))*SIZE(FG%ZAS,KIND=JPIB)
-  WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%ZAA', C_SIZEOF(FG%ZAA(1))*SIZE(FG%ZAA,KIND=JPIB)
-  WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%ZAS0', C_SIZEOF(FG%ZAS0(1,1))*SIZE(FG%ZAS0,KIND=JPIB)
-  WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%ZAA0', C_SIZEOF(FG%ZAA0(1,1))*SIZE(FG%ZAA0,KIND=JPIB)
-  WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%ZEPSNM', C_SIZEOF(FG%ZEPSNM(1,1))*SIZE(FG%ZEPSNM,KIND=JPIB)
-
-  IF (S%LUSEFLT) THEN
-    WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%Y_BUT_FLAT_DEVICE_A', GET_BUT_FLAT_DEVICE_SIZE(FG%Y_BUT_FLAT_A)
-    WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%Y_BUT_FLAT_DEVICE_S', GET_BUT_FLAT_DEVICE_SIZE(FG%Y_BUT_FLAT_S)
-    WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%Y_BUT_FLAT_HOST_A', GET_BUT_FLAT_HOST_SIZE(FG%Y_BUT_FLAT_A)
-    WRITE(1000+MYPROC,'(A25,":",I13,"B")') 'FG%Y_BUT_FLAT_HOST_S', GET_BUT_FLAT_HOST_SIZE(FG%Y_BUT_FLAT_S)
+  IF (LLP2) THEN
+    WRITE(NOUT,'(A)') 'Legendre arrays allocated on device'
+    WRITE(NOUT,'(A,F12.3,A)') '  ZAS:    ', &
+      & C_SIZEOF(FG%ZAS(1)) * SIZE(FG%ZAS,KIND=JPIB) / 1000.0**3, ' GB'
+    WRITE(NOUT,'(A,F12.3,A)') '  ZAA:    ', &
+      & C_SIZEOF(FG%ZAA(1)) * SIZE(FG%ZAA,KIND=JPIB) / 1000.0**3, ' GB'
+    WRITE(NOUT,'(A,F12.3,A)') '  ZAS0:   ', &
+      & C_SIZEOF(FG%ZAS0(1,1)) * SIZE(FG%ZAS0,KIND=JPIB) / 1000.0**3, ' GB'
+    WRITE(NOUT,'(A,F12.3,A)') '  ZAA0:   ', &
+      & C_SIZEOF(FG%ZAA0(1,1)) * SIZE(FG%ZAA0,KIND=JPIB) / 1000.0**3, ' GB'
+    WRITE(NOUT,'(A,F12.3,A)') '  ZEPSNM: ', &
+      & C_SIZEOF(FG%ZEPSNM(1,1)) * SIZE(FG%ZEPSNM,KIND=JPIB) / 1000.0**3, ' GB'
   ENDIF
 
+  IF (S%LUSEFLT) THEN
+    IF (LLP2) THEN
+      WRITE(NOUT,*) 'Butterfly structure allocated on device'
+      WRITE(NOUT,'(A,F12.3,A)') '  FG%Y_BUT_FLAT_DEVICE_A:  ', &
+        & GET_BUT_FLAT_DEVICE_SIZE(FG%Y_BUT_FLAT_A) / 1000.0**3, ' GB'
+      WRITE(NOUT,'(A,F12.3,A)') '  FG%Y_BUT_FLAT_DEVICE_S:  ', &
+        & GET_BUT_FLAT_DEVICE_SIZE(FG%Y_BUT_FLAT_S) / 1000.0**3, ' GB'
+    ENDIF
+  ENDIF
+
+  FLUSH(NOUT) ! Flush NOUT now in case we get a crash
 
   IF (ANY(D%MYMS == 0)) THEN
 #ifdef ACCGPU
