@@ -623,7 +623,8 @@ endif()
 # Add test for ability to call INV_TRANS at multiple precisions
 # --------------------------------------------------------------------------------------------------
 
-if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
+if( HAVE_CPU AND HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
+  # Requires the CPU backend's ectrans_sp/ectrans_dp libs and _sp.h/_dp.h headers.
   ecbuild_add_test( TARGET ectrans_test_multiple_precisions
     SOURCES trans/test_multiple_precisions.F90
     LIBS ectrans_sp ectrans_dp fiat
