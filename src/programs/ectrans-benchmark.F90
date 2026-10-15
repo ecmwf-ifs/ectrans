@@ -390,6 +390,17 @@ if (verbosity >= 1 .and. myproc == 1) then
 endif
 call allocator%set_pinning(lpinning)
 
+! Grid point fields in device memory are unreachable from the host or incompatible builds.
+if (lpgp_on_gpu) then
+  if (.not. allocator%device_resident_supported()) then
+    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device requires an OpenMP offload or &
+      &OpenACC build')
+  endif
+  if (lfield_api) then
+    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device is incompatible with --field-api')
+  endif
+endif
+
 !===================================================================================================
 ! Setup gstats
 !===================================================================================================
@@ -467,6 +478,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("luvder     ",l1)') luvder
   write(nout,'("lfield_api ",l1)') lfield_api
   write(nout,'("lalloperm  ",l1)') lalloperm
+  write(nout,'("lpgp_on_gpu ",l1)') lpgp_on_gpu
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -557,7 +569,8 @@ if (lscders) then
   inum_sc_2d_fields = inum_sc_2d_fields * 3
 endif
 
-! Finally, allocate grid point arrays
+! Finally, allocate grid point arrays (device-resident when PGP arrays are kept on the device).
+call allocator%set_device_resident(lpgp_on_gpu)
 if (icall_mode == 1) then
   itotal_fields = nflevg * (inum_wind_fields + inum_sc_3d_fields) + inum_sc_2d_fields
   call allocator%allocate('zgp', zgp, [nproma,itotal_fields,ngpblks])
@@ -566,6 +579,7 @@ else
   call allocator%allocate('zgp3a', zgp3a, [nproma,nflevg,inum_sc_3d_fields,ngpblks])
   call allocator%allocate('zgp2', zgp2, [nproma,inum_sc_2d_fields,ngpblks])
 endif
+call allocator%set_device_resident(.false.)
 
 #if USE_FIELD_API
 if (lfield_api) then
@@ -1072,6 +1086,7 @@ else
   call allocator%deallocate('zspsc2', zspsc2)
 endif
 
+call allocator%set_device_resident(lpgp_on_gpu)
 if (icall_mode == 1) then
   call allocator%deallocate('zgp', zgp)
 else
@@ -1079,6 +1094,7 @@ else
   call allocator%deallocate('zgp3a', zgp3a)
   call allocator%deallocate('zgp2', zgp2)
 endif
+call allocator%set_device_resident(.false.)
 
 !===================================================================================================
 

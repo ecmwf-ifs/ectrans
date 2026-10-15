@@ -258,6 +258,20 @@ foreach( benchmark ${benchmarks} )
         ectrans_checksum_reference_name( reference_name ${benchmark} T${t} ${grid} nfld10 nlev20 niter${niter} scders0 uvders0 vordiv0 flt0 )
         ectrans_add_checksum_reference_tests( ${test_name} ${reference_name} )
 
+        # Check it works with --keep-pgp-arrays-on-device (gpu only). This flag is incompatible
+        # with --dump-checksums (grid-point data is not synced to the host), so correctness here
+        # relies solely on --check against the spectral-space round-trip error.
+        if( ${benchmark} MATCHES "gpu" )
+          set( test_name ${base_title}_nfld10_nlev20_pgp_on_gpu )
+          ecbuild_add_test( TARGET ${test_name}
+              COMMAND ${benchmark}
+              ARGS ${base_args} --nfld 10 --nlev 20 --keep-pgp-arrays-on-device --check 100
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${test_name} )
+        endif()
+
         # Check it works with LALLOPERM=F (cpu only)
         if( ${benchmark} MATCHES "cpu" )
           set( test_name ${base_title}_lalloperm_f )
