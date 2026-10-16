@@ -48,7 +48,6 @@ The available bundle options are defined in [`bundle.yml`](bundle.yml). Common o
 
 - `--with-etrans` to enable the limited-area transform implementation.
 - `--with-mkl` to enable Intel MKL for BLAS and FFT calls.
-- `--with-fftw` to enable FFTW calls.
 - `--without-mpi` to disable MPI.
 - `--without-omp` to disable OpenMP.
 - `--with-bitid-tests` to enable bit-identicality tests.
