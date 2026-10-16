@@ -159,6 +159,7 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
     HIC_CHECK(hipStreamEndCapture(captureStream, &my_graph));
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
+    HIC_CHECK(hipGraphDestroy(my_graph));
 #endif
     HIC_CHECK(hipStreamDestroy(captureStream));
 
