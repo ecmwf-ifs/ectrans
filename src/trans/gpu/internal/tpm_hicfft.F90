@@ -75,15 +75,15 @@ END INTERFACE
   CONTAINS
   ! ------------------------------------------------------------------
 
-SUBROUTINE REPORT_FFT_PLAN_STATS(CDKIND,KFIELD)
+SUBROUTINE REPORT_FFT_PLAN_STATS(CDKIND, KFIELD)
   ! Print the device memory footprint of any FFT plans created by the preceding FFT call
-  USE EC_PARKIND    ,ONLY : JPIM
-  USE ISO_C_BINDING ,ONLY : C_INT, C_INT64_T
-  USE TPM_GEN       ,ONLY : NOUT, NPRINTLEV
+  USE EC_PARKIND,    ONLY: JPIM
+  USE ISO_C_BINDING, ONLY: C_INT, C_INT64_T
+  USE TPM_GEN,       ONLY: NOUT, NPRINTLEV
 
   IMPLICIT NONE
 
-  CHARACTER(LEN=*),  INTENT(IN) :: CDKIND
+  CHARACTER(LEN=*),  INTENT(IN) :: CDKIND ! e.g. 'direct, double'
   INTEGER(KIND=JPIM),INTENT(IN) :: KFIELD
 
 #ifndef USE_ROCFFT
@@ -91,24 +91,30 @@ SUBROUTINE REPORT_FFT_PLAN_STATS(CDKIND,KFIELD)
   INTEGER(KIND=C_INT64_T) :: IWORKSPACE, IDEVICE_MEM, ITOTAL_WORKSPACE, ITOTAL_DEVICE_MEM
 
   ! Always query so that the "new plans" flag is cleared even when not printing
-  CALL GET_FFT_PLAN_STATS(INEW_PLANS,INPLANS,IWORKSPACE,IDEVICE_MEM,ITOTAL_WORKSPACE,ITOTAL_DEVICE_MEM)
+  CALL GET_FFT_PLAN_STATS(INEW_PLANS, INPLANS, IWORKSPACE, IDEVICE_MEM, ITOTAL_WORKSPACE, &
+    &                     ITOTAL_DEVICE_MEM)
 
   IF (NPRINTLEV > 1 .AND. INEW_PLANS == 1) THEN
     WRITE(NOUT,'(A,A,A,I0,A,I0,A)') 'FFT plans created (', CDKIND, '): KFIELD=', KFIELD, &
       & ', NPLANS=', INPLANS, ' (one per latitude)'
     WRITE(NOUT,'(A)') '  this plan set:'
     WRITE(NOUT,'(A,F12.3,A)') '  work areas (sum of hipfftGetSize)         : ', &
-      & REAL(IWORKSPACE)/1000.0**3, ' GB'
+      & TO_GIGABYTES(IWORKSPACE), ' GB'
     WRITE(NOUT,'(A,F12.3,A)') '  device memory used (drop in free memory)  : ', &
-      & REAL(IDEVICE_MEM)/1000.0**3, ' GB'
+      & TO_GIGABYTES(IDEVICE_MEM), ' GB'
     WRITE(NOUT,'(A)') '  cumulative over all plan sets:'
     WRITE(NOUT,'(A,F12.3,A)') '  work areas                                : ', &
-      & REAL(ITOTAL_WORKSPACE)/1000.0**3, ' GB'
+      & TO_GIGABYTES(ITOTAL_WORKSPACE), ' GB'
     WRITE(NOUT,'(A,F12.3,A)') '  device memory used                        : ', &
-      & REAL(ITOTAL_DEVICE_MEM)/1000.0**3, ' GB'
+      & TO_GIGABYTES(ITOTAL_DEVICE_MEM), ' GB'
   ENDIF
 #endif
 
+  CONTAINS
+    REAL(KIND=JPRD) FUNCTION TO_GIGABYTES(I_SIZE)
+      INTEGER(KIND=JPIM), INTENT(IN) :: I_SIZE
+      TO_GIGABYTES = REAL(I_SIZE, JPRD) / (1000.0_JPRD ** 3.0_JPRD)
+    END FUNCTION TO_GIGABYTES
 END SUBROUTINE REPORT_FFT_PLAN_STATS
 
 
