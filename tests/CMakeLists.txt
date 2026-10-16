@@ -624,10 +624,24 @@ endif()
 # --------------------------------------------------------------------------------------------------
 
 if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
-  ecbuild_add_test( TARGET ectrans_test_multiple_precisions
-    SOURCES trans/test_multiple_precisions.F90
-    LIBS ectrans_sp ectrans_dp fiat
-    LINKER_LANGUAGE Fortran )
+  foreach( platform ${platforms} )
+    if( "${platform}" STREQUAL "cpu" )
+      set( trans_libs ectrans_sp ectrans_dp )
+    else()
+      set( trans_libs ectrans_gpu_sp ectrans_gpu_dp)
+    endif()
+
+    ecbuild_add_test( TARGET ectrans_test_multiple_precisions_${platform}
+      SOURCES trans/test_multiple_precisions.F90
+      LIBS ${trans_libs} fiat
+      LINKER_LANGUAGE Fortran )
+
+    if( "${platform}" STREQUAL "cpu" )
+      target_compile_definitions(ectrans_test_multiple_precisions_${platform} PUBLIC CPU_VERSION)
+    else()
+      target_compile_definitions(ectrans_test_multiple_precisions_${platform} PUBLIC GPU_VERSION)
+    endif()
+  endforeach()
 endif()
 
 # --------------------------------------------------------------------------------------------------

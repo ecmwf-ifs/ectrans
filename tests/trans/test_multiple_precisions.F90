@@ -17,11 +17,28 @@ IMPLICIT NONE
 
 ! The following ARE dependent on precision
 ! By including _sp or _dp versions, we can have multiple precisions in the same program
+#ifdef CPU_VERSION
 #include "setup_trans_sp.h"
 #include "setup_trans_dp.h"
 #include "trans_inq_sp.h"
 #include "inv_trans_sp.h"
 #include "inv_trans_dp.h"
+#else
+#include "setup_trans_gpu_sp.h"
+#include "setup_trans_gpu_dp.h"
+#include "trans_inq_gpu_sp.h"
+#include "inv_trans_gpu_sp.h"
+#include "inv_trans_gpu_dp.h"
+#endif
+
+#ifdef GPU_VERSION
+#define SETUP_TRANS_SP SETUP_TRANS_GPU_SP
+#define SETUP_TRANS_DP SETUP_TRANS_GPU_DP
+#define TRANS_INQ_SP TRANS_INQ_GPU_SP
+#define INV_TRANS_SP INV_TRANS_GPU_SP
+#define INV_TRANS_DP INV_TRANS_GPU_DP
+#endif
+
 #include "trans_end.h"
 
 ! STDOUT
