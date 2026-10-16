@@ -90,9 +90,10 @@ SUBROUTINE DIR_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
 !                      dimensioned(NPROMA,IFLDS,NGPBLKS)
 !                      IFLDS is the number of 'variables' (the same as in
 !                      PSPSC2 )
-!     LPSP_ON_GPU    - optional device-residency flag for PSPVOR/PSPDIV only.
-!                      If true, the GPU path uses their existing device data
-!                      without host transfers. Scalars retain host semantics.
+!     LPSP_ON_GPU    - optional device-residency flag for all spectral arrays:
+!                      PSPVOR, PSPDIV, PSPSCALAR, PSPSC2, PSPSC3A and PSPSC3B.
+!                      If true, the caller supplies device-present spectra;
+!                      no spectral payload upload/download is performed.
 !                      Ignored by the CPU implementation; default is false.
 !     LPGP_ON_GPU    - optional device-residency hint for PGP, PGPUV,
 !                      PGP3A, PGP3B and PGP2. If present and true, the GPU
