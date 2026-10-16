@@ -21,6 +21,7 @@ printf("test_lam_invtrans_adjoint()\n");
 
 struct Trans_t trans;
 TRANS_CHECK( trans_new(&trans) );
+trans.fft = TRANSI_TEST_FFT_BACKEND;
 
 TRANS_CHECK( trans_set_resol_lam(&trans, 20, 18, 2500.0, 2500.0) );
 TRANS_CHECK( trans_set_trunc_lam(&trans, 9, 8) );
