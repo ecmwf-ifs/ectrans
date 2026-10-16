@@ -80,10 +80,6 @@ foreach( prec dp sp )
       INSTALL_MODULE_DIRECTORY module/ectrans
     )
 
-    if( prec STREQUAL sp )
-      target_compile_definitions( ectrans_lam_gpu_${prec} PRIVATE TRANS_SINGLE PARKINDTRANS_SINGLE )
-    endif()
-
     # cuFFT can do in-place FFT, hipFFT cannot
     if( HAVE_CUDA )
       target_compile_definitions( ectrans_lam_gpu_${prec} PRIVATE IN_PLACE_FFT )
