@@ -63,7 +63,6 @@ foreach( prec dp sp )
           PRIVATE_LIBS         ${ECTRANS_GPU_HIP_LIBRARIES}
                                $<${HAVE_ACC}:OpenACC::OpenACC_Fortran>
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
-                               $<${HAVE_MPI}:MPI::MPI_Fortran>
           PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
                                ECTRANS_MAP_PRESENT_ALLOC=${ECTRANS_MAP_PRESENT_ALLOC}
                                ECTRANS_OMP_DEFAULT=${ECTRANS_OMP_DEFAULT}
