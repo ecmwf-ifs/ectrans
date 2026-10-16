@@ -133,6 +133,21 @@ void erase_from_caches(int resol_id) {
   erase_resol_from_cache(get_ptr_cache<Type, Direction>(), resol_id);
 }
 
+// Memory footprint of the most recently created set of FFT plans, plus running totals over all
+// plan sets created so far, for diagnostic output
+struct fft_plan_stats {
+  bool new_plans = false;
+  int nplans = 0;
+  int64_t workspace_bytes = 0;  // sum of work areas reported by hipfftGetSize
+  int64_t device_mem_bytes = 0; // drop in free device memory across plan creation
+  int64_t total_workspace_bytes = 0;
+  int64_t total_device_mem_bytes = 0;
+};
+fft_plan_stats &get_fft_plan_stats() {
+  static fft_plan_stats stats;
+  return stats;
+}
+
 template <class Type, hipfftType Direction>
 std::vector<hicfft_plan<Type, Direction>> plan_all(int resol_id, int kfield, int *loens,
                                                    int nfft, int64_t *offsets) {
@@ -144,6 +159,10 @@ std::vector<hicfft_plan<Type, Direction>> plan_all(int resol_id, int kfield, int
   auto fftPlans = fftPlansCache.find(key);
   if (fftPlans == fftPlansCache.end()) {
     // the fft plans do not exist yet
+    size_t free_before, free_after, total;
+    HIC_CHECK(hipMemGetInfo(&free_before, &total));
+    int64_t workspace = 0;
+
     std::vector<hicfft_plan<Type, Direction>> newPlans;
     newPlans.reserve(nfft);
     for (int i = 0; i < nfft; ++i) {
@@ -155,9 +174,21 @@ std::vector<hicfft_plan<Type, Direction>> plan_all(int resol_id, int kfield, int
       fftSafeCall(hipfftPlanMany(
           &plan, 1, &nloen, embed, 1, is_forward ? dist : dist / 2, embed, 1,
           is_forward ? dist / 2 : dist, Direction, abs(kfield)));
+      size_t plan_workspace;
+      fftSafeCall(hipfftGetSize(plan, &plan_workspace));
+      workspace += plan_workspace;
       newPlans.emplace_back(plan, abs(kfield) * offsets[i]);
     }
     fftPlansCache.insert({key, newPlans});
+
+    HIC_CHECK(hipMemGetInfo(&free_after, &total));
+    auto &stats = get_fft_plan_stats();
+    stats.new_plans = true;
+    stats.nplans = nfft;
+    stats.workspace_bytes = workspace;
+    stats.device_mem_bytes = (int64_t)free_before - (int64_t)free_after;
+    stats.total_workspace_bytes += stats.workspace_bytes;
+    stats.total_device_mem_bytes += stats.device_mem_bytes;
   }
   return fftPlansCache.find(key)->second;
 }
@@ -287,6 +318,21 @@ void execute_inv_fft_double(hipfftDoubleComplex *data_complex,
                           growing_allocator);
 }
 #undef RUN
+
+// Returns the footprint of the plans created by the most recent FFT call, if any (knew_plans = 1),
+// and clears the flag so each plan set is only reported once
+void get_fft_plan_stats(int *knew_plans, int *knplans, int64_t *kworkspace,
+                        int64_t *kdevice_mem, int64_t *ktotal_workspace,
+                        int64_t *ktotal_device_mem) {
+  auto &stats = get_fft_plan_stats();
+  *knew_plans = stats.new_plans ? 1 : 0;
+  *knplans = stats.nplans;
+  *kworkspace = stats.workspace_bytes;
+  *kdevice_mem = stats.device_mem_bytes;
+  *ktotal_workspace = stats.total_workspace_bytes;
+  *ktotal_device_mem = stats.total_device_mem_bytes;
+  stats.new_plans = false;
+}
 
 void clean_fft(int resol_id) {
   erase_from_caches<Float, HIPFFT_R2C>(resol_id);
