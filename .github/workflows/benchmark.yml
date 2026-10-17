@@ -1,15 +1,24 @@
 name: benchmark
 
-# Placeholder. This file exists on the default branch only so the workflow is
-# registered and can be dispatched against a feature branch:
+# Builds the pull request branch and its base branch side by side on HPC, runs a
+# node-count sweep of the ecTrans benchmark against both, and uploads the raw
+# results as an artifact.
 #
-#   gh workflow run benchmark.yml --ref <branch> -f pr_number=<n>
-#
-# The real implementation (pull_request_target on the
-# 'approved-for-benchmarking' label, plus the HPC build and benchmark sweep)
-# replaces this once it has been validated that way.
+# Triggered by a maintainer applying the 'approved-for-benchmarking' label, or
+# manually with a PR number. Note that under pull_request_target GitHub always
+# runs the copy of this file that is on the *base* branch, so changes here only
+# take effect once merged; use the workflow_dispatch trigger to test edits from
+# a feature branch.
 
 on:
+
+  # Trigger when a label is added to a pull request
+  pull_request_target:
+    types: [labeled]
+
+  # Allow benchmarking a pull request on demand. Unlike pull_request_target,
+  # this runs the version of this file on the ref selected at dispatch time,
+  # which is what makes iterating on the templates below practical.
   workflow_dispatch:
     inputs:
       pr_number:
@@ -18,10 +27,435 @@ on:
         type: number
 
 jobs:
-  placeholder:
-    name: placeholder
+  pr-info:
+    name: PR information
+    # Gate both triggers here. Downstream jobs inherit the gate through `needs`,
+    # because a skipped job skips its dependents.
+    if: ${{ github.event_name == 'workflow_dispatch' ||
+            github.event.label.name == 'approved-for-benchmarking' }}
     runs-on: ubuntu-latest
+    outputs:
+      number: ${{ steps.pr.outputs.number }}
+      head_repo: ${{ steps.pr.outputs.head_repo }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      base_repo: ${{ steps.pr.outputs.base_repo }}
+      base_ref: ${{ steps.pr.outputs.base_ref }}
+      base_sha: ${{ steps.pr.outputs.base_sha }}
     steps:
-      - run: |
-          echo "The benchmark workflow is not implemented on this branch."
-          echo "Dispatch it against the feature branch that implements it."
+      - name: Read pull request
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const number = Number('${{ inputs.pr_number || github.event.pull_request.number }}');
+            const { data } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: number,
+            });
+
+            // Everything downstream is pinned to these two commits. Resolving a
+            // branch name inside the Slurm job instead would mean the machine
+            // builds whatever the branch tip happens to be when the job leaves
+            // the queue, which is neither what the maintainer approved nor what
+            // the results would be attributed to.
+            core.setOutput('number', String(number));
+            core.setOutput('head_repo', data.head.repo.full_name);
+            core.setOutput('head_sha', data.head.sha);
+            core.setOutput('base_repo', `${context.repo.owner}/${context.repo.repo}`);
+            core.setOutput('base_ref', data.base.ref);
+            core.setOutput('base_sha', data.base.sha);
+
+            core.info(`PR #${number}`);
+            core.info(`  head: ${data.head.repo.full_name} @ ${data.head.sha}`);
+            core.info(`  base: ${context.repo.owner}/${context.repo.repo} @ ${data.base.sha} (${data.base.ref})`);
+
+  benchmark:
+    name: benchmark (${{ matrix.name }})
+    needs: pr-info
+
+    strategy:
+      fail-fast: false    # false: try to complete all jobs
+
+      matrix:
+        name:
+          - ac-ops intel
+
+        include:
+          - name: ac-ops intel
+            site: ac-batch
+            troika_user_secret: HPC_CI_SSH_USER
+            arch: ecmwf/hpc2020/intel/2023.2.0/hpcx-openmpi/2.9.0
+            reference_key: ecmwf-hpc2020-intel-2023-2-0
+            build_time_limit: 01:30:00
+            build_threads: 32
+            memory: 200G
+            extra_slurm_options: --qos=np
+            run_time_limit: 01:30:00
+            max_nodes: 8
+            ntasks_per_node: 4
+            cpus_per_task: 32
+
+    runs-on: [self-hosted, linux, hpc]
+    env:
+      GH_TOKEN: ${{ github.token }}
+      WORKDIR: ${{ format('/scratch/{0}/github-actions/ectrans-benchmark/{1}/{2}/{3}', secrets[matrix.account_secret || matrix.troika_user_secret], github.run_id, strategy.job-index, github.run_attempt) }}
+    steps:
+      - name: Build ecTrans bundles
+        uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        with:
+          workdir: ${{ env.WORKDIR }}
+          output_dir: ${{ env.WORKDIR }}
+          site: ${{ matrix.site }}
+          troika_user: ${{ secrets[matrix.troika_user_secret] }}
+          sbatch_options: |
+            #SBATCH --time=${{ matrix.build_time_limit }}
+            #SBATCH --nodes=1
+            #SBATCH --ntasks=1
+            #SBATCH --cpus-per-task=${{ matrix.build_threads }}
+            #SBATCH --mem=${{ matrix.memory }}
+            #SBATCH ${{ matrix.extra_slurm_options }}
+          template_data: |
+            arch: "${{ matrix.arch }}"
+            env_vars: "${{ join(matrix.env_vars, ',') }}"
+            results_dir: "${{ env.WORKDIR }}/results"
+            pr_number: "${{ needs.pr-info.outputs.number }}"
+            pr_repo: "${{ needs.pr-info.outputs.head_repo }}"
+            pr_sha: "${{ needs.pr-info.outputs.head_sha }}"
+            base_repo: "${{ needs.pr-info.outputs.base_repo }}"
+            base_ref: "${{ needs.pr-info.outputs.base_ref }}"
+            base_sha: "${{ needs.pr-info.outputs.base_sha }}"
+            reference_key: "${{ matrix.reference_key }}"
+          template: |
+            error_trap() {
+              echo "Finished: FAILURE"
+              exit 1
+            }
+            trap error_trap ERR
+
+            BASEDIR=$PWD
+            RESULTS={{ results_dir }}
+            mkdir -p $RESULTS
+
+            # Check out both sides of the comparison at pinned commits.
+            checkout() {
+              local dir=$1 repo=$2 sha=$3
+              mkdir -p "$dir"
+              git -C "$dir" init
+              git -C "$dir" remote add origin ${{ github.server_url }}/"$repo"
+              git -C "$dir" fetch origin "$sha"
+              git -C "$dir" reset --hard FETCH_HEAD
+            }
+
+            checkout ectrans-pr      "{{ pr_repo }}"   "{{ pr_sha }}"
+            checkout ectrans-develop "{{ base_repo }}" "{{ base_sha }}"
+
+            source $BASEDIR/ectrans-pr/package/bundle/arch/{{ arch }}/env.sh
+
+            {% for var in env_vars.split(',') if var %}
+              export {{ var }}
+            {% endfor %}
+
+            BUNDLE=$BASEDIR/ectrans-pr/package/bundle
+
+            ECTRANS_BUNDLE_ECTRANS_DIR=$BASEDIR/ectrans-pr \
+              $BUNDLE/ectrans-bundle create --bundle $BUNDLE/bundle.yml \
+              --src-dir=$BASEDIR/source_pr
+
+            ECTRANS_BUNDLE_ECTRANS_DIR=$BASEDIR/ectrans-develop \
+              $BUNDLE/ectrans-bundle create --bundle $BUNDLE/bundle.yml \
+              --src-dir=$BASEDIR/source_develop
+
+            pr_src=$(readlink -f $BASEDIR/source_pr/ectrans)
+            develop_src=$(readlink -f $BASEDIR/source_develop/ectrans)
+            echo "source_pr/ectrans      -> $pr_src"
+            echo "source_develop/ectrans -> $develop_src"
+            if [ "$pr_src" = "$develop_src" ]; then
+              echo "FATAL: both bundles point at the same ecTrans source tree"
+              exit 1
+            fi
+
+            $BUNDLE/ectrans-bundle build --ninja --src-dir=$BASEDIR/source_pr \
+              --build-dir=$BASEDIR/build_pr --arch={{ arch }}
+
+            $BUNDLE/ectrans-bundle build --ninja --src-dir=$BASEDIR/source_develop \
+              --build-dir=$BASEDIR/build_develop --arch={{ arch }}
+
+            # Provenance for the report step. Do not clean up the build trees
+            # here: the sweep runs in a separate Slurm job and needs them.
+            {
+              echo "pr_number={{ pr_number }}"
+              echo "pr_repo={{ pr_repo }}"
+              echo "pr_sha={{ pr_sha }}"
+              echo "base_repo={{ base_repo }}"
+              echo "base_ref={{ base_ref }}"
+              echo "base_sha={{ base_sha }}"
+              echo "arch={{ arch }}"
+              echo "reference_key={{ reference_key }}"
+              echo "run_id=${{ github.run_id }}"
+              echo "run_attempt=${{ github.run_attempt }}"
+              echo "pr_head_resolved=$(git -C $BASEDIR/ectrans-pr rev-parse HEAD)"
+              echo "base_head_resolved=$(git -C $BASEDIR/ectrans-develop rev-parse HEAD)"
+            } > $RESULTS/metadata.env
+            cat $RESULTS/metadata.env
+
+      - name: Run benchmark sweep
+        uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        with:
+          workdir: ${{ env.WORKDIR }}
+          output_dir: ${{ env.WORKDIR }}
+          site: ${{ matrix.site }}
+          troika_user: ${{ secrets[matrix.troika_user_secret] }}
+          sbatch_options: |
+            #SBATCH --time=${{ matrix.run_time_limit }}
+            #SBATCH --nodes=${{ matrix.max_nodes }}
+            #SBATCH --ntasks-per-node=${{ matrix.ntasks_per_node }}
+            #SBATCH --cpus-per-task=${{ matrix.cpus_per_task }}
+            #SBATCH --mem=${{ matrix.memory }}
+            #SBATCH ${{ matrix.extra_slurm_options }}
+          template_data: |
+            arch: "${{ matrix.arch }}"
+            env_vars: "${{ join(matrix.env_vars, ',') }}"
+            results_dir: "${{ env.WORKDIR }}/results"
+            max_nodes: ${{ matrix.max_nodes }}
+            ntasks_per_node: ${{ matrix.ntasks_per_node }}
+            cpus_per_task: ${{ matrix.cpus_per_task }}
+          template: |
+            error_trap() {
+              echo "Finished: FAILURE"
+              exit 1
+            }
+            trap error_trap ERR
+
+            BASEDIR=$PWD
+            RESULTS={{ results_dir }}
+            mkdir -p $RESULTS
+
+            source $BASEDIR/ectrans-pr/package/bundle/arch/{{ arch }}/env.sh
+
+            {% for var in env_vars.split(',') if var %}
+              export {{ var }}
+            {% endfor %}
+
+            export OMP_NUM_THREADS={{ cpus_per_task }}
+            export OMP_PROC_BIND=close
+            export OMP_PLACES=cores
+
+            {% set node_counts = [1, 2, 4, 8, 16, 32, 64, 128, 256]
+                                 | select('le', max_nodes | int) | list %}
+
+            {% set precision = 'sp' %}
+            {% set truncation = 319 %}
+            {% set nfld = 1 %}
+            {% set nlev = 137 %}
+            {% set niter = 10 %}
+
+            {% set timing_section = 'Inverse-direct transforms' %}
+
+            if [ "$SLURM_JOB_NUM_NODES" -ne {{ node_counts | max }} ]; then
+              echo "FATAL: allocation has $SLURM_JOB_NUM_NODES nodes, sweep needs {{ node_counts | max }}"
+              exit 1
+            fi
+
+            # Guard: if either binary resolves its shared libraries out of the
+            # other variant's build tree, both legs measure the same code.
+            for variant in pr develop; do
+              case $variant in
+                pr) other=develop ;;
+                develop) other=pr ;;
+              esac
+              ldd $BASEDIR/build_$variant/bin/ectrans-benchmark-cpu-{{ precision }} \
+                > $RESULTS/ldd-$variant.txt 2>&1 || true
+              if grep -q "build_$other/" $RESULTS/ldd-$variant.txt; then
+                echo "FATAL: $variant binary resolves libraries from build_$other"
+                exit 1
+              fi
+            done
+
+            # Read one "med  (s):" value out of a benchmark log, in ms.
+            extract_median_ms() {
+              [ -f "$1" ] || { echo NA; return 0; }
+              awk -v section="$2" '
+                $0 ~ "^[[:space:]]*" section "[[:space:]]*$" { inside = 1; next }
+                inside && /^[[:space:]]*med[[:space:]]+\(s\):/ {
+                  if ($NF ~ /^[0-9]*\.[0-9]+$/) printf "%.4f\n", $NF * 1000.0
+                  else print "NA"
+                  found = 1
+                  exit
+                }
+                END { if (!found) print "NA" }
+              ' "$1"
+            }
+
+            failures=0
+            echo "variant,nodes,ntasks,ntasks_per_node,cpus_per_task,truncation,precision,nfld,nlev,niter,logfile,exit_code" \
+              > $RESULTS/runs.csv
+            echo "nodes,truncation,version,median_ms" > $RESULTS/results.csv
+
+            # Record which timing block results.csv reports, so the report job
+            # can label the table without duplicating the choice made above.
+            echo "timing_section={{ timing_section }}" >> $RESULTS/metadata.env
+
+            {% for nodes in node_counts %}
+              {% set ntasks = nodes * (ntasks_per_node | int) %}
+              {% for variant in ['develop', 'pr'] %}
+
+                logfile={{ variant }}-n{{ nodes }}.log
+                echo "=== {{ variant }}: {{ nodes }} node(s), {{ ntasks }} rank(s), T{{ truncation }} ==="
+
+                if srun --nodes={{ nodes }} \
+                        --ntasks={{ ntasks }} \
+                        --ntasks-per-node={{ ntasks_per_node }} \
+                        --cpus-per-task={{ cpus_per_task }} \
+                        $BASEDIR/build_{{ variant }}/bin/ectrans-benchmark-cpu-{{ precision }} \
+                        -t {{ truncation }} \
+                        -f {{ nfld }} \
+                        -l {{ nlev }} \
+                        -n {{ niter }} \
+                        > $RESULTS/$logfile 2>&1; then
+                  status=0
+                else
+                  status=$?
+                  failures=$((failures + 1))
+                  echo "run failed with exit code $status, see $logfile"
+                  tail -n 20 $RESULTS/$logfile || true
+                fi
+
+                # Appended per run rather than at the end, so a walltime kill
+                # still leaves usable partial results behind.
+                echo "{{ variant }},{{ nodes }},{{ ntasks }},{{ ntasks_per_node }},{{ cpus_per_task }},{{ truncation }},{{ precision }},{{ nfld }},{{ nlev }},{{ niter }},$logfile,$status" \
+                  >> $RESULTS/runs.csv
+
+                median_ms=$(extract_median_ms "$RESULTS/$logfile" "{{ timing_section }}")
+                echo "  {{ timing_section }} med: $median_ms ms"
+                echo "{{ nodes }},{{ truncation }},{{ variant }},$median_ms" >> $RESULTS/results.csv
+
+              {% endfor %}
+            {% endfor %}
+
+            cat $RESULTS/runs.csv
+            echo
+            cat $RESULTS/results.csv
+
+            if [ "$failures" -ne 0 ]; then
+              echo "$failures benchmark run(s) failed"
+              echo "Finished: FAILURE"
+              exit 1
+            fi
+
+      - name: Ensure ci-infrastructure present
+        if: ${{ always() }}
+        uses: ecmwf/ci-infrastructure/actions/ensure-infrastructure-present@main
+
+      - name: Fetch benchmark results from the HPC
+        if: ${{ always() }}
+        uses: ecmwf/ci-infrastructure/actions/fetch-hpc-tree@main
+        with:
+          site: ${{ matrix.site }}
+          troika-user: ${{ secrets[matrix.troika_user_secret] }}
+          remote-dir: ${{ env.WORKDIR }}/results
+          local-dir: ${{ runner.temp }}/ectrans-benchmark-results
+
+      - name: Upload benchmark artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ectrans-benchmark-${{ matrix.reference_key }}
+          path: ${{ runner.temp }}/ectrans-benchmark-results
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Remove the working directory from the HPC
+        if: ${{ always() }}
+        uses: ecmwf/ci-infrastructure/actions/remove-hpc-tree@main
+        with:
+          site: ${{ matrix.site }}
+          troika-user: ${{ secrets[matrix.troika_user_secret] }}
+          remote-dir: ${{ env.WORKDIR }}
+
+      - name: Cleanup local results
+        if: ${{ always() }}
+        shell: bash -eux {0}
+        run: |
+          rm -rf "${{ runner.temp }}/ectrans-benchmark-results"
+
+  report:
+    name: report
+    # always() so a sweep with failed runs still gets reported; pr-info must
+    # have succeeded because the PR number to comment on comes from it. Waiting
+    # on the whole benchmark matrix means one comment covers every platform.
+    needs: [pr-info, benchmark]
+    if: ${{ always() && needs.pr-info.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      # No `ref` on purpose. Under pull_request_target this checks out the base
+      # branch, so a fork PR cannot alter the script that posts comments with a
+      # write token; under workflow_dispatch it checks out the dispatched ref,
+      # which is what you want while iterating. Do not "fix" this to head.sha.
+      - name: Checkout report tooling
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/tools
+
+      # continue-on-error: a totally failed build produces no artifact at all,
+      # and the report should still say so rather than failing silently.
+      - name: Download benchmark artifacts
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: ectrans-benchmark-*
+          path: ${{ runner.temp }}/artifacts
+
+      - name: Render comparison
+        shell: bash -eux {0}
+        env:
+          BENCHMARK_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 .github/tools/benchmark-report.py \
+            "${{ runner.temp }}/artifacts" > "${{ runner.temp }}/body.md"
+          cat "${{ runner.temp }}/body.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update the comparison comment
+        uses: actions/github-script@v9
+        env:
+          BODY_FILE: ${{ runner.temp }}/body.md
+          PR_NUMBER: ${{ needs.pr-info.outputs.number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(process.env.BODY_FILE, 'utf8');
+            const marker = '<!-- ectrans-benchmark-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = Number(process.env.PR_NUMBER);
+
+            // Update in place rather than adding a comment per run, so
+            // re-benchmarking a PR does not bury the conversation.
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (c) => c.user?.login === 'github-actions[bot]' && c.body?.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated ${existing.html_url}`);
+            } else {
+              const { data } = await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+              core.info(`Created ${data.html_url}`);
+            }
