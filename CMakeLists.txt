@@ -132,6 +132,21 @@ include( ectrans_compiler_specific_directives )
 # OpenMP offload flags for the GPU targets only, keeping OpenMP_Fortran_FLAGS host-only.
 include( ectrans_omp_offload )
 
+# CUDA Unified Memory
+ecbuild_add_option( FEATURE CUDA_UNIFIED
+                    DESCRIPTION "Use full CUDA Unified Memory with system allocations"
+                    DEFAULT OFF
+                    CONDITION HAVE_CUDA AND HAVE_ACC AND CMAKE_Fortran_COMPILER_ID MATCHES "PGI|NVHPC" )
+
+if( HAVE_CUDA_UNIFIED )
+  if( NOT DEFINED ECTRANS_ACC_UNIFIED_FLAGS )
+    ecbuild_critical( "CUDA_UNIFIED requested but ECTRANS_ACC_UNIFIED_FLAGS is not defined" )
+  endif()
+  string( APPEND OpenACC_Fortran_FLAGS " ${ECTRANS_ACC_UNIFIED_FLAGS}" )
+  target_compile_options( OpenACC::OpenACC_Fortran
+                          INTERFACE $<$<COMPILE_LANGUAGE:Fortran>:${ECTRANS_ACC_UNIFIED_FLAGS}> )
+endif()
+
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
