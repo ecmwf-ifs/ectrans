@@ -129,7 +129,7 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
 
 #ifdef USE_CUTLASS
     hipGraph_t new_graph;
-    hipGraphCreate(&new_graph, 0);
+    HIC_CHECK(hipGraphCreate(&new_graph, 0));
     for (int i = 0; i < batchCount; ++i) {
       if (m == 0 || n[i] == 0 || k[i] == 0)
         continue;
@@ -142,6 +142,7 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
       hipGraphNode_t my_node;
       HIC_CHECK(
           hipGraphAddChildGraphNode(&my_node, new_graph, nullptr, 0, my_graph));
+      HIC_CHECK(hipGraphDestroy(my_graph));
     }
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
