@@ -56,7 +56,8 @@ jobs:
       matrix:
         name:
           - ac-ops intel
-          - ac-gpu nvhpc
+          - ac-gpu-acc nvhpc
+          - ac-gpu-omp nvhpc
           - lumi-g cce
 
         include:
@@ -77,7 +78,7 @@ jobs:
             env_vars:
               - CMAKE_GENERATOR=Ninja
 
-          - name: ac-gpu nvhpc
+          - name: ac-gpu-acc nvhpc
             site: ac-batch
             os: ecmwf-hpc2020
             compiler: nvhpc-24-5
@@ -93,6 +94,28 @@ jobs:
               #SBATCH --qos=ng
             env_vars:
               - CMAKE_GENERATOR=Ninja
+            cmake_options:
+              - -DENABLE_ACC=ON
+
+          - name: ac-gpu-omp nvhpc
+            site: ac-batch
+            os: ecmwf-hpc2020
+            compiler: nvhpc-24-5
+            troika_user_secret: HPC_CI_SSH_USER
+            arch: ecmwf/hpc2020/nvhpc/24.5/hpcx-openmpi/2.19.0-cuda
+            sbatch_options: |
+              #SBATCH --time=01:30:00
+              #SBATCH --nodes=1
+              #SBATCH --ntasks=4
+              #SBATCH --cpus-per-task=32
+              #SBATCH --gpus-per-task=1
+              #SBATCH --mem=200G
+              #SBATCH --qos=ng
+            env_vars:
+              - CMAKE_GENERATOR=Ninja
+            cmake_options:
+              - -DENABLE_OMP=ON
+              - -DENABLE_ACC=OFF
 
           - name: lumi-g cce
             site: lumi
@@ -159,6 +182,7 @@ jobs:
               - -DENABLE_BITID_TESTS=ON
               - -DENABLE_REFERENCE_TESTS=ON
               - -DECTRANS_TEST_REFERENCE_DIR=$BASEDIR/$REPO/tests/references/${{ steps.reference-key.outputs.reference_key }}
+            job_cmake_options: "${{ join(matrix.cmake_options || fromJSON('[]'), ' ') }}"
             ctest_options: ${{ matrix.ctest_options || '' }}
             reference_key: ${{ steps.reference-key.outputs.reference_key }}
             reference_head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -259,7 +283,7 @@ jobs:
                       -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
                     {% endif %}
                   {% endfor %}
-                  {{ options['cmake_options']|join(' ') }}
+                  {{ options['cmake_options']|join(' ') }} {{ job_cmake_options }}
                 configure_end=$(date +%s)
                 echo "{{name}} configure took $((configure_end - configure_start)) seconds"
                 build_install_start=$(date +%s)
@@ -281,7 +305,7 @@ jobs:
                   -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
                 {% endif %}
               {% endfor %}
-              {{ cmake_options|join(' ') }}
+              {{ cmake_options|join(' ') }} {{ job_cmake_options }}
             configure_end=$(date +%s)
             echo "ecTrans configure took $((configure_end - configure_start)) seconds"
             build_start=$(date +%s)

@@ -19,6 +19,8 @@ set(CMAKE_Fortran_COMPILER nvfortran)
 ####################################################################
 
 set( ENABLE_GPU ON )
-set( ENABLE_ACC ON )
+if( NOT DEFINED ENABLE_ACC )
+  set( ENABLE_ACC ON )
+endif()
 set( ENABLE_GPU_STATIC ON )
 set( ENABLE_FIELD_API ON )
