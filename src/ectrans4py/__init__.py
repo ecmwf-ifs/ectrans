@@ -13,9 +13,8 @@ one set of Legendre assets (``get_legendre_assets``):
   ``etrans_inq4py``, ``get_legendre_assets``, and ``trans_inq4py`` with
   ``KRESOL<=0`` (it self-initialises from the grid parameters).
 * Distributed-memory (MPI): initialise with ``mpl_init4py`` (attaches to an
-  existing communicator, e.g. mpi4py), or with ``mpl_init_comm4py`` to run ecTrans on
-  the tasks of a communicator of one's own (e.g. split from ``MPI_COMM_WORLD``) only,
-  set up the processor grid/resolution with
+  existing communicator by default, e.g. mpi4py, or pass your own communicator (e.g. split from
+  ``MPI_COMM_WORLD``) as an argument), set up the processor grid/resolution with
   ``setup_trans0_4py``/``setup_trans_4py`` (``LDSPLIT=.TRUE.``), query the local
   geometry with ``trans_inq4py`` passing the returned ``KRESOL``, transform local
   arrays with the ``*_dist4py`` routines, move data with ``dist_spec``/
@@ -725,21 +724,12 @@ def dir_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV, KRESOL=1):
 
 
 @ctypesFF()
-def mpl_init4py():
-    """Initialise FIAT MPL (after mpi4py). Returns (rank[1-based], size)."""
-    return ([],
-            [(np.int64, None, OUT),
-             (np.int64, None, OUT)],
-            None)
-
-
-@ctypesFF()
-def mpl_init_comm4py(KCOMM):
-    """Initialise FIAT MPL (after mpi4py) on the communicator KCOMM instead of
-    MPI_COMM_WORLD: ecTrans then runs on the tasks of KCOMM only, and the other
-    tasks take no part. Call it instead of mpl_init4py, on the tasks of KCOMM.
+def mpl_init4py(KCOMM=-1):
+    """Initialise FIAT MPL (after mpi4py).
+    Optionally pass a communicator to be used instead of MPI_COMM_WORLD (which is the default).
+    ecTrans then runs on the tasks of KCOMM only, and the other tasks take no part.
     KCOMM is the Fortran handle of the communicator (mpi4py: comm.py2f()).
-    Returns (rank[1-based], size) within KCOMM."""
+    Returns (rank[1-based], size) within KCOMM or MPI_COMM_WORLD."""
     return ([KCOMM],
             [(np.int64, None, IN),
              (np.int64, None, OUT),

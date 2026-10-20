@@ -72,7 +72,7 @@ def setUpModule():
     else:
         raise NotImplementedError("ectrans4py does not support Windows")
 
-    context.mpl_rank, context.mpl_size = ectrans4py.mpl_init_comm4py(context.comm.py2f())
+    context.mpl_rank, context.mpl_size = ectrans4py.mpl_init4py(context.comm.py2f())
     n_rank = context.comm.Get_size()
 
     # KPRGPNS=n_rank, KPRGPEW=1, KPRTRW=n_rank, LDEQ_REGIONS=False, KMAX_RESOL=1, LDMPOFF=False
