@@ -34,10 +34,13 @@
 #define hipGraph_t cudaGraph_t
 #define hipGraphNode_t cudaGraphNode_t
 #define hipGraphExec_t cudaGraphExec_t
+#define hipEvent_t cudaEvent_t
 
 // Constants
 #define hipMemcpyHostToDevice cudaMemcpyHostToDevice
 #define hipMemcpyDeviceToHost cudaMemcpyDeviceToHost
+#define hipStreamNonBlocking cudaStreamNonBlocking
+#define hipEventDisableTiming cudaEventDisableTiming
 
 // Library calls
 #define hipblasCreate cublasCreate
@@ -63,12 +66,21 @@
 #define hipStreamEndCapture cudaStreamEndCapture
 
 // Runtime calls
+#define hipGetLastError cudaGetLastError
 #define hipHostMalloc(PTR, SIZE, FLAGS) cudaMallocHost(PTR, SIZE)
 #define hipMalloc cudaMalloc
 #define hipFree cudaFree
 #define hipMemcpy cudaMemcpy
 #define hipDeviceSynchronize cudaDeviceSynchronize
 #define hipStreamSynchronize cudaStreamSynchronize
+#define hipStreamCreateWithFlags cudaStreamCreateWithFlags
+#define hipStreamWaitEvent cudaStreamWaitEvent
+#define hipEventCreateWithFlags cudaEventCreateWithFlags
+#define hipEventRecord cudaEventRecord
+#define hipEventSynchronize cudaEventSynchronize
+#define hipMemcpyAsync cudaMemcpyAsync
+#define hipMemset cudaMemset
+#define hipHostFree cudaFreeHost
 #define hipMemGetInfo cudaMemGetInfo
 
 inline static const char * _blasGetErrorEnum(cublasStatus_t error)
