@@ -39,9 +39,11 @@ foreach( program ectrans-benchmark )
   endif()
 
   if( HAVE_GPU )
+    # ${GPU_OFFLOAD}GPU lets ectrans_memory offer device-resident allocation.
     list( APPEND util_PRIVATE_DEFINITIONS
       $<${HAVE_CUDA}:CUDA>
       $<${HAVE_HIP}:HIP>
+      ${GPU_OFFLOAD}GPU
     )
     list( APPEND util_PRIVATE_LIBRARIES
       $<${HAVE_CUDA}:CUDA::cudart>
