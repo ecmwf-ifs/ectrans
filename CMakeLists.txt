@@ -160,6 +160,9 @@ ecbuild_add_option( FEATURE GPU_GRAPHS_FFT
                     CONDITION HAVE_GPU
                     DESCRIPTION "Enable graph-based optimisation of FFT kernels" )
 
+set( ECTRANS_GRAPH_STREAMS 4 CACHE STRING
+     "HIP streams used when capturing FFT and GEMM graphs. 1 restores single-stream capture." )
+
 ecbuild_add_option( FEATURE ROCFFT
                     DEFAULT OFF
                     CONDITION HAVE_HIP

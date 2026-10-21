@@ -86,6 +86,7 @@ ecbuild_add_library(
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
                        $<${HAVE_ROCFFT}:USE_ROCFFT>
+                       ECTRANS_GRAPH_STREAMS=${ECTRANS_GRAPH_STREAMS}
 )
 
 ecbuild_target_fortran_module_directory(
