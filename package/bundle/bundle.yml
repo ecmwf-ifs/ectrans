@@ -72,7 +72,7 @@ options :
     - with-gpu-omp:
         help  : Compile GPU libraries as well as CPU libraries
         cmake : >
-            ENABLE_GPU=ON ENABLE_OMP=ON
+            ENABLE_GPU=ON ENABLE_OMP=ON ENABLE_ACC=OFF
 
     - without-gpu-mpi:
         help  : Use GPU-aware MPI for communication
