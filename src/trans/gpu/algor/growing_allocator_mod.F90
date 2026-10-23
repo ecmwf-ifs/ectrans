@@ -1,3 +1,12 @@
+! (C) Copyright 2024- ECMWF.
+! (C) Copyright 2024- NVIDIA.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 MODULE GROWING_ALLOCATOR_MOD
 
   USE ISO_C_BINDING, ONLY: C_INT8_T
