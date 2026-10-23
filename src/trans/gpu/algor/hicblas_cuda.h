@@ -34,6 +34,7 @@
 #define hipGraph_t cudaGraph_t
 #define hipGraphNode_t cudaGraphNode_t
 #define hipGraphExec_t cudaGraphExec_t
+#define hipEvent_t cudaEvent_t
 
 // Constants
 #define hipMemcpyHostToDevice cudaMemcpyHostToDevice
@@ -58,9 +59,14 @@
 #define hipGraphAddChildGraphNode cudaGraphAddChildGraphNode
 #define hipStreamCreate cudaStreamCreate
 #define hipStreamDestroy cudaStreamDestroy
+#define hipStreamWaitEvent cudaStreamWaitEvent
 #define hipStreamCaptureModeGlobal cudaStreamCaptureModeGlobal
 #define hipStreamBeginCapture cudaStreamBeginCapture
 #define hipStreamEndCapture cudaStreamEndCapture
+#define hipEventCreateWithFlags cudaEventCreateWithFlags
+#define hipEventDisableTiming cudaEventDisableTiming
+#define hipEventRecord cudaEventRecord
+#define hipEventDestroy cudaEventDestroy
 
 // Runtime calls
 #define hipHostMalloc(PTR, SIZE, FLAGS) cudaMallocHost(PTR, SIZE)

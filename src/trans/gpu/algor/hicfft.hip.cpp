@@ -2,8 +2,13 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "growing_allocator.h"
+
+#ifndef ECTRANS_GRAPH_STREAMS
+#define ECTRANS_GRAPH_STREAMS 4
+#endif
 
 #define fftSafeCall(err) __fftSafeCall(err, __FILE__, __LINE__)
 
@@ -193,27 +198,47 @@ void run_group_graph(typename Type::real *data_real,
     auto plans =
         plan_all<Type, Direction>(resol_id, kfield, loens, nfft, offsets);
 
-    // create a temporary stream
-    hipStream_t stream;
-    HIC_CHECK(hipStreamCreate(&stream));
-
-    for (auto &plan : plans) // set the streams
-      plan.set_stream(stream);
-
 #if HIPGPU
-    // now create the graph
-    HIC_CHECK(hipStreamBeginCapture(stream, hipStreamCaptureModeGlobal));
+    int const nstreams = std::min<int>(ECTRANS_GRAPH_STREAMS, plans.size());
+    std::vector<hipStream_t> streams(nstreams);
+    for (auto &s : streams)
+      HIC_CHECK(hipStreamCreate(&s));
+    std::vector<hipEvent_t> events(nstreams);
+    for (auto &e : events)
+      HIC_CHECK(hipEventCreateWithFlags(&e, hipEventDisableTiming));
+
+    for (size_t i = 0; i < plans.size(); ++i)
+      plans[i].set_stream(streams[i % nstreams]);
+
+    HIC_CHECK(hipStreamBeginCapture(streams[0], hipStreamCaptureModeGlobal));
+    HIC_CHECK(hipEventRecord(events[0], streams[0]));
+    for (int j = 1; j < nstreams; ++j)
+      HIC_CHECK(hipStreamWaitEvent(streams[j], events[0], 0));
+
     for (auto &plan : plans) {
       plan.exec(data_real, data_complex);
     }
+
+    for (int j = 1; j < nstreams; ++j) {
+      HIC_CHECK(hipEventRecord(events[j], streams[j]));
+      HIC_CHECK(hipStreamWaitEvent(streams[0], events[j], 0));
+    }
     hipGraph_t my_graph;
-    HIC_CHECK(hipStreamEndCapture(stream, &my_graph));
+    HIC_CHECK(hipStreamEndCapture(streams[0], &my_graph));
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
     HIC_CHECK(hipGraphDestroy(my_graph));
+    for (auto &e : events)
+      HIC_CHECK(hipEventDestroy(e));
+    for (auto &s : streams)
+      HIC_CHECK(hipStreamDestroy(s));
 #endif
 #if CUDAGPU
-    // now create the graph
+    hipStream_t stream;
+    HIC_CHECK(hipStreamCreate(&stream));
+    for (auto &plan : plans)
+      plan.set_stream(stream);
+
     hipGraph_t new_graph;
     hipGraphCreate(&new_graph, 0);
     for (auto &plan : plans) {
@@ -228,8 +253,8 @@ void run_group_graph(typename Type::real *data_real,
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
     HIC_CHECK(hipGraphDestroy(new_graph));
-#endif
     HIC_CHECK(hipStreamDestroy(stream));
+#endif
 
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(
                                 new hipGraphExec_t{instance}, [](auto ptr) {
