@@ -145,6 +145,8 @@ if( HAVE_CUDA_UNIFIED )
   string( APPEND OpenACC_Fortran_FLAGS " ${ECTRANS_ACC_UNIFIED_FLAGS}" )
   target_compile_options( OpenACC::OpenACC_Fortran
                           INTERFACE $<$<COMPILE_LANGUAGE:Fortran>:${ECTRANS_ACC_UNIFIED_FLAGS}> )
+  target_link_options( OpenACC::OpenACC_Fortran
+                          INTERFACE $<$<COMPILE_LANGUAGE:Fortran>:${ECTRANS_ACC_UNIFIED_FLAGS}> )
 endif()
 
 ecbuild_add_option( FEATURE CUTLASS
