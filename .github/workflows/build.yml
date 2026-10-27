@@ -382,7 +382,7 @@ jobs:
         # Set dependency references for provenance metadata in the reference artifact package.
         export ECTRANS_DEP_REF_ECBUILD=develop
         export ECTRANS_DEP_REF_FIAT=develop
-        export ECTRANS_DEP_REF_FIELD_API=v0.3.9
+        export ECTRANS_DEP_REF_FIELD_API=v0.3.10
 
         bash ${ECTRANS_TOOLS}/reference-artifact-package.sh \
           "${{ steps.reference-key.outputs.reference_key }}" \
