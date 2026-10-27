@@ -619,7 +619,7 @@ if( HAVE_CPU AND HAVE_MPI )
   endif()
 
   if (fiat_VERSION VERSION_LESS 1.6.3 OR (fiat_VERSION VERSION_EQUAL 2.0.0 AND NOT HAVE_FIAT_DEVELOP))
-    # Once fiat develop branch is released in version > 2.0.0, we can drop "AND NOT HAVE FIAT_DEVELOP"
+    # Once fiat develop branch is released in version > 2.0.0, we can drop "AND NOT HAVE FIAT_DEVELOP"
     ecbuild_warn("Skipping test ectrans_test_init_mpi_ranks for fiat version (${fiat_VERSION}) < 1.6.3 or "
                  " version == 2.0.0; see https://github.com/ecmwf-ifs/ectrans/pull/387")
   else()
