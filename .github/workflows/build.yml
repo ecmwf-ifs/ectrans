@@ -117,7 +117,7 @@ jobs:
             compiler_cc: amdclang
             compiler_cxx: amdclang++
             compiler_fc: amdflang
-            cmake_options: -DCMAKE_Fortran_FLAGS_INIT=-fPIC -DCMAKE_CXX_FLAGS_INIT=-fPIC -DCMAKE_C_FLAGS_INIT=-fPIC -DENABLE_MPI=OFF -DOpenMP_Fortran_FLAGS=-fopenmp -DOpenMP_CXX_FLAGS=-fopenmp -DOpenMP_C_FLAGS=-fopenmp -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+            cmake_options: -DENABLE_MPI=OFF -DOpenMP_Fortran_FLAGS=-fopenmp -DOpenMP_CXX_FLAGS=-fopenmp -DOpenMP_C_FLAGS=-fopenmp
 
           - name: macos
             # Xcode compiler requires empty environment variables, so we pass null (~) here
@@ -278,7 +278,14 @@ jobs:
           MATH_FLAGS="-fp-model consistent"
         fi
 
-        echo "COMPILE_FLAGS=${TARGET_FLAGS} ${MATH_FLAGS}" >> $GITHUB_ENV
+        # CMake does not define a PIC flag for LLVMFlang, so CMAKE_POSITION_INDEPENDENT_CODE has no effect for
+        # Fortran sources. Pass -fPIC explicitly via the toolchain file so it reaches all dependencies too.
+        PIC_FLAGS=""
+        if [[ "${{ matrix.compiler }}" =~ "amd-flang" ]]; then
+          PIC_FLAGS="-fPIC"
+        fi
+
+        echo "COMPILE_FLAGS=${TARGET_FLAGS} ${MATH_FLAGS} ${PIC_FLAGS}" >> $GITHUB_ENV
 
     - name: Install AMD flang compiler
       if: contains( matrix.compiler, 'amd-flang' )
