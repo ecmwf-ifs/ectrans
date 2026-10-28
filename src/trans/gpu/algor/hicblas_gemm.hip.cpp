@@ -10,10 +10,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
 
 #include "hicblas.h"
 #ifdef USE_CUTLASS
@@ -21,6 +23,10 @@
 #endif
 
 #include "growing_allocator.h"
+
+#ifndef ECTRANS_GRAPH_STREAMS
+#define ECTRANS_GRAPH_STREAMS 4
+#endif
 
 bool hip_alreadyAllocated_sgemm = false;
 bool hip_alreadyAllocated_sgemm_handle = false;
@@ -124,10 +130,9 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
   auto graph = graphCache.find(key);
   if (graph == graphCache.end()) {
     // this graph does not exist yet
+#ifdef USE_CUTLASS
     hipStream_t captureStream;
     HIC_CHECK(hipStreamCreate(&captureStream));
-
-#ifdef USE_CUTLASS
     hipGraph_t new_graph;
     HIC_CHECK(hipGraphCreate(&new_graph, 0));
     for (int i = 0; i < batchCount; ++i) {
@@ -147,22 +152,43 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
     HIC_CHECK(hipGraphDestroy(new_graph));
+    HIC_CHECK(hipStreamDestroy(captureStream));
 #else
-    HIC_CHECK(hipStreamBeginCapture(captureStream, hipStreamCaptureModeGlobal));
+    int const nstreams = std::max(1, std::min(ECTRANS_GRAPH_STREAMS, batchCount));
+    std::vector<hipStream_t> streams(nstreams);
+    for (auto &s : streams)
+      HIC_CHECK(hipStreamCreate(&s));
+    std::vector<hipEvent_t> events(nstreams);
+    for (auto &e : events)
+      HIC_CHECK(hipEventCreateWithFlags(&e, hipEventDisableTiming));
+
+    HIC_CHECK(hipStreamBeginCapture(streams[0], hipStreamCaptureModeGlobal));
+    HIC_CHECK(hipEventRecord(events[0], streams[0]));
+    for (int j = 1; j < nstreams; ++j)
+      HIC_CHECK(hipStreamWaitEvent(streams[j], events[0], 0));
+
     for (int i = 0; i < batchCount; ++i) {
       if (m == 0 || n[i] == 0 || k[i] == 0)
         continue;
 
-      gemm(captureStream, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i],
+      gemm(streams[i % nstreams], m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i],
            ldb[i], beta, C + offsetsC[i], ldc);
     }
+
+    for (int j = 1; j < nstreams; ++j) {
+      HIC_CHECK(hipEventRecord(events[j], streams[j]));
+      HIC_CHECK(hipStreamWaitEvent(streams[0], events[j], 0));
+    }
     hipGraph_t my_graph;
-    HIC_CHECK(hipStreamEndCapture(captureStream, &my_graph));
+    HIC_CHECK(hipStreamEndCapture(streams[0], &my_graph));
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
     HIC_CHECK(hipGraphDestroy(my_graph));
+    for (auto &e : events)
+      HIC_CHECK(hipEventDestroy(e));
+    for (auto &s : streams)
+      HIC_CHECK(hipStreamDestroy(s));
 #endif
-    HIC_CHECK(hipStreamDestroy(captureStream));
 
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(
                                 new hipGraphExec_t{instance}, [](auto ptr) {
