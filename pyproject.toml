@@ -20,13 +20,20 @@ classifiers = [
 
 [build-system]
 requires = ["scikit-build-core>=0.10"]
-build-backend = "scikit_build_core.build"
+# Thin wrapper around scikit-build-core that first runs `ectrans-bundle create`
+# to clone the ecbuild/fiat dependencies (see _ectrans_build_backend.py).
+build-backend = "_ectrans_build_backend"
+backend-path = ["."]
 
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 
 # Require the same CMake as the top-level CMakeLists.txt
 cmake.version = ">=3.25"
+
+# Build the ecbundle-generated superbuild, which builds fiat (and ecbuild's
+# macros) in-tree alongside ectrans so the wheel is self-contained.
+cmake.source-dir = "package/bundle/source"
 
 # The Python package lives under src/
 wheel.packages = ["src/ectrans4py"]
