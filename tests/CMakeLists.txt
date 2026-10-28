@@ -81,6 +81,12 @@ add_subdirectory( trans/api )
 
 add_subdirectory( trans/adjoint )
 
+# The grid partition selector is precision independent and runs on the host.
+ecbuild_add_test( TARGET ectrans_test_sustaonl
+  SOURCES trans/test_sustaonl.F90
+  LIBS ectrans_common
+  LABELS "components" )
+
 # --------------------------------------------------------------------------------------------------
 # Add field-view metadata test
 # --------------------------------------------------------------------------------------------------
