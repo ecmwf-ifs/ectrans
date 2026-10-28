@@ -191,6 +191,7 @@ int main( int argc, char** argv ) {
 
   struct Trans_t trans;
   TRANS_CHECK( trans_new( &trans ) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
 #ifndef LAM_VERSION
   TRANS_CHECK( trans_set_trunc( &trans, 2 ) );
 #else

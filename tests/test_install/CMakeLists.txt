@@ -31,10 +31,19 @@ endif()
 
 if( TARGET transi_dp )
   enable_language( C )
+
+  set( transi_test_install_defs )
+  list( FIND ectrans_FEATURES FFT992 ectrans_has_fft992 )
+  if( NOT ectrans_has_fft992 EQUAL -1 )
+    list( APPEND transi_test_install_defs TRANSI_TEST_FFT_BACKEND=TRANS_FFT992 )
+  endif()
+
   add_executable( transi_sptogp transi_sptogp.c )
   target_link_libraries( transi_sptogp transi_dp )
+  target_compile_definitions( transi_sptogp PRIVATE ${transi_test_install_defs} )
 
   add_executable( transi_gptosp transi_gptosp.c )
   target_link_libraries( transi_gptosp transi_dp )
+  target_compile_definitions( transi_gptosp PRIVATE ${transi_test_install_defs} )
 
 endif()
