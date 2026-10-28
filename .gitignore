@@ -11,5 +11,5 @@ install/*
 source/*
 ecbundle
 /env.sh
-
-
+docs/site
+docs/content_processed
