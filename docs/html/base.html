@@ -48,9 +48,9 @@
 
   <body>
 
-    <!-- Fixed navbar -->
-    <div class="container-fluid mb-sm-4 mb-xl-2">
-      <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+    <!-- Sticky navbar (stays in the document flow, so content always starts below it whatever its
+         height) -->
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
         <div class="container">
           <a class="navbar-brand" href="{{ project_url }}/index.html">{{ project }} {% if version %}<small>{{ version }}</small>{% endif %}</a>
           <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
@@ -138,7 +138,6 @@
           </div><!--/.nav-collapse -->
         </div>
       </nav>
-    </div>
 
     <div class="container">
       {% block body %}

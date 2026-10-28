@@ -42,3 +42,12 @@ div.container > div.row ul > li > p {
 div#text {
     margin-top: 20px;
 }
+/* The navbar is sticky rather than fixed (see html/base.html), so FORD's fixed body padding, which
+   assumes a navbar of constant height, is not needed. Space the content from the navbar instead. */
+body {
+    padding-top: 0;
+}
+
+nav.navbar {
+    margin-bottom: 1.5rem;
+}
