@@ -8,46 +8,19 @@
 !
 
 INTERFACE
+!> This subroutine is the "tangent linear" version of GPNORM_TRANS. It is actually identical, but
+!! has a simpler interface as the PMIN and PMAX arguments are not used for tangent-linear
+!! applications.
+!!
+!! @param PGP Input grid point array, distributed across MPI tasks as usual.
+!!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
+!! @param KFIELDS Number of input fields on which to compute statistics.
+!! @param KPROMA Blocking factor for grid point input.
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!!   Default: 1 (i.e. first resolution handle)
+!! @param PAVE The global average of each field. Only task 1 will have data.
+!!   Dimensions: (KFIELDS)
 SUBROUTINE GPNORM_TRANSTL(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
-
-! begin_doc_block
-! ## `GPNORM_TRANSTL`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE GPNORM_TRANSTL(PGP, KFIELDS, KPROMA, PAVE, KRESOL)
-! ```
-!
-! ### Purpose
-!
-! This subroutine is the "tangent linear" version of `GPNORM_TRANS`. It is actually identical, but
-! has a simpler interface as the `PMIN` and `PMAX` arguments are not used for tangent-linear
-! applications.
-!
-! ### `INTENT(IN)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(IN) :: PGP(:,:,:)`  
-!   Input grid point array, distributed across MPI tasks as usual.  
-!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS`  
-!   Number of input fields on which to compute statistics.
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA`  
-!   Blocking factor for grid point input.
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.  
-!   *Default*: `1` (i.e. first resolution handle)
-!
-! ### `INTENT(OUT)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(OUT) :: PAVE(:)`  
-!   The global average of each field. Only task 1 will have data.  
-!   Dimensions: (`KFIELDS`)
-!
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

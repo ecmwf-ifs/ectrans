@@ -8,48 +8,18 @@
 !
 
 INTERFACE
+!> This subroutine is the "adjoint" version of GPNORM_TRANSTL.
+!!
+!! @param KFIELDS Number of input fields on which to compute statistics.
+!! @param KPROMA Blocking factor for grid point input.
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!!   Default: 1 (i.e. first resolution handle)
+!! @param PAVE Input global average of each field. Only task 1 should have data. On output this will
+!!   be zeroed.
+!!   Dimensions: (KFIELDS)
+!! @param PGP Output grid point array, distributed across MPI tasks as usual.
+!!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
 SUBROUTINE GPNORM_TRANSAD(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
-
-! begin_doc_block
-! ## `GPNORM_TRANSAD`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE GPNORM_TRANSAD(PGP, KFIELDS, KPROMA, PAVE, KRESOL)
-! ```
-!
-! ### Purpose
-!
-! This subroutine is the "adjoint" version of `GPNORM_TRANSTL`.
-!
-! ### `INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS`  
-!   Number of input fields on which to compute statistics.
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA`  
-!   Blocking factor for grid point input.
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.  
-!   *Default*: `1` (i.e. first resolution handle)
-!
-! ### `INTENT(INOUT)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(INOUT) :: PAVE(:)`  
-!   Input global average of each field. Only task 1 should have data. On output this will be  
-!   zeroed.
-!   Dimensions: (`KFIELDS`)
-!
-! ### `INTENT(OUT)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(OUT) :: PGP(:,:,:)`  
-!   Output grid point array, distributed across MPI tasks as usual.  
-!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
-!
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

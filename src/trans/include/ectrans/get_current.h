@@ -9,34 +9,16 @@
 ! nor does it submit to any jurisdiction.
 
 INTERFACE
+!> This subroutine allows one to retrieve the current resolution handle, NCUR_RESOL, and the LAM
+!! parameter, LDLAM, which indicates if the local area version of ecTrans is being used or not.
+!!
+!! @note
+!! LDLAM will always be .FALSE. for the moment. ecTrans currently only supports global spectral
+!! transforms, though local (bifourier) transforms may be supported in future.
+!!
+!! @param KRESOL The current default resolution handle.
+!! @param LDLAM Whether the local area version of ecTrans is being used or not.
 SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
-
-! begin_doc_block
-! ## `GET_CURRENT`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
-! ```
-!
-! ### Purpose
-!
-! This subroutine allows one to retrieve the current resolution handle, `NCUR_RESOL`, and the LAM
-! parameter, `LDLAM`, which indicates if the local area version of ecTrans is being used or not.
-!
-! @note
-! `LDLAM` will always be `.FALSE.` for the moment. ecTrans currently only supports global spectral
-! transforms, though local (bifourier) transforms may be supported in future.
-! @endnote
-!
-! ### `OPTIONAL, INTENT(OUT)` arguments
-!
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KRESOL`  
-!   The current default resolution handle.
-! - `LOGICAL, OPTIONAL, INTENT(OUT) :: LDLAM`  
-!   Whether the local area version of ecTrans is being used or not.
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM
 

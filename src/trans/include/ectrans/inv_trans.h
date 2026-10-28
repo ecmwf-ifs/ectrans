@@ -9,156 +9,109 @@
 !
 
 INTERFACE
+!> This subroutine performs an inverse spectral transform.
+!! INV_TRANS supports two modes of passing arrays (which we call "call modes" below):
+!!
+!! 1. Pass in PSPVOR, PSPDIV, PSPSCALAR, receive PGP.
+!! 2. Pass in PSPVOR, PSPDIV, PSPSC3A, PSPSC3B, PSPSC2, receive PGPUV, PGP3A,  PGP3B, PGP2
+!!
+!! Although call mode 1 is simpler, it can often entail having to create array copies in order to
+!! subsequently operate on the different elements of PGP. Hence, with call mode 2, the output
+!! arrays are already categorized according to whether they are wind related, 3D scalar, or 2D
+!! scalar.
+!!
+!! Note that PSPSC3A/PGP3A and PSPSC3B/PGP3B are essentially identical in type and size.
+!! There are cases where it is useful to have the ability to pass two sets of scalar fields to be
+!! transformed independently.
+!!
+!! @param PSPVOR Spectral space vorticity.
+!!   Dimensions: (vertical levels, spectral coefficients).
+!! @param PSPDIV Spectral space divergence.
+!!   Dimensions: (vertical levels, spectral coefficients).
+!! @param PSPSCALAR Spectral space scalar fields (call mode 1).
+!!   Dimensions: (total number of 2D scalar fields, spectral coefficients).
+!! @param PSPSC3A Spectral space 3D scalar fields (call mode 2) corresponding to PGP3A.
+!!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
+!! @param PSPSC3B Spectral space 3D scalar fields (call mode 2) corresponding to PGP3B.
+!!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
+!! @param PSPSC2 Spectral space 2D scalar fields (call mode 2) corresponding to PGP2.
+!!   Dimensions: (number of 2D scalar fields, spectral coefficients).
+!! @param LDSCDERS Indicates if derivatives of scalar variables are required.
+!!   Default: .FALSE.
+!! @param LDVORGP Indicates if grid point space vorticity is required.
+!!   Default: .FALSE.
+!! @param LDDIVGP Indicates if grid point space divergence is required.
+!!   Default: .FALSE.
+!! @param LDUVDER Indicates of East-West derivatives of U and V are required.
+!!   Default: .FALSE.
+!! @param LDLATLON Indicates if regular latitude-longitude output is required.
+!!   Default: .FALSE.
+!! @param KPROMA Required blocking factor for grid point output.
+!!   Default: D%NGPTOT
+!! @param KVSETUV Array which maps each vertical level of the input vorticity/divergence to its
+!!   corresponding member of the V-set.
+!! @param KVSETSC Array which maps each of the input scalar fields to its corresponding member  of
+!!   the V-set (call mode 1).
+!! @param KVSETSC3A Array which maps each vertical level of the input 3D scalar fields to its
+!!   corresponding member of the V-set (call mode 2).
+!! @param KVSETSC3B Array which maps each vertical level of the input 3D scalar fields to its
+!!   corresponding member of the V-set (call mode 2).
+!! @param KVSETSC2 Array which maps each 2D scalar field to its corresponding member of the V-set
+!!   (call mode 2).
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!! @param LPGP_ON_GPU Optional device-residency hint for PGP, PGPUV, PGP3A, PGP3B and PGP2. If
+!!   present and true, the GPU path leaves the PGP arrays resident on device and skips the
+!!   associated host/device synchronization. Ignored on the CPU path.
+!!   Default: .FALSE.
+!! @param LPSP_ON_GPU Optional device-residency hint for PSPVOR, PSPDIV, PSPSCALAR, PSPSC3A,
+!!   PSPSC3B, and PSPSC2. If present and true, the GPU path skips the copy of these arrays from host
+!!   to device, instead assuming that they are already present. Ignored on the CPU path.
+!!   Default: .FALSE.
+!! @param FSPGL_PROC External procedure to be executed in Fourier space before transposition.
+!! @param PGP Array containing all grid point fields (call mode 1).
+!!   Dimensions: (NPROMA, number of grid point fields, number of NPROMA blocks).
+!!   The ordering of grid point fields in this array is as follows:
+!!     1. vorticity (if PSPVOR is present and LDVORGP)
+!!     2. divergence (if PSPDIV is present and LDDIVGP)
+!!     3. U wind (if PSPVOR and PSPDIV are present)
+!!     4. V wind (if PSPVOR and PSPDIV are present)
+!!     5. scalar fields (if PSPSCALAR is present)
+!!     6. North-South derivative of scalar fields (if PSPSCALAR is present and LDSCDERS)
+!!     7. East-West derivative of U wind (if PSPVOR and PSPDIV are present and LDUVDER)
+!!     8. East-West derivative of V wind (if PSPVOR and PSPDIV are present and LDUVDER)
+!!     9. East-West derivative of scalar fields (if PSPSCALAR is present and LDSCDERS)
+!! @param PGPUV Array containing grid point fields relating to wind (call mode 2).
+!!   Dimensions: (NPROMA, vertical levels, number of wind-related fields, number of NPROMA blocks).
+!!   The ordering of grid point fields in this array is as follows:
+!!     1. vorticity (if PSPVOR is present and LDVORGP)
+!!     2. divergence (if PSPDIV is present and LDDIVGP)
+!!     3. U wind (if PSPVOR and PSPDIV are present)
+!!     4. V wind (if PSPVOR and PSPDIV are present)
+!!     5. East-West derivative of U wind (if PSPVOR and PSPDIV are present and LDUVDER)
+!!     6. East-West derivative of V wind (if PSPVOR and PSPDIV are present and LDUVDER)
+!! @param PGP3A Array containing 3D scalar grid point fields corresponding to PSPSC3A.
+!!   Dimensions: (NPROMA, vertical levels, number of 3D scalar fields, number of NPROMA blocks).
+!!   The ordering of grid point fields in this array is as follows:
+!!     1. scalar fields
+!!     2. North-South derivatives of scalar fields (if LDSCDERS)
+!!     3. East-West derivatives of scalar fields (if LDSCDERS)
+!! @param PGP3B Array containing 3D scalar grid point fields corresponding to PSPSC3B.
+!!   Dimensions: (NPROMA, vertical levels, number of 3D scalar fields, number of NPROMA blocks).
+!!   The ordering of grid point fields in this array is as follows:
+!!     1. scalar fields
+!!     2. North-South derivatives of scalar fields (if LDSCDERS)
+!!     3. East-West derivatives of scalar fields (if LDSCDERS)
+!! @param PGP2 Array containing 2D scalar grid point fields corresponding to PSPSC2.
+!!   Dimensions: (NPROMA, number of 2D scalar fields, number of NPROMA blocks).
+!!   The ordering of grid point fields in this array is as follows:
+!!     1. scalar fields
+!!     2. North-South derivatives of scalar fields (if LDSCDERS)
+!!     3. East-West derivatives of scalar fields (if LDSCDERS)
 SUBROUTINE INV_TRANS(PSPVOR,PSPDIV,PSPSCALAR,PSPSC3A,PSPSC3B,PSPSC2,&
  & FSPGL_PROC,&
  & LDSCDERS,LDVORGP,LDDIVGP,LDUVDER,LDLATLON,KPROMA,KVSETUV,KVSETSC,KRESOL,&
  & KVSETSC3A,KVSETSC3B,KVSETSC2,&
  & PGP,PGPUV,PGP3A,PGP3B,PGP2,LPGP_ON_GPU,LPSP_ON_GPU)
-
-! begin_doc_block
-! ## `INV_TRANS`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE INV_TRANS(PSPVOR, PSPDIV, PSPSCALAR, PSPSC3A, PSPSC3B, PSPSC2, &
-!   &                  FSPGL_PROC, LDSCDERS, LDVORGP, LDDIVGP, LDUVDER, LDLATLON, KPROMA, KVSETUV, &
-!   &                  KVSETSC, KRESOL, KVSETSC3A, KVSETSC3B, KVSETSC2, PGP, PGPUV, PGP3A, PGP3B, &
-!   &                  PGP2, LPGP_ON_GPU, LPSP_ON_GPU)
-! ```
-!
-! ### Purpose
-!
-! This subroutine performs an inverse spectral transform.
-! `INV_TRANS` supports two modes of passing arrays (which we call "call modes" below):
-!
-! 1. Pass in `PSPVOR`, `PSPDIV`, `PSPSCALAR`, receive `PGP`.
-! 2. Pass in `PSPVOR`, `PSPDIV`, `PSPSC3A`, `PSPSC3B`, `PSPSC2`, receive `PGPUV`, `PGP3A`,  `PGP3B`, `PGP2`
-!
-! Although call mode 1 is simpler, it can often entail having to create array copies in order to
-! subsequently operate on the different elements of `PGP`. Hence, with call mode 2, the output
-! arrays are already categorized according to whether they are wind related, 3D scalar, or 2D
-! scalar.
-!
-! Note that `PSPSC3A`/`PGP3A` and `PSPSC3B`/`PGP3B` are essentially identical in type and size.
-! There are cases where it is useful to have the ability to pass two sets of scalar fields to be
-! transformed independently.
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPVOR(:,:)`  
-!   Spectral space vorticity.  
-!   Dimensions: (vertical levels, spectral coefficients).
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPDIV(:,:)`  
-!   Spectral space divergence.  
-!   Dimensions: (vertical levels, spectral coefficients).
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSCALAR(:,:)`  
-!   Spectral space scalar fields (call mode 1).  
-!   Dimensions: (total number of 2D scalar fields, spectral coefficients).
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSC3A(:,:,:)`  
-!   Spectral space 3D scalar fields (call mode 2) corresponding to `PGP3A`.  
-!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSC3B(:,:,:)`  
-!   Spectral space 3D scalar fields (call mode 2) corresponding to `PGP3B`.  
-!   Dimensions: (vertical levels, spectral coefficients, number of 3D scalar fields).
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPSC2(:,:)`  
-!   Spectral space 2D scalar fields (call mode 2) corresponding to `PGP2`.  
-!   Dimensions: (number of 2D scalar fields, spectral coefficients).
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDSCDERS`  
-!   Indicates if derivatives of scalar variables are required.  
-!   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDVORGP`  
-!   Indicates if grid point space vorticity is required.  
-!   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDDIVGP`  
-!   Indicates if grid point space divergence is required.  
-!   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDUVDER`  
-!   Indicates of East-West derivatives of U and V are required.  
-!   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDLATLON`  
-!   Indicates if regular latitude-longitude output is required.  
-!   *Default*: `.FALSE.`
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMA`  
-!   Required blocking factor for grid point output.  
-!   *Default*: `D%NGPTOT`
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETUV(:)`  
-!   Array which maps each vertical level of the input vorticity/divergence to its corresponding  
-!   member of the V-set.
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC(:)`  
-!   Array which maps each of the input scalar fields to its corresponding member  of the V-set  
-!   (call mode 1).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3A(:)`  
-!   Array which maps each vertical level of the input 3D scalar fields to its corresponding  
-!   member of the V-set (call mode 2).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC3B(:)`  
-!   Array which maps each vertical level of the input 3D scalar fields to its corresponding  
-!   member of the V-set (call mode 2).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSETSC2(:)`  
-!   Array which maps each 2D scalar field to its corresponding member of the V-set (call mode 2).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LPGP_ON_GPU`  
-!   Optional device-residency hint for `PGP`, `PGPUV`, `PGP3A`, `PGP3B` and `PGP2`. If present and  
-!   true, the GPU path leaves the PGP arrays resident on device and skips the associated  
-!   host/device synchronization. Ignored on the CPU path.  
-!   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LPSP_ON_GPU`  
-!   Optional device-residency hint for `PSPVOR`, `PSPDIV`, `PSPSCALAR`, `PSPSC3A`, `PSPSC3B`, and
-!   `PSPSC2`. If present and true, the GPU path skips the copy of these arrays from host to device,
-!   instead assuming that they are already present. Ignored on the CPU path.  
-!   *Default*: `.FALSE.`
-!
-! ### `OPTIONAL, EXTERNAL` arguments
-! - `OPTIONAL, EXTERNAL :: FSPGL_PROC`  
-!   External procedure to be executed in Fourier space before transposition.
-!
-! ### `OPTIONAL, INTENT(OUT)` arguments
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP(:,:,:)`  
-!   Array containing all grid point fields (call mode 1).  
-!   Dimensions: (NPROMA, number of grid point fields, number of NPROMA blocks).  
-!   The ordering of grid point fields in this array is as follows:  
-!     1. vorticity (if `PSPVOR` is present and `LDVORGP`)
-!     2. divergence (if `PSPDIV` is present and `LDDIVGP`)
-!     3. U wind (if `PSPVOR` and `PSPDIV` are present)
-!     4. V wind (if `PSPVOR` and `PSPDIV` are present)
-!     5. scalar fields (if `PSPSCALAR` is present)
-!     6. North-South derivative of scalar fields (if `PSPSCALAR` is present and `LDSCDERS`)
-!     7. East-West derivative of U wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
-!     8. East-West derivative of V wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
-!     9. East-West derivative of scalar fields (if `PSPSCALAR` is present and `LDSCDERS`)
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGPUV(:,:,:,:)`  
-!   Array containing grid point fields relating to wind (call mode 2).  
-!   Dimensions: (NPROMA, vertical levels, number of wind-related fields, number of NPROMA blocks).  
-!   The ordering of grid point fields in this array is as follows:  
-!     1. vorticity (if `PSPVOR` is present and `LDVORGP`)
-!     2. divergence (if `PSPDIV` is present and `LDDIVGP`)
-!     3. U wind (if `PSPVOR` and `PSPDIV` are present)
-!     4. V wind (if `PSPVOR` and `PSPDIV` are present)
-!     5. East-West derivative of U wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
-!     6. East-West derivative of V wind (if `PSPVOR` and `PSPDIV` are present and `LDUVDER`)
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP3A(:,:,:,:)`  
-!   Array containing 3D scalar grid point fields corresponding to `PSPSC3A`.  
-!   Dimensions: (NPROMA, vertical levels, number of 3D scalar fields, number of NPROMA blocks).  
-!   The ordering of grid point fields in this array is as follows:  
-!     1. scalar fields
-!     2. North-South derivatives of scalar fields (if `LDSCDERS`)
-!     3. East-West derivatives of scalar fields (if `LDSCDERS`)
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP3B(:,:,:,:)`  
-!   Array containing 3D scalar grid point fields corresponding to `PSPSC3B`.  
-!   Dimensions: (NPROMA, vertical levels, number of 3D scalar fields, number of NPROMA blocks).  
-!   The ordering of grid point fields in this array is as follows:  
-!     1. scalar fields
-!     2. North-South derivatives of scalar fields (if `LDSCDERS`)
-!     3. East-West derivatives of scalar fields (if `LDSCDERS`)
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP2(:,:,:)`  
-!   Array containing 2D scalar grid point fields corresponding to `PSPSC2`.  
-!   Dimensions: (NPROMA, number of 2D scalar fields, number of NPROMA blocks).  
-!   The ordering of grid point fields in this array is as follows:  
-!     1. scalar fields
-!     2. North-South derivatives of scalar fields (if `LDSCDERS`)
-!     3. East-West derivatives of scalar fields (if `LDSCDERS`)
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

@@ -9,47 +9,22 @@
 !
 
 INTERFACE
+!> This subroutine computes the Legendre polynomials for a given wavenumber.
+!!
+!! @param KM The zonal wavenumber to compute the polynomials for.
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!!   Default: 1 (i.e. first resolution handle)
+!! @param LDTRANSPOSE Whether to transpose the output array (see dimensions of PRPNM below).
+!!   Default: .FALSE.
+!! @param LDCHEAP Whether to use "cheap" algorithm to compute the polynomials (which are albeit less
+!!   accurate).
+!!   Default: .FALSE.
+!! @param PRPNM The computed Legendre polynomials. The dimensions depend on the value of
+!!   LDTRANSPOSE. Note that this must be already allocated. See
+!!   [SETUP_DIMS_MOD](https://sites.ecmwf.int/docs/ectrans/sourcefile/setup_dims_mod.f90.html) for
+!!   the defininition of R%NLEI3.
+!!   Dimensions: `(R%NTMAX-KM+3, R%NLEI3)` if LDTRANSPOSE is .TRUE., else `(R%NLEI3, R%NTMAX-KM+3)`
 SUBROUTINE TRANS_PNM(KRESOL,KM,PRPNM,LDTRANSPOSE,LDCHEAP)
-
-! begin_doc_block
-! ## `TRANS_PNM`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE TRANS_PNM(KRESOL, KM, PRPNM, LDTRANSPOSE, LDCHEAP)
-! ```
-!
-! ### Purpose
-!
-! This subroutine computes the Legendre polynomials for a given wavenumber.
-!
-! ### `INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KM`  
-!   The zonal wavenumber to compute the polynomials for.
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.  
-!   *Default*: `1` (i.e. first resolution handle)
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDTRANSPOSE`  
-!   Whether to transpose the output array (see dimensions of `PRPNM` below).  
-!   *Default*: `.FALSE.`
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDCHEAP`  
-!   Whether to use "cheap" algorithm to compute the polynomials (which are albeit less accurate).  
-!   *Default*: `.FALSE.`
-!
-! ### `INTENT(OUT)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(OUT) :: PRPNM`  
-!   The computed Legendre polynomials. The dimensions depend on the value of `LDTRANSPOSE`.  
-!   Note that this must be already allocated.  
-!   See [`SETUP_DIMS_MOD`](https://sites.ecmwf.int/docs/ectrans/sourcefile/setup_dims_mod.f90.html)
-!   for the defininition of `R%NLEI3`.  
-!   Dimensions: (`R%NTMAX-KM+3`, `R%NLEI3`) if `LDTRANSPOSE == .TRUE.`, else (`R%NLEI3`, `R%NTMAX-KM+3`)
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

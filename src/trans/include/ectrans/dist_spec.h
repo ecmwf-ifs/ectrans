@@ -9,77 +9,46 @@
 !
 
 INTERFACE
+!> This subroutine distributes a global spectral array among MPI tasks according to the specified
+!! distribution parameters. Fields are partitioned in the horizontal dimension (i.e. the dimension
+!! of spectral coefficients) and in the "fields" dimension, according to KVSET. This subroutine
+!! is the opposite of GATH_SPEC.
+!!
+!! The figure below illustrates an example in which four fields are distributed equally across four
+!! MPI tasks. In this case, `NPRTRV = 2` which means that each field is split among two MPI tasks,
+!! as shown. This is in contrast to DIST_GRID, which distributes fields such that each MPI task
+!! receives a slice of _every_ field.
+!!
+!! ![A schematic showing how DIST_SPEC works](img/dist_spec.png)
+!!
+!! @param KFDISTG The global number of fields to be distributed.
+!! @param KFROM Array which, for each field to be distributed, which MPI task is responsible for
+!!   distributing the field.
+!!   Dimensions: (KFDISTG).
+!! @param PSPECG Global spectral array to be distributed.
+!!   Dimensions: (number of fields, number of spectral coefficients) (flipped if LDIM1_IS_FLD is
+!!   .FALSE.). Note that this is optional, because some tasks may only receive fields (and so they
+!!   wouldn't have any fields to offer through PSPECG).
+!! @param KVSET Array which, for each field to be distributed, which "V-set" the field belongs to.
+!!   Dimensions: (KFDISTG).
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!!   Default: 1 (i.e. first resolution handle)
+!! @param LDIM1_IS_FLD If .TRUE., the first dimension of PSPECG and PSPEC corresponds to fields and
+!!   the second dimension corresponds to spectral coefficients. If .FALSE., the first dimension
+!!   corresponds to spectral coefficients and the second dimension corresponds to fields.
+!!   Default: .TRUE.
+!! @param KSMAX Maximum total wavenumber of the spectral transform. If not provided, it is inferred
+!!   from the resolution handle KRESOL.
+!!   Default: inferred from KRESOL
+!! @param KSORT Array which, for each field to be distributed, specifies the sorting order of the
+!!   spectral coefficients.
+!!   Dimensions: (KFDISTG).
+!!   Default: no sorting
+!! @param PSPEC Local spectral array on each MPI task after distribution.
+!!   Dimensions: (number of fields on this MPI task, number of spectral coefficients on this MPI
+!!   task).
 SUBROUTINE DIST_SPEC(PSPECG,KFDISTG,KFROM,KVSET,KRESOL,PSPEC,&
  & LDIM1_IS_FLD,KSMAX,KSORT)
-
-! begin_doc_block
-! ## `DIST_SPEC`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE DIST_SPEC(PSPECG, KFDISTG, KFROM, KVSET, KRESOL, PSPEC, LDIM1_IS_FLD, KSMAX, KSORT)
-! ```
-!
-! ### Purpose
-!
-! This subroutine distributes a global spectral array among MPI tasks according to the specified
-! distribution parameters. Fields are partitioned in the horizontal dimension (i.e. the dimension
-! of spectral coefficients) and in the "fields" dimension, according to `KVSET`. This subroutine
-! is the opposite of `GATH_SPEC`.
-!
-! The figure below illustrates an example in which four fields are distributed equally across four
-! MPI tasks. In this case, `NPRTRV = 2` which means that each field is split among two MPI tasks,
-! as shown. This is in contrast to `DIST_GRID`, which distributes fields such that each MPI task
-! receives a slice of _every_ field.
-!
-! ![A schematic showing how DIST_SPEC works](img/dist_spec.png)
-!
-! ### `INTENT(IN)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(IN) :: KFDISTG`  
-!   The global number of fields to be distributed.
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFROM(:)`  
-!   Array which, for each field to be distributed, which MPI task is responsible for distributing
-!   the field.  
-!   Dimensions: (KFDISTG).
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PSPECG(:,:)`  
-!   Global spectral array to be distributed.  
-!   Dimensions: (number of fields, number of spectral coefficients) (flipped if `LDIM1_IS_FLD` is  
-!  `.FALSE.`).  
-!   Note that this is optional, because some tasks may only receive fields (and so they wouldn't  
-!   have any fields to offer through `PSPECG`).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KVSET(:)`  
-!   Array which, for each field to be distributed, which "V-set" the field belongs to.  
-!   Dimensions: (KFDISTG).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.  
-!   *Default*: `1` (i.e. first resolution handle)
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LDIM1_IS_FLD`  
-!   If `.TRUE.`, the first dimension of `PSPECG` and `PSPEC` corresponds to fields and the second  
-!   dimension corresponds to spectral coefficients. If `.FALSE.`, the first dimension  
-!   corresponds to spectral coefficients and the second dimension corresponds to fields.  
-!   *Default*: `.TRUE.`
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSMAX`  
-!   Maximum total wavenumber of the spectral transform. If not provided, it is inferred from the  
-!   resolution handle `KRESOL`.  
-!   *Default*: inferred from `KRESOL`
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSORT(:)`  
-!   Array which, for each field to be distributed, specifies the sorting order of the spectral  
-!   coefficients.  
-!   Dimensions: (KFDISTG).  
-!   *Default*: no sorting
-!
-! ### `OPTIONAL, INTENT(OUT)` arguments
-!
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PSPEC(:,:)`  
-!   Local spectral array on each MPI task after distribution.  
-!   Dimensions: (number of fields on this MPI task, number of spectral coefficients on this MPI  
-!   task).
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

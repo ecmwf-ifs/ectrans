@@ -9,61 +9,35 @@
 !
 
 INTERFACE
+!> The subroutine distributes one or more global grid point fields resident across one or more MPI
+!! tasks (each field is entirely resident on a single MPI task without decomposition) among all
+!! other tasks, decomposing them along the way. It is the opposite of GATH_GRID.
+!!
+!! The figure below illustrates an example in which four fields are distributed equally across four
+!! MPI tasks. Note that at the end, each task receives part of all four input fields. Note also that
+!! the NPROMA-based blocking is introduced at the end of DIST_GRID.
+!!
+!! ![A schematic showing how DIST_GRID works](img/dist_grid.png)
+!!
+!! @param KFDISTG The number of fields to be distributed.
+!! @param KFROM Array which, for each field to be distributed, which MPI task will be sending the
+!!   field.
+!!   Dimensions: (KFDISTG)
+!! @param PGPG Array containing fields to be distributed.
+!!   Dimensions: (number of global grid points, number of fields on this MPI task).
+!!   Note that this is optional, because some tasks may only receive fields (and so they wouldn't
+!!   have any fields to offer through PGPG).
+!! @param KPROMA "Blocking factor" used for grid point output.
+!!   Default: D%NGPTOT
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!!   Default: 1 (i.e. first resolution handle)
+!! @param KSORT Array allowing to rearrange fields in the output array. For each element, specify
+!!   which element you want the field to end up in.
+!!   Dimensions: (second dimension of PGP)
+!!   Default: no sorting
+!! @param PGP Array containing grid point output.
+!!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks).
 SUBROUTINE DIST_GRID(PGPG,KPROMA,KFDISTG,KFROM,KRESOL,PGP,KSORT)
-
-! begin_doc_block
-! ## `DIST_GRID`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE DIST_GRID(PGPG, KPROMA, KFDISTG, KFROM, KRESOL, PGP, KSORT)
-! ```
-!
-! ### Purpose
-! The subroutine distributes one or more global grid point fields resident across one or more MPI
-! tasks (each field is entirely resident on a single MPI task without decomposition) among all other
-! tasks, decomposing them along the way. It is the opposite of `GATH_GRID`.
-!
-! The figure below illustrates an example in which four fields are distributed equally across four MPI
-! tasks. Note that at the end, each task receives part of all four input fields. Note also that the
-! NPROMA-based blocking is introduced at the end of `DIST_GRID`.
-!
-! ![A schematic showing how DIST_GRID works](img/dist_grid.png)
-!
-! ### `INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFDISTG`  
-!   The number of fields to be distributed.
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFROM(:)`  
-!   Array which, for each field to be distributed, which MPI task will be sending the field.  
-!   Dimensions: (KFDISTG)
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(IN) :: PGPG(:,:)`  
-!   Array containing fields to be distributed.  
-!   Dimensions: (number of global grid points, number of fields on this MPI task). 
-!   Note that this is optional, because some tasks may only receive fields (and so they wouldn't
-!   have any fields to offer through `PGPG`).
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KPROMA`  
-!   "Blocking factor" used for grid point output.  
-!   *Default*: `D%NGPTOT`
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.  
-!   *Default*: `1` (i.e. first resolution handle)
-! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(IN) :: KSORT(:)`  
-!   Array allowing to rearrange fields in the output array. For each element, specify which  
-!   element you want the field to end up in.  
-!   Dimensions: (second dimension of `PGP`)  
-!   *Default*: no sorting
-!
-! ### `INTENT(OUT)` arguments
-!
-! - `REAL(KIND=JPRB), OPTIONAL, INTENT(OUT) :: PGP(:,:,:)`  
-!   Array containing grid point output.  
-!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks).
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

@@ -9,29 +9,13 @@
 !
 
 INTERFACE
+!> This subroutine terminates the transform package by releasing (i.e. deallocating and nullifying)
+!! all allocated arrays.
+!!
+!! @param CDMODE A string parameter indicating which mode to finalise with. Either 'FINAL' to
+!!   finalise everything or 'INTER' just to deallocate N_REGIONS and NPRCIDS.
+!!   Default: 'FINAL'
 SUBROUTINE TRANS_END(CDMODE)
-
-! begin_doc_block
-! ## `TRANS_END`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE TRANS_END(CDMODE)
-! ```
-!
-! ### Purpose
-!
-! This subroutine terminates the transform package by releasing (i.e. deallocating and nullifying)
-! all allocated arrays.
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `CHARACTER*5, OPTIONAL, INTENT(IN) :: CDMODE`  
-!   A string parameter indicating which mode to finalise with. Either `'FINAL'` to finalise  
-!   everything or `'INTER'` just to deallocate `N_REGIONS` and `NPRCIDS`.  
-!   *Default*: `'FINAL'`
-! end_doc_block
 
 IMPLICIT NONE
 CHARACTER*5, OPTIONAL, INTENT(IN) :: CDMODE

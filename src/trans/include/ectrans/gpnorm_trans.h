@@ -9,62 +9,29 @@
 !
 
 INTERFACE
+!> This subroutine calculates the global average (and optionally the global minimum and maximum) of
+!! the input fields in grid point space. The results are communicated to task 1 only.
+!!
+!! @param PGP Input grid point array, distributed across MPI tasks as usual.
+!!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
+!! @param KFIELDS Number of input fields on which to compute statistics.
+!! @param KPROMA Blocking factor for grid point input.
+!! @param LDAVE_ONLY Specify that only the average should be calculated before the aggregation to
+!!   task 1. In this case PMIN and PMAX should already contain the minimum and maximum values of
+!!   each field for each MPI task's local region, and afterwards they will contain the global
+!!   maximum and minimum (again, only on task 1).
+!! @param KRESOL Resolution handle returned by original call to SETUP_TRANS.
+!!   Default: 1 (i.e. first resolution handle)
+!! @param LPGP_ON_GPU When .TRUE., this argument indicates that input grid point data is already
+!!   resident on device and no host->device update is needed.
+!!   Default: .FALSE.
+!! @param PAVE The global average of each field. Only task 1 will have data.
+!!   Dimensions: (KFIELDS)
+!! @param PMIN The global minimum of each field. Only task 1 will have data.
+!!   Dimensions: (KFIELDS)
+!! @param PMAX The global maximum of each field. Only task 1 will have data.
+!!   Dimensions: (KFIELDS)
 SUBROUTINE GPNORM_TRANS(PGP,KFIELDS,KPROMA,PAVE,PMIN,PMAX,LDAVE_ONLY,KRESOL,LPGP_ON_GPU)
-
-! begin_doc_block
-! ## `GPNORM_TRANS`
-!
-! ### Signature
-!
-! ```f90
-! SUBROUTINE GPNORM_TRANS(PGP, KFIELDS, KPROMA, PAVE, PMIN, PMAX, LDAVE_ONLY, KRESOL, LPGP_ON_GPU)
-! ```
-!
-! ### Purpose
-!
-! This subroutine calculates the global average (and optionally the global minimum and maximum) of
-! the input fields in grid point space. The results are communicated to task 1 only.
-!
-! ### `INTENT(IN)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(IN) :: PGP(:,:,:)`  
-!   Input grid point array, distributed across MPI tasks as usual.  
-!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS`  
-!   Number of input fields on which to compute statistics.
-! - `INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA`  
-!   Blocking factor for grid point input.
-! - `LOGICAL, INTENT(IN) :: LDAVE_ONLY`  
-!   Specify that only the average should be calculated before the aggregation to task 1.  
-!   In this case `PMIN` and `PMAX` should already contain the minimum and maximum values of each
-!   field for each MPI task's local region, and afterwards they will contain the global maximum and
-!   minimum (again, only on task 1).
-!
-! ### `OPTIONAL, INTENT(IN)` arguments
-!
-! - `INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL`  
-!   Resolution handle returned by original call to `SETUP_TRANS`.  
-!   *Default*: `1` (i.e. first resolution handle)
-! - `LOGICAL, OPTIONAL, INTENT(IN) :: LPGP_ON_GPU`  
-!   When `.TRUE.`, this argument indicates that input grid point data is already resident on device  
-!   and no host->device update is needed.  
-!   *Default*: `.FALSE.`
-!
-! ### `INTENT(OUT)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(OUT) :: PAVE(:)`  
-!   The global average of each field. Only task 1 will have data.  
-!   Dimensions: (`KFIELDS`)
-!
-! ### `INTENT(INOUT)` arguments
-!
-! - `REAL(KIND=JPRB), INTENT(INOUT) :: PMIN(:)`  
-!   The global minimum of each field. Only task 1 will have data.  
-!   Dimensions: (`KFIELDS`)
-! - `REAL(KIND=JPRB), INTENT(INOUT) :: PMAX(:)`  
-!   The global maximum of each field. Only task 1 will have data.  
-!   Dimensions: (`KFIELDS`)
-! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 
