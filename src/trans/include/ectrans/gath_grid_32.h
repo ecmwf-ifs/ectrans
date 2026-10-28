@@ -14,6 +14,14 @@ INTERFACE
 ! This subroutine no longer has a purpose and is deprecated. It will be removed in a future release.
 SUBROUTINE GATH_GRID_32(PGPG,KPROMA,KFGATHG,KTO,KRESOL,PGP)
 
+! begin_doc_block
+! ## `GATH_GRID_32`
+!
+! @note
+! This subroutine is deprecated and will be removed in a future release.
+! @endnote
+! end_doc_block
+
 USE PARKIND1, ONLY: JPIM, JPRM
 
 IMPLICIT NONE

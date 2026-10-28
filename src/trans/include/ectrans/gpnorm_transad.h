@@ -10,41 +10,46 @@
 INTERFACE
 SUBROUTINE GPNORM_TRANSAD(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
 
-
-!**** *GPNORM_TRANSAD* - calculate grid-point norms
-!                          (adjoint version)
-
-!     Purpose.
-!     --------
-!        calculate grid-point norms
-
-!**   Interface.
-!     ----------
-!     CALL GPNORM_TRANSAD(...)
-
-!     Explicit arguments :
-!     --------------------
-!     PGP(:,:,:) - gridpoint fields (input)
-!                  PGP is  dimensioned (NPROMA,KFIELDS,NGPBLKS) where
-!                  NPROMA is the blocking factor, KFIELDS the total number
-!                  of fields and NGPBLKS the number of NPROMA blocks.
-!     KFIELDS     - number of fields (input)
-!                   (these do not have to be just levels)
-!     KPROMA      - required blocking factor (input)
-!     PAVE        - average (output)
-!     KRESOL      -  resolution tag (optional)
-!                    default assumes first defined resolution
+! begin_doc_block
+! ## `GPNORM_TRANSAD`
 !
-
-!     Author.
-!     -------
-!       Filip Vana
-!       (c) ECMWF  14-Aug-2024
-
-!     Modifications.
-!     --------------
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE GPNORM_TRANSAD(PGP, KFIELDS, KPROMA, PAVE, KRESOL)
+! ```
+!
+! ### Purpose
+!
+! This subroutine is the "adjoint" version of `GPNORM_TRANSTL`.
+!
+! ### `INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS`  
+!   Number of input fields on which to compute statistics.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA`  
+!   Blocking factor for grid point input.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.  
+!   *Default*: `1` (i.e. first resolution handle)
+!
+! ### `INTENT(INOUT)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(INOUT) :: PAVE(:)`  
+!   Input global average of each field. Only task 1 should have data. On output this will be  
+!   zeroed.
+!   Dimensions: (`KFIELDS`)
+!
+! ### `INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(OUT) :: PGP(:,:,:)`  
+!   Output grid point array, distributed across MPI tasks as usual.  
+!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
+!
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

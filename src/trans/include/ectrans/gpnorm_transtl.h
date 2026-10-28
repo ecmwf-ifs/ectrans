@@ -10,41 +10,44 @@
 INTERFACE
 SUBROUTINE GPNORM_TRANSTL(PGP,KFIELDS,KPROMA,PAVE,KRESOL)
 
-
-!**** *GPNORM_TRANSTL* - calculate grid-point norms
-!                        reduced version for linear model
-
-!     Purpose.
-!     --------
-!        calculate grid-point norms
-
-!**   Interface.
-!     ----------
-!     CALL GPNORM_TRANSTL(...)
-
-!     Explicit arguments :
-!     --------------------
-!     PGP(:,:,:) - gridpoint fields (input)
-!                  PGP is  dimensioned (NPROMA,KFIELDS,NGPBLKS) where
-!                  NPROMA is the blocking factor, KFIELDS the total number
-!                  of fields and NGPBLKS the number of NPROMA blocks.
-!     KFIELDS     - number of fields (input)
-!                   (these do not have to be just levels)
-!     KPROMA      - required blocking factor (input)
-!     PAVE        - average (output)
-!     KRESOL      -  resolution tag (optional)
-!                    default assumes first defined resolution
+! begin_doc_block
+! ## `GPNORM_TRANSTL`
 !
-
-!     Author.
-!     -------
-!        Filip Vana, (c) ECMWF
-!        9-Sep-2024
-
-!     Modifications.
-!     --------------
-
-!     ------------------------------------------------------------------
+! ### Signature
+!
+! ```f90
+! SUBROUTINE GPNORM_TRANSTL(PGP, KFIELDS, KPROMA, PAVE, KRESOL)
+! ```
+!
+! ### Purpose
+!
+! This subroutine is the "tangent linear" version of `GPNORM_TRANS`. It is actually identical, but
+! has a simpler interface as the `PMIN` and `PMAX` arguments are not used for tangent-linear
+! applications.
+!
+! ### `INTENT(IN)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(IN) :: PGP(:,:,:)`  
+!   Input grid point array, distributed across MPI tasks as usual.  
+!   Dimensions: (NPROMA, number of fields, number of NPROMA blocks)
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KFIELDS`  
+!   Number of input fields on which to compute statistics.
+! - `INTEGER(KIND=JPIM), INTENT(IN) :: KPROMA`  
+!   Blocking factor for grid point input.
+!
+! ### `OPTIONAL, INTENT(IN)` arguments
+!
+! - `INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN) :: KRESOL`  
+!   Resolution handle returned by original call to `SETUP_TRANS`.  
+!   *Default*: `1` (i.e. first resolution handle)
+!
+! ### `INTENT(OUT)` arguments
+!
+! - `REAL(KIND=JPRB), INTENT(OUT) :: PAVE(:)`  
+!   The global average of each field. Only task 1 will have data.  
+!   Dimensions: (`KFIELDS`)
+!
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 

@@ -11,36 +11,32 @@
 INTERFACE
 SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
 
-!**** *GET_CURRENT* - Extract current information from the transform package
-
-!     Purpose.
-!     --------
-!     Interface routine for extracting current information from the T.P.
-
-!**   Interface.
-!     ----------
-!     CALL GET_CURRENT(...)
-
-!     Explicit arguments : (all optional)
-!     --------------------
-!     KRESOL   - Current resolution
-!     LDLAM    -  .T. if the corresponding resolution is LAM, .F. if it is global
-
-!     Method.
-!     -------
-
-!     Externals.  None
-!     ----------
-
-!     Author.
-!     -------
-!        Ryad El Khatib *Meteo-France*
-
-!     Modifications.
-!     --------------
-!        Original : 24-Aug-2012
-
-!     ------------------------------------------------------------------
+! begin_doc_block
+! ## `GET_CURRENT`
+!
+! ### Signature
+!
+! ```f90
+! SUBROUTINE GET_CURRENT(KRESOL,LDLAM)
+! ```
+!
+! ### Purpose
+!
+! This subroutine allows one to retrieve the current resolution handle, `NCUR_RESOL`, and the LAM
+! parameter, `LDLAM`, which indicates if the local area version of ecTrans is being used or not.
+!
+! @note
+! `LDLAM` will always be `.FALSE.` for the moment. ecTrans currently only supports global spectral
+! transforms, though local (bifourier) transforms may be supported in future.
+! @endnote
+!
+! ### `OPTIONAL, INTENT(OUT)` arguments
+!
+! - `INTEGER(KIND=JPIM), OPTIONAL, INTENT(OUT) :: KRESOL`  
+!   The current default resolution handle.
+! - `LOGICAL, OPTIONAL, INTENT(OUT) :: LDLAM`  
+!   Whether the local area version of ecTrans is being used or not.
+! end_doc_block
 
 USE PARKIND1  ,ONLY : JPIM
 
