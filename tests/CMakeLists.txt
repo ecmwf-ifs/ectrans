@@ -89,9 +89,15 @@ if( HAVE_CPU )
   else()
     set( flt_test_precision sp )
   endif()
+  set( flt_test_mpi 0 )
+  if( HAVE_MPI )
+    # MPL_INIT needs the configured launcher with relocatable MPI installations.
+    set( flt_test_mpi 1 )
+  endif()
   ecbuild_add_test( TARGET ectrans_test_flt_belusov
     SOURCES trans/test_flt_belusov.F90
     LIBS trans_${flt_test_precision}
+    MPI ${flt_test_mpi}
     OMP 1
     LINKER_LANGUAGE Fortran )
 endif()
