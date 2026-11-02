@@ -1,5 +1,6 @@
 ! (C) Copyright 2015- ECMWF.
 ! (C) Copyright 2015- Meteo-France.
+! (C) Copyright 2026- NVIDIA.
 ! 
 ! This software is licensed under the terms of the Apache Licence Version 2.0
 ! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -43,11 +44,20 @@ REAL(KIND=JPRD)   ,INTENT(OUT) :: PNONIM(:,:)  ! Non-identity part of projection
                                                ! matrix
 
 INTEGER(KIND=JPIM) :: JM,JN
-REAL(KIND=JPRD) :: ZR(KM,KN)
+REAL(KIND=JPRD) :: ZR(KM,KN), ZSCALE
 REAL(KIND=JPRD),ALLOCATABLE :: ZS(:,:),ZT(:,:)
 !----------------------------------------------------------------------------
 !Avoid destroying input matrix
-ZR(:,:) = PMAT(1:KM,1:KN)
+! ALG511 has an absolute threshold; normalize so QR rank is scale independent.
+ZSCALE = MAXVAL(ABS(PMAT(1:KM,1:KN)))
+! Keep a positive-rank zero representation for the butterfly decomposition.
+IF (ZSCALE == 0.0_JPRD) THEN
+  KRANK = 1
+  KBCLIST(1:KN) = [(JN,JN=1,KN)]
+  PNONIM = 0.0_JPRD
+  RETURN
+ENDIF
+ZR(:,:) = PMAT(1:KM,1:KN)/ZSCALE
 ! Householder QR
 CALL ALG541(PEPS,KM,KN,ZR,KRANK,KBCLIST)
 
