@@ -65,6 +65,8 @@ foreach( prec dp sp )
                                $<${HAVE_OMP}:OpenMP::OpenMP_Fortran>
                                $<${HAVE_MPI}:MPI::MPI_Fortran>
           PRIVATE_DEFINITIONS  ${GPU_RUNTIME}GPU ${GPU_OFFLOAD}GPU
+                               ECTRANS_MAP_PRESENT_ALLOC=${ECTRANS_MAP_PRESENT_ALLOC}
+                               ECTRANS_OMP_DEFAULT=${ECTRANS_OMP_DEFAULT}
                                #$<${HAVE_CUTLASS}:USE_CUTLASS>   # not relevant for LAM
                                #$<${HAVE_CUTLASS_3XTF32}:USE_CUTLASS_3XTF32>   # not relevant for LAM
                                #$<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>   # not relevant for LAM
@@ -87,6 +89,8 @@ foreach( prec dp sp )
         if( HAVE_CUDA )
           target_compile_definitions( ectrans_lam_gpu_${prec} PRIVATE IN_PLACE_FFT )
         endif()
+
+        ectrans_target_omp_offload( ectrans_lam_gpu_${prec} )
 
         if( HAVE_OMP AND CMAKE_Fortran_COMPILER_ID MATCHES Cray )
           # Propagate flags as link options for downstream targets. Only required for Cray

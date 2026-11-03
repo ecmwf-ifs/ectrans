@@ -262,6 +262,7 @@ void run_group_graph(typename Type::real *data_real,
     HIC_CHECK(hipStreamEndCapture(stream, &my_graph));
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
+    HIC_CHECK(hipGraphDestroy(my_graph));
     HIC_CHECK(hipStreamDestroy(stream));
 
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(

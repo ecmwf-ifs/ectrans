@@ -125,6 +125,13 @@ if( HAVE_GPU )
   endif()
 endif()
 
+# Per-compiler spellings for the OpenMP clauses in the GPU backend, consumed by the GPU
+# targets in src/trans/gpu and src/etrans/gpu.
+include( ectrans_compiler_specific_directives )
+
+# OpenMP offload flags for the GPU targets only, keeping OpenMP_Fortran_FLAGS host-only.
+include( ectrans_omp_offload )
+
 ecbuild_add_option( FEATURE CUTLASS
                     DEFAULT OFF
                     CONDITION HAVE_GPU AND HAVE_CUDA AND CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC"
@@ -175,10 +182,10 @@ ecbuild_add_option( FEATURE ETRANS
 # Note: ETRANS GPU does not support OpenMP yet or FFT graphs yet
 set( HAVE_ETRANS_GPU 0 )
 if( HAVE_ETRANS AND HAVE_GPU )
-  if( HAVE_ACC AND NOT HAVE_GRAPHS_FFT )
+  if( HAVE_ACC AND NOT HAVE_GPU_GRAPHS_FFT )
     set( HAVE_ETRANS_GPU 1 )
   else()
-    ecbuild_warn( "ETRANS and GPU features requested, but ACC and GRAPHS_FFT also requested."
+    ecbuild_warn( "ETRANS and GPU features requested, but ACC and GPU_GRAPHS_FFT also requested."
                   "The GPU version of etrans only supports OpenACC at the moment, with FFT graphs disabled." )
   endif()
 endif()
@@ -234,6 +241,7 @@ ecbuild_override_compiler_flags(
   INHERIT_ECBUILD_FLAGS
 )
 include( ectrans_contiguous_workaround )
+include( ectrans_optional_map_workaround )
 add_subdirectory( src )
 
 ### Add tests

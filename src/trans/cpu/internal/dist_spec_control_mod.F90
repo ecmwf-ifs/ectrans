@@ -67,7 +67,7 @@ USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 
 IMPLICIT NONE
 
-! See https://github.com/ecmwf-ifs/ectrans/pull/98
+! See https://github.com/ecmwf-ifs/ectrans/pull/98
 ! There is a problem with CONTIGUOUS keyword
 #ifndef CONTIG_BUGGY_COMPILER
 #define CONTIG_STATUS ,CONTIGUOUS

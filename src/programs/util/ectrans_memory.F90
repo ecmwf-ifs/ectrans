@@ -7,6 +7,8 @@ public :: allocator
 type allocator_t
 contains
     procedure, nopass :: set_pinning
+    procedure, nopass :: set_device_resident
+    procedure, nopass :: device_resident_supported
     procedure, nopass :: set_logging
     procedure, nopass :: set_logging_output_unit
 
@@ -83,6 +85,9 @@ type(allocator_t) :: allocator
 
 character(kind=c_char), pointer, private :: c_label(:) => null()
 
+! When set, allocate()/deallocate() also map the array onto the device, as LPGP_ON_GPU requires.
+logical, private :: device_resident_ = .false.
+
 interface
     function c_allocate_var(bytes) result(ptr) bind(c, name="ectrans_memory_allocate_var")
         use iso_c_binding, only: c_ptr, c_size_t
@@ -147,6 +152,20 @@ contains
         endif
     end subroutine
 
+    subroutine set_device_resident(device_resident)
+        logical, intent(in) :: device_resident
+        device_resident_ = device_resident
+    end subroutine
+
+    function device_resident_supported() result(supported)
+        logical :: supported
+#if defined(OMPGPU) || defined(ACCGPU)
+        supported = .true.
+#else
+        supported = .false.
+#endif
+    end function
+
     subroutine set_logging(logging)
         logical, intent(in) :: logging
         if (logging) then
@@ -168,6 +187,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_float))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real32_r2(array, shape)
@@ -177,6 +202,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_float))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real32_r3(array, shape)
@@ -186,6 +217,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_float))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real32_r4(array, shape)
@@ -195,6 +232,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_float))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real64_r1(array, shape)
@@ -204,6 +247,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_double))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real64_r2(array, shape)
@@ -213,6 +262,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_double))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real64_r3(array, shape)
@@ -222,6 +277,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_double))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine allocate_var_real64_r4(array, shape)
@@ -231,6 +292,12 @@ contains
         type(c_ptr) :: mem
         mem = c_allocate_var(required_bytes(shape,c_double))
         call c_f_pointer(mem, array, shape)
+#ifdef OMPGPU
+        !$OMP TARGET ENTER DATA MAP(TO:array) IF(device_resident_ .and. size(array) > 0)
+#endif
+#ifdef ACCGPU
+        !$ACC ENTER DATA COPYIN(array) IF(device_resident_ .and. size(array) > 0)
+#endif
     end subroutine
 
     subroutine deallocate_var_real32_r1(array)
@@ -243,6 +310,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -257,6 +330,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1,1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -271,6 +350,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1,1,1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -285,6 +370,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1,1,1,1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -299,6 +390,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -313,6 +410,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1,1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -327,6 +430,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1,1,1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
@@ -341,6 +450,12 @@ contains
         if (bytes > 0) then
             mem = c_loc(array(1,1,1,1))
         endif
+#ifdef OMPGPU
+        !$OMP TARGET EXIT DATA MAP(DELETE:array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
+#ifdef ACCGPU
+        !$ACC EXIT DATA DELETE(array) IF(device_resident_ .and. bytes > 0_c_size_t)
+#endif
         call c_deallocate_var(mem, bytes)
         array => null()
     end subroutine
