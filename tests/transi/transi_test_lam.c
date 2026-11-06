@@ -23,6 +23,7 @@ int main ( int arc, char **argv ) {
   int nout_sp = 3;
   struct Trans_t trans;
   trans_new(&trans);
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   // lam grid of 20x18
   int nx = 20;
   int ny = 18;
