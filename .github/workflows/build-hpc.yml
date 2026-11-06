@@ -57,7 +57,6 @@ jobs:
         name:
           - ac-ops intel
           - ac-gpu nvhpc
-          - lumi-g cce
 
         include:
           - name: ac-ops intel
