@@ -316,10 +316,6 @@ jobs:
               exit $ctest_status
             fi
 
-      - name: Ensure ci-infrastructure present
-        if: ${{ always() }}
-        uses: ecmwf/ci-infrastructure/actions/ensure-infrastructure-present@main
-
       - name: Fetch the reference artifacts from the HPC
         if: ${{ always() }}
         uses: ecmwf/ci-infrastructure/actions/fetch-hpc-tree@main
