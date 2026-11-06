@@ -31,6 +31,8 @@ if( HAVE_HIP )
     algor/hicfft.hip.cpp
     algor/hicfft.rocfft.cpp
   )
+  set( ECTRANS_GRAPH_STREAMS 4 CACHE STRING
+       "HIP streams used when capturing FFT and GEMM graphs. 1 restores single-stream capture." )
   if( HAVE_ROCFFT )
     ecbuild_info("warn: rocFFT uses out-of-place FFT")
   else()
@@ -86,6 +88,7 @@ ecbuild_add_library(
                        $<${HAVE_GPU_GRAPHS_GEMM}:USE_GRAPHS_GEMM>
                        $<${HAVE_GPU_GRAPHS_FFT}:USE_GRAPHS_FFT>
                        $<${HAVE_ROCFFT}:USE_ROCFFT>
+                       $<${HAVE_HIP}:ECTRANS_GRAPH_STREAMS=${ECTRANS_GRAPH_STREAMS}>
 )
 
 ecbuild_target_fortran_module_directory(
