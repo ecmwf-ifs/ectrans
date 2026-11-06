@@ -141,6 +141,11 @@ ENDIF
 ! Set current resolution
 CALL SET_RESOL(KRESOL)
 
+IF (D%LGRIDONLY) THEN
+  ! This subroutine requires several Fourier-space related arrays.
+  CALL ABORT_TRANS("GPNORM_TRANS: LGRIDONLY MUST BE .FALSE.")
+ENDIF
+
 ! Set defaults
 
 NPROMA = KPROMA
