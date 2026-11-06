@@ -24,8 +24,40 @@ LONS_PER_LAT = [20 + 4 * i for i in range(NUM_LATS // 2)]
 LONS_PER_LAT = np.array(LONS_PER_LAT + LONS_PER_LAT[::-1])
 NFLD = 20
 
+# A second resolution, set up next to the first one: another truncation, on a regular Gaussian
+# grid
+TRUNCATION_2 = 47
+NUM_LATS_2 = 72
+LONS_PER_LAT_2 = np.full(NUM_LATS_2, 2 * NUM_LATS_2, dtype=np.int64)
+# A third one for grid-point space only (LDGRIDONLY), on the octahedral grid O16, as the IFS
+# sets up its radiation grid (truncation 0)
+NUM_LATS_GRID = 32
+LONS_PER_LAT_GRID = [20 + 4 * i for i in range(NUM_LATS_GRID // 2)]
+LONS_PER_LAT_GRID = np.array(LONS_PER_LAT_GRID + LONS_PER_LAT_GRID[::-1])
+# The maximum number of resolutions leaves room for a fourth one, never set up
+KMAX_RESOL = 4
+
+# Earth radius used by ecTrans (the default of SETUP_TRANS0's PRAD)
+EARTH_RADIUS = 6371229.0
+
+# Tolerances. Data movement and minima/maxima are exact and compared bit for bit; the rest is
+# compared relative to the size of the expected values. EPS: machine epsilon of the build.
+EPS = np.finfo(ectrans4py._REAL).eps
+# One spherical harmonic, transformed once: rounding only, except that winds -> vorticity
+# leaves spurious high-degree coefficients of up to 2e-13 in double precision
+ANALYTIC_TOL = max(1.0e-12, 1000 * EPS)
+# Spectral -> grid -> spectral is inexact on the reduced grid, which drops the zonal wavenumbers
+# above each latitude's cut-off near the poles (up to 7e-10 at T79); rounding dominates in sp
+ROUND_TRIP_TOL = max(1.0e-8, 1000 * EPS)
+# Adjoint identities: the threshold of ecTrans's own adjoint tests (tests/trans/adjoint)
+ADJOINT_TOL = 20000 * EPS
+
 # Shared transform geometry, populated once by setUpModule
 context = SimpleNamespace()
+# The same for the second resolution
+context_2 = SimpleNamespace()
+# The grid-point-only resolution
+context_grid = SimpleNamespace()
 
 
 def _approx_eq(a, b, tol=1.0e-4):
@@ -52,6 +84,286 @@ def _initialise_local_spectral_field(rank, nfld, num_spec2_glob, num_spec2_loc):
 
 
 
+def _inquire_geometry(geom, kresol, truncation, lons_per_lat):
+    """Store in geom the sizes of resolution kresol, set up with the given truncation and grid
+    (number of points of each latitude row, north to south), and the coordinates of the points
+    and coefficients of its global fields."""
+    num_lats = len(lons_per_lat)
+    (num_grid_points_loc, _, num_spec2_loc, num_grid_points_glob, num_spec2_glob,
+     inquired_truncation, _, sin_lats, gauss_weights) = \
+        ectrans4py.trans_inq4py(kresol, num_lats, 0, 0, np.array([], dtype=np.int64), 0)
+    geom.kresol = kresol
+    geom.truncation = truncation
+    geom.lons_per_lat = lons_per_lat
+    geom.num_grid_points_loc = num_grid_points_loc
+    geom.num_spec2_loc = num_spec2_loc
+    geom.num_grid_points_glob = num_grid_points_glob
+    geom.num_spec2_glob = num_spec2_glob
+    geom.inquired_truncation = inquired_truncation
+    geom.sin_lats = sin_lats
+    geom.gauss_weights = gauss_weights
+
+    # Grid points: latitude rows from north to south, each starting at longitude 0
+    row = np.repeat(np.arange(num_lats), lons_per_lat)
+    geom.sin_lat = geom.sin_lats[row]
+    # (1 - sin)(1 + sin) avoids the cancellation of 1 - sin^2 near the poles
+    geom.cos_lat = np.sqrt((1.0 - geom.sin_lat) * (1.0 + geom.sin_lat))
+    geom.lon = np.concatenate([2.0 * np.pi * np.arange(nlon) / nlon for nlon in lons_per_lat])
+
+    # Spectral coefficients: m = 0..T, then n = m..T, each a (real, imaginary) pair. Weights for
+    # inner products and norms: 2 for m > 0 (a coefficient also stands for its conjugate), 0 for
+    # the imaginary part of m = 0 (a real field has none), 1 for the real part of m = 0
+    zonal, total = np.array([(m, n) for m in range(truncation + 1)
+                             for n in range(m, truncation + 1)]).T
+    imaginary = np.tile([False, True], zonal.size)
+    geom.zonal_wavenumber = np.repeat(zonal, 2)
+    geom.total_wavenumber = np.repeat(total, 2)
+    geom.spectral_weights = np.where(geom.zonal_wavenumber > 0, 2.0,
+                                     np.where(imaginary, 0.0, 1.0))
+
+
+def _spectral_index(geom, m, n):
+    """Index of the real part of coefficient (m, n) in a global spectral field."""
+    return np.flatnonzero((geom.zonal_wavenumber == m) & (geom.total_wavenumber == n))[0]
+
+
+def _random_field(shape, seed):
+    """Uniform random values in [-1, 1) in working precision, the same on every rank."""
+    return np.random.default_rng(seed).uniform(-1.0, 1.0, shape).astype(ectrans4py._REAL)
+
+
+def _random_grid_field(geom, nfld, seed):
+    return _random_field((nfld, geom.num_grid_points_glob), seed)
+
+
+def _random_spectral_field(geom, nfld, seed, zero_mean=False):
+    """Random global spectral field of real fields (no imaginary part for m = 0). With
+    zero_mean, the (0, 0) coefficient is zero too, as for vorticity and divergence."""
+    field = _random_field((nfld, geom.num_spec2_glob), seed)
+    field[:, geom.spectral_weights == 0.0] = 0.0
+    if zero_mean:
+        field[:, geom.total_wavenumber == 0] = 0.0
+    return field
+
+
+def _distribute_spectral(geom, field_glob):
+    nfld = field_glob.shape[0]
+    return ectrans4py.dist_spec4py(geom.num_spec2_glob, geom.num_spec2_loc, nfld,
+                                   _from_which_rank(context.my_rank, nfld), field_glob,
+                                   geom.kresol)
+
+
+def _gather_spectral(geom, field_loc):
+    nfld = field_loc.shape[0]
+    return ectrans4py.gath_spec4py(geom.num_spec2_glob, geom.num_spec2_loc, nfld,
+                                   _from_which_rank(context.my_rank, nfld), field_loc,
+                                   geom.kresol)
+
+
+def _distribute_grid(geom, field_glob):
+    nfld = field_glob.shape[0]
+    return ectrans4py.dist_grid4py(geom.num_grid_points_glob, geom.num_grid_points_loc, nfld,
+                                   _from_which_rank(context.my_rank, nfld), field_glob,
+                                   geom.kresol)
+
+
+def _gather_grid(geom, field_loc):
+    nfld = field_loc.shape[0]
+    return ectrans4py.gath_grid4py(geom.num_grid_points_glob, geom.num_grid_points_loc, nfld,
+                                   _from_which_rank(context.my_rank, nfld), field_loc,
+                                   geom.kresol)
+
+
+def _on_rank_0(compute):
+    """compute() on rank 0, which holds the gathered fields, broadcast so that all ranks agree."""
+    return MPI.COMM_WORLD.bcast(compute() if context.my_rank == 0 else None, root=0)
+
+
+def _relative_error(actual, expected):
+    """Largest difference relative to the largest expected magnitude."""
+    expected = np.asarray(expected, dtype=np.float64)
+    return float(np.max(np.abs(np.asarray(actual, dtype=np.float64) - expected))
+                 / np.max(np.abs(expected)))
+
+
+def _grid_dot(*pairs):
+    """Grid-point inner product summed over pairs of local fields: unweighted sum over all grid
+    points, as SCALPRODGP of tests/trans/adjoint."""
+    local = sum(np.sum(a.astype(np.float64) * b.astype(np.float64)) for a, b in pairs)
+    return MPI.COMM_WORLD.allreduce(float(local), op=MPI.SUM)
+
+
+def _spectral_dot(geom, *pairs):
+    """Spectral inner product summed over pairs of local fields, weighted as SCALPRODSP of
+    tests/trans/adjoint."""
+    gathered = [(_gather_spectral(geom, a), _gather_spectral(geom, b)) for a, b in pairs]
+    return _on_rank_0(lambda: float(sum(np.sum(geom.spectral_weights * a.astype(np.float64)
+                                               * b.astype(np.float64)) for a, b in gathered)))
+
+
+def _adjoint_error(lhs, rhs):
+    """Relative difference between <F x, y> and <x, F* y>, as in tests/trans/adjoint."""
+    return abs(lhs - rhs) / abs(lhs)
+
+
+def _first_task_only(outputs):
+    """outputs on the first task, which receives the norms, and nothing on the others (where
+    the average of gpnorm_trans4py is undefined)."""
+    return outputs if context.my_rank == 0 else ()
+
+
+def _binding_calls(geom):
+    """Every distributed binding that takes KRESOL, as (name, call) pairs: call(*kresol) runs
+    the binding on fixed inputs of resolution geom, with *kresol appended to its arguments
+    (none: the default resolution), and returns its outputs. The V-set bindings get the single
+    V-set of the suite's decomposition for every field, and the same inputs as the others."""
+    nfld = 2
+    root = np.ones(nfld, dtype=np.int64)
+    spectral_glob = _random_spectral_field(geom, nfld, seed=25, zero_mean=True)
+    grid_glob = _random_grid_field(geom, nfld, seed=26)
+    spectral_loc = _distribute_spectral(geom, spectral_glob)
+    grid_loc = _distribute_grid(geom, grid_glob)
+    spec2_glob, spec2_loc = geom.num_spec2_glob, geom.num_spec2_loc
+    gp_glob, gp_loc = geom.num_grid_points_glob, geom.num_grid_points_loc
+    sizes = (spec2_loc, gp_loc, nfld)
+    vset = np.ones(nfld, dtype=np.int64)
+    vset_sizes = (spec2_loc, gp_loc, nfld, nfld, vset)
+    return [
+        ("dist_spec4py", lambda *k: ectrans4py.dist_spec4py(
+            spec2_glob, spec2_loc, nfld, root, spectral_glob, *k)),
+        ("gath_spec4py", lambda *k: ectrans4py.gath_spec4py(
+            spec2_glob, spec2_loc, nfld, root, spectral_loc, *k)),
+        ("dist_grid4py", lambda *k: ectrans4py.dist_grid4py(
+            gp_glob, gp_loc, nfld, root, grid_glob, *k)),
+        ("gath_grid4py", lambda *k: ectrans4py.gath_grid4py(
+            gp_glob, gp_loc, nfld, root, grid_loc, *k)),
+        ("inv_trans_scalar_dist4py", lambda *k: ectrans4py.inv_trans_scalar_dist4py(
+            *sizes, spectral_loc, *k)),
+        ("inv_trans_scalar_ders_dist4py", lambda *k: ectrans4py.inv_trans_scalar_ders_dist4py(
+            *sizes, spectral_loc, *k)),
+        ("dir_trans_scalar_dist4py", lambda *k: ectrans4py.dir_trans_scalar_dist4py(
+            *sizes, grid_loc, *k)),
+        ("inv_trans_uv_dist4py", lambda *k: ectrans4py.inv_trans_uv_dist4py(
+            *sizes, spectral_loc, spectral_loc, *k)),
+        ("dir_trans_uv_dist4py", lambda *k: ectrans4py.dir_trans_uv_dist4py(
+            *sizes, grid_loc, grid_loc, *k)),
+        ("inv_trans_scalar_dist4py_ad", lambda *k: ectrans4py.inv_trans_scalar_dist4py_ad(
+            *sizes, grid_loc, *k)),
+        ("inv_trans_scalar_ders_dist4py_ad",
+         lambda *k: ectrans4py.inv_trans_scalar_ders_dist4py_ad(
+             *sizes, grid_loc, grid_loc, grid_loc, *k)),
+        ("dir_trans_scalar_dist4py_ad", lambda *k: ectrans4py.dir_trans_scalar_dist4py_ad(
+            *sizes, spectral_loc, *k)),
+        ("inv_trans_uv_dist4py_ad", lambda *k: ectrans4py.inv_trans_uv_dist4py_ad(
+            *sizes, grid_loc, grid_loc, *k)),
+        ("dir_trans_uv_dist4py_ad", lambda *k: ectrans4py.dir_trans_uv_dist4py_ad(
+            *sizes, spectral_loc, spectral_loc, *k)),
+        ("specnorm4py", lambda *k: _first_task_only(ectrans4py.specnorm4py(
+            spec2_loc, nfld, spectral_loc, *k))),
+        ("gpnorm_trans4py", lambda *k: _first_task_only(ectrans4py.gpnorm_trans4py(
+            gp_loc, nfld, grid_loc, *k))),
+        ("trans_inq_vset4py", lambda *k: ectrans4py.trans_inq_vset4py(*k)),
+        ("dist_spec_vset4py", lambda *k: ectrans4py.dist_spec_vset4py(
+            spec2_glob, spec2_loc, nfld, nfld, root, vset, spectral_glob, *k)),
+        ("gath_spec_vset4py", lambda *k: ectrans4py.gath_spec_vset4py(
+            spec2_glob, spec2_loc, nfld, nfld, root, vset, spectral_loc, *k)),
+        ("inv_trans_scalar_vset4py", lambda *k: ectrans4py.inv_trans_scalar_vset4py(
+            *vset_sizes, spectral_loc, *k)),
+        ("inv_trans_scalar_ders_vset4py", lambda *k: ectrans4py.inv_trans_scalar_ders_vset4py(
+            *vset_sizes, spectral_loc, *k)),
+        ("dir_trans_scalar_vset4py", lambda *k: ectrans4py.dir_trans_scalar_vset4py(
+            *vset_sizes, grid_loc, *k)),
+        ("inv_trans_uv_vset4py", lambda *k: ectrans4py.inv_trans_uv_vset4py(
+            *vset_sizes, spectral_loc, spectral_loc, *k)),
+        ("dir_trans_uv_vset4py", lambda *k: ectrans4py.dir_trans_uv_vset4py(
+            *vset_sizes, grid_loc, grid_loc, *k)),
+        ("inv_trans_scalar_vset4py_ad", lambda *k: ectrans4py.inv_trans_scalar_vset4py_ad(
+            *vset_sizes, grid_loc, *k)),
+        ("inv_trans_scalar_ders_vset4py_ad",
+         lambda *k: ectrans4py.inv_trans_scalar_ders_vset4py_ad(
+             *vset_sizes, grid_loc, grid_loc, grid_loc, *k)),
+        ("dir_trans_scalar_vset4py_ad", lambda *k: ectrans4py.dir_trans_scalar_vset4py_ad(
+            *vset_sizes, spectral_loc, *k)),
+        ("inv_trans_uv_vset4py_ad", lambda *k: ectrans4py.inv_trans_uv_vset4py_ad(
+            *vset_sizes, grid_loc, grid_loc, *k)),
+        ("dir_trans_uv_vset4py_ad", lambda *k: ectrans4py.dir_trans_uv_vset4py_ad(
+            *vset_sizes, spectral_loc, spectral_loc, *k)),
+        ("specnorm_vset4py", lambda *k: _first_task_only(ectrans4py.specnorm_vset4py(
+            spec2_loc, nfld, nfld, vset, spectral_loc, *k))),
+        ("inv_trans_all_dist4py", lambda *k: ectrans4py.inv_trans_all_dist4py(
+            spec2_loc, gp_loc, nfld, nfld, nfld, nfld, 6 * nfld, 1, 1, vset, vset, spectral_loc,
+            spectral_loc, spectral_loc, *k)),
+        ("dir_trans_all_dist4py", lambda *k: ectrans4py.dir_trans_all_dist4py(
+            spec2_loc, gp_loc, nfld, nfld, nfld, nfld, 3 * nfld, vset, vset,
+            np.concatenate([grid_loc, grid_loc, grid_loc]), *k)),
+    ]
+
+
+def _differing_outputs(names, outputs, other_outputs):
+    """Names of the bindings whose outputs (an array or a tuple of arrays) differ in any bit on
+    any task."""
+    def as_tuple(output):
+        return output if isinstance(output, tuple) else (output,)
+
+    differing = [name for name, output, other in zip(names, outputs, other_outputs)
+                 if not all(np.array_equal(a, b) for a, b in zip(as_tuple(output),
+                                                                as_tuple(other)))]
+    return sorted(set(sum(MPI.COMM_WORLD.allgather(differing), [])))
+
+
+def _partition_tables(kresol, num_lats, regions_ns, regions_ew):
+    """trans_inq_grid4py of resolution kresol, as a namespace"""
+    names = ("ngptot", "ngptotg", "ngptotmx", "frstloff", "ptrfloff", "my_region_ns",
+             "my_region_ew", "frstlat", "lstlat", "ptrfrstlat", "sta", "onl", "gptotl", "mu")
+    return SimpleNamespace(**dict(zip(names, ectrans4py.trans_inq_grid4py(
+        kresol, num_lats, regions_ns, regions_ew))))
+
+
+def _partition_problems(tables, lons_per_lat, regions):
+    """What is wrong with the grid-point partition tables of a resolution with lons_per_lat
+    points on its latitude rows, for the number of E-W regions of each N-S band (regions,
+    zero beyond the bands), on this task: the descriptions of the failed checks."""
+    comm = MPI.COMM_WORLD
+    num_bands = int(np.count_nonzero(regions))
+    problems = []
+    # Every point of every latitude row is in exactly one region: the rows of a band are at
+    # NPTRFRSTLAT onwards in NSTA/NONL, a latitude split between two bands has a row in each
+    counts = [np.zeros(n, dtype=np.int64) for n in lons_per_lat]
+    own_points = 0
+    for band in range(num_bands):
+        for region in range(tables.onl.shape[0]):
+            for lat in range(tables.frstlat[band], tables.lstlat[band] + 1):
+                row = tables.ptrfrstlat[band] + lat - tables.frstlat[band] - 1
+                start, length = tables.sta[region, row], tables.onl[region, row]
+                counts[lat - 1][start - 1:start - 1 + length] += 1
+                if (band + 1, region + 1) == (tables.my_region_ns, tables.my_region_ew):
+                    own_points += length
+            if (tables.gptotl[region, band] > 0) != (region < regions[band]):
+                problems.append(f"region ({band + 1}, {region + 1}) of {regions[band]}: "
+                                f"{tables.gptotl[region, band]} points")
+    if not all(np.all(count == 1) for count in counts):
+        problems.append("the regions do not tile every latitude row exactly once")
+    # The numbers of points
+    if not (tables.ngptotg == np.sum(lons_per_lat) == np.sum(tables.gptotl)
+            == comm.allreduce(tables.ngptot, op=MPI.SUM)):
+        problems.append(f"NGPTOTG {tables.ngptotg}, not the number of points")
+    if not (tables.ngptot == own_points
+            == tables.gptotl[tables.my_region_ew - 1, tables.my_region_ns - 1]):
+        problems.append(f"NGPTOT {tables.ngptot}, not the points of the task's region")
+    if tables.ngptotmx != comm.allreduce(tables.ngptot, op=MPI.MAX):
+        problems.append(f"NGPTOTMX {tables.ngptotmx}, not the most points of a task")
+    # The regions of the tasks: each once
+    if sorted(comm.allgather((tables.my_region_ns, tables.my_region_ew))) != [
+            (band + 1, region + 1) for band in range(num_bands)
+            for region in range(regions[band])]:
+        problems.append("the tasks are not on the regions, once each")
+    # The latitudes, north to south, in double precision
+    if not (tables.mu.dtype == np.float64 and np.all(np.abs(tables.mu) < 1.0)
+            and np.all(np.diff(tables.mu) < 0.0)):
+        problems.append("PMU is not the sines of the latitudes, north to south")
+    return problems
+
+
 def setUpModule():
     system = platform.system()
     if system == "Linux":
@@ -68,30 +380,79 @@ def setUpModule():
         print(f"Testing with {comm.Get_size()} MPI processes")
     ectrans4py.mpl_init4py()
 
-    # KPRGPNS=n_rank, KPRGPEW=1, KPRTRW=n_rank, LDEQ_REGIONS=False, KMAX_RESOL=1, LDMPOFF=False
-    ectrans4py.setup_trans0_4py(n_rank, 1, n_rank, False, 1, False)
+    # KPRGPNS=n_rank, KPRGPEW=1, KPRTRW=n_rank, LDEQ_REGIONS=False, KMAX_RESOL, LDMPOFF=False:
+    # setup_trans0_4py, also returning the region counts of the grid-point partition
+    context.regions_ns, context.regions_ew, context.regions = (
+        ectrans4py.setup_trans0_regions4py(n_rank, 1, n_rank, False, KMAX_RESOL, False))
 
     # KSMAX=TRUNCATION, KDGL=num_lats, KSLOEN=num_lats, KLOEN=lons_per_lat, LDSPLIT=True
     # LDUSEFLT=False
     kresol = ectrans4py.setup_trans_4py(TRUNCATION, NUM_LATS, NUM_LATS, LONS_PER_LAT, True, False)
 
-    (num_grid_points_loc, _, num_spec2_loc, num_grid_points_glob, num_spec2_glob, _, _, _, _) = \
-        ectrans4py.trans_inq4py(kresol, NUM_LATS, 0, 0, np.array([], dtype=np.int64), 0)
-
     context.my_rank = my_rank
     context.n_rank = n_rank
-    context.kresol = kresol
-    context.num_grid_points_loc = num_grid_points_loc
-    context.num_spec2_loc = num_spec2_loc
-    context.num_grid_points_glob = num_grid_points_glob
-    context.num_spec2_glob = num_spec2_glob
+    _inquire_geometry(context, kresol, TRUNCATION, LONS_PER_LAT)
+
+    # Outputs of the first resolution before the second one is set up
+    context.reference_outputs = [call() for _, call in _binding_calls(context)]
+
+    kresol_2 = ectrans4py.setup_trans_4py(TRUNCATION_2, NUM_LATS_2, NUM_LATS_2, LONS_PER_LAT_2,
+                                          True, False)
+    _inquire_geometry(context_2, kresol_2, TRUNCATION_2, LONS_PER_LAT_2)
+
+    # Outputs of the second resolution before the grid-point-only one is set up
+    context_2.reference_outputs = [call(kresol_2) for _, call in _binding_calls(context_2)]
+
+    # KSMAX=0, KDGL=NUM_LATS_GRID, KSLOEN=NUM_LATS_GRID, KLOEN=LONS_PER_LAT_GRID, LDSPLIT=True,
+    # LDUSEFLT=False, LDGRIDONLY=True
+    context_grid.kresol = ectrans4py.setup_trans_4py(0, NUM_LATS_GRID, NUM_LATS_GRID,
+                                                     LONS_PER_LAT_GRID, True, False, True)
+    context_grid.lons_per_lat = LONS_PER_LAT_GRID
 
 
 def tearDownModule():
     ectrans4py.mpl_end4py()
 
 
-class TestInverse(TestCase):
+class DistributedTestCase(TestCase):
+    # Transform geometry the tests run on: the first resolution set up by setUpModule (the
+    # classes at the end of the module run the same tests on the second one)
+    geom = context
+
+
+class TestInquiry(DistributedTestCase):
+    def test_sizes(self):
+        geom = self.geom
+        # Every grid point and every spectral coefficient is held by exactly one rank
+        num_grid_points = MPI.COMM_WORLD.allreduce(geom.num_grid_points_loc, op=MPI.SUM)
+        num_spec2 = MPI.COMM_WORLD.allreduce(geom.num_spec2_loc, op=MPI.SUM)
+
+        assert geom.inquired_truncation == geom.truncation
+        assert geom.num_grid_points_glob == np.sum(geom.lons_per_lat)
+        assert geom.num_spec2_glob == (geom.truncation + 1) * (geom.truncation + 2)
+        assert num_grid_points == geom.num_grid_points_glob
+        assert num_spec2 == geom.num_spec2_glob
+
+    def test_latitudes(self):
+        geom = self.geom
+        # Sines of the Gaussian latitudes, north to south, and Gaussian weights summing to one
+        # (each weight rounded to working precision)
+        assert np.all(np.abs(geom.sin_lats) < 1.0)
+        assert np.all(np.diff(geom.sin_lats) < 0.0)
+        weights_sum = np.sum(geom.gauss_weights, dtype=np.float64)
+        assert abs(weights_sum - 1.0) <= len(geom.lons_per_lat) * EPS
+
+    def test_sin_lats_double_precision(self):
+        geom = self.geom
+        # The sines of the Gaussian latitudes come in double precision whatever the precision of
+        # the build: the Gauss-Legendre nodes, north to south. numpy's nodes agree with them to
+        # within an ulp or two; rounded to single precision, they would be off by up to 3e-8
+        nodes, _ = np.polynomial.legendre.leggauss(len(geom.lons_per_lat))
+        assert geom.sin_lats.dtype == np.float64
+        assert np.max(np.abs(geom.sin_lats - nodes[::-1])) <= 100 * np.finfo(np.float64).eps
+
+
+class TestInverse(DistributedTestCase):
     def test_scalar(self):
         spectral_field_loc = _initialise_local_spectral_field(context.my_rank, NFLD,
                                                               context.num_spec2_glob,
@@ -109,13 +470,50 @@ class TestInverse(TestCase):
             assert range_val <= 1.0e-4
 
     def test_scalar_ders(self):
-        assert True
+        geom = self.geom
+        # Y(n=1, m=0) = sqrt(3) sin(lat) and the real part of Y(n=1, m=1), sqrt(6) cos(lat)
+        # cos(lon), with their N-S derivatives (1/a) d/dlat and E-W derivatives
+        # 1/(a cos(lat)) d/dlon, a being the Earth's radius
+        spectral_field_glob = np.zeros((2, geom.num_spec2_glob), dtype=ectrans4py._REAL)
+        spectral_field_glob[0, _spectral_index(geom, 0, 1)] = 1.0
+        spectral_field_glob[1, _spectral_index(geom, 1, 1)] = 1.0
+        fields_loc = ectrans4py.inv_trans_scalar_ders_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, 2,
+            _distribute_spectral(geom, spectral_field_glob), geom.kresol)
+        value, ns_der, ew_der = [_gather_grid(geom, field) for field in fields_loc]
+
+        def error():
+            sin_lat, cos_lat, lon = geom.sin_lat, geom.cos_lat, geom.lon
+            a = EARTH_RADIUS
+            return max(
+                _relative_error(value, [np.sqrt(3) * sin_lat,
+                                        np.sqrt(6) * cos_lat * np.cos(lon)]),
+                _relative_error(ns_der, [np.sqrt(3) * cos_lat / a,
+                                         -np.sqrt(6) * sin_lat * np.cos(lon) / a]),
+                _relative_error(ew_der, [np.zeros_like(lon), -np.sqrt(6) * np.sin(lon) / a]))
+
+        assert _on_rank_0(error) <= ANALYTIC_TOL
 
     def test_uv(self):
-        assert True
+        geom = self.geom
+        # Solid-body rotation: vorticity 2 sin(lat) / a, i.e. 2 / (sqrt(3) a) times
+        # Y(n=1, m=0), and no divergence give the winds u = cos(lat), v = 0
+        vorticity_glob = np.zeros((1, geom.num_spec2_glob), dtype=ectrans4py._REAL)
+        vorticity_glob[0, _spectral_index(geom, 0, 1)] = 2.0 / (np.sqrt(3.0) * EARTH_RADIUS)
+        divergence_glob = np.zeros((1, geom.num_spec2_glob), dtype=ectrans4py._REAL)
+        u_loc, v_loc = ectrans4py.inv_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, 1,
+            _distribute_spectral(geom, vorticity_glob),
+            _distribute_spectral(geom, divergence_glob), geom.kresol)
+        u_glob, v_glob = _gather_grid(geom, u_loc), _gather_grid(geom, v_loc)
+
+        def error():
+            return max(_relative_error(u_glob[0], geom.cos_lat), float(np.max(np.abs(v_glob))))
+
+        assert _on_rank_0(error) <= ANALYTIC_TOL
 
 
-class TestDirect(TestCase):
+class TestDirect(DistributedTestCase):
     def test_scalar(self):
         gridded_field_glob = np.ones((NFLD, context.num_grid_points_glob), dtype=ectrans4py._REAL)
 
@@ -138,28 +536,544 @@ class TestDirect(TestCase):
             assert _approx_eq(spectral_field_glob[:,1:], 0.0)
 
     def test_uv(self):
-        assert True
+        geom = self.geom
+        # The solid-body rotation of TestInverse.test_uv: u = cos(lat) and v = 0 give the
+        # vorticity 2 / (sqrt(3) a) times Y(n=1, m=0) and no divergence
+        u_glob = geom.cos_lat[np.newaxis, :].astype(ectrans4py._REAL)
+        v_glob = np.zeros_like(u_glob)
+        vorticity_loc, divergence_loc = ectrans4py.dir_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, 1,
+            _distribute_grid(geom, u_glob), _distribute_grid(geom, v_glob), geom.kresol)
+        vorticity_glob = _gather_spectral(geom, vorticity_loc)
+        divergence_glob = _gather_spectral(geom, divergence_loc)
+
+        def error():
+            expected = np.zeros((1, geom.num_spec2_glob))
+            expected[0, _spectral_index(geom, 0, 1)] = 2.0 / (np.sqrt(3.0) * EARTH_RADIUS)
+            return max(_relative_error(vorticity_glob, expected),
+                       float(np.max(np.abs(divergence_glob)) / np.max(expected)))
+
+        assert _on_rank_0(error) <= ANALYTIC_TOL
 
 
-class TestRoundTrip(TestCase):
+class TestRoundTrip(DistributedTestCase):
     def test_scalar(self):
-        assert True
+        geom = self.geom
+        # spectral -> grid -> spectral
+        spectral_field_glob = _random_spectral_field(geom, NFLD, seed=1)
+        gridded_field_loc = ectrans4py.inv_trans_scalar_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD,
+            _distribute_spectral(geom, spectral_field_glob), geom.kresol)
+        spectral_field_loc = ectrans4py.dir_trans_scalar_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, gridded_field_loc, geom.kresol)
+        round_trip_glob = _gather_spectral(geom, spectral_field_loc)
+
+        def error():
+            return _relative_error(round_trip_glob, spectral_field_glob)
+
+        assert _on_rank_0(error) <= ROUND_TRIP_TOL
 
     def test_uv(self):
-        assert True
+        geom = self.geom
+        # vorticity, divergence -> u, v -> vorticity, divergence
+        vorticity_glob = _random_spectral_field(geom, NFLD, seed=2, zero_mean=True)
+        divergence_glob = _random_spectral_field(geom, NFLD, seed=3, zero_mean=True)
+        u_loc, v_loc = ectrans4py.inv_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD,
+            _distribute_spectral(geom, vorticity_glob),
+            _distribute_spectral(geom, divergence_glob), geom.kresol)
+        vorticity_loc, divergence_loc = ectrans4py.dir_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, u_loc, v_loc, geom.kresol)
+        round_trip_glob = [_gather_spectral(geom, vorticity_loc),
+                           _gather_spectral(geom, divergence_loc)]
+
+        def error():
+            return _relative_error(round_trip_glob, [vorticity_glob, divergence_glob])
+
+        assert _on_rank_0(error) <= ROUND_TRIP_TOL
+
+    def test_scalar_ders(self):
+        geom = self.geom
+        # The E-W and N-S derivatives of a velocity potential chi are the winds u and v of a
+        # purely divergent flow: transformed back, they have no vorticity and the divergence
+        # -n (n + 1) chi / a^2
+        chi_glob = _random_spectral_field(geom, NFLD, seed=4)
+        _, ns_der_loc, ew_der_loc = ectrans4py.inv_trans_scalar_ders_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD,
+            _distribute_spectral(geom, chi_glob), geom.kresol)
+        vorticity_loc, divergence_loc = ectrans4py.dir_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, ew_der_loc, ns_der_loc,
+            geom.kresol)
+        vorticity_glob = _gather_spectral(geom, vorticity_loc)
+        divergence_glob = _gather_spectral(geom, divergence_loc)
+
+        def error():
+            n = geom.total_wavenumber
+            laplacian = -n * (n + 1) / EARTH_RADIUS ** 2 * chi_glob.astype(np.float64)
+            return _relative_error([vorticity_glob, divergence_glob],
+                                   [np.zeros_like(laplacian), laplacian])
+
+        assert _on_rank_0(error) <= ROUND_TRIP_TOL
 
 
-class TestDistributeGather(TestCase):
+class TestDistributeGather(DistributedTestCase):
+    # Field j is distributed from, and gathered back to, MPL rank j mod (number of ranks) + 1.
+    # The global array of a rank holds only its own fields, in its first rows (as the ecTrans
+    # DIST_* and GATH_* routines expect). Distributing and gathering only move data, so the
+    # round trip reproduces the global arrays bit for bit (GATH_SPEC returns no imaginary part
+    # for m = 0, so the spectral fields have none).
+
+    def _own_fields(self, field_glob):
+        """Rank owning each field, and field_glob with the rows of this rank's fields first and
+        the other rows zero."""
+        owners = np.arange(NFLD, dtype=np.int64) % context.n_rank + 1
+        num_own = np.count_nonzero(owners == context.my_rank + 1)
+        own_field_glob = np.zeros_like(field_glob)
+        own_field_glob[:num_own] = field_glob[:num_own]
+        return owners, own_field_glob
+
     def test_dist_spec(self):
-        assert True
+        geom = self.geom
+        owners, spectral_field_glob = self._own_fields(
+            _random_spectral_field(geom, NFLD, seed=5 + context.my_rank))
+        spectral_field_loc = ectrans4py.dist_spec4py(geom.num_spec2_glob, geom.num_spec2_loc,
+                                                     NFLD, owners, spectral_field_glob,
+                                                     geom.kresol)
+        gathered_glob = ectrans4py.gath_spec4py(geom.num_spec2_glob, geom.num_spec2_loc, NFLD,
+                                                owners, spectral_field_loc, geom.kresol)
+
+        identical = bool(np.array_equal(gathered_glob, spectral_field_glob))
+        assert MPI.COMM_WORLD.allreduce(identical, op=MPI.LAND)
 
     def test_dist_grid(self):
-        assert True
+        geom = self.geom
+        owners, gridded_field_glob = self._own_fields(
+            _random_grid_field(geom, NFLD, seed=5 + context.my_rank))
+        gridded_field_loc = ectrans4py.dist_grid4py(geom.num_grid_points_glob,
+                                                    geom.num_grid_points_loc, NFLD, owners,
+                                                    gridded_field_glob, geom.kresol)
+        gathered_glob = ectrans4py.gath_grid4py(geom.num_grid_points_glob,
+                                                geom.num_grid_points_loc, NFLD, owners,
+                                                gridded_field_loc, geom.kresol)
+
+        identical = bool(np.array_equal(gathered_glob, gridded_field_glob))
+        assert MPI.COMM_WORLD.allreduce(identical, op=MPI.LAND)
 
 
-class TestNorm(TestCase):
+class TestNorm(DistributedTestCase):
     def test_specnorm(self):
-        assert True
+        geom = self.geom
+        # Square root of the weighted sum of squares of the coefficients (weights of
+        # _spectral_dot), returned on rank 0
+        spectral_field_glob = _random_spectral_field(geom, NFLD, seed=7)
+        norms = ectrans4py.specnorm4py(geom.num_spec2_loc, NFLD,
+                                       _distribute_spectral(geom, spectral_field_glob),
+                                       geom.kresol)
+
+        def error():
+            squares = geom.spectral_weights * spectral_field_glob.astype(np.float64) ** 2
+            expected = np.sqrt(np.sum(squares, axis=1))
+            return float(np.max(np.abs(norms - expected) / expected))
+
+        # Sums of squares in working precision over T + 1 wavenumbers n, then T + 1 m
+        assert _on_rank_0(error) <= 2 * (geom.truncation + 1) * EPS
 
     def test_gpnorm_trans(self):
-        assert True
+        geom = self.geom
+        # Average (Gaussian weight times mean of each latitude row, summed over the rows),
+        # minimum and maximum, returned on rank 0
+        gridded_field_glob = _random_grid_field(geom, NFLD, seed=8)
+        average, minimum, maximum = ectrans4py.gpnorm_trans4py(
+            geom.num_grid_points_loc, NFLD, _distribute_grid(geom, gridded_field_glob),
+            geom.kresol)
+
+        def errors():
+            rows = np.split(gridded_field_glob.astype(np.float64),
+                            np.cumsum(geom.lons_per_lat)[:-1], axis=1)
+            expected = sum(weight * row.mean(axis=1)
+                           for weight, row in zip(geom.gauss_weights.astype(np.float64), rows))
+            exact = (np.array_equal(minimum, np.min(gridded_field_glob, axis=1))
+                     and np.array_equal(maximum, np.max(gridded_field_glob, axis=1)))
+            average_error = np.max(np.abs(average - expected)) / np.max(np.abs(gridded_field_glob))
+            return bool(exact), float(average_error)
+
+        min_max_exact, average_error = _on_rank_0(errors)
+        assert min_max_exact
+        # The latitude contributions are summed in working precision, one rounding per row
+        assert average_error <= len(geom.lons_per_lat) * EPS
+
+
+class TestAdjoint(DistributedTestCase):
+    # <F x, y> = <x, F* y> for each transform F and its adjoint F*, with the inner products of
+    # ecTrans's adjoint tests (_grid_dot, _spectral_dot)
+
+    def test_inv_trans_scalar(self):
+        geom = self.geom
+        x_loc = _distribute_spectral(geom, _random_spectral_field(geom, NFLD, seed=9))
+        y_loc = _distribute_grid(geom, _random_grid_field(geom, NFLD, seed=10))
+        inv_x_loc = ectrans4py.inv_trans_scalar_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, x_loc, geom.kresol)
+        adj_y_loc = ectrans4py.inv_trans_scalar_dist4py_ad(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, y_loc, geom.kresol)
+
+        lhs = _grid_dot((inv_x_loc, y_loc))
+        rhs = _spectral_dot(geom, (x_loc, adj_y_loc))
+        assert _adjoint_error(lhs, rhs) <= ADJOINT_TOL
+
+    def test_inv_trans_scalar_ders(self):
+        geom = self.geom
+        # The derivatives are smaller than the values by a factor of about the Earth's radius,
+        # so their seeds are scaled up by it to weigh as much in the inner product
+        x_loc = _distribute_spectral(geom, _random_spectral_field(geom, NFLD, seed=11))
+        y_loc, y_ns_loc, y_ew_loc = [
+            _distribute_grid(geom, scale * _random_grid_field(geom, NFLD, seed))
+            for scale, seed in ((1.0, 12), (EARTH_RADIUS, 13), (EARTH_RADIUS, 14))]
+        value_loc, ns_der_loc, ew_der_loc = ectrans4py.inv_trans_scalar_ders_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, x_loc, geom.kresol)
+        adj_y_loc = ectrans4py.inv_trans_scalar_ders_dist4py_ad(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, y_loc, y_ns_loc, y_ew_loc,
+            geom.kresol)
+
+        lhs = _grid_dot((value_loc, y_loc), (ns_der_loc, y_ns_loc), (ew_der_loc, y_ew_loc))
+        rhs = _spectral_dot(geom, (x_loc, adj_y_loc))
+        assert _adjoint_error(lhs, rhs) <= ADJOINT_TOL
+
+    def test_dir_trans_scalar(self):
+        geom = self.geom
+        u_loc = _distribute_grid(geom, _random_grid_field(geom, NFLD, seed=15))
+        v_loc = _distribute_spectral(geom, _random_spectral_field(geom, NFLD, seed=16))
+        dir_u_loc = ectrans4py.dir_trans_scalar_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, u_loc, geom.kresol)
+        adj_v_loc = ectrans4py.dir_trans_scalar_dist4py_ad(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, v_loc, geom.kresol)
+
+        lhs = _spectral_dot(geom, (dir_u_loc, v_loc))
+        rhs = _grid_dot((u_loc, adj_v_loc))
+        assert _adjoint_error(lhs, rhs) <= ADJOINT_TOL
+
+    def test_inv_trans_uv(self):
+        geom = self.geom
+        vorticity_loc, divergence_loc = [
+            _distribute_spectral(geom, _random_spectral_field(geom, NFLD, seed, zero_mean=True))
+            for seed in (17, 18)]
+        y_u_loc, y_v_loc = [_distribute_grid(geom, _random_grid_field(geom, NFLD, seed))
+                            for seed in (19, 20)]
+        u_loc, v_loc = ectrans4py.inv_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, vorticity_loc, divergence_loc,
+            geom.kresol)
+        adj_vorticity_loc, adj_divergence_loc = ectrans4py.inv_trans_uv_dist4py_ad(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, y_u_loc, y_v_loc, geom.kresol)
+
+        lhs = _grid_dot((u_loc, y_u_loc), (v_loc, y_v_loc))
+        rhs = _spectral_dot(geom, (vorticity_loc, adj_vorticity_loc),
+                            (divergence_loc, adj_divergence_loc))
+        assert _adjoint_error(lhs, rhs) <= ADJOINT_TOL
+
+    def test_dir_trans_uv(self):
+        geom = self.geom
+        u_loc, v_loc = [_distribute_grid(geom, _random_grid_field(geom, NFLD, seed))
+                        for seed in (21, 22)]
+        y_vorticity_loc, y_divergence_loc = [
+            _distribute_spectral(geom, _random_spectral_field(geom, NFLD, seed, zero_mean=True))
+            for seed in (23, 24)]
+        vorticity_loc, divergence_loc = ectrans4py.dir_trans_uv_dist4py(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, u_loc, v_loc, geom.kresol)
+        adj_u_loc, adj_v_loc = ectrans4py.dir_trans_uv_dist4py_ad(
+            geom.num_spec2_loc, geom.num_grid_points_loc, NFLD, y_vorticity_loc,
+            y_divergence_loc, geom.kresol)
+
+        lhs = _spectral_dot(geom, (vorticity_loc, y_vorticity_loc),
+                            (divergence_loc, y_divergence_loc))
+        rhs = _grid_dot((u_loc, adj_u_loc), (v_loc, adj_v_loc))
+        assert _adjoint_error(lhs, rhs) <= ADJOINT_TOL
+
+
+class TestInputArrays(DistributedTestCase):
+    def test_grid_point_inputs_unchanged(self):
+        # The bindings pass grid-point inputs to ecTrans in place, without a copy, and must leave
+        # them bit for bit as they were
+        geom = self.geom
+        sizes = (geom.num_spec2_loc, geom.num_grid_points_loc, NFLD)
+        gridded_field_loc = _distribute_grid(geom, _random_grid_field(geom, NFLD, seed=27))
+        original = gridded_field_loc.copy()
+        ectrans4py.dir_trans_scalar_dist4py(*sizes, gridded_field_loc, geom.kresol)
+        ectrans4py.inv_trans_scalar_dist4py_ad(*sizes, gridded_field_loc, geom.kresol)
+        ectrans4py.gath_grid4py(geom.num_grid_points_glob, geom.num_grid_points_loc, NFLD,
+                                _from_which_rank(context.my_rank, NFLD), gridded_field_loc,
+                                geom.kresol)
+        ectrans4py.gpnorm_trans4py(geom.num_grid_points_loc, NFLD, gridded_field_loc, geom.kresol)
+
+        unchanged = gridded_field_loc.tobytes() == original.tobytes()
+        assert MPI.COMM_WORLD.allreduce(unchanged, op=MPI.LAND)
+
+
+class TestVsetBindings(DistributedTestCase):
+    def test_single_vset(self):
+        # The suite's decomposition has a single V-set (as many wave sets as tasks). With it,
+        # the V-set bindings compute the same as the other bindings, here on the same inputs
+        # (test_ectrans4py_vset.py tests them with several V-sets).
+        geom = self.geom
+        calls = dict(_binding_calls(geom))
+        kprtrw, mysetw, mysetv = calls.pop("trans_inq_vset4py")(geom.kresol)
+        wave_sets = MPI.COMM_WORLD.allgather(mysetw)
+
+        def counterpart(name):
+            return name.replace("_vset4py", "_dist4py" if "_trans_" in name else "4py")
+
+        def as_tuple(output):
+            return output if isinstance(output, tuple) else (output,)
+
+        # The same computation in ecTrans: bit-identical when measured, but allowed rounding
+        # differences of the order of EPS (exactly equal where the result is zero)
+        differing = []
+        for name in [name for name in calls if "_vset4py" in name]:
+            outputs = zip(as_tuple(calls[name](geom.kresol)),
+                          as_tuple(calls[counterpart(name)](geom.kresol)))
+            if not all(np.all(np.abs(a - b) <= 10 * EPS * np.max(np.abs(b), initial=0.0))
+                       for a, b in outputs):
+                differing.append(name)
+
+        assert kprtrw == context.n_rank and mysetv == 1
+        assert sorted(wave_sets) == list(range(1, context.n_rank + 1))
+        assert sum(MPI.COMM_WORLD.allgather(differing), []) == []
+
+
+class TestTransformAll(DistributedTestCase):
+    # A single transform of the winds and the scalar fields together, against the transforms of
+    # each kind of field. ecTrans's sums depend, at the level of rounding, on the number of fields
+    # transformed together (by up to 4 EPS when measured, in single and double precision), so the
+    # results agree up to rounding, not bit for bit. The numbers of wind and scalar fields differ,
+    # so that a field in the wrong place shows.
+    NUM_WINDS = 3
+    NUM_SCALARS = 2
+
+    def _blocks_agree(self, actual, expected_blocks):
+        """Whether actual, split into the shapes of expected_blocks, agrees with each of them
+        within 100 EPS relative to its largest magnitude, on every task"""
+        offsets = np.cumsum([block.shape[0] for block in expected_blocks])[:-1]
+        agree = (actual.shape[0] == sum(block.shape[0] for block in expected_blocks)
+                 and all(_relative_error(block, expected) <= 100 * EPS
+                         for block, expected in zip(np.split(actual, offsets), expected_blocks)))
+        return MPI.COMM_WORLD.allreduce(agree, op=MPI.LAND)
+
+    def test_inverse(self):
+        # [grid-point divergence] u v scalars [N-S derivatives E-W derivatives], with and without
+        # the divergence (KDDIVGP) and the derivatives (KDSCDERS)
+        geom = self.geom
+        nuv, nsc = self.NUM_WINDS, self.NUM_SCALARS
+        sizes = (geom.num_spec2_loc, geom.num_grid_points_loc)
+        vorticity_loc, divergence_loc = [
+            _distribute_spectral(geom, _random_spectral_field(geom, nuv, seed, zero_mean=True))
+            for seed in (32, 33)]
+        scalar_loc = _distribute_spectral(geom, _random_spectral_field(geom, nsc, seed=34))
+        u_loc, v_loc = ectrans4py.inv_trans_uv_dist4py(*sizes, nuv, vorticity_loc, divergence_loc,
+                                                        geom.kresol)
+        divergence_gp_loc = ectrans4py.inv_trans_scalar_dist4py(*sizes, nuv, divergence_loc,
+                                                                geom.kresol)
+        scalar_gp_loc, ns_der_loc, ew_der_loc = ectrans4py.inv_trans_scalar_ders_dist4py(
+            *sizes, nsc, scalar_loc, geom.kresol)
+
+        for with_divergence in (0, 1):
+            for with_derivatives in (0, 1):
+                expected_blocks = (([divergence_gp_loc] if with_divergence else [])
+                                   + [u_loc, v_loc, scalar_gp_loc]
+                                   + ([ns_der_loc, ew_der_loc] if with_derivatives else []))
+                num_gp = (3 if with_divergence else 2) * nuv + (3 if with_derivatives else 1) * nsc
+                gridded_field_loc = ectrans4py.inv_trans_all_dist4py(
+                    *sizes, nuv, nsc, nuv, nsc, num_gp, with_divergence, with_derivatives,
+                    np.ones(nuv, dtype=np.int64), np.ones(nsc, dtype=np.int64), vorticity_loc,
+                    divergence_loc, scalar_loc, geom.kresol)
+                agree = self._blocks_agree(gridded_field_loc, expected_blocks)
+                assert agree, (with_divergence, with_derivatives)
+
+    def test_direct(self):
+        # u v scalars
+        geom = self.geom
+        nuv, nsc = self.NUM_WINDS, self.NUM_SCALARS
+        sizes = (geom.num_spec2_loc, geom.num_grid_points_loc)
+        u_loc, v_loc = [_distribute_grid(geom, _random_grid_field(geom, nuv, seed))
+                        for seed in (35, 36)]
+        scalar_loc = _distribute_grid(geom, _random_grid_field(geom, nsc, seed=37))
+        expected_blocks = (list(ectrans4py.dir_trans_uv_dist4py(*sizes, nuv, u_loc, v_loc,
+                                                                geom.kresol))
+                           + [ectrans4py.dir_trans_scalar_dist4py(*sizes, nsc, scalar_loc,
+                                                                  geom.kresol)])
+        spectral_fields_loc = ectrans4py.dir_trans_all_dist4py(
+            *sizes, nuv, nsc, nuv, nsc, 2 * nuv + nsc, np.ones(nuv, dtype=np.int64),
+            np.ones(nsc, dtype=np.int64), np.concatenate([u_loc, v_loc, scalar_loc]), geom.kresol)
+
+        assert self._blocks_agree(np.concatenate(spectral_fields_loc), expected_blocks)
+
+
+# The tests above on the second resolution: every binding is passed its KRESOL, and runs at
+# that resolution's truncation and on its grid. (The test_scalar of TestInverse and TestDirect
+# use the first resolution and the default KRESOL, and are not repeated.)
+
+
+class TestInquiryResolution2(TestInquiry):
+    geom = context_2
+
+
+class TestInverseResolution2(TestInverse):
+    geom = context_2
+    test_scalar = None
+
+
+class TestDirectResolution2(TestDirect):
+    geom = context_2
+    test_scalar = None
+
+
+class TestRoundTripResolution2(TestRoundTrip):
+    geom = context_2
+
+
+class TestDistributeGatherResolution2(TestDistributeGather):
+    geom = context_2
+
+
+class TestNormResolution2(TestNorm):
+    geom = context_2
+
+
+class TestAdjointResolution2(TestAdjoint):
+    geom = context_2
+
+
+class TestInputArraysResolution2(TestInputArrays):
+    geom = context_2
+
+
+class TestVsetBindingsResolution2(TestVsetBindings):
+    geom = context_2
+
+
+class TestTransformAllResolution2(TestTransformAll):
+    geom = context_2
+
+
+class TestResolutions(TestCase):
+    def test_default_resolution(self):
+        # The first resolution set up has the tag 1, and without KRESOL every binding runs on
+        # it, bit for bit as with KRESOL=1
+        calls = _binding_calls(context)
+        names = [name for name, _ in calls]
+        assert context.kresol == 1 and context_2.kresol == 2
+        assert _differing_outputs(names, [call() for _, call in calls],
+                                  [call(1) for _, call in calls]) == []
+
+    def test_first_resolution_unchanged(self):
+        # After the second resolution has been set up and used, the outputs of the first one
+        # are bit-identical to those before the second one was set up
+        for _, call in _binding_calls(context_2):
+            call(context_2.kresol)
+        calls = _binding_calls(context)
+        names = [name for name, _ in calls]
+        assert _differing_outputs(names, context.reference_outputs,
+                                  [call() for _, call in calls]) == []
+
+    def test_unknown_resolution(self):
+        # Every binding raises error code 101 for a KRESOL that is not a resolution set up: 0
+        # and KMAX_RESOL + 1, out of range, and KMAX_RESOL, never set up. (trans_inq4py takes
+        # KRESOL <= 0 to set up a serial resolution from its other arguments.)
+        for kresol in (0, KMAX_RESOL, KMAX_RESOL + 1):
+            for _, call in _binding_calls(context):
+                with pytest.raises(RuntimeError, match="Error code 101"):
+                    call(kresol)
+            if kresol > 0:
+                with pytest.raises(RuntimeError, match="Error code 101"):
+                    ectrans4py.trans_inq4py(kresol, NUM_LATS, 0, 0, np.array([], dtype=np.int64),
+                                            0)
+
+
+class TestPartitionTables(TestCase):
+    def test_region_counts(self):
+        # The number of E-W regions of each N-S band: one region per task
+        regions = context.regions
+        num_bands = context.regions_ns
+
+        assert len(regions) == context.n_rank
+        assert np.all(regions[:num_bands] >= 1) and np.all(regions[num_bands:] == 0)
+        assert np.sum(regions) == context.n_rank
+        assert np.max(regions) == context.regions_ew
+
+    def test_tables(self):
+        # The partition tables of the two spectral resolutions and of the grid-point-only one,
+        # which agree with trans_inq4py for the spectral ones
+        problems = []
+        for kresol, lons_per_lat, geom in ((context.kresol, LONS_PER_LAT, context),
+                                           (context_2.kresol, LONS_PER_LAT_2, context_2),
+                                           (context_grid.kresol, LONS_PER_LAT_GRID, None)):
+            tables = _partition_tables(kresol, len(lons_per_lat), context.regions_ns,
+                                       context.regions_ew)
+            problems += [f"resolution {kresol}: {problem}" for problem
+                         in _partition_problems(tables, lons_per_lat, context.regions)]
+            if geom is not None and not (
+                    tables.ngptot == geom.num_grid_points_loc
+                    and tables.ngptotg == geom.num_grid_points_glob
+                    and np.array_equal(tables.mu, geom.sin_lats)):
+                problems.append(f"resolution {kresol}: not the sizes and PMU of trans_inq4py")
+
+        assert sum(MPI.COMM_WORLD.allgather(problems), []) == []
+
+    def test_errors(self):
+        # Error code 1 for region counts other than those of the setup, 2 for another number
+        # of latitude rows than that of the resolution, 101 for a KRESOL that is not set up
+        kresol, num_lats = context_grid.kresol, NUM_LATS_GRID
+        num_bands, num_regions = context.regions_ns, context.regions_ew
+        for args, code in (((kresol, num_lats, num_bands + 1, num_regions), 1),
+                           ((kresol, num_lats, num_bands, num_regions + 1), 1),
+                           ((kresol, num_lats + 1, num_bands, num_regions), 2),
+                           ((KMAX_RESOL, num_lats, num_bands, num_regions), 101),
+                           ((0, num_lats, num_bands, num_regions), 101)):
+            with pytest.raises(RuntimeError, match=f"Error code {code} "):
+                ectrans4py.trans_inq_grid4py(*args)
+
+
+def _grid_only_round_trip():
+    """Random global grid-point fields of the grid-point-only resolution, and the same
+    distributed and gathered back"""
+    tables = _partition_tables(context_grid.kresol, NUM_LATS_GRID, context.regions_ns,
+                               context.regions_ew)
+    gridded_field_glob = _random_field((NFLD, tables.ngptotg), seed=38)
+    root = _from_which_rank(context.my_rank, NFLD)
+    gridded_field_loc = ectrans4py.dist_grid4py(tables.ngptotg, tables.ngptot, NFLD, root,
+                                                gridded_field_glob, context_grid.kresol)
+    gathered_glob = ectrans4py.gath_grid4py(tables.ngptotg, tables.ngptot, NFLD, root,
+                                            gridded_field_loc, context_grid.kresol)
+    return gridded_field_glob, gathered_glob
+
+
+class TestGridOnly(TestCase):
+    def test_distribute_gather(self):
+        # Grid-point fields distributed over the grid-point-only resolution and gathered back:
+        # bit for bit the global fields
+        gridded_field_glob, gathered_glob = _grid_only_round_trip()
+
+        assert context_grid.kresol == 3
+        assert _on_rank_0(lambda: np.array_equal(gathered_glob, gridded_field_glob))
+
+    def test_spectral_calls(self):
+        # Every binding that needs spectral or Fourier space raises error code 102 on the
+        # grid-point-only resolution, gpnorm_trans4py too (ecTrans's GPNORM_TRANS crashes on
+        # one), instead of ecTrans aborting or crashing. (The inputs are those of the first
+        # resolution: the bindings check the resolution first.)
+        grid_point_bindings = ("dist_grid4py", "gath_grid4py")
+        for name, call in _binding_calls(context):
+            if name not in grid_point_bindings:
+                with pytest.raises(RuntimeError, match="Error code 102"):
+                    call(context_grid.kresol)
+        with pytest.raises(RuntimeError, match="Error code 102"):
+            ectrans4py.trans_inq4py(context_grid.kresol, NUM_LATS_GRID, 0, 0,
+                                    np.array([], dtype=np.int64), 0)
+
+    def test_other_resolutions_unchanged(self):
+        # After the grid-point-only resolution has been set up and used, the outputs of the two
+        # spectral resolutions are bit-identical to those before it was set up
+        _grid_only_round_trip()
+        names = [name for name, _ in _binding_calls(context)]
+        outputs = [call() for _, call in _binding_calls(context)]
+        outputs_2 = [call(context_2.kresol) for _, call in _binding_calls(context_2)]
+
+        assert _differing_outputs(names, context.reference_outputs, outputs) == []
+        assert _differing_outputs(names, context_2.reference_outputs, outputs_2) == []
