@@ -61,7 +61,7 @@ jobs:
             core.setOutput('head_sha', pull.data.head.sha);
 
   ci-hpc:
-    name: ci-hpc (lumi-g cce, PR #${{ inputs.pr_number }})
+    name: "ci-hpc (lumi-g cce, PR #${{ inputs.pr_number }})"
     needs: pr-info
     runs-on: [self-hosted, linux, hpc]
 
