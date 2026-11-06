@@ -23,12 +23,11 @@ projects :
     - fiat :
         git     : https://github.com/ecmwf-ifs/fiat 
         version : develop
-        cmake   : ENABLE_DR_HOOK_NVTX=OFF ENAMBLE_OMP=ON
+        cmake   : ENABLE_DR_HOOK_NVTX=OFF ENABLE_OMP=ON
 
     - ectrans :
         dir     : $PWD/../../
         require : fiat
-        cmake   : ENABLE_MKL=OFF WITH_FFTW=OFF ENABLE_FFTW=OFF ENABLE_GPU=OFF
 
 options :
 
