@@ -24,6 +24,7 @@ set( test_list
   ectrans_test_trans_api_setup_trans_spsetuponly
   ectrans_test_trans_api_setup_trans_pnmonly
   ectrans_test_trans_api_setup_trans_write_read_legpoly
+  ectrans_test_trans_api_setup_trans_write_read_legpoly_flt
 )
 
 # Declare tests that WILL_FAIL
@@ -32,10 +33,10 @@ set( will_fail_list
   ectrans_test_trans_api_setup_trans_without_setup_trans0
 )
 
-# Note: the FLT is not implemented for the GPU backend
 generate_api_test_suite( SUITE_NAME setup_trans_test_suite
                          TESTS ${test_list}
                          WILL_FAIL_LIST ${will_fail_list}
                          MPIxOMPS "0x1" "0x8" "1x1" "1x8" "2x1" "2x8"
                          BACKENDS "cpu_sp" "cpu_dp" "gpu_sp" "gpu_dp"
-                         EXCLUDES "flt.*gpu" "write_read_legpoly.*mpi1" "write_read_legpoly.*mpi2")
+                         EXCLUDES "write_read_legpoly.*mpi1" "write_read_legpoly.*mpi2"
+                                  "write_read_legpoly_flt.*gpu")
