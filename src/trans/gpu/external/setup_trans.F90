@@ -185,8 +185,9 @@ IF(MSETUP0 == 0) THEN
 ENDIF
 
 ! Detect GPU. Count devices rather than relying on the current device type, which may be the host
-! (or none) when no device is present. Without offload enabled at compile time the OpenMP runtime
-! reports no devices and target regions silently fall back to the host.
+! (or none) when no device is present. If offload was not enabled at compile time, the OpenMP
+! runtime reports zero devices, so we abort here rather than let target regions silently fall
+! back to the host.
 #ifdef ACCGPU
 INUMDEVS = ACC_GET_NUM_DEVICES(ACC_DEVICE_NOT_HOST)
 #endif
