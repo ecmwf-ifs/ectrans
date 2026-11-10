@@ -300,20 +300,18 @@ foreach( benchmark ${benchmarks} )
           ectrans_add_checksum_reference_tests( ${test_name} ${reference_name} )
         endif()
 
-        if( ${benchmark} MATCHES "cpu" )
-          # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform (CPU only)
-          # TODO: Find out why the FLT gives so much higher errors
-          set( test_name ${base_title}_nfld10_nlev20_flt )
-          ecbuild_add_test( TARGET ${test_name}
-              COMMAND ${benchmark}
-              ARGS ${base_args} --nfld 10 --nlev 20 --flt --check 1000000 --dump-checksums ${checksums_dir}/${test_name}.checksums
-              MPI ${mpi}
-              OMP ${omp}
-          )
-          ectrans_set_test_properties( ${test_name} )
-          ectrans_checksum_reference_name( reference_name ${benchmark} T${t} ${grid} nfld10 nlev20 niter${niter} scders0 uvders0 vordiv0 flt1 )
-          ectrans_add_checksum_reference_tests( ${test_name} ${reference_name} )
-        endif()
+        # Check it works with 10 3D scalar fields, 20 levels, and the fast Legendre tranform
+        # TODO: Find out why the FLT gives so much higher errors
+        set( test_name ${base_title}_nfld10_nlev20_flt )
+        ecbuild_add_test( TARGET ${test_name}
+            COMMAND ${benchmark}
+            ARGS ${base_args} --nfld 10 --nlev 20 --flt --check 1000000 --dump-checksums ${checksums_dir}/${test_name}.checksums
+            MPI ${mpi}
+            OMP ${omp}
+        )
+        ectrans_set_test_properties( ${test_name} )
+        ectrans_checksum_reference_name( reference_name ${benchmark} T${t} ${grid} nfld10 nlev20 niter${niter} scders0 uvders0 vordiv0 flt1 )
+        ectrans_add_checksum_reference_tests( ${test_name} ${reference_name} )
       endforeach()
     endforeach()
   endforeach()
