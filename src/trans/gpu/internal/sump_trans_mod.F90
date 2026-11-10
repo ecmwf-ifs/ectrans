@@ -286,17 +286,14 @@ DO KMLOC=1,D%NUMP
   D%OFFSETS_GEMM2(KMLOC) = OFFSET2
   D%OFFSETS_GEMM_MATRIX(KMLOC) = OFFSET3
 
-  !KM=0 is transformed in double precision, no need to store here
-  IF (KM /= 0) THEN
-    OFFSET1 = OFFSET1 + ALIGN(G%NDGLU(KM),8)
-    ! N_OFFSET takes the max of the two GEMMs
-    OFFSET2 = OFFSET2 + ALIGN((R%NSMAX-KM+3)/2,8)
+  OFFSET1 = OFFSET1 + ALIGN(G%NDGLU(KM),8)
+  ! N_OFFSET takes the max of the two GEMMs
+  OFFSET2 = OFFSET2 + ALIGN((R%NSMAX-KM+3)/2,8)
 
-    D%LEGENDRE_MATRIX_STRIDES(KMLOC) = ALIGN(G%NDGLU(KM),8)
-    ! Note that both sizes have to be aligned because we make the GEMMs
-    ! multiples of 8
-    OFFSET3 = OFFSET3 + ALIGN((R%NSMAX-KM+3)/2,8) * D%LEGENDRE_MATRIX_STRIDES(KMLOC)
-  ENDIF
+  D%LEGENDRE_MATRIX_STRIDES(KMLOC) = ALIGN(G%NDGLU(KM),8)
+  ! Note that both sizes have to be aligned because we make the GEMMs
+  ! multiples of 8
+  OFFSET3 = OFFSET3 + ALIGN((R%NSMAX-KM+3)/2,8) * D%LEGENDRE_MATRIX_STRIDES(KMLOC)
 ENDDO
 D%OFFSETS_GEMM1(D%NUMP+1) = OFFSET1
 D%OFFSETS_GEMM2(D%NUMP+1) = OFFSET2
