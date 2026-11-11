@@ -76,6 +76,7 @@
 #define hipStreamCreateWithFlags cudaStreamCreateWithFlags
 #define hipStreamWaitEvent cudaStreamWaitEvent
 #define hipEventCreateWithFlags cudaEventCreateWithFlags
+#define hipEventDestroy cudaEventDestroy
 #define hipEventRecord cudaEventRecord
 #define hipEventSynchronize cudaEventSynchronize
 #define hipMemcpyAsync cudaMemcpyAsync

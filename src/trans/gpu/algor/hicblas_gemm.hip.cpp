@@ -9,13 +9,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdlib>
 
 #include <iostream>
 #include <memory>
 #include <type_traits>
 #include <unordered_map>
+#include <vector>
+#include <algorithm>
 
 #include "hicblas.h"
+#include "gemm_execution.h"
+#ifdef CUDAGPU
+#include "hicblas_cublaslt.cuda.h"
+#endif
 #ifdef USE_CUTLASS
 #include "cutlass/gemm/device/gemm.h"
 #endif
@@ -83,6 +90,14 @@ template <typename Gemm> void erase_from_caches(int resol_id) {
   erase_resol_from_cache(get_ptr_cache<Gemm>(), resol_id);
 }
 
+template <typename Real> struct hipblas_gemm_grouped;
+
+template <typename Gemm>
+gemm_execution::Scheduler &dense_scheduler(int default_branches = 0) {
+  static gemm_execution::Scheduler scheduler(gemm_execution::options(false, default_branches));
+  return scheduler;
+}
+
 // this version is using graphs and caches the graphs
 template <typename Gemm, typename Real>
 void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
@@ -90,9 +105,35 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
                      const int64_t *offsetsA, const Real *B, const int *ldb,
                      const int64_t *offsetsB, Real beta, Real *C, int ldc,
                      const int64_t *offsetsC, int batchCount,
-                     hipStream_t stream, int blas_id, void *growing_allocator) {
-  growing_allocator_register_free_c(growing_allocator,
-                                    free_gemm_graph_cache<Gemm>);
+                     hipStream_t stream, int blas_id, void *growing_allocator,
+                     int default_branches = 0) {
+  auto &scheduler = dense_scheduler<std::decay_t<Gemm>>(default_branches);
+  auto make_tasks = [&] {
+    std::vector<int> tasks;
+    for (int i = 0; i < batchCount; ++i)
+      if (m && n[i] && k[i]) tasks.push_back(i);
+    return tasks;
+  };
+  auto prepare = [&](int count) {
+    scheduler.prepare(count, stream, [&](hipStream_t branch) {
+      if constexpr (std::is_same<std::decay_t<Gemm>, hipblas_gemm_grouped<Real>>::value)
+        gemm_execution::blas().prepare<Real>(branch, scheduler.config.graphs && scheduler.config.branches == 0);
+    });
+  };
+  auto launch = [&](int i, hipStream_t branch) {
+    gemm(branch, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i],
+         ldb[i], beta, C + offsetsC[i], ldc);
+  };
+  if (!scheduler.config.graphs) {
+    auto tasks = make_tasks();
+    if (tasks.empty()) return;
+    prepare(int(tasks.size()));
+    scheduler.run(int(tasks.size()), stream,
+                  [&](int i, hipStream_t branch) { launch(tasks[i], branch); });
+    HIC_CHECK(hipStreamSynchronize(stream));
+    return;
+  }
+  growing_allocator_register_free_c(growing_allocator, free_gemm_graph_cache<Gemm>);
 
   // we store at most one graph per "m" (# fields) and "blas id"
   auto &graphCache = get_graph_cache<Gemm>();
@@ -123,46 +164,14 @@ void run_group_graph(Gemm &&gemm, int resol_id, int m, const int *n,
 
   auto graph = graphCache.find(key);
   if (graph == graphCache.end()) {
-    // this graph does not exist yet
-    hipStream_t captureStream;
-    HIC_CHECK(hipStreamCreate(&captureStream));
-
-#ifdef USE_CUTLASS
-    hipGraph_t new_graph;
-    HIC_CHECK(hipGraphCreate(&new_graph, 0));
-    for (int i = 0; i < batchCount; ++i) {
-      if (m == 0 || n[i] == 0 || k[i] == 0)
-        continue;
-
-      HIC_CHECK(hipStreamBeginCapture(captureStream, hipStreamCaptureModeGlobal));
-      gemm(captureStream, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i],
-           ldb[i], beta, C + offsetsC[i], ldc);
-      hipGraph_t my_graph;
-      HIC_CHECK(hipStreamEndCapture(captureStream, &my_graph));
-      hipGraphNode_t my_node;
-      HIC_CHECK(
-          hipGraphAddChildGraphNode(&my_node, new_graph, nullptr, 0, my_graph));
-      HIC_CHECK(hipGraphDestroy(my_graph));
-    }
+    auto tasks = make_tasks();
+    if (tasks.empty()) return;
+    prepare(int(tasks.size()));
+    hipGraph_t graph = scheduler.graph(int(tasks.size()),
+        [&](int i, hipStream_t branch) { launch(tasks[i], branch); });
     hipGraphExec_t instance;
-    HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
-    HIC_CHECK(hipGraphDestroy(new_graph));
-#else
-    HIC_CHECK(hipStreamBeginCapture(captureStream, hipStreamCaptureModeGlobal));
-    for (int i = 0; i < batchCount; ++i) {
-      if (m == 0 || n[i] == 0 || k[i] == 0)
-        continue;
-
-      gemm(captureStream, m, n[i], k[i], alpha, A + offsetsA[i], lda, B + offsetsB[i],
-           ldb[i], beta, C + offsetsC[i], ldc);
-    }
-    hipGraph_t my_graph;
-    HIC_CHECK(hipStreamEndCapture(captureStream, &my_graph));
-    hipGraphExec_t instance;
-    HIC_CHECK(hipGraphInstantiate(&instance, my_graph, NULL, NULL, 0));
-    HIC_CHECK(hipGraphDestroy(my_graph));
-#endif
-    HIC_CHECK(hipStreamDestroy(captureStream));
+    HIC_CHECK(hipGraphInstantiate(&instance, graph, NULL, NULL, 0));
+    HIC_CHECK(hipGraphDestroy(graph));
 
     graphCache.insert({key, std::shared_ptr<hipGraphExec_t>(
                                 new hipGraphExec_t{instance}, [](auto ptr) {
@@ -192,6 +201,49 @@ void run_group(Gemm &&gemm, int resol_id, int m, const int *n, const int *k,
   HIC_CHECK(hipStreamSynchronize(stream));
 }
 
+#ifdef CUDAGPU
+struct cublaslt_gemm_grouped {
+  using real_type = float;
+  bool transpose_a, transpose_b;
+
+  void operator()(cudaStream_t stream, int m, int n, int k, float alpha,
+                  const float *A, int lda, const float *B, int ldb, float beta,
+                  float *C, int ldc) const {
+    legendre_cublaslt::gemm(stream, transpose_a, transpose_b, m, n, k, alpha,
+                            A, lda, B, ldb, beta, C, ldc);
+  }
+};
+
+void cublaslt_sgemm_wrapper_grouped(
+    int resol_id, int blas_id, char transa, char transb, int m, const int *n,
+    const int *k, float alpha, const float *A, int lda, const int64_t *offsetsA,
+    const float *B, const int *ldb, const int64_t *offsetsB, float beta,
+    float *C, int ldc, const int64_t *offsetsC, int batchCount,
+    cudaStream_t stream, void *growing_allocator) {
+  const bool ta = transa == 'T' || transa == 't';
+  const bool tb = transb == 'T' || transb == 't';
+  // Match the existing graph cache's operation/resolution/pointer lifetime.
+  const cache_key key{resol_id, m, blas_id};
+  auto &graphs = get_graph_cache<cublaslt_gemm_grouped>();
+  auto &pointers = get_ptr_cache<cublaslt_gemm_grouped>();
+  const auto found = pointers.find(key);
+  if (dense_scheduler<cublaslt_gemm_grouped>().config.graphs &&
+      (graphs.find(key) == graphs.end() || found == pointers.end() ||
+       found->second != std::make_tuple(A, B, static_cast<const float *>(C)))) {
+    // Heuristics and descriptors must be prepared before graph capture.
+    for (int i = 0; i < batchCount; ++i) {
+      if (m == 0 || n[i] == 0 || k[i] == 0) continue;
+      legendre_cublaslt::prepare(ta, tb, m, n[i], k[i], lda, ldb[i], ldc,
+                                 1, false, A + offsetsA[i], B + offsetsB[i],
+                                 C + offsetsC[i]);
+    }
+  }
+  run_group_graph(cublaslt_gemm_grouped{ta, tb}, resol_id, m, n, k, alpha, A,
+                  lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
+                  batchCount, stream, blas_id, growing_allocator);
+}
+#endif
+
 #ifdef USE_CUTLASS
 #include "hicblas_cutlass.cuda.h"
 #endif
@@ -207,15 +259,12 @@ public:
   using real_type = Real;
   hipblas_gemm_grouped(hipblasOperation_t transa, hipblasOperation_t transb)
       : transa_(transa), transb_(transb) {
-    // we need to get the hipblas handle here, otherwise this could be created
-    // during graph capturing
-    get_hipblas_handle();
+    // Stream-specific BLAS preparation is performed by the scheduler before capture.
   };
   void operator()(hipStream_t stream, int m, int n, int k, Real alpha,
                   const Real *A, int lda, const Real *B, int ldb, Real beta,
                   Real *C, int ldc) const {
-    hipblasHandle_t handle = get_hipblas_handle();
-    HICBLAS_CHECK(hipblasSetStream(handle, stream));
+    hipblasHandle_t handle = gemm_execution::blas().handle(stream);
 
     if constexpr (std::is_same<Real, float>::value)
       HICBLAS_CHECK(hipblasSgemm(handle, transa_, transb_, m, n, k, &alpha, A,
@@ -228,8 +277,6 @@ public:
 private:
   hipblasOperation_t transa_, transb_;
 };
-
-#ifndef USE_CUTLASS
 
 void hipblas_sgemm_wrapper_grouped(
     int resol_id, int blas_id, char transa, char transb, int m, const int *n,
@@ -244,18 +291,11 @@ void hipblas_sgemm_wrapper_grouped(
   if (transb == 'T' || transb == 't')
     op_t2 = HIPBLAS_OP_T;
 
-#ifdef USE_GRAPHS_GEMM
   run_group_graph(hipblas_gemm_grouped<float>(op_t1, op_t2), resol_id, m, n, k,
                   alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc,
-                  offsetsC, batchCount, stream, blas_id, growing_allocator);
-#else
-  run_group(hipblas_gemm_grouped<float>(op_t1, op_t2), resol_id, m, n, k, alpha,
-            A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
-            batchCount, stream);
-#endif
+                  offsetsC, batchCount, stream, blas_id, growing_allocator, 1);
 }
 
-#endif
 
 void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
                                    char transb, int m, const int *n,
@@ -272,6 +312,7 @@ void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
   if (transb == 'T' || transb == 't')
     op_t2 = HIPBLAS_OP_T;
 
+  gemm_execution::blas().prepare<double>(stream, false);
   run_group(hipblas_gemm_grouped<double>(op_t1, op_t2), resol_id, m, n, k,
             alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
             batchCount, stream, blas_id);
@@ -330,6 +371,27 @@ void hipblas_sgemm_wrapper_grouped(
     const float *B, const int *ldb, const int64_t *offsetsB, float beta,
     float *C, int ldc, const int64_t *offsetsC, int batchCount, size_t stream,
     void *growing_allocator) {
+#ifdef CUDAGPU
+  if (legendre_cublaslt::enabled()) {
+    cublaslt_sgemm_wrapper_grouped(
+        resol_id, blas_id, transa, transb, m, n, k, alpha, A, lda, offsetsA,
+        B, ldb, offsetsB, beta, C, ldc, offsetsC, batchCount,
+        *(hipStream_t *)stream, growing_allocator);
+    return;
+  }
+  // An explicit cuBLAS request overrides the build's CUTLASS default.
+  static const bool use_cublas = [] {
+    const char *backend = std::getenv("ECTRANS_BLAS_IMPLEMENTATION");
+    return backend && std::strcmp(backend, "cublas") == 0;
+  }();
+  if (use_cublas) {
+    hipblas_sgemm_wrapper_grouped(resol_id, blas_id, transa, transb, m, n, k,
+        alpha, A, lda, offsetsA, B, ldb, offsetsB, beta, C, ldc, offsetsC,
+        batchCount, *(hipStream_t *)stream, growing_allocator);
+    return;
+  }
+#endif
+
 #ifdef USE_CUTLASS
   cutlass_sgemm_wrapper_grouped(resol_id, blas_id, transa, transb, m, n, k,
                                 alpha, A, lda, offsetsA, B, ldb, offsetsB, beta,
@@ -359,6 +421,9 @@ void hipblas_dgemm_wrapper_grouped(int resol_id, int blas_id, char transa,
 }
 
 void clean_gemm(int resol_id) {
+#ifdef CUDAGPU
+  erase_from_caches<cublaslt_gemm_grouped>(resol_id);
+#endif
   erase_from_caches<hipblas_gemm_grouped<float>>(resol_id);
   erase_from_caches<hipblas_gemm_grouped<double>>(resol_id);
 #ifdef USE_CUTLASS
