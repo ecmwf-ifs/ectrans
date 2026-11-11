@@ -20,20 +20,24 @@ IMPLICIT NONE
 #include "dist_spec.h"
 #include "trans_end.h"
 
-INTEGER(KIND=JPIM), PARAMETER :: TRUNCATION = 79
-INTEGER(KIND=JPIM), PARAMETER :: NDGL = 2 * (TRUNCATION + 1)
+INTEGER(KIND=JPIM), PARAMETER :: JPTRUNCATION = 79
+INTEGER(KIND=JPIM), PARAMETER :: JPNDGL = 2 * (JPTRUNCATION + 1)
 
 CONTAINS
 
 !---------------------------------------------------------------------------------------------------
 
+! Test DIST_SPEC by initialising a global spectral array on the last task in the world communicator,
+! with each spectral coefficient containing two fields: one storing a real version of its global
+! index, and another with that value multiplied by -2. This field is distributed to all other tasks,
+! who then check their values against the expected values derived from the indexing arrays.
 INTEGER FUNCTION TEST_DIST_SPEC(LDSPSETUPONLY) RESULT(RET)
   LOGICAL, INTENT(IN) :: LDSPSETUPONLY
 
   LOGICAL :: LUSE_MPI
   INTEGER(KIND=JPIM) :: IPROC, IMY_PROC, ISPEC2, ISPEC2G, INUMP, JM, IM, IN, ISP, ISPG
   INTEGER(KIND=JPIM), ALLOCATABLE :: IMYMS(:)
-  INTEGER(KIND=JPIM) :: IASM0(0:TRUNCATION)
+  INTEGER(KIND=JPIM) :: IASM0(0:JPTRUNCATION)
   REAL(KIND=JPRB), ALLOCATABLE :: ZSPECG(:,:), ZSPEC(:,:), ZEXPECTED(:,:)
 
   LUSE_MPI = DETECT_MPIRUN()
@@ -47,7 +51,7 @@ INTEGER FUNCTION TEST_DIST_SPEC(LDSPSETUPONLY) RESULT(RET)
   ENDIF
 
   CALL SETUP_TRANS0(LDMPOFF=.NOT. LUSE_MPI, KPRGPNS=IPROC, KPRGPEW=1, KPRTRW=IPROC)
-  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, LDSPSETUPONLY=LDSPSETUPONLY)
+  CALL SETUP_TRANS(KSMAX=JPTRUNCATION, KDGL=JPNDGL, LDSPSETUPONLY=LDSPSETUPONLY)
   CALL TRANS_INQ(KSPEC2=ISPEC2, KSPEC2G=ISPEC2G, KNUMP=INUMP, KASM0=IASM0)
   ALLOCATE(IMYMS(INUMP))
   CALL TRANS_INQ(KMYMS=IMYMS)
@@ -64,9 +68,9 @@ INTEGER FUNCTION TEST_DIST_SPEC(LDSPSETUPONLY) RESULT(RET)
   ! Compute expected local coefficients independently from the global input array.
   DO JM = 1, INUMP
     IM = IMYMS(JM)
-    DO IN = IM, TRUNCATION
+    DO IN = IM, JPTRUNCATION
       ISP = IASM0(IM) + 2 * (IN - IM)
-      ISPG = IM * (2 * TRUNCATION + 3 - IM) + 2 * (IN - IM) + 1
+      ISPG = IM * (2 * JPTRUNCATION + 3 - IM) + 2 * (IN - IM) + 1
       ZEXPECTED(1,ISP:ISP+1) = [REAL(ISPG, JPRB), REAL(ISPG+1, JPRB)]
     ENDDO
   ENDDO

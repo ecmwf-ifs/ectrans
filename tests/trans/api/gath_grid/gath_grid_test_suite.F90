@@ -20,21 +20,26 @@ IMPLICIT NONE
 #include "gath_grid.h"
 #include "trans_end.h"
 
-INTEGER(KIND=JPIM), PARAMETER :: TRUNCATION = 15
-INTEGER(KIND=JPIM), PARAMETER :: NDGL = 2 * (TRUNCATION + 1)
-INTEGER(KIND=JPIM), PARAMETER :: PROMA = 17
+INTEGER(KIND=JPIM), PARAMETER :: JPTRUNCATION = 15
+INTEGER(KIND=JPIM), PARAMETER :: JPNDGL = 2 * (JPTRUNCATION + 1)
+INTEGER(KIND=JPIM), PARAMETER :: JPPROMA = 17
 
 CONTAINS
 
 !---------------------------------------------------------------------------------------------------
 
+! Test GATH_GRID by initialising on each task a gridded array containing two fields: one storing the
+! global index of that grid point and another with that value multiplied by -2. These arrays are
+! then gathered to the last task in the world communicator which checks that the values are as
+! expected. Note that the NPROMA tail of each block is deliberately "poisoned" with -999 to make
+! sure that the tails are properly stripped out during the gather operation.
 INTEGER FUNCTION TEST_GATH_GRID(LDGRIDONLY) RESULT(RET)
   LOGICAL, INTENT(IN) :: LDGRIDONLY
 
   LOGICAL :: LUSE_MPI
   INTEGER(KIND=JPIM) :: IPROC, IMY_PROC, IGPTOT, IGPTOTG, IGPBLKS, IREGION, IOFF
   INTEGER(KIND=JPIM) :: JLAT, JGP, IROW, IBL
-  INTEGER(KIND=JPIM) :: ILOEN(NDGL)
+  INTEGER(KIND=JPIM) :: ILOEN(JPNDGL)
   INTEGER(KIND=JPIM), ALLOCATABLE :: IFRSTLAT(:)
   REAL(KIND=JPRB), ALLOCATABLE :: ZGPG(:,:), ZGP(:,:,:)
   REAL(KIND=JPRB) :: ZEXPECTED(2)
@@ -50,27 +55,27 @@ INTEGER FUNCTION TEST_GATH_GRID(LDGRIDONLY) RESULT(RET)
   ENDIF
 
   CALL SETUP_TRANS0(LDMPOFF=.NOT. LUSE_MPI, KPRGPNS=IPROC, KPRGPEW=1, KPRTRW=IPROC)
-  DO JLAT = 1, NDGL / 2
+  DO JLAT = 1, JPNDGL / 2
     ILOEN(JLAT) = 20 + 4 * JLAT
-    ILOEN(NDGL-JLAT+1) = ILOEN(JLAT)
+    ILOEN(JPNDGL - JLAT + 1) = ILOEN(JLAT)
   ENDDO
-  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, KLOEN=ILOEN, LDSPLIT=.FALSE., LDGRIDONLY=LDGRIDONLY)
+  CALL SETUP_TRANS(KSMAX=JPTRUNCATION, KDGL=JPNDGL, KLOEN=ILOEN, LDSPLIT=.FALSE., LDGRIDONLY=LDGRIDONLY)
   ALLOCATE(IFRSTLAT(IPROC))
   CALL TRANS_INQ(KGPTOT=IGPTOT, KGPTOTG=IGPTOTG, KFRSTLAT=IFRSTLAT, KMY_REGION_NS=IREGION)
   ! With one east-west region and no split latitudes, each local grid is a contiguous latitude band.
   IOFF = SUM(ILOEN(1:IFRSTLAT(IREGION)-1))
-  IGPBLKS = (IGPTOT - 1) / PROMA + 1
-  ALLOCATE(ZGPG(IGPTOTG,2), ZGP(PROMA,2,IGPBLKS))
+  IGPBLKS = (IGPTOT - 1) / JPPROMA + 1
+  ALLOCATE(ZGPG(IGPTOTG,2), ZGP(JPPROMA,2,IGPBLKS))
   ! Padding must not appear in the gathered field.
   ZGP(:,:,:) = -999.0_JPRB
   DO JGP = 1, IGPTOT
-    IROW = MOD(JGP - 1, PROMA) + 1
-    IBL = (JGP - 1) / PROMA + 1
+    IROW = MOD(JGP - 1, JPPROMA) + 1
+    IBL = (JGP - 1) / JPPROMA + 1
     ZGP(IROW,1,IBL) = REAL(IOFF+JGP, JPRB)
     ZGP(IROW,2,IBL) = -2.0_JPRB * REAL(IOFF+JGP, JPRB)
   ENDDO
 
-  CALL GATH_GRID(PGPG=ZGPG, KPROMA=PROMA, KFGATHG=2, KTO=[IPROC, IPROC], PGP=ZGP)
+  CALL GATH_GRID(PGPG=ZGPG, KPROMA=JPPROMA, KFGATHG=2, KTO=[IPROC, IPROC], PGP=ZGP)
 
   RET = 0
   IF (IMY_PROC == IPROC) THEN
