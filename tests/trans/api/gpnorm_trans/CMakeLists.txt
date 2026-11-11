@@ -11,6 +11,7 @@
 # Define list of GPNORM_TRANS tests
 set( test_list
   ectrans_test_trans_api_gpnorm_trans_ave
+  ectrans_test_trans_api_gpnorm_trans_ave_gridonly
 )
 
 # Declare tests that WILL_FAIL
