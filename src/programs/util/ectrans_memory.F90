@@ -8,7 +8,6 @@ type allocator_t
 contains
     procedure, nopass :: set_pinning
     procedure, nopass :: set_device_resident
-    procedure, nopass :: device_resident_supported
     procedure, nopass :: set_logging
     procedure, nopass :: set_logging_output_unit
 
@@ -156,15 +155,6 @@ contains
         logical, intent(in) :: device_resident
         device_resident_ = device_resident
     end subroutine
-
-    function device_resident_supported() result(supported)
-        logical :: supported
-#if defined(OMPGPU) || defined(ACCGPU)
-        supported = .true.
-#else
-        supported = .false.
-#endif
-    end function
 
     subroutine set_logging(logging)
         logical, intent(in) :: logging

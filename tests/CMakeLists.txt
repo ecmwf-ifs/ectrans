@@ -270,6 +270,15 @@ foreach( benchmark ${benchmarks} )
               OMP ${omp}
           )
           ectrans_set_test_properties( ${test_name} )
+
+          set( test_name ${base_title}_nfld10_nlev20_psp_on_gpu )
+          ecbuild_add_test( TARGET ${test_name}
+              COMMAND ${benchmark}
+              ARGS ${base_args} --nfld 10 --nlev 20 --keep-psp-arrays-on-device
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${test_name} )
         endif()
 
         # Check it works with LALLOPERM=F (cpu only)
