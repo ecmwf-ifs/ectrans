@@ -1274,6 +1274,8 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
     & when also --vordiv is given"
   write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
+  write(nout, "(a)") "    --fft992            Use in-project FFT992 library for FFTs, instead of&
+    & FFTW-compatible library"
   write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
   write(nout, "(a)") "    --npromatr NPROMATR Perform transforms in blocks of size NPROMATR rather&
     & than all at once"
@@ -1421,7 +1423,6 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--scders'); lscders = .true.
       case('--uvders'); luvder = .true.
       case('--flt'); luseflt = .true.
-      case('--fftw'); lusefftw = .true.
       case('--fft992'); lusefftw = .false.
       case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
