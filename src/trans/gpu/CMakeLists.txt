@@ -40,7 +40,7 @@ if( HAVE_HIP )
   endif()
 elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
-  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
+  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas CUDA::cublasLt nvhpcwrapnvtx CUDA::cudart )
   list( APPEND trans_gpu_common_src
     algor/hicblas_gemm.cuda.cu
     algor/mult_butm.cuda.cu
