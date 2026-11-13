@@ -68,6 +68,7 @@ foreach( program ectrans-benchmark )
                                   USE_FIELD_API=${HAVE_FIELD_API}
         )
         ecbuild_target_fortran_module_directory(TARGET ${program}-gpu-${prec} MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/module/${program}-gpu-${prec} )
+        ectrans_target_omp_offload( ${program}-gpu-${prec} )
       endif()
     endforeach( prec )
   endif( HAVE_GPU )
