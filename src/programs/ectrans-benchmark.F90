@@ -25,7 +25,7 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
-use ectrans_memory, only : allocator
+use ectrans_memory, only : allocator, update_device
 use ec_checksum_mod, only : fletcher16_hex
 
 #if USE_FIELD_API
@@ -538,24 +538,14 @@ endif
 ! The allocator mapped the spectral arrays to the device before they were initialised, so copy the
 ! initial values over once here (outside the timed loop). Zero-sized arrays are never mapped.
 if (lpsp_on_gpu) then
-#ifdef ACCGPU
-  !$acc update device(zspvor, zspdiv) if_present
+  call update_device(zspvor)
+  call update_device(zspdiv)
   if (icall_mode == 1) then
-    !$acc update device(zspscalar) if_present
+    call update_device(zspscalar)
   else
-    !$acc update device(zspsc3a, zspsc2) if_present
+    call update_device(zspsc3a)
+    call update_device(zspsc2)
   endif
-#endif
-#ifdef OMPGPU
-  !$omp target update to(zspvor) if(size(zspvor) > 0)
-  !$omp target update to(zspdiv) if(size(zspdiv) > 0)
-  if (icall_mode == 1) then
-    !$omp target update to(zspscalar) if(size(zspscalar) > 0)
-  else
-    !$omp target update to(zspsc3a) if(size(zspsc3a) > 0)
-    !$omp target update to(zspsc2) if(size(zspsc2) > 0)
-  endif
-#endif
 endif
 
 call allocator%set_device_resident(.false.)
