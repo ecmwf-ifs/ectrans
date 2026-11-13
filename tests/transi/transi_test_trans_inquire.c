@@ -29,6 +29,7 @@ void test_trans_inquire() {
   }
 
   TRANS_CHECK(trans_new(&trans));
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   TRANS_CHECK(trans_set_resol(&trans, nlat, nloen));
   TRANS_CHECK(trans_set_trunc(&trans, truncation));
   TRANS_CHECK(trans_setup(&trans));

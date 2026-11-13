@@ -89,8 +89,11 @@ USE TPM_GEOMETRY    ,ONLY : G
 #ifdef WITH_FFT992
 USE TPM_FFT         ,ONLY : T, FFT_RESOL
 USE TPMALD_FFT      ,ONLY : TALD, ALDFFT_RESOL
+USE TPM_FFT992      ,ONLY : T992, FFT992_RESOL
 #endif
+#ifdef WITH_FFTW
 USE TPM_FFTW        ,ONLY : TW, FFTW_RESOL
+#endif
 
 USE TPMALD_DIM      ,ONLY : RALD, ALDDIM_RESOL
 USE TPMALD_DISTR    ,ONLY : ALDDISTR_RESOL
@@ -152,9 +155,12 @@ IF (NDEF_RESOL > NMAX_RESOL) THEN
 ENDIF
 
 ! Allocate CPU backend-specific resolution dependent structures
+#ifdef WITH_FFTW
 IF (.NOT. ALLOCATED(FFTW_RESOL)) ALLOCATE(FFTW_RESOL(NMAX_RESOL))
+#endif
 #ifdef WITH_FFT992
   IF (.NOT. ALLOCATED(FFT_RESOL)) ALLOCATE(FFT_RESOL(NMAX_RESOL))
+  IF (.NOT. ALLOCATED(FFT992_RESOL)) ALLOCATE(FFT992_RESOL(NMAX_RESOL))
 #endif
 
 ! Allocate LAM-specific resolution dependent structures
@@ -185,7 +191,9 @@ D%LSPLIT = .FALSE.
 #ifdef WITH_FFT992
 TALD%LFFT992=.TRUE. ! Use FFT992 interface for FFTs
 #endif
+#ifdef WITH_FFTW
 TW%LALL_FFTW=.FALSE. ! transform fields one at a time
+#endif
 
 ! NON-OPTIONAL ARGUMENTS
 R%NSMAX = KSMAX
@@ -258,17 +266,28 @@ ELSE
   R%NNOEXTZG=0
 ENDIF
 
+#ifdef WITH_FFTW
 IF(PRESENT(LD_ALL_FFTW)) THEN
   TW%LALL_FFTW=LD_ALL_FFTW
 ENDIF
-
-#ifdef WITH_FFT992
-IF(PRESENT(LDUSEFFTW)) THEN
-  TALD%LFFT992=.NOT.LDUSEFFTW
-ELSE
-  TALD%LFFT992=.TRUE.
+#else
+IF(PRESENT(LD_ALL_FFTW)) THEN
+  IF(LD_ALL_FFTW) CALL ABORT_TRANS('ESETUP_TRANS: LD_ALL_FFTW requires FFTW support in this build')
 ENDIF
 #endif
+
+IF(PRESENT(LDUSEFFTW)) THEN
+#ifndef WITH_FFTW
+  IF(LDUSEFFTW) CALL ABORT_TRANS('ESETUP_TRANS: FFTW backend requested but FFTW is not enabled in this build')
+#endif
+#ifdef WITH_FFT992
+  TALD%LFFT992=.NOT.LDUSEFFTW
+#endif
+ELSE
+#ifdef WITH_FFT992
+  TALD%LFFT992=.TRUE.
+#endif
+ENDIF
 
 !     Setup resolution dependent structures
 !     -------------------------------------

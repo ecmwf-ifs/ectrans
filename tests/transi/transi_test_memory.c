@@ -47,6 +47,7 @@ int main ( int arc, char **argv )
     struct Trans_t trans;
 
     trans_new(&trans);
+    trans.fft = TRANSI_TEST_FFT_BACKEND;
     trans_set_resol(&trans,sizeof(nloen)/sizeof(int),nloen);
     trans_set_trunc(&trans,159);
 
@@ -78,4 +79,3 @@ int main ( int arc, char **argv )
 
   return mem_leak;
 }
-

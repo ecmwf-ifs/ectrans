@@ -43,6 +43,7 @@ void test_io()
   int mem;
 
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   set_standard_rgg(&trans,N,T);
   TRANS_CHECK( trans_set_write(&trans,filepath) );
   mem = allocated();
@@ -58,6 +59,7 @@ void test_io()
   print_mem( "Cache size:", size);
 
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   set_standard_rgg(&trans,N,T);
   TRANS_CHECK( trans_set_cache(&trans,buffer,size) );
   mem = allocated();
@@ -69,6 +71,7 @@ void test_io()
 
 
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   set_standard_rgg(&trans,N,T);
   TRANS_CHECK( trans_set_read(&trans,filepath) );
   mem = allocated();
@@ -129,6 +132,7 @@ void test_io_lonlat(int nlon, int nlat, int nsmax, int flt)
   printf("Writing\n");
 
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   trans.flt = flt;
   if( lonlat )
   {
@@ -182,6 +186,7 @@ void test_io_lonlat(int nlon, int nlat, int nsmax, int flt)
   print_mem( "Cache size:", size);
 
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   trans.flt = flt;
   if( lonlat )
   {
@@ -230,6 +235,7 @@ void test_io_lonlat(int nlon, int nlat, int nsmax, int flt)
   // ---------------------------------------
   printf("Reading\n");
   TRANS_CHECK( trans_new(&trans) );
+  trans.fft = TRANSI_TEST_FFT_BACKEND;
   trans.flt = flt;
   if( lonlat )
   {
@@ -298,4 +304,3 @@ int main ( int arc, char **argv )
 
   return 0;
 }
-
