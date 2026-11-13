@@ -46,6 +46,7 @@
 #define hipfftGetSize cufftGetSize
 #define hipfftSetAutoAllocation cufftSetAutoAllocation 
 #define hipfftSetStream cufftSetStream
+#define hipMemGetInfo cudaMemGetInfo
 #define hipStreamCreate  cudaStreamCreate
 #define hipStreamDestroy  cudaStreamDestroy
 #define hipSetStream  cudaSetStream
