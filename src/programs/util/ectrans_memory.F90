@@ -2,13 +2,12 @@ module ectrans_memory
 use, intrinsic :: iso_c_binding, only : c_char
 
 private
-public :: allocator
+public :: allocator, update_device
 
 type allocator_t
 contains
     procedure, nopass :: set_pinning
     procedure, nopass :: set_device_resident
-    procedure, nopass :: device_resident_supported
     procedure, nopass :: set_logging
     procedure, nopass :: set_logging_output_unit
 
@@ -80,6 +79,13 @@ contains
         & deallocate_var_label_real64_r3, &
         & deallocate_var_label_real64_r4
 end type
+
+interface update_device
+    module procedure update_device_real32_r2
+    module procedure update_device_real64_r2
+    module procedure update_device_real32_r3
+    module procedure update_device_real64_r3
+end interface update_device
 
 type(allocator_t) :: allocator
 
@@ -156,15 +162,6 @@ contains
         logical, intent(in) :: device_resident
         device_resident_ = device_resident
     end subroutine
-
-    function device_resident_supported() result(supported)
-        logical :: supported
-#if defined(OMPGPU) || defined(ACCGPU)
-        supported = .true.
-#else
-        supported = .false.
-#endif
-    end function
 
     subroutine set_logging(logging)
         logical, intent(in) :: logging
@@ -669,4 +666,48 @@ contains
             call copy_c_str_to_string( s, string )
         end subroutine
     end subroutine
+
+    subroutine update_device_real32_r2(array)
+        use, intrinsic :: iso_c_binding, only: c_float
+        real(c_float), pointer, intent(in) :: array(:,:)
+#ifdef ACCGPU
+        !$acc update device(array) if_present
+#endif
+#ifdef OMPGPU
+        !$omp target update to(array) if(size(array) > 0)
+#endif
+    end subroutine update_device_real32_r2
+
+    subroutine update_device_real64_r2(array)
+        use, intrinsic :: iso_c_binding, only: c_double
+        real(c_double), pointer, intent(in) :: array(:,:)
+#ifdef ACCGPU
+        !$acc update device(array) if_present
+#endif
+#ifdef OMPGPU
+        !$omp target update to(array) if(size(array) > 0)
+#endif
+    end subroutine update_device_real64_r2
+
+    subroutine update_device_real32_r3(array)
+        use, intrinsic :: iso_c_binding, only: c_float
+        real(c_float), pointer, intent(in) :: array(:,:,:)
+#ifdef ACCGPU
+        !$acc update device(array) if_present
+#endif
+#ifdef OMPGPU
+        !$omp target update to(array) if(size(array) > 0)
+#endif
+    end subroutine update_device_real32_r3
+
+    subroutine update_device_real64_r3(array)
+        use, intrinsic :: iso_c_binding, only: c_double
+        real(c_double), pointer, intent(in) :: array(:,:,:)
+#ifdef ACCGPU
+        !$acc update device(array) if_present
+#endif
+#ifdef OMPGPU
+        !$omp target update to(array) if(size(array) > 0)
+#endif
+    end subroutine update_device_real64_r3
 end module

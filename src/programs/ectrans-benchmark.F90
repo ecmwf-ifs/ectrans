@@ -25,7 +25,7 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
-use ectrans_memory, only : allocator
+use ectrans_memory, only : allocator, update_device
 use ec_checksum_mod, only : fletcher16_hex
 
 #if USE_FIELD_API
@@ -195,6 +195,7 @@ logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
 logical :: lpgp_on_gpu = .false.
+logical :: lpsp_on_gpu = .false.
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
@@ -242,7 +243,7 @@ call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, l
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
   &                             lpinning, lfield_api, icall_mode, ldump_checksums, iters_checksums, &
-  &                             cchecksums_path, lalloperm, lpgp_on_gpu)
+  &                             cchecksums_path, lalloperm, lpgp_on_gpu, lpsp_on_gpu)
 if (iters_checksums < 0) then
   if (iters_warmup > 0) then
     iters_checksums = iters_warmup
@@ -390,14 +391,14 @@ if (verbosity >= 1 .and. myproc == 1) then
 endif
 call allocator%set_pinning(lpinning)
 
-! Grid point fields in device memory are unreachable from the host or incompatible builds.
-if (lpgp_on_gpu) then
-  if (.not. allocator%device_resident_supported()) then
-    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device requires an OpenMP offload or &
-      &OpenACC build')
+if (lpgp_on_gpu .or. lpsp_on_gpu) then
+  if (VERSION /= "gpu") then
+    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device and --keep-psp-arrays-on-device &
+      &only work with a GPU build')
   endif
   if (lfield_api) then
-    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device is incompatible with --field-api')
+    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device and --keep-psp-arrays-on-device are &
+      &incompatible with --field-api')
   endif
 endif
 
@@ -479,6 +480,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("lfield_api ",l1)') lfield_api
   write(nout,'("lalloperm  ",l1)') lalloperm
   write(nout,'("lpgp_on_gpu ",l1)') lpgp_on_gpu
+  write(nout,'("lpsp_on_gpu ",l1)') lpsp_on_gpu
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -497,6 +499,9 @@ do jb = 1, nprtrv
     ivset(ilev) = jb
   enddo
 enddo
+
+! Allocate spectral fields (device-resident when PSP arrays are kept on the device).
+call allocator%set_device_resident(lpsp_on_gpu)
 
 ! Initialize vorticity and divergence - same for both call modes
 call allocator%allocate('zspvor', zspvor, [nflevl,nspec2])
@@ -529,6 +534,21 @@ else
   enddo
   call initialize_spectral_field(nsmax, zspsc2)
 endif
+
+! The allocator mapped the spectral arrays to the device before they were initialised, so copy the
+! initial values over once here (outside the timed loop). Zero-sized arrays are never mapped.
+if (lpsp_on_gpu) then
+  call update_device(zspvor)
+  call update_device(zspdiv)
+  if (icall_mode == 1) then
+    call update_device(zspscalar)
+  else
+    call update_device(zspsc3a)
+    call update_device(zspsc2)
+  endif
+endif
+
+call allocator%set_device_resident(.false.)
 
 !===================================================================================================
 ! Allocate gridpoint arrays
@@ -714,13 +734,13 @@ do jstep = 1, iters+iters_warmup
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
       &            kvsetuv=ivset, kvsetsc=ivsetsc, &
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
-      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu)
+      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   else
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
       &            pgp3a=zgp3a, pgp2=zgp2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
-      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu)
+      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
@@ -796,13 +816,13 @@ do jstep = 1, iters+iters_warmup
   else if (icall_mode == 1) then
     call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
       &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma, &
-      &            lpgp_on_gpu=lpgp_on_gpu)
+      &            lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   else
     call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
       &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
       &            pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma, &
-      &            lpgp_on_gpu=lpgp_on_gpu)
+      &            lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
@@ -1076,6 +1096,7 @@ if (lfield_api) then
 endif
 #endif
 
+call allocator%set_device_resident(lpsp_on_gpu)
 call allocator%deallocate('zspvor', zspvor)
 call allocator%deallocate('zspdiv', zspdiv)
 
@@ -1085,6 +1106,7 @@ else
   call allocator%deallocate('zspsc3a', zspsc3a)
   call allocator%deallocate('zspsc2', zspsc2)
 endif
+call allocator%set_device_resident(.false.)
 
 call allocator%set_device_resident(lpgp_on_gpu)
 if (icall_mode == 1) then
@@ -1299,6 +1321,8 @@ subroutine print_help(unit)
    & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
   write(nout, "(a)") "    --keep-pgp-arrays-on-device  Keep PGP arrays on the GPU (default = off;&
    & cannot be enabled with --dump-values nor --dump-checksums)"
+  write(nout, "(a)") "    --keep-psp-arrays-on-device  Keep PSP arrays on the GPU (default = off;&
+   & cannot be enabled with --norms, --check nor --dump-checksums )"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
@@ -1329,7 +1353,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
   &                                   iters_checksums, &
-  &                                   cchecksums_path, lalloperm, lpgp_on_gpu)
+  &                                   cchecksums_path, lalloperm, lpgp_on_gpu, lpsp_on_gpu)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1368,6 +1392,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   character(len=1024), intent(inout) :: cchecksums_path ! path to export checksum files
   logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
   logical, intent(inout) :: lpgp_on_gpu                ! keep PGP arrays on the GPU
+  logical, intent(inout) :: lpsp_on_gpu                ! keep PSP arrays on the GPU
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
 
@@ -1439,6 +1464,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
           end if
       case('--deallocate-foubuf-temps'); lalloperm = .false.
       case('--keep-pgp-arrays-on-device'); lpgp_on_gpu = .true.
+      case('--keep-psp-arrays-on-device'); lpsp_on_gpu = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
@@ -1447,8 +1473,12 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   end do
 
   if (lpgp_on_gpu .and. (ldump_values .or. ldump_checksums)) then
-    call parsing_failed("Invalid combination of arguments: --keep-pgp-arrays-on-device cannot be&
+    call parsing_failed("Invalid combination of arguments: --keep-pgp-arrays-on-device cannot be &
       &used with --dump-values or --dump-checksums")
+  end if
+  if (lpsp_on_gpu .and. (lprint_norms .or. ncheck > 0 .or. ldump_checksums)) then
+    call parsing_failed("Invalid combination of arguments: --keep-psp-arrays-on-device cannot be &
+      &used with --norms or --check or --dump-checksums")
   end if
 
 end subroutine get_command_line_arguments
