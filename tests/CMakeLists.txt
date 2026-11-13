@@ -1,4 +1,5 @@
 # (C) Copyright 2020- ECMWF.
+# (C) Copyright 2026- NVIDIA.
 #
 # This software is licensed under the terms of the Apache Licence Version 2.0
 # which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
@@ -80,6 +81,26 @@ add_subdirectory( trans/api )
 # --------------------------------------------------------------------------------------------------
 
 add_subdirectory( trans/adjoint )
+
+# Exercise FLT setup with the real Belusov coefficients that triggered a zero-rank abort.
+if( HAVE_CPU )
+  if( HAVE_DOUBLE_PRECISION )
+    set( flt_test_precision dp )
+  else()
+    set( flt_test_precision sp )
+  endif()
+  set( flt_test_mpi 0 )
+  if( HAVE_MPI )
+    # MPL_INIT needs the configured launcher with relocatable MPI installations.
+    set( flt_test_mpi 1 )
+  endif()
+  ecbuild_add_test( TARGET ectrans_test_flt_belusov
+    SOURCES trans/test_flt_belusov.F90
+    LIBS trans_${flt_test_precision}
+    MPI ${flt_test_mpi}
+    OMP 1
+    LINKER_LANGUAGE Fortran )
+endif()
 
 # --------------------------------------------------------------------------------------------------
 # Add field-view metadata test
