@@ -3,6 +3,11 @@ import numpy
 from . import data
 import ectrans4py
 import platform
+import json
+import os
+import subprocess
+import sys
+from . import spec_layout_check
 
 system = platform.system()
 if system == "Linux":
@@ -139,6 +144,30 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
         self.assertEqual(kgptot, kgptotg)   # serial: local sizes equal global
         # PGW/PMU consistent with get_legendre_assets
         self.assertTrue(abs(sum(pgw) - 1.0) < EPSILON, f"sum of weights is {sum(pgw)}")
+
+    def test_trans_inq4py_latitudes(self):
+        # PMU in double precision whatever the precision of the build, as get_legendre_assets
+        # returns it, and PGW in the precision of the build: both the same as get_legendre_assets
+        nspec = sum([self.truncation['max'] + 2 - im for im in range(self.truncation['max']+1)])
+        _, weights, mu, _ = ectrans4py.get_legendre_assets(
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            nspec,
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL
+        )
+        *_, pmu, pgw = ectrans4py.trans_inq4py(
+            0,
+            self.gpdims['lat_number'],
+            self.truncation['max'],
+            len(self.gpdims['lon_number_by_lat']),
+            self.gpdims['lon_number_by_lat'],
+            KNUMMAXRESOL)
+        self.assertEqual(pmu.dtype, numpy.float64)
+        self.assertEqual(pgw.dtype, ectrans4py._REAL)
+        numpy.testing.assert_array_equal(pmu, mu)
+        numpy.testing.assert_array_equal(pgw, weights)
     
     def test_sp2gp(self):
         gpdata = ectrans4py.sp2gp_gauss4py(
@@ -167,3 +196,33 @@ class TestGlobal(TestCase, ArraysAlmostEqual):
             self.gpdata.astype(ectrans4py._REAL))
         self.assert_arrays_diff_under_epsilon(self.spdata, spdata)
 
+
+class TestSpecLayout(TestCase):
+    # The repacking of spectral arrays between the layout of the Python callers and that of
+    # ecTrans, in every distributed binding with spectral fields (spec_layout_check.py), exact
+    # with the array-section loops and with the blocked loops, at any number of threads
+
+    def test_repack(self):
+        # In this process, as the environment sets the repacking up; threaded if the build asked
+        # for OpenMP
+        report = spec_layout_check.report()
+        self.assertEqual(report["failed"], [])
+        self.assertEqual(report["openmp"], report["openmp_build"])
+
+    def test_repack_settings(self):
+        # In processes of their own (ECTRANS4PY_OMP and OMP_NUM_THREADS are read once per
+        # process): the array-section loops (ECTRANS4PY_OMP unset or 0), and the blocked loops
+        # on 1, 2 and 4 threads
+        for setting, threads in ((None, 4), ("0", 4), ("1", 1), ("1", 2), ("1", 4)):
+            env = dict(os.environ, OMP_NUM_THREADS=str(threads))
+            env.pop("ECTRANS4PY_OMP", None)
+            if setting is not None:
+                env["ECTRANS4PY_OMP"] = setting
+            result = subprocess.run([sys.executable, spec_layout_check.__file__], env=env,
+                                    capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout.splitlines()[-1])
+            self.assertEqual(report["failed"], [], (setting, threads))
+            self.assertEqual(report["blocked"], int(setting == "1"), (setting, threads))
+            if report["openmp"]:
+                self.assertEqual(report["threads"], threads, (setting, threads))

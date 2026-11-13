@@ -13,12 +13,35 @@ one set of Legendre assets (``get_legendre_assets``):
   ``etrans_inq4py``, ``get_legendre_assets``, and ``trans_inq4py`` with
   ``KRESOL<=0`` (it self-initialises from the grid parameters).
 * Distributed-memory (MPI): initialise with ``mpl_init4py`` (attaches to an
-  existing communicator, e.g. mpi4py), set up the processor grid/resolution with
+  existing communicator by default, e.g. mpi4py, or pass your own communicator (e.g. split from
+  ``MPI_COMM_WORLD``) as an argument), set up the processor grid/resolution with
   ``setup_trans0_4py``/``setup_trans_4py`` (``LDSPLIT=.TRUE.``), query the local
   geometry with ``trans_inq4py`` passing the returned ``KRESOL``, transform local
   arrays with the ``*_dist4py`` routines, move data with ``dist_spec``/
   ``gath_spec``/``dist_grid``/``gath_grid``, and compute global norms with
-  ``specnorm4py``/``gpnorm_trans4py``.
+  ``specnorm4py``/``gpnorm_trans4py``. With several V-sets (``KPRTRW < NPROC``), the
+  spectral fields are distributed over the V-sets as well: use the ``*_vset4py``
+  bindings, with a map from each field to its V-set (``trans_inq_vset4py`` returns
+  the task's). ``inv_trans_all_dist4py``/``dir_trans_all_dist4py`` transform winds
+  and scalar fields together, in a single call. The repacking of the spectral arrays
+  between the layout of the callers and that of ecTrans is blocked and threaded with
+  OpenMP when the environment variable ``ECTRANS4PY_OMP`` is set (to ``1``, say), with
+  bit-identical results (``spec_layout_inq4py``).
+
+Several resolutions can coexist (``KMAX_RESOL`` of ``setup_trans0_4py``): every
+distributed transform, scatter/gather and norm takes a trailing ``KRESOL``, the tag
+``setup_trans_4py`` returned (default 1, the first resolution set up), and runs on
+that resolution. A ``KRESOL`` that is not a resolution set up by ``setup_trans_4py``
+raises ``RuntimeError`` with error code 101, instead of ecTrans aborting the job. The
+bindings take positional arguments only (the ctypesForFortran wrappers forward
+``*args``), so pass ``KRESOL`` positionally.
+
+A resolution can be set up for grid-point space only (``setup_trans_4py`` with
+``LDGRIDONLY`` True, CPU only), as the IFS does for its radiation grid: its grid-point
+partition is distributed (``dist_grid4py``/``gath_grid4py``) and inquired
+(``trans_inq_grid4py``, with the region counts of ``setup_trans0_regions4py``), and
+every binding that needs spectral or Fourier space raises ``RuntimeError`` with error
+code 102 for it, instead of ecTrans crashing.
 """
 
 from __future__ import print_function, absolute_import, unicode_literals, division
@@ -72,8 +95,9 @@ else:
 
 # Floating-point type of the field data (spectral / grid-point) crossing the
 # Fortran interface (the JPRB arrays): float32 for the single-precision build,
-# float64 for the double. Geometry (Gaussian latitudes/weights, Legendre
-# polynomials) and resolution deltas remain double regardless.
+# float64 for the double. So are the Gaussian weights, Legendre polynomials and
+# resolution deltas; only the sines of the Gaussian latitudes (PMU), which
+# ecTrans returns in double precision, are float64 regardless.
 _REAL = np.float32 if _prec == "sp" else np.float64
 
 ctypesFF, handle = ctypesForFortran.ctypesForFortranFactory(shared_objects_library)
@@ -204,7 +228,8 @@ def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
       (KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL); local sizes equal global.
     * KRESOL >  0: inquire the resolution already set up by setup_trans_4py (after the
       parallel setup_trans0_4py); the local sizes are this task's partition and the
-      grid parameters are unused.
+      grid parameters are unused. A KRESOL that is not a resolution set up by
+      setup_trans_4py raises RuntimeError with error code 101.
 
     Args:\n
     1) KRESOL: resolution tag from setup_trans_4py, or <=0 to self-initialise
@@ -222,7 +247,8 @@ def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
     5) KSPEC2G: global number of (doubled) spectral coefficients
     6) KSMAX: spectral truncation T
     7) KNMENG: cut-off zonal wavenumber (per latitude)
-    8) PMU: sines of the Gaussian latitudes (global, length KSIZEJ)
+    8) PMU: sines of the Gaussian latitudes (global, length KSIZEJ), float64 whatever the
+       precision of the build
     9) PGW: Gaussian weights (global, length KSIZEJ)
     """
     return ([KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL],
@@ -239,8 +265,89 @@ def trans_inq4py(KRESOL, KSIZEJ, KTRUNC, KSLOEN, KLOEN, KNUMMAXRESOL):
              (np.int64, None, OUT),
              (np.int64, None, OUT),
              (np.int64, (KSIZEJ,), OUT),
-             (_REAL, (KSIZEJ,), OUT),
+             (np.float64, (KSIZEJ,), OUT),
              (_REAL, (KSIZEJ,), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def trans_inq_grid4py(KRESOL, KDGL, KNRNS, KNREW):
+    """
+    Wrapper to TRANS_INQ for the grid-point partition tables of a distributed resolution,
+    spectral or grid-point-only (setup_trans_4py LDGRIDONLY), as the IFS inquires them for
+    its radiation grid.
+
+    Args:\n
+    1) KRESOL: resolution tag from setup_trans_4py
+    2) KDGL: number of latitude rows of that resolution
+    3,4) KNRNS, KNREW: numbers of N-S bands and of E-W regions of the grid-point partition,
+       k_regions_ns and k_regions_ew of setup_trans0_4py (or setup_trans0_regions4py)
+
+    Returns:\n
+    1) NGPTOT: grid points on this task
+    2) NGPTOTG: grid points on the globe
+    3) NGPTOTMX: largest number of grid points on a task
+    4) NFRSTLOFF: offset of the first latitude of this task's N-S band
+    5) NPTRFLOFF: offset of the row of that latitude in NSTA/NONL
+    6,7) MY_REGION_NS, MY_REGION_EW: this task's region (1-based)
+    8) NFRSTLAT (KNRNS,): first latitude of each N-S band
+    9) NLSTLAT (KNRNS,): last latitude of each N-S band
+    10) NPTRFRSTLAT (KNRNS,): row of the first latitude of each N-S band in NSTA/NONL
+    11) NSTA (KNREW, KDGL+KNRNS-1): first grid point (1-based) of each row in each E-W
+        region; a latitude split between two N-S bands has a row in each
+    12) NONL (KNREW, KDGL+KNRNS-1): number of grid points of each row in each E-W region
+    13) NGPTOTL (KNREW, KNRNS): grid points of each region
+    14) PMU (KDGL,): sines of the latitudes, float64
+
+    Raises RuntimeError with error code 1 when KNRNS or KNREW differs from the region counts
+    of the setup, 2 when KDGL differs from the number of latitude rows of KRESOL and 101
+    when KRESOL is not a resolution set up by setup_trans_4py.
+    """
+    return ([KRESOL, KDGL, KNRNS, KNREW],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, (KNRNS,), OUT),
+             (np.int64, (KNRNS,), OUT),
+             (np.int64, (KNRNS,), OUT),
+             (np.int64, (KNREW, KDGL + KNRNS - 1), OUT),
+             (np.int64, (KNREW, KDGL + KNRNS - 1), OUT),
+             (np.int64, (KNREW, KNRNS), OUT),
+             (np.float64, (KDGL,), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def trans_inq_vset4py(KRESOL=1):
+    """
+    Wrapper to TRANS_INQ for the spectral decomposition of a distributed resolution,
+    as needed by the *_vset4py bindings.
+
+    Args:\n
+    1) KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)
+
+    Returns:\n
+    1) KPRTRW: number of wave sets (the number of V-sets is NPROC / KPRTRW)
+    2) KMYSETW: this task's wave set (1-based)
+    3) KMYSETV: this task's V-set (1-based)
+    """
+    return ([KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT)],
             None)
 
 
@@ -498,18 +605,20 @@ def sp2gp_fft1d4py(KSIZES, KTRUNC, PSPEC, KSIZEG):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def inv_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP):
+def inv_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, KRESOL=1):
     """Adjoint of inv_trans_scalar_dist4py (INV_TRANSAD): grid-point seed -> spectral result.
     PGP (KFLD, KGPTOT) IN; returns PSPEC (KFLD, KSPEC2).
-    Note: adj(INV_TRANS) = S^T != DIR_TRANS = S^T W (differ by Gaussian weights W)."""
+    Note: adj(INV_TRANS) = S^T != DIR_TRANS = S^T W (differ by Gaussian weights W).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
     return (
-        [KSPEC2, KGPTOT, KFLD, PGP],
+        [KSPEC2, KGPTOT, KFLD, PGP, KRESOL],
         [
             (np.int64, None, IN),
             (np.int64, None, IN),
             (np.int64, None, IN),
             (_REAL, (KFLD, KGPTOT), IN),
             (_REAL, (KFLD, KSPEC2), OUT),
+            (np.int64, None, IN),
         ],
         None,
     )
@@ -518,7 +627,7 @@ def inv_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def inv_trans_scalar_ders_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW):
+def inv_trans_scalar_ders_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW, KRESOL=1):
     """Adjoint of inv_trans_scalar_ders_dist4py (INV_TRANSAD, LDSCDERS=.TRUE.):
     grid value seed PGP, N-S derivative seed PGPNS, E-W derivative seed PGPEW
     (each (KFLD, KGPTOT)) IN; returns the accumulated spectral result PSPEC
@@ -526,9 +635,10 @@ def inv_trans_scalar_ders_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW):
     derivative adjoint is already implemented in ecTrans -- this wrapper adds no
     new transform maths, only passes the seeds through in the field order
     inv_trans_scalar_ders_dist4py itself uses: values | N-S | E-W).
-    Note: adj(INV_TRANS) = S^T != DIR_TRANS = S^T W (differ by Gaussian weights W)."""
+    Note: adj(INV_TRANS) = S^T != DIR_TRANS = S^T W (differ by Gaussian weights W).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
     return (
-        [KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW],
+        [KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW, KRESOL],
         [
             (np.int64, None, IN),
             (np.int64, None, IN),
@@ -537,6 +647,7 @@ def inv_trans_scalar_ders_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW):
             (_REAL, (KFLD, KGPTOT), IN),
             (_REAL, (KFLD, KGPTOT), IN),
             (_REAL, (KFLD, KSPEC2), OUT),
+            (np.int64, None, IN),
         ],
         None,
     )
@@ -545,17 +656,19 @@ def inv_trans_scalar_ders_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGP, PGPNS, PGPEW):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def dir_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPEC):
+def dir_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPEC, KRESOL=1):
     """Adjoint of dir_trans_scalar_dist4py (DIR_TRANSAD): spectral seed -> grid result.
-    PSPEC (KFLD, KSPEC2) IN; returns PGP (KFLD, KGPTOT)."""
+    PSPEC (KFLD, KSPEC2) IN; returns PGP (KFLD, KGPTOT).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
     return (
-        [KSPEC2, KGPTOT, KFLD, PSPEC],
+        [KSPEC2, KGPTOT, KFLD, PSPEC, KRESOL],
         [
             (np.int64, None, IN),
             (np.int64, None, IN),
             (np.int64, None, IN),
             (_REAL, (KFLD, KSPEC2), IN),
             (_REAL, (KFLD, KGPTOT), OUT),
+            (np.int64, None, IN),
         ],
         None,
     )
@@ -564,11 +677,12 @@ def dir_trans_scalar_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPEC):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def inv_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGPU, PGPV):
+def inv_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGPU, PGPV, KRESOL=1):
     """Adjoint of inv_trans_uv_dist4py (INV_TRANSAD): grid u,v seeds -> spectral vor,div.
-    PGPU, PGPV (KFLD, KGPTOT) IN; returns PSPVOR, PSPDIV (KFLD, KSPEC2)."""
+    PGPU, PGPV (KFLD, KGPTOT) IN; returns PSPVOR, PSPDIV (KFLD, KSPEC2).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
     return (
-        [KSPEC2, KGPTOT, KFLD, PGPU, PGPV],
+        [KSPEC2, KGPTOT, KFLD, PGPU, PGPV, KRESOL],
         [
             (np.int64, None, IN),
             (np.int64, None, IN),
@@ -577,6 +691,7 @@ def inv_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGPU, PGPV):
             (_REAL, (KFLD, KGPTOT), IN),
             (_REAL, (KFLD, KSPEC2), OUT),
             (_REAL, (KFLD, KSPEC2), OUT),
+            (np.int64, None, IN),
         ],
         None,
     )
@@ -585,11 +700,12 @@ def inv_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PGPU, PGPV):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def dir_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV):
+def dir_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV, KRESOL=1):
     """Adjoint of dir_trans_uv_dist4py (DIR_TRANSAD): spectral vor,div seeds -> grid u,v.
-    PSPVOR, PSPDIV (KFLD, KSPEC2) IN; returns PGPU, PGPV (KFLD, KGPTOT)."""
+    PSPVOR, PSPDIV (KFLD, KSPEC2) IN; returns PGPU, PGPV (KFLD, KGPTOT).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
     return (
-        [KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV],
+        [KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV, KRESOL],
         [
             (np.int64, None, IN),
             (np.int64, None, IN),
@@ -598,6 +714,7 @@ def dir_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV):
             (_REAL, (KFLD, KSPEC2), IN),
             (_REAL, (KFLD, KGPTOT), OUT),
             (_REAL, (KFLD, KGPTOT), OUT),
+            (np.int64, None, IN),
         ],
         None,
     )
@@ -607,10 +724,15 @@ def dir_trans_uv_dist4py_ad(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV):
 
 
 @ctypesFF()
-def mpl_init4py():
-    """Initialise FIAT MPL (after mpi4py). Returns (rank[1-based], size)."""
-    return ([],
-            [(np.int64, None, OUT),
+def mpl_init4py(KCOMM=-1):
+    """Initialise FIAT MPL (after mpi4py).
+    Optionally pass a communicator to be used instead of MPI_COMM_WORLD (which is the default).
+    ecTrans then runs on the tasks of KCOMM only, and the other tasks take no part.
+    KCOMM is the Fortran handle of the communicator (mpi4py: comm.py2f()).
+    Returns (rank[1-based], size) within KCOMM or MPI_COMM_WORLD."""
+    return ([KCOMM],
+            [(np.int64, None, IN),
+             (np.int64, None, OUT),
              (np.int64, None, OUT)],
             None)
 
@@ -642,17 +764,47 @@ def setup_trans0_4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def setup_trans_4py(KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT):
+def setup_trans_4py(KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT, LDGRIDONLY=False):
     """Parallel resolution-dependent setup (LDUSEFLT selects Fast Legendre Transform).
+    LDGRIDONLY=True sets up grid-point space only, as the IFS does for its radiation grid
+    (KSMAX is then not used; the IFS passes 0): dist_grid4py, gath_grid4py and
+    trans_inq_grid4py work on such a resolution, every binding that needs spectral or
+    Fourier space (the transforms, the spectral scatter/gather, the norms -- gpnorm_trans4py
+    too -- and trans_inq4py, trans_inq_vset4py) raises RuntimeError with error code 102.
+    CPU only: the GPU version of ecTrans's SETUP_TRANS resets LDGRIDONLY to False and sets
+    up truncation 1 instead (src/trans/gpu/external/setup_trans.F90).
     Returns kresol."""
-    return ([KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT],
+    return ([KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT, LDGRIDONLY],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KSLOEN,), IN),
              (bool, None, IN),
              (bool, None, IN),
-             (np.int64, None, OUT)],
+             (np.int64, None, OUT),
+             (bool, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def setup_trans0_regions4py(KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF):
+    """setup_trans0_4py that also returns the number of E-W regions of each N-S band of the
+    grid-point partition (SETUP_TRANS0's K_REGIONS; with equal regions, it differs between
+    the bands). The same setup otherwise: call one of the two, once per process.
+    Returns (k_regions_ns, k_regions_ew, k_regions), k_regions of length KPRGPNS * KPRGPEW:
+    the number of E-W regions of N-S band 1..k_regions_ns, zero beyond."""
+    return ([KPRGPNS, KPRGPEW, KPRTRW, LDEQ_REGIONS, KMAX_RESOL, LDMPOFF],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (bool, None, IN),
+             (np.int64, None, IN),
+             (bool, None, IN),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, (KPRGPNS * KPRGPEW,), OUT)],
             None)
 
 
@@ -665,60 +817,68 @@ def setup_trans_4py(KSMAX, KDGL, KSLOEN, KLOEN, LDSPLIT, LDUSEFLT):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def dist_spec4py(KSPEC2G, KSPEC2, KFLD, KFROM, PSPECG):
-    """Scatter global spectral PSPECG(KFLD,KSPEC2G) -> local PSPEC(KFLD,KSPEC2)."""
-    return ([KSPEC2G, KSPEC2, KFLD, KFROM, PSPECG],
+def dist_spec4py(KSPEC2G, KSPEC2, KFLD, KFROM, PSPECG, KRESOL=1):
+    """Scatter global spectral PSPECG(KFLD,KSPEC2G) -> local PSPEC(KFLD,KSPEC2).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2G, KSPEC2, KFLD, KFROM, PSPECG, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KFLD,), IN),
              (_REAL, (KFLD, KSPEC2G), IN),
-             (_REAL, (KFLD, KSPEC2), OUT)],
+             (_REAL, (KFLD, KSPEC2), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def gath_spec4py(KSPEC2G, KSPEC2, KFLD, KTO, PSPEC):
-    """Gather local spectral PSPEC(KFLD,KSPEC2) -> global PSPECG(KFLD,KSPEC2G)."""
-    return ([KSPEC2G, KSPEC2, KFLD, KTO, PSPEC],
+def gath_spec4py(KSPEC2G, KSPEC2, KFLD, KTO, PSPEC, KRESOL=1):
+    """Gather local spectral PSPEC(KFLD,KSPEC2) -> global PSPECG(KFLD,KSPEC2G).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2G, KSPEC2, KFLD, KTO, PSPEC, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KFLD,), IN),
              (_REAL, (KFLD, KSPEC2), IN),
-             (_REAL, (KFLD, KSPEC2G), OUT)],
+             (_REAL, (KFLD, KSPEC2G), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def dist_grid4py(KGPTOTG, KGPTOT, KFLD, KFROM, PGPG):
-    """Scatter global grid PGPG(KFLD,KGPTOTG) -> local PGP(KFLD,KGPTOT)."""
-    return ([KGPTOTG, KGPTOT, KFLD, KFROM, PGPG],
+def dist_grid4py(KGPTOTG, KGPTOT, KFLD, KFROM, PGPG, KRESOL=1):
+    """Scatter global grid PGPG(KFLD,KGPTOTG) -> local PGP(KFLD,KGPTOT).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KGPTOTG, KGPTOT, KFLD, KFROM, PGPG, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KFLD,), IN),
              (_REAL, (KFLD, KGPTOTG), IN),
-             (_REAL, (KFLD, KGPTOT), OUT)],
+             (_REAL, (KFLD, KGPTOT), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def gath_grid4py(KGPTOTG, KGPTOT, KFLD, KTO, PGP):
-    """Gather local grid PGP(KFLD,KGPTOT) -> global PGPG(KFLD,KGPTOTG)."""
-    return ([KGPTOTG, KGPTOT, KFLD, KTO, PGP],
+def gath_grid4py(KGPTOTG, KGPTOT, KFLD, KTO, PGP, KRESOL=1):
+    """Gather local grid PGP(KFLD,KGPTOT) -> global PGPG(KFLD,KGPTOTG).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KGPTOTG, KGPTOT, KFLD, KTO, PGP, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, (KFLD,), IN),
              (_REAL, (KFLD, KGPTOT), IN),
-             (_REAL, (KFLD, KGPTOTG), OUT)],
+             (_REAL, (KFLD, KGPTOTG), OUT),
+             (np.int64, None, IN)],
             None)
 
 
@@ -730,77 +890,87 @@ def gath_grid4py(KGPTOTG, KGPTOT, KFLD, KTO, PGP):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def inv_trans_scalar_dist4py(KSPEC2, KGPTOT, KFLD, PSPEC):
-    """Local inverse transform: scalar spectral (KFLD,KSPEC2) -> grid (KFLD,KGPTOT)."""
-    return ([KSPEC2, KGPTOT, KFLD, PSPEC],
+def inv_trans_scalar_dist4py(KSPEC2, KGPTOT, KFLD, PSPEC, KRESOL=1):
+    """Local inverse transform: scalar spectral (KFLD,KSPEC2) -> grid (KFLD,KGPTOT).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLD, PSPEC, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KSPEC2), IN),
-             (_REAL, (KFLD, KGPTOT), OUT)],
+             (_REAL, (KFLD, KGPTOT), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def inv_trans_scalar_ders_dist4py(KSPEC2, KGPTOT, KFLD, PSPEC):
+def inv_trans_scalar_ders_dist4py(KSPEC2, KGPTOT, KFLD, PSPEC, KRESOL=1):
     """Local inverse transform with derivatives: scalar spectral (KFLD,KSPEC2) ->
-    grid value, N-S derivative, E-W derivative (each (KFLD,KGPTOT))."""
-    return ([KSPEC2, KGPTOT, KFLD, PSPEC],
+    grid value, N-S derivative, E-W derivative (each (KFLD,KGPTOT)).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLD, PSPEC, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KSPEC2), IN),
              (_REAL, (KFLD, KGPTOT), OUT),
              (_REAL, (KFLD, KGPTOT), OUT),
-             (_REAL, (KFLD, KGPTOT), OUT)],
+             (_REAL, (KFLD, KGPTOT), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def dir_trans_scalar_dist4py(KSPEC2, KGPTOT, KFLD, PGP):
-    """Local direct transform: scalar grid (KFLD,KGPTOT) -> spectral (KFLD,KSPEC2)."""
-    return ([KSPEC2, KGPTOT, KFLD, PGP],
+def dir_trans_scalar_dist4py(KSPEC2, KGPTOT, KFLD, PGP, KRESOL=1):
+    """Local direct transform: scalar grid (KFLD,KGPTOT) -> spectral (KFLD,KSPEC2).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLD, PGP, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KGPTOT), IN),
-             (_REAL, (KFLD, KSPEC2), OUT)],
+             (_REAL, (KFLD, KSPEC2), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def inv_trans_uv_dist4py(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV):
-    """Local inverse transform: vorticity/divergence -> u,v (KFLD,KGPTOT each)."""
-    return ([KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV],
+def inv_trans_uv_dist4py(KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV, KRESOL=1):
+    """Local inverse transform: vorticity/divergence -> u,v (KFLD,KGPTOT each).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLD, PSPVOR, PSPDIV, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KSPEC2), IN),
              (_REAL, (KFLD, KSPEC2), IN),
              (_REAL, (KFLD, KGPTOT), OUT),
-             (_REAL, (KFLD, KGPTOT), OUT)],
+             (_REAL, (KFLD, KGPTOT), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def dir_trans_uv_dist4py(KSPEC2, KGPTOT, KFLD, PGPU, PGPV):
-    """Local direct transform: u,v -> vorticity/divergence (KFLD,KSPEC2 each)."""
-    return ([KSPEC2, KGPTOT, KFLD, PGPU, PGPV],
+def dir_trans_uv_dist4py(KSPEC2, KGPTOT, KFLD, PGPU, PGPV, KRESOL=1):
+    """Local direct transform: u,v -> vorticity/divergence (KFLD,KSPEC2 each).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLD, PGPU, PGPV, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KGPTOT), IN),
              (_REAL, (KFLD, KGPTOT), IN),
              (_REAL, (KFLD, KSPEC2), OUT),
-             (_REAL, (KFLD, KSPEC2), OUT)],
+             (_REAL, (KFLD, KSPEC2), OUT),
+             (np.int64, None, IN)],
             None)
 
 
@@ -811,28 +981,434 @@ def dir_trans_uv_dist4py(KSPEC2, KGPTOT, KFLD, PGPU, PGPV):
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def specnorm4py(KSPEC2, KFLD, PSPEC):
-    """Global spectral L2 norm per field. Returns PNORM(KFLD)."""
-    return ([KSPEC2, KFLD, PSPEC],
+def specnorm4py(KSPEC2, KFLD, PSPEC, KRESOL=1):
+    """Global spectral L2 norm per field. Returns PNORM(KFLD).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KFLD, PSPEC, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KSPEC2), IN),
-             (_REAL, (KFLD,), OUT)],
+             (_REAL, (KFLD,), OUT),
+             (np.int64, None, IN)],
             None)
 
 
 @treatReturnCode
 @ctypesFF()
 @addReturnCode
-def gpnorm_trans4py(KGPTOT, KFLD, PGP):
-    """Global grid-point average/min/max per field. Returns (PAVE, PMIN, PMAX)."""
-    return ([KGPTOT, KFLD, PGP],
+def gpnorm_trans4py(KGPTOT, KFLD, PGP, KRESOL=1):
+    """Global grid-point average/min/max per field. Returns (PAVE, PMIN, PMAX).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KGPTOT, KFLD, PGP, KRESOL],
             [(np.int64, None, IN),
              (np.int64, None, IN),
              (_REAL, (KFLD, KGPTOT), IN),
              (_REAL, (KFLD,), OUT),
              (_REAL, (KFLD,), OUT),
-             (_REAL, (KFLD,), OUT)],
+             (_REAL, (KFLD,), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+# ---------------------------------------------------------------------------
+# V-set-aware distributed bindings, for the 2-D spectral decomposition (several
+# V-sets, KPRTRW < NPROC in setup_trans0_4py): the spectral fields are distributed
+# over the V-sets as well. KVSET/KVSETSC/KVSETUV (KFLDG,) give the V-set (1-based)
+# of each of the KFLDG global fields; a task holds the spectral coefficients of the
+# KFLDL fields of its own V-set (KMYSETV of trans_inq_vset4py), in the order of the
+# global fields, and the grid-point values of all KFLDG fields at its grid points.
+# With a single V-set (KVSET all 1, KFLDL == KFLDG) they compute the same as the
+# *_dist4py bindings, which ecTrans does not accept with several V-sets.
+# ---------------------------------------------------------------------------
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dist_spec_vset4py(KSPEC2G, KSPEC2, KFLDG, KFLDL, KFROM, KVSET, PSPECG, KRESOL=1):
+    """Scatter global spectral PSPECG(KFLDG,KSPEC2G) from the tasks KFROM (as for
+    dist_spec4py) -> local PSPEC(KFLDL,KSPEC2), the fields of this task's V-set.
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2G, KSPEC2, KFLDG, KFLDL, KFROM, KVSET, PSPECG, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDG, KSPEC2G), IN),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def gath_spec_vset4py(KSPEC2G, KSPEC2, KFLDG, KFLDL, KTO, KVSET, PSPEC, KRESOL=1):
+    """Gather local spectral PSPEC(KFLDL,KSPEC2), the fields of this task's V-set ->
+    global PSPECG(KFLDG,KSPEC2G) on the tasks KTO (as for gath_spec4py).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2G, KSPEC2, KFLDG, KFLDL, KTO, KVSET, PSPEC, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG, KSPEC2G), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_scalar_vset4py(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PSPEC, KRESOL=1):
+    """Local inverse transform: scalar spectral (KFLDL,KSPEC2) -> grid (KFLDG,KGPTOT).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PSPEC, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_scalar_ders_vset4py(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PSPEC, KRESOL=1):
+    """Local inverse transform with derivatives: scalar spectral (KFLDL,KSPEC2) ->
+    grid value, N-S derivative, E-W derivative (each (KFLDG,KGPTOT)).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PSPEC, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_scalar_vset4py(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PGP, KRESOL=1):
+    """Local direct transform: scalar grid (KFLDG,KGPTOT) -> spectral (KFLDL,KSPEC2).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PGP, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_uv_vset4py(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PSPVOR, PSPDIV, KRESOL=1):
+    """Local inverse transform: vorticity/divergence (KFLDL,KSPEC2 each) -> u,v
+    (KFLDG,KGPTOT each).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PSPVOR, PSPDIV, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_uv_vset4py(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PGPU, PGPV, KRESOL=1):
+    """Local direct transform: u,v (KFLDG,KGPTOT each) -> vorticity/divergence
+    (KFLDL,KSPEC2 each).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PGPU, PGPV, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_scalar_vset4py_ad(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PGP, KRESOL=1):
+    """Adjoint of inv_trans_scalar_vset4py (INV_TRANSAD): grid-point seed PGP
+    (KFLDG,KGPTOT) IN; returns PSPEC (KFLDL,KSPEC2).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PGP, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_scalar_ders_vset4py_ad(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PGP, PGPNS, PGPEW,
+                                     KRESOL=1):
+    """Adjoint of inv_trans_scalar_ders_vset4py (INV_TRANSAD, LDSCDERS=.TRUE.): value,
+    N-S and E-W derivative seeds (each (KFLDG,KGPTOT)) IN; returns the accumulated
+    spectral result PSPEC (KFLDL,KSPEC2).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PGP, PGPNS, PGPEW, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_scalar_vset4py_ad(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PSPEC, KRESOL=1):
+    """Adjoint of dir_trans_scalar_vset4py (DIR_TRANSAD): spectral seed PSPEC
+    (KFLDL,KSPEC2) IN; returns PGP (KFLDG,KGPTOT).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETSC, PSPEC, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_uv_vset4py_ad(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PGPU, PGPV, KRESOL=1):
+    """Adjoint of inv_trans_uv_vset4py (INV_TRANSAD): u,v seeds (KFLDG,KGPTOT each) IN;
+    returns PSPVOR, PSPDIV (KFLDL,KSPEC2 each).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PGPU, PGPV, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDG, KGPTOT), IN),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (_REAL, (KFLDL, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_uv_vset4py_ad(KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PSPVOR, PSPDIV, KRESOL=1):
+    """Adjoint of dir_trans_uv_vset4py (DIR_TRANSAD): vorticity/divergence seeds
+    (KFLDL,KSPEC2 each) IN; returns PGPU, PGPV (KFLDG,KGPTOT each).
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFLDL, KFLDG, KVSETUV, PSPVOR, PSPDIV, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (_REAL, (KFLDG, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def specnorm_vset4py(KSPEC2, KFLDG, KFLDL, KVSET, PSPEC, KRESOL=1):
+    """Global spectral L2 norm per field from the local PSPEC(KFLDL,KSPEC2), the fields
+    of this task's V-set. Returns PNORM(KFLDG), the norms of all global fields, on
+    the first task.
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KFLDG, KFLDL, KVSET, PSPEC, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFLDG,), IN),
+             (_REAL, (KFLDL, KSPEC2), IN),
+             (_REAL, (KFLDG,), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+# ---------------------------------------------------------------------------
+# One transform for a whole set of fields: winds and scalars together in a
+# single INV_TRANS or DIR_TRANS, as the IFS transforms its model state. The
+# V-set maps and field counts are those of the *_vset4py bindings (with a single
+# V-set: KVSETUV, KVSETSC all 1, KFUV == KFUVG, KFSC == KFSCG).
+# ---------------------------------------------------------------------------
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def inv_trans_all_dist4py(KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KDDIVGP, KDSCDERS,
+                          KVSETUV, KVSETSC, PSPVOR, PSPDIV, PSPSCALAR, KRESOL=1):
+    """Local inverse transform of vorticity/divergence (KFUV,KSPEC2 each) and scalar fields
+    (KFSC,KSPEC2), the fields of this task's V-set, in a single INV_TRANS. KVSETUV (KFUVG,)
+    and KVSETSC (KFSCG,) give the V-set of each global wind and scalar field. KDDIVGP and
+    KDSCDERS (0 or 1) ask for the grid-point divergence and the derivatives of the scalars.
+    Returns PGP (KFGP,KGPTOT), all fields in the order of inv_trans.h:
+      [divergence (KFUVG, if KDDIVGP)] u (KFUVG) v (KFUVG) scalars (KFSCG)
+      [N-S derivatives (KFSCG)] [E-W derivatives (KFSCG)] (the last two if KDSCDERS),
+    so KFGP = (3 if KDDIVGP else 2) * KFUVG + (3 if KDSCDERS else 1) * KFSCG.
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KDDIVGP, KDSCDERS, KVSETUV,
+             KVSETSC, PSPVOR, PSPDIV, PSPSCALAR, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFUVG,), IN),
+             (np.int64, (KFSCG,), IN),
+             (_REAL, (KFUV, KSPEC2), IN),
+             (_REAL, (KFUV, KSPEC2), IN),
+             (_REAL, (KFSC, KSPEC2), IN),
+             (_REAL, (KFGP, KGPTOT), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def dir_trans_all_dist4py(KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KVSETUV, KVSETSC, PGP,
+                          KRESOL=1):
+    """Local direct transform of grid-point fields PGP (KFGP,KGPTOT), all fields in the order
+    of dir_trans.h, u (KFUVG) v (KFUVG) scalars (KFSCG), so KFGP = 2 * KFUVG + KFSCG, in a
+    single DIR_TRANS. KVSETUV (KFUVG,) and KVSETSC (KFSCG,) give the V-set of each global wind
+    and scalar field. Returns PSPVOR, PSPDIV (KFUV,KSPEC2 each) and PSPSCALAR (KFSC,KSPEC2),
+    the fields of this task's V-set.
+    KRESOL: resolution tag from setup_trans_4py (default 1, the first resolution)."""
+    return ([KSPEC2, KGPTOT, KFUV, KFSC, KFUVG, KFSCG, KFGP, KVSETUV, KVSETSC, PGP, KRESOL],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, None, IN),
+             (np.int64, (KFUVG,), IN),
+             (np.int64, (KFSCG,), IN),
+             (_REAL, (KFGP, KGPTOT), IN),
+             (_REAL, (KFUV, KSPEC2), OUT),
+             (_REAL, (KFUV, KSPEC2), OUT),
+             (_REAL, (KFSC, KSPEC2), OUT),
+             (np.int64, None, IN)],
+            None)
+
+
+# ---------------------------------------------------------------------------
+# The repacking of spectral arrays between the layout of the Python callers
+# (KFLD, KSPEC2) and that of ecTrans, which every distributed binding with
+# spectral fields does (SPEC_LAYOUT4PY_MOD in spec_layout4py.F90): by default
+# with array-section loops; with the environment variable ECTRANS4PY_OMP set to a
+# value that does not start with '0', with loops blocked over the spectral
+# coefficients and threaded with OpenMP (OMP_NUM_THREADS), which pay off with
+# several threads per task. The results are bit-identical. ECTRANS4PY_OMP is read
+# once per process. These bindings expose the repacking, to test and time it.
+# ---------------------------------------------------------------------------
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def spec_to_fld4py(KSPEC2, KFLD, PSPEC):
+    """The transpose (KSPEC2,KFLD) of PSPEC (KFLD,KSPEC2), as the bindings repack their
+    spectral inputs for ecTrans."""
+    return ([KSPEC2, KFLD, PSPEC],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (_REAL, (KFLD, KSPEC2), IN),
+             (_REAL, (KSPEC2, KFLD), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def fld_to_spec4py(KSPEC2, KFLD, PFLD):
+    """The transpose (KFLD,KSPEC2) of PFLD (KSPEC2,KFLD), as the bindings repack the spectral
+    outputs of ecTrans."""
+    return ([KSPEC2, KFLD, PFLD],
+            [(np.int64, None, IN),
+             (np.int64, None, IN),
+             (_REAL, (KSPEC2, KFLD), IN),
+             (_REAL, (KFLD, KSPEC2), OUT)],
+            None)
+
+
+@treatReturnCode
+@ctypesFF()
+@addReturnCode
+def spec_layout_inq4py():
+    """Inquire the repacking of spectral arrays. Returns:
+    1) KBLK: number of spectral coefficients in a block of the blocked loops
+    2) KBLOCKED: 1 if ECTRANS4PY_OMP selects the blocked, threaded loops, else 0
+    3) KTHREADS: number of OpenMP threads of the blocked loops (1 without OpenMP)
+    4) KOPENMP: 1 if the repacking is compiled with OpenMP, else 0
+    5) KOPENMP_BUILD: 1 if the build asked for OpenMP (ecTrans's feature OMP), else 0;
+       KOPENMP must be the same, or the blocked loops run on a single thread."""
+    return ([],
+            [(np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT),
+             (np.int64, None, OUT)],
             None)
 
 
