@@ -10,7 +10,7 @@
 
 MODULE GAWL_MOD
 CONTAINS
-SUBROUTINE GAWL(PFN,PL,PW,PEPS,KN,KITER,PMOD)
+SUBROUTINE GAWL(PFN, PL, PW, PEPS, KN, KITER, PMOD)
 
 !**** *GAWL * - Routine to perform the Newton loop
 
@@ -61,58 +61,62 @@ SUBROUTINE GAWL(PFN,PL,PW,PEPS,KN,KITER,PMOD)
 !      F. Vana  05-Mar-2015  Support for single precision
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND  ,ONLY : JPRD, JPIM
-
-USE CPLEDN_MOD      ,ONLY : CPLEDN
+USE EC_PARKIND, ONLY: JPRD, JPIM
 
 !     ------------------------------------------------------------------
 
 IMPLICIT NONE
 
-INTEGER(KIND=JPIM),INTENT(IN)  :: KN
-REAL(KIND=JPRD),INTENT(IN)     :: PFN(0:KN/2)
-REAL(KIND=JPRD),INTENT(INOUT)  :: PL
-REAL(KIND=JPRD),INTENT(OUT)    :: PW
-REAL(KIND=JPRD),INTENT(IN)     :: PEPS
-INTEGER(KIND=JPIM),INTENT(OUT) :: KITER
-REAL(KIND=JPRD),INTENT(INOUT)  :: PMOD
+INTEGER(KIND=JPIM), INTENT(IN)    :: KN
+REAL(KIND=JPRD),    INTENT(IN)    :: PFN(0:KN/2)
+REAL(KIND=JPRD),    INTENT(INOUT) :: PL
+REAL(KIND=JPRD),    INTENT(OUT)   :: PW
+REAL(KIND=JPRD),    INTENT(IN)    :: PEPS
+INTEGER(KIND=JPIM), INTENT(OUT)   :: KITER
+REAL(KIND=JPRD),    INTENT(INOUT) :: PMOD
 
 !     ------------------------------------------------------------------
 
-
-INTEGER(KIND=JPIM) :: IFLAG, ITEMAX, JTER, IODD
-REAL(KIND=JPRD) :: ZW, ZX, ZXN
-
-!     ------------------------------------------------------------------
-
-!*       1. Initialization.
-!           ---------------
-
-ITEMAX = 20
-ZX = PL
-IFLAG = 0
-IODD=MOD(KN,2)
+INTEGER(KIND=JPIM), PARAMETER :: ITEMAX = 20
+INTEGER(KIND=JPIM) :: IODD
+REAL(KIND=JPRD) :: ZDLK, ZDLLDN
+INTEGER(KIND=JPIM) :: IK, JN
 
 !     ------------------------------------------------------------------
 
-!*       2. Newton iteration.
-!           -----------------
+IODD = MOD(KN, 2)
+PMOD = HUGE(1.0_JPRD)
 
-DO JTER=1,ITEMAX+1
-  KITER = JTER
-  CALL CPLEDN(KN,IODD,PFN,ZX,IFLAG,ZW,ZXN,PMOD)
-  ZX = ZXN
+DO KITER = 1, ITEMAX + 1
+  ZDLLDN = 0.0_JPRD
+  IK = 1
+  IF (ABS(PMOD) <= PEPS * 1000._JPRD) THEN
+    ! Last pass
+    DO JN = 2 - IODD, KN, 2
+      ! normalised derivative
+      ZDLLDN = ZDLLDN - PFN(IK) * REAL(JN, JPRD) * SIN(REAL(JN, JPRD) * PL)
+      IK = IK + 1
+    ENDDO
+    PW = REAL(2 * KN + 1, JPRD) / ZDLLDN ** 2
+    EXIT
+  ENDIF
 
-  IF(IFLAG == 1) EXIT
-  IF(ABS(PMOD) <= PEPS*1000._JPRD) IFLAG = 1
+  ZDLK = 0.0_JPRD
+  IF (IODD == 0) ZDLK = 0.5_JPRD * PFN(0)
+
+  DO JN = 2 - IODD, KN, 2
+    ! normalised ordinary Legendre polynomial == \overbar{P_n}^0
+    ZDLK = ZDLK + PFN(IK) * COS(REAL(JN, JPRD) * PL)
+    ! normalised derivative == d/d\theta(\overbar{P_n}^0)
+    ZDLLDN = ZDLLDN - PFN(IK) * REAL(JN, JPRD) * SIN(REAL(JN, JPRD) * PL)
+    IK = IK + 1
+  ENDDO
+  ! Newton method
+  PMOD = -ZDLK / ZDLLDN
+  PL = PL + PMOD
 ENDDO
-
-PL = ZXN
-PW = ZW
 
 !     ------------------------------------------------------------------
 
 END SUBROUTINE GAWL
 END MODULE GAWL_MOD
-
-
