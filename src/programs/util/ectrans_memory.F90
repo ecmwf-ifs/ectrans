@@ -2,7 +2,7 @@ module ectrans_memory
 use, intrinsic :: iso_c_binding, only : c_char
 
 private
-public :: allocator
+public :: allocator, update_device
 
 type allocator_t
 contains
