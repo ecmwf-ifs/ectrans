@@ -654,7 +654,7 @@ endif()
 # Add test for ability to call INV_TRANS at multiple precisions
 # --------------------------------------------------------------------------------------------------
 
-if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
+if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION AND HAVE_FFTW )
   foreach( platform ${platforms} )
     if( "${platform}" STREQUAL "cpu" )
       set( trans_libs ectrans_sp ectrans_dp )
