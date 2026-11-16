@@ -19,3 +19,7 @@ set( ENABLE_OMP ON )
 set( ENABLE_GPU_GRAPHS_GEMM OFF )
 set( ENABLE_GPU_GRAPHS_FFT OFF )
 set( ENABLE_FIELD_API OFF ) # Not supported on LUMI yet
+
+set( CMAKE_EXE_LINKER_FLAGS -fopenmp )
+set( CMAKE_SHARED_LINKER_FLAGS -fopenmp )
+

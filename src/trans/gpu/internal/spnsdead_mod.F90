@@ -111,24 +111,24 @@ ASSOCIATE(D_NUMP=>D%NUMP, R_NSMAX=>R%NSMAX, D_MYMS=>D%MYMS)
 #endif
 #endif
 DO KMLOC=1,D_NUMP
-  DO JN=0,R_NSMAX+1
+  DO JN=-1,R_NSMAX+2
     DO J=1,KF_SCALARS
       IR = 2*J-1
       II = IR+1
       KM = D_MYMS(KMLOC)
 
-      IF(KM /= 0 .AND. JN >= KM) THEN
-        ! (DO JN=KN,R_NSMAX+1)
+      ! Gather into one output coefficient per iteration: scattering from the
+      ! derivative coefficients races between neighbouring degrees.
+      IF(JN >= KM-1) THEN
         JI = R_NSMAX+3-JN
-        PF(IR,JI+1,KMLOC) = PF(IR,JI+1,KMLOC) - (JN-1)*PEPSNM(KMLOC,JN)*PNSD(IR,JI,KMLOC)
-        PF(IR,JI-1,KMLOC) = PF(IR,JI-1,KMLOC) + (JN+2)*PEPSNM(KMLOC,JN+1)*PNSD(IR,JI,KMLOC)
-        PF(II,JI+1,KMLOC) = PF(II,JI+1,KMLOC) - (JN-1)*PEPSNM(KMLOC,JN)*PNSD(II,JI,KMLOC)
-        PF(II,JI-1,KMLOC) = PF(II,JI-1,KMLOC) + (JN+2)*PEPSNM(KMLOC,JN+1)*PNSD(II,JI,KMLOC) 
-      ELSEIF(KM == 0) THEN
-        ! (DO JN=0,R_NSMAX+1)
-        JI = R_NSMAX+3-JN
-        PF(IR,JI+1,KMLOC) = PF(IR,JI+1,KMLOC) - (JN-1)*PEPSNM(KMLOC,JN)*PNSD(IR,JI,KMLOC)
-        PF(IR,JI-1,KMLOC) = PF(IR,JI-1,KMLOC) + (JN+2)*PEPSNM(KMLOC,JN+1)*PNSD(IR,JI,KMLOC)
+        IF(JN <= R_NSMAX) THEN
+          PF(IR,JI,KMLOC) = PF(IR,JI,KMLOC) - JN*PEPSNM(KMLOC,JN+1)*PNSD(IR,JI-1,KMLOC)
+          IF(KM /= 0) PF(II,JI,KMLOC) = PF(II,JI,KMLOC) - JN*PEPSNM(KMLOC,JN+1)*PNSD(II,JI-1,KMLOC)
+        ENDIF
+        IF(JN >= KM+1) THEN
+          PF(IR,JI,KMLOC) = PF(IR,JI,KMLOC) + (JN+1)*PEPSNM(KMLOC,JN)*PNSD(IR,JI+1,KMLOC)
+          IF(KM /= 0) PF(II,JI,KMLOC) = PF(II,JI,KMLOC) + (JN+1)*PEPSNM(KMLOC,JN)*PNSD(II,JI+1,KMLOC)
+        ENDIF
       ENDIF
     ENDDO
   ENDDO
