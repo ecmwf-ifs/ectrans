@@ -116,13 +116,19 @@ LLP2 = NPRINTLEV>1
 
 IBUFLEN = R%NDGL*N_REGIONS_EW*2
 
+! Local indices for the first and last latitude points in my NS region
 I1 = MAX(1,      D%NFRSTLAT(MY_REGION_NS) - D%NFRSTLOFF)
 I2 = MIN(R%NDGL, D%NLSTLAT (MY_REGION_NS) - D%NFRSTLOFF)
 
+! Number of latitudes in my NS region
 ILEN = D%NLSTLAT(MY_REGION_NS) - D%NFRSTLAT(MY_REGION_NS)+1
 
+! Number of grid points on all latitudes before the first latitude of my NS region
+! (equal to the offset of my NS region's first grid point if latitudes are not split)
 IGPTPRSETS = SUM(G%NLOEN(1:D%NFRSTLAT(MY_REGION_NS)-1))
 
+! Compute offset for the starting grid point in my NS region (IGPTA) and the number of grid points
+! in my NS region (IGPTS)
 IF (D%LSPLIT) THEN
   IF( LEQ_REGIONS )THEN
     IGPTA=0
@@ -132,9 +138,11 @@ IF (D%LSPLIT) THEN
     IGPTS = KPROCAGP(MY_REGION_NS)
   ELSE
     IF (MY_REGION_NS <= KRESTM.OR.KRESTM == 0) THEN
+      ! Normal band for the first KRESTM regions
       IGPTS = KMEDIAP
       IGPTA = KMEDIAP*(MY_REGION_NS-1)
     ELSE
+      ! Remaining bands for the regions after the first KRESTM regions
       IGPTS = KMEDIAP-1
       IGPTA = KMEDIAP*KRESTM+IGPTS*(MY_REGION_NS-1-KRESTM)
     ENDIF
@@ -144,8 +152,14 @@ ELSE
   IGPTS = SUM(G%NLOEN(D%NFRSTLAT(MY_REGION_NS):D%NLSTLAT(MY_REGION_NS)))
 ENDIF
 
+! Average number of points per EW region in my NS region, rounded down (IGPTSP) and how many EW
+! regions get an extra point (IREST) (these regions come first)
 IGPTSP = IGPTS/N_REGIONS(MY_REGION_NS)
 IREST = IGPTS-N_REGIONS(MY_REGION_NS)*IGPTSP
+
+! The starting (IXPTLAT) and ending (ILSTPTLAT) point indices for each latitude in my NS region
+! Note that when LSPLIT = .FALSE., IXPTLAT and ILSTPTLAT are simply equal to 1 and NLOEN(JGL),
+! respectively
 IXPTLAT(1) = IGPTA-IGPTPRSETS+1
 ILSTPTLAT(1) = G%NLOEN(D%NFRSTLAT(MY_REGION_NS))
 INPLAT = G%NLOEN(D%NFRSTLAT(MY_REGION_NS))-IXPTLAT(1)+1
@@ -163,12 +177,11 @@ DO JB=1,N_REGIONS_EW
   ENDDO
 ENDDO
 
-
 !  grid point decomposition
 !  ---------------------------------------
 IF( NPROC > 1 )THEN
   DO JGL=1,ILEN
-    ! Longitudinal spacing of points in thousands of a degree
+    ! Longitudinal spacing of points in thousandths of a degree
     ZDIVID(JGL) = 360000.0_JPRD/REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRD)
   ENDDO
   IF( LDWEIGHTED_DISTR )THEN
