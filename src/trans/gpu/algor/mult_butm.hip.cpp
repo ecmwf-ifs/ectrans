@@ -26,13 +26,16 @@
 // per node for the gather/scatter kernels, and the GEMMs grouped by shape. The plan for all levels
 // is uploaded with a single copy, after which each level takes one gather kernel (or two scatter
 // kernels in the transposed case) plus one batched GEMM per distinct shape. The GEMM groups of a
-// phase are independent, and are spread over several "branch" streams (MULT_BUTM_NBRANCHES,
-// default 4) so that they can run concurrently.
+// phase are independent. ECTRANS_BUTTERFLY_NBRANCHES selects independent work (0) or stream chains (N,
+// default 64 for FP32 cuBLASLt, 4 otherwise) so that they can run concurrently.
+// CUDA branches share one BLAS handle: host enqueueing is serial and every GEMM
+// selects its stream explicitly. This avoids allocating a workspace per handle.
+// HIP retains per-stream handles because rocBLAS scratch memory is stream-specific.
 //
 // By default the whole sequence is captured once in a CUDA/HIP graph, together with its own copy
 // of the plan, and replayed on subsequent calls, which avoids both building the plan and issuing
 // the individual launches. The graph is recaptured if anything it depends on changes (A, C, the
-// work space or the butterfly structure). Set MULT_BUTM_GRAPHS=0 to execute directly instead.
+// work space or the butterfly structure). Set ECTRANS_BUTTERFLY_GRAPHS=0 for direct execution.
 
 #include <algorithm>
 #include <cstdint>
@@ -40,21 +43,16 @@
 #include <cstdlib>
 #include <map>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "hicblas.h"
+#include "gemm_execution.h"
+#ifdef CUDAGPU
+#include "hicblas_cublaslt.cuda.h"
+#endif
 
 namespace {
-
-hipblasHandle_t get_mult_butm_handle() {
-  static hipblasHandle_t handle;
-  static bool initialised = false;
-  if (!initialised) {
-    HICBLAS_CHECK(hipblasCreate(&handle));
-    initialised = true;
-  }
-  return handle;
-}
 
 // Device work space, grown as needed and kept between calls
 template <typename Real> Real *get_workspace(size_t n) {
@@ -103,31 +101,47 @@ PlanBuffers &get_plan_buffers(size_t n) {
   return buf;
 }
 
-void gemm(hipblasHandle_t handle, hipblasOperation_t transa, hipblasOperation_t transb, int m,
+void gemm(hipStream_t stream, hipblasOperation_t transa, hipblasOperation_t transb, int m,
           int n, int k, float alpha, const float *A, int lda, const float *B, int ldb, float beta,
           float *C, int ldc) {
-  HICBLAS_CHECK(hipblasSgemm(handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
+#ifdef CUDAGPU
+  if (legendre_cublaslt::enabled()) {
+    legendre_cublaslt::gemm(stream, transa == HIPBLAS_OP_T, transb == HIPBLAS_OP_T,
+                            m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+    return;
+  }
+#endif
+  HICBLAS_CHECK(hipblasSgemm(gemm_execution::blas().handle(stream), transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
 }
 
-void gemm(hipblasHandle_t handle, hipblasOperation_t transa, hipblasOperation_t transb, int m,
+void gemm(hipStream_t stream, hipblasOperation_t transa, hipblasOperation_t transb, int m,
           int n, int k, double alpha, const double *A, int lda, const double *B, int ldb,
           double beta, double *C, int ldc) {
-  HICBLAS_CHECK(hipblasDgemm(handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
+  HICBLAS_CHECK(hipblasDgemm(gemm_execution::blas().handle(stream), transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
 }
 
-void gemm_batched(hipblasHandle_t handle, hipblasOperation_t transa, hipblasOperation_t transb,
+void gemm_batched(hipStream_t stream, hipblasOperation_t transa, hipblasOperation_t transb,
                   int m, int n, int k, float alpha, const float *const *A, int lda,
                   const float *const *B, int ldb, float beta, float *const *C, int ldc,
                   int batch_count) {
-  HICBLAS_CHECK(hipblasSgemmBatched(handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta,
+#ifdef CUDAGPU
+  if (legendre_cublaslt::enabled()) {
+    legendre_cublaslt::gemm(stream, transa == HIPBLAS_OP_T, transb == HIPBLAS_OP_T,
+                            m, n, k, alpha, A, lda, B, ldb, beta,
+                            const_cast<void *>(static_cast<const void *>(C)),
+                            ldc, batch_count, true);
+    return;
+  }
+#endif
+  HICBLAS_CHECK(hipblasSgemmBatched(gemm_execution::blas().handle(stream), transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta,
                                     C, ldc, batch_count));
 }
 
-void gemm_batched(hipblasHandle_t handle, hipblasOperation_t transa, hipblasOperation_t transb,
+void gemm_batched(hipStream_t stream, hipblasOperation_t transa, hipblasOperation_t transb,
                   int m, int n, int k, double alpha, const double *const *A, int lda,
                   const double *const *B, int ldb, double beta, double *const *C, int ldc,
                   int batch_count) {
-  HICBLAS_CHECK(hipblasDgemmBatched(handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta,
+  HICBLAS_CHECK(hipblasDgemmBatched(gemm_execution::blas().handle(stream), transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta,
                                     C, ldc, batch_count));
 }
 
@@ -136,58 +150,6 @@ void check_rank(int rank) {
     fprintf(stderr, "mult_butm: IRANK<=0 not allowed\n");
     abort();
   }
-}
-
-int env_int(const char *name, int default_value) {
-  const char *env = std::getenv(name);
-  return env ? std::atoi(env) : default_value;
-}
-
-// Branch streams (each with its own BLAS handle) over which independent GEMMs are spread, plus the
-// events used to fork them from and join them onto the main stream, and the stream on which
-// graphs are captured. All BLAS handles are warmed up here, so that no lazy initialisation (and
-// in particular no allocation) happens during graph capture.
-struct Branches {
-  int n = 0;
-  std::vector<hipStream_t> streams;
-  std::vector<hipblasHandle_t> handles;
-  std::vector<hipEvent_t> join;
-  hipEvent_t fork;
-  hipStream_t capture;
-};
-
-Branches &get_branches() {
-  static Branches br;
-  if (br.n == 0) {
-    int n = std::max(1, env_int("MULT_BUTM_NBRANCHES", 4));
-    br.streams.resize(n);
-    br.handles.resize(n);
-    br.join.resize(n);
-    for (int i = 0; i < n; ++i) {
-      HIC_CHECK(hipStreamCreateWithFlags(&br.streams[i], hipStreamNonBlocking));
-      HICBLAS_CHECK(hipblasCreate(&br.handles[i]));
-      HICBLAS_CHECK(hipblasSetStream(br.handles[i], br.streams[i]));
-      HIC_CHECK(hipEventCreateWithFlags(&br.join[i], hipEventDisableTiming));
-    }
-    HIC_CHECK(hipEventCreateWithFlags(&br.fork, hipEventDisableTiming));
-    HIC_CHECK(hipStreamCreateWithFlags(&br.capture, hipStreamNonBlocking));
-
-    double *scratch;
-    HIC_CHECK(hipMalloc(&scratch, 3 * sizeof(double)));
-    HIC_CHECK(hipMemset(scratch, 0, 3 * sizeof(double)));
-    auto warm_up = [&](hipblasHandle_t handle, hipStream_t stream) {
-      HICBLAS_CHECK(hipblasSetStream(handle, stream));
-      gemm(handle, HIPBLAS_OP_N, HIPBLAS_OP_N, 1, 1, 1, 1.0, scratch, 1, scratch + 1, 1, 0.0,
-           scratch + 2, 1);
-    };
-    for (int i = 0; i < n; ++i) warm_up(br.handles[i], br.streams[i]);
-    warm_up(get_mult_butm_handle(), br.capture);
-    HIC_CHECK(hipDeviceSynchronize());
-    HIC_CHECK(hipFree(scratch));
-
-    br.n = n;
-  }
-  return br;
 }
 
 constexpr int block_size = 256;
@@ -205,9 +167,32 @@ struct NodeTask {
   int flags;
 };
 
+// Small node counts otherwise leave most SMs idle while a single block copies a
+// large node. Spread each node over several blocks, targeting one full wave of
+// threads across the device. Each block owns a disjoint subset of field elements.
+dim3 node_task_grid(const std::vector<NodeTask> &tasks, int n_flds) {
+  int tiles = 1;
+#ifdef CUDAGPU
+  static const int target_blocks = [] {
+    int device, sms, threads;
+    HIC_CHECK(cudaGetDevice(&device));
+    HIC_CHECK(cudaDeviceGetAttribute(&sms, cudaDevAttrMultiProcessorCount, device));
+    HIC_CHECK(cudaDeviceGetAttribute(&threads, cudaDevAttrMaxThreadsPerMultiProcessor, device));
+    return sms * std::max(1, threads / block_size);
+  }();
+  int64_t max_elements = 0;
+  for (const auto &task : tasks)
+    max_elements = std::max(max_elements, int64_t(task.icols) * n_flds);
+  const int max_tiles = int(std::min<int64_t>(64, (max_elements + block_size - 1) / block_size));
+  const int count = int(tasks.size());
+  tiles = std::max(1, std::min(max_tiles, (target_blocks + count - 1) / count));
+#endif
+  return dim3(unsigned(tasks.size()), unsigned(tiles));
+}
+
 // Gather the columns of each node, permuted by ICLIST, from the source. The first rank columns go
 // to beta (the "skeleton" columns), the rest go to vec (to be multiplied by PNONIM). One block per
-// node. The source is A (row stride lda) for EXTERNAL tasks, and the work space (row stride n_flds)
+// node, split across blocks when there are few nodes. The source is A (row stride lda) for EXTERNAL tasks, and the work space (row stride n_flds)
 // otherwise.
 template <typename Real>
 __global__ void gather_kernel(const NodeTask *tasks, int n_flds, const int *iclist_all,
@@ -218,7 +203,8 @@ __global__ void gather_kernel(const NodeTask *tasks, int n_flds, const int *icli
   const Real *src = external ? A + t.ext_off : work + t.ext_off;
   int src_row_stride = external ? lda : n_flds;
 
-  for (int e = threadIdx.x; e < t.icols * n_flds; e += blockDim.x) {
+  for (int e = threadIdx.x + blockIdx.y * blockDim.x; e < t.icols * n_flds;
+       e += blockDim.x * gridDim.y) {
     int f = e % n_flds;
     int jn = e / n_flds;
     Real v = src[(size_t)(iclist[jn] - 1) * src_row_stride + f];
@@ -228,7 +214,7 @@ __global__ void gather_kernel(const NodeTask *tasks, int n_flds, const int *icli
 }
 
 // Scatter the columns of each node, permuted by ICLIST, into the destination (transposed case).
-// One block per node. Column jn is taken from beta if jn < rank and from vec otherwise.
+// Each node is split across disjoint blocks as in gather_kernel. Column jn is taken from beta if jn < rank and from vec otherwise.
 // Destination row i = ICLIST(jn)-1 maps to row off_l + i if i < split, to row off_r + (i - split)
 // if split <= i < limit, and is dropped otherwise. With ACCUMULATE the values are added to the
 // destination, otherwise they overwrite it. The destination is C (row stride ldc) for EXTERNAL
@@ -243,7 +229,8 @@ __global__ void scatter_kernel(const NodeTask *tasks, int n_flds, const int *icl
   Real *dst = external ? C + t.ext_off : work + t.ext_off;
   int dst_row_stride = external ? ldc : n_flds;
 
-  for (int e = threadIdx.x; e < t.icols * n_flds; e += blockDim.x) {
+  for (int e = threadIdx.x + blockIdx.y * blockDim.x; e < t.icols * n_flds;
+       e += blockDim.x * gridDim.y) {
     int f = e % n_flds;
     int jn = e / n_flds;
     int i = iclist[jn] - 1;
@@ -300,39 +287,25 @@ template <typename Real> struct GemmPhase {
     g.c.push_back(c);
   }
 
-  // Launch the groups after all preceding work on stream (whose BLAS handle is handle), and before
-  // all subsequent work on it. If there are several groups, they are spread over the branch
-  // streams so that they can run concurrently.
-  void launch(hipblasHandle_t handle, hipStream_t stream, Branches &br,
-              void *const *d_ptrs) const {
-    int n_used = groups.size() > 1 ? std::min<int>(br.n, groups.size()) : 0;
-    if (n_used > 1) {
-      HIC_CHECK(hipEventRecord(br.fork, stream));
-      for (int i = 0; i < n_used; ++i) HIC_CHECK(hipStreamWaitEvent(br.streams[i], br.fork, 0));
+  void launch_group(int i, hipStream_t stream, void *const *d_ptrs) const {
+    const GemmGroup<Real> &g = groups[i];
+    const int count = int(g.c.size());
+    if (count == 1) {
+      gemm(stream, g.transa, g.transb, g.m, g.n, g.k, Real(1),
+           g.a[0], g.lda, g.b[0], g.ldb, g.beta, g.c[0], g.ldc);
     } else {
-      n_used = 0;
+      void *const *p = d_ptrs + g.ptr_off;
+      gemm_batched(stream, g.transa, g.transb, g.m, g.n, g.k, Real(1),
+                   reinterpret_cast<const Real *const *>(p), g.lda,
+                   reinterpret_cast<const Real *const *>(p + count), g.ldb, g.beta,
+                   reinterpret_cast<Real *const *>(p + 2 * count), g.ldc, count);
     }
+  }
 
-    for (size_t ig = 0; ig < groups.size(); ++ig) {
-      const GemmGroup<Real> &g = groups[ig];
-      if (n_used > 0) handle = br.handles[ig % n_used];
-      int count = g.c.size();
-      if (count == 1) {
-        gemm(handle, g.transa, g.transb, g.m, g.n, g.k, (Real)1.0, g.a[0], g.lda, g.b[0], g.ldb,
-             g.beta, g.c[0], g.ldc);
-      } else {
-        void *const *p = d_ptrs + g.ptr_off;
-        gemm_batched(handle, g.transa, g.transb, g.m, g.n, g.k, (Real)1.0,
-                     reinterpret_cast<const Real *const *>(p), g.lda,
-                     reinterpret_cast<const Real *const *>(p + count), g.ldb, g.beta,
-                     reinterpret_cast<Real *const *>(p + 2 * count), g.ldc, count);
-      }
-    }
-
-    for (int i = 0; i < n_used; ++i) {
-      HIC_CHECK(hipEventRecord(br.join[i], br.streams[i]));
-      HIC_CHECK(hipStreamWaitEvent(stream, br.join[i], 0));
-    }
+  void launch(gemm_execution::Scheduler &scheduler, hipStream_t stream,
+              void *const *d_ptrs) const {
+    scheduler.run(int(groups.size()), stream,
+                  [&](int i, hipStream_t branch) { launch_group(i, branch, d_ptrs); });
   }
 };
 
@@ -346,6 +319,26 @@ template <typename Real> struct LevelPlan {
   size_t task_off[2] = {0, 0};
   GemmPhase<Real> gemms[2];
 };
+
+#ifdef CUDAGPU
+template <typename Real>
+void prepare_cublaslt(const std::vector<LevelPlan<Real>> &plan) {
+  if constexpr (std::is_same<Real, float>::value) {
+    if (!legendre_cublaslt::enabled()) return;
+    for (const auto &level : plan)
+      for (int phase = 0; phase < 2; ++phase)
+        for (const auto &group : level.gemms[phase].groups) {
+          const int count = int(group.c.size());
+          if (count == 0) continue;
+          legendre_cublaslt::prepare(
+              group.transa == HIPBLAS_OP_T, group.transb == HIPBLAS_OP_T,
+              group.m, group.n, group.k,
+              group.lda, group.ldb, group.ldc, count, count > 1,
+              group.a[0], group.b[0], group.c[0]);
+        }
+  }
+}
+#endif
 
 // Graph cache. There is at most one graph per key; everything else the graph depends on is kept
 // in GraphDeps, and if any of it changes the graph is recaptured.
@@ -413,8 +406,12 @@ void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const i
   int n_modes = end_mode - start_mode + 1;
   if (n_modes <= 0 || n_flds <= 0) return;
 
-  Branches &br = get_branches();
-  hipblasHandle_t handle = get_mult_butm_handle();
+  int default_branches = 4;
+#ifdef CUDAGPU
+  if constexpr (std::is_same<Real, float>::value)
+    if (legendre_cublaslt::enabled()) default_branches = 64;
+#endif
+  static gemm_execution::Scheduler scheduler(gemm_execution::options(true, default_branches));
 
   const hipblasOperation_t N = HIPBLAS_OP_N, T = HIPBLAS_OP_T;
   const int nf = n_flds;
@@ -596,52 +593,72 @@ void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const i
     return task_bytes;
   };
 
-  // Issue the plan on stream s, one level at a time across all modes, using the uploaded copy of
-  // the plan at d_plan
-  auto execute_plan = [&](const std::vector<LevelPlan<Real>> &plan, char *d_plan,
-                          size_t task_bytes, Real *work, hipStream_t s) {
-    HICBLAS_CHECK(hipblasSetStream(handle, s));
-    const NodeTask *d_tasks = reinterpret_cast<const NodeTask *>(d_plan);
-    void *const *d_ptrs = reinterpret_cast<void *const *>(d_plan + task_bytes);
-
-    auto launch_tasks = [&](const LevelPlan<Real> &lp, int i, bool scatter) {
-      int count = lp.tasks[i].size();
-      if (count == 0) return;
-      if (scatter) {
-        scatter_kernel<<<count, block_size, 0, s>>>(d_tasks + lp.task_off[i], nf,
-                                                    lev_node_iclist, C, ldc, work);
-      } else {
-        gather_kernel<<<count, block_size, 0, s>>>(d_tasks + lp.task_off[i], nf,
-                                                   lev_node_iclist, A, lda, work);
-      }
-      HIC_CHECK(hipGetLastError());
-    };
-
+  // Keep the numerical dependencies identical for direct execution and child graphs.
+  auto visit_plan = [&](const std::vector<LevelPlan<Real>> &plan, auto tasks, auto phase) {
     if (is_transposed) {
       for (int lev = max_levels; lev >= 0; --lev) {
-        const LevelPlan<Real> &lp = plan[lev];
-        lp.gemms[0].launch(handle, s, br, d_ptrs);
-        lp.gemms[1].launch(handle, s, br, d_ptrs);
-        launch_tasks(lp, 0, true);
-        launch_tasks(lp, 1, true);
+        const auto &lp = plan[lev];
+        phase(lp.gemms[0]);
+        phase(lp.gemms[1]);
+        tasks(lp, 0, true);
+        tasks(lp, 1, true);
       }
     } else {
-      for (int lev = 0; lev <= max_levels; ++lev) {
-        const LevelPlan<Real> &lp = plan[lev];
-        launch_tasks(lp, 0, false);
-        lp.gemms[0].launch(handle, s, br, d_ptrs);
-        lp.gemms[1].launch(handle, s, br, d_ptrs);
+      for (const auto &lp : plan) {
+        tasks(lp, 0, false);
+        phase(lp.gemms[0]);
+        phase(lp.gemms[1]);
       }
     }
   };
 
-  static const bool use_graphs = env_int("MULT_BUTM_GRAPHS", 1) != 0;
+  auto launch_tasks = [&](const LevelPlan<Real> &lp, int i, bool scatter,
+                          const NodeTask *d_tasks, Real *work, hipStream_t stream) {
+    if (lp.tasks[i].empty()) return;
+    const dim3 grid = node_task_grid(lp.tasks[i], nf);
+    if (scatter)
+      scatter_kernel<<<grid, block_size, 0, stream>>>(d_tasks + lp.task_off[i], nf,
+                                                     lev_node_iclist, C, ldc, work);
+    else
+      gather_kernel<<<grid, block_size, 0, stream>>>(d_tasks + lp.task_off[i], nf,
+                                                    lev_node_iclist, A, lda, work);
+    HIC_CHECK(hipGetLastError());
+  };
+
+  auto prepare_execution = [&](const std::vector<LevelPlan<Real>> &plan) {
+    int max_groups = 0;
+    for (const auto &level : plan)
+      for (const auto &phase : level.gemms)
+        max_groups = std::max(max_groups, int(phase.groups.size()));
+    scheduler.prepare(max_groups, stream, [&](hipStream_t branch) {
+#ifdef CUDAGPU
+      if constexpr (std::is_same<Real, float>::value)
+        if (legendre_cublaslt::enabled()) return;
+#endif
+      gemm_execution::blas().prepare<Real>(branch, scheduler.config.graphs && scheduler.config.branches == 0);
+    });
+#ifdef CUDAGPU
+    if (scheduler.config.graphs) prepare_cublaslt(plan);
+#endif
+  };
+
+  auto execute_plan = [&](const std::vector<LevelPlan<Real>> &plan, char *d_plan,
+                          size_t task_bytes, Real *work, hipStream_t stream) {
+    const NodeTask *d_tasks = reinterpret_cast<const NodeTask *>(d_plan);
+    void *const *d_ptrs = reinterpret_cast<void *const *>(d_plan + task_bytes);
+    visit_plan(plan,
+        [&](const auto &lp, int i, bool scatter) { launch_tasks(lp, i, scatter, d_tasks, work, stream); },
+        [&](const auto &phase) { phase.launch(scheduler, stream, d_ptrs); });
+  };
+
+  const bool use_graphs = scheduler.config.graphs;
 
   if (!use_graphs) {
     // Build, upload and execute the plan directly on the caller's stream
     compute_work_offsets();
     Real *work = get_workspace<Real>(work_offsets[n_modes]);
     std::vector<LevelPlan<Real>> plan = build_plan(work);
+    prepare_execution(plan);
     std::vector<char> host;
     size_t task_bytes = pack_plan(plan, host);
     PlanBuffers &buf = get_plan_buffers(host.size());
@@ -696,6 +713,7 @@ void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const i
   entry.work_len = work_offsets[n_modes];
   Real *work = get_workspace<Real>(entry.work_len);
   std::vector<LevelPlan<Real>> plan = build_plan(work);
+  prepare_execution(plan);
   std::vector<char> host;
   size_t task_bytes = pack_plan(plan, host);
   entry.d_plan = nullptr;
@@ -705,11 +723,27 @@ void mult_butm(char transpose, int start_mode, int end_mode, int n_flds, const i
   }
   entry.deps = make_deps(work);
 
-  // Capture the plan's execution on the capture stream, then launch it on the caller's stream
   hipGraph_t graph;
-  HIC_CHECK(hipStreamBeginCapture(br.capture, hipStreamCaptureModeGlobal));
-  execute_plan(plan, entry.d_plan, task_bytes, work, br.capture);
-  HIC_CHECK(hipStreamEndCapture(br.capture, &graph));
+  if (scheduler.config.branches == 0) {
+    HIC_CHECK(hipGraphCreate(&graph, 0));
+    std::vector<hipGraphNode_t> parents;
+    const NodeTask *d_tasks = reinterpret_cast<const NodeTask *>(entry.d_plan);
+    void *const *d_ptrs = reinterpret_cast<void *const *>(entry.d_plan + task_bytes);
+    visit_plan(plan, [&](const auto &lp, int i, bool scatter) {
+      if (lp.tasks[i].empty()) return;
+      auto node = scheduler.append_serial(graph, parents, scheduler.capture_stream(),
+          [&](hipStream_t branch) { launch_tasks(lp, i, scatter, d_tasks, work, branch); });
+      parents = {node};
+    }, [&](const auto &phase) {
+      scheduler.append(graph, parents, int(phase.groups.size()),
+          [&](int i, hipStream_t branch) { phase.launch_group(i, branch, d_ptrs); });
+    });
+  } else {
+    // Retain the single captured fork/join graph for bounded stream chains.
+    HIC_CHECK(hipStreamBeginCapture(scheduler.capture_stream(), hipStreamCaptureModeGlobal));
+    execute_plan(plan, entry.d_plan, task_bytes, work, scheduler.capture_stream());
+    HIC_CHECK(hipStreamEndCapture(scheduler.capture_stream(), &graph));
+  }
   HIC_CHECK(hipGraphInstantiate(&entry.exec, graph, NULL, NULL, 0));
   HIC_CHECK(hipGraphDestroy(graph));
   cache.emplace(key, entry);
