@@ -249,6 +249,7 @@ void run_group_graph(typename Type::real *data_real,
       hipGraphNode_t my_node;
       HIC_CHECK(
           hipGraphAddChildGraphNode(&my_node, new_graph, nullptr, 0, my_graph));
+      HIC_CHECK(hipGraphDestroy(my_graph));
     }
     hipGraphExec_t instance;
     HIC_CHECK(hipGraphInstantiate(&instance, new_graph, NULL, NULL, 0));
