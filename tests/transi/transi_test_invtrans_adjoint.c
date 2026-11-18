@@ -33,7 +33,7 @@ int* nloen  = malloc( sizeof(int) * nlat);
 TRANS_CHECK( trans_set_resol(&trans,nlat, nloen) );
 TRANS_CHECK( trans_set_trunc(&trans,nsmax) );
 
-trans.fft = TRANS_FFTW;
+ trans.fft = TRANSI_TEST_FFT_BACKEND;
 trans.flt = 0;
 
 TRANS_CHECK( trans_setup(&trans) );
@@ -317,4 +317,3 @@ int main ( int arc, char **argv )
 
   return 0;
 }
-

@@ -51,7 +51,8 @@ SUBROUTINE SETUP_TRANS(KSMAX,KDGL,KDLON,KLOEN,LDSPLIT,PSTRET,&
 !     LDKEEPRPNM - Keep Legendre Polynomials (only applicable when using
 !                  FLT, otherwise always kept)
 !     LDPNMONLY  - Compute the Legendre polynomialsonly, not the FFTs.
-!     LDUSEFFTW - Use FFTW for FFTs (option deprecated - FFTW is now mandatory)
+!     LDUSEFFTW - Use FFTW for FFTs. If false and FFT992 support is enabled,
+!                 use FFT992 where supported.
 !     LD_ALL_FFTW : T to transform all fields in one call, F to transforms fields one after another
 !     LDLL                 - Setup second set of input/output latitudes
 !                                 the number of input/output latitudes to transform is equal KDGL 

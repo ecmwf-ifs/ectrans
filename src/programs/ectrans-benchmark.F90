@@ -119,6 +119,7 @@ integer(kind=jpim) :: ndgl    ! Number of latitudes
 integer(kind=jpim), allocatable :: nloen(:) ! Number of points on each latitude
 logical :: luserpnm = .false. ! Use Belusov algorithm to compute RPNM array instead of per m
 logical :: luseflt = .false. ! Use fast legendre transforms
+logical :: lusefftw = .true. ! Use FFTW-compatible library for Fourier transforms
 
 ! Extra inv_trans options
 logical :: lvordiv = .false. ! Compute vorticity and divergence in grid point space
@@ -240,7 +241,7 @@ endif
 
 ! Setup
 call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, lscders, &
-  &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
+  &                             luvder, luseflt, lusefftw, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
   &                             lpinning, lfield_api, icall_mode, ldump_checksums, iters_checksums, &
   &                             cchecksums_path, lalloperm, lpgp_on_gpu, lpsp_on_gpu)
@@ -432,7 +433,7 @@ call gstats(1, 1)
 
 call gstats(2, 0)
 call setup_trans(ksmax=nsmax, kdgl=ndgl, kloen=nloen, ldsplit=.true., lduserpnm=luserpnm, &
-  &              lduseflt=luseflt)
+  &              lduseflt=luseflt, ldusefftw=lusefftw)
 call gstats(2, 1)
 
 call trans_inq(kspec2=nspec2, kspec2g=nspec2g, kgptot=ngptot, kgptotg=ngptotg)
@@ -473,6 +474,7 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("nspec2     ",i0)') nspec2
   write(nout,'("nspec2g    ",i0)') nspec2g
   write(nout,'("luseflt    ",l1)') luseflt
+  write(nout,'("lusefftw   ",l1)') lusefftw
   write(nout,'("nopt_mem_tr",i0)') nopt_mem_tr
   write(nout,'("lvordiv    ",l1)') lvordiv
   write(nout,'("lscders    ",l1)') lscders
@@ -1294,6 +1296,8 @@ subroutine print_help(unit)
   write(nout, "(a)") "    --uvders            Compute uv East-West derivatives (default off). Only&
     & when also --vordiv is given"
   write(nout, "(a)") "    --flt               Run with fast Legendre transforms (default off)"
+  write(nout, "(a)") "    --fft992            Use in-project FFT992 library for FFTs, instead of&
+    & FFTW-compatible library"
   write(nout, "(a)") "    --nproma NPROMA     Run with NPROMA (default no blocking: NPROMA=ngptot)"
   write(nout, "(a)") "    --npromatr NPROMATR Perform transforms in blocks of size NPROMATR rather&
     & than all at once"
@@ -1349,7 +1353,7 @@ end subroutine
 !===================================================================================================
 
 subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, lvordiv, &
-  &                                   lscders, luvder, luseflt, nopt_mem_tr, nproma, npromatr, &
+  &                                   lscders, luvder, luseflt, lusefftw, nopt_mem_tr, nproma, npromatr, &
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
   &                                   iters_checksums, &
@@ -1370,6 +1374,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   logical, intent(inout) :: lscders         ! Compute scalar derivatives
   logical, intent(inout) :: luvder          ! Compute uv East-West derivatives
   logical, intent(inout) :: luseflt         ! Use fast Legendre transforms
+  logical, intent(inout) :: lusefftw        ! Use FFTW-compatible library for Fourier transforms
   integer, intent(inout) :: nopt_mem_tr     ! Use of heap or stack memory for ZCOMBUF arrays in transposition arrays (0 for heap, 1 for stack)
   integer, intent(inout) :: nproma          ! NPROMA
   integer, intent(inout) :: npromatr        ! block size for field-blocking
@@ -1443,6 +1448,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
       case('--scders'); lscders = .true.
       case('--uvders'); luvder = .true.
       case('--flt'); luseflt = .true.
+      case('--fft992'); lusefftw = .false.
       case('--mem-tr'); nopt_mem_tr = get_int_value('--mem-tr', iarg)
       case('--nproma'); nproma = get_int_value('--nproma', iarg)
       case('--npromatr'); npromatr = get_int_value('--npromatr', iarg)
