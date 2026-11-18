@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 MODULE SUEMP_TRANS_PRELEG_MOD
 CONTAINS
 SUBROUTINE SUEMP_TRANS_PRELEG
@@ -51,8 +60,6 @@ IF(LLP2)WRITE(NOUT,9) 'D%NASM0 ',SIZE(D%NASM0   ),SHAPE(D%NASM0   )
 ALLOCATE(DALD%NESM0(0:RALD%NMSMAX))
 IF(LLP2)WRITE(NOUT,9) 'DALD%NESM0 ',SIZE(DALD%NESM0   ),SHAPE(DALD%NESM0   )
 
-ALLOCATE(D%NATM0(0:R%NTMAX))
-IF(LLP2)WRITE(NOUT,9) 'D%NATM0 ',SIZE(D%NATM0   ),SHAPE(D%NATM0   )
 ALLOCATE(D%NUMPP(NPRTRW))
 IF(LLP2)WRITE(NOUT,9) 'D%NUMPP ',SIZE(D%NUMPP   ),SHAPE(D%NUMPP   )
 ALLOCATE(D%NPOSSP(NPRTRW+1))
@@ -136,7 +143,6 @@ D%NUMP  = D%NUMPP (MYSETW)
 ALLOCATE(D%MYMS(D%NUMP))
 IF(LLP2)WRITE(NOUT,9) 'D%MYMS    ',SIZE(D%MYMS   ),SHAPE(D%MYMS   )
 D%MYMS(:) = IMYMS(1:D%NUMP)
-D%NUMTP = D%NUMP 
 
 ! pointer to the first wave number of a given wave-set in NALLMS array
 ALLOCATE(D%NPTRMS(NPRTRW))
@@ -226,8 +232,6 @@ DO JM=0,R%NSMAX
 
   INM = INM+R%NTMAX+2-JM
 ENDDO
-
-D%NLEI3D = (R%NLEI3-1)/NPRTRW+1
 
 ENDIF
 

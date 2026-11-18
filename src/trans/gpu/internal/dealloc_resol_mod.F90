@@ -42,9 +42,9 @@ SUBROUTINE DEALLOC_RESOL(KRESOL)
 
 !     ------------------------------------------------------------------
 
-USE PARKIND_ECTRANS, ONLY: JPIM
+USE PARKIND_ECTRANS, ONLY: JPIM, JPRD, JPRB
 USE TPM_DIM,         ONLY: R, DIM_TYPE
-USE TPM_GEN,         ONLY: LENABLED, NOUT, NDEF_RESOL
+USE TPM_GEN,         ONLY: LENABLED, NDEF_RESOL
 USE TPM_DISTR,       ONLY: D, DISTR_TYPE, NPRTRV
 USE TPM_GEOMETRY,    ONLY: G, GEOM_TYPE
 USE TPM_FIELDS,      ONLY: F, FIELDS_TYPE
@@ -55,12 +55,14 @@ USE TPM_FLT,         ONLY: S, FLT_TYPE_WRAP
 USE TPM_CTL,         ONLY: C
 USE SEEFMM_MIX,      ONLY: FREE_SEEFMM
 USE SET_RESOL_MOD,   ONLY: SET_RESOL
+USE RESOLS_MOD,      ONLY: Y_RESOLS
+USE BACKENDS_MOD,    ONLY: JP_BACKEND_GPU_SP, JP_BACKEND_GPU_DP
 !
 
 IMPLICIT NONE
 
 INTEGER(KIND=JPIM),  INTENT(IN) :: KRESOL
-INTEGER(KIND=JPIM) :: JMLOC,IPRTRV,JSETV,IMLOC,IM,ILA,ILS, JRESOL
+INTEGER(KIND=JPIM) :: JMLOC, IPRTRV, JSETV, IMLOC, IM, ILA, ILS, JRESOL, I_BACKEND
 TYPE(DIM_TYPE) :: R_
 TYPE(DISTR_TYPE) :: D_
 TYPE(GEOM_TYPE) :: G_
@@ -70,13 +72,7 @@ TYPE(FLT_TYPE_WRAP) :: S_
 
 !     ------------------------------------------------------------------
 
-IF (.NOT.LENABLED(KRESOL)) THEN
-
-  WRITE(UNIT=NOUT,FMT='('' DEALLOC_RESOL WARNING : KRESOL = '',I3,'' ALREADY DISABLED '')') KRESOL
-
-ELSE
-
-  CALL SET_RESOL(KRESOL)
+CALL SET_RESOL(KRESOL)
 
 #ifdef ACCGPU
 !$ACC EXIT DATA DELETE(R) ASYNC(1)
@@ -100,53 +96,56 @@ ELSE
 !$OMP TARGET EXIT DATA MAP(DELETE:G%NLOEN,G%NMEN,G%NDGLU,G)
 #endif
 
-  ! TPM_FLD is more complex because it has pointers
-  IF( ALLOCATED(S%FA) ) THEN
-    DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
-      IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
-      DO JSETV=1,IPRTRV
-        IMLOC=JMLOC+JSETV-1
-        IM = D%MYMS(IMLOC)
-        ILA = (R%NSMAX-IM+2)/2
-        ILS = (R%NSMAX-IM+3)/2
-        IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMA)) DEALLOCATE(S%FA(IMLOC)%RPNMA)
-        IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMS)) DEALLOCATE(S%FA(IMLOC)%RPNMS)
-        IF(S%LDLL) THEN
-          IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMWI)) DEALLOCATE(S%FA(IMLOC)%RPNMWI)
-          IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMWO)) DEALLOCATE(S%FA(IMLOC)%RPNMWO)
-        ENDIF
-      ENDDO
+! TPM_FLD is more complex because it has pointers
+IF( ALLOCATED(S%FA) ) THEN
+  DO JMLOC=1,D%NUMP,NPRTRV  ! +++++++++++++++++++++ JMLOC LOOP ++++++++++
+    IPRTRV=MIN(NPRTRV,D%NUMP-JMLOC+1)
+    DO JSETV=1,IPRTRV
+      IMLOC=JMLOC+JSETV-1
+      IM = D%MYMS(IMLOC)
+      ILA = (R%NSMAX-IM+2)/2
+      ILS = (R%NSMAX-IM+3)/2
+      IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMA)) DEALLOCATE(S%FA(IMLOC)%RPNMA)
+      IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMS)) DEALLOCATE(S%FA(IMLOC)%RPNMS)
+      IF(S%LDLL) THEN
+        IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMWI)) DEALLOCATE(S%FA(IMLOC)%RPNMWI)
+        IF(.NOT.C%CIO_TYPE == 'mbuf' .AND. ASSOCIATED(S%FA(IMLOC)%RPNMWO)) DEALLOCATE(S%FA(IMLOC)%RPNMWO)
+      ENDIF
     ENDDO
-    DEALLOCATE(S%FA)
-  ENDIF
-  IF(S%LDLL) THEN
-    CALL FREE_SEEFMM(S%FMM_INTI)
-    IF(ASSOCIATED(S%FMM_INTI)) DEALLOCATE(S%FMM_INTI)
-  ENDIF
-  S = S_
-
-  ! Empty all fields (none of them has pointers; allocatable arrays implicitly deallocate)
-  R_%NSMAX = 0 ! Avoids warning of unused R_ with Cray compiler
-  D = D_
-  F = F_
-  FG = FG_
-  R = R_
-  G = G_
-
-  CALL CLEAN_FFT(KRESOL)
-  CALL CLEAN_GEMM(KRESOL)
-
-  LENABLED(KRESOL)=.FALSE.
-  NDEF_RESOL = COUNT(LENABLED)
-  ! Do not stay on a disabled resolution
-  DO JRESOL=1,SIZE(LENABLED)
-    IF (LENABLED(JRESOL)) THEN
-      CALL SET_RESOL(JRESOL)
-      EXIT
-    ENDIF
   ENDDO
-
+  DEALLOCATE(S%FA)
 ENDIF
+IF(S%LDLL) THEN
+  CALL FREE_SEEFMM(S%FMM_INTI)
+  IF(ASSOCIATED(S%FMM_INTI)) DEALLOCATE(S%FMM_INTI)
+ENDIF
+S = S_
+
+! Empty all fields (none of them has pointers; allocatable arrays implicitly deallocate)
+R_%NSMAX = 0 ! Avoids warning of unused R_ with Cray compiler
+D = D_
+F = F_
+FG = FG_
+R = R_
+G = G_
+
+CALL CLEAN_FFT(KRESOL)
+CALL CLEAN_GEMM(KRESOL)
+
+LENABLED(KRESOL)=.FALSE.
+NDEF_RESOL = COUNT(LENABLED)
+
+! Determine backend
+I_BACKEND = MERGE(JP_BACKEND_GPU_DP, JP_BACKEND_GPU_SP, JPRB == JPRD)
+
+! Do not stay on a disabled resolution -> pick the first one that matches this backend
+DO JRESOL=1,SIZE(LENABLED)
+  IF (LENABLED(JRESOL) .AND. Y_RESOLS(JRESOL)%BACKEND == I_BACKEND) THEN
+    CALL SET_RESOL(JRESOL)
+    EXIT
+  ENDIF
+ENDDO
+
 !     ------------------------------------------------------------------
 
 END SUBROUTINE DEALLOC_RESOL

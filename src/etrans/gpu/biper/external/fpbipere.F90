@@ -1,5 +1,14 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 SUBROUTINE FPBIPERE(KDLUX,KDGUX,KDLON,KDGL,KNUBI,KD1,PGPBI,KDADD,LDZON, &
- & LDBOYD, KDBOYD, PLBOYD)
+ & LDBOYD, KDBOYD, PLBOYD, LDSEAM, KDSEAM, PLSEAM)
 
 !****   *FPBIPERE*  - Full-POS interface for double periodicisation
 
@@ -26,7 +35,9 @@ SUBROUTINE FPBIPERE(KDLUX,KDGUX,KDLON,KDGL,KNUBI,KD1,PGPBI,KDADD,LDZON, &
 !         LDBOYD: perform boyd periodization (inside C U I)
 !         KDBOYD: array containing dimensions of boyd domain
 !         PLBOYD: scalar parameter for boyd (variable L in paper)
-
+!         LDSEAM: perform SEAM periodization
+!         KDSEAM: size of the SEAM mixing zone
+!         PLSEAM: scalar parameter for SEAM (Lmix and Lboyd)
 !        IMPLICIT ARGUMENTS
 !        --------------------
 
@@ -58,6 +69,7 @@ SUBROUTINE FPBIPERE(KDLUX,KDGUX,KDLON,KDGL,KNUBI,KD1,PGPBI,KDADD,LDZON, &
 !      R. El Khatib 04-Aug-2016 new interface to ewindowe + cleaning
 !     ------------------------------------------------------------------
 
+USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
 USE PARKIND1  ,ONLY : JPIM     ,JPRB
 USE YOMHOOK   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
 USE ESPLINE_MOD
@@ -79,6 +91,9 @@ LOGICAL, OPTIONAL ,INTENT(IN)    :: LDZON
 LOGICAL           ,INTENT(IN) ,OPTIONAL :: LDBOYD
 INTEGER(KIND=JPIM),INTENT(IN) ,OPTIONAL :: KDBOYD(6)
 REAL(KIND=JPRB)   ,INTENT(IN) ,OPTIONAL :: PLBOYD
+LOGICAL           ,INTENT(IN) ,OPTIONAL :: LDSEAM
+INTEGER(KIND=JPIM),INTENT(IN) ,OPTIONAL :: KDSEAM
+REAL(KIND=JPRB)   ,INTENT(IN) ,OPTIONAL :: PLSEAM(2)
 
 !     ------------------------------------------------------------------
 
@@ -93,6 +108,9 @@ REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
 !     ------------------------------------------------------------------
 IF (LHOOK) CALL DR_HOOK('FPBIPERE',0,ZHOOK_HANDLE)
 !     ------------------------------------------------------------------
+IF (PRESENT(LDSEAM) .OR. PRESENT(KDSEAM) .OR. PRESENT(PLSEAM)) THEN
+    CALL ABORT_TRANS("FPBIPERE: SEAM periodization not implemented yet for GPUs")
+ENDIF
 
 LLBOYD=.FALSE.
 IF (PRESENT(LDBOYD)) LLBOYD=LDBOYD

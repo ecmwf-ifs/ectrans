@@ -1,0 +1,308 @@
+name: build-hpc-lumi-debug
+
+# On-demand LUMI build for a specific pull request, using the LUMI debug
+# partition (dev-g) to bypass long queue times on standard-g.
+#
+# Only one instance of this workflow runs at a time (see `concurrency` below),
+# so that we stay within the per-user job limits of the debug partition.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to build
+        required: true
+        type: number
+      partition:
+        description: LUMI Slurm partition
+        required: false
+        default: dev-g
+        type: string
+      time_limit:
+        description: Slurm time limit (HH:MM:SS)
+        required: false
+        default: "01:10:00"
+        type: string
+
+# A single, repository-wide concurrency group: at most one run in progress.
+# Note: GitHub keeps at most ONE pending run per group; dispatching a third run
+# while one is running and one is pending will cancel the older pending run.
+concurrency:
+  group: build-hpc-lumi-debug
+  cancel-in-progress: false
+
+env:
+  ECTRANS_TOOLS: ${{ github.workspace }}/.github/tools
+  CTEST_PARALLEL_LEVEL: 1
+
+jobs:
+  pr-info:
+    name: PR information
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      head_repo: ${{ steps.pr.outputs.head_repo }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+    steps:
+      - name: Read pull request
+        id: pr
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: Number('${{ inputs.pr_number }}'),
+            });
+            core.setOutput('head_repo', pull.data.head.repo.full_name);
+            core.setOutput('head_sha', pull.data.head.sha);
+
+  ci-hpc:
+    name: "ci-hpc (lumi-g cce, PR #${{ inputs.pr_number }})"
+    needs: pr-info
+    runs-on: [self-hosted, linux, hpc]
+
+    env:
+      SITE: lumi
+      OS: lumi-g
+      COMPILER: cce-19-0-0
+      ARCH: eurohpc/lumi-g/cray/19.0.0
+      HEAD_SHA: ${{ needs.pr-info.outputs.head_sha }}
+      HEAD_REPO: ${{ needs.pr-info.outputs.head_repo }}
+      GH_TOKEN: ${{ github.token }}
+      OUTPUT_DIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/0/{2}', secrets.LUMI_CI_PROJECT, github.run_id, github.run_attempt) }}
+      WORKDIR: ${{ format('/scratch/{0}/github-actions/ectrans/{1}/0/{2}', secrets.LUMI_CI_PROJECT, github.run_id, github.run_attempt) }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ needs.pr-info.outputs.head_repo }}
+          ref: ${{ needs.pr-info.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Reference artifact dir
+        id: reference-artifact-dir
+        shell: bash -eux {0}
+        run: |
+          reference_artifact_dir="${OUTPUT_DIR}/ectrans-reference-artifact"
+          echo "path=${reference_artifact_dir}" >> "$GITHUB_OUTPUT"
+
+      - name: Reference key
+        id: reference-key
+        shell: bash -eux {0}
+        run: |
+          reference_key=$(bash ${ECTRANS_TOOLS}/reference-key.sh "${OS}" "${COMPILER}" default)
+          echo "reference_key=${reference_key}" >> $GITHUB_OUTPUT
+
+      - name: Build on HPC
+        id: build_hpc
+        uses: ecmwf-actions/reusable-workflows/ci-hpc-generic@v2
+        with:
+          site: lumi
+          troika_user: ${{ secrets.LUMI_CI_SSH_USER }}
+          sbatch_options: |
+            #SBATCH --time=${{ inputs.time_limit }}
+            #SBATCH --nodes=1
+            #SBATCH --ntasks-per-node=8
+            #SBATCH --gpus-per-task=1
+            #SBATCH --partition=${{ inputs.partition }}
+            #SBATCH --account=${{ secrets.LUMI_CI_PROJECT }}
+          output_dir: ${{ env.OUTPUT_DIR }}
+          workdir: ${{ env.WORKDIR }}
+          template_data: |
+            site: lumi
+            arch: ${{ env.ARCH }}
+            cmake_options:
+              - -DENABLE_ETRANS=ON
+              - -DENABLE_BITID_TESTS=ON
+              - -DENABLE_REFERENCE_TESTS=ON
+              - -DECTRANS_TEST_REFERENCE_DIR=$BASEDIR/$REPO/tests/references/${{ steps.reference-key.outputs.reference_key }}
+            ctest_options: -E bitid
+            reference_key: ${{ steps.reference-key.outputs.reference_key }}
+            reference_head_sha: ${{ env.HEAD_SHA }}
+            reference_pr_number: "${{ inputs.pr_number }}"
+            reference_artifact_dir: ${{ steps.reference-artifact-dir.outputs.path }}
+            reference_redact_secret: ${{ secrets.LUMI_CI_PROJECT }}
+            dependencies:
+              ecmwf/ecbuild:
+                version: develop
+              ecmwf-ifs/fiat:
+                version: develop
+                cmake_options:
+                  - -DENABLE_MPI=ON
+          template: |
+            REPO=${{ env.HEAD_REPO }}
+            SHA=${{ env.HEAD_SHA }}
+
+            # Cleanup function
+            cleanup() {
+              {% for name in dependencies.keys() %}
+                {% if name != unsupported_dependency %}
+                  rm -r {{name}}
+                {% endif %}
+              {% endfor %}
+
+              rm -r $REPO
+              rm -r build
+
+              {% for name in dependencies.keys() %}
+                {% if name != unsupported_dependency %}
+                  {% set org, proj = name.split('/') %}
+                  rmdir {{org}} 2>/dev/null || true
+                {% endif %}
+              {% endfor %}
+              repo_owner=$(dirname "$REPO")
+              if [ "$repo_owner" != "." ]; then
+                rmdir "$repo_owner" 2>/dev/null || true
+              fi
+            }
+            error_trap() {
+              cleanup
+
+              echo "Finished: FAILURE"
+              exit 1
+            }
+
+            trap error_trap ERR
+
+            BASEDIR=$PWD
+
+            set +x
+            export ECTRANS_HPC_REFERENCE_PATH_SECRET="{{ reference_redact_secret }}"
+            set -x
+
+            export ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
+            export MPICH_GPU_SUPPORT_ENABLED=1
+            export MPICH_SMP_SINGLE_COPY_MODE=NONE
+            export CMAKE_GENERATOR=Ninja
+
+            export CMAKE_TEST_LAUNCHER="srun;-n;1"
+            export DR_HOOK_ASSERT_MPI_INITIALIZED=0
+
+            # Fetch dependencies
+            {% for name, options in dependencies.items() %}
+              {% if name != unsupported_dependency %}
+                mkdir -p {{name}}
+                pushd {{name}}
+                git init
+                git remote add origin ${{ github.server_url }}/{{name}}
+                git fetch origin {{options['version']}}
+                git reset --hard FETCH_HEAD
+                popd
+              {% endif %}
+            {% endfor %}
+
+            # Fetch ecTrans
+            mkdir -p $REPO
+            pushd $REPO
+            git init
+            git remote add origin ${{ github.server_url }}/$REPO
+            git fetch origin $SHA
+            git reset --hard FETCH_HEAD
+            popd
+
+            source $BASEDIR/$REPO/package/bundle/arch/{{ arch }}/env.sh
+
+            # Build dependencies
+            {% for name, options in dependencies.items() %}
+              {% if name != unsupported_dependency %}
+                pushd {{name}}
+                configure_start=$(date +%s)
+                cmake -S . -B build \
+                  {% for name in dependencies %}
+                    {% if name != unsupported_dependency %}
+                      {% set org, proj = name.split('/') %}
+                      -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                    {% endif %}
+                  {% endfor %}
+                  {{ options['cmake_options']|join(' ') }}
+                configure_end=$(date +%s)
+                echo "{{name}} configure took $((configure_end - configure_start)) seconds"
+                build_install_start=$(date +%s)
+                cmake --build build
+                cmake --install build --prefix installation
+                build_install_end=$(date +%s)
+                echo "{{name}} configure took $((configure_end - configure_start)) seconds"
+                echo "{{name}} build and install took $((build_install_end - build_install_start)) seconds"
+                popd
+              {% endif %}
+            {% endfor %}
+
+            # Build ecTrans
+            configure_start=$(date +%s)
+            cmake -S $REPO -B build \
+              {% for name in dependencies %}
+                {% if name != unsupported_dependency %}
+                  {% set org, proj = name.split('/') %}
+                  -D{{proj}}_ROOT=$BASEDIR/{{name}}/installation \
+                {% endif %}
+              {% endfor %}
+              {{ cmake_options|join(' ') }}
+            configure_end=$(date +%s)
+            echo "ecTrans configure took $((configure_end - configure_start)) seconds"
+            build_start=$(date +%s)
+            cmake --build build
+            build_end=$(date +%s)
+            echo "ecTrans configure took $((configure_end - configure_start)) seconds"
+            echo "ecTrans build took $((build_end - build_start)) seconds"
+
+            test_start=$(date +%s)
+            if ctest --test-dir build --output-on-failure {{ ctest_options }}; then
+              ctest_status=0
+            else
+              ctest_status=$?
+            fi
+            test_end=$(date +%s)
+            echo "ecTrans tests took $((test_end - test_start)) seconds"
+
+            export ECTRANS_DEP_REF_ECBUILD=develop
+            export ECTRANS_DEP_REF_FIAT=develop
+
+            bash $REPO/.github/tools/reference-artifact-package.sh \
+              "{{ reference_key }}" \
+              "{{ reference_head_sha }}" \
+              "{{ reference_pr_number }}" \
+              "{{ reference_artifact_dir }}"
+
+            cleanup
+
+            if [ $ctest_status -ne 0 ]; then
+              echo "Finished: FAILURE"
+              exit $ctest_status
+            fi
+
+      - name: Fetch the reference artifacts from the HPC
+        if: ${{ always() }}
+        uses: ecmwf/ci-infrastructure/actions/fetch-hpc-tree@main
+        with:
+          site: lumi
+          troika-user: ${{ secrets.LUMI_CI_SSH_USER }}
+          remote-dir: ${{ steps.reference-artifact-dir.outputs.path }}
+          local-dir: ${{ runner.temp }}/ectrans-reference-artifact
+
+      - name: Remove the artifacts from the HPC
+        if: ${{ always() }}
+        uses: ecmwf/ci-infrastructure/actions/remove-hpc-tree@main
+        with:
+          site: lumi
+          troika-user: ${{ secrets.LUMI_CI_SSH_USER }}
+          remote-dir: ${{ steps.reference-artifact-dir.outputs.path }}
+
+      - name: Upload reference artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ectrans-reference-artifact-${{ steps.reference-key.outputs.reference_key }}
+          path: ${{ runner.temp }}/ectrans-reference-artifact
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Cleanup reference artifact
+        if: ${{ always() }}
+        shell: bash -eux {0}
+        run: |
+          rm -rf "${{ runner.temp }}/ectrans-reference-artifact"

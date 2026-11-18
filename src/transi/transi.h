@@ -773,9 +773,11 @@ struct Trans_t {
                      //!<         DIMENSIONS(1:NPRTRW)
   int*  nallms;      //!< @brief  Wave numbers for all wave-set concatenated together
                      //!<         to give all wave numbers in wave-set order \n
-                     //!<         DIMENSIONS(1:NSMAX+1)
+                     //!<         DIMENSIONS(1:NSMAX+1) (global)
+                     //!<         DIMENSIONS(1:NMSMAX+1) (local area)
   int*  ndim0g;      //!< @brief  Defines partitioning of global spectral fields among PEs \n
-                     //!<         DIMENSIONS(0:NSMAX)
+                     //!<         DIMENSIONS(0:NSMAX) (global)
+                     //!<         DIMENSIONS(0:NMSMAX) (local area)
   int*  nvalue;      //!< @brief  n value for each KSPEC2 spectral coeffient\n
                      //!<         DIMENSIONS(1:NSPEC2)
   /*! @} */

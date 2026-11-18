@@ -100,10 +100,10 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 
     ! gridpoint vector field vorticitity and divergence
     if (lvordiv) then
-        call field_new(ywflds%vor, data=zgp(:, ioffset:ioffset+kuv-1, :))
-        ioffset = ioffset + kuv
-        call field_new(ywflds%div, data=zgp(:, ioffset:ioffset+kuv-1, :))
-        ioffset = ioffset + kuv
+      call field_new(ywflds%vor, data=zgp(:, ioffset:ioffset+kuv-1, :))
+      ioffset = ioffset + kuv
+      call field_new(ywflds%div, data=zgp(:, ioffset:ioffset+kuv-1, :))
+      ioffset = ioffset + kuv
     endif
 
     ! grid-point u and v
@@ -120,12 +120,12 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 
     if (k2d > 0) then
       if (lscders) then
-          call field_new(ywflds%scalar_ns, data=zgp(:,ioffset:ioffset+k2d-1,:))
-          ioffset = ioffset + k2d
+        call field_new(ywflds%scalar_ns, data=zgp(:,ioffset:ioffset+k2d-1,:))
+        ioffset = ioffset + k2d
       endif
     endif
 
- ! grid-point vector derivatives
+    ! grid-point vector derivatives
     if (luvders) then
       call field_new(ywflds%u_ew, data=zgp(:, ioffset:ioffset+kuv-1, :))
       ioffset = ioffset + kuv
@@ -135,8 +135,8 @@ subroutine wrap_benchmark_fields_zgp(ywflds, lvordiv, lscders, luvders,&
 
     if (k2d > 0) then
       if (lscders) then
-          call field_new(ywflds%scalar_ew, data=zgp(:,ioffset:ioffset+k2d-1,:))
-          ioffset = ioffset + k2d
+        call field_new(ywflds%scalar_ew, data=zgp(:,ioffset:ioffset+k2d-1,:))
+        ioffset = ioffset + k2d
       endif
     endif
 end subroutine wrap_benchmark_fields_zgp
@@ -164,7 +164,7 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
 
     integer :: ioffset
 
-  ! spectral vector fields
+    ! spectral vector fields
     call field_new(ywflds%spvor,      data=zspvor(:,:))
     call field_new(ywflds%spdiv,      data=zspdiv(:,:))
     ! spectral scalar fields
@@ -180,10 +180,10 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
     ioffset = 1
     ! gridpoint vector field vorticitity and divergence
     if (lvordiv) then
-        call field_new(ywflds%vor, data=zgpuv(:,:, ioffset, :))
-        ioffset = ioffset + kuv
-        call field_new(ywflds%div, data=zgpuv(:,:, ioffset, :))
-        ioffset = ioffset + kuv
+      call field_new(ywflds%vor, data=zgpuv(:,:, ioffset, :))
+      ioffset = ioffset + kuv
+      call field_new(ywflds%div, data=zgpuv(:,:, ioffset, :))
+      ioffset = ioffset + kuv
     endif
 
     ! grid-point u and v
@@ -206,11 +206,11 @@ subroutine wrap_benchmark_fields(ywflds, lvordiv, lscders, luvders,&
       call field_new(ywflds%scalar3,  data=zgp3a(:,:,ioffset:ioffset+k3d-1,:))
       ioffset = ioffset + k3d
       if (lscders) then
-          ! grid-point surfacic scalar derivatives fields
-          call field_new(ywflds%scalar3_ns,  data=zgp3a(:,:,ioffset:ioffset+k3d-1,:))
-          ioffset = ioffset + k3d
-          call field_new(ywflds%scalar3_ew,  data=zgp3a(:,:,ioffset:ioffset+k3d-1,:))
-          ioffset = ioffset + k3d
+        ! grid-point surfacic scalar derivatives fields
+        call field_new(ywflds%scalar3_ns,  data=zgp3a(:,:,ioffset:ioffset+k3d-1,:))
+        ioffset = ioffset + k3d
+        call field_new(ywflds%scalar3_ew,  data=zgp3a(:,:,ioffset:ioffset+k3d-1,:))
+        ioffset = ioffset + k3d
       endif
     endif
 
@@ -234,7 +234,7 @@ subroutine create_fields_lists(ywflds,ylf, kvsetuv, kvsetsc,kvsetsc2)
   ! Create field lists in ylf from field API objects in ywflds
 
   type(wrapped_fields), intent(in) :: ywflds       !input fields api objects
-  type(fields_lists), intent(inout) :: ylf ! output field lists
+  type(fields_lists), intent(inout), target :: ylf ! output field lists
   integer(kind=jpim), optional, intent(in) :: kvsetuv(:)     ! 'b-set' for vector fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc(:)     ! 'b-set' for scalar fields
   integer(kind=jpim), optional, intent(in) :: kvsetsc2(:)    ! 'b-set' for surfacic fields

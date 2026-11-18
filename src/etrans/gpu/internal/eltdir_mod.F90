@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 #define ALIGN(I, A) (((I)+(A)-1)/(A)*(A))
 MODULE ELTDIR_MOD
   USE BUFFERED_ALLOCATOR_MOD
@@ -15,7 +24,7 @@ MODULE ELTDIR_MOD
 
 CONTAINS
   FUNCTION PREPARE_ELTDIR(ALLOCATOR,KF_FS,KF_UV) RESULT(HELTDIR)
-    USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT, JPRD
+    USE PARKIND_ECTRANS, ONLY: JPIM, JPRBT, JPRD, JPIB
     USE TPM_DISTR, ONLY: D
     USE TPM_DIM, ONLY: R
     USE TPMALD_DIM      ,ONLY : RALD

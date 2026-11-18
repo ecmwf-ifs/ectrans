@@ -11,7 +11,7 @@
 MODULE GATH_SPEC_CONTROL_MOD
 CONTAINS
 SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
- &                           KSMAX,KSPEC2,KSPEC2_G,KPOSSP,KDIM0G,LDZA0IP)
+ &                           KSMAX,KSPEC2,KSPEC2_G,KPOSSP,KDIM0G,KN,LDZA0IP)
 
 !**** *GATH_SPEC_CONTROL* - Gather global spectral array from processors
 
@@ -27,9 +27,12 @@ SUBROUTINE GATH_SPEC_CONTROL(PSPECG,KFGATHG,KTO,KVSET,PSPEC,LDIM1_IS_FLD,&
 !     --------------------
 !     PSPECG(:,:) - Global spectral array
 !     KFGATHG     - Global number of fields to be distributed
-!     KTO(:)    - Processor responsible for distributing each field
+!     KTO(:)      - Processor responsible for distributing each field
 !     KVSET(:)    - "B-Set" for each field
 !     PSPEC(:,:)  - Local spectral array
+!     KN          - Optional number of coefficients for each m wave.
+!                   Required for non-triangular truncation (ETRANS).
+!                   If absent, triangular truncation is assumed.
 !     LDZA0IP     - Set first coefficients (imaginary part) to zero
 
 !     ------------------------------------------------------------------
@@ -56,6 +59,7 @@ INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KSPEC2_G
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KPOSSP(:)
 INTEGER(KIND=JPIM)          , INTENT(IN)  :: KDIM0G(0:)
+INTEGER(KIND=JPIM) ,OPTIONAL, INTENT(IN)  :: KN(0:)
 LOGICAL            ,OPTIONAL, INTENT(IN)  :: LDZA0IP
 
 REAL(KIND=JPRB)    :: ZFLD(KSPEC2,KFGATHG)
@@ -67,7 +71,7 @@ LOGICAL            :: LLZA0IP
 
 !     ------------------------------------------------------------------
 
-LLZA0IP=.TRUE.
+LLZA0IP=.NOT.PRESENT(KN)
 IF (PRESENT (LDZA0IP)) LLZA0IP=LDZA0IP
 
 !GATHER SPECTRAL ARRAY
@@ -103,13 +107,23 @@ ELSE
     ALLOCATE(ZRECV(KSPEC2_G,IMYFIELDS))
     II = 0
     CALL GSTATS(1804,0)
-    DO JM=0,KSMAX
-      DO JN=JM,KSMAX
-        IDIST(II+1) = KDIM0G(JM)+(JN-JM)*2
-        IDIST(II+2) = KDIM0G(JM)+(JN-JM)*2+1
-        II = II+2
+    IF (PRESENT(KN)) THEN
+      DO JM=0,KSMAX
+        DO JN=0,KN(JM)-1
+          II = II+1
+          IDIST(II) = KDIM0G(JM)+JN
+        ENDDO
       ENDDO
-    ENDDO
+    ELSE
+      DO JM=0,KSMAX
+        DO JN=JM,KSMAX
+          IDIST(II+1) = KDIM0G(JM)+(JN-JM)*2
+          IDIST(II+2) = KDIM0G(JM)+(JN-JM)*2+1
+          II = II+2
+        ENDDO
+      ENDDO
+    ENDIF
+    IF (II /= KSPEC2_G) CALL ABORT_TRANS('GATH_SPEC_CONTROL:INVALID GLOBAL SPECTRAL MAP SIZE')
     CALL GSTATS(1804,1)
   ENDIF
 

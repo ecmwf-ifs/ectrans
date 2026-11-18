@@ -1,3 +1,12 @@
+! (C) Copyright 2025- ECMWF.
+! (C) Copyright 2025- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 SUBROUTINE SPEC_SETUP4PY(KRETURNCODE, KSIZEI, KSIZEJ, KPHYSICALSIZEI, KPHYSICALSIZEJ, &
                        &KTRUNCX, KTRUNCY, KNUMMAXRESOL, KLOEN, LDLAM, &
                        &KSIZEKLOEN, PDELTAX, PDELTAY, &
@@ -30,6 +39,7 @@ SUBROUTINE SPEC_SETUP4PY(KRETURNCODE, KSIZEI, KSIZEJ, KPHYSICALSIZEI, KPHYSICALS
 
 USE ISO_FORTRAN_ENV, ONLY: INT64
 USE PARKIND1, ONLY : JPRB
+USE SETUP_CORE4PY_MOD, ONLY: SETUP_TRANS0_CORE
 
 IMPLICIT NONE
 
@@ -62,8 +72,8 @@ INTEGER, DIMENSION(:), ALLOCATABLE, SAVE :: ITRUNCXSAVE, ITRUNCYSAVE, &
 INTEGER(KIND=INT64), DIMENSION(:), ALLOCATABLE, SAVE :: ILOENSAVE
 REAL(KIND=JPRB), DIMENSION(:), ALLOCATABLE, SAVE :: ZDELTAXSAVE, ZDELTAYSAVE
 REAL(KIND=JPRB) :: ZEXWN, ZEYWN
+INTEGER :: IDUMNS, IDUMEW
 
-#include "setup_trans0.h"
 #include "esetup_trans.h"
 #include "setup_trans.h"
 
@@ -75,7 +85,10 @@ LDSTOP=.FALSE.
 ! Maximum number of resolution is set now and cannot be change anymore
 IF (LLFIRSTCALL) THEN
   !This code is called only once, whatever is the number of resolutions
-  CALL SETUP_TRANS0(KPRINTLEV=0, LDMPOFF=.TRUE., KMAX_RESOL=KNUMMAXRESOL)
+  ! Serial init: message passing off, single (1x1x1) processor grid.
+  CALL SETUP_TRANS0_CORE(KMAX_RESOL=KNUMMAXRESOL, LDMPOFF=.TRUE., &
+                       & KPRGPNS=1, KPRGPEW=1, KPRTRW=1, LDEQ_REGIONS=.FALSE., &
+                       & KREGIONS_NS=IDUMNS, KREGIONS_EW=IDUMEW)
   ALLOCATE(ITRUNCXSAVE(KNUMMAXRESOL))
   ALLOCATE(ITRUNCYSAVE(KNUMMAXRESOL))
   ALLOCATE(IPHYSICALSIZEISAVE(KNUMMAXRESOL))

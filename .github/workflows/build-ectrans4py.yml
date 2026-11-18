@@ -113,6 +113,19 @@ jobs:
 
         printenv
 
+    - name: Install MPI
+      shell: bash -eux {0}
+      run: |
+        FCFLAGS=-fPIC CFLAGS=-fPIC FFLAGS=-fPIC \
+          ${ECTRANS_TOOLS}/install-mpi.sh --mpi openmpi --prefix  ${DEPS_DIR}/openmpi
+        [ -f ${DEPS_DIR}/openmpi/env.sh ] && source ${DEPS_DIR}/openmpi/env.sh
+        [ -z ${MPI_HOME+x} ] || echo "MPI_HOME=${MPI_HOME}" >> $GITHUB_ENV
+        [ -z ${MPI_HOME+x} ] || echo "${MPI_HOME}/bin" >> $GITHUB_PATH
+        if [[ "${{ matrix.os }}" =~ macos ]]; then
+          mpi_cache_version=$(${ECTRANS_TOOLS}/openmpi-cache-version.py)
+          echo "CACHE_SUFFIX=${CACHE_SUFFIX}-mpi_${mpi_cache_version}" >> $GITHUB_ENV
+        fi
+
     - name: Install FIAT
       run:  |
         cmake -B $GITHUB_WORKSPACE/fiat/build -S $GITHUB_WORKSPACE/fiat
@@ -151,9 +164,19 @@ jobs:
           exit 1
         fi
 
-    - name: Test ectrans4py
+    - name: Prepare environment for testing
+      run:  |
+        . venv/bin/activate
+        pip install pytest mpi4py
+
+    - name: Run ectrans4py serial tests
       run:  |
         . venv/bin/activate
         cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
-        pip install pytest
-        python -m pytest
+        python -m pytest -k test_ectrans4py_serial
+
+    - name: Run ectrans4py parallel tests with MPI
+      run:  |
+        . venv/bin/activate
+        cd $GITHUB_WORKSPACE/ectrans/tests/test_ectrans4py
+        mpirun -np 4 python -m pytest -k test_ectrans4py_parallel

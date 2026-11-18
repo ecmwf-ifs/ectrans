@@ -1747,7 +1747,7 @@ subroutine dump_checksums(filename, noutdump, &
     endif
 
     if (jstep /= last_header_jstep) then
-      write(noutdump,'(a)')     "# --------------------------------------------"
+      write(noutdump,'(a)')     "# --------------------------------------------"
       write(noutdump,'(a, i0)') "# Iteration ", jstep
       write(noutdump,'(a)')     "# --------------------------------------------"
       last_header_jstep = jstep

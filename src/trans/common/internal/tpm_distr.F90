@@ -56,11 +56,8 @@ INTEGER(KIND=JPIM) :: NUMP      ! No. of spectral waves handled by this processo
 INTEGER(KIND=JPIM) :: NSPEC     ! No. of complex spectral coefficients (on this PE)
 INTEGER(KIND=JPIM) :: NSPEC2    ! 2*NSPEC
 INTEGER(KIND=JPIM) :: NSPEC2MX  ! maximun NSPEC2 among all PEs
-INTEGER(KIND=JPIM) :: NTPEC2    ! cf. NSPEC2 but for truncation NTMAX
-INTEGER(KIND=JPIM) :: NUMTP     ! cf. NUMP but for truncation NTMAX
 
 INTEGER(KIND=JPIM) :: NSPOLEGL  ! No. of legendre polynomials on this PE
-INTEGER(KIND=JPIM) :: NLEI3D    ! (NLEI3-1)/NPRTRW+1
 
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: MYMS(:)    ! Wave numbers handled by this PE
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NUMPP(:)   ! No. of wave numbers each wave set is
@@ -72,7 +69,6 @@ INTEGER(KIND=JPIM) ,ALLOCATABLE :: NDIM0G(:)  ! Defines partitioning of global s
                                  ! fields among PEs
 
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NASM0(:)  ! Address in a spectral array of (m, n=m)
-INTEGER(KIND=JPIM) ,ALLOCATABLE :: NATM0(:)  ! Same as NASM0 but for NTMAX
 INTEGER(KIND=JPIM) ,ALLOCATABLE :: NALLMS(:) ! Wave numbers for all a-set concatenated
                                 ! together to give all wave numbers in a-set
                                 ! order. Used when global spectral norms 

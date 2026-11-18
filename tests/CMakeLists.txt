@@ -82,6 +82,34 @@ add_subdirectory( trans/api )
 add_subdirectory( trans/adjoint )
 
 # --------------------------------------------------------------------------------------------------
+# Add field-view metadata test
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_CPU )
+  set( field_view_platform_tag "" )
+else()
+  set( field_view_platform_tag "gpu_" )
+endif()
+if( HAVE_DOUBLE_PRECISION )
+  set( field_view_precision dp )
+else()
+  set( field_view_precision sp )
+endif()
+
+ecbuild_add_test( TARGET ectrans_test_field_view
+  SOURCES trans/test_field_view.F90
+  LIBS ectrans_field_view_${field_view_platform_tag}${field_view_precision}
+  LINKER_LANGUAGE Fortran )
+
+# --------------------------------------------------------------------------------------------------
+# Add etrans tests
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_ETRANS )
+  add_subdirectory( etrans )
+endif()
+
+# --------------------------------------------------------------------------------------------------
 # Add tests for common call patterns of ecTrans, using the benchmark program
 # This tests CPU and/or GPU versions, depending on which are enabled
 # --------------------------------------------------------------------------------------------------
@@ -229,6 +257,29 @@ foreach( benchmark ${benchmarks} )
         ectrans_set_test_properties( ${test_name} )
         ectrans_checksum_reference_name( reference_name ${benchmark} T${t} ${grid} nfld10 nlev20 niter${niter} scders0 uvders0 vordiv0 flt0 )
         ectrans_add_checksum_reference_tests( ${test_name} ${reference_name} )
+
+        # Check it works with --keep-pgp-arrays-on-device (gpu only). This flag is incompatible
+        # with --dump-checksums (grid-point data is not synced to the host), so correctness here
+        # relies solely on --check against the spectral-space round-trip error.
+        if( ${benchmark} MATCHES "gpu" )
+          set( test_name ${base_title}_nfld10_nlev20_pgp_on_gpu )
+          ecbuild_add_test( TARGET ${test_name}
+              COMMAND ${benchmark}
+              ARGS ${base_args} --nfld 10 --nlev 20 --keep-pgp-arrays-on-device --check 100
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${test_name} )
+
+          set( test_name ${base_title}_nfld10_nlev20_psp_on_gpu )
+          ecbuild_add_test( TARGET ${test_name}
+              COMMAND ${benchmark}
+              ARGS ${base_args} --nfld 10 --nlev 20 --keep-psp-arrays-on-device
+              MPI ${mpi}
+              OMP ${omp}
+          )
+          ectrans_set_test_properties( ${test_name} )
+        endif()
 
         # Check it works with LALLOPERM=F (cpu only)
         if( ${benchmark} MATCHES "cpu" )
@@ -577,7 +628,7 @@ if( HAVE_CPU AND HAVE_MPI )
   endif()
 
   if (fiat_VERSION VERSION_LESS 1.6.3 OR (fiat_VERSION VERSION_EQUAL 2.0.0 AND NOT HAVE_FIAT_DEVELOP))
-    # Once fiat develop branch is released in version > 2.0.0, we can drop "AND NOT HAVE FIAT_DEVELOP"
+    # Once fiat develop branch is released in version > 2.0.0, we can drop "AND NOT HAVE FIAT_DEVELOP"
     ecbuild_warn("Skipping test ectrans_test_init_mpi_ranks for fiat version (${fiat_VERSION}) < 1.6.3 or "
                  " version == 2.0.0; see https://github.com/ecmwf-ifs/ectrans/pull/387")
   else()
@@ -589,6 +640,31 @@ if( HAVE_CPU AND HAVE_MPI )
       OMP 1
     )
   endif()
+endif()
+
+# --------------------------------------------------------------------------------------------------
+# Add test for ability to call INV_TRANS at multiple precisions
+# --------------------------------------------------------------------------------------------------
+
+if( HAVE_SINGLE_PRECISION AND HAVE_DOUBLE_PRECISION )
+  foreach( platform ${platforms} )
+    if( "${platform}" STREQUAL "cpu" )
+      set( trans_libs ectrans_sp ectrans_dp )
+    else()
+      set( trans_libs ectrans_gpu_sp ectrans_gpu_dp)
+    endif()
+
+    ecbuild_add_test( TARGET ectrans_test_multiple_precisions_${platform}
+      SOURCES trans/test_multiple_precisions.F90
+      LIBS ${trans_libs} fiat
+      LINKER_LANGUAGE Fortran )
+
+    if( "${platform}" STREQUAL "cpu" )
+      target_compile_definitions(ectrans_test_multiple_precisions_${platform} PUBLIC CPU_VERSION)
+    else()
+      target_compile_definitions(ectrans_test_multiple_precisions_${platform} PUBLIC GPU_VERSION)
+    endif()
+  endforeach()
 endif()
 
 # --------------------------------------------------------------------------------------------------
@@ -748,6 +824,42 @@ if( HAVE_TRANSI )
         LINKER_LANGUAGE C
         ENVIRONMENT TRANS_USE_MPI=1 )
     endif()
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test
+      MPI 4 # > 3 needed to make this test result in zero-sized local spectra
+      LINKER_LANGUAGE C
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral_lam
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test
+      MPI 4
+      LINKER_LANGUAGE C
+      DEFINITIONS LAM_VERSION
+      CONDITION HAVE_ETRANS
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral_gpu
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test_gpu
+      MPI 4
+      LINKER_LANGUAGE C
+      DEFINITIONS GPU_VERSION
+      CONDITION HAVE_GPU
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    if( TEST ectrans_test_transi_zero_local_spectral_gpu )
+      set_tests_properties( ectrans_test_transi_zero_local_spectral_gpu PROPERTIES LABELS gpu )
+    endif()
+    ecbuild_add_test( TARGET ectrans_test_transi_zero_local_spectral_lam_gpu
+      SOURCES   transi/transi_test_zero_local_spectral.c
+      LIBS      ectrans_test_gpu
+      MPI 4
+      LINKER_LANGUAGE C
+      DEFINITIONS LAM_VERSION GPU_VERSION
+      CONDITION HAVE_ETRANS_GPU
+      ENVIRONMENT TRANS_USE_MPI=1 )
+    if( TEST ectrans_test_transi_zero_local_spectral_lam_gpu )
+      set_tests_properties( ectrans_test_transi_zero_local_spectral_lam_gpu PROPERTIES LABELS gpu )
+    endif()
   endif()
 
   if( HAVE_ETRANS_GPU )
@@ -763,4 +875,16 @@ if( HAVE_TRANSI )
     endif()
   endif()
 
+  ecbuild_add_test( TARGET ectrans_test_transi_trans_inquire
+    SOURCES   transi/transi_test_trans_inquire.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    ENVIRONMENT TRANS_USE_MPI=0 )
+
+  ecbuild_add_test( TARGET ectrans_test_transi_trans_inquire_lam
+    SOURCES   transi/transi_test_trans_inquire_lam.c
+    LIBS      ectrans_test
+    LINKER_LANGUAGE C
+    CONDITION HAVE_ETRANS
+    ENVIRONMENT TRANS_USE_MPI=0 )
 endif()

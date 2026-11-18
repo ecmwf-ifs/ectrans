@@ -105,3 +105,6 @@ endif()
 if( HAVE_GPU )
   add_subdirectory( gpu )
 endif()
+
+add_subdirectory( field_view )
+

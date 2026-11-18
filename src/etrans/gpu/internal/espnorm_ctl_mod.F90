@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 MODULE ESPNORM_CTL_MOD
 CONTAINS
 SUBROUTINE ESPNORM_CTL(PSPEC,KFLD,KFLD_G,KVSET,KMASTER,PMET,PNORM)
@@ -47,7 +56,11 @@ ELSE
   ZMET(:) = 1.0_JPRB
 ENDIF
 
-CALL ESPNORMD(PSPEC,KFLD,ZMET,ZSM)
+IF(PRESENT(PSPEC)) THEN
+  CALL ESPNORMD(PSPEC,KFLD,ZMET,ZSM)
+ELSEIF(SIZE(ZSM)>0) THEN
+  ZSM(:,:) = 0.0_JPRB
+ENDIF
 
 IF (LHOOK) CALL DR_HOOK('ESPNORM_CTL_MOD:SPNORMC',0,ZHOOK_HANDLE1)
 CALL SPNORMC(ZSM,KFLD_G,IVSET,KMASTER,RALD%NMSMAX,ZGM)

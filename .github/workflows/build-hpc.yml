@@ -57,7 +57,6 @@ jobs:
         name:
           - ac-ops intel
           - ac-gpu nvhpc
-          - lumi-g cce
 
         include:
           - name: ac-ops intel
@@ -94,27 +93,29 @@ jobs:
             env_vars:
               - CMAKE_GENERATOR=Ninja
 
-          - name: lumi-g cce
-            site: lumi
-            os: lumi-g
-            compiler: cce-19-0-0
-            troika_user_secret: LUMI_CI_SSH_USER
-            account_secret: LUMI_CI_PROJECT
-            arch: eurohpc/lumi-g/cray/19.0.0
-            sbatch_options: |
-              #SBATCH --time=01:10:00
-              #SBATCH --nodes=1
-              #SBATCH --ntasks-per-node=8
-              #SBATCH --gpus-per-task=1
-              #SBATCH --partition=standard-g
-              #SBATCH --account={0}
-            env_vars:
-              - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
-              - MPICH_GPU_SUPPORT_ENABLED=1
-              - MPICH_SMP_SINGLE_COPY_MODE=NONE
-              - CMAKE_GENERATOR=Ninja
-            ctest_options: -E bitid # We don't bother with reproducibility checks on LUMI
-            unsupported_dependency: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
+          # LUMI is not reliable enough for regular CI runs, so it is commented out for now.
+          # Instead use the "on-demand" action build-hpc-lumi-debug.
+          # - name: lumi-g cce
+          #   site: lumi
+          #   os: lumi-g
+          #   compiler: cce-19-0-0
+          #   troika_user_secret: LUMI_CI_SSH_USER
+          #   account_secret: LUMI_CI_PROJECT
+          #   arch: eurohpc/lumi-g/cray/19.0.0
+          #   sbatch_options: |
+          #     #SBATCH --time=01:10:00
+          #     #SBATCH --nodes=1
+          #     #SBATCH --ntasks-per-node=8
+          #     #SBATCH --gpus-per-task=1
+          #     #SBATCH --partition=standard-g
+          #     #SBATCH --account={0}
+          #   env_vars:
+          #     - ROCFFT_RTC_CACHE_PATH=$PWD/../../rocfft_kernel_cache.db
+          #     - MPICH_GPU_SUPPORT_ENABLED=1
+          #     - MPICH_SMP_SINGLE_COPY_MODE=NONE
+          #     - CMAKE_GENERATOR=Ninja
+          #   ctest_options: -E bitid # We don't bother with reproducibility checks on LUMI
+          #   unsupported_dependency: ecmwf-ifs/field_api # We don't build Field API on LUMI for now
 
 
     runs-on: [self-hosted, linux, hpc]
@@ -315,10 +316,6 @@ jobs:
               echo "Finished: FAILURE"
               exit $ctest_status
             fi
-
-      - name: Ensure ci-infrastructure present
-        if: ${{ always() }}
-        uses: ecmwf/ci-infrastructure/actions/ensure-infrastructure-present@main
 
       - name: Fetch the reference artifacts from the HPC
         if: ${{ always() }}

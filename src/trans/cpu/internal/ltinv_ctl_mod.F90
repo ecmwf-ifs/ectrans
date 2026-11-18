@@ -82,7 +82,7 @@ INTEGER(KIND=JPIM) :: JM,IM,IBLEN,ILEI2,IDIM1
 !     ------------------------------------------------------------------
 
 CALL GSTATS(102,0)
-ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS
+ILEI2 = 8*KF_UV + 2*KF_SCALARS + 2*KF_SCDERS ! Maximum number of fields with all options on
 IDIM1 = 2*KF_OUT_LT
 IBLEN = D%NLENGT0B*2*KF_OUT_LT
 IF (ALLOCATED(FOUBUF)) THEN

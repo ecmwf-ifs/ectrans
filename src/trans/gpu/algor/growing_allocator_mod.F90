@@ -1,3 +1,12 @@
+! (C) Copyright 2024- ECMWF.
+! (C) Copyright 2024- NVIDIA.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 MODULE GROWING_ALLOCATOR_MOD
 
   USE ISO_C_BINDING, ONLY: C_INT8_T
@@ -29,6 +38,7 @@ MODULE GROWING_ALLOCATOR_MOD
 CONTAINS
 
   SUBROUTINE REALLOCATE_GROWING_ALLOCATION(ALLOC, SZ)
+    USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
 #ifdef OMPGPU
     USE OMP_LIB, ONLY: OMP_GET_DEFAULT_DEVICE, OMP_TARGET_ALLOC, OMP_TARGET_ASSOCIATE_PTR
 #endif
@@ -54,6 +64,10 @@ CONTAINS
       DEV_PTR = OMP_TARGET_ALLOC(SZ, DEVICE_NUM)
       CALL C_F_POINTER(DEV_PTR, ALLOC%PTR, [SZ])
       IERR = OMP_TARGET_ASSOCIATE_PTR(C_LOC(ALLOC%PTR), DEV_PTR, SZ, 0_C_SIZE_T, DEVICE_NUM)
+      IF (IERR /= 0) THEN
+        CALL ABORT_TRANS("REALLOCATE_GROWING_ALLOCATION: ERROR - Failed to associate device&
+                        & pointer")
+      ENDIF
 #endif
 #ifdef ACCGPU
       ALLOCATE(ALLOC%PTR(SZ))

@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 MODULE EDEALLOC_RESOL_MOD
 CONTAINS
 SUBROUTINE EDEALLOC_RESOL(KRESOL)
@@ -78,7 +87,7 @@ ELSE
 
   IF(.NOT.D%LGRIDONLY) THEN
 
-    DEALLOCATE(D%MYMS,D%NUMPP,D%NPOSSP,D%NPROCM,D%NDIM0G,D%NASM0,D%NATM0)
+    DEALLOCATE(D%MYMS,D%NUMPP,D%NPOSSP,D%NPROCM,D%NDIM0G,D%NASM0)
     DEALLOCATE(D%NLATLS,D%NLATLE,D%NPMT,D%NPMS,D%NPMG,D%NULTPP,D%NPROCL)
     DEALLOCATE(D%NPTRLS,D%NALLMS,D%NPTRMS,D%NSTAGT0B,D%NSTAGT1B,D%NPNTGTB0)
     DEALLOCATE(D%NPNTGTB1,D%NLTSFTB,D%NLTSGTB,D%MSTABF)

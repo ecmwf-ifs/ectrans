@@ -25,7 +25,7 @@ use oml_mod ,only : oml_max_threads
 use mpl_module
 use yomgstats, only: jpmaxstat, gstats_lstats => lstats
 use yomhook, only : dr_hook_init
-use ectrans_memory, only : allocator
+use ectrans_memory, only : allocator, update_device
 use ec_checksum_mod, only : fletcher16_hex
 
 #if USE_FIELD_API
@@ -194,6 +194,8 @@ type(fields_lists) :: ylf
 logical :: ldump_values = .false.
 logical :: lpinning = .false.
 logical :: ldump_checksums = .false.
+logical :: lpgp_on_gpu = .false.
+logical :: lpsp_on_gpu = .false.
 
 integer, external :: ec_mpirank
 logical :: luse_mpi = .true.
@@ -241,7 +243,7 @@ call get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, nlev, l
   &                             luvder, luseflt, nopt_mem_tr, nproma, npromatr, verbosity, &
   &                             ldump_values, lprint_norms, lmeminfo, nprtrv, nprtrw, ncheck, &
   &                             lpinning, lfield_api, icall_mode, ldump_checksums, iters_checksums, &
-  &                             cchecksums_path, lalloperm)
+  &                             cchecksums_path, lalloperm, lpgp_on_gpu, lpsp_on_gpu)
 if (iters_checksums < 0) then
   if (iters_warmup > 0) then
     iters_checksums = iters_warmup
@@ -389,6 +391,17 @@ if (verbosity >= 1 .and. myproc == 1) then
 endif
 call allocator%set_pinning(lpinning)
 
+if (lpgp_on_gpu .or. lpsp_on_gpu) then
+  if (VERSION /= "gpu") then
+    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device and --keep-psp-arrays-on-device &
+      &only work with a GPU build')
+  endif
+  if (lfield_api) then
+    call abor1('ectrans_benchmark: --keep-pgp-arrays-on-device and --keep-psp-arrays-on-device are &
+      &incompatible with --field-api')
+  endif
+endif
+
 !===================================================================================================
 ! Setup gstats
 !===================================================================================================
@@ -466,6 +479,8 @@ if (verbosity >= 0 .and. myproc == 1) then
   write(nout,'("luvder     ",l1)') luvder
   write(nout,'("lfield_api ",l1)') lfield_api
   write(nout,'("lalloperm  ",l1)') lalloperm
+  write(nout,'("lpgp_on_gpu ",l1)') lpgp_on_gpu
+  write(nout,'("lpsp_on_gpu ",l1)') lpsp_on_gpu
   write(nout,'(" ")')
   write(nout,'(a)') '======= End of runtime parameters ======='
   write(nout,'(" ")')
@@ -484,6 +499,9 @@ do jb = 1, nprtrv
     ivset(ilev) = jb
   enddo
 enddo
+
+! Allocate spectral fields (device-resident when PSP arrays are kept on the device).
+call allocator%set_device_resident(lpsp_on_gpu)
 
 ! Initialize vorticity and divergence - same for both call modes
 call allocator%allocate('zspvor', zspvor, [nflevl,nspec2])
@@ -516,6 +534,21 @@ else
   enddo
   call initialize_spectral_field(nsmax, zspsc2)
 endif
+
+! The allocator mapped the spectral arrays to the device before they were initialised, so copy the
+! initial values over once here (outside the timed loop). Zero-sized arrays are never mapped.
+if (lpsp_on_gpu) then
+  call update_device(zspvor)
+  call update_device(zspdiv)
+  if (icall_mode == 1) then
+    call update_device(zspscalar)
+  else
+    call update_device(zspsc3a)
+    call update_device(zspsc2)
+  endif
+endif
+
+call allocator%set_device_resident(.false.)
 
 !===================================================================================================
 ! Allocate gridpoint arrays
@@ -556,7 +589,8 @@ if (lscders) then
   inum_sc_2d_fields = inum_sc_2d_fields * 3
 endif
 
-! Finally, allocate grid point arrays
+! Finally, allocate grid point arrays (device-resident when PGP arrays are kept on the device).
+call allocator%set_device_resident(lpgp_on_gpu)
 if (icall_mode == 1) then
   itotal_fields = nflevg * (inum_wind_fields + inum_sc_3d_fields) + inum_sc_2d_fields
   call allocator%allocate('zgp', zgp, [nproma,itotal_fields,ngpblks])
@@ -565,6 +599,7 @@ else
   call allocator%allocate('zgp3a', zgp3a, [nproma,nflevg,inum_sc_3d_fields,ngpblks])
   call allocator%allocate('zgp2', zgp2, [nproma,inum_sc_2d_fields,ngpblks])
 endif
+call allocator%set_device_resident(.false.)
 
 #if USE_FIELD_API
 if (lfield_api) then
@@ -690,9 +725,8 @@ do jstep = 1, iters+iters_warmup
     call inv_trans_field_api(kresol=1, ydfspscalar=ylf%spscalar, ydfspvor=ylf%spvor, &
       &                      ydfspdiv=ylf%spdiv, ydfscalar=ylf%scalar, ydfu=ylf%u, ydfv=ylf%v, &
       &                      ydfvor=ylf%vor, ydfdiv=ylf%div, ydfscalar_ns=ylf%scalar_ns, &
-      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew, &
-      &                      kgptot = ngptot)
-    call synchost_rdonly_wrapped_fields(ywflds)
+      &                      ydfscalar_ew=ylf%scalar_ew, ydfu_ew=ylf%u_ew, ydfv_ew=ylf%v_ew)
+      call synchost_rdonly_wrapped_fields(ywflds)
 #else
     call abor1('ectrans_benchmark: No field API support')
 #endif
@@ -700,12 +734,13 @@ do jstep = 1, iters+iters_warmup
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspscalar=zspscalar, pgp=zgp, &
       &            kvsetuv=ivset, kvsetsc=ivsetsc, &
       &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
-      &            kproma=nproma)
+      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   else
     call inv_trans(pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, pgpuv=zgpuv, &
       &            pgp3a=zgp3a, pgp2=zgp2, &
       &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, &
-      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, kproma=nproma)
+      &            ldscders=lscders, ldvorgp=lvordiv, lddivgp=lvordiv, lduvder=luvder, &
+      &            kproma=nproma, lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
@@ -780,12 +815,14 @@ do jstep = 1, iters+iters_warmup
 #endif
   else if (icall_mode == 1) then
     call dir_trans(pgp=zgp(:,ipgp_start:ipgp_end,:), pspvor=zspvor, pspdiv=zspdiv, &
-      &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma)
+      &            pspscalar=zspscalar, kvsetuv=ivset, kvsetsc=ivsetsc, kproma=nproma, &
+      &            lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   else
     call dir_trans(pgpuv=zgpuv(:,:,ipgpuv_start:ipgpuv_end,:), &
       &            pgp3a=zgp3a(:,:,1:nfld,:), pgp2=zgp2(:,1:1,:), &
       &            pspvor=zspvor, pspdiv=zspdiv, pspsc3a=zspsc3a, pspsc2=zspsc2, &
-      &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma)
+      &            kvsetuv=ivset, kvsetsc2=ivsetsc2, kvsetsc3a=ivset, kproma=nproma, &
+      &            lpgp_on_gpu=lpgp_on_gpu, lpsp_on_gpu=lpsp_on_gpu)
   endif
 
   if (ldump_checksums .and. jstep <= iters_checksums) then
@@ -1059,6 +1096,7 @@ if (lfield_api) then
 endif
 #endif
 
+call allocator%set_device_resident(lpsp_on_gpu)
 call allocator%deallocate('zspvor', zspvor)
 call allocator%deallocate('zspdiv', zspdiv)
 
@@ -1068,7 +1106,9 @@ else
   call allocator%deallocate('zspsc3a', zspsc3a)
   call allocator%deallocate('zspsc2', zspsc2)
 endif
+call allocator%set_device_resident(.false.)
 
+call allocator%set_device_resident(lpgp_on_gpu)
 if (icall_mode == 1) then
   call allocator%deallocate('zgp', zgp)
 else
@@ -1076,6 +1116,7 @@ else
   call allocator%deallocate('zgp3a', zgp3a)
   call allocator%deallocate('zgp2', zgp2)
 endif
+call allocator%set_device_resident(.false.)
 
 !===================================================================================================
 
@@ -1278,6 +1319,10 @@ subroutine print_help(unit)
    & https://sites.ecmwf.int/docs/ectrans/page/api.html for more information"
   write(nout, "(a)") "    --deallocate-foubuf-temps Enable deallocation of temporary Fourier-space&
    & buffers (default = off, when enabled equivalent to LALLOPERM=.FALSE.)"
+  write(nout, "(a)") "    --keep-pgp-arrays-on-device  Keep PGP arrays on the GPU (default = off;&
+   & cannot be enabled with --dump-values nor --dump-checksums)"
+  write(nout, "(a)") "    --keep-psp-arrays-on-device  Keep PSP arrays on the GPU (default = off;&
+   & cannot be enabled with --norms, --check nor --dump-checksums )"
   write(nout, "(a)") ""
   write(nout, "(a)") "DEBUGGING"
   write(nout, "(a)") "    --dump-values             Output gridpoint fields in unformatted binary file"
@@ -1308,7 +1353,7 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
   &                                   verbosity, ldump_values, lprint_norms, lmeminfo, nprtrv, &
   &                                   nprtrw, ncheck, lpinning, lfield_api, icall_mode, ldump_checksums, &
   &                                   iters_checksums, &
-  &                                   cchecksums_path, lalloperm)
+  &                                   cchecksums_path, lalloperm, lpgp_on_gpu, lpsp_on_gpu)
 
 #ifdef _OPENACC
   use openacc, only: acc_init, acc_get_device_type
@@ -1346,6 +1391,8 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
 
   character(len=1024), intent(inout) :: cchecksums_path ! path to export checksum files
   logical, intent(inout) :: lalloperm                  ! keep FOUBUF & FOUBUF_IN allocated
+  logical, intent(inout) :: lpgp_on_gpu                ! keep PGP arrays on the GPU
+  logical, intent(inout) :: lpsp_on_gpu                ! keep PSP arrays on the GPU
   character(len=128) :: carg          ! Storage variable for command line arguments
   integer            :: iarg          ! Argument index
 
@@ -1416,12 +1463,23 @@ subroutine get_command_line_arguments(nsmax, cgrid, iters, iters_warmup, nfld, n
             call parsing_failed("Invalid argument for --callmode: must be 1 or 2")
           end if
       case('--deallocate-foubuf-temps'); lalloperm = .false.
+      case('--keep-pgp-arrays-on-device'); lpgp_on_gpu = .true.
+      case('--keep-psp-arrays-on-device'); lpsp_on_gpu = .true.
       case default
         call parsing_failed("Unrecognised argument: " // trim(carg))
 
     end select
     iarg = iarg + 1
   end do
+
+  if (lpgp_on_gpu .and. (ldump_values .or. ldump_checksums)) then
+    call parsing_failed("Invalid combination of arguments: --keep-pgp-arrays-on-device cannot be &
+      &used with --dump-values or --dump-checksums")
+  end if
+  if (lpsp_on_gpu .and. (lprint_norms .or. ncheck > 0 .or. ldump_checksums)) then
+    call parsing_failed("Invalid combination of arguments: --keep-psp-arrays-on-device cannot be &
+      &used with --norms or --check or --dump-checksums")
+  end if
 
 end subroutine get_command_line_arguments
 !===================================================================================================
@@ -1712,7 +1770,7 @@ subroutine open_dump_checksums_file(filename, noutdump, jstep, append_checksums)
 
   if (jstep /= last_header_jstep) then
     write(noutdump,'(a)')     "# --------------------------------------------"
-    write(noutdump,'(a, i0)') "# Iteration ", jstep
+    write(noutdump,'(a, i0)') "# Iteration ", jstep
     write(noutdump,'(a)')     "# --------------------------------------------"
     last_header_jstep = jstep
   endif
@@ -2216,7 +2274,26 @@ subroutine gstats_labels
   call gstats_label(157, '   ', 'FTINV_CTL      - L to G transposition')
   call gstats_label(158, '   ', 'FTDIR_CTL      - G to L transposition')
   call gstats_label(400, '   ', 'GSTATS         - GSTATS itself')
-
+  call gstats_label(410, '   ', 'DIR_TRANS      - Direct transform')
+  call gstats_label(411, '   ', 'TRGTOL/TRLTOM  - MPI communications')
+  call gstats_label(412, '   ', 'LTDIR/TRGTOL   - H<->D copies (direct)')
+  call gstats_label(413, '   ', 'FTDIR          - Low level FFT')
+  call gstats_label(414, '   ', 'LEDIR          - Mat. mul.')
+  call gstats_label(420, '   ', 'INV_TRANS      - Inverse transform')
+  call gstats_label(421, '   ', 'TRLTOG/TRMTOL  - MPI communications')
+  call gstats_label(422, '   ', 'LTINV/TRLTOG   - H<->D copies (inverse)')
+  call gstats_label(423, '   ', 'FTINV          - Low level FFT')
+  call gstats_label(424, '   ', 'LEINV          - Mat. mul.')
+  call gstats_label(430, '   ', 'Direct trans.  - MPI synchronization')
+  call gstats_label(431, '   ', 'TRGTOL/TRLTOM  - MPI synchronization')
+  call gstats_label(432, '   ', 'LTDIR/TRGTOL   - MPI synchronization')
+  call gstats_label(433, '   ', 'FTDIR          - MPI synchronization')
+  call gstats_label(434, '   ', 'LEDIR          - MPI synchronization')
+  call gstats_label(440, '   ', 'Inverse trans. - MPI synchronization')
+  call gstats_label(441, '   ', 'TRLTOG/TRMTOL  - MPI synchronization')
+  call gstats_label(442, '   ', 'LTINV/TRLTOG   - MPI synchronization')
+  call gstats_label(443, '   ', 'FTINV          - MPI synchronization')
+  call gstats_label(444, '   ', 'LEINV          - MPI synchronization')
 end subroutine gstats_labels
 
 end program ectrans_benchmark

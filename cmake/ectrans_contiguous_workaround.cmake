@@ -20,4 +20,7 @@ if( NOT DEFINED ECTRANS_HAVE_CONTIGUOUS_ISSUE )
       set( ECTRANS_HAVE_CONTIGUOUS_ISSUE True )
     endif()
   endif()
+
+  # I believe the above is no longer necessary with PR https://github.com/ecmwf-ifs/ectrans/pull/476
+  set( ECTRANS_HAVE_CONTIGUOUS_ISSUE False )
 endif()

@@ -1,3 +1,12 @@
+! (C) Copyright 2001- ECMWF.
+! (C) Copyright 2001- Meteo-France.
+!
+! This software is licensed under the terms of the Apache Licence Version 2.0
+! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! In applying this licence, ECMWF does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+
 SUBROUTINE ESPECNORM(PSPEC,KVSET,KMASTER,KRESOL,PMET,PNORM)
 
 !**** *ESPECNORM* - Compute global spectral norms
@@ -113,7 +122,7 @@ IF(MYPROC == IMASTER) THEN
     CALL ABORT_TRANS('ESPECNORM: PNORM TOO SMALL')
   ENDIF
 ENDIF
-IF(IFLD > 0 ) THEN
+IF(IFLD > 0 .AND. D%NSPEC2 > 0 ) THEN
   IF(.NOT. PRESENT(PSPEC)) THEN
     CALL ABORT_TRANS('ESPECNORM: PSPEC NOT PRESENT')
   ENDIF
@@ -125,7 +134,11 @@ IF(IFLD > 0 ) THEN
   ENDIF
 ENDIF
 
-CALL ESPNORM_CTL(PSPEC,IFLD,IFLD_G,KVSET,IMASTER,PMET,PNORM)
+IF(PRESENT(PSPEC)) THEN
+  CALL ESPNORM_CTL(PSPEC=PSPEC,KFLD=IFLD,KFLD_G=IFLD_G,KVSET=KVSET,KMASTER=IMASTER,PMET=PMET,PNORM=PNORM)
+ELSE
+  CALL ESPNORM_CTL(KFLD=IFLD,KFLD_G=IFLD_G,KVSET=KVSET,KMASTER=IMASTER,PMET=PMET,PNORM=PNORM)
+ENDIF
 IF (LHOOK) CALL DR_HOOK('ESPECNORM',1,ZHOOK_HANDLE)
 
 !endif INTERFACE
