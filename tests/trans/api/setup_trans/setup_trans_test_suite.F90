@@ -334,4 +334,56 @@ END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY
 
 !---------------------------------------------------------------------------------------------------
 
+! Test SETUP_TRANS works with Legendre polynomials written to and read from disk, with FLT
+INTEGER FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY_FLT() RESULT(RET) BIND(C)
+  USE PARKIND1, ONLY: JPRB, JPRD
+  USE MPL_MODULE, ONLY: MPL_END
+  USE OML_MOD, ONLY: OML_MAX_THREADS
+
+  INTEGER(KIND=JPIM) :: IPROC_TEST_NAME
+  CHARACTER(LEN=64) :: CLLEGPOLFNAME
+  CHARACTER(LEN=2) :: CPREC
+
+#include "abor1.intfb.h"
+
+  CALL SETUP_TEST(LCALL_SETUP_TRANS0=.FALSE.)
+  IF (NPROC > 1) THEN
+    CALL ABOR1("ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY_FLT: Test does not " // &
+      &        "support running with > 1 tasks")
+  ENDIF
+
+  ! Build file name for Legendre polynomials, unique to this test
+  IPROC_TEST_NAME = MERGE(1, 0, LUSE_MPI)
+  CPREC = MERGE("dp", "sp", JPRB == JPRD)
+  WRITE(CLLEGPOLFNAME, "(A,A,A,I1,A,I0)") &
+    & "legpols_" // CPREC // "_mpi", IPROC_TEST_NAME, "xomp", OML_MAX_THREADS()
+
+  WRITE(6,*) "Writing Legendre polynomials to disk..."
+  FLUSH(6)
+
+  ! First write the polynomial to disk
+  CALL SETUP_TRANS0(LDMPOFF=.TRUE.)
+  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, CDIO_LEGPOL="WRITEF", &
+    &              CDLEGPOLFNAME=TRIM(CLLEGPOLFNAME), LDUSEFLT=.TRUE.)
+  CALL TRANS_END
+
+  WRITE(6,*) "Legendre polynomials written to disk successfully."
+  FLUSH(6)
+
+  ! Now setup, reading Legendre polynomials from disk
+  CALL SETUP_TRANS0(LDMPOFF=.TRUE.)
+  CALL SETUP_TRANS(KSMAX=TRUNCATION, KDGL=NDGL, CDIO_LEGPOL="READF", &
+    &              CDLEGPOLFNAME=TRIM(CLLEGPOLFNAME), LDUSEFLT=.TRUE.)
+
+  CALL TRANS_END
+
+  IF (LUSE_MPI) THEN
+    CALL MPL_END(LDMEMINFO=.FALSE.)
+  ENDIF
+
+  RET = 0
+END FUNCTION ECTRANS_TEST_TRANS_API_SETUP_TRANS_WRITE_READ_LEGPOLY_FLT
+
+!---------------------------------------------------------------------------------------------------
+
 END MODULE SETUP_TRANS_TEST_SUITE
