@@ -40,7 +40,16 @@ if( HAVE_HIP )
   endif()
 elseif( HAVE_CUDA )
   set( GPU_RUNTIME "CUDA" )
-  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas nvhpcwrapnvtx CUDA::cudart )
+  set( ECTRANS_GPU_HIP_LIBRARIES CUDA::cufft CUDA::cublas CUDA::cudart )
+  if( CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC|PGI" )
+    # tpm_stats.F90 uses NVHPC's Fortran 'nvtx' module. Its library was renamed in NVHPC 26.9.
+    # Link it by name rather than with -cudalib=nvtx, which fails to link with GPU_STATIC.
+    if( CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 26.9 )
+      list( APPEND ECTRANS_GPU_HIP_LIBRARIES nvhpcwrapnvtx )
+    else()
+      list( APPEND ECTRANS_GPU_HIP_LIBRARIES nvhpcnvtx )
+    endif()
+  endif()
   list( APPEND trans_gpu_common_src
     algor/hicblas_gemm.cuda.cu
     algor/hicfft.cuda.cu
