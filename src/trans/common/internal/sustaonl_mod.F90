@@ -64,19 +64,15 @@ SUBROUTINE SUSTAONL(KMEDIAP,KRESTM,LDWEIGHTED_DISTR,PWEIGHT,PMEDIAP,KPROCAGP)
 !        R. El Khatib 26-Apr-2018 vectorization
 !     ------------------------------------------------------------------
 
-USE EC_PARKIND      ,ONLY : JPIM, JPRD
-USE MPL_MODULE      ,ONLY : MPL_ALLGATHERV, MPL_RECV, MPL_SEND
-
-USE TPM_GEN         ,ONLY : NOUT, NPRINTLEV
-USE TPM_DIM         ,ONLY : R
-USE TPM_GEOMETRY    ,ONLY : G
-USE TPM_DISTR       ,ONLY : D, LEQ_REGIONS, MTAGPART, NPRCIDS, MYPROC, NPROC
-
-USE SET2PE_MOD      ,ONLY : SET2PE
-USE ABORT_TRANS_MOD ,ONLY : ABORT_TRANS
-USE EQ_REGIONS_MOD  ,ONLY : MY_REGION_NS, MY_REGION_EW,           &
-     &                      N_REGIONS, N_REGIONS_EW, N_REGIONS_NS
-!
+USE EC_PARKIND,      ONLY: JPIM, JPRD
+USE MPL_MODULE,      ONLY: MPL_ALLGATHERV, MPL_RECV, MPL_SEND
+USE TPM_GEN,         ONLY: NOUT, NPRINTLEV
+USE TPM_DIM,         ONLY: R
+USE TPM_GEOMETRY,    ONLY: G
+USE TPM_DISTR,       ONLY: D, LEQ_REGIONS, MTAGPART, NPRCIDS, MYPROC, NPROC
+USE SET2PE_MOD,      ONLY: SET2PE
+USE ABORT_TRANS_MOD, ONLY: ABORT_TRANS
+USE EQ_REGIONS_MOD,  ONLY: MY_REGION_NS, MY_REGION_EW,  N_REGIONS, N_REGIONS_EW, N_REGIONS_NS
 
 IMPLICIT NONE
 
@@ -90,14 +86,14 @@ INTEGER(KIND=JPIM),INTENT(IN) :: KPROCAGP(:)
 
 !     LOCAL
 
-INTEGER(KIND=JPIM) :: IXPTLAT(R%NDGL), ILSTPTLAT(R%NDGL)
+INTEGER(KIND=JPIM) :: IXPTLAT(R%NDGL), ILSTPTLAT(R%NDGL), ITAKE(R%NDGL)
 INTEGER(KIND=JPIM) :: ICHK(R%NDLON,R%NDGL), ICOMBUF(R%NDGL*N_REGIONS_EW*2)
-INTEGER(KIND=JPIM) :: I1, I2, IBUFLEN, IDGLG, IDWIDE,&
+INTEGER(KIND=JPIM) :: I1, I2, IBUFLEN, &
              &IGL, IGL1, IGL2, IGLOFF, IGPTA, &
              &IGPTPRSETS, IGPTS, IGPTSP, ILEN, ILRECV, &
              &ILSEND, INPLAT, INXLAT, IPOS, &
              &IPROCB, IPTSRE, IRECV, &
-             &IREST, ISEND, ITAG, JA, JB, JGL, JL, JNPTSRE, &
+             &IREST, ISEND, ITAG, JA, JB, JGL, JL, &
              &ILAT, ILON, ILOEN
 INTEGER(KIND=JPIM),ALLOCATABLE :: ICOMBUFG(:)
 REAL(KIND=JPRD),ALLOCATABLE :: ZWEIGHT(:,:)
@@ -107,12 +103,10 @@ LOGICAL :: LLABORT
 LOGICAL :: LLP1,LLP2
 
 REAL(KIND=JPRD) ::  ZDIVID(R%NDGL)
-REAL(KIND=JPRD) ::  ZCOMP,ZPI
+REAL(KIND=JPRD) ::  ZCOMP
 INTEGER(KIND=JPIM) :: ILATMD,ILATMD1
 
 !      -----------------------------------------------------------------
-
-ZPI  = 2.0_JPRD*ASIN(1.0_JPRD)
 
 IXPTLAT  (:)=999999
 ILSTPTLAT(:)=999999
@@ -120,17 +114,21 @@ ILSTPTLAT(:)=999999
 LLP1 = NPRINTLEV>0
 LLP2 = NPRINTLEV>1
 
-IDWIDE  = R%NDGL/2
 IBUFLEN = R%NDGL*N_REGIONS_EW*2
-IDGLG   = R%NDGL
 
-I1 = MAX(   1,D%NFRSTLAT(MY_REGION_NS)-D%NFRSTLOFF)
-I2 = MIN(IDGLG,D%NLSTLAT (MY_REGION_NS)-D%NFRSTLOFF)
+! Local indices for the first and last latitude points in my NS region
+I1 = MAX(1,      D%NFRSTLAT(MY_REGION_NS) - D%NFRSTLOFF)
+I2 = MIN(R%NDGL, D%NLSTLAT (MY_REGION_NS) - D%NFRSTLOFF)
 
+! Number of latitudes in my NS region
 ILEN = D%NLSTLAT(MY_REGION_NS) - D%NFRSTLAT(MY_REGION_NS)+1
 
+! Number of grid points on all latitudes before the first latitude of my NS region
+! (equal to the offset of my NS region's first grid point if latitudes are not split)
 IGPTPRSETS = SUM(G%NLOEN(1:D%NFRSTLAT(MY_REGION_NS)-1))
 
+! Compute offset for the starting grid point in my NS region (IGPTA) and the number of grid points
+! in my NS region (IGPTS)
 IF (D%LSPLIT) THEN
   IF( LEQ_REGIONS )THEN
     IGPTA=0
@@ -140,9 +138,11 @@ IF (D%LSPLIT) THEN
     IGPTS = KPROCAGP(MY_REGION_NS)
   ELSE
     IF (MY_REGION_NS <= KRESTM.OR.KRESTM == 0) THEN
+      ! Normal band for the first KRESTM regions
       IGPTS = KMEDIAP
       IGPTA = KMEDIAP*(MY_REGION_NS-1)
     ELSE
+      ! Remaining bands for the regions after the first KRESTM regions
       IGPTS = KMEDIAP-1
       IGPTA = KMEDIAP*KRESTM+IGPTS*(MY_REGION_NS-1-KRESTM)
     ENDIF
@@ -152,8 +152,15 @@ ELSE
   IGPTS = SUM(G%NLOEN(D%NFRSTLAT(MY_REGION_NS):D%NLSTLAT(MY_REGION_NS)))
 ENDIF
 
+! Average number of points per EW region in my NS region, rounded down (IGPTSP) and how many EW
+! regions get an extra point (IREST) (these regions come first)
 IGPTSP = IGPTS/N_REGIONS(MY_REGION_NS)
 IREST = IGPTS-N_REGIONS(MY_REGION_NS)*IGPTSP
+
+! The starting (IXPTLAT) and ending (ILSTPTLAT) point indices for each latitude in my NS region
+! Note that when LSPLIT = .FALSE., IXPTLAT and ILSTPTLAT are simply equal to 1 and NLOEN(JGL),
+! respectively
+! IXPTLAT is gradually increased as we sweep west-east through the regions allocating points
 IXPTLAT(1) = IGPTA-IGPTPRSETS+1
 ILSTPTLAT(1) = G%NLOEN(D%NFRSTLAT(MY_REGION_NS))
 INPLAT = G%NLOEN(D%NFRSTLAT(MY_REGION_NS))-IXPTLAT(1)+1
@@ -171,11 +178,11 @@ DO JB=1,N_REGIONS_EW
   ENDDO
 ENDDO
 
-
 !  grid point decomposition
 !  ---------------------------------------
 IF( NPROC > 1 )THEN
   DO JGL=1,ILEN
+    ! Longitudinal spacing of points in thousandths of a degree
     ZDIVID(JGL) = 360000.0_JPRD/REAL(G%NLOEN(D%NFRSTLAT(MY_REGION_NS)+JGL-1),JPRD)
   ENDDO
   IF( LDWEIGHTED_DISTR )THEN
@@ -192,42 +199,26 @@ IF( NPROC > 1 )THEN
   ENDIF
 
   DO JB=1,N_REGIONS(MY_REGION_NS)
-    
     IF( .NOT.LDWEIGHTED_DISTR )THEN
-      
+      ! The number of points in this region
       IF (JB <= IREST) THEN
         IPTSRE = IGPTSP+1
       ELSE
         IPTSRE = IGPTSP
       ENDIF
-      DO JNPTSRE=1,IPTSRE
-
-        ILATMD = 360000
-        DO JGL=1,ILEN
-          IF (IXPTLAT(JGL)  <=  ILSTPTLAT(JGL)) THEN
-            ILATMD1 = NINT(REAL(IXPTLAT(JGL)-1,JPRD)*ZDIVID(JGL))
-            IF(ILATMD1 < ILATMD) THEN
-              ILATMD = ILATMD1
-              INXLAT = JGL
-            ENDIF
-          ENDIF
-        ENDDO
-        
-        IF (INXLAT >= I1 .AND. INXLAT <= I2) THEN
-          IGL=D%NPTRFLOFF+INXLAT
-          IF (D%NSTA(IGL,JB) == 0) THEN
-            D%NSTA(IGL,JB) = IXPTLAT(INXLAT)
-          ENDIF
-          D%NONL(IGL,JB) = D%NONL(IGL,JB)+1
+      CALL SELECT_LONGITUDE_POINTS(IXPTLAT(1:ILEN), ILSTPTLAT(1:ILEN), ZDIVID(1:ILEN), IPTSRE, &
+        &                          ITAKE(1:ILEN))
+      DO JGL=1,ILEN
+        IF (JGL >= I1 .AND. JGL <= I2 .AND. ITAKE(JGL) > 0) THEN
+          IGL=D%NPTRFLOFF+JGL
+          D%NSTA(IGL,JB) = IXPTLAT(JGL)
+          D%NONL(IGL,JB) = ITAKE(JGL)
         ENDIF
-        IXPTLAT(INXLAT) = IXPTLAT(INXLAT)+1
       ENDDO
-      
+      IXPTLAT(1:ILEN) = IXPTLAT(1:ILEN)+ITAKE(1:ILEN)
     ELSE
-      
       DO WHILE ( (JB <  N_REGIONS(MY_REGION_NS) .AND. ZCOMP < PMEDIAP) &
        & .OR. (JB == N_REGIONS(MY_REGION_NS) .AND. IGPTS < KPROCAGP(MY_REGION_NS)) )
-        
         IGPTS = IGPTS + 1
         ILATMD = 360000
         DO JGL=1,ILEN
@@ -239,7 +230,7 @@ IF( NPROC > 1 )THEN
             ENDIF
           ENDIF
         ENDDO
-        
+
         IF (INXLAT >= I1 .AND. INXLAT <= I2) THEN
           IGL=D%NPTRFLOFF+INXLAT
           IF (D%NSTA(IGL,JB) == 0) THEN
@@ -259,20 +250,18 @@ IF( NPROC > 1 )THEN
         ENDIF
         IXPTLAT(INXLAT) = IXPTLAT(INXLAT)+1
       ENDDO
-      
+
       ZCOMP = ZCOMP - PMEDIAP
-      
+
     ENDIF
-    
+
   ENDDO
-  
+
   IF( LDWEIGHTED_DISTR )THEN
     DEALLOCATE(ZWEIGHT)
   ENDIF
-  
+
   ! Exchange local partitioning info to produce global view
-  !
-  
   CALL GSTATS_BARRIER(795)
   CALL GSTATS(814,0)
   IF( LEQ_REGIONS )THEN
@@ -453,4 +442,79 @@ ENDIF
 !     ------------------------------------------------------------------
 
 END SUBROUTINE SUSTAONL
+
+! Select the next KPOINTS in the merge of the latitude rows, ordered by
+! rounded longitude and then latitude. Starts are one-based and inclusive.
+SUBROUTINE SELECT_LONGITUDE_POINTS(KFIRST,KLAST,PDIVID,KPOINTS,KTAKE)
+USE EC_PARKIND, ONLY: JPIM, JPIB, JPRD
+
+IMPLICIT NONE
+
+INTEGER(KIND=JPIM), INTENT(IN) :: KFIRST(:), KLAST(:), KPOINTS
+REAL(KIND=JPRD), INTENT(IN) :: PDIVID(:)
+INTEGER(KIND=JPIM), INTENT(OUT) :: KTAKE(SIZE(KFIRST))
+INTEGER(KIND=JPIM) :: ILOWER, IUPPER, IANGLE, JGL, ILEFT, IADD
+INTEGER(KIND=JPIB) :: ICOUNT
+
+KTAKE = 0
+IF (KPOINTS<=0) RETURN
+! The final region consumes every remaining point without searching.
+IF (INT(KPOINTS,JPIB)==SUM(INT(MAX(0,KLAST-KFIRST+1),JPIB))) THEN
+  KTAKE = MAX(0,KLAST-KFIRST+1)
+  RETURN
+ENDIF
+
+! Find the rounded longitude containing the final point of this region.
+! Count against the exact NINT expression used by the original point scan.
+ILOWER = 0
+IUPPER = 360000
+DO WHILE(ILOWER<IUPPER)
+  IANGLE = ILOWER+(IUPPER-ILOWER)/2
+  ICOUNT = 0
+  DO JGL = 1,SIZE(KFIRST)
+    ICOUNT = ICOUNT+ROW_COUNT(JGL,IANGLE)
+  ENDDO
+  IF (ICOUNT<KPOINTS) THEN
+    ILOWER = IANGLE+1
+  ELSE
+    IUPPER = IANGLE
+  ENDIF
+ENDDO
+DO JGL = 1,SIZE(KFIRST)
+  KTAKE(JGL) = ROW_COUNT(JGL,ILOWER-1)
+ENDDO
+ILEFT = KPOINTS-INT(SUM(INT(KTAKE,JPIB)),JPIM)
+! All points below the boundary are selected. At equal rounded longitude,
+! the old scan takes the lowest latitude index first, including repeats.
+DO JGL = 1,SIZE(KFIRST)
+  IF (ILEFT==0) EXIT
+  IADD = MIN(ILEFT,ROW_COUNT(JGL,ILOWER)-KTAKE(JGL))
+  KTAKE(JGL) = KTAKE(JGL)+IADD
+  ILEFT = ILEFT-IADD
+ENDDO
+
+CONTAINS
+
+! Count the number of points in a given row up to a specified longitude limit.
+INTEGER(KIND=JPIM) FUNCTION ROW_COUNT(KROW,KLIMIT) RESULT(IROWCOUNT)
+  INTEGER(KIND=JPIM), INTENT(IN) :: KROW, KLIMIT
+  INTEGER(KIND=JPIM) :: ILO, IHI, IMID
+
+  IROWCOUNT = 0
+  IF (KFIRST(KROW)>KLAST(KROW)) RETURN
+  ILO = KFIRST(KROW)-1
+  IHI = KLAST(KROW)
+  DO WHILE(ILO<IHI)
+    IMID = ILO+(IHI-ILO)/2+1
+    IF (NINT(REAL(IMID-1,JPRD)*PDIVID(KROW))<=KLIMIT) THEN
+      ILO = IMID
+    ELSE
+      IHI = IMID-1
+    ENDIF
+  ENDDO
+  IROWCOUNT = ILO-KFIRST(KROW)+1
+END FUNCTION ROW_COUNT
+
+END SUBROUTINE SELECT_LONGITUDE_POINTS
+
 END MODULE SUSTAONL_MOD
