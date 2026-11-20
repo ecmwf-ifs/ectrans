@@ -160,6 +160,7 @@ IREST = IGPTS-N_REGIONS(MY_REGION_NS)*IGPTSP
 ! The starting (IXPTLAT) and ending (ILSTPTLAT) point indices for each latitude in my NS region
 ! Note that when LSPLIT = .FALSE., IXPTLAT and ILSTPTLAT are simply equal to 1 and NLOEN(JGL),
 ! respectively
+! IXPTLAT is gradually increased as we sweep west-east through the regions allocating points
 IXPTLAT(1) = IGPTA-IGPTPRSETS+1
 ILSTPTLAT(1) = G%NLOEN(D%NFRSTLAT(MY_REGION_NS))
 INPLAT = G%NLOEN(D%NFRSTLAT(MY_REGION_NS))-IXPTLAT(1)+1
@@ -199,6 +200,7 @@ IF( NPROC > 1 )THEN
 
   DO JB=1,N_REGIONS(MY_REGION_NS)
     IF( .NOT.LDWEIGHTED_DISTR )THEN
+      ! The number of points in this region
       IF (JB <= IREST) THEN
         IPTSRE = IGPTSP+1
       ELSE
@@ -493,6 +495,7 @@ ENDDO
 
 CONTAINS
 
+! Count the number of points in a given row up to a specified longitude limit.
 INTEGER(KIND=JPIM) FUNCTION ROW_COUNT(KROW,KLIMIT) RESULT(IROWCOUNT)
   INTEGER(KIND=JPIM), INTENT(IN) :: KROW, KLIMIT
   INTEGER(KIND=JPIM) :: ILO, IHI, IMID
